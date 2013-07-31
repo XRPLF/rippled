@@ -160,6 +160,9 @@
     <Filter Include="[2] Build">
       <UniqueIdentifier>{c69b07a2-44e5-4b06-99a9-81f5d137ea15}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\ripple_net\protocol">
+      <UniqueIdentifier>{f0308442-e7af-44d4-a76a-c91fbf685e10}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Subtrees\sqlite\sqlite3.c">
@@ -881,6 +884,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\main\ripple_FatalErrorReporter.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\protocol\ripple_ProxyProtocol.cpp">
+      <Filter>[1] Ripple\ripple_net\protocol</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1669,6 +1675,9 @@
     </ClInclude>
     <ClInclude Include="..\..\BeastConfig.h">
       <Filter>[2] Build</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\protocol\ripple_ProxyProtocol.h">
+      <Filter>[1] Ripple\ripple_net\protocol</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

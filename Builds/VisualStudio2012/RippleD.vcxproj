@@ -998,6 +998,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\protocol\ripple_ProxyProtocol.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\ripple_net.cpp" />
     <ClCompile Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1557,6 +1563,7 @@
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HttpsClient.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_RPCServer.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_SNTPClient.h" />
+    <ClInclude Include="..\..\modules\ripple_net\protocol\ripple_ProxyProtocol.h" />
     <ClInclude Include="..\..\modules\ripple_net\ripple_net.h" />
     <ClInclude Include="..\..\modules\ripple_websocket\autosocket\ripple_AutoSocket.h" />
     <ClInclude Include="..\..\modules\ripple_websocket\ripple_websocket.h" />
