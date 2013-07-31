@@ -122,8 +122,6 @@ David Features:
   use read/write locking semantics to update the values. Later, use Listeners
   to notify dependent code to resolve the dependency inversion.
 
-- Merge ripple_Version.h and ripple_BuildVersion.h
-
 - Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
 
 - Rename LedgerMaster to Ledgers, create ILedgers interface.

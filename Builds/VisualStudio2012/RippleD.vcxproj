@@ -19,6 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\modules\ripple_app\basics\ripple_BuildInfo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1318,9 +1324,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\BeastConfig.h" />
-    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_BuildVersion.h" />
+    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_BuildInfo.h" />
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.h" />
-    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_Version.h" />
     <ClInclude Include="..\..\modules\ripple_app\consensus\ripple_DisputedTx.h" />
     <ClInclude Include="..\..\modules\ripple_app\consensus\ripple_LedgerConsensus.h" />
     <ClInclude Include="..\..\modules\ripple_app\contracts\ripple_Contract.h" />

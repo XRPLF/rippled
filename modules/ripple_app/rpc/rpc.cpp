@@ -123,7 +123,8 @@ std::string HTTPReply (int nStatus, const std::string& strMsg)
                rfc1123Time ().c_str (),
                access.c_str (),
                strMsg.size () + 2,
-               SERVER_VERSION,
+               //SERVER_VERSION,
+               BuildInfo::getFullVersionString (),
                strMsg.c_str ());
 }
 

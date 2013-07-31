@@ -972,11 +972,11 @@ void PeerImp::recvHello (protocol::TMHello& packet)
             WriteLog (lsINFO, Peer) << "Recv(Hello): " << getIP () << " :Clock far off -" << ourTime - packet.nettime ();
         }
     }
-    else if (packet.protoversionmin () > MAKE_VERSION_INT (PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR))
+    else if (packet.protoversionmin () > BuildInfo::getCurrentProtocol().toPacked ())
     {
-        WriteLog (lsINFO, Peer) << "Recv(Hello): Server requires protocol version " <<
-                                GET_VERSION_MAJOR (packet.protoversion ()) << "." << GET_VERSION_MINOR (packet.protoversion ())
-                                << " we run " << PROTO_VERSION_MAJOR << "." << PROTO_VERSION_MINOR;
+        WriteLog (lsINFO, Peer) <<
+            "Recv(Hello): Server requires protocol version " << BuildInfo::Protocol (packet.protoversion()).toStdString () <<
+            ", we run " << BuildInfo::getCurrentProtocol().toStdString ();
     }
     else if (!mNodePublic.setNodePublic (packet.nodepublic ()))
     {
@@ -991,9 +991,8 @@ void PeerImp::recvHello (protocol::TMHello& packet)
     {
         // Successful connection.
         WriteLog (lsINFO, Peer) << "Recv(Hello): Connect: " << mNodePublic.humanNodePublic ();
-        CondLog (packet.protoversion () != MAKE_VERSION_INT (PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR), lsINFO, Peer)
-                << "Peer speaks version " <<
-                (packet.protoversion () >> 16) << "." << (packet.protoversion () & 0xFF);
+        CondLog (BuildInfo::Protocol (packet.protoversion()) != BuildInfo::getCurrentProtocol(), lsINFO, Peer) <<
+                "Peer speaks version " << BuildInfo::Protocol (packet.protoversion()).toStdString ();
         mHello = packet;
 
         if (getApp().getUNL ().nodeInCluster (mNodePublic, mNodeName))
@@ -2239,9 +2238,9 @@ void PeerImp::sendHello ()
 
     protocol::TMHello h;
 
-    h.set_protoversion (MAKE_VERSION_INT (PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR));
-    h.set_protoversionmin (MAKE_VERSION_INT (MIN_PROTO_MAJOR, MIN_PROTO_MINOR));
-    h.set_fullversion (SERVER_VERSION);
+    h.set_protoversion (BuildInfo::getCurrentProtocol().toPacked ());
+    h.set_protoversionmin (BuildInfo::getMinimumProtocol().toPacked ());
+    h.set_fullversion (BuildInfo::getFullVersionString ());
     h.set_nettime (getApp().getOPs ().getNetworkTimeNC ());
     h.set_nodepublic (getApp().getLocalCredentials ().getNodePublic ().humanNodePublic ());
     h.set_nodeproof (&vchSig[0], vchSig.size ());
@@ -2410,9 +2409,10 @@ Json::Value PeerImp::getJson ()
         ret["version"] = mHello.fullversion ();
 
     if (mHello.has_protoversion () &&
-            (mHello.protoversion () != MAKE_VERSION_INT (PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR)))
-        ret["protocol"] = lexicalCastThrow <std::string> (GET_VERSION_MAJOR (mHello.protoversion ())) + "." +
-                          lexicalCastThrow <std::string> (GET_VERSION_MINOR (mHello.protoversion ()));
+            (mHello.protoversion () != BuildInfo::getCurrentProtocol().toPacked ()))
+    {
+        ret["protocol"] = BuildInfo::Protocol (mHello.protoversion ()).toStdString ();
+    }
 
     if (!!mClosedLedgerHash)
         ret["ledger"] = mClosedLedgerHash.GetHex ();

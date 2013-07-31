@@ -870,6 +870,9 @@
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_sqlite\beast_sqlite.c">
       <Filter>[0] Subtrees\beast</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\basics\ripple_BuildInfo.cpp">
+      <Filter>[1] Ripple\ripple_app\basics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
@@ -1287,12 +1290,6 @@
     <ClInclude Include="..\..\modules\ripple_client\ripple_client.h">
       <Filter>[1] Ripple\ripple_client</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_BuildVersion.h">
-      <Filter>[1] Ripple\ripple_app\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_Version.h">
-      <Filter>[1] Ripple\ripple_app\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_LogFile.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
@@ -1658,6 +1655,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorImp.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_BuildInfo.h">
+      <Filter>[1] Ripple\ripple_app\basics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
