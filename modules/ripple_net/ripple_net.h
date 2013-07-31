@@ -32,8 +32,6 @@ namespace ripple
 #include "basics/ripple_RPCServer.h"
 #include "basics/ripple_SNTPClient.h"
 
-#include "protocol/ripple_ProxyProtocol.h"
-
 }
 
 #endif

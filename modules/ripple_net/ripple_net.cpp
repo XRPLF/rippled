@@ -25,6 +25,4 @@ namespace ripple
 #include "basics/ripple_RPCServer.cpp"
 #include "basics/ripple_SNTPClient.cpp"
 
-#include "protocol/ripple_ProxyProtocol.cpp"
-
 }

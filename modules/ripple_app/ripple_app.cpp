@@ -239,6 +239,8 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
+#include "network/ripple_ProxyHandshake.h" // private?
+
 //------------------------------------------------------------------------------
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
@@ -326,6 +328,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "tx/Transactor.cpp"
 #include "network/WSConnection.cpp"
 #include "network/WSDoor.cpp"
+#include "network/ripple_ProxyHandshake.cpp"
 
 #endif
 
