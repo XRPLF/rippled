@@ -403,7 +403,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    ValidatorsTests () : UnitTest ("Validators", "ripple")
+    ValidatorsTests () : UnitTest ("Validators", "ripple", runManual)
     {
     }
 
@@ -419,18 +419,18 @@ public:
 
         {
             Array <Validator::Info> oldInfo = TestSource (1, 4).fetch ();
-            expect (oldInfo.size () == 2);
+            expect (oldInfo.size () == 4);
 
             Array <Validator::Info> newInfo = TestSource (3, 6).fetch ();
-            expect (newInfo.size () == 2);
+            expect (newInfo.size () == 4);
 
             ValidatorsImp::Logic logic;
 
             Validator::List::Ptr oldList = logic.createListFromInfo (oldInfo);
-            expect (oldList->size () == 2);
+            expect (oldList->size () == 4);
 
             Validator::List::Ptr newList = logic.createListFromInfo (newInfo);
-            expect (newList->size () == 2);
+            expect (newList->size () == 4);
 
             TestCompareCallback cb;
             ValidatorsImp::compareLists (*oldList, *newList, cb);
