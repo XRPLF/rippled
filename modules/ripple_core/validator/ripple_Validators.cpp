@@ -75,70 +75,86 @@ public:
         ScopedPointer <Source> const source;
         Status status;
         Time whenToFetch;
-        int numberOfFailures; // of fetch()
-
-        Validator::List::Ptr lastFetchResults;
-    };
-
-    // This is what comes back from a source
-    typedef OwnedArray <SourceInfo> SourceInfoArray;
-
-    // The result of performing a fetch
-    struct FetchResult
-    {
-#if 0
-        // This is what comes back from the fetch
-        Validator::ListImp::Ptr updatedList;
-
-        // The original list before the fetch
-        Validator::List oldList;
-
-        // The new list after the fetch
-        Validator::List newList;
-
-        // The list of validators that were added
-        Validator::List addedList;
-
-        // The list of validators that were removed
-        Validator::List removedList;
-#endif
-
-        FetchResult ()
-        {
-            /*
-            updatedList.ensureStorageAllocated (expectedNumberOfResults);
-            oldList.ensureStorageAllocated (expectedNumberOfResults);
-            newList.ensureStorageAllocated (expectedNumberOfResults);
-            addedList.ensureStorageAllocated (expectedNumberOfResults);
-            removedList.ensureStorageAllocated (expectedNumberOfResults);
-            */
-        }
-
-        void clear ()
-        {
-            /*
-            //updatedList.clearQuick ();
-            oldList.clear ();
-            newList.clear ();
-            addedList.clear ();
-            removedList.clear ();
-            */
-        }
+        int numberOfFailures;
+        Validator::List::Ptr list;
     };
 
     //--------------------------------------------------------------------------
 
+    // Called during the list comparison
+    //
+    struct CompareCallback
+    {
+        virtual void onValidatorAdded (Validator const& validator) { }
+        virtual void onValidatorRemoved (Validator const& validator) { }
+        virtual void onValidatorUnchanged (Validator const& validator) { }
+    };
+
+    // Given the old list and the new list for a source, this
+    // computes which validators were added or removed, and
+    // updates some statistics.
+    //
+    static void compareLists (Validator::List const& oldList,
+                              Validator::List const& newList,
+                              CompareCallback& callback)
+    {
+        // Validator::List is always sorted so walk both arrays and
+        // do an element-wise comparison to perform set calculations.
+        //
+        int i = 0;
+        int j = 0;
+        while (i < oldList.size () || j < newList.size ())
+        {
+            if (i < oldList.size () && j < newList.size ())
+            {
+                int const compare = Validator::Compare::compareElements (
+                    oldList [i], newList [j]);
+
+                if (compare < 0)
+                {
+                    callback.onValidatorRemoved (*oldList [i]);
+                    ++i;
+                }
+                else if (compare > 0)
+                {
+                    callback.onValidatorAdded (*newList [j]);
+                    ++j;
+                }
+                else
+                {
+                    bassert (oldList [i] == newList [j]);
+
+                    callback.onValidatorUnchanged (*newList [j]);
+                    ++i;
+                    ++j;
+                }
+            }
+            else if (i < oldList.size ())
+            {
+                callback.onValidatorRemoved (*oldList [i]);
+                ++i;
+            }
+            else
+            {
+                bassert (j < newList.size ());
+
+                callback.onValidatorAdded (*newList [j]);
+                ++j;
+            }
+        }
+    }
+
     // Encapsulates the logic for creating the chosen validators.
     // This is a separate class to facilitate the unit tests.
     //
-    class Logic
+    class Logic : public CompareCallback
     {
     private:
         HashMap <Validator::PublicKey,
                  Validator::Ptr,
                  Validator::PublicKey::HashFunction> m_map;
                  
-        SourceInfoArray m_sourceInfo;
+        OwnedArray <SourceInfo> m_sources;
 
     public:
         Logic ()
@@ -147,88 +163,32 @@ public:
 
         void addSource (Source* source)
         {
-            m_sourceInfo.add (new SourceInfo (source));
+            m_sources.add (new SourceInfo (source));
         }
 
-        SourceInfoArray& getSources ()
+        OwnedArray <SourceInfo>& getSources ()
         {
-            return m_sourceInfo;
+            return m_sources;
         }
 
-        void sortValidatorInfo (Array <Validator::Info>& arrayToSort)
+        void onValidatorAdded (Validator const& validator)
         {
-            Array <Validator::Info> sorted;
-
-            sorted.ensureStorageAllocated (arrayToSort.size ());
-
-            for (int i = 0; i < arrayToSort.size (); ++i)
-            {
-                Validator::Info::Compare compare;
-                sorted.addSorted (compare, arrayToSort [i]);
-            }
-
-            arrayToSort.swapWith (sorted);
         }
 
-        // Given the old list and the new list for a source, this
-        // computes which validators were added or removed, and
-        // updates some statistics. It also produces the new list.
-        //
-        void processFetch (FetchResult* pFetchResult,
-                           Validator::List& oldList,
-                           Validator::List& newList)
+        void onValidatorRemoved (Validator const& validator)
         {
-#if 0
-            ValidatorsImp::FetchResult& fetchResult (*pFetchResult);
+        }
 
-            // First sort both arrays.
-            //
-            Validator::Info::Compare compare;
-            oldList.sort (compare, true);
-            newList.sort (compare, true);
-
-            // Now walk both arrays and do an element-wise
-            // comparison to determine the set intersection.
-            //
-            for (int i = 0; i < bmax (oldList.size (), newList.size ()); ++i)
-            {
-                if (i >= oldList.size ())
-                {
-                    // newList [i] not present in oldList
-                    // newList [i] was added
-                }
-                else if (i >= newList.size ())
-                {
-                    // oldList [i] not present in newList
-                    // oldList [i] no longer present
-                }
-                else
-                {
-                    int const result = Validator::Info::Compare::compareElements (
-                        oldList [i], newList [i]);
-
-                    if (result < 0)
-                    {
-                        // oldList [i] not present in newList
-                        // oldList [i] was removed
-                    }
-                    else if (result > 0)
-                    {
-                        // newList [i] not present in oldList
-                        // newList [i] was added
-                    }
-                    else
-                    {
-                        // no change in validator
-                    }
-                }
-            }
-#endif
+        void onValidatorUnchanged (Validator const& validator)
+        {
         }
 
         // Produces an array of references to validators given the validator info.
-        Validator::List::Ptr createListFromInfo (Array <Validator::Info> const& info)
+        //
+        Validator::List::Ptr createListFromInfo (Array <Validator::Info>& info)
         {
+            Validator::Info::sortAndRemoveDuplicates (info);
+
             SharedObjectArray <Validator> items;
 
             items.ensureStorageAllocated (info.size ());
@@ -243,7 +203,7 @@ public:
                 {
                     validator = new Validator (key);
 
-                    m_map [key] = validator;
+                    m_map.set (key, validator);
                 }
 
                 items.add (validator);
@@ -254,23 +214,26 @@ public:
 
         // Fetch the validators from a source and process the result
         //
-        void fetchSource (SourceInfo& sourceInfo)
+        void fetchAndProcessSource (SourceInfo& sourceInfo)
         {
-            Array <Validator::Info> fetchedInfo = sourceInfo.source->fetch ();
+            Array <Validator::Info> newInfo = sourceInfo.source->fetch ();
 
-            if (fetchedInfo.size () != 0)
+            if (newInfo.size () != 0)
             {
                 sourceInfo.status = SourceInfo::statusFetched;
 
                 sourceInfo.whenToFetch = Time::getCurrentTime () +
                     RelativeTime (hoursBetweenFetches * 60.0 * 60.0);
 
-                //processFetchedInfo (fetchedInfo);
+                Validator::List::Ptr newList (createListFromInfo (newInfo));
+
+                compareLists (*sourceInfo.list, *newList, *this);
+
+                sourceInfo.list = newList;
             }
             else
             {
-                // Failed to fetch
-                // Don't update fetch time
+                // Failed to fetch, don't update fetch time
                 sourceInfo.status = SourceInfo::statusFailed;
                 sourceInfo.numberOfFailures++;
             }
@@ -324,7 +287,7 @@ public:
 
             if (currentTime <= sourceInfo.whenToFetch)
             {
-                m_logic.fetchSource (sourceInfo);
+                m_logic.fetchAndProcessSource (sourceInfo);
             }
 
             interrupted = m_thread.interruptionPoint ();
@@ -404,14 +367,50 @@ public:
 
     //--------------------------------------------------------------------------
 
+    struct TestCompareCallback : public ValidatorsImp::CompareCallback
+    {
+        int numTotal;
+        int numAdded;
+        int numRemoved;
+        int numUnchanged;
+
+        TestCompareCallback ()
+            : numTotal (0)
+            , numAdded (0)
+            , numRemoved (0)
+            , numUnchanged (0)
+        {
+        }
+
+        void onValidatorAdded (Validator const& validator)
+        {
+            ++numTotal;
+            ++numAdded;
+        }
+
+        void onValidatorRemoved (Validator const& validator)
+        {
+            ++numTotal;
+            ++numRemoved;
+        }
+
+        void onValidatorUnchanged (Validator const& validator)
+        {
+            ++numTotal;
+            ++numUnchanged;
+        }
+    };
+
+    //--------------------------------------------------------------------------
+
     ValidatorsTests () : UnitTest ("Validators", "ripple")
     {
     }
 
     // Check logic for comparing a source's fetch results
-    void processTest ()
+    void testCompare ()
     {
-        beginTestCase ("process");
+        beginTestCase ("compare");
 
         {
             Array <Validator::Info> results = TestSource (1, 32).fetch ();
@@ -419,24 +418,32 @@ public:
         }
 
         {
-            Array <Validator::Info> oldList = TestSource (1, 2).fetch ();
-            expect (oldList.size () == 2);
+            Array <Validator::Info> oldInfo = TestSource (1, 4).fetch ();
+            expect (oldInfo.size () == 2);
 
-            Array <Validator::Info> newList = TestSource (2, 3).fetch ();
-            expect (newList.size () == 2);
+            Array <Validator::Info> newInfo = TestSource (3, 6).fetch ();
+            expect (newInfo.size () == 2);
 
             ValidatorsImp::Logic logic;
 
-            Validator::List::Ptr list = logic.createListFromInfo (newList);
+            Validator::List::Ptr oldList = logic.createListFromInfo (oldInfo);
+            expect (oldList->size () == 2);
 
-            //ValidatorsImp::FetchResult fetchResult;
-            //ValidatorsImp::Logic ().processFetch (&fetchResult, oldList, newList);
+            Validator::List::Ptr newList = logic.createListFromInfo (newInfo);
+            expect (newList->size () == 2);
+
+            TestCompareCallback cb;
+            ValidatorsImp::compareLists (*oldList, *newList, cb);
+
+            expect (cb.numAdded == 2);
+            expect (cb.numRemoved == 2);
+            expect (cb.numUnchanged == 2);
         }
     }
 
     void runTest ()
     {
-        processTest ();
+        testCompare ();
     }
 };
 

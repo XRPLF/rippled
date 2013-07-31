@@ -50,6 +50,28 @@ public:
         //String friendlyName;
         //String organizationType;
         //String jurisdicton;
+
+        static void sortAndRemoveDuplicates (Array <Info>& arrayToSort)
+        {
+            Array <Info> sorted;
+
+            sorted.ensureStorageAllocated (arrayToSort.size ());
+
+            for (int i = 0; i < arrayToSort.size (); ++i)
+            {
+                Compare compare;
+                
+                int const index = sorted.addSorted (compare, arrayToSort [i]);
+
+                if (index > 0 && Compare::compareElements (sorted [index], sorted [index-1]) == 0)
+                {
+                    // duplicate
+                    sorted.remove (index);
+                }
+            }
+
+            arrayToSort.swapWith (sorted);
+        }
     };
 
     typedef SharedObjectPtr <Validator> Ptr;
@@ -58,10 +80,22 @@ public:
 
     //--------------------------------------------------------------------------
 
+    // Comparison function for Validator objects
+    //
+    struct Compare
+    {
+        static int compareElements (Validator const* lhs, Validator const* rhs)
+        {
+            return lhs->getPublicKey().compare (rhs->getPublicKey ());
+        }
+    };
+
     /** A list of Validator that comes from a source of validators.
 
         Sources include trusted URIs, or a local file. The list may be
         signed.
+
+        @note The list is immutable and guaranteed to be sorted.
     */
     class List : public SharedObject
     {
@@ -71,6 +105,10 @@ public:
         explicit List (SharedObjectArray <Validator>& list)
         {
             m_list.swapWith (list);
+
+            Validator::Compare compare;
+
+            m_list.sort (compare);
         }
 
         ~List ()
@@ -103,6 +141,7 @@ public:
 
 private:
     PublicKey const m_publicKey;
+
 };
 
 #endif
