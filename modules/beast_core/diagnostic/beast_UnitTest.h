@@ -141,6 +141,16 @@ public:
     */
     struct Suite
     {
+        String className;
+        String packageName;
+        Time whenStarted;
+        double secondsElapsed;
+        int tests;
+        int failures;
+        OwnedArray <Case, CriticalSection> cases;
+
+        //----
+
         Suite (String const& className_, String const& packageName_)
             : className (className_)
             , packageName (packageName_)
@@ -151,13 +161,13 @@ public:
         {
         }
 
-        String className;
-        String packageName;
-        Time whenStarted;
-        double secondsElapsed;
-        int tests;
-        int failures;
-        OwnedArray <Case, CriticalSection> cases;
+        // for convenience
+        String getSuiteName () const noexcept
+        {
+            String s;
+            s << packageName << "::" << className;
+            return s;
+        }
     };
 
     /** The type of a list of tests.

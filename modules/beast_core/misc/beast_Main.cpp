@@ -17,8 +17,103 @@
 */
 //==============================================================================
 
-Main::Main (int argc, char const* const* argv)
-    : m_argc (argc)
-    , m_argv (argv)
+Static::Storage <Atomic <Main*>, Main> Main::s_instance;
+
+Main::Main ()
 {
+    bool const replaced = s_instance->compareAndSetBool (this, nullptr);
+
+    // If this happens it means there are two instances of Main!
+    if (! replaced)
+        FatalError ("Multiple instances of Main", __FILE__, __LINE__);
+}
+
+Main::~Main ()
+{
+    s_instance->set (nullptr);
+}
+
+Main& Main::getInstance ()
+{
+    bassert (s_instance->get () != nullptr);
+
+    return *s_instance->get ();
+}
+
+void Main::runStartupUnitTests ()
+{
+    struct StartupUnitTests : UnitTests
+    {
+        void logMessage (String const&)
+        {
+            // Intentionally do nothing, we don't want
+            // to see the extra output for startup tests.
+        }
+
+        void log (String const& message)
+        {
+#if BEAST_MSVC
+            if (beast_isRunningUnderDebugger ())
+                Logger::outputDebugString (message);
+#endif
+
+            std::cerr << message.toStdString () << std::endl;
+        }
+
+        void reportCase (String const& suiteName, UnitTest::Case const& testcase)
+        {
+            String s;
+            s << suiteName << " (" << testcase.name << ") produced " <<
+                String (testcase.failures) <<
+                ((testcase.failures == 1) ? " failure." : " failures.");
+            log (s);
+        }
+
+        void reportSuite (UnitTest::Suite const& suite)
+        {
+            if (suite.failures > 0)
+            {
+                String const suiteName = suite.getSuiteName ();
+
+                for (int i = 0; i < suite.cases.size (); ++i)
+                {
+                    UnitTest::Case const& testcase (*suite.cases [i]);
+
+                    if (testcase.failures > 0)
+                        reportCase (suiteName, testcase);
+                }
+            }
+        }
+
+        void reportSuites (UnitTests::Results const& results)
+        {
+            for (int i = 0; i < results.suites.size (); ++i)
+                reportSuite (*results.suites [i]);
+        }
+
+        void reportResults ()
+        {
+            reportSuites (getResults ());
+        }
+    };
+
+    StartupUnitTests tests;
+
+    tests.runStartupTests ();
+
+    if (tests.anyTestsFailed ())
+    {
+        tests.reportResults  ();
+
+        tests.log ("Terminating due to failed startup tests");
+
+        Process::terminate ();
+    }
+}
+
+int Main::runFromMain (int argc, char const* const* argv)
+{
+    runStartupUnitTests ();
+
+    return run (argc, argv);
 }
