@@ -37,6 +37,13 @@
 #pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
 
+#if BEAST_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreorder"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#endif
+
 #include "hyperleveldb/db/builder.cc"
 #include "hyperleveldb/db/db_impl.cc"
 #include "hyperleveldb/db/db_iter.cc"
@@ -92,6 +99,10 @@
 
 #ifdef BEAST_MSVC
 #pragma warning (pop)
+#endif
+
+#if BEAST_GCC
+#pragma GCC diagnostic pop
 #endif
 
 #endif
