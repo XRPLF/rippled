@@ -150,6 +150,7 @@ namespace beast
 #include "diagnostic/beast_FPUFlags.cpp"
 #include "diagnostic/beast_LeakChecked.cpp"
 #include "diagnostic/beast_ProtectedCall.cpp"
+#include "diagnostic/beast_SemanticVersion.cpp"
 #include "diagnostic/beast_UnitTest.cpp"
 #include "diagnostic/beast_UnitTestUtilities.cpp"
 

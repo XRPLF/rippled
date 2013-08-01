@@ -307,6 +307,7 @@ namespace beast
 #include "text/beast_LocalisedStrings.h"
 #include "text/beast_NewLine.h"
 #include "text/beast_StringArray.h"
+#include "diagnostic/beast_SemanticVersion.h"
 #include "text/beast_StringPairArray.h"
 #include "text/beast_StringPool.h"
 #include "text/beast_TextDiff.h"

@@ -121,6 +121,7 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_FPUFlags.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_LeakChecked.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_SafeBool.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_SemanticVersion.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Throw.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.h" />
@@ -420,6 +421,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_LeakChecked.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_SemanticVersion.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
