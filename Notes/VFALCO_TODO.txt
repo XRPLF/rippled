@@ -17,6 +17,8 @@ Vinnie's List: Changes day to day, descending priority
 - Improved Mutex to track deadlocks
 - Work on KeyvaDB
 - Allow skipped/disabled unit tests and reporting.
+- Supress useless gcc warnings
+  http://stackoverflow.com/questions/3378560/how-to-disable-gcc-warnings-for-a-few-lines-of-code
 
 David Features:
 - override config items from command line

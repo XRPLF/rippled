@@ -4,37 +4,24 @@
 */
 //==============================================================================
 
-String const& BuildInfo::getVersionString ()
+char const* BuildInfo::getRawVersionString ()
 {
     static char const* const rawText =
-        
+
     //--------------------------------------------------------------------------
     //
-    // The build version number (edit this for each release)
+    //  The build version number (edit this for each release)
     //
-        "0.010-rc1"
+        "0.11.0-rc1"
+    //
+    //  Must follow the format described here:
+    //
+    //  http://semver.org/
     //
     //--------------------------------------------------------------------------
     ;
 
-    struct SanityChecker
-    {
-        SanityChecker ()
-        {
-            Version v;
-
-            if (! v.parse (rawText) || v.print () != rawText)
-                Throw (std::invalid_argument ("illegal server version format string"));
-
-            versionString = rawText;
-        }
-
-        String versionString;
-    };
-
-    static SanityChecker value;
-
-    return value.versionString;
+    return rawText;
 }
 
 BuildInfo::Protocol const& BuildInfo::getCurrentProtocol ()
@@ -71,9 +58,35 @@ BuildInfo::Protocol const& BuildInfo::getMinimumProtocol ()
     return minimumProtocol;
 }
 
+//
+//
 // Don't touch anything below this line
 //
 //------------------------------------------------------------------------------
+
+String const& BuildInfo::getVersionString ()
+{
+    struct SanityChecker
+    {
+        SanityChecker ()
+        {
+            SemanticVersion v;
+
+            char const* const rawText = getRawVersionString ();
+
+            if (! v.parse (rawText) || v.print () != rawText)
+                FatalError ("Bad server version string", __FILE__, __LINE__);
+
+            versionString = rawText;
+        }
+
+        String versionString;
+    };
+
+    static SanityChecker value;
+
+    return value.versionString;
+}
 
 char const* BuildInfo::getFullVersionString ()
 {
@@ -94,90 +107,6 @@ char const* BuildInfo::getFullVersionString ()
     static PrettyPrinter value;
 
     return value.fullVersionString.c_str ();
-}
-
-//------------------------------------------------------------------------------
-
-BuildInfo::Version::Version ()
-    : vmajor (0)
-    , vminor (0)
-{
-}
-
-bool BuildInfo::Version::parse (String const& s)
-{
-    // Many not have leading or trailing whitespace
-    if (s.trim () != s)
-        return false;
-
-    int const indexOfDot = s.indexOfChar ('.');
-
-    // Must have a dot
-    if (indexOfDot == -1)
-        return false;
-
-    String const majorString = s.substring (0, indexOfDot);
-
-    // Must only contain digits
-    if (! majorString.containsOnly ("0123456789"))
-        return false;
-
-    // Must match after conversion back and forth
-    if (String (majorString.getIntValue ()) != majorString)
-        return false;
-
-    int const indexOfDash = s.indexOfChar ('-');
-
-    // A dash must come after the dot.
-    if (indexOfDash >= 0 && indexOfDash <= indexOfDot)
-        return false;
-
-    String const minorString = (indexOfDash == -1) ?
-        s.substring (indexOfDot + 1) : s.substring (indexOfDot + 1, indexOfDash);
-
-    // Must be length three
-    if (minorString.length () != 3)
-        return false;
-
-    // Must only contain digits
-    if (! minorString.containsOnly ("0123456789"))
-        return false;
-
-    String const suffixString = (indexOfDash == -1) ?
-        "" : s.substring (indexOfDash + 1);
-
-    if (suffixString.length () > 0)
-    {
-        // Must be 4 characters or less
-        if (suffixString.length () > 4)
-            return false;
-
-        // Must start with a letter
-        if (! String::charToString (suffixString [0]).containsOnly ("abcdefghijklmnopqrstuvwxyz"))
-            return false;
-
-        // Must only contain letters and numbers
-        if (! String::charToString (suffixString [0]).containsOnly ("abcdefghijklmnopqrstuvwxyz01234567890"))
-            return false;
-    }
-
-    vmajor = majorString.getIntValue ();
-    vminor = minorString.getIntValue ();
-    suffix = suffixString;
-
-    return true;
-}
-
-String BuildInfo::Version::print () const noexcept
-{
-    String s;
-
-    s << String (vmajor) << "." << String (vminor).paddedLeft ('0', 3);
-
-    if (suffix.isNotEmpty ())
-        s << "-" << suffix;
-
-    return s;
 }
 
 //------------------------------------------------------------------------------
@@ -223,45 +152,13 @@ public:
     {
     }
 
-    void checkVersion (String const& s)
-    {
-        BuildInfo::Version v;
-
-        expect (v.parse (s));
-
-        // Conversion back and forth should be identical
-        expect (v.print () == s);
-    }
-
     void testVersion ()
     {
         beginTestCase ("version");
 
-        BuildInfo::Version v;
+        SemanticVersion v;
 
-        checkVersion ("0.000");
-        checkVersion ("1.002");
-        checkVersion ("10.002");
-        checkVersion ("99.999");
-        checkVersion ("99.999-r");
-        checkVersion ("99.999-r1");
-        checkVersion ("99.999-r123");
-
-        unexpected (v.parse (" 1.2"));      // Many not have leading or trailing whitespace
-        unexpected (v.parse ("1.2 "));      // Many not have leading or trailing whitespace
-        unexpected (v.parse (" 1.2 "));     // Many not have leading or trailing whitespace
-        unexpected (v.parse ("2"));         // Must have a dot
-        unexpected (v.parse ("23"));        // Must have a dot
-        unexpected (v.parse ("4-rc1"));     // Must have a dot
-        unexpected (v.parse ("01.000"));    // No leading zeroes
-        unexpected (v.parse ("4-4.r"));     // A dash must come after the dot.
-        unexpected (v.parse ("1.2345"));    // Must be length three
-        unexpected (v.parse ("1a.2"));      // Must only contain digits
-        unexpected (v.parse ("1.2b"));      // Must only contain digits
-        unexpected (v.parse ("1.2-rxxx1")); // Must be 4 characters or less
-        unexpected (v.parse ("1.2-"));      // Must start with a letter
-        unexpected (v.parse ("1.2-3"));     // Must start with a letter
-        unexpected (v.parse ("1.2-r!"));    // Must only contain letters and numbers
+        expect (v.parse (BuildInfo::getRawVersionString ()));
     }
 
     void checkProtcol (unsigned short vmajor, unsigned short vminor)

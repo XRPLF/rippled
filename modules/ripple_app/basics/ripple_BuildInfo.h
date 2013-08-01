@@ -12,33 +12,9 @@ struct BuildInfo
 {
     /** Server version.
 
-        The server version has three parts:
+        Follows the Semantic Versioning Specification:
 
-            <major>     A non negative integer.
-            <minor>     An integer between 0 and 999 inclusive.
-            <suffix>    An optional string. For example, "rc1"
-
-        The version string is formatted thusly:
-
-            <major> '.' <minor> ['-' <suffix>]
-
-        The minor version number is always padded with leading zeroes
-        to bring the number of characters up to exactly three. For example,
-        the server version string "12.045-rc1" has major version 12, minor
-        version 45, and suffix "rc1". A suffix may only consist of lowercase
-        letters and digits, and must start with a letter. The suffix may
-        be up to 4 characters. The major version may not be prefixed with
-        extra leading zeroes.
-
-        The suffix for a new official release is usually omitted. If hotfixes
-        are added to official releases they get a single leter suffix.
-
-        Release candidates are marked with suffixes starting with "rc" and
-        followed by a number starting from 1 to indicate the first
-        release candidate, with subsequent release candidates incrementing
-        the number. A final release candidate which becomes an official
-        release loses the suffix. The next release candidate will have a
-        new major or minor version number, and start back at "rc1".
+        http://semver.org/
     */
     static String const& getVersionString ();
 
@@ -48,26 +24,6 @@ struct BuildInfo
         protocol hello message and also the headers of some HTTP replies.
     */
     static char const* getFullVersionString ();
-
-    /** The server version's components. */
-    struct Version
-    {
-        int    vmajor;  // 0+
-        int    vminor;  // 0-999
-        String suffix;  // Can be empty
-
-        //----
-
-        Version ();
-
-        /** Convert a string to components.
-            @return `false` if the string is improperly formatted.
-        */
-        bool parse (String const& s);
-
-        /** Convert the components to a string. */
-        String print () const noexcept;
-    };
 
     //--------------------------------------------------------------------------
 
@@ -107,6 +63,11 @@ struct BuildInfo
 
     /** The oldest protocol version we will accept. */
     static Protocol const& getMinimumProtocol ();
+
+private:
+    friend class BuildInfoTests;
+
+    static char const* getRawVersionString ();
 };
 
 #endif

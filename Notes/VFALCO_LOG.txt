@@ -1,5 +1,10 @@
 Vinnie Falco's Change Log
 
+2013/08/01
+
+- Add beast::SemanticVersion
+- Change rippled to use SemanticVersion
+
 2013/07/31
 
 - Add "hostname" to server_info output
