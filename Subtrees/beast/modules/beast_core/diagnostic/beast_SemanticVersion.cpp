@@ -367,7 +367,7 @@ public:
         checkRelease (input, shouldPass);
     }
 
-    void ncheck (String const& input)
+    void negcheck (String const& input)
     {
         check (input, false);
     }
@@ -381,28 +381,28 @@ public:
         check ("2147483647.2147483647.2147483647"); // max int
 
         // negative values
-        ncheck ("-1.2.3");
-        ncheck ("1.-2.3");
-        ncheck ("1.2.-3");
+        negcheck ("-1.2.3");
+        negcheck ("1.-2.3");
+        negcheck ("1.2.-3");
 
         // missing parts
-        ncheck ("");
-        ncheck ("1");
-        ncheck ("1.");
-        ncheck ("1.2");
-        ncheck ("1.2.");
-        ncheck (".2.3");
+        negcheck ("");
+        negcheck ("1");
+        negcheck ("1.");
+        negcheck ("1.2");
+        negcheck ("1.2.");
+        negcheck (".2.3");
 
         // whitespace
-        ncheck (" 1.2.3");
-        ncheck ("1 .2.3");
-        ncheck ("1.2 .3");
-        ncheck ("1.2.3 ");
+        negcheck (" 1.2.3");
+        negcheck ("1 .2.3");
+        negcheck ("1.2 .3");
+        negcheck ("1.2.3 ");
 
         // leading zeroes
-        ncheck ("01.2.3");
-        ncheck ("1.02.3");
-        ncheck ("1.2.03");
+        negcheck ("01.2.3");
+        negcheck ("1.02.3");
+        negcheck ("1.2.03");
     }
 
     static StringArray ids ()
