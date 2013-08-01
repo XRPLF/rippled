@@ -67,16 +67,28 @@ class UnitTests;
 class BEAST_API UnitTest : public Uncopyable
 {
 public:
-    /** When the test should be run.
-
-        Tests that run always will be incuded in all tests or in a group test.
-        Manual tests will only run when they are individually targeted. This
-        lets you leave out slow tests or peformance tests from the main test set.
-    */
+    /** When the test should be run. */
     enum When
     {
-        runAlways,
-        runManual
+        /** Test will be run when @ref runAllTests is called.
+            @see runAllTests
+        */
+        runNormal,
+
+        /** Test will excluded from @ref runAllTests.
+            The test can be manually run from @ref runTestsByName.
+            @see runAllTests, runTestsByName
+        */
+        runManual,
+
+        /** Test will be additionlly forced to run on every launch.
+            If any failures occur, FatalError is called. The tests will
+            also be run from @ref runAllTests or @ref runTestsByName if
+            explicitly invoked.
+
+            @see FatalError
+        */
+        runStartup
     };
 
     /** Describes a single test item.
@@ -172,7 +184,7 @@ public:
     */    
     explicit UnitTest (String const& name,
                        String const& group = "",
-                       When when = runAlways);
+                       When when = runNormal);
 
     /** Destructor. */
     virtual ~UnitTest();
@@ -358,9 +370,12 @@ public:
     void runTests (Array <UnitTest*> const& tests);
 
     /** Runs all the UnitTest objects that currently exist.
-        This calls runTests() for all the objects listed in UnitTest::getAllTests().
+        This calls @ref runTests for all the objects listed in @ref UnitTest::getAllTests.
     */
     void runAllTests ();
+
+    /** Runs the startup tests. */
+    void runStartupTests ();
 
     /** Run a particular test or group. */
     void runTestsByName (String const& name);

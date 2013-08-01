@@ -258,7 +258,28 @@ void UnitTests::runAllTests ()
     {
         UnitTest* const test = allTests [i];
 
-        if (test->getWhen () == UnitTest::runAlways)
+        if (test->getWhen () == UnitTest::runNormal)
+        {
+            tests.add (test);
+        }
+    }
+
+    runTests (tests);
+}
+
+void UnitTests::runStartupTests ()
+{
+    UnitTest::TestList const& allTests (UnitTest::getAllTests ());
+
+    Array <UnitTest*> tests;
+
+    tests.ensureStorageAllocated (allTests.size ());
+
+    for (int i = 0; i < allTests.size(); ++i)
+    {
+        UnitTest* const test = allTests [i];
+
+        if (test->getWhen () == UnitTest::runStartup)
         {
             tests.add (test);
         }
@@ -279,7 +300,9 @@ void UnitTests::runTestsByName (String const& name)
     {
         UnitTest* const test = allTests [i];
 
-        if (test->getPackageName () == name && test->getWhen () == UnitTest::runAlways)
+        if (test->getPackageName () == name && 
+            (test->getWhen () == UnitTest::runNormal ||
+             test->getWhen () == UnitTest::runStartup))
         {
             tests.add (test);
         }
