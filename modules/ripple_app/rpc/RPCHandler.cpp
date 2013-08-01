@@ -3724,6 +3724,8 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {
             try
             {
+                LoadEvent::autoptr ev   = getApp().getJobQueue().getLoadEventAP(
+                    jtGENERIC, std::string("cmd:") + strCommand);
                 Json::Value jvRaw       = (this->* (commandsA[i].dfpFunc)) (params, loadType, lock);
 
                 // Regularize result.
