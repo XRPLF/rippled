@@ -734,6 +734,9 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_FatalError.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_SemanticVersion.h">
+      <Filter>beast_core\diagnostic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -1145,6 +1148,9 @@
       <Filter>beast_basics\threads</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_FatalError.cpp">
+      <Filter>beast_core\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_SemanticVersion.cpp">
       <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
   </ItemGroup>
