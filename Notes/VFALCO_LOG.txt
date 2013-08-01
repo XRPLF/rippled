@@ -4,6 +4,8 @@ Vinnie Falco's Change Log
 
 - Add beast::SemanticVersion
 - Change rippled to use SemanticVersion
+- Add runStartup to UnitTest, allowing forced tests on startup
+- Force rippled BuildInfo unit test to run on every startup
 
 2013/07/31
 

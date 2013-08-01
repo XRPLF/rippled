@@ -224,7 +224,7 @@ static int runUnitTests (String const& whichTests, String const& format)
 
 //------------------------------------------------------------------------------
 
-int rippleMain (int argc, char** argv)
+int RippleMain::run (int argc, char const* const* argv)
 {
     FatalErrorReporter reporter;
 

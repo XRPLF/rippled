@@ -379,9 +379,6 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "ledger/ripple_AcceptedLedger.cpp"
 #include "consensus/ripple_DisputedTx.cpp"
 #include "misc/ripple_HashRouter.cpp"
- #include "main/ripple_FatalErrorReporter.h" // private
-#include "main/ripple_FatalErrorReporter.cpp"
-#include "main/ripple_Main.cpp"
 #include "misc/ripple_Offer.cpp"
 
 #endif
@@ -417,25 +414,24 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 
 #include "shamap/ripple_SHAMapSyncFilters.cpp" // requires Application
 
+ #include "main/ripple_FatalErrorReporter.h" // private
+#include "main/ripple_FatalErrorReporter.cpp"
+ #include "main/ripple_RippleMain.h" // private
+#include "main/ripple_RippleMain.cpp"
+
 #endif
 
 //------------------------------------------------------------------------------
 
 }
 
-//------------------------------------------------------------------------------
-
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 8
-
-namespace ripple
-{
-    extern int rippleMain (int argc, char** argv);
-}
 
 // Must be outside the namespace for obvious reasons
 int main (int argc, char** argv)
 {
-    return ripple::rippleMain (argc, argv);
+    ripple::RippleMain rippled;
+    return rippled.runFromMain (argc, argv);
 }
 
 #endif

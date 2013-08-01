@@ -193,7 +193,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\main\ripple_Main.cpp">
+    <ClCompile Include="..\..\modules\ripple_app\main\ripple_RippleMain.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1405,6 +1405,7 @@
     <ClInclude Include="..\..\modules\ripple_app\main\ripple_FatalErrorReporter.h" />
     <ClInclude Include="..\..\modules\ripple_app\main\ripple_ILoadManager.h" />
     <ClInclude Include="..\..\modules\ripple_app\main\ripple_LocalCredentials.h" />
+    <ClInclude Include="..\..\modules\ripple_app\main\ripple_RippleMain.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\NetworkOPs.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_AccountItem.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_AccountItems.h" />
