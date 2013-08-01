@@ -21,19 +21,59 @@
 #define BEAST_MAIN_H_INCLUDED
 
 /** Represents a command line program's entry point.
+
+    To use this, derive your class from @ref Main and implement the
+    function run ();
 */
 class BEAST_API Main : Uncopyable
 {
 public:
-    Main (int argc, char const* const* argv);
+    Main ();
 
-    int getExitCode () const;
+    virtual ~Main ();
 
+    /** Run the program.
+
+        You should call this from your @ref main function. Don't put
+        anything else in there. Instead, do it in your class derived
+        from Main. For example:
+
+        @code
+
+        struct MyProgram : Main
+        {
+            int run (int argc, char const* const* argv)
+            {
+                std::cout << "Hello, world!" << std::endl;
+                return 0;
+            }
+        };
+
+        int main (int argc, char const* const* argv)
+        {
+            MyProgram program;
+
+            return program.runFromMain (argc, argv);
+        }
+
+        @endcode
+    */
+    int runFromMain (int argc, char const* const* argv);
+
+    /** Retrieve the instance of the program. */
     static Main& getInstance ();
 
 protected:
-    int const m_argc;
-    char const* const* const m_argv;
+    /** Entry point for running the program.
+        Subclasses provide the implementation.
+    */
+    virtual int run (int argc, char const* const* argv) = 0;
+
+private:
+    void runStartupUnitTests ();
+
+private:
+    static Static::Storage <Atomic <Main*>, Main> s_instance;
 };
 
 #endif

@@ -110,6 +110,8 @@
 #define BEAST_BOOST_IS_AVAILABLE 0
 #endif
 
+//------------------------------------------------------------------------------
+
 /** Bind source configuration.
 
     Set one of these to manually force a particular implementation of bind().
