@@ -148,7 +148,7 @@ std::string BuildInfo::Protocol::toStdString () const noexcept
 class BuildInfoTests : public UnitTest
 {
 public:
-    BuildInfoTests () : UnitTest ("BuildInfo", "ripple")
+    BuildInfoTests () : UnitTest ("BuildInfo", "ripple", runStartup)
     {
     }
 
