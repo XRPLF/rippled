@@ -65,12 +65,12 @@
     printSomething (TRANS("hello"));
     @endcode
 
-    This macro is used in the Beast classes themselves, so your application has a chance to
-    intercept and translate any internal Beast text strings that might be shown. (You can easily
-    get a list of all the messages by searching for the TRANS() macro in the Beast source
+    This macro is used in the Juce classes themselves, so your application has a chance to
+    intercept and translate any internal Juce text strings that might be shown. (You can easily
+    get a list of all the messages by searching for the TRANS() macro in the Juce source
     code).
 */
-class BEAST_API LocalisedStrings : LeakChecked <LocalisedStrings>
+class BEAST_API  LocalisedStrings : LeakChecked <LocalisedStrings>
 {
 public:
     //==============================================================================
@@ -207,6 +207,11 @@ String translate (const String& stringLiteral);
     @see LocalisedStrings
 */
 String translate (const char* stringLiteral);
+
+/** Uses the LocalisedStrings class to translate the given string literal.
+    @see LocalisedStrings
+*/
+String translate (CharPointer_UTF8 stringLiteral);
 
 /** Uses the LocalisedStrings class to translate the given string literal.
     @see LocalisedStrings

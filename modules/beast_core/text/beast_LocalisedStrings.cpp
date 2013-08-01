@@ -150,26 +150,12 @@ LocalisedStrings* LocalisedStrings::getCurrentMappings()
     return currentMappings;
 }
 
-String LocalisedStrings::translateWithCurrentMappings (const String& text)
-{
-    return beast::translate (text);
-}
+String LocalisedStrings::translateWithCurrentMappings (const String& text)  { return beast::translate (text); }
+String LocalisedStrings::translateWithCurrentMappings (const char* text)    { return beast::translate (text); }
 
-String LocalisedStrings::translateWithCurrentMappings (const char* text)
-{
-    return beast::translate (String (text));
-}
-
-String translate (const String& text)
-{
-    return translate (text, text);
-}
-
-String translate (const char* const literal)
-{
-    const String text (literal);
-    return translate (text, text);
-}
+String translate (const String& text)       { return beast::translate (text, text); }
+String translate (const char* text)         { return beast::translate (String (text)); }
+String translate (CharPointer_UTF8 text)    { return beast::translate (String (text)); }
 
 String translate (const String& text, const String& resultIfNotFound)
 {
