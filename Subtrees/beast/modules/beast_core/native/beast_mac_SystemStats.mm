@@ -64,21 +64,17 @@ namespace SystemStatsHelpers
 }
 
 //==============================================================================
-SystemStats::CPUFlags::CPUFlags()
+void CPUInformation::initialise() noexcept
 {
    #if BEAST_INTEL && ! BEAST_NO_INLINE_ASM
-    uint32 familyModel = 0, extFeatures = 0, features = 0, dummy = 0;
-    SystemStatsHelpers::doCPUID (familyModel, extFeatures, dummy, features, 1);
+    uint32 a = 0, b = 0, d = 0, c = 0;
+    SystemStatsHelpers::doCPUID (a, b, c, d, 1);
 
-    hasMMX   = (features    & (1u << 23)) != 0;
-    hasSSE   = (features    & (1u << 25)) != 0;
-    hasSSE2  = (features    & (1u << 26)) != 0;
-    has3DNow = (extFeatures & (1u << 31)) != 0;
-   #else
-    hasMMX = false;
-    hasSSE = false;
-    hasSSE2 = false;
-    has3DNow = false;
+    hasMMX = (d & (1u << 23)) != 0;
+    hasSSE = (d & (1u << 25)) != 0;
+    hasSSE2 = (d & (1u << 26)) != 0;
+    has3DNow = (b & (1u << 31)) != 0;
+    hasSSE3 = (c & (1u << 0)) != 0;
    #endif
 
    #if BEAST_IOS || (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)

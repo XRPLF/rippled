@@ -882,6 +882,9 @@
     <ClCompile Include="..\..\modules\ripple_app\main\ripple_FatalErrorReporter.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\network\ripple_ProxyHandshake.cpp">
+      <Filter>[1] Ripple\ripple_app\network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
@@ -1669,6 +1672,9 @@
     </ClInclude>
     <ClInclude Include="..\..\BeastConfig.h">
       <Filter>[2] Build</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\network\ripple_ProxyHandshake.h">
+      <Filter>[1] Ripple\ripple_app\network</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

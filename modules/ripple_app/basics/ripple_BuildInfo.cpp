@@ -209,7 +209,7 @@ std::string BuildInfo::Protocol::toStdString () const noexcept
 {
     String s;
 
-    s << String (vmajor) << "." << "vminor";
+    s << String (vmajor) << "." << String (vminor);
 
     return s.toStdString ();
 }

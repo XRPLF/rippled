@@ -31,7 +31,11 @@ void FatalError::resetReporter (Reporter& reporter)
 
 FatalError::FatalError (char const* message, char const* fileName, int lineNumber)
 {
-    LockType::ScopedLockType lock (m_mutex);
+    typedef CriticalSection LockType;
+
+    static LockType s_mutex;
+
+    LockType::ScopedLockType lock (s_mutex);
 
     String const backtraceString = SystemStats::getStackBacktrace ();
 
