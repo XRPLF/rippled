@@ -87,11 +87,7 @@ public:
     FatalError (char const* message, char const* fileName, int lineNumber);
 
 private:
-    typedef CriticalSection LockType;
-
     static Static::Storage <Atomic <Reporter*>, FatalError> s_reporter;
-
-    LockType m_mutex;
 };
 
 #endif
