@@ -19,7 +19,7 @@ bool OfferCreateTransactor::bValidOffer (
     boost::unordered_set<uint160>&  usAccountTouched,
     STAmount&           saOfferFunds)                       // <--
 {
-    bool    bValid;
+    bool bValid = false;
 
     if (sleOfferDir->isFieldPresent (sfExpiration) && sleOfferDir->getFieldU32 (sfExpiration) <= mEngine->getLedger ()->getParentCloseTimeNC ())
     {
@@ -46,6 +46,8 @@ bool OfferCreateTransactor::bValidOffer (
                 % saOfferPays % saOfferGets);
 
         usOfferUnfundedFound.insert (uOfferIndex);
+
+        bValid = false;
     }
     else
     {
