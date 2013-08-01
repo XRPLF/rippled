@@ -605,7 +605,7 @@ public:
     };
 
 public:
-    NodeStoreUnitTest (String name, UnitTest::When when = UnitTest::runAlways)
+    NodeStoreUnitTest (String name, UnitTest::When when = UnitTest::runNormal)
         : UnitTest (name, "ripple", when)
     {
     }
