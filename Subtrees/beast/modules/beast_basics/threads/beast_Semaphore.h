@@ -38,7 +38,7 @@ public:
 
         @param initialCount The starting number of resources.
     */
-    explicit Semaphore (int initialCount);
+    explicit Semaphore (int initialCount = 0);
 
     ~Semaphore ();
 
