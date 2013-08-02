@@ -4,8 +4,6 @@ BEAST TODO
 
 - add expectThrow() to UnitTest, where it expects an exception
 
-- Remove timeout forced-kill from Thread::stopThread ()
-
 - Import secp256k1 from sipa
 
 - HashMap work:

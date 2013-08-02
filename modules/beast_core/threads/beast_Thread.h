@@ -56,10 +56,7 @@ public:
 
     /** Destructor.
 
-        Deleting a Thread object that is running will only give the thread a
-        brief opportunity to stop itself cleanly, so it's recommended that you
-        should always call stopThread() with a decent timeout before deleting,
-        to avoid the thread being forcibly killed (which is a Bad Thing).
+        If the thread has not been stopped first, this will generate a fatal error.
     */
     virtual ~Thread();
 

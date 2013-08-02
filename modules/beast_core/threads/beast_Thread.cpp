@@ -42,7 +42,8 @@ Thread::~Thread()
     */
     bassert (! isThreadRunning());
 
-    stopThread (100);
+    if (isThreadRunning())
+        FatalError ("Thread is still running", __FILE__, __LINE__);
 }
 
 //==============================================================================
