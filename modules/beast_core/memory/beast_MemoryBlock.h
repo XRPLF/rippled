@@ -77,7 +77,7 @@ public:
     typedef char const* const_iterator;
     inline iterator begin () noexcept { return static_cast <iterator> (getData ()); }
     inline iterator end () noexcept { return addBytesToPointer (begin (), size); }
-    inline const_iterator cbegin () const noexcept { return static_cast <const_iterator> (getData ()); }
+    inline const_iterator cbegin () const noexcept { return static_cast <const_iterator> (getConstData ()); }
     inline const_iterator cend () const noexcept { return addBytesToPointer (cbegin (), size); }
 
     //==============================================================================
@@ -103,7 +103,20 @@ public:
         Note that the pointer returned will probably become invalid when the
         block is resized.
     */
-    void* getData() const noexcept                                  { return data; }
+    void* getData() const noexcept
+    {
+        return data;
+    }
+
+    /** Returns a void pointer to data as unmodifiable.
+
+        Note that the pointer returned will probably become invalid when the
+        block is resized.
+    */
+    void const* getConstData() const noexcept
+    {
+        return data;
+    }
 
     /** Returns a byte from the memory block.
 
