@@ -35,7 +35,7 @@
 
     If you need an absolute time, (i.e. a date + time), see the Time class.
 */
-class BEAST_API RelativeTime
+class BEAST_API  RelativeTime
 {
 public:
     //==============================================================================
@@ -57,14 +57,19 @@ public:
 
     //==============================================================================
     /** Creates a new RelativeTime object representing a number of milliseconds.
-        @see minutes, hours, days, weeks
+        @see seconds, minutes, hours, days, weeks
     */
     static RelativeTime milliseconds (int milliseconds) noexcept;
 
     /** Creates a new RelativeTime object representing a number of milliseconds.
-        @see minutes, hours, days, weeks
+        @see seconds, minutes, hours, days, weeks
     */
     static RelativeTime milliseconds (int64 milliseconds) noexcept;
+
+    /** Creates a new RelativeTime object representing a number of seconds.
+        @see milliseconds, minutes, hours, days, weeks
+    */
+    static RelativeTime seconds (double seconds) noexcept;
 
     /** Creates a new RelativeTime object representing a number of minutes.
         @see milliseconds, hours, days, weeks
@@ -95,7 +100,7 @@ public:
     /** Returns the number of seconds this time represents.
         @see inMilliseconds, inMinutes, inHours, inDays, inWeeks
     */
-    double inSeconds() const noexcept       { return seconds; }
+    double inSeconds() const noexcept       { return numSeconds; }
 
     /** Returns the number of minutes this time represents.
         @see inMilliseconds, inSeconds, inHours, inDays, inWeeks
@@ -148,7 +153,7 @@ public:
 
 private:
     //==============================================================================
-    double seconds;
+    double numSeconds;
 };
 
 //==============================================================================
@@ -170,7 +175,5 @@ bool operator<= (RelativeTime t1, RelativeTime t2) noexcept;
 RelativeTime  operator+  (RelativeTime t1, RelativeTime t2) noexcept;
 /** Subtracts two RelativeTimes. */
 RelativeTime  operator-  (RelativeTime t1, RelativeTime t2) noexcept;
-
-
 
 #endif   // BEAST_RELATIVETIME_BEASTHEADER
