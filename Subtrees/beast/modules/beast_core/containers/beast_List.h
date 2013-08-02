@@ -315,6 +315,14 @@ public:
     typedef Element*       pointer;
     typedef Element const* const_pointer;
 
+    /** Thrown when some members are called with an empty list. */
+    struct empty_list_error : std::logic_error
+    {
+        empty_list_error () : std::logic_error ("empty list")
+        {
+        }
+    };
+
     class Node : Uncopyable
     {
     public:
@@ -474,7 +482,7 @@ public:
     reference front ()
     {
         if (empty ())
-            Throw (Error ().fail (__FILE__, __LINE__, Error::noMoreData));
+            Throw (empty_list_error (), __FILE__, __LINE__);
 
         return element_from (m_head.m_next);
     }
@@ -488,7 +496,7 @@ public:
     const_reference front () const
     {
         if (empty ())
-            Throw (Error ().fail (__FILE__, __LINE__, Error::noMoreData));
+            Throw (empty_list_error (), __FILE__, __LINE__);
 
         return element_from (m_head.m_next);
     }
@@ -502,7 +510,7 @@ public:
     reference back ()
     {
         if (empty ())
-            Throw (Error ().fail (__FILE__, __LINE__, Error::noMoreData));
+            Throw (empty_list_error (), __FILE__, __LINE__);
 
         return element_from (m_tail.m_prev);
     }
@@ -516,7 +524,7 @@ public:
     const_reference back () const
     {
         if (empty ())
-            Throw (Error ().fail (__FILE__, __LINE__, Error::noMoreData));
+            Throw (empty_list_error (), __FILE__, __LINE__);
 
         return element_from (m_tail.m_prev);
     }
@@ -671,13 +679,13 @@ public:
     /** Remove the element at the beginning of the list.
 
         @invariant The list must not be empty.
+        @return A reference to the popped element.
     */
-    void pop_front ()
+    Element& pop_front ()
     {
-        if (empty ())
-            Throw (Error ().fail (__FILE__, __LINE__, Error::noMoreData));
-
+        Element& elem (front ());
         erase (begin ());
+        return elem;
     }
 
     /** Append an element at the end of the list.
@@ -694,13 +702,13 @@ public:
     /** Remove the element at the end of the list.
 
         @invariant The list must not be empty.
+        @return A reference to the popped element.
     */
-    void pop_back ()
+    Element& pop_back ()
     {
-        if (empty ())
-            Throw (Error ().fail (__FILE__, __LINE__, Error::noMoreData));
-
+        Element& elem (back ());
         erase (--end ());
+        return elem;
     }
 
     /** Swap contents with another list.
