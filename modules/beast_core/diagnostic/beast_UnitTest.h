@@ -295,7 +295,7 @@ public:
     void pass ();
 
     /** Causes the test item to fail. */
-    void fail (String const& failureMessage);
+    void fail (String const& failureMessage = String::empty);
 
     /** Records an exception in the test item. */
     void failException ();
