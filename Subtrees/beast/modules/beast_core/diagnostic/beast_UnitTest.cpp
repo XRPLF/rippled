@@ -135,9 +135,7 @@ void UnitTest::pass ()
     // If this goes off it means you forgot to call beginTestCase()!
     bassert (m_case != nullptr);
 
-    Item item (true);
-
-    m_case->items.add (item);
+    m_case->items.add (Item (true));
 }
 
 void UnitTest::fail (String const& failureMessage)
@@ -148,7 +146,7 @@ void UnitTest::fail (String const& failureMessage)
     Item item (false, failureMessage);
 
     m_case->failures++;
-    int const caseNumber = m_case->items.add (item);
+    int const caseNumber = m_case->items.add (Item (false, failureMessage));
 
     String s;
     s << "#" << String (caseNumber) << " failed: " << failureMessage;
