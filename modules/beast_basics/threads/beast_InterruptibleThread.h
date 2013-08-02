@@ -152,7 +152,6 @@ private:
 
     ThreadHelper m_thread;
     EntryPoint* m_entryPoint;
-    Function <void (void)> m_function;
     WaitableEvent m_runEvent;
     id m_threadId;
 

@@ -355,8 +355,7 @@ public:
     inline Work (Proxy* proxy,
                  Entry* const entry,
                  const timestamp_t timestamp)
-        : m_proxy (proxy)
-        , m_entry (entry)
+        : m_entry (entry)
         , m_timestamp (timestamp)
     {
     }
@@ -374,7 +373,6 @@ public:
     }
 
 private:
-    Proxy* const m_proxy;
     Entry::Ptr m_entry;
     const timestamp_t m_timestamp;
 };

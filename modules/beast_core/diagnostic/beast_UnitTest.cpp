@@ -207,7 +207,6 @@ void UnitTest::finishCase ()
 
 UnitTests::UnitTests()
     : m_assertOnFailure (false)
-    , m_currentTest (nullptr)
 {
 }
 
