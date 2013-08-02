@@ -72,6 +72,14 @@ public:
     MemoryBlock& operator= (MemoryBlock&& other) noexcept;
    #endif
 
+    // Standard container interface
+    typedef char* iterator;
+    typedef char const* const_iterator;
+    inline iterator begin () noexcept { return static_cast <iterator> (getData ()); }
+    inline iterator end () noexcept { return addBytesToPointer (begin (), size); }
+    inline const_iterator cbegin () const noexcept { return static_cast <const_iterator> (getData ()); }
+    inline const_iterator cend () const noexcept { return addBytesToPointer (cbegin (), size); }
+
     //==============================================================================
     /** Compares two memory blocks.
 
@@ -103,7 +111,6 @@ public:
     */
     template <typename Type>
     char& operator[] (const Type offset) const noexcept             { return data [offset]; }
-
 
     //==============================================================================
     /** Returns the block's current allocated size, in bytes. */
