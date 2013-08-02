@@ -589,13 +589,13 @@ public:
             LedgerIndex ledgerIndex = 1 + r.nextInt (1024 * 1024);
 
             uint256 hash;
-            r.nextBlob (hash.begin (), hash.size ());
+            r.fillBitsRandomly (hash.begin (), hash.size ());
 
             int const payloadBytes = 1 + r.nextInt (maxPayloadBytes);
 
             Blob data (payloadBytes);
 
-            r.nextBlob (data.data (), payloadBytes);
+            r.fillBitsRandomly (data.data (), payloadBytes);
 
             return NodeObject::createObject (type, ledgerIndex, data, hash);
         }

@@ -526,58 +526,6 @@ void InboundLedger::trigger (Peer::ref peer)
     }
 }
 
-void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ref peer)
-{
-    if (!peer)
-        sendRequest (tmGL);
-    else
-        peer->sendPacket (boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER), false);
-}
-
-void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
-{
-    boost::recursive_mutex::scoped_lock sl (mLock);
-
-    if (mPeers.empty ())
-        return;
-
-    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER);
-
-    for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
-    {
-        Peer::pointer peer = getApp().getPeers ().getPeerById (it->first);
-
-        if (peer)
-            peer->sendPacket (packet, false);
-    }
-}
-
-int PeerSet::takePeerSetFrom (const PeerSet& s)
-{
-    int ret = 0;
-    mPeers.clear ();
-
-    for (boost::unordered_map<uint64, int>::const_iterator it = s.mPeers.begin (), end = s.mPeers.end ();
-            it != end; ++it)
-    {
-        mPeers.insert (std::make_pair (it->first, 0));
-        ++ret;
-    }
-
-    return ret;
-}
-
-int PeerSet::getPeerCount () const
-{
-    int ret = 0;
-
-    for (boost::unordered_map<uint64, int>::const_iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
-        if (getApp().getPeers ().hasPeer (it->first))
-            ++ret;
-
-    return ret;
-}
-
 void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
                                  std::set<SHAMapNode>& recentNodes, int max, bool aggressive)
 {
