@@ -89,15 +89,14 @@ public:
     */
     bool nextBool() noexcept;
 
-    /** Fills a piece of memory with random data.
-    */
-    void nextBlob (void* buffer, size_t bytes);
-
     /** Returns a BigInteger containing a random number.
 
         @returns a random value in the range 0 to (maximumValue - 1).
     */
     BigInteger nextLargeNumber (const BigInteger& maximumValue);
+
+    /** Fills a block of memory with random values. */
+    void fillBitsRandomly (void* bufferToFill, size_t sizeInBytes);
 
     /** Sets a range of bits in a BigInteger to random values. */
     void fillBitsRandomly (BigInteger& arrayToChange, int startBit, int numBits);

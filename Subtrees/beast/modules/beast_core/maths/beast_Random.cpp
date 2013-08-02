@@ -103,23 +103,6 @@ double Random::nextDouble() noexcept
     return static_cast <uint32> (nextInt()) / (double) 0xffffffff;
 }
 
-void Random::nextBlob (void* buffer, size_t bytes)
-{
-    int const remainder = bytes % sizeof (int64);
-
-    {
-        int64* dest = static_cast <int64*> (buffer);
-        for (int i = bytes / sizeof (int64); i > 0; --i)
-            *dest++ = nextInt64 ();
-        buffer = dest;
-    }
-
-    {
-        int64 const val = nextInt64 ();
-        memcpy (buffer, &val, remainder);
-    }
-}
-
 BigInteger Random::nextLargeNumber (const BigInteger& maximumValue)
 {
     BigInteger n;
@@ -131,6 +114,20 @@ BigInteger Random::nextLargeNumber (const BigInteger& maximumValue)
     while (n >= maximumValue);
 
     return n;
+}
+
+void Random::fillBitsRandomly (void* const buffer, size_t bytes)
+{
+    int* d = static_cast<int*> (buffer);
+
+    for (; bytes >= sizeof (int); bytes -= sizeof (int))
+        *d++ = nextInt();
+
+    if (bytes > 0)
+    {
+        const int lastBytes = nextInt();
+        memcpy (d, &lastBytes, bytes);
+    }
 }
 
 void Random::fillBitsRandomly (BigInteger& arrayToChange, int startBit, int numBits)
