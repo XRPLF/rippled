@@ -413,7 +413,6 @@ private:
 private:
     bool m_assertOnFailure;
     ScopedPointer <Results> m_results;
-    UnitTest* m_currentTest;
 };
 
 #endif

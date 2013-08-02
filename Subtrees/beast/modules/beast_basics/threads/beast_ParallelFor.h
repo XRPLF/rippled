@@ -246,7 +246,6 @@ private:
     WaitableEvent m_finishedEvent;
     Atomic <int> m_currentIndex;
     Atomic <int> m_numberOfInstances;
-    int m_numberOfIterations;
 };
 
 #endif

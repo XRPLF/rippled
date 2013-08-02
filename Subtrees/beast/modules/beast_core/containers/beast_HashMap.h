@@ -48,6 +48,7 @@ public:
     int generateHash (const var& key, const int upperLimit) const noexcept       { return generateHash (key.toString(), upperLimit); }
 };
 
+#if 0
 /** Hardened hash functions for use with HashMap.
 
     The seed is used to make the hash unpredictable. This prevents
@@ -74,6 +75,7 @@ public:
 private:
     int m_seed;
 };
+#endif
 
 //==============================================================================
 /**
