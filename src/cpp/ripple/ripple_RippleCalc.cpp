@@ -481,7 +481,7 @@ TER RippleCalc::calcNodeDeliverRev (
         if (saInPassReq > saTakerPays)
             saInPassReq = saTakerPays;
 
-        if (!saInPassReq)
+        if (!saInPassReq) // FIXME: This is bogus
         {
             // After rounding did not want anything.
             WriteLog (lsINFO, RippleCalc) << boost::str (boost::format ("calcNodeDeliverRev: micro offer is unfunded."));
@@ -717,7 +717,7 @@ TER RippleCalc::calcNodeDeliverFwd (
                                           % saInPassAct
                                           % saOutPassMax);
 
-            if (!saInSum)
+            if (!saInSum) // FIXME: We remove an offer if we didn't want anything out of it?!
             {
                 WriteLog (lsINFO, RippleCalc) << "calcNodeDeliverFwd: Microscopic offer unfunded.";
 
@@ -850,7 +850,7 @@ TER RippleCalc::calcNodeDeliverFwd (
 
             lesActive.entryModify (sleOffer);
 
-            if (saOutPassAct == saOutFunded)
+            if ((saOutPassAct == saOutFunded) || saTakerGetsNew.isZero())
             {
                 // Offer became unfunded.
 
