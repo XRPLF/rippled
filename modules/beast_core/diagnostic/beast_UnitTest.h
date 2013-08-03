@@ -262,7 +262,7 @@ public:
         If Suite is true, a pass is logged; if it's false, a failure is logged.
         If the failure message is specified, it will be written to the log if the test fails.
     */
-    void expect (bool trueCondition, String const& failureMessage = String::empty);
+    bool expect (bool trueCondition, String const& failureMessage = String::empty);
 
     /** Checks that the result of a test is false, and logs this result.
 
@@ -270,13 +270,13 @@ public:
 
         @see expect
     */
-    void unexpected (bool falseCondition, String const& failureMessage = String::empty);
+    bool unexpected (bool falseCondition, String const& failureMessage = String::empty);
 
     /** Compares two values, and if they don't match, prints out a message containing the
         expected and actual result values.
     */
     template <class ActualType, class ExpectedType>
-    void expectEquals (ActualType actual, ExpectedType expected, String failureMessage = String::empty)
+    bool expectEquals (ActualType actual, ExpectedType expected, String failureMessage = String::empty)
     {
         const bool result = (actual == expected);
 
@@ -288,7 +288,7 @@ public:
             failureMessage << "Expected value: " << expected << ", Actual value: " << actual;
         }
 
-        expect (result, failureMessage);
+        return expect (result, failureMessage);
     }
 
     /** Causes the test item to pass. */

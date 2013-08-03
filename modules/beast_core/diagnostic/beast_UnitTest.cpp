@@ -106,7 +106,7 @@ void UnitTest::beginTestCase (String const& name)
     m_case = new Case (name, m_className);
 }
 
-void UnitTest::expect (bool trueCondition, String const& failureMessage)
+bool UnitTest::expect (bool trueCondition, String const& failureMessage)
 {
     if (trueCondition)
     {
@@ -116,9 +116,11 @@ void UnitTest::expect (bool trueCondition, String const& failureMessage)
     {
         fail (failureMessage);
     }
+
+    return trueCondition;
 }
 
-void UnitTest::unexpected (bool falseCondition, String const& failureMessage)
+bool UnitTest::unexpected (bool falseCondition, String const& failureMessage)
 {
     if (! falseCondition)
     {
@@ -128,6 +130,8 @@ void UnitTest::unexpected (bool falseCondition, String const& failureMessage)
     {
         fail (failureMessage);
     }
+
+    return ! falseCondition;
 }
 
 void UnitTest::pass ()
