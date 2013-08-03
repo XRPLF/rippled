@@ -64,7 +64,7 @@ void SslContext::initializeFromFile (
 
         try
         {
-            while (true)
+            for (;;)
             {
                 X509* x = PEM_read_X509 (f, NULL, NULL, NULL);
 
