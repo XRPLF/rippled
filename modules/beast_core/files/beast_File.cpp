@@ -951,7 +951,9 @@ public:
         expect (! home.isOnCDRomDrive());
         expect (File::getCurrentWorkingDirectory().exists());
         expect (home.setAsCurrentWorkingDirectory());
+       #if BEAST_WINDOWS
         expect (File::getCurrentWorkingDirectory() == home);
+       #endif
 
         {
             Array<File> roots;
