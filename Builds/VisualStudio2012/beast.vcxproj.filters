@@ -137,7 +137,7 @@
     <Filter Include="beast_sqdb\source">
       <UniqueIdentifier>{10ef778f-6b81-437e-a6ef-558ff4163acc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_core\memory\logging">
+    <Filter Include="beast_core\logging">
       <UniqueIdentifier>{0fa6b76b-305f-473c-9b94-c1028a3af3fc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -212,10 +212,10 @@
       <Filter>beast_core\json</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\logging\beast_FileLogger.h">
-      <Filter>beast_core\memory\logging</Filter>
+      <Filter>beast_core\logging</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\logging\beast_Logger.h">
-      <Filter>beast_core\memory\logging</Filter>
+      <Filter>beast_core\logging</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\maths\beast_BigInteger.h">
       <Filter>beast_core\maths</Filter>
@@ -779,10 +779,10 @@
       <Filter>beast_core\json</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\logging\beast_FileLogger.cpp">
-      <Filter>beast_core\memory\logging</Filter>
+      <Filter>beast_core\logging</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\logging\beast_Logger.cpp">
-      <Filter>beast_core\memory\logging</Filter>
+      <Filter>beast_core\logging</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\maths\beast_BigInteger.cpp">
       <Filter>beast_core\maths</Filter>
