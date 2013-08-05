@@ -8,7 +8,7 @@ SETUP_LOG (OfferCreateTransactor)
 
 // Make sure an offer is still valid. If not, mark it unfunded.
 bool OfferCreateTransactor::bValidOffer (
-    SLE::ref            sleOfferDir,
+    SLE::ref            sleOffer,
     uint256 const&      uOfferIndex,
     const uint160&      uOfferOwnerID,
     const STAmount&     saOfferPays,
@@ -21,7 +21,7 @@ bool OfferCreateTransactor::bValidOffer (
 {
     bool    bValid;
 
-    if (sleOfferDir->isFieldPresent (sfExpiration) && sleOfferDir->getFieldU32 (sfExpiration) <= mEngine->getLedger ()->getParentCloseTimeNC ())
+    if (sleOffer->isFieldPresent (sfExpiration) && sleOffer->getFieldU32 (sfExpiration) <= mEngine->getLedger ()->getParentCloseTimeNC ())
     {
         // Offer is expired. Expired offers are considered unfunded. Delete it.
         WriteLog (lsINFO, OfferCreateTransactor) << "bValidOffer: encountered expired offer";
@@ -222,7 +222,7 @@ TER OfferCreateTransactor::takeOffers (
             bool            bValid;
 
             bValid  =  bValidOffer (
-                           sleOfferDir, uOfferIndex, uOfferOwnerID, saOfferPays, saOfferGets,
+                           sleOffer, uOfferIndex, uOfferOwnerID, saOfferPays, saOfferGets,
                            uTakerAccountID,
                            usOfferUnfundedFound, usOfferUnfundedBecame, usAccountTouched,
                            saOfferFunds);
