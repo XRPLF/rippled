@@ -40,10 +40,7 @@ Thread::~Thread()
        To avoid this type of nastiness, always make sure you call stopThread() before or during
        your subclass's destructor.
     */
-    bassert (! isThreadRunning());
-
-    if (isThreadRunning())
-        FatalError ("Thread is still running", __FILE__, __LINE__);
+    fatal_require (! isThreadRunning());
 }
 
 //==============================================================================
