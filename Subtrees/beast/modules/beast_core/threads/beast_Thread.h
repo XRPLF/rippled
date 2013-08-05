@@ -109,8 +109,10 @@ public:
                                     thread to finish before killing it by force. A negative
                                     value in here will wait forever.
         @see signalThreadShouldExit, threadShouldExit, waitForThreadToExit, isThreadRunning
+
+        @returns    true if the thread exits, or false if the timeout expires first.
     */
-    void stopThread (int timeOutMilliseconds = -1);
+    bool stopThread (int timeOutMilliseconds = -1);
 
     //==============================================================================
     /** Returns true if the thread is currently active */

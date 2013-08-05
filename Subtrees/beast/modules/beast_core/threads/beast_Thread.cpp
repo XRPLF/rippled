@@ -171,8 +171,10 @@ bool Thread::waitForThreadToExit (const int timeOutMilliseconds) const
     return true;
 }
 
-void Thread::stopThread (const int timeOutMilliseconds)
+bool Thread::stopThread (const int timeOutMilliseconds)
 {
+    bool cleanExit = true;
+
     // agh! You can't stop the thread that's calling this method! How on earth
     // would that work??
     bassert (getCurrentThreadId() != getThreadId());
@@ -185,21 +187,30 @@ void Thread::stopThread (const int timeOutMilliseconds)
         notify();
 
         if (timeOutMilliseconds != 0)
-            waitForThreadToExit (timeOutMilliseconds);
+        {
+            cleanExit = waitForThreadToExit (timeOutMilliseconds);
+        }
 
         if (isThreadRunning())
         {
+            bassert (! cleanExit);
+
             // very bad karma if this point is reached, as there are bound to be
             // locks and events left in silly states when a thread is killed by force..
-            bassertfalse;
-            Logger::writeToLog ("!! killing thread by force !!");
-
             killThread();
 
             threadHandle = nullptr;
             threadId = 0;
+
+            cleanExit = false;
+        }
+        else
+        {
+            cleanExit = true;
         }
     }
+
+    return cleanExit;
 }
 
 //==============================================================================
