@@ -237,7 +237,7 @@ TER RippleCalc::calcNodeAdvance (
 
             // Only a allow a source to be used once, in the first node encountered from initial path scan.
             // This prevents conflicting uses of the same balance when going reverse vs forward.
-            if (bFoundForward && itForward->second != uNode)
+            if (bFoundForward && (itForward->second != uNode) && (uOfrOwnerID != uCurIssuerID))
             {
                 // Temporarily unfunded. Another node uses this source, ignore in this offer.
                 WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: temporarily unfunded offer (forward)";
@@ -250,7 +250,7 @@ TER RippleCalc::calcNodeAdvance (
 
             // For this quality increment, only allow a source to be used from a single node, in the first node encountered from applying offers
             // in reverse.
-            if (bFoundReverse && itReverse->second != uNode)
+            if (bFoundReverse && (itReverse->second != uNode) && (uOfrOwnerID != uCurIssuerID))
             {
                 // Temporarily unfunded. Another node uses this source, ignore in this offer.
                 WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: temporarily unfunded offer (reverse)";
