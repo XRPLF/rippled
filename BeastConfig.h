@@ -110,6 +110,17 @@
 #define BEAST_BOOST_IS_AVAILABLE 1
 #endif
 
+//------------------------------------------------------------------------------
+
+/** Config: BEAST_DISABLE_BEAST_VERSION_PRINTING
+    Turns off the debugging display of the beast version number
+*/
+#ifndef BEAST_DISABLE_BEAST_VERSION_PRINTING
+#define BEAST_DISABLE_BEAST_VERSION_PRINTING 1
+#endif
+
+//------------------------------------------------------------------------------
+
 /** Bind source configuration.
 
     Set one of these to manually force a particular implementation of bind().

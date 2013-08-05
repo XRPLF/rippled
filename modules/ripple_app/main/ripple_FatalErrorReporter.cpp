@@ -4,6 +4,12 @@
 */
 //==============================================================================
 
+#ifdef TWICE
+#error die
+#endif
+
+#define TWICE
+
 FatalErrorReporter::FatalErrorReporter ()
 {
     FatalError::setReporter (*this);
@@ -14,20 +20,9 @@ FatalErrorReporter::~FatalErrorReporter ()
     FatalError::resetReporter (*this);
 }
 
-void FatalErrorReporter::onFatalError (
-    char const* message,
-    char const* stackBacktrace,
-    char const* fileName,
-    int lineNumber)
+void FatalErrorReporter::reportMessage (String& formattedMessage)
 {
-    String s;
-                
-    s << "Message = '" << message << "'" << newLine;
-    s << "File = '" << fileName << "' Line " << String (lineNumber) << newLine;
-    s << "Stack Trace:" << newLine;
-    s << stackBacktrace;
-
-    Log::out() << s;
+    Log::out() << formattedMessage.toRawUTF8 ();
 }
 
 //------------------------------------------------------------------------------
@@ -48,7 +43,7 @@ public:
         // We don't really expect the program to run after this
         // but the unit test is here so you can manually test it.
 
-        FatalError ("unit test", __FILE__, __LINE__);
+        FatalError ("The unit test intentionally failed", __FILE__, __LINE__);
     }
 };
 

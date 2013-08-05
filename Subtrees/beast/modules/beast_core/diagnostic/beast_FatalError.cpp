@@ -17,6 +17,56 @@
 */
 //==============================================================================
 
+//
+// FatalError::Reporter
+//
+
+void FatalError::Reporter::onFatalError (
+    char const* message, char const* stackBacktrace, char const* filePath, int lineNumber)
+{
+    String formattedMessage = formatMessage (
+        message, stackBacktrace, filePath, lineNumber);
+
+    reportMessage (formattedMessage);
+}
+
+void FatalError::Reporter::reportMessage (String& formattedMessage)
+{
+    std::cerr << formattedMessage.toRawUTF8 ();
+}
+
+String FatalError::Reporter::formatMessage (
+    char const* message, char const* stackBacktrace, char const* filePath, int lineNumber)
+{
+    String formattedMessage;
+    formattedMessage.preallocateBytes (16 * 1024);
+
+    formattedMessage << message;
+
+    if (filePath != nullptr && filePath [0] != 0)
+    {
+        formattedMessage << ", in " << formatFilePath (filePath)
+                         << " line " << String (lineNumber);
+    }
+
+    formattedMessage << newLine;
+
+    if (stackBacktrace != nullptr && stackBacktrace [0] != 0)
+    {
+        formattedMessage << "Stack:" << newLine;
+        formattedMessage << stackBacktrace;
+    }
+
+    return formattedMessage;
+}
+
+String FatalError::Reporter::formatFilePath (char const* filePath)
+{
+    return File::createFileWithoutCheckingPath (filePath).getFileName ();
+}
+
+//------------------------------------------------------------------------------
+
 Static::Storage <Atomic <FatalError::Reporter*>, FatalError> FatalError::s_reporter;
 
 void FatalError::setReporter (Reporter& reporter)
@@ -66,47 +116,14 @@ public:
     {
     }
 
-    class TestReporter
-        : public FatalError::Reporter
-        , public Uncopyable
-    {
-    public:
-        explicit TestReporter (UnitTest& test)
-            : m_test (test)
-        {
-        }
-
-        void onFatalError (char const* message,
-                           char const* stackBacktrace,
-                           char const* fileName,
-                           int lineNumber)
-        {
-            String s;
-                
-            s << "Message = '" << message << "'" << newLine;
-            s << "File = '" << fileName << "' Line " << String (lineNumber) << newLine;
-            s << "Stack Trace:" << newLine;
-            s << stackBacktrace;
-
-            m_test.logMessage (s);
-        }
-
-    private:
-        UnitTest& m_test;
-    };
-
     void runTest ()
     {
         beginTestCase ("raise");
 
-        TestReporter reporter (*this);
-
-        FatalError::setReporter (reporter);
-
         // We don't really expect the program to run after this
         // but the unit test is here so you can manually test it.
-
-        FatalError ("unit test", __FILE__, __LINE__);
+        int shouldBeZero (1);
+        fatal_require (shouldBeZero == 0);
     }
 };
 

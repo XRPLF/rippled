@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SCOPEDFATALERRORREPORTER_H_INCLUDED
-#define RIPPLE_SCOPEDFATALERRORREPORTER_H_INCLUDED
+#ifndef RIPPLE_FATALERRORREPORTER_H_INCLUDED
+#define RIPPLE_FATALERRORREPORTER_H_INCLUDED
 
 /** FatalError reporter.
 
@@ -24,10 +24,7 @@ public:
     FatalErrorReporter ();
     ~FatalErrorReporter ();
 
-    void onFatalError (char const* message,
-                       char const* stackBacktrace,
-                       char const* fileName,
-                       int lineNumber);
+    void reportMessage (String& formattedMessage);
 };
 
 #endif
