@@ -36,35 +36,93 @@ class FatalError : Uncopyable
 public:
     struct Reporter
     {
+        virtual ~Reporter () { }
+
         /** Called when a fatal error is raised.
 
             Because the program is likely in an inconsistent state, it is a
             good idea to do as little as possible from within this function.
             It will be called from the thread that raised the fatal error.
 
+            The default implementation of this function first calls
+            formatMessage to produce the string, then calls reportMessage
+            to report the results.
+
+            You can override this to perform custom formatting.
+
+            @note filePath may be a zero length string if identifying
+                  information was stripped from the executable for security.
+
+            @note stackBacktrace will be a string with zero characters for
+                  platforms for which which don't support stack crawls, or
+                  when symbolic information is missing from the executable.
+
             @param message The error message.
             @param stackBackTrace The stack of the thread that raised the error.
-            @param fileName The source file that raised the error.
+            @param filePath A full or partial path to the source file that raised the error.
             @param lineNumber The line number in the source file.
         */
         virtual void onFatalError (char const* message,
                                    char const* stackBacktrace,
-                                   char const* fileName,
-                                   int lineNumber) = 0;
+                                   char const* filePath,
+                                   int lineNumber);
+
+        /** Called to report the message.
+
+            The default implementation simply writes this to standard error.
+            You can override this to perform additional things like logging
+            to a file or sending the message to another process.
+
+            @param formattedMessage The message to report.
+        */
+        virtual void reportMessage (String& formattedMessage);
+
+    protected:
+       /** Called to format the message.
+
+            The default implementation calls formatFilePath to produce
+            a formatted file name, and then creates a suitable string
+            containing all of the information.
+
+            You can override this function to format your own messages.
+
+            @param message The message from the report.
+            @param stackBacktrace The stack backtrace from the report.
+            @param filePath The file path from the report.
+            @param lineNumber The line number from the report
+        */
+        virtual String formatMessage (char const* message,
+                                      char const* stackBacktrace,
+                                      char const* filePath,
+                                      int lineNumber);
+
+        /** Call to reformat the file path.
+
+            Usually the file is a full path, which we really don't care
+            to see and can also be a security hole.
+
+            The default implementation removes most of the useless
+            directory components from the front.
+
+            You can override this to do a custom format on the file path.
+        */
+        virtual String formatFilePath (char const* filePath);
     };
 
     /** Set the fatal error reporter.
 
         Note that if a fatal error is raised during the construction of
         objects with static storage duration, it might not be possible to
-        set the reporter before the error is raised.
+        set the reporter before the error is raised. The solution is not
+        to use objects with static storage duration that have non-trivial
+        constructors, use SharedSingleton instead.
 
-        The solution is not to use objects with static storage duration
-        that have non-trivial constructors, use SharedSingleton instead.
+        The default behavior when no reporter is set is to invoke
+        the base class version of Reporter::onFatalError.
 
         If a reporter was previously set, this routine will do nothing.
 
-        @see SharedSingleton
+        @see SharedSingleton, Reporter
     */
     static void setReporter (Reporter& reporter);
 
@@ -81,13 +139,24 @@ public:
         other threads will be blocked before the process terminates.
 
         @param message A null terminated string, which should come from a constant.
-        @param fileName Pass __FILE__ here.
+        @param filePath Pass __FILE__ here.
         @param lineNumber Pass __LINE__ here.
     */
-    FatalError (char const* message, char const* fileName, int lineNumber);
+    FatalError (char const* message, char const* filePath, int lineNumber);
 
 private:
     static Static::Storage <Atomic <Reporter*>, FatalError> s_reporter;
 };
+
+/** Fatal assertion macro.
+    These get compiled into the code regardless of the BEAST_DEBUG
+    setting, and call FatalError.
+    @see FatalError
+*/
+#define fatal_require_report(expression) \
+    { if (beast::beast_isRunningUnderDebugger()) beast_breakDebugger; \
+      FatalError ("Assertion '" BEAST_STRINGIFY(expression) "' failed", __FILE__, __LINE__); \
+      BEAST_ANALYZER_NORETURN }
+#define fatal_require(condition) { if (! (condition)) { fatal_require_report(condition); } }
 
 #endif

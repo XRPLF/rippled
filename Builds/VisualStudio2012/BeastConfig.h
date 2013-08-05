@@ -103,11 +103,19 @@
 //------------------------------------------------------------------------------
 
 /** Config: BEAST_BOOST_IS_AVAILABLE
-
     This activates boost specific features and improvements.
 */
 #ifndef BEAST_BOOST_IS_AVAILABLE
 #define BEAST_BOOST_IS_AVAILABLE 0
+#endif
+
+//------------------------------------------------------------------------------
+
+/** Config: BEAST_DISABLE_BEAST_VERSION_PRINTING
+    Turns off the debugging display of the beast version number
+*/
+#ifndef BEAST_DISABLE_BEAST_VERSION_PRINTING
+//#define BEAST_DISABLE_BEAST_VERSION_PRINTING 1
 #endif
 
 //------------------------------------------------------------------------------

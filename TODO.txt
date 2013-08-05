@@ -2,6 +2,10 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Use SemanticVersion for beast version numbers to replace BEAST_VERSION
+
+- add support for a __PRETTY_FUNCTION__ equivalent for all environments
+
 - add expectThrow() to UnitTest, where it expects an exception
 
 - Import secp256k1 from sipa
