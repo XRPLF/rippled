@@ -208,27 +208,28 @@ bool SystemStats::isOperatingSystem64Bit()
 //==============================================================================
 namespace BSDStatsHelpers
 {
-    String getCpuInfo (const char* const key)
+    String getDmesgInfo (const char* const key)
     {
         StringArray lines;
-        File ("/proc/cpuinfo").readLines (lines);
+        File ("/var/run/dmesg.boot").readLines (lines);
 
         for (int i = lines.size(); --i >= 0;) // (NB - it's important that this runs in reverse order)
-            if (lines[i].startsWithIgnoreCase (key))
-                return lines[i].fromFirstOccurrenceOf (":", false, false).trim();
+            if (lines[i].startsWith (key))
+                return lines[i].substring (strlen (key)).trim();
 
         return String::empty;
     }
+
 }
 
 String SystemStats::getCpuVendor()
 {
-    return BSDStatsHelpers::getCpuInfo ("vendor_id");
+    return BSDStatsHelpers::getDmesgInfo ("  Origin =").upToFirstOccurrenceOf (" ", false, false).unquoted();
 }
 
 int SystemStats::getCpuSpeedInMegaherz()
 {
-    return roundToInt (BSDStatsHelpers::getCpuInfo ("cpu MHz").getFloatValue());
+    return roundToInt (BSDStatsHelpers::getDmesgInfo ("CPU:").fromLastOccurrenceOf ("(", false, false).upToFirstOccurrenceOf ("-MHz", false, false).getFloatValue());
 }
 
 int SystemStats::getMemorySizeInMegabytes()
@@ -298,15 +299,19 @@ String SystemStats::getDisplayLanguage()
 }
 
 //==============================================================================
-SystemStats::CPUFlags::CPUFlags()
+void CPUInformation::initialise() noexcept
 {
-    const String flags (BSDStatsHelpers::getCpuInfo ("flags"));
-    hasMMX   = flags.contains ("mmx");
-    hasSSE   = flags.contains ("sse");
-    hasSSE2  = flags.contains ("sse2");
-    has3DNow = flags.contains ("3dnow");
+    const String features (BSDStatsHelpers::getDmesgInfo ("  Features="));
+    hasMMX = features.contains ("MMX");
+    hasSSE = features.contains ("SSE");
+    hasSSE2 = features.contains ("SSE2");
+    const String features2 (BSDStatsHelpers::getDmesgInfo ("  Features2="));
+    hasSSE3 = features2.contains ("SSE3");
+    const String amdfeatures2 (BSDStatsHelpers::getDmesgInfo ("  AMD Features2="));
+    has3DNow = amdfeatures2.contains ("3DNow!");
 
-    numCpus = BSDStatsHelpers::getCpuInfo ("processor").getIntValue() + 1;
+    GETSYSCTL("hw.ncpu", numCpus);
+    if (numCpus == -1) numCpus = 1;
 }
 
 //==============================================================================
