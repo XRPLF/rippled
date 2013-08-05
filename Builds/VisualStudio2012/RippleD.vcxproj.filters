@@ -160,6 +160,9 @@
     <Filter Include="[2] Build">
       <UniqueIdentifier>{c69b07a2-44e5-4b06-99a9-81f5d137ea15}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\ripple_basio\tests">
+      <UniqueIdentifier>{271e2469-a2e6-40c6-acc9-aa75cd6e59c3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Subtrees\sqlite\sqlite3.c">
@@ -884,6 +887,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\main\ripple_RippleMain.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basio\tests\ripple_AsioTests.cpp">
+      <Filter>[1] Ripple\ripple_basio\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
