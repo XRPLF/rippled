@@ -381,7 +381,7 @@ TER RippleCalc::calcNodeDeliverRev (
         STAmount&       saTakerGets     = pnCur.saTakerGets;
         STAmount&       saRateMax       = pnCur.saRateMax;
 
-        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality, true);      // If needed, advance to next funded offer.
+        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality || saOutAct.isZero(), true);      // If needed, advance to next funded offer.
 
         if (tesSUCCESS != terResult || !uOfferIndex)
         {
@@ -656,7 +656,7 @@ TER RippleCalc::calcNodeDeliverFwd (
         }
 
         // Determine values for pass to adjust saInAct, saInFees, and saCurDeliverAct
-        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality, false);             // If needed, advance to next funded offer.
+        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality || saInAct.isZero(), false);             // If needed, advance to next funded offer.
 
         if (tesSUCCESS != terResult)
         {
