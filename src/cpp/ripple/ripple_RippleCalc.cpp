@@ -717,7 +717,7 @@ TER RippleCalc::calcNodeDeliverFwd (
                                           % saInPassAct
                                           % saOutPassMax);
 
-            if (!saInSum) // FIXME: We remove an offer if we didn't want anything out of it?!
+            if (!saTakerPays || !saInSum) // FIXME: We remove an offer if we didn't want anything out of it?!
             {
                 WriteLog (lsINFO, RippleCalc) << "calcNodeDeliverFwd: Microscopic offer unfunded.";
 
