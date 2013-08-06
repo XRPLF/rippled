@@ -59,7 +59,7 @@
 
     @see SharedObjectPtr, SharedObjectArray, SingleThreadedSharedObject
 */
-class BEAST_API SharedObject : Uncopyable
+class BEAST_API SharedObject : public Uncopyable
 {
 public:
     //==============================================================================
