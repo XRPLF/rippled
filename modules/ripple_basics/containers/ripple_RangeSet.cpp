@@ -69,7 +69,7 @@ uint32 RangeSet::getPrev (uint32 v) const
         if (it.second < v)
             return it.second;
 
-        if (contains (it, v + 1))
+        if (contains (it, v - 1))
             return v - 1;
     }
     return absent;
@@ -96,6 +96,12 @@ uint32 RangeSet::prevMissing (uint32 v) const
             {
                 result = cur->first - 1;
                 break;
+            }
+            else if (v > cur->second)
+            {
+                if (v == cur->second + 1)
+                    result = cur->first - 1;
+                break;            
             }
         }
     }
