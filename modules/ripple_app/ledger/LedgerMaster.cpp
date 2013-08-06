@@ -587,10 +587,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
     mCompleteLedgers.setValue (ledger->getLedgerSeq ());
 
     if (Ledger::getHashByIndex (ledger->getLedgerSeq ()) != ledger->getHash ())
-    {
         ledger->pendSave (false);
-        return;
-    }
 
     if ((ledger->getLedgerSeq () != 0) && mCompleteLedgers.hasValue (ledger->getLedgerSeq () - 1))
     {
