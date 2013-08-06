@@ -17,6 +17,8 @@ class LedgerConsensus
     , public CountedObject <LedgerConsensus>
 {
 public:
+    static char const* getCountedObjectName () { return "LedgerConsensus"; }
+
     LedgerConsensus (LedgerHash const & prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
 
     int startup ();
@@ -105,6 +107,8 @@ private:
 
     void beginAccept (bool synchronous);
     void endConsensus ();
+
+    void addLoad (SerializedValidation::ref val);
 
 private:
     // VFALCO TODO Rename these to look pretty

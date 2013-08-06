@@ -67,7 +67,7 @@ inline uint160 Hash160 (Blob const& vch)
 }
 
 /*
-#ifdef WIN32
+#if BEAST_WIN32
 // This is used to attempt to keep keying material out of swap
 // Note that VirtualLock does not provide this as a guarantee on Windows,
 // but, in practice, memory that has been VirtualLock'd almost never gets written to

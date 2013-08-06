@@ -4,9 +4,6 @@
 */
 //==============================================================================
 
-// VFALCO TODO make this an inline function
-#define ADDRESS(p)          strHex(uint64( ((char*) p) - ((char*) 0)))
-
 SETUP_LOG (Peer)
 
 class PeerImp;
@@ -24,6 +21,8 @@ class PeerImp : public Peer
     , public CountedObject <PeerImp>
 {
 public:
+    static char const* getCountedObjectName () { return "Peer"; }
+
     PeerImp (boost::asio::io_service & io_service,
              boost::asio::ssl::context & ctx,
              uint64 peerId,
@@ -31,10 +30,11 @@ public:
 
     void handleConnect (const boost::system::error_code & error, boost::asio::ip::tcp::resolver::iterator it);
 
-    std::string& getIP ()
+    std::string const& getIP ()
     {
         return mIpPort.first;
     }
+
     std::string getDisplayName ()
     {
         return mCluster ? mNodeName : mIpPort.first;
@@ -69,6 +69,10 @@ public:
     bool isConnected () const
     {
         return mHelloed && !mDetaching;
+    }
+    bool isInCluster () const
+    {
+        return mCluster;
     }
     bool isInbound () const
     {
@@ -114,8 +118,8 @@ private:
     bool            mCluster;           // Node in our cluster
     RippleAddress   mNodePublic;        // Node public key of peer.
     std::string     mNodeName;
-    ipPort          mIpPort;
-    ipPort          mIpPortConnect;
+    IPAndPortNumber          mIpPort;
+    IPAndPortNumber          mIpPortConnect;
     uint256         mCookieHash;
     uint64          mPeerId;
     bool            mPrivate;           // Keep peer IP private.
@@ -160,6 +164,7 @@ private:
     void sendHello ();
 
     void recvHello (protocol::TMHello & packet);
+    void recvCluster (protocol::TMCluster & packet);
     void recvTransaction (protocol::TMTransaction & packet, ScopedLock & MasterLockHolder);
     void recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, ScopedLock & MasterLockHolder);
     void recvGetValidation (protocol::TMGetValidations & packet);
@@ -205,15 +210,15 @@ PeerImp::PeerImp (boost::asio::io_service& io_service, boost::asio::ssl::context
     mActivityTimer (io_service),
     mIOStrand (io_service)
 {
-    WriteLog (lsDEBUG, Peer) << "CREATING PEER: " << ADDRESS (this);
+    WriteLog (lsDEBUG, Peer) << "CREATING PEER: " << addressToString (this);
 }
 
 void PeerImp::handleWrite (const boost::system::error_code& error, size_t bytes_transferred)
 {
     // Call on IO strand
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
     //  if (!error)
-    //      std::cerr << "PeerImp::handleWrite bytes: "<< bytes_transferred << std::endl;
+    //      Log::out() << "PeerImp::handleWrite bytes: "<< bytes_transferred;
 #endif
 
     mSendingPacket.reset ();
@@ -225,7 +230,7 @@ void PeerImp::handleWrite (const boost::system::error_code& error, size_t bytes_
     }
     else if (error)
     {
-        WriteLog (lsINFO, Peer) << "Peer: Write: Error: " << ADDRESS (this) << ": bytes=" << bytes_transferred << ": " << error.category ().name () << ": " << error.message () << ": " << error;
+        WriteLog (lsINFO, Peer) << "Peer: Write: Error: " << addressToString (this) << ": bytes=" << bytes_transferred << ": " << error.category ().name () << ": " << error.message () << ": " << error;
 
         detach ("hw", true);
     }
@@ -247,15 +252,19 @@ void PeerImp::setIpPort (const std::string& strIP, int iPort)
     mLoad.rename (strIP);
 
     WriteLog (lsDEBUG, Peer) << "Peer: Set: "
-                             << ADDRESS (this) << "> "
+                             << addressToString (this) << "> "
                              << (mNodePublic.isValid () ? mNodePublic.humanNodePublic () : "-") << " " << getIP () << " " << getPort ();
 }
 
 void PeerImp::detach (const char* rsn, bool onIOStrand)
 {
+    // VFALCO NOTE So essentially, detach() is really two different functions
+    //              depending on the value of onIOStrand.
+    //        TODO Clean this up.
+    //
     if (!onIOStrand)
     {
-        mIOStrand.post (boost::bind (&Peer::detach, shared_from_this (), rsn, true));
+        mIOStrand.post (BIND_TYPE (&Peer::detach, shared_from_this (), rsn, true));
         return;
     }
 
@@ -266,7 +275,7 @@ void PeerImp::detach (const char* rsn, bool onIOStrand)
         CondLog (mCluster, lsWARNING, Peer) << "Cluster peer detach \"" << mNodeName << "\": " << rsn;
         /*
         WriteLog (lsDEBUG, Peer) << "Peer: Detach: "
-            << ADDRESS(this) << "> "
+            << addressToString(this) << "> "
             << rsn << ": "
             << (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
             */
@@ -280,7 +289,7 @@ void PeerImp::detach (const char* rsn, bool onIOStrand)
 
         if (mNodePublic.isValid ())
         {
-            theApp->getPeers ().peerDisconnected (shared_from_this (), mNodePublic);
+            getApp().getPeers ().peerDisconnected (shared_from_this (), mNodePublic);
 
             mNodePublic.clear ();       // Be idempotent.
         }
@@ -289,14 +298,14 @@ void PeerImp::detach (const char* rsn, bool onIOStrand)
         {
             // Connection might be part of scanning.  Inform connect failed.
             // Might need to scan. Inform connection closed.
-            theApp->getPeers ().peerClosed (shared_from_this (), mIpPort.first, mIpPort.second);
+            getApp().getPeers ().peerClosed (shared_from_this (), mIpPort.first, mIpPort.second);
 
             mIpPort.first.clear ();     // Be idempotent.
         }
 
         /*
         WriteLog (lsDEBUG, Peer) << "Peer: Detach: "
-            << ADDRESS(this) << "< "
+            << addressToString(this) << "< "
             << rsn << ": "
             << (mNodePublic.isValid() ? mNodePublic.humanNodePublic() : "-") << " " << getIP() << " " << getPort();
             */
@@ -340,7 +349,7 @@ void PeerImp::handleVerifyTimer (const boost::system::error_code& ecResult)
     if (ecResult == boost::asio::error::operation_aborted)
     {
         // Timer canceled because deadline no longer needed.
-        // std::cerr << "Deadline cancelled." << std::endl;
+        // Log::out() << "Deadline cancelled.";
 
         nothing (); // Aborter is done.
     }
@@ -370,7 +379,7 @@ void PeerImp::connect (const std::string& strIp, int iPort)
 
     boost::asio::ip::tcp::resolver::query   query (strIp, boost::lexical_cast<std::string> (iPortAct),
             boost::asio::ip::resolver_query_base::numeric_host | boost::asio::ip::resolver_query_base::numeric_service);
-    boost::asio::ip::tcp::resolver              resolver (theApp->getIOService ());
+    boost::asio::ip::tcp::resolver              resolver (getApp().getIOService ());
     boost::system::error_code                   err;
     boost::asio::ip::tcp::resolver::iterator    itrEndpoint = resolver.resolve (query, err);
 
@@ -399,7 +408,7 @@ void PeerImp::connect (const std::string& strIp, int iPort)
 
     if (!err)
     {
-        WriteLog (lsINFO, Peer) << "Peer: Connect: Outbound: " << ADDRESS (this) << ": " << mIpPort.first << " " << mIpPort.second;
+        WriteLog (lsINFO, Peer) << "Peer: Connect: Outbound: " << addressToString (this) << ": " << mIpPort.first << " " << mIpPort.second;
 
         boost::asio::async_connect (
             getSocket (),
@@ -482,7 +491,7 @@ void PeerImp::connected (const boost::system::error_code& error)
     {
         // Not redundant ip and port, handshake, and start.
 
-        WriteLog (lsINFO, Peer) << "Peer: Inbound: Accepted: " << ADDRESS (this) << ": " << strIp << " " << iPort;
+        WriteLog (lsINFO, Peer) << "Peer: Inbound: Accepted: " << addressToString (this) << ": " << strIp << " " << iPort;
 
 
         mSocketSsl.set_verify_mode (boost::asio::ssl::verify_none);
@@ -492,7 +501,7 @@ void PeerImp::connected (const boost::system::error_code& error)
     }
     else if (!mDetaching)
     {
-        WriteLog (lsINFO, Peer) << "Peer: Inbound: Error: " << ADDRESS (this) << ": " << strIp << " " << iPort << " : " << error.category ().name () << ": " << error.message () << ": " << error;
+        WriteLog (lsINFO, Peer) << "Peer: Inbound: Error: " << addressToString (this) << ": " << strIp << " " << iPort << " : " << error.category ().name () << ": " << error.message () << ": " << error;
 
         detach ("ctd", false);
     }
@@ -519,7 +528,7 @@ void PeerImp::sendPacket (const PackedMessage::pointer& packet, bool onStrand)
     {
         if (!onStrand)
         {
-            mIOStrand.post (boost::bind (&Peer::sendPacket, shared_from_this (), packet, true));
+            mIOStrand.post (BIND_TYPE (&Peer::sendPacket, shared_from_this (), packet, true));
             return;
         }
 
@@ -621,7 +630,7 @@ void PeerImp::handleReadBody (const boost::system::error_code& error)
             WriteLog (lsINFO, Peer) << "Peer: Body: Error: " << getIP () << ": " << error.category ().name () << ": " << error.message () << ": " << error;
         }
 
-        boost::recursive_mutex::scoped_lock sl (theApp->getMasterLock ());
+        boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
         detach ("hrb", true);
         return;
     }
@@ -634,15 +643,15 @@ void PeerImp::processReadBuffer ()
 {
     // must not hold peer lock
     int type = PackedMessage::getType (mReadbuf);
-#ifdef DEBUG
-    //  std::cerr << "PRB(" << type << "), len=" << (mReadbuf.size()-PackedMessage::kHeaderBytes) << std::endl;
+#ifdef BEAST_DEBUG
+    //  Log::out() << "PRB(" << type << "), len=" << (mReadbuf.size()-PackedMessage::kHeaderBytes);
 #endif
 
-    //  std::cerr << "PeerImp::processReadBuffer: " << mIpPort.first << " " << mIpPort.second << std::endl;
+    //  Log::out() << "PeerImp::processReadBuffer: " << mIpPort.first << " " << mIpPort.second;
 
-    LoadEvent::autoptr event (theApp->getJobQueue ().getLoadEventAP (jtPEER, "PeerImp::read"));
+    LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtPEER, "PeerImp::read"));
 
-    ScopedLock sl (theApp->getMasterLock ());
+    ScopedLock sl (getApp().getMasterLock ());
 
     // If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
     if (mHelloed == (type == protocol::mtHELLO))
@@ -665,6 +674,17 @@ void PeerImp::processReadBuffer ()
                 WriteLog (lsWARNING, Peer) << "parse error: " << type;
         }
         break;
+
+        case protocol::mtCLUSTER:
+        {
+            event->reName ("PeerImp::cluster");
+            protocol::TMCluster msg;
+
+            if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                recvCluster (msg);
+	    else
+	        WriteLog (lsWARNING, Peer) << "parse error: " << type;
+        }
 
         case protocol::mtERROR_MSG:
         {
@@ -899,11 +919,8 @@ void PeerImp::processReadBuffer ()
 
         default:
             event->reName ("PeerImp::unknown");
-            if (type != 5)
-            { // TEMPORARY: Don't warn on cluster message
-                WriteLog (lsWARNING, Peer) << "Unknown Msg: " << type;
-                WriteLog (lsWARNING, Peer) << strHex (&mReadbuf[0], mReadbuf.size ());
-	    }
+            WriteLog (lsWARNING, Peer) << "Unknown Msg: " << type;
+            WriteLog (lsWARNING, Peer) << strHex (&mReadbuf[0], mReadbuf.size ());
         }
     }
 }
@@ -917,11 +934,11 @@ void PeerImp::recvHello (protocol::TMHello& packet)
     mActivityTimer.async_wait (mIOStrand.wrap (boost::bind (&PeerImp::handlePingTimer, boost::static_pointer_cast <PeerImp> (shared_from_this ()),
                                boost::asio::placeholders::error)));
 
-    uint32 ourTime = theApp->getOPs ().getNetworkTimeNC ();
+    uint32 ourTime = getApp().getOPs ().getNetworkTimeNC ();
     uint32 minTime = ourTime - 20;
     uint32 maxTime = ourTime + 20;
 
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
 
     if (packet.has_nettime ())
     {
@@ -974,7 +991,7 @@ void PeerImp::recvHello (protocol::TMHello& packet)
                 (packet.protoversion () >> 16) << "." << (packet.protoversion () & 0xFF);
         mHello = packet;
 
-        if (theApp->getUNL ().nodeInCluster (mNodePublic, mNodeName))
+        if (getApp().getUNL ().nodeInCluster (mNodePublic, mNodeName))
         {
             mCluster = true;
             mLoad.setPrivileged ();
@@ -990,10 +1007,10 @@ void PeerImp::recvHello (protocol::TMHello& packet)
         if (mClientConnect)
         {
             // If we connected due to scan, no longer need to scan.
-            theApp->getPeers ().peerVerified (shared_from_this ());
+            getApp().getPeers ().peerVerified (shared_from_this ());
         }
 
-        if (! theApp->getPeers ().peerConnected (shared_from_this (), mNodePublic, getIP (), getPort ()))
+        if (! getApp().getPeers ().peerConnected (shared_from_this (), mNodePublic, getIP (), getPort ()))
         {
             // Already connected, self, or some other reason.
             WriteLog (lsINFO, Peer) << "Recv(Hello): Disconnect: Extraneous connection.";
@@ -1020,7 +1037,7 @@ void PeerImp::recvHello (protocol::TMHello& packet)
                     // Don't save IP address if the node wants privacy.
                     // Note: We don't go so far as to delete it.  If a node which has previously announced itself now wants
                     // privacy, it should at least change its port.
-                    theApp->getPeers ().savePeer (strIP, iPort, IUniqueNodeList::vsInbound);
+                    getApp().getPeers ().savePeer (strIP, iPort, UniqueNodeList::vsInbound);
                 }
             }
 
@@ -1074,20 +1091,20 @@ static void checkTransaction (Job&, int flags, SerializedTransaction::pointer st
 
         if (tx->getStatus () == INVALID)
         {
-            theApp->getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
+            getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
             Peer::applyLoadCharge (peer, LT_InvalidSignature);
             return;
         }
         else
-            theApp->getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
+            getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
 
-        theApp->getOPs ().processTransaction (tx, isSetBit (flags, SF_TRUSTED), false);
+        getApp().getOPs ().processTransaction (tx, isSetBit (flags, SF_TRUSTED), false);
 
 #ifndef TRUST_NETWORK
     }
     catch (...)
     {
-        theApp->getHashRouter ().setFlags (stx->getTransactionID (), SF_BAD);
+        getApp().getHashRouter ().setFlags (stx->getTransactionID (), SF_BAD);
         applyLoadCharge (peer, LT_InvalidRequest);
     }
 
@@ -1110,7 +1127,7 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
 
         int flags;
 
-        if (! theApp->getHashRouter ().addSuppressionPeer (txID, mPeerId, flags))
+        if (! getApp().getHashRouter ().addSuppressionPeer (txID, mPeerId, flags))
         {
             // we have seen this transaction recently
             if (isSetBit (flags, SF_BAD))
@@ -1123,7 +1140,7 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
                 return;
         }
 
-        if (theApp->getMasterTransaction().fetch(txID, true))
+        if (getApp().getMasterTransaction().fetch(txID, true))
         {
             WriteLog (lsDEBUG, Peer) << "Peer " << getDisplayName() << " send old TX " << txID;
             applyLoadCharge (LT_InvalidRequest);
@@ -1135,21 +1152,22 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
         if (mCluster)
             flags |= SF_TRUSTED | SF_SIGGOOD;
 
-        if (theApp->getJobQueue().getJobCount(jtTRANSACTION) > 100)
+        if (getApp().getJobQueue().getJobCount(jtTRANSACTION) > 100)
             WriteLog(lsINFO, Peer) << "Transaction queue is full";
-        else if (theApp->getLedgerMaster().getValidatedLedgerAge() > 240)
+        else if (getApp().getLedgerMaster().getValidatedLedgerAge() > 240)
             WriteLog(lsINFO, Peer) << "No new transactions until synchronized";
         else
-            theApp->getJobQueue ().addJob (jtTRANSACTION, "recvTransction->checkTransaction",
+            getApp().getJobQueue ().addJob (jtTRANSACTION, "recvTransction->checkTransaction",
                                        BIND_TYPE (&checkTransaction, P_1, flags, stx, boost::weak_ptr<Peer> (shared_from_this ())));
 
 #ifndef TRUST_NETWORK
     }
     catch (...)
     {
-#ifdef DEBUG
-        std::cerr << "Transaction from peer fails validity tests" << std::endl;
+#ifdef BEAST_DEBUG
+        Log::out() << "Transaction from peer fails validity tests";
         Json::StyledStreamWriter w;
+        // VFALCO NOTE This bypasses the Log bottleneck
         w.write (std::cerr, tx->getJson (0));
 #endif
         return;
@@ -1161,7 +1179,8 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, ScopedLock& Mast
 
 // Called from our JobQueue
 static void checkPropose (Job& job, boost::shared_ptr<protocol::TMProposeSet> packet,
-                          LedgerProposal::pointer proposal, uint256 consensusLCL, RippleAddress nodePublic, boost::weak_ptr<Peer> peer)
+                          LedgerProposal::pointer proposal, uint256 consensusLCL, RippleAddress nodePublic,
+                          boost::weak_ptr<Peer> peer, bool fromCluster)
 {
     bool sigGood = false;
     bool isTrusted = (job.getType () == jtPROPOSAL_t);
@@ -1179,7 +1198,7 @@ static void checkPropose (Job& job, boost::shared_ptr<protocol::TMProposeSet> pa
         WriteLog (lsTRACE, Peer) << "proposal with previous ledger";
         memcpy (prevLedger.begin (), set.previousledger ().data (), 256 / 8);
 
-        if (!proposal->checkSign (set.signature ()))
+        if (!fromCluster && !proposal->checkSign (set.signature ()))
         {
             Peer::pointer p = peer.lock ();
             WriteLog (lsWARNING, Peer) << "proposal with previous ledger fails signature check: " <<
@@ -1205,15 +1224,15 @@ static void checkPropose (Job& job, boost::shared_ptr<protocol::TMProposeSet> pa
     }
 
     if (isTrusted)
-        theApp->getOPs ().processTrustedProposal (proposal, packet, nodePublic, prevLedger, sigGood);
+        getApp().getOPs ().processTrustedProposal (proposal, packet, nodePublic, prevLedger, sigGood);
     else if (sigGood && (prevLedger == consensusLCL))
     {
         // relay untrusted proposal
         WriteLog (lsTRACE, Peer) << "relaying untrusted proposal";
         std::set<uint64> peers;
-        theApp->getHashRouter ().swapSet (proposal->getHashRouter (), peers, SF_RELAYED);
+        getApp().getHashRouter ().swapSet (proposal->getHashRouter (), peers, SF_RELAYED);
         PackedMessage::pointer message = boost::make_shared<PackedMessage> (set, protocol::mtPROPOSE_LEDGER);
-        theApp->getPeers ().relayMessageBut (peers, message);
+        getApp().getPeers ().relayMessageBut (peers, message);
     }
     else
         WriteLog (lsDEBUG, Peer) << "Not relaying untrusted proposal";
@@ -1257,7 +1276,7 @@ void PeerImp::recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& pack
 
     uint256 suppression = s.getSHA512Half ();
 
-    if (! theApp->getHashRouter ().addSuppressionPeer (suppression, mPeerId))
+    if (! getApp().getHashRouter ().addSuppressionPeer (suppression, mPeerId))
     {
         WriteLog (lsTRACE, Peer) << "Received duplicate proposal from peer " << mPeerId;
         return;
@@ -1271,8 +1290,8 @@ void PeerImp::recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& pack
         return;
     }
 
-    bool isTrusted = theApp->getUNL ().nodeInUNL (signerPublic);
-    if (!isTrusted && theApp->getFeeTrack ().isLoaded ())
+    bool isTrusted = getApp().getUNL ().nodeInUNL (signerPublic);
+    if (!isTrusted && getApp().getFeeTrack ().isLoadedLocal ())
     {
         WriteLog (lsDEBUG, Peer) << "Dropping untrusted proposal due to load";
         return;
@@ -1280,14 +1299,14 @@ void PeerImp::recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& pack
 
     WriteLog (lsTRACE, Peer) << "Received " << (isTrusted ? "trusted" : "UNtrusted") << " proposal from " << mPeerId;
 
-    uint256 consensusLCL = theApp->getOPs ().getConsensusLCL ();
+    uint256 consensusLCL = getApp().getOPs ().getConsensusLCL ();
     LedgerProposal::pointer proposal = boost::make_shared<LedgerProposal> (
                                            prevLedger.isNonZero () ? prevLedger : consensusLCL,
                                            set.proposeseq (), proposeHash, set.closetime (), signerPublic, suppression);
 
-    theApp->getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut, "recvPropose->checkPropose",
+    getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut, "recvPropose->checkPropose",
                                    BIND_TYPE (&checkPropose, P_1, packet, proposal, consensusLCL,
-                                           mNodePublic, boost::weak_ptr<Peer> (shared_from_this ())));
+                                           mNodePublic, boost::weak_ptr<Peer> (shared_from_this ()), mCluster));
 }
 
 void PeerImp::recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
@@ -1301,12 +1320,16 @@ void PeerImp::recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
     }
 
     uint256 hash;
+
+    // VFALCO TODO There should be no use of memcpy() throughout the program.
+    //        TODO Clean up this magic number
+    //
     memcpy (hash.begin (), packet.hash ().data (), 32);
 
     if (packet.status () == protocol::tsHAVE)
         addTxSet (hash);
 
-    if (!theApp->getOPs ().hasTXSet (shared_from_this (), hash, packet.status ()))
+    if (!getApp().getOPs ().hasTXSet (shared_from_this (), hash, packet.status ()))
         applyLoadCharge (LT_UnwantedData);
 }
 
@@ -1335,11 +1358,11 @@ static void checkValidation (Job&, SerializedValidation::pointer val, uint256 si
 
         std::set<uint64> peers;
 
-        if (theApp->getOPs ().recvValidation (val, source) &&
-                theApp->getHashRouter ().swapSet (signingHash, peers, SF_RELAYED))
+        if (getApp().getOPs ().recvValidation (val, source) &&
+                getApp().getHashRouter ().swapSet (signingHash, peers, SF_RELAYED))
         {
             PackedMessage::pointer message = boost::make_shared<PackedMessage> (*packet, protocol::mtVALIDATION);
-            theApp->getPeers ().relayMessageBut (peers, message);
+            getApp().getPeers ().relayMessageBut (peers, message);
         }
     }
 
@@ -1375,15 +1398,15 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
 
         uint256 signingHash = val->getSigningHash ();
 
-        if (! theApp->getHashRouter ().addSuppressionPeer (signingHash, mPeerId))
+        if (! getApp().getHashRouter ().addSuppressionPeer (signingHash, mPeerId))
         {
             WriteLog (lsTRACE, Peer) << "Validation is duplicate";
             return;
         }
 
-        bool isTrusted = theApp->getUNL ().nodeInUNL (val->getSignerPublic ());
-        if (isTrusted || !theApp->getFeeTrack ().isLoaded ())
-	        theApp->getJobQueue ().addJob (isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
+        bool isTrusted = getApp().getUNL ().nodeInUNL (val->getSignerPublic ());
+        if (isTrusted || !getApp().getFeeTrack ().isLoadedLocal ())
+	        getApp().getJobQueue ().addJob (isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
                                        BIND_TYPE (&checkValidation, P_1, val, signingHash, isTrusted, mCluster, packet,
                                                boost::weak_ptr<Peer> (shared_from_this ())));
 	else
@@ -1398,6 +1421,32 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
     }
 
 #endif
+}
+
+void PeerImp::recvCluster (protocol::TMCluster& packet)
+{
+    if (!mCluster)
+    {
+        applyLoadCharge(LT_UnwantedData);
+        return;
+    }
+
+    for (int i = 0; i < packet.clusternodes().size(); ++i)
+    {
+        protocol::TMClusterNode const& node = packet.clusternodes(i);
+
+        std::string name;
+        if (node.has_nodename())
+	    name = node.nodename();
+        ClusterNodeStatus s(name, node.nodeload(), node.reporttime());
+
+        RippleAddress nodePub;
+        nodePub.setNodePublic(node.publickey());
+
+        getApp().getUNL().nodeUpdate(nodePub, s);
+    }
+
+    getApp().getFeeTrack().setClusterFee(getApp().getUNL().getClusterFee());
 }
 
 void PeerImp::recvGetValidation (protocol::TMGetValidations& packet)
@@ -1420,7 +1469,7 @@ void PeerImp::recvGetPeers (protocol::TMGetPeers& packet, ScopedLock& MasterLock
     MasterLockHolder.unlock ();
     std::vector<std::string> addrs;
 
-    theApp->getPeers ().getTopNAddrs (30, addrs);
+    getApp().getPeers ().getTopNAddrs (30, addrs);
 
     if (!addrs.empty ())
     {
@@ -1438,7 +1487,7 @@ void PeerImp::recvGetPeers (protocol::TMGetPeers& packet, ScopedLock& MasterLock
             addr->set_ipv4 (inet_addr (strIP.c_str ()));
             addr->set_ipv4port (iPort);
 
-            //WriteLog (lsINFO, Peer) << "Peer: Teaching: " << ADDRESS(this) << ": " << n << ": " << strIP << " " << iPort;
+            //WriteLog (lsINFO, Peer) << "Peer: Teaching: " << addressToString(this) << ": " << n << ": " << strIP << " " << iPort;
         }
 
         PackedMessage::pointer message = boost::make_shared<PackedMessage> (peers, protocol::mtPEERS);
@@ -1460,9 +1509,9 @@ void PeerImp::recvPeers (protocol::TMPeers& packet)
 
         if (strIP != "0.0.0.0" && strIP != "127.0.0.1")
         {
-            //WriteLog (lsINFO, Peer) << "Peer: Learning: " << ADDRESS(this) << ": " << i << ": " << strIP << " " << iPort;
+            //WriteLog (lsINFO, Peer) << "Peer: Learning: " << addressToString(this) << ": " << i << ": " << strIP << " " << iPort;
 
-            theApp->getPeers ().savePeer (strIP, iPort, IUniqueNodeList::vsTold);
+            getApp().getPeers ().savePeer (strIP, iPort, UniqueNodeList::vsTold);
         }
     }
 }
@@ -1501,7 +1550,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObject
             if (obj.has_hash () && (obj.hash ().size () == (256 / 8)))
             {
                 memcpy (hash.begin (), obj.hash ().data (), 256 / 8);
-                HashedObject::pointer hObj = theApp->getHashedObjectStore ().retrieve (hash);
+                NodeObject::pointer hObj = getApp().getNodeStore ().retrieve (hash);
 
                 if (hObj)
                 {
@@ -1542,7 +1591,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObject
                     {
                         CondLog (pLDo && (pLSeq != 0), lsDEBUG, Peer) << "Recevied full fetch pack for " << pLSeq;
                         pLSeq = obj.ledgerseq ();
-                        pLDo = !theApp->getOPs ().haveLedger (pLSeq);
+                        pLDo = !getApp().getOPs ().haveLedger (pLSeq);
 
                         if (!pLDo)
                         {
@@ -1561,7 +1610,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObject
                     boost::shared_ptr< Blob > data = boost::make_shared< Blob >
                                                      (obj.data ().begin (), obj.data ().end ());
 
-                    theApp->getOPs ().addFetchPack (hash, data);
+                    getApp().getOPs ().addFetchPack (hash, data);
                 }
             }
         }
@@ -1569,7 +1618,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObject
         CondLog (pLDo && (pLSeq != 0), lsDEBUG, Peer) << "Received partial fetch pack for " << pLSeq;
 
         if (packet.type () == protocol::TMGetObjectByHash::otFETCH_PACK)
-            theApp->getOPs ().gotFetchPack (progress, pLSeq);
+            getApp().getOPs ().gotFetchPack (progress, pLSeq);
     }
 }
 
@@ -1615,7 +1664,7 @@ void PeerImp::recvProofWork (protocol::TMProofWork& packet)
 
         uint256 response;
         memcpy (response.begin (), packet.response ().data (), 256 / 8);
-        POWResult r = theApp->getProofOfWorkFactory ().checkProof (packet.token (), response);
+        POWResult r = getApp().getProofOfWorkFactory ().checkProof (packet.token (), response);
 
         if (r == powOK)
         {
@@ -1663,7 +1712,7 @@ void PeerImp::recvProofWork (protocol::TMProofWork& packet)
         }
 
 #if 0   // Until proof of work is completed, don't do it
-        theApp->getJobQueue ().addJob (
+        getApp().getJobQueue ().addJob (
             jtPROOFWORK,
             "recvProof->doProof",
             BIND_TYPE (&PeerImp::doProofOfWork, P_1, boost::weak_ptr <Peer> (shared_from_this ()), pow));
@@ -1680,7 +1729,7 @@ void PeerImp::recvStatus (protocol::TMStatusChange& packet)
     WriteLog (lsTRACE, Peer) << "Received status change from peer " << getIP ();
 
     if (!packet.has_networktime ())
-        packet.set_networktime (theApp->getOPs ().getNetworkTimeNC ());
+        packet.set_networktime (getApp().getOPs ().getNetworkTimeNC ());
 
     if (!mLastStatus.has_newstatus () || packet.has_newstatus ())
         mLastStatus = packet;
@@ -1756,14 +1805,14 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, ScopedLock& MasterLo
 
         uint256 txHash;
         memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
-        map = theApp->getOPs ().getTXMap (txHash);
+        map = getApp().getOPs ().getTXMap (txHash);
 
         if (!map)
         {
             if (packet.has_querytype () && !packet.has_requestcookie ())
             {
                 WriteLog (lsDEBUG, Peer) << "Trying to route TX set request";
-                std::vector<Peer::pointer> peerList = theApp->getPeers ().getPeerVector ();
+                std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
                 std::vector<Peer::pointer> usablePeers;
                 BOOST_FOREACH (Peer::ref peer, peerList)
                 {
@@ -1814,7 +1863,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, ScopedLock& MasterLo
             memcpy (ledgerhash.begin (), packet.ledgerhash ().data (), 32);
             logMe += "LedgerHash:";
             logMe += ledgerhash.GetHex ();
-            ledger = theApp->getLedgerMaster ().getLedgerByHash (ledgerhash);
+            ledger = getApp().getLedgerMaster ().getLedgerByHash (ledgerhash);
 
             CondLog (!ledger, lsTRACE, Peer) << "Don't have ledger " << ledgerhash;
 
@@ -1825,7 +1874,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, ScopedLock& MasterLo
                 if (packet.has_ledgerseq ())
                     seq = packet.ledgerseq ();
 
-                std::vector<Peer::pointer> peerList = theApp->getPeers ().getPeerVector ();
+                std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
                 std::vector<Peer::pointer> usablePeers;
                 BOOST_FOREACH (Peer::ref peer, peerList)
                 {
@@ -1848,17 +1897,17 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, ScopedLock& MasterLo
         }
         else if (packet.has_ledgerseq ())
         {
-            ledger = theApp->getLedgerMaster ().getLedgerBySeq (packet.ledgerseq ());
+            ledger = getApp().getLedgerMaster ().getLedgerBySeq (packet.ledgerseq ());
             CondLog (!ledger, lsDEBUG, Peer) << "Don't have ledger " << packet.ledgerseq ();
         }
         else if (packet.has_ltype () && (packet.ltype () == protocol::ltCURRENT))
-            ledger = theApp->getLedgerMaster ().getCurrentLedger ();
+            ledger = getApp().getLedgerMaster ().getCurrentLedger ();
         else if (packet.has_ltype () && (packet.ltype () == protocol::ltCLOSED) )
         {
-            ledger = theApp->getLedgerMaster ().getClosedLedger ();
+            ledger = getApp().getLedgerMaster ().getClosedLedger ();
 
             if (ledger && !ledger->isClosed ())
-                ledger = theApp->getLedgerMaster ().getLedgerBySeq (ledger->getLedgerSeq () - 1);
+                ledger = getApp().getLedgerMaster ().getLedgerBySeq (ledger->getLedgerSeq () - 1);
         }
         else
         {
@@ -2029,7 +2078,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
 
     if (packet.has_requestcookie ())
     {
-        Peer::pointer target = theApp->getPeers ().getPeerById (packet.requestcookie ());
+        Peer::pointer target = getApp().getPeers ().getPeerById (packet.requestcookie ());
 
         if (target)
         {
@@ -2077,7 +2126,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
             nodeData.push_back (Blob (node.nodedata ().begin (), node.nodedata ().end ()));
         }
 
-        SHAMapAddNode san =  theApp->getOPs ().gotTXData (shared_from_this (), hash, nodeIDs, nodeData);
+        SHAMapAddNode san =  getApp().getOPs ().gotTXData (shared_from_this (), hash, nodeIDs, nodeData);
 
         if (san.isInvalid ())
             applyLoadCharge (LT_UnwantedData);
@@ -2085,9 +2134,9 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
         return;
     }
 
-    if (theApp->getInboundLedgers ().awaitLedgerData (hash))
-        theApp->getJobQueue ().addJob (jtLEDGER_DATA, "gotLedgerData",
-                                       BIND_TYPE (&InboundLedgers::gotLedgerData, &theApp->getInboundLedgers (),
+    if (getApp().getInboundLedgers ().awaitLedgerData (hash))
+        getApp().getJobQueue ().addLimitJob (jtLEDGER_DATA, "gotLedgerData", 2,
+                                       BIND_TYPE (&InboundLedgers::gotLedgerData, &getApp().getInboundLedgers (),
                                                P_1, hash, packet_ptr, boost::weak_ptr<Peer> (shared_from_this ())));
     else
         applyLoadCharge (LT_UnwantedData);
@@ -2181,21 +2230,21 @@ void PeerImp::sendHello ()
     getSessionCookie (strCookie);
     mCookieHash = Serializer::getSHA512Half (strCookie);
 
-    theApp->getLocalCredentials ().getNodePrivate ().signNodePrivate (mCookieHash, vchSig);
+    getApp().getLocalCredentials ().getNodePrivate ().signNodePrivate (mCookieHash, vchSig);
 
     protocol::TMHello h;
 
     h.set_protoversion (MAKE_VERSION_INT (PROTO_VERSION_MAJOR, PROTO_VERSION_MINOR));
     h.set_protoversionmin (MAKE_VERSION_INT (MIN_PROTO_MAJOR, MIN_PROTO_MINOR));
     h.set_fullversion (SERVER_VERSION);
-    h.set_nettime (theApp->getOPs ().getNetworkTimeNC ());
-    h.set_nodepublic (theApp->getLocalCredentials ().getNodePublic ().humanNodePublic ());
+    h.set_nettime (getApp().getOPs ().getNetworkTimeNC ());
+    h.set_nodepublic (getApp().getLocalCredentials ().getNodePublic ().humanNodePublic ());
     h.set_nodeproof (&vchSig[0], vchSig.size ());
     h.set_ipv4port (theConfig.PEER_PORT);
     h.set_nodeprivate (theConfig.PEER_PRIVATE);
     h.set_testnet (theConfig.TESTNET);
 
-    Ledger::pointer closedLedger = theApp->getLedgerMaster ().getClosedLedger ();
+    Ledger::pointer closedLedger = getApp().getLedgerMaster ().getClosedLedger ();
 
     if (closedLedger && closedLedger->isClosed ())
     {
@@ -2223,21 +2272,21 @@ void PeerImp::sendGetPeers ()
 
 void PeerImp::applyLoadCharge (LoadType loadType)
 {
-    // IMPLEMENATION IS INCOMPLETE
+    // IMPLEMENTATION IS INCOMPLETE
 
-    // VFALCO TODO This needs to implemented before open sourcing.
+    // VFALCO TODO This needs to completed before open sourcing.
 
-    if (theApp->getLoadManager ().applyLoadCharge (mLoad, loadType))
+    if (getApp().getLoadManager ().applyLoadCharge (mLoad, loadType))
     {
         if (mCluster)
         {
             WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " load from cluster";
         }
-        else if (theApp->getLoadManager ().shouldCutoff(mLoad))
+        else if (getApp().getLoadManager ().shouldCutoff(mLoad))
         {
             WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " should cutoff";
         }
-        else if (theApp->getLoadManager ().shouldWarn (mLoad))
+        else if (getApp().getLoadManager ().shouldWarn (mLoad))
         {
             WriteLog (lsWARNING, Peer) << "aLC: " << getDisplayName() << " load warning";
         }
@@ -2279,7 +2328,8 @@ void PeerImp::doProofOfWork (Job&, boost::weak_ptr <Peer> peer, ProofOfWork::poi
 
 void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet)
 {
-    if (theApp->getFeeTrack ().isLoaded ())
+    // VFALCO TODO Invert this dependency using an observer and shared state object.
+    if (getApp().getFeeTrack ().isLoadedLocal ())
     {
         WriteLog (lsINFO, Peer) << "Too busy to make fetch pack";
         return;
@@ -2295,7 +2345,7 @@ void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>&
     uint256 hash;
     memcpy (hash.begin (), packet->ledgerhash ().data (), 32);
 
-    Ledger::pointer haveLedger = theApp->getOPs ().getLedgerByHash (hash);
+    Ledger::pointer haveLedger = getApp().getOPs ().getLedgerByHash (hash);
 
     if (!haveLedger)
     {
@@ -2311,7 +2361,7 @@ void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>&
         return;
     }
 
-    Ledger::pointer wantLedger = theApp->getOPs ().getLedgerByHash (haveLedger->getParentHash ());
+    Ledger::pointer wantLedger = getApp().getOPs ().getLedgerByHash (haveLedger->getParentHash ());
 
     if (!wantLedger)
     {
@@ -2320,8 +2370,8 @@ void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>&
         return;
     }
 
-    theApp->getJobQueue ().addJob (jtPACK, "MakeFetchPack",
-                                   BIND_TYPE (&NetworkOPs::makeFetchPack, &theApp->getOPs (), P_1,
+    getApp().getJobQueue ().addLimitJob (jtPACK, "MakeFetchPack", 1,
+                                   BIND_TYPE (&NetworkOPs::makeFetchPack, &getApp().getOPs (), P_1,
                                            boost::weak_ptr<Peer> (shared_from_this ()), packet, wantLedger, haveLedger, UptimeTimer::getInstance ().getElapsedSeconds ()));
 }
 
@@ -2334,7 +2384,7 @@ Json::Value PeerImp::getJson ()
 {
     Json::Value ret (Json::objectValue);
 
-    //ret["this"]           = ADDRESS(this);
+    //ret["this"]           = addressToString(this);
     ret["public_key"]   = mNodePublic.ToString ();
     ret["ip"]           = mIpPortConnect.first;
     //ret["port"]           = mIpPortConnect.second;
@@ -2411,12 +2461,13 @@ Peer::pointer Peer::New (boost::asio::io_service& io_service,
     return Peer::pointer (new PeerImp (io_service, ctx, id, inbound));
 }
 
-void Peer::applyLoadCharge (const boost::weak_ptr<Peer>& wp, LoadType l)
+void Peer::applyLoadCharge (boost::weak_ptr <Peer>& peerToPunish,
+                            LoadType loadThatWasImposed)
 {
-    Peer::pointer p = wp.lock ();
+    Peer::pointer p = peerToPunish.lock ();
 
-    if (p)
-        p->applyLoadCharge (l);
+    if (p != nullptr)
+    {
+        p->applyLoadCharge (loadThatWasImposed);
+    }
 }
-
-// vim:ts=4

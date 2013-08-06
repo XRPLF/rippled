@@ -10,6 +10,8 @@
     @ingroup ripple_sqlite
 */
 
+#include "BeastConfig.h"
+
 // This prevents sqlite.h from being included
 //
 #define RIPPLE_SQLITE_MODULE_INCLUDED 1

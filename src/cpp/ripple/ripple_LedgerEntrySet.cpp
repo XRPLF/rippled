@@ -679,24 +679,9 @@ TER LedgerEntrySet::dirAdd (
         }
         else
         {
-            // Have old last point to new node, if it was not root.
-            if (uNodeDir == 1)
-            {
-                // Previous node is root node.
-
-                sleRoot->setFieldU64 (sfIndexNext, uNodeDir);
-            }
-            else
-            {
-                // Previous node is not root node.
-
-                SLE::pointer    slePrevious = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir - 1));
-
-                slePrevious->setFieldU64 (sfIndexNext, uNodeDir);
-                entryModify (slePrevious);
-
-                sleNode->setFieldU64 (sfIndexPrevious, uNodeDir - 1);
-            }
+            // Have old last point to new node
+            sleNode->setFieldU64(sfIndexNext, uNodeDir);
+            entryModify(sleNode);
 
             // Have root point to new node.
             sleRoot->setFieldU64 (sfIndexPrevious, uNodeDir);
@@ -704,6 +689,8 @@ TER LedgerEntrySet::dirAdd (
 
             // Create the new node.
             sleNode     = entryCreate (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
+            if (uNodeDir != 1)
+                sleNode->setFieldU64(sfIndexPrevious, uNodeDir - 1);
             sleNode->setFieldH256 (sfRootIndex, uRootIndex);
             fDescriber (sleNode);
 
@@ -893,6 +880,8 @@ TER LedgerEntrySet::dirDelete (
             // Fix next to point to its new previous.
             sleNext->setFieldU64 (sfIndexPrevious, uNodePrevious);
             entryModify (sleNext);
+
+            entryDelete(sleNode);
         }
         // Last node.
         else if (bKeepRoot || uNodePrevious)

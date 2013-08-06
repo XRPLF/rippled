@@ -6,32 +6,37 @@
 
 SETUP_LOG (RPCDoor)
 
-using namespace std;
-using namespace boost::asio::ip;
-
-extern void initSSLContext (boost::asio::ssl::context& context,
-                            std::string key_file, std::string cert_file, std::string chain_file);
-
-RPCDoor::RPCDoor (boost::asio::io_service& io_service) :
-    mAcceptor (io_service, tcp::endpoint (address::from_string (theConfig.RPC_IP), theConfig.RPC_PORT)),
-    mDelayTimer (io_service), mSSLContext (boost::asio::ssl::context::sslv23)
+RPCDoor::RPCDoor (boost::asio::io_service& io_service, RPCServer::Handler& handler)
+    : m_rpcServerHandler (handler)
+    , mAcceptor (io_service,
+                 boost::asio::ip::tcp::endpoint (boost::asio::ip::address::from_string (theConfig.getRpcIP ()), theConfig.getRpcPort ()))
+    , mDelayTimer (io_service)
+    , mSSLContext (boost::asio::ssl::context::sslv23)
 {
-    WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+    WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.getRpcAddress().toRawUTF8() << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 
     if (theConfig.RPC_SECURE != 0)
-        initSSLContext (mSSLContext, theConfig.RPC_SSL_KEY, theConfig.RPC_SSL_CERT, theConfig.RPC_SSL_CHAIN);
+    {
+        // VFALCO TODO This could be a method of theConfig
+        //
+        basio::SslContext::initializeFromFile (
+            mSSLContext,
+            theConfig.RPC_SSL_KEY,
+            theConfig.RPC_SSL_CERT,
+            theConfig.RPC_SSL_CHAIN);
+    }
 
     startListening ();
 }
 
 RPCDoor::~RPCDoor ()
 {
-    WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.RPC_IP << " " << theConfig.RPC_PORT << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
+    WriteLog (lsINFO, RPCDoor) << "RPC port: " << theConfig.getRpcAddress().toRawUTF8() << " allow remote: " << theConfig.RPC_ALLOW_REMOTE;
 }
 
 void RPCDoor::startListening ()
 {
-    RPCServer::pointer new_connection = RPCServer::create (mAcceptor.get_io_service (), mSSLContext, &theApp->getOPs ());
+    RPCServer::pointer new_connection = RPCServer::New (mAcceptor.get_io_service (), mSSLContext, m_rpcServerHandler);
     mAcceptor.set_option (boost::asio::ip::tcp::acceptor::reuse_address (true));
 
     mAcceptor.async_accept (new_connection->getRawSocket (),
@@ -44,6 +49,8 @@ bool RPCDoor::isClientAllowed (const std::string& ip)
     if (theConfig.RPC_ALLOW_REMOTE)
         return true;
 
+    // VFALCO TODO Represent ip addresses as a structure. Use isLoopback() member here
+    //
     if (ip == "127.0.0.1")
         return true;
 
@@ -59,7 +66,7 @@ void RPCDoor::handleConnect (RPCServer::pointer new_connection, const boost::sys
         // Restrict callers by IP
         try
         {
-            if (!isClientAllowed (new_connection->getRawSocket ().remote_endpoint ().address ().to_string ()))
+            if (! isClientAllowed (new_connection->getRemoteAddressText ()))
             {
                 startListening ();
                 return;

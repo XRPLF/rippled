@@ -32,6 +32,8 @@ class Transaction
     , public CountedObject <Transaction>
 {
 public:
+    static char const* getCountedObjectName () { return "Transaction"; }
+
     typedef boost::shared_ptr<Transaction> pointer;
     typedef const pointer& ref;
 
@@ -42,7 +44,7 @@ public:
     static Transaction::pointer transactionFromSQL (Database * db, bool bValidate);
 
     Transaction (
-        TransactionType ttKind,
+        TxType ttKind,
         const RippleAddress &    naPublicKey,       // To prove transaction is consistent and authorized.
         const RippleAddress &    naSourceAccount,   // To identify the paying account.
         uint32                  uSeq,               // To order transactions.
@@ -131,9 +133,6 @@ public:
     {
         mInLedger = ledger;
     }
-
-    // database functions
-    void save ();
 
     bool operator< (const Transaction&) const;
     bool operator> (const Transaction&) const;

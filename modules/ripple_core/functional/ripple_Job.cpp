@@ -7,17 +7,20 @@
 Job::Job ()
     : mType (jtINVALID)
     , mJobIndex (0)
+    , m_limit (0)
 {
 }
 
 Job::Job (JobType type, uint64 index)
     : mType (type)
     , mJobIndex (index)
+    , m_limit (0)
 {
 }
 
 Job::Job (JobType type,
           std::string const& name,
+          int limit,
           uint64 index,
           LoadMonitor& lm,
           FUNCTION_TYPE <void (Job&)> const& job)
@@ -25,6 +28,7 @@ Job::Job (JobType type,
     , mJobIndex (index)
     , mJob (job)
     , mName (name)
+    , m_limit(limit)
 {
     m_loadEvent = boost::make_shared <LoadEvent> (boost::ref (lm), name, false);
 }
@@ -36,20 +40,24 @@ JobType Job::getType () const
 
 void Job::doJob ()
 {
-    m_loadEvent->start ();
+    m_loadEvent->reName (mName);
 
     mJob (*this);
-
-    // VFALCO TODO Isn't there a way to construct the load event with
-    //             the proper name? This way the load event object
-    //             can have the invariant "name is always set"
-    //
-    m_loadEvent->reName (mName);
 }
 
 void Job::rename (std::string const& newName)
 {
     mName = newName;
+}
+
+int Job::getLimit () const
+{
+    return m_limit;
+}
+
+LoadEvent& Job::peekEvent() const
+{
+    return *m_loadEvent;
 }
 
 const char* Job::toString (JobType t)

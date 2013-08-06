@@ -51,7 +51,7 @@
     @see GenericScopedUnlock, CriticalSection, SpinLock, ScopedLock, ScopedUnlock
 */
 template <class LockType>
-class GenericScopedLock
+class GenericScopedLock : Uncopyable
 {
 public:
     //==============================================================================
@@ -76,8 +76,6 @@ public:
 private:
     //==============================================================================
     const LockType& lock_;
-
-    BEAST_DECLARE_NON_COPYABLE (GenericScopedLock)
 };
 
 
@@ -120,7 +118,7 @@ private:
     @see GenericScopedLock, CriticalSection, ScopedLock, ScopedUnlock
 */
 template <class LockType>
-class GenericScopedUnlock
+class GenericScopedUnlock : Uncopyable
 {
 public:
     //==============================================================================
@@ -149,8 +147,6 @@ public:
 private:
     //==============================================================================
     const LockType& lock_;
-
-    BEAST_DECLARE_NON_COPYABLE (GenericScopedUnlock)
 };
 
 
@@ -190,7 +186,7 @@ private:
     @see CriticalSection::tryEnter, GenericScopedLock, GenericScopedUnlock
 */
 template <class LockType>
-class GenericScopedTryLock
+class GenericScopedTryLock : Uncopyable
 {
 public:
     //==============================================================================
@@ -224,8 +220,6 @@ private:
     //==============================================================================
     const LockType& lock_;
     const bool lockWasSuccessful;
-
-    BEAST_DECLARE_NON_COPYABLE (GenericScopedTryLock)
 };
 
 

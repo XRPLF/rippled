@@ -40,7 +40,8 @@
     @see Array, OwnedArray, ReferenceCountedArray
 */
 template <class ElementType, class TypeOfCriticalSectionToUse>
-class ArrayAllocationBase  : public TypeOfCriticalSectionToUse
+class ArrayAllocationBase
+    : public TypeOfCriticalSectionToUse
 {
 public:
     //==============================================================================
@@ -103,6 +104,8 @@ public:
     {
         if (minNumElements > numAllocated)
             setAllocatedSize ((minNumElements + minNumElements / 2 + 8) & ~7);
+
+        bassert (numAllocated <= 0 || elements != nullptr);
     }
 
     /** Minimises the amount of storage allocated so that it's no more than
@@ -124,10 +127,6 @@ public:
     //==============================================================================
     HeapBlock <ElementType> elements;
     int numAllocated;
-
-private:
-    BEAST_DECLARE_NON_COPYABLE (ArrayAllocationBase)
 };
-
 
 #endif   // BEAST_ARRAYALLOCATIONBASE_BEASTHEADER

@@ -4,24 +4,20 @@
 */
 //==============================================================================
 
-boost::recursive_mutex Log::sLock;
-
+LogFile Log::s_logFile;
+boost::recursive_mutex Log::s_lock;
 LogSeverity Log::sMinSeverity = lsINFO;
 
-std::ofstream* Log::outStream = NULL;
-boost::filesystem::path* Log::pathToLog = NULL;
-uint32 Log::logRotateCounter = 0;
-
-#ifndef LOG_MAX_MESSAGE
-#define LOG_MAX_MESSAGE (12 * 1024)
-#endif
+//------------------------------------------------------------------------------
 
 LogPartition* LogPartition::headLog = NULL;
 
-LogPartition::LogPartition (const char* name) : mNextLog (headLog), mMinSeverity (lsWARNING)
+LogPartition::LogPartition (char const* partitionName)
+    : mNextLog (headLog)
+    , mMinSeverity (lsWARNING)
 {
-    const char* ptr = strrchr (name, '/');
-    mName = (ptr == NULL) ? name : (ptr + 1);
+    const char* ptr = strrchr (partitionName, '/');
+    mName = (ptr == NULL) ? partitionName : (ptr + 1);
 
     size_t p = mName.find (".cpp");
 
@@ -40,25 +36,6 @@ std::vector< std::pair<std::string, std::string> > LogPartition::getSeverities (
 
     return sevs;
 }
-
-//------------------------------------------------------------------------------
-
-// VFALCO TODO remove original code once we know the replacement is correct.
-// Original code
-/*
-std::string ls = oss.str();
-size_t s = ls.find("\"secret\"");
-if (s != std::string::npos)
-{
-    s += 8;
-    size_t sEnd = ls.size() - 1;
-    if (sEnd > (s + 35))
-        sEnd = s + 35;
-    for (int i = s; i < sEnd; ++i)
-        ls[i] = '*';
-}
-logMsg += ls;
-*/
 
 //------------------------------------------------------------------------------
 
@@ -133,76 +110,56 @@ Log::~Log ()
 
     logMsg += replaceFirstSecretWithAsterisks (oss.str ());
 
-    if (logMsg.size () > LOG_MAX_MESSAGE)
+    if (logMsg.size () > maximumMessageCharacters)
     {
-        logMsg.resize (LOG_MAX_MESSAGE);
+        logMsg.resize (maximumMessageCharacters);
         logMsg += "...";
     }
 
-    boost::recursive_mutex::scoped_lock sl (sLock);
-
-    if (mSeverity >= sMinSeverity)
-        std::cerr << logMsg << std::endl;
-
-    if (outStream != NULL)
-        (*outStream) << logMsg << std::endl;
+    print (logMsg, mSeverity >= sMinSeverity);
 }
 
-std::string Log::rotateLog (void)
+void Log::print (std::string const& text, bool toStdErr)
 {
-    boost::recursive_mutex::scoped_lock sl (sLock);
-    boost::filesystem::path abs_path;
-    std::string abs_path_str;
+    boost::recursive_mutex::scoped_lock sl (s_lock);
 
-    uint32 failsafe = 0;
+    // Does nothing if not open.
+    s_logFile.writeln (text);
 
-    std::string abs_new_path_str;
-
-    do
+    if (toStdErr)
     {
-        std::string s;
-        std::stringstream out;
-
-        failsafe++;
-
-        if (failsafe == std::numeric_limits<uint32>::max ())
+#if BEAST_MSVC
+        if (beast_isRunningUnderDebugger ())
         {
-            return "unable to create new log file; too many log files!";
+            // Send it to the attached debugger's Output window
+            //
+            Logger::outputDebugString (text);
         }
-
-        abs_path        = boost::filesystem::absolute ("");
-        abs_path        /= *pathToLog;
-        abs_path_str    = abs_path.parent_path ().string ();
-
-        out << logRotateCounter;
-        s = out.str ();
-
-        abs_new_path_str = abs_path_str + "/" + s + "_" + pathToLog->filename ().string ();
-
-        logRotateCounter++;
-
+        else
+#endif
+        {
+            std::cerr << text << std::endl;
+        }
     }
-    while (boost::filesystem::exists (boost::filesystem::path (abs_new_path_str)));
+}
 
-    outStream->close ();
+std::string Log::rotateLog ()
+{
+    bool const wasOpened = s_logFile.closeAndReopen ();
 
-    try
+    if (wasOpened)
     {
-        boost::filesystem::rename (abs_path, boost::filesystem::path (abs_new_path_str));
+        return "The log file was closed and reopened.";
     }
-    catch (...)
+    else
     {
-        // unable to rename existing log file
+        return "The log file could not be closed and reopened.";
     }
-
-    setLogFile (*pathToLog);
-
-    return abs_new_path_str;
 }
 
 void Log::setMinSeverity (LogSeverity s, bool all)
 {
-    boost::recursive_mutex::scoped_lock sl (sLock);
+    boost::recursive_mutex::scoped_lock sl (s_lock);
 
     sMinSeverity = s;
 
@@ -212,7 +169,7 @@ void Log::setMinSeverity (LogSeverity s, bool all)
 
 LogSeverity Log::getMinSeverity ()
 {
-    boost::recursive_mutex::scoped_lock sl (sLock);
+    boost::recursive_mutex::scoped_lock sl (s_lock);
 
     return sMinSeverity;
 }
@@ -270,28 +227,11 @@ LogSeverity Log::stringToSeverity (const std::string& s)
 
 void Log::setLogFile (boost::filesystem::path const& path)
 {
-    std::ofstream* newStream = new std::ofstream (path.c_str (), std::fstream::app);
+    bool const wasOpened = s_logFile.open (path.c_str ());
 
-    if (!newStream->good ())
+    if (! wasOpened)
     {
         Log (lsFATAL) << "Unable to open logfile " << path;
-        delete newStream;
-        newStream = NULL;
-    }
-
-    boost::recursive_mutex::scoped_lock sl (sLock);
-
-    if (outStream != NULL)
-        delete outStream;
-
-    outStream = newStream;
-
-    if (pathToLog != &path)
-    {
-        if (pathToLog != NULL)
-            delete pathToLog;
-
-        pathToLog = new boost::filesystem::path (path);
     }
 }
 

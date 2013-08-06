@@ -20,6 +20,9 @@
 # Undefined sections are reserved.
 # No escapes are currently defined.
 #
+# IMPORTANT: Please remove these comments before publishing this file. Doing so
+# makes the file much more readable to humans trying to find info on your site. 
+#
 # [expires]
 #   Number of days after which this file should be considered expire.  Clients
 #   are expected to check this file when they have cause to believe it has
@@ -101,6 +104,11 @@
 #
 # [currencies]:
 #   This section allows a site to declare currencies it currently issues.
+#
+#   Examples: (multiple allowed one per line)
+#    USD
+#    BTC
+#    LTC
 #
 
 [validation_public_key]

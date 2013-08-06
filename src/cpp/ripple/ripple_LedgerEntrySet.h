@@ -36,6 +36,8 @@ class LedgerEntrySetEntry
     : public CountedObject <LedgerEntrySetEntry>
 {
 public:
+    static char const* getCountedObjectName () { return "LedgerEntrySetEntry"; }
+
     SLE::pointer        mEntry;
     LedgerEntryAction   mAction;
     int                 mSeq;
@@ -60,6 +62,8 @@ class LedgerEntrySet
     : public CountedObject <LedgerEntrySet>
 {
 public:
+    static char const* getCountedObjectName () { return "LedgerEntrySet"; }
+
     LedgerEntrySet (Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) :
         mLedger (ledger), mParams (tep), mSeq (0), mImmutable (immutable)
     {
@@ -263,17 +267,5 @@ inline LedgerEntrySet::iterator range_end (LedgerEntrySet& x)
 {
     return x.end ();
 }
-namespace boost
-{
-template<> struct range_mutable_iterator<LedgerEntrySet>
-{
-    typedef LedgerEntrySet::iterator type;
-};
-template<> struct range_const_iterator<LedgerEntrySet>
-{
-    typedef LedgerEntrySet::const_iterator type;
-};
-}
 
 #endif
-// vim:ts=4

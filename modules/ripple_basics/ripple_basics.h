@@ -20,43 +20,41 @@
 #ifndef RIPPLE_BASICS_RIPPLEHEADER
 #define RIPPLE_BASICS_RIPPLEHEADER
 
-#include <algorithm>
-#include <cassert>
-#include <climits>
-#include <cstdio>
-#include <cstring>
-#include <ctime>
-#include <functional>
-#include <limits>
-#include <list>
-#include <sstream>
-#include <string>
-#include <vector>
+#include "system/ripple_StandardIncludes.h"
 
-#include <boost/version.hpp>
-#if BOOST_VERSION < 104700
-#error Ripple requires Boost version 1.47 or later
+// This must come before Boost, to fix the boost placeholders problem
+#include "beast/modules/beast_basics/beast_basics.h"
+
+#include "system/ripple_BoostIncludes.h"
+
+#include "system/ripple_OpenSSLIncludes.h"
+
+//------------------------------------------------------------------------------
+
+// From
+// http://stackoverflow.com/questions/4682343/how-to-resolve-conflict-between-boostshared-ptr-and-using-stdshared-ptr
+//
+#if __cplusplus > 201100L
+namespace boost
+{
+    template <class T>
+    const T* get_pointer (std::shared_ptr<T> const& ptr)
+    {
+        return ptr.get();
+    }
+
+    template <class T>
+    T* get_pointer (std::shared_ptr<T>& ptr)
+    {
+        return ptr.get();
+    }
+}
 #endif
 
-// VFALCO TODO Move all boost includes into ripple_BoostHeaders.h
-//
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/function.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/ref.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/recursive_mutex.hpp>
-#include <boost/unordered_map.hpp>
+//------------------------------------------------------------------------------
 
 // ByteOrder
-#ifdef WIN32
+#if BEAST_WIN32
 // (nothing)
 #elif __APPLE__
 # include <libkern/OSByteOrder.h>
@@ -66,23 +64,16 @@
 # include <sys/types.h>
 #endif
 
-#include <openssl/dh.h> // for DiffieHellmanUtil
-#include <openssl/ripemd.h> // For HashUtilities
-#include <openssl/sha.h> // For HashUtilities
-
-#include "BeastConfig.h" // Must come before any Beast includes
-
-#include "modules/beast_core/beast_core.h"
-#include "modules/beast_basics/beast_basics.h"
+#include "beast/modules/beast_core/beast_core.h"
 
 #include "../ripple_json/ripple_json.h"
 
-#if RIPPLE_USE_NAMESPACE
 namespace ripple
 {
-#endif
 
-#include "utility/ripple_IntegerTypes.h" // must come first
+using namespace beast;
+
+#include "utility/ripple_LogFile.h"
 #include "utility/ripple_Log.h" // Needed by others
 
 #include "types/ripple_BasicTypes.h"
@@ -108,8 +99,6 @@ namespace ripple
 #include "containers/ripple_SecureAllocator.h"
 #include "containers/ripple_TaggedCache.h"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
 
 #endif

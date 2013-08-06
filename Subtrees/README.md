@@ -10,9 +10,11 @@ http://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/ <b
 
 ## LevelDB
 
+Ripple's fork of LevelDB is shared by the Bitcoin reference client project.
+
 Repository <br>
 ```
-git@github.com:vinniefalco/LevelDB.git
+git@github.com:ripple/LevelDB.git
 ```
 Branch
 ```
@@ -21,9 +23,11 @@ ripple-fork
 
 ## websocket
 
+Ripple's fork of websocketpp has some incompatible changes and Ripple specific includes.
+
 Repository
 ```
-git@github.com:vinniefalco/websocketpp.git
+git@github.com:ripple/websocketpp.git
 ```
 Branch
 ```
@@ -32,9 +36,12 @@ ripple-fork
 
 ## protobuf
 
+Ripple's fork of protobuf doesn't have any actual changes, but since the upstream
+repository uses SVN, we have created a Git version to use with the git-subtree command.
+
 Repository
 ```
-git@github.com:vinniefalco/protobuf.git
+git@github.com:ripple/protobuf.git
 ```
 Branch
 ```

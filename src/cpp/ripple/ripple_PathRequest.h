@@ -10,8 +10,6 @@
 // A pathfinding request submitted by a client
 // The request issuer must maintain a strong pointer
 
-class InfoSub;
-class STAmount;
 class RippleLineCache;
 
 // Return values from parseJson <0 = invalid, >0 = valid

@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_H
-#define RIPPLE_TYPES_H
+#ifndef RIPPLE_BASICTYPES_H
+#define RIPPLE_BASICTYPES_H
 
 /** Storage for linear binary data.
 

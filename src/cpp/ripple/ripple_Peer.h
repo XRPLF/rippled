@@ -4,25 +4,21 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEER_H
-#define RIPPLE_PEER_H
+#ifndef RIPPLE_PEER_H_INCLUDED
+#define RIPPLE_PEER_H_INCLUDED
 
 // VFALCO TODO Couldn't this be a struct?
-typedef std::pair <std::string, int> ipPort;
+typedef std::pair <std::string, int> IPAndPortNumber;
 
-class Peer : public boost::enable_shared_from_this <Peer>
+/** Represents a peer connection in the overlay.
+*/
+class Peer
+    : public boost::enable_shared_from_this <Peer>
+    , LeakChecked <Peer>
 {
 public:
-    typedef boost::shared_ptr<Peer>         pointer;
-    typedef const boost::shared_ptr<Peer>&  ref;
-
-    static int const psbGotHello        = 0;
-    static int const psbSentHello       = 1;
-    static int const psbInMap           = 2;
-    static int const psbTrusted         = 3;
-    static int const psbNoLedgers       = 4;
-    static int const psbNoTransactions  = 5;
-    static int const psbDownLevel       = 6;
+    typedef boost::shared_ptr <Peer> pointer;
+    typedef pointer const& ref;
 
 public:
     static pointer New (boost::asio::io_service& io_service,
@@ -34,7 +30,7 @@ public:
     virtual void handleConnect (const boost::system::error_code& error,
                                 boost::asio::ip::tcp::resolver::iterator it) = 0;
 
-    virtual std::string& getIP () = 0;
+    virtual std::string const& getIP () = 0;
 
     virtual std::string getDisplayName () = 0;
 
@@ -50,9 +46,6 @@ public:
 
     virtual void detach (const char*, bool onIOStrand) = 0;
 
-    //virtual bool samePeer (Peer::ref p) = 0;
-    //virtual bool samePeer (const Peer& p) = 0;
-
     virtual void sendPacket (const PackedMessage::pointer& packet, bool onStrand) = 0;
 
     virtual void sendGetPeers () = 0;
@@ -60,11 +53,18 @@ public:
     virtual void applyLoadCharge (LoadType) = 0;
 
     // VFALCO NOTE what's with this odd parameter passing? Why the static member?
-    static void applyLoadCharge (const boost::weak_ptr<Peer>&, LoadType);
+    //
+    /** Adjust this peer's load balance based on the type of load imposed.
+
+        @note Formerly named punishPeer
+    */
+    static void applyLoadCharge (boost::weak_ptr <Peer>& peerTOCharge, LoadType loadThatWasImposed);
 
     virtual Json::Value getJson () = 0;
 
     virtual bool isConnected () const = 0;
+
+    virtual bool isInCluster () const = 0;
 
     virtual bool isInbound () const = 0;
 
@@ -88,4 +88,3 @@ public:
 };
 
 #endif
-// vim:ts=4

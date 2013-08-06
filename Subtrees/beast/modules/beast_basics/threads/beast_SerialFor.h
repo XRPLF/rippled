@@ -31,7 +31,7 @@
 
     @ingroup beast_core
 */
-class SerialFor : Uncopyable
+class BEAST_API SerialFor : Uncopyable
 {
 public:
     /** Create a serial for loop.

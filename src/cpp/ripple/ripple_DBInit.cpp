@@ -250,6 +250,7 @@ const char* WalletDBInit[] =
     // Score:
     //  Computed trust score.  Higher is better.
     // Source:
+    //  'C' = Configuration file
     //  'V' = Validation file
     //  'M' = Manually added.
     //  'I' = Inbound connection.

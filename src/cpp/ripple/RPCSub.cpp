@@ -75,7 +75,7 @@ void RPCSub::sendThread ()
                 WriteLog (lsINFO, RPCSub) << boost::str (boost::format ("callRPC calling: %s") % mIp);
 
                 callRPC (
-                    theApp->getIOService (),
+                    getApp().getIOService (),
                     mIp, mPort,
                     mUsername, mPassword,
                     mPath, "event",
@@ -112,7 +112,7 @@ void RPCSub::send (const Json::Value& jvObj, bool broadcast)
         mSending    = true;
 
         WriteLog (lsINFO, RPCSub) << boost::str (boost::format ("callRPC start"));
-        boost::thread (boost::bind (&RPCSub::sendThread, this)).detach ();
+        boost::thread (BIND_TYPE (&RPCSub::sendThread, this)).detach ();
     }
 }
 

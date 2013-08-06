@@ -723,6 +723,8 @@ public:
 
     STAmount getRound () const;
     void roundSelf ();
+    
+    static void canonicalizeRound (bool isNative, uint64& value, int& offset, bool roundUp);
 
 private:
     template <class Iterator>

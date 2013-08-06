@@ -4,7 +4,9 @@
 */
 //==============================================================================
 
-#if !defined(WIN32) && !defined(WIN64)
+// VFALCO TODO Replace these with something more robust and without macros.
+//
+#if ! BEAST_MSVC
 #define _vsnprintf(a,b,c,d) vsnprintf(a,b,c,d)
 #endif
 
@@ -186,6 +188,7 @@ extern std::string urlEncode (const std::string& strSrc)
 // IP Port parsing
 //
 // <-- iPort: "" = -1
+// VFALCO TODO Make this not require boost... and especially boost::asio
 bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort)
 {
     boost::smatch   smMatch;
@@ -233,10 +236,10 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
         boost::algorithm::to_lower (strScheme);
 
         iPort   = strPort.empty () ? -1 : lexical_cast_s<int> (strPort);
-        // std::cerr << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPort << "' : " << iPort << " : '" << strPath << "'" << std::endl;
+        // Log::out() << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPort << "' : " << iPort << " : '" << strPath << "'";
     }
 
-    // std::cerr << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPath << "'" << std::endl;
+    // Log::out() << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPath << "'";
 
     return bMatch;
 }
@@ -260,52 +263,50 @@ bool parseQuality (const std::string& strSource, uint32& uQuality)
     return !!uQuality;
 }
 
-BOOST_AUTO_TEST_SUITE ( Utils)
-
-BOOST_AUTO_TEST_CASE ( ParseUrl )
+std::string addressToString (void const* address)
 {
-    std::string strScheme;
-    std::string strDomain;
-    int         iPort;
-    std::string strPath;
-
-    if (!parseUrl ("lower://domain", strScheme, strDomain, iPort, strPath))
-        BOOST_FAIL ("parseUrl: lower://domain failed");
-
-    if (strScheme != "lower")
-        BOOST_FAIL ("parseUrl: lower://domain : scheme failed");
-
-    if (strDomain != "domain")
-        BOOST_FAIL ("parseUrl: lower://domain : domain failed");
-
-    if (iPort != -1)
-        BOOST_FAIL ("parseUrl: lower://domain : port failed");
-
-    if (strPath != "")
-        BOOST_FAIL ("parseUrl: lower://domain : path failed");
-
-    if (!parseUrl ("UPPER://domain:234/", strScheme, strDomain, iPort, strPath))
-        BOOST_FAIL ("parseUrl: UPPER://domain:234/ failed");
-
-    if (strScheme != "upper")
-        BOOST_FAIL ("parseUrl: UPPER://domain:234/ : scheme failed");
-
-    if (iPort != 234)
-        BOOST_FAIL (boost::str (boost::format ("parseUrl: UPPER://domain:234/ : port failed: %d") % iPort));
-
-    if (strPath != "/")
-        BOOST_FAIL ("parseUrl: UPPER://domain:234/ : path failed");
-
-    if (!parseUrl ("Mixed://domain/path", strScheme, strDomain, iPort, strPath))
-        BOOST_FAIL ("parseUrl: Mixed://domain/path failed");
-
-    if (strScheme != "mixed")
-        BOOST_FAIL ("parseUrl: Mixed://domain/path tolower failed");
-
-    if (strPath != "/path")
-        BOOST_FAIL ("parseUrl: Mixed://domain/path path failed");
+    // VFALCO TODO Clean this up, use uintptr_t and only produce a 32 bit
+    //             output on 32 bit platforms
+    //
+    return strHex (static_cast <char const*> (address) - static_cast <char const*> (0));
 }
 
-BOOST_AUTO_TEST_SUITE_END ()
+StringPairArray parseKeyValueParameters (String parameters, beast_wchar delimiter)
+{
+    StringPairArray keyValues;
 
-// vim:ts=4
+    while (parameters.isNotEmpty ())
+    {
+        String pair;
+
+        {
+            int const delimiterPos = parameters.indexOfChar (delimiter);
+
+            if (delimiterPos != -1)
+            {
+                pair = parameters.substring (0, delimiterPos);
+
+                parameters = parameters.substring (delimiterPos + 1);
+            }
+            else
+            {
+                pair = parameters;
+
+                parameters = String::empty;
+            }
+        }
+
+        int const equalPos = pair.indexOfChar ('=');
+
+        if (equalPos != -1)
+        {
+            String const key = pair.substring (0, equalPos);
+            String const value = pair.substring (equalPos + 1, pair.length ());
+
+            keyValues.set (key, value);
+        }
+    }
+
+    return keyValues;
+}
+

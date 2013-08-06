@@ -25,12 +25,17 @@ JobQueue::JobQueue (boost::asio::io_service& svc)
     mJobLoads [ jtPROPOSAL_t    ].setTargetLatency (100, 500);
 
     mJobLoads [ jtCLIENT        ].setTargetLatency (2000, 5000);
-    mJobLoads [ jtPEER          ].setTargetLatency (200, 1250);
+    mJobLoads [ jtPEER          ].setTargetLatency (200, 2500);
     mJobLoads [ jtDISK          ].setTargetLatency (500, 1000);
     mJobLoads [ jtACCEPTLEDGER  ].setTargetLatency (1000, 2500);
 }
 
 void JobQueue::addJob (JobType type, const std::string& name, const FUNCTION_TYPE<void (Job&)>& jobFunc)
+{
+    addLimitJob(type, name, 0, jobFunc);
+}
+
+void JobQueue::addLimitJob (JobType type, const std::string& name, int limit, const FUNCTION_TYPE<void (Job&)>& jobFunc)
 {
     assert (type != jtINVALID);
 
@@ -39,7 +44,9 @@ void JobQueue::addJob (JobType type, const std::string& name, const FUNCTION_TYP
     if (type != jtCLIENT) // FIXME: Workaround incorrect client shutdown ordering
         assert (mThreadCount != 0); // do not add jobs to a queue with no threads
 
-    mJobSet.insert (Job (type, name, ++mLastJob, mJobLoads[type], jobFunc));
+    std::pair< std::set <Job>::iterator, bool > it =
+        mJobSet.insert (Job (type, name, limit, ++mLastJob, mJobLoads[type], jobFunc));
+    it.first->peekEvent().start(); // start timing how long it stays in the queue
     ++mJobCounts[type].first;
     mJobCond.notify_one ();
 }
@@ -232,6 +239,37 @@ void JobQueue::setThreadCount (int c, bool const standaloneMode)
     mJobCond.notify_one (); // in case we sucked up someone else's signal
 }
 
+bool JobQueue::getJob(Job& job)
+{
+    if (mJobSet.empty() || mShuttingDown)
+        return false;
+
+    std::set<Job>::iterator it = mJobSet.begin ();
+
+    while (1)
+    {
+        // Are we out of jobs?
+        if (it == mJobSet.end())
+            return false;
+
+        // Does this job have no limit?
+        if (it->getLimit() == 0)
+            break;
+
+        // Is this job category below the limit?
+        if (mJobCounts[it->getType()].second < it->getLimit())
+            break;
+
+        // Try the next job, if any
+        ++it;
+    }
+
+    job = *it;
+    mJobSet.erase (it);
+
+    return true;
+}
+
 // do jobs until asked to stop
 void JobQueue::threadEntry ()
 {
@@ -239,27 +277,32 @@ void JobQueue::threadEntry ()
 
     while (1)
     {
+        JobType type;
+
         setCallingThreadName ("waiting");
 
-        while (mJobSet.empty () && !mShuttingDown)
         {
-            mJobCond.wait (sl);
-        }
-
-        if (mJobSet.empty ())
-            break;
-
-        JobType type;
-        std::set<Job>::iterator it = mJobSet.begin ();
-        {
-            Job job (*it);
-            mJobSet.erase (it);
+            Job job;
+            while (!getJob(job))
+            {
+                if (mShuttingDown)
+                {
+                    --mThreadCount;
+                    mJobCond.notify_all();
+                    return;
+                }
+                mJobCond.wait (sl);
+            }
 
             type = job.getType ();
             -- (mJobCounts[type].first);
 
             if (type == jtDEATH)
-                break;
+            {
+                --mThreadCount;
+                mJobCond.notify_all();
+                return;
+            }
 
             ++ (mJobCounts[type].second);
             sl.unlock ();
@@ -267,12 +310,10 @@ void JobQueue::threadEntry ()
             WriteLog (lsTRACE, JobQueue) << "Doing " << Job::toString (type) << " job";
             job.doJob ();
         } // must destroy job without holding lock
+
         sl.lock ();
         -- (mJobCounts[type].second);
     }
-
-    --mThreadCount;
-    mJobCond.notify_all ();
 }
 
 // vim:ts=4

@@ -7,7 +7,7 @@
 #ifndef RIPPLE_PROOFOFWORK_H
 #define RIPPLE_PROOFOFWORK_H
 
-class ProofOfWork
+class ProofOfWork : LeakChecked <ProofOfWork>
 {
 public:
     static const int sMaxDifficulty;

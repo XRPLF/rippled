@@ -65,7 +65,7 @@ inline Type* createCopyIfNotNull (const Type* pointer)     { return pointer != n
  /** A handy C++ wrapper that creates and deletes an NSAutoreleasePool object using RAII.
      You should use the BEAST_AUTORELEASEPOOL macro to create a local auto-release pool on the stack.
  */
- class BEAST_API ScopedAutoReleasePool
+ class BEAST_API ScopedAutoReleasePool : Uncopyable
  {
  public:
      ScopedAutoReleasePool();
@@ -73,8 +73,6 @@ inline Type* createCopyIfNotNull (const Type* pointer)     { return pointer != n
 
  private:
      void* pool;
-
-     BEAST_DECLARE_NON_COPYABLE (ScopedAutoReleasePool)
  };
 
  /** A macro that can be used to easily declare a local ScopedAutoReleasePool
@@ -92,30 +90,5 @@ inline Type* createCopyIfNotNull (const Type* pointer)     { return pointer != n
  #define BEAST_AUTORELEASEPOOL
 #endif
 
-//==============================================================================
-/* In a Windows DLL build, we'll expose some malloc/free functions that live inside the DLL, and use these for
-   allocating all the objects - that way all beast objects in the DLL and in the host will live in the same heap,
-   avoiding problems when an object is created in one module and passed across to another where it is deleted.
-   By piggy-backing on the BEAST_LEAK_DETECTOR macro, these allocators can be injected into most beast classes.
-*/
-#if BEAST_MSVC && (defined (BEAST_DLL) || defined (BEAST_DLL_BUILD)) && ! (BEAST_DISABLE_DLL_ALLOCATORS || DOXYGEN)
- extern BEAST_API void* beastDLL_malloc (size_t);
- extern BEAST_API void  beastDLL_free (void*);
-
- #define BEAST_LEAK_DETECTOR(OwnerClass)  public:\
-    static void* operator new (size_t sz)           { return beast::beastDLL_malloc (sz); } \
-    static void* operator new (size_t, void* p)     { return p; } \
-    static void operator delete (void* p)           { beast::beastDLL_free (p); } \
-    static void operator delete (void*, void*)      {}
 #endif
 
-//==============================================================================
-/** (Deprecated) This was a Windows-specific way of checking for object leaks - now please
-    use the BEAST_LEAK_DETECTOR instead.
-*/
-#ifndef beast_UseDebuggingNewOperator
- #define beast_UseDebuggingNewOperator
-#endif
-
-
-#endif   // BEAST_MEMORY_BEASTHEADER

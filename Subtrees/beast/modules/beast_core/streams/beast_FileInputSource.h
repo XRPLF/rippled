@@ -34,7 +34,10 @@
 
     @see InputSource
 */
-class BEAST_API FileInputSource     : public InputSource
+class BEAST_API FileInputSource
+    : public InputSource
+    , LeakChecked <FileInputSource>
+    , Uncopyable
 {
 public:
     //==============================================================================
@@ -56,8 +59,6 @@ private:
     //==============================================================================
     const File file;
     bool useFileTimeInHashGeneration;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FileInputSource)
 };
 
 

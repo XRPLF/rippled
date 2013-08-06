@@ -82,7 +82,7 @@ namespace HeapBlockHelper
     @see Array, OwnedArray, MemoryBlock
 */
 template <class ElementType, bool throwOnFailure = false>
-class HeapBlock
+class HeapBlock : Uncopyable
 {
 public:
     //==============================================================================
@@ -294,7 +294,6 @@ private:
     }
 
    #if ! (defined (BEAST_DLL) || defined (BEAST_DLL_BUILD))
-    BEAST_DECLARE_NON_COPYABLE (HeapBlock)
     BEAST_PREVENT_HEAP_ALLOCATION // Creating a 'new HeapBlock' would be missing the point!
    #endif
 };

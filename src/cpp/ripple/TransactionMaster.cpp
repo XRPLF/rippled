@@ -49,7 +49,7 @@ SerializedTransaction::pointer TransactionMaster::fetch (SHAMapItem::ref item, S
         bool checkDisk, uint32 uCommitLedger)
 {
     SerializedTransaction::pointer  txn;
-    Transaction::pointer            iTx = theApp->getMasterTransaction ().fetch (item->getTag (), false);
+    Transaction::pointer            iTx = getApp().getMasterTransaction ().fetch (item->getTag (), false);
 
     if (!iTx)
     {
@@ -80,7 +80,7 @@ SerializedTransaction::pointer TransactionMaster::fetch (SHAMapItem::ref item, S
     return txn;
 }
 
-bool TransactionMaster::canonicalize (Transaction::pointer& txn, bool may_be_new)
+bool TransactionMaster::canonicalize (Transaction::pointer& txn)
 {
     uint256 tid = txn->getID ();
 
@@ -89,9 +89,6 @@ bool TransactionMaster::canonicalize (Transaction::pointer& txn, bool may_be_new
 
     if (mCache.canonicalize (tid, txn))
         return true;
-
-    if (may_be_new)
-        txn->save ();
 
     return false;
 }

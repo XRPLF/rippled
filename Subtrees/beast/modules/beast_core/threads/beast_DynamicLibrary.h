@@ -31,7 +31,7 @@
     Since the DLL is freed when this object is deleted, it's handy for managing
     library lifetimes using RAII.
 */
-class BEAST_API DynamicLibrary
+class BEAST_API DynamicLibrary : LeakChecked <DynamicLibrary>, Uncopyable
 {
 public:
     /** Creates an unopened DynamicLibrary object.
@@ -72,8 +72,6 @@ public:
 
 private:
     void* handle;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DynamicLibrary)
 };
 
 

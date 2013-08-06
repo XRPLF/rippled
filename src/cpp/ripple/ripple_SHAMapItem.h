@@ -12,6 +12,8 @@ class SHAMapItem
     : public CountedObject <SHAMapItem>
 {
 public:
+    static char const* getCountedObjectName () { return "SHAMapItem"; }
+
     typedef boost::shared_ptr<SHAMapItem>           pointer;
     typedef const boost::shared_ptr<SHAMapItem>&    ref;
 

@@ -41,7 +41,7 @@
 
     It can also guess how far it's got using a wildly inaccurate algorithm.
 */
-class BEAST_API DirectoryIterator
+class BEAST_API DirectoryIterator : LeakChecked <DirectoryIterator>, Uncopyable
 {
 public:
     //==============================================================================
@@ -116,7 +116,7 @@ public:
 
 private:
     //==============================================================================
-    class NativeIterator
+    class NativeIterator : LeakChecked <NativeIterator>, Uncopyable
     {
     public:
         NativeIterator (const File& directory, const String& wildCard);
@@ -132,8 +132,6 @@ private:
         friend class DirectoryIterator;
         friend class ScopedPointer<Pimpl>;
         ScopedPointer<Pimpl> pimpl;
-
-        BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NativeIterator)
     };
 
     friend class ScopedPointer<NativeIterator::Pimpl>;
@@ -147,8 +145,6 @@ private:
     bool hasBeenAdvanced;
     ScopedPointer <DirectoryIterator> subIterator;
     File currentFile;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DirectoryIterator)
 };
 
 #endif   // BEAST_DIRECTORYITERATOR_BEASTHEADER

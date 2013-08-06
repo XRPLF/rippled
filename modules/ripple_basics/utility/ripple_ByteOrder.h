@@ -11,8 +11,7 @@
 
 // Reference: http://www.mail-archive.com/licq-commits@googlegroups.com/msg02334.html
 
-// VFALCO TODO use BEAST_* platform macros instead of hard-coded compiler specific ones
-#ifdef WIN32
+#if BEAST_WIN32
 extern uint64_t htobe64 (uint64_t value);
 extern uint64_t be64toh (uint64_t value);
 extern uint32_t htobe32 (uint32_t value);

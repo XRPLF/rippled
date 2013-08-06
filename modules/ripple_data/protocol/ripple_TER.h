@@ -150,6 +150,7 @@ enum TER    // aka TransactionEngineResult
     tecUNFUNDED                 = 129,  // Deprecated, old ambiguous unfunded.
     tecMASTER_DISABLED          = 130,
     tecNO_REGULAR_KEY           = 131,
+    tecOWNERS                   = 132,
 };
 
 // VFALCO TODO change these to normal functions.

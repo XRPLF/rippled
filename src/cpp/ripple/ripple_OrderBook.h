@@ -10,7 +10,7 @@
 
 /** Describes a serialized ledger entry for an order book.
 */
-class OrderBook
+class OrderBook : LeakChecked <OrderBook>
 {
 public:
     typedef boost::shared_ptr <OrderBook> pointer;

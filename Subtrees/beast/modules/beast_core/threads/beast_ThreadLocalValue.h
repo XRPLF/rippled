@@ -51,7 +51,7 @@
     is deleted.
 */
 template <typename Type>
-class ThreadLocalValue
+class ThreadLocalValue : Uncopyable
 {
 public:
     /** */
@@ -170,7 +170,7 @@ public:
 private:
     //==============================================================================
    #if BEAST_NO_COMPILER_THREAD_LOCAL
-    struct ObjectHolder
+    struct ObjectHolder : Uncopyable
     {
         ObjectHolder (const Thread::ThreadID& tid)
             : threadId (tid), object()
@@ -179,15 +179,11 @@ private:
         Thread::ThreadID threadId;
         ObjectHolder* next;
         Type object;
-
-        BEAST_DECLARE_NON_COPYABLE (ObjectHolder)
     };
 
     mutable Atomic<ObjectHolder*> first;
     SpinLock lock;
    #endif
-
-    BEAST_DECLARE_NON_COPYABLE (ThreadLocalValue)
 };
 
 

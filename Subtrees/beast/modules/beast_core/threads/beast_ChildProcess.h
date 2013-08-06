@@ -32,7 +32,7 @@
     This class lets you launch an executable, and read its output. You can also
     use it to check whether the child process has finished.
 */
-class BEAST_API ChildProcess
+class BEAST_API ChildProcess : LeakChecked <ChildProcess>, Uncopyable
 {
 public:
     //==============================================================================
@@ -92,8 +92,6 @@ private:
     class ActiveProcess;
     friend class ScopedPointer<ActiveProcess>;
     ScopedPointer<ActiveProcess> activeProcess;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChildProcess)
 };
 
 

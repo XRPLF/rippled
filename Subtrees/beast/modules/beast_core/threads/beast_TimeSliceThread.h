@@ -79,7 +79,9 @@ private:
 
     @see TimeSliceClient, Thread
 */
-class BEAST_API TimeSliceThread   : public Thread
+class BEAST_API TimeSliceThread
+    : public Thread 
+    , LeakChecked <TimeSliceThread>
 {
 public:
     //==============================================================================
@@ -139,8 +141,6 @@ private:
     TimeSliceClient* clientBeingCalled;
 
     TimeSliceClient* getNextClient (int index) const;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TimeSliceThread)
 };
 
 

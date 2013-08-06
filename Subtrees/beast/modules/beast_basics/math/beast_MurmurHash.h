@@ -22,7 +22,7 @@
 
 // Original source code links in .cpp file
 
-// This file depends on some Juce declarations and defines
+// This file depends on some Beast declarations and defines
 
 namespace Murmur
 {
@@ -31,7 +31,7 @@ extern void MurmurHash3_x86_32  (const void* key, int len, uint32 seed, void* ou
 extern void MurmurHash3_x86_128 (const void* key, int len, uint32 seed, void* out);
 extern void MurmurHash3_x64_128 (const void* key, int len, uint32 seed, void* out);
 
-// Uses Juce to choose an appropriate routine
+// Uses Beast to choose an appropriate routine
 
 // This handy template deduces which size hash is desired
 template <typename HashType>
@@ -44,15 +44,15 @@ inline void Hash (const void* key, int len, uint32 seed, HashType* out)
         break;
 
 #if BEAST_64BIT
-
     case 128:
         MurmurHash3_x64_128 (key, len, seed, out);
         break;
-#else
 
+#else
     case 128:
         MurmurHash3_x86_128 (key, len, seed, out);
         break;
+
 #endif
 
     default:

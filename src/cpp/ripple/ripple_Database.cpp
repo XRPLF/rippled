@@ -4,11 +4,10 @@
 */
 //==============================================================================
 
-Database::Database (const char* host, const char* user, const char* pass) : mNumCol (0)
+Database::Database (const char* host)
+    : mNumCol (0)
 {
-    mDBPass = pass;
     mHost   = host;
-    mUser   = user;
 }
 
 Database::~Database ()

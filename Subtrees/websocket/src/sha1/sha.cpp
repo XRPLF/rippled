@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#ifdef WIN32
+#if BEAST_WIN32
 #include <io.h>
 #endif
 #include <fcntl.h>
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 
         if (argc == 1 || !strcmp(argv[i],"-"))
         {
-#ifdef WIN32
+#if BEAST_WIN32
             _setmode(_fileno(stdin), _O_BINARY);
 #endif
             fp = stdin;

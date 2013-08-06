@@ -6,6 +6,10 @@
 
 SETUP_LOG (RangeSet)
 
+// VFALCO NOTE std::min and std::max not good enough?
+//        NOTE Why isn't this written as a template?
+//        TODO Replace this with std calls.
+//
 inline uint32 min (uint32 x, uint32 y)
 {
     return (x < y) ? x : y;
@@ -30,7 +34,7 @@ uint32 RangeSet::getFirst () const
     const_iterator it = mRanges.begin ();
 
     if (it == mRanges.end ())
-        return RangeSetAbsent;
+        return absent;
 
     return it->first;
 }
@@ -45,7 +49,7 @@ uint32 RangeSet::getNext (uint32 v) const
         if (contains (it, v + 1))
             return v + 1;
     }
-    return RangeSetAbsent;
+    return absent;
 }
 
 uint32 RangeSet::getLast () const
@@ -53,7 +57,7 @@ uint32 RangeSet::getLast () const
     const_reverse_iterator it = mRanges.rbegin ();
 
     if (it == mRanges.rend ())
-        return RangeSetAbsent;
+        return absent;
 
     return it->second;
 }
@@ -66,30 +70,39 @@ uint32 RangeSet::getPrev (uint32 v) const
             return it.second;
 
         if (contains (it, v + 1))
+            return v - 1;
     }
-    return RangeSetAbsent;
+    return absent;
 }
 
+// Return the largest number not in the set that is less than the given number
+//
 uint32 RangeSet::prevMissing (uint32 v) const
 {
-    // largest number not in the set that is less than the given number
+    uint32 result = absent;
 
-    // Nothing before zero
-    if (v == 0)
-        return RangeSetAbsent;
-
-    BOOST_FOREACH (const value_type & it, mRanges)
+    if (v != 0)
     {
-        if (contains (it, v - 1))
-        { // We have (v-1) in the set
-            if (it.first == 0)
-                return RangeSetAbent;
-            return it.first - 1;
+        checkInternalConsistency ();
+
+        // Handle the case where the loop reaches the terminating condition
+        //
+        result = v - 1;
+
+        for (const_reverse_iterator cur = mRanges.rbegin (); cur != mRanges.rend (); ++cur)
+        {
+            // See if v-1 is in the range
+            if (contains (*cur, result))
+            {
+                result = cur->first - 1;
+                break;
+            }
         }
     }
 
-    // We don't have (v-1), so v-1 is it
-    return v - 1;
+    bassert (result == absent || !hasValue (result));
+
+    return result;
 }
 
 void RangeSet::setValue (uint32 v)
@@ -97,6 +110,7 @@ void RangeSet::setValue (uint32 v)
     if (!hasValue (v))
     {
         mRanges[v] = v;
+        
         simplify ();
     }
 }
@@ -112,6 +126,7 @@ void RangeSet::setRange (uint32 minV, uint32 maxV)
     }
 
     mRanges[minV] = maxV;
+
     simplify ();
 }
 
@@ -124,7 +139,9 @@ void RangeSet::clearValue (uint32 v)
             if (it->first == v)
             {
                 if (it->second == v)
+                {
                     mRanges.erase (it);
+                }
                 else
                 {
                     uint32 oldEnd = it->second;
@@ -133,7 +150,9 @@ void RangeSet::clearValue (uint32 v)
                 }
             }
             else if (it->second == v)
+            {
                 -- (it->second);
+            }
             else
             {
                 uint32 oldEnd = it->second;
@@ -141,6 +160,7 @@ void RangeSet::clearValue (uint32 v)
                 mRanges[v + 1] = oldEnd;
             }
 
+            checkInternalConsistency();
             return;
         }
     }
@@ -176,7 +196,10 @@ void RangeSet::simplify ()
         iterator nit = it;
 
         if (++nit == mRanges.end ())
+        {
+            checkInternalConsistency();
             return;
+        }
 
         if (it->second >= (nit->first - 1))
         {
@@ -185,35 +208,37 @@ void RangeSet::simplify ()
             mRanges.erase (nit);
         }
         else
+        {
             it = nit;
+        }
     }
 }
 
-BOOST_AUTO_TEST_SUITE (RangeSet_suite)
-
-BOOST_AUTO_TEST_CASE (RangeSet_test)
+void RangeSet::checkInternalConsistency () const noexcept
 {
-    WriteLog (lsTRACE, RangeSet) << "RangeSet test begins";
+#if BEAST_DEBUG
+    if (mRanges.size () > 1)
+    {
+        const_iterator const last = std::prev (mRanges.end ());
 
-    RangeSet r1, r2;
+        for (const_iterator cur = mRanges.begin (); cur != last; ++cur)
+        {
+            const_iterator const next = std::next (cur);
 
-    r1.setRange (1, 10);
-    r1.clearValue (5);
-    r1.setRange (11, 20);
+            bassert (cur->first <= cur->second);
 
-    r2.setRange (1, 4);
-    r2.setRange (6, 10);
-    r2.setRange (10, 20);
+            bassert (next->first <= next->second);
 
-    if (r1.hasValue (5))     BOOST_FAIL ("RangeSet fail");
+            bassert (cur->second + 1 < next->first);
+        }
+    }
+    else if (mRanges.size () == 1)
+    {
+        const_iterator const iter = mRanges.begin ();
 
-    if (!r2.hasValue (9))    BOOST_FAIL ("RangeSet fail");
+        bassert (iter->first <= iter->second);
+    }
 
-    // TODO: Traverse functions must be tested
-
-    WriteLog (lsTRACE, RangeSet) << "RangeSet test complete";
+#endif
 }
 
-BOOST_AUTO_TEST_SUITE_END ()
-
-// vim:ts=4

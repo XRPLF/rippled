@@ -14,7 +14,7 @@
 // VFALCO TODO Rename to Ledgers
 //        It sounds like this holds all the ledgers...
 //
-class LedgerMaster
+class LedgerMaster : LeakChecked <LedgerMaster>
 {
 public:
     typedef FUNCTION_TYPE <void (Ledger::ref)> callback;
@@ -29,6 +29,10 @@ public:
         , mPathFindThread (false)
         , mPathFindNewLedger (false)
         , mPathFindNewRequest (false)
+    {
+    }
+
+    ~LedgerMaster ()
     {
     }
 
@@ -54,11 +58,19 @@ public:
         return mFinalizedLedger;
     }
 
-    // The published ledger is the last fully validated ledger
+    // The validated ledger is the last fully validated ledger
     Ledger::ref getValidatedLedger ()
+    {
+        return mValidLedger;
+    }
+
+    // This is the last ledger we published to clients and can lag the validated ledger
+    Ledger::ref getPublishedLedger ()
     {
         return mPubLedger;
     }
+
+    int getPublishedLedgerAge ();
     int getValidatedLedgerAge ();
     bool isCaughtUp(std::string& reason);
 

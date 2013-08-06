@@ -11,7 +11,7 @@
 // Provide abstract access to an account's state, such that access to the serialized format is hidden.
 //
 
-class AccountState
+class AccountState : LeakChecked <AccountState>
 {
 public:
     typedef boost::shared_ptr<AccountState> pointer;

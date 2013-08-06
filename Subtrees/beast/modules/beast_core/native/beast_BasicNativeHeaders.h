@@ -188,8 +188,19 @@
 
  #if BEAST_BSD
   #include <dirent.h>
+  #include <ifaddrs.h>
+  #include <net/if_dl.h>
+  #include <kvm.h>
+  #include <langinfo.h>
+  #include <sys/cdefs.h>
   #include <sys/param.h>
   #include <sys/mount.h>
+  #include <sys/types.h>
+  #include <sys/sysctl.h>
+
+  // This has to be in the global namespace
+  extern char** environ;
+
  #else
   #include <sys/dir.h>
   #include <sys/vfs.h>

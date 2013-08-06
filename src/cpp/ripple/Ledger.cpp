@@ -8,7 +8,7 @@ SETUP_LOG (Ledger)
 
 Ledger::Ledger (const RippleAddress& masterID, uint64 startAmount)
     : mTotCoins (startAmount)
-    , mLedgerSeq (1)
+    , mLedgerSeq (1) // First Ledger
     , mCloseTime (0)
     , mParentCloseTime (0)
     , mCloseResolution (LEDGER_TIME_ACCURACY)
@@ -135,7 +135,7 @@ Ledger::Ledger (bool /* dummy */,
 
     if (prevLedger.mCloseTime == 0)
     {
-        mCloseTime = roundCloseTime (theApp->getOPs ().getCloseTimeNC (), mCloseResolution);
+        mCloseTime = roundCloseTime (getApp().getOPs ().getCloseTimeNC (), mCloseResolution);
     }
     else
     {
@@ -194,6 +194,7 @@ void Ledger::updateHash ()
             mAccountHash.zero ();
     }
 
+    // VFALCO TODO Fix this hard coded magic number 118
     Serializer s (118);
     s.add32 (HashPrefix::ledgerMaster);
     addRaw (s);
@@ -205,7 +206,8 @@ void Ledger::setRaw (Serializer& s, bool hasPrefix)
 {
     SerializerIterator sit (s);
 
-    if (hasPrefix) sit.get32 ();
+    if (hasPrefix)
+        sit.get32 ();
 
     mLedgerSeq =        sit.get32 ();
     mTotCoins =         sit.get64 ();
@@ -267,8 +269,8 @@ bool Ledger::hasAccount (const RippleAddress& accountID)
 
 AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
 {
-#ifdef DEBUG
-    //  std::cerr << "Ledger:getAccountState(" << accountID.humanAccountID() << ")" << std::endl;
+#ifdef BEAST_DEBUG
+    //  Log::out() << "Ledger:getAccountState(" << accountID.humanAccountID() << ")";
 #endif
 
     SLE::pointer sle = getSLEi (Ledger::getAccountRootIndex (accountID));
@@ -345,7 +347,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
 
     if (!item) return Transaction::pointer ();
 
-    Transaction::pointer txn = theApp->getMasterTransaction ().fetch (transID, false);
+    Transaction::pointer txn = getApp().getMasterTransaction ().fetch (transID, false);
 
     if (txn)
         return txn;
@@ -371,7 +373,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
     if (txn->getStatus () == NEW)
         txn->setStatus (mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 
-    theApp->getMasterTransaction ().canonicalize (txn, false);
+    getApp().getMasterTransaction ().canonicalize (txn);
     return txn;
 }
 
@@ -425,7 +427,7 @@ bool Ledger::getTransaction (uint256 const& txID, Transaction::pointer& txn, Tra
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
     {
         // in tree with no metadata
-        txn = theApp->getMasterTransaction ().fetch (txID, false);
+        txn = getApp().getMasterTransaction ().fetch (txID, false);
         meta.reset ();
 
         if (!txn)
@@ -435,7 +437,7 @@ bool Ledger::getTransaction (uint256 const& txID, Transaction::pointer& txn, Tra
     {
         // in tree with metadata
         SerializerIterator it (item->peekSerializer ());
-        txn = theApp->getMasterTransaction ().fetch (txID, false);
+        txn = getApp().getMasterTransaction ().fetch (txID, false);
 
         if (!txn)
             txn = Transaction::sharedTransaction (it.getVL (), true);
@@ -450,7 +452,7 @@ bool Ledger::getTransaction (uint256 const& txID, Transaction::pointer& txn, Tra
     if (txn->getStatus () == NEW)
         txn->setStatus (mClosed ? COMMITTED : INCLUDED, mLedgerSeq);
 
-    theApp->getMasterTransaction ().canonicalize (txn, false);
+    getApp().getMasterTransaction ().canonicalize (txn);
     return true;
 }
 
@@ -531,18 +533,18 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
     Serializer s (128);
     s.add32 (HashPrefix::ledgerMaster);
     addRaw (s);
-    theApp->getHashedObjectStore ().store (hotLEDGER, mLedgerSeq, s.peekData (), mHash);
+    getApp().getNodeStore ().store (hotLEDGER, mLedgerSeq, s.peekData (), mHash);
 
     AcceptedLedger::pointer aLedger = AcceptedLedger::makeAcceptedLedger (shared_from_this ());
 
     {
-        ScopedLock sl (theApp->getLedgerDB ()->getDBLock ());
-        theApp->getLedgerDB ()->getDB ()->executeSQL (boost::str (deleteLedger % mLedgerSeq));
+        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (deleteLedger % mLedgerSeq));
     }
 
     {
-        Database* db = theApp->getTxnDB ()->getDB ();
-        ScopedLock dbLock (theApp->getTxnDB ()->getDBLock ());
+        Database* db = getApp().getTxnDB ()->getDB ();
+        ScopedLock dbLock (getApp().getTxnDB ()->getDBLock ());
         db->executeSQL ("BEGIN TRANSACTION;");
 
         db->executeSQL (boost::str (deleteTrans1 % mLedgerSeq));
@@ -551,7 +553,7 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
         BOOST_FOREACH (const AcceptedLedger::value_type & vt, aLedger->getMap ())
         {
             uint256 txID = vt.second->getTransactionID ();
-            theApp->getMasterTransaction ().inLedger (txID, mLedgerSeq);
+            getApp().getMasterTransaction ().inLedger (txID, mLedgerSeq);
 
             db->executeSQL (boost::str (deleteAcctTrans % txID.GetHex ()));
 
@@ -596,8 +598,9 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
     }
 
     {
-        ScopedLock sl (theApp->getLedgerDB ()->getDBLock ());
-        theApp->getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
+        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+
+        getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
                 getHash ().GetHex () % mLedgerSeq % mParentHash.GetHex () %
                 boost::lexical_cast<std::string> (mTotCoins) % mCloseTime % mParentCloseTime %
                 mCloseResolution % mCloseFlags % mAccountHash.GetHex () % mTransHash.GetHex ()));
@@ -606,8 +609,8 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
     if (!fromConsensus && (theConfig.NODE_SIZE < 2)) // tiny or small
         dropCache ();
 
-    if (theApp->getJobQueue ().getJobCountTotal (jtPUBOLDLEDGER) < 2)
-        theApp->getLedgerMaster ().resumeAcquiring ();
+    if (getApp().getJobQueue ().getJobCountTotal (jtPUBOLDLEDGER) < 2)
+        getApp().getLedgerMaster ().resumeAcquiring ();
     else
         WriteLog (lsTRACE, Ledger) << "no resume, too many pending ledger saves";
 }
@@ -618,8 +621,8 @@ Ledger::pointer Ledger::loadByIndex (uint32 ledgerIndex)
 {
     Ledger::pointer ledger;
     {
-        Database* db = theApp->getLedgerDB ()->getDB ();
-        ScopedLock sl (theApp->getLedgerDB ()->getDBLock ());
+        Database* db = getApp().getLedgerDB ()->getDB ();
+        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         SqliteStatement pSt (db->getSqliteDB (), "SELECT "
                              "LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
@@ -643,8 +646,8 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
 {
     Ledger::pointer ledger;
     {
-        Database* db = theApp->getLedgerDB ()->getDB ();
-        ScopedLock sl (theApp->getLedgerDB ()->getDBLock ());
+        Database* db = getApp().getLedgerDB ()->getDB ();
+        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         SqliteStatement pSt (db->getSqliteDB (), "SELECT "
                              "LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
@@ -698,8 +701,8 @@ Ledger::pointer Ledger::getSQL (const std::string& sql)
     std::string hash;
 
     {
-        Database* db = theApp->getLedgerDB ()->getDB ();
-        ScopedLock sl (theApp->getLedgerDB ()->getDBLock ());
+        Database* db = getApp().getLedgerDB ()->getDB ();
+        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return Ledger::pointer ();
@@ -731,7 +734,7 @@ Ledger::pointer Ledger::getSQL (const std::string& sql)
 
     ret->setClosed ();
 
-    if (theApp->getOPs ().haveLedger (ledgerSeq))
+    if (getApp().getOPs ().haveLedger (ledgerSeq))
         ret->setAccepted ();
 
     if (ret->getHash () != ledgerHash)
@@ -798,7 +801,7 @@ void Ledger::getSQL2 (Ledger::ref ret)
     ret->setClosed ();
     ret->setImmutable ();
 
-    if (theApp->getOPs ().haveLedger (ret->getLedgerSeq ()))
+    if (getApp().getOPs ().haveLedger (ret->getLedgerSeq ()))
         ret->setAccepted ();
 
     WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ret->getHash ().GetHex ();
@@ -814,8 +817,8 @@ uint256 Ledger::getHashByIndex (uint32 ledgerIndex)
 
     std::string hash;
     {
-        Database* db = theApp->getLedgerDB ()->getDB ();
-        ScopedLock sl (theApp->getLedgerDB ()->getDBLock ());
+        Database* db = getApp().getLedgerDB ()->getDB ();
+        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return ret;
@@ -832,7 +835,7 @@ bool Ledger::getHashesByIndex (uint32 ledgerIndex, uint256& ledgerHash, uint256&
 {
 #ifndef NO_SQLITE3_PREPARE
 
-    DatabaseCon* con = theApp->getLedgerDB ();
+    DatabaseCon* con = getApp().getLedgerDB ();
     ScopedLock sl (con->getDBLock ());
 
     SqliteStatement pSt (con->getDB ()->getSqliteDB (),
@@ -868,8 +871,8 @@ bool Ledger::getHashesByIndex (uint32 ledgerIndex, uint256& ledgerHash, uint256&
 
     std::string hash, prevHash;
     {
-        Database* db = theApp->getLedgerDB ()->getDB ();
-        ScopedLock sl (theApp->getLedgerDB ()->getDBLock ());
+        Database* db = getApp().getLedgerDB ()->getDB ();
+        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return false;
@@ -891,39 +894,27 @@ bool Ledger::getHashesByIndex (uint32 ledgerIndex, uint256& ledgerHash, uint256&
 
 std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex (uint32 minSeq, uint32 maxSeq)
 {
-#ifndef NO_SQLITE_PREPARE
     std::map< uint32, std::pair<uint256, uint256> > ret;
-    DatabaseCon* con = theApp->getLedgerDB ();
+
+    std::string sql = "SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq >= ";
+    sql.append (boost::lexical_cast<std::string> (minSeq));
+    sql.append (" AND LedgerSeq <= ");
+    sql.append (boost::lexical_cast<std::string> (maxSeq));
+    sql.append (";");
+
+    DatabaseCon* con = getApp().getLedgerDB ();
     ScopedLock sl (con->getDBLock ());
 
-    SqliteStatement pSt (con->getDB ()->getSqliteDB (),
-                         "SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger "
-                         "WHERE LedgerSeq >= ? AND LedgerSeq <= ?;");
+    SqliteStatement pSt (con->getDB ()->getSqliteDB (), sql);
 
-    std::pair<uint256, uint256> hashes;
-
-    pSt.bind (1, minSeq);
-    pSt.bind (2, maxSeq);
-
-    do
+    while (pSt.isRow (pSt.step ()))
     {
-        int r = pSt.step ();
-
-        if (pSt.isDone (r))
-            return ret;
-
-        if (!pSt.isRow (r))
-            return ret;
-
+        std::pair<uint256, uint256>& hashes = ret[pSt.getUInt32 (0)];
         hashes.first.SetHexExact (pSt.peekString (1));
         hashes.second.SetHexExact (pSt.peekString (2));
-        ret[pSt.getUInt32 (0)] = hashes;
     }
-    while (1);
 
-#else
-#error SQLite prepare is required
-#endif
+    return ret;
 }
 
 Ledger::pointer Ledger::getLastFullLedger ()
@@ -1150,13 +1141,13 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId)
     if (!node)
         return SLE::pointer ();
 
-    SLE::pointer ret = theApp->getSLECache ().fetch (hash);
+    SLE::pointer ret = getApp().getSLECache ().fetch (hash);
 
     if (!ret)
     {
         ret = boost::make_shared<SLE> (node->peekSerializer (), node->getTag ());
         ret->setImmutable ();
-        theApp->getSLECache ().canonicalize (hash, ret);
+        getApp().getSLECache ().canonicalize (hash, ret);
     }
 
     return ret;
@@ -1488,7 +1479,10 @@ uint256 Ledger::getLedgerHash (uint32 ledgerIndex)
             WriteLog (lsWARNING, Ledger) << "Ledger " << mLedgerSeq << " missing hash for " << ledgerIndex
                                          << " (" << vec.size () << "," << diff << ")";
         }
-        else WriteLog (lsWARNING, Ledger) << "Ledger " << mLedgerSeq << ":" << getHash () << " missing normal list";
+        else
+        {
+            WriteLog (lsWARNING, Ledger) << "Ledger " << mLedgerSeq << ":" << getHash () << " missing normal list";
+        }
     }
 
     if ((ledgerIndex & 0xff) != 0)
@@ -1811,12 +1805,12 @@ uint32 Ledger::roundCloseTime (uint32 closeTime, uint32 closeResolution)
 
 void Ledger::pendSave (bool fromConsensus)
 {
-    if (!fromConsensus && !theApp->getHashRouter ().setFlag (getHash (), SF_SAVED))
+    if (!fromConsensus && !getApp().getHashRouter ().setFlag (getHash (), SF_SAVED))
         return;
 
     assert (isImmutable ());
 
-    theApp->getJobQueue ().addJob (
+    getApp().getJobQueue ().addJob (
         fromConsensus ? jtPUBLEDGER : jtPUBOLDLEDGER,
         fromConsensus ? "Ledger::pendSave" : "Ledger::pendOldSave",
         BIND_TYPE (&Ledger::saveAcceptedLedger, shared_from_this (), P_1, fromConsensus));
@@ -1879,7 +1873,7 @@ uint64 Ledger::scaleFeeBase (uint64 fee)
     if (!mBaseFee)
         updateFees ();
 
-    return theApp->getFeeTrack ().scaleFeeBase (fee, mBaseFee, mReferenceFeeUnits);
+    return getApp().getFeeTrack ().scaleFeeBase (fee, mBaseFee, mReferenceFeeUnits);
 }
 
 uint64 Ledger::scaleFeeLoad (uint64 fee, bool bAdmin)
@@ -1887,7 +1881,7 @@ uint64 Ledger::scaleFeeLoad (uint64 fee, bool bAdmin)
     if (!mBaseFee)
         updateFees ();
 
-    return theApp->getFeeTrack ().scaleFeeLoad (fee, mBaseFee, mReferenceFeeUnits, bAdmin);
+    return getApp().getFeeTrack ().scaleFeeLoad (fee, mBaseFee, mReferenceFeeUnits, bAdmin);
 }
 
 std::vector<uint256> Ledger::getNeededTransactionHashes (int max, SHAMapSyncFilter* filter)
@@ -1919,16 +1913,3 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (int max, SHAMapSyncFil
 
     return ret;
 }
-
-BOOST_AUTO_TEST_SUITE (quality)
-
-BOOST_AUTO_TEST_CASE ( getquality )
-{
-    uint256 uBig ("D2DC44E5DC189318DB36EF87D2104CDF0A0FE3A4B698BEEE55038D7EA4C68000");
-
-    if (6125895493223874560 != Ledger::getQuality (uBig))
-        BOOST_FAIL ("Ledger::getQuality fails.");
-}
-
-BOOST_AUTO_TEST_SUITE_END ()
-// vim:ts=4

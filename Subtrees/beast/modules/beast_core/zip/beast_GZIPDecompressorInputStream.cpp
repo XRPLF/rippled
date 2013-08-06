@@ -82,7 +82,7 @@ namespace zlibNamespace
 //==============================================================================
 // internal helper object that holds the zlib structures so they don't have to be
 // included publicly.
-class GZIPDecompressorInputStream::GZIPDecompressHelper
+class GZIPDecompressorInputStream::GZIPDecompressHelper : Uncopyable
 {
 public:
     GZIPDecompressHelper (const bool dontWrap)
@@ -160,8 +160,6 @@ private:
     zlibNamespace::z_stream stream;
     uint8* data;
     size_t dataSize;
-
-    BEAST_DECLARE_NON_COPYABLE (GZIPDecompressHelper)
 };
 
 //==============================================================================

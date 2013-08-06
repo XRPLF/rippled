@@ -15,6 +15,8 @@ class TransactionAcquire
     , public CountedObject <TransactionAcquire>
 {
 public:
+    static char const* getCountedObjectName () { return "TransactionAcquire"; }
+
     typedef boost::shared_ptr<TransactionAcquire> pointer;
 
 public:
@@ -36,7 +38,7 @@ private:
     SHAMap::pointer     mMap;
     bool                mHaveRoot;
 
-    void onTimer (bool progress);
+    void onTimer (bool progress, boost::recursive_mutex::scoped_lock& peerSetLock);
     void newPeer (Peer::ref peer)
     {
         trigger (peer);

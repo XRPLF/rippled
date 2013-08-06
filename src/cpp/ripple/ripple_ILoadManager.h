@@ -65,7 +65,6 @@ enum LoadType
 class LoadSource
 {
 public:
-    // VFALCO TODO Why even bother with a warning? Why can't we just drop?
     // VFALCO TODO Use these dispositions
     /*
     enum Disposition
@@ -201,6 +200,13 @@ private:
 
     This object creates an associated thread to maintain a clock.
 
+    When the server is overloaded by a particular peer it issues a warning
+    first. This allows friendly peers to reduce their consumption of resources,
+    or disconnect from the server.
+
+    The warning system is used instead of merely dropping, because hostile
+    peers can just reconnect anyway.
+
     @see LoadSource, LoadType
 */
 class ILoadManager
@@ -208,21 +214,26 @@ class ILoadManager
 public:
     /** Create a new manager.
 
+        The manager thread begins running immediately.
+
         @note The thresholds for warnings and punishments are in
               the ctor-initializer
     */
     static ILoadManager* New ();
 
+    /** Destroy the manager.
+
+        The destructor returns only after the thread has stopped.
+    */
     virtual ~ILoadManager () { }
 
     /** Start the associated thread.
 
         This is here to prevent the deadlock detector from activating during
         a lengthy program initialization.
-
-        @note In stand-alone mode, this might not get called.
     */
     // VFALCO TODO Simplify the two stage initialization to one stage (construction).
+    //        NOTE In stand-alone mode the load manager thread isn't started
     virtual void startThread () = 0;
 
     /** Turn on deadlock detection.

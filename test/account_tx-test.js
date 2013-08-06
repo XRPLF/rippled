@@ -6,9 +6,8 @@ var Remote      = require("ripple-lib").Remote;
 var Transaction = require("ripple-lib").Transaction;
 var Server      = require("./server").Server;
 
-var testutils = require("./testutils");
-
-require('ripple-lib').config.load(require('./config'));
+var testutils   = require("./testutils");
+var config      = testutils.init_config();
 
 buster.testRunner.timeout = 350000; //This is a very long test!
 

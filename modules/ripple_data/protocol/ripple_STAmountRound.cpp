@@ -4,7 +4,7 @@
 */
 //==============================================================================
 
-static void canonicalizeRound (bool isNative, uint64& value, int& offset, bool roundUp)
+void STAmount::canonicalizeRound (bool isNative, uint64& value, int& offset, bool roundUp)
 {
     if (!roundUp) // canonicalize already rounds down
         return;
@@ -298,54 +298,3 @@ STAmount STAmount::divRound (const STAmount& num, const STAmount& den,
     return STAmount (uCurrencyID, uIssuerID, amount, offset, resultNegative);
 }
 
-BOOST_AUTO_TEST_SUITE (amountRound)
-
-BOOST_AUTO_TEST_CASE ( amountRound_test )
-{
-    uint64 value = 25000000000000000ull;
-    int offset = -14;
-    canonicalizeRound (false, value, offset, true);
-
-    STAmount one (CURRENCY_ONE, ACCOUNT_ONE, 1);
-    STAmount two (CURRENCY_ONE, ACCOUNT_ONE, 2);
-    STAmount three (CURRENCY_ONE, ACCOUNT_ONE, 3);
-
-    STAmount oneThird1 = STAmount::divRound (one, three, CURRENCY_ONE, ACCOUNT_ONE, false);
-    STAmount oneThird2 = STAmount::divide (one, three, CURRENCY_ONE, ACCOUNT_ONE);
-    STAmount oneThird3 = STAmount::divRound (one, three, CURRENCY_ONE, ACCOUNT_ONE, true);
-    WriteLog (lsINFO, STAmount) << oneThird1;
-    WriteLog (lsINFO, STAmount) << oneThird2;
-    WriteLog (lsINFO, STAmount) << oneThird3;
-
-    STAmount twoThird1 = STAmount::divRound (two, three, CURRENCY_ONE, ACCOUNT_ONE, false);
-    STAmount twoThird2 = STAmount::divide (two, three, CURRENCY_ONE, ACCOUNT_ONE);
-    STAmount twoThird3 = STAmount::divRound (two, three, CURRENCY_ONE, ACCOUNT_ONE, true);
-    WriteLog (lsINFO, STAmount) << twoThird1;
-    WriteLog (lsINFO, STAmount) << twoThird2;
-    WriteLog (lsINFO, STAmount) << twoThird3;
-
-    STAmount oneA = STAmount::mulRound (oneThird1, three, CURRENCY_ONE, ACCOUNT_ONE, false);
-    STAmount oneB = STAmount::multiply (oneThird2, three, CURRENCY_ONE, ACCOUNT_ONE);
-    STAmount oneC = STAmount::mulRound (oneThird3, three, CURRENCY_ONE, ACCOUNT_ONE, true);
-    WriteLog (lsINFO, STAmount) << oneA;
-    WriteLog (lsINFO, STAmount) << oneB;
-    WriteLog (lsINFO, STAmount) << oneC;
-
-    STAmount fourThirdsA = STAmount::addRound (twoThird2, twoThird2, false);
-    STAmount fourThirdsB = twoThird2 + twoThird2;
-    STAmount fourThirdsC = STAmount::addRound (twoThird2, twoThird2, true);
-    WriteLog (lsINFO, STAmount) << fourThirdsA;
-    WriteLog (lsINFO, STAmount) << fourThirdsB;
-    WriteLog (lsINFO, STAmount) << fourThirdsC;
-
-    STAmount dripTest1 = STAmount::mulRound (twoThird2, two, uint160 (), uint160 (), false);
-    STAmount dripTest2 = STAmount::multiply (twoThird2, two, uint160 (), uint160 ());
-    STAmount dripTest3 = STAmount::mulRound (twoThird2, two, uint160 (), uint160 (), true);
-    WriteLog (lsINFO, STAmount) << dripTest1;
-    WriteLog (lsINFO, STAmount) << dripTest2;
-    WriteLog (lsINFO, STAmount) << dripTest3;
-}
-
-BOOST_AUTO_TEST_SUITE_END ()
-
-// vim:ts=4

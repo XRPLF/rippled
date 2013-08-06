@@ -6,8 +6,6 @@
 
 SETUP_LOG (SqliteDatabase)
 
-//using namespace std;
-
 SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql, bool aux)
 {
     assert (db);
@@ -35,7 +33,10 @@ SqliteStatement::~SqliteStatement ()
     sqlite3_finalize (statement);
 }
 
-SqliteDatabase::SqliteDatabase (const char* host) : Database (host, "", ""), mWalQ (NULL), walRunning (false)
+SqliteDatabase::SqliteDatabase (const char* host)
+    : Database (host)
+    , mWalQ (NULL)
+    , walRunning (false)
 {
     mConnection     = NULL;
     mAuxConnection  = NULL;
@@ -102,7 +103,7 @@ bool SqliteDatabase::executeSQL (const char* sql, bool fail_ok)
     {
         if (!fail_ok)
         {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
             WriteLog (lsWARNING, SqliteDatabase) << "Perror:" << mHost << ": " << rc;
             WriteLog (lsWARNING, SqliteDatabase) << "Statement: " << sql;
             WriteLog (lsWARNING, SqliteDatabase) << "Error: " << sqlite3_errmsg (mConnection);
@@ -136,7 +137,7 @@ bool SqliteDatabase::executeSQL (const char* sql, bool fail_ok)
 
         if (!fail_ok)
         {
-#ifdef DEBUG
+#ifdef BEAST_DEBUG
             WriteLog (lsWARNING, SqliteDatabase) << "SQL Serror:" << mHost << ": " << rc;
             WriteLog (lsWARNING, SqliteDatabase) << "Statement: " << sql;
             WriteLog (lsWARNING, SqliteDatabase) << "Error: " << sqlite3_errmsg (mConnection);
@@ -289,9 +290,9 @@ void SqliteDatabase::doHook (const char* db, int pages)
     }
 
     if (mWalQ)
-        mWalQ->addJob (jtWAL, std::string ("WAL:") + mHost, boost::bind (&SqliteDatabase::runWal, this));
+        mWalQ->addJob (jtWAL, std::string ("WAL:") + mHost, BIND_TYPE (&SqliteDatabase::runWal, this));
     else
-        boost::thread (boost::bind (&SqliteDatabase::runWal, this)).detach ();
+        boost::thread (BIND_TYPE (&SqliteDatabase::runWal, this)).detach ();
 }
 
 void SqliteDatabase::runWal ()

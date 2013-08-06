@@ -175,6 +175,21 @@ bool File::setAsCurrentWorkingDirectory() const
 }
 
 //==============================================================================
+// The unix siginterrupt function is deprecated - this does the same job.
+int beast_siginterrupt (int sig, int flag)
+{
+    struct ::sigaction act;
+    (void) ::sigaction (sig, nullptr, &act);
+
+    if (flag != 0)
+        act.sa_flags &= ~SA_RESTART;
+    else
+        act.sa_flags |= SA_RESTART;
+
+    return ::sigaction (sig, &act, nullptr);
+}
+
+//==============================================================================
 namespace
 {
    #if BEAST_LINUX || \
@@ -973,7 +988,7 @@ void* DynamicLibrary::getFunction (const String& functionName) noexcept
 
 
 //==============================================================================
-class ChildProcess::ActiveProcess
+class ChildProcess::ActiveProcess : LeakChecked <ActiveProcess>, Uncopyable
 {
 public:
     ActiveProcess (const StringArray& arguments)
@@ -1066,8 +1081,6 @@ public:
 private:
     int pipeHandle;
     FILE* readHandle;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ActiveProcess)
 };
 
 bool ChildProcess::start (const String& command)
@@ -1104,7 +1117,7 @@ bool ChildProcess::kill()
 }
 
 //==============================================================================
-struct HighResolutionTimer::Pimpl
+struct HighResolutionTimer::Pimpl : Uncopyable
 {
     Pimpl (HighResolutionTimer& t)  : owner (t), thread (0), shouldStop (false)
     {
@@ -1192,7 +1205,7 @@ private:
 
         uint64_t time, delta;
 
-       #elif BEAST_ANDROID
+       #elif BEAST_ANDROID || BEAST_BSD
         Clock (double millis) noexcept  : delta ((uint64) (millis * 1000000))
         {
         }
@@ -1221,12 +1234,7 @@ private:
             struct timespec t;
             t.tv_sec  = (time_t) (time / 1000000000);
             t.tv_nsec = (long)   (time % 1000000000);
-
-#if BEAST_BSD
-            bassertfalse; // unimplemented
-#else
             clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &t, nullptr);
-#endif
         }
 
         uint64 time, delta;
@@ -1255,6 +1263,4 @@ private:
 
        #endif
     }
-
-    BEAST_DECLARE_NON_COPYABLE (Pimpl)
 };

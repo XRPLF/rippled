@@ -19,7 +19,7 @@ bool OfferCreateTransactor::bValidOffer (
     boost::unordered_set<uint160>&  usAccountTouched,
     STAmount&           saOfferFunds)                       // <--
 {
-    bool    bValid;
+    bool bValid = false;
 
     if (sleOffer->isFieldPresent (sfExpiration) && sleOffer->getFieldU32 (sfExpiration) <= mEngine->getLedger ()->getParentCloseTimeNC ())
     {
@@ -46,6 +46,8 @@ bool OfferCreateTransactor::bValidOffer (
                 % saOfferPays % saOfferGets);
 
         usOfferUnfundedFound.insert (uOfferIndex);
+
+        bValid = false;
     }
     else
     {
@@ -712,7 +714,7 @@ TER OfferCreateTransactor::doApply ()
     CondLog (tesSUCCESS != terResult, lsINFO, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: final terResult=%s") % transToken (terResult));
 
     if (isTesSuccess (terResult))
-        theApp->getOrderBookDB ().invalidate ();
+        getApp().getOrderBookDB ().invalidate ();
 
     return terResult;
 }

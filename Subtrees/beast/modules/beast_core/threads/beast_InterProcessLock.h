@@ -34,7 +34,7 @@
 
     @see CriticalSection
 */
-class BEAST_API InterProcessLock
+class BEAST_API InterProcessLock : Uncopyable
 {
 public:
     //==============================================================================
@@ -71,7 +71,7 @@ public:
 
         @see ScopedLock
     */
-    class ScopedLockType
+    class ScopedLockType : Uncopyable
     {
     public:
         //==============================================================================
@@ -106,8 +106,6 @@ public:
         //==============================================================================
         InterProcessLock& ipLock;
         bool lockWasSuccessful;
-
-        BEAST_DECLARE_NON_COPYABLE (ScopedLockType)
     };
 
 private:
@@ -118,8 +116,6 @@ private:
 
     CriticalSection lock;
     String name;
-
-    BEAST_DECLARE_NON_COPYABLE (InterProcessLock)
 };
 
 

@@ -1,10 +1,10 @@
-var async   = require("async");
+var async       = require("async");
+var extend      = require("extend");
 
-var Amount  = require("ripple-lib").Amount;
-var Remote  = require("ripple-lib").Remote;
-var Server  = require("./server").Server;
-
-var config  = require('ripple-lib').config.load(require('./config'));
+var Amount      = require("ripple-lib").Amount;
+var Remote      = require("ripple-lib").Remote;
+var Server      = require("./server").Server;
+var Transaction = require("ripple-lib").Transaction;
 
 var account_dump = function (remote, account, callback) {
   var self = this;
@@ -64,6 +64,8 @@ var account_dump = function (remote, account, callback) {
  * @param host {String} Identifier for the host configuration to be used.
  */
 var build_setup = function (opts, host) {
+  var config = get_config();
+
   opts = opts || {};
 
   // Normalize options
@@ -74,6 +76,18 @@ var build_setup = function (opts, host) {
 
   return function (done) {
     var self = this;
+    
+    self.compute_fees_amount_for_txs = function(txs) {
+        var fee_units = Transaction.fee_units["default"] * txs;
+        return self.remote.fee_tx(fee_units);
+    };
+
+    self.amount_for = function(options) {
+        var reserve = self.remote.reserve(options.ledger_entries || 0);
+        var fees = self.compute_fees_amount_for_txs(options.default_transactions || 0)
+        return reserve.add(fees)
+                      .add(options.extra || 0);
+    };
 
     host = host || config.server_default;
 
@@ -87,8 +101,12 @@ var build_setup = function (opts, host) {
       function runServerStep(callback) {
         if (opts.no_server) return callback();
 
+        var server_config = extend({}, config.default_server_config,
+                                   config.servers[host]);
+
         data.server = Server
-                        .from_config(host, !!opts.verbose_server)
+                        .from_config(host, server_config,
+                                     !!opts.verbose_server)
                         .on('started', callback)
                         .on('exited', function () {
                             // If know the remote, tell it server is gone.
@@ -114,6 +132,7 @@ var build_setup = function (opts, host) {
  * @param host {String} Identifier for the host configuration to be used.
  */
 var build_teardown = function (host) {
+  var config = get_config();
 
   return function (done) {
     host = host || config.server_default;
@@ -160,7 +179,9 @@ var create_accounts = function (remote, src, amount, accounts, callback) {
       .on('proposed', function (m) {
           // console.log("proposed: %s", JSON.stringify(m));
 
-          callback(m.result != 'tesSUCCESS');
+          if (m.result != 'tesSUCCESS') {
+            callback(new Error("Payment to create account did not succeed."));
+          } else callback(null);
         })
       .on('error', function (m) {
           // console.log("error: %s", JSON.stringify(m));
@@ -203,6 +224,24 @@ var credit_limit = function (remote, src, amount, callback) {
   }
 };
 
+function get_config() {
+  var cfg = require('./config-example');
+
+  // See if the person testing wants to override the configuration by creating a
+  // file called test/config.js.
+  try {
+    cfg = extend({}, cfg, require('./config'));
+  } catch (e) { }
+
+  return cfg;
+}
+
+function init_config() {
+  var cfg = get_config();
+
+  return require('ripple-lib').config.load(cfg);
+}
+
 var verify_limit = function (remote, src, amount, callback) {
   assert(4 === arguments.length);
 
@@ -214,6 +253,7 @@ var verify_limit = function (remote, src, amount, callback) {
   }
   else
   {
+    // console.log("_m", _m.length, _m);
     // console.log("verify_limit: parsed: %s", JSON.stringify(_m, undefined, 2));
     var _account_limit  = _m[1];
     var _quality_in     = _m[2];
@@ -470,6 +510,8 @@ exports.build_teardown          = build_teardown;
 exports.create_accounts         = create_accounts;
 exports.credit_limit            = credit_limit;
 exports.credit_limits           = credit_limits;
+exports.get_config              = get_config;
+exports.init_config             = init_config;
 exports.ledger_close            = ledger_close;
 exports.payment                 = payment;
 exports.payments                = payments;

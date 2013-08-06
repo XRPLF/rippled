@@ -27,6 +27,8 @@ class SerializedLedgerEntry
     , public CountedObject <SerializedLedgerEntry>
 {
 public:
+    static char const* getCountedObjectName () { return "SerializedLedgerEntry"; }
+
     typedef boost::shared_ptr<SerializedLedgerEntry>        pointer;
     typedef const boost::shared_ptr<SerializedLedgerEntry>& ref;
 
@@ -70,7 +72,7 @@ public:
     {
         return getFieldU16 (sfLedgerEntryType);
     }
-    const LedgerEntryFormat* getFormat ()
+    LedgerFormats::Item const* getFormat ()
     {
         return mFormat;
     }
@@ -96,7 +98,7 @@ private:
 private:
     uint256                     mIndex;
     LedgerEntryType             mType;
-    const LedgerEntryFormat*    mFormat;
+    LedgerFormats::Item const*  mFormat;
     bool                        mMutable;
 };
 

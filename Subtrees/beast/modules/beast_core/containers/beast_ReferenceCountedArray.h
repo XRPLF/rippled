@@ -288,14 +288,17 @@ public:
         @param newObject       the new object to add to the array
         @see set, insert, addIfNotAlreadyThere, addSorted, addArray
     */
-    void add (ObjectClass* const newObject) noexcept
+    ObjectClass* add (ObjectClass* const newObject) noexcept
     {
         const ScopedLockType lock (getLock());
         data.ensureAllocatedSize (numUsed + 1);
+        bassert (data.elements != nullptr);
         data.elements [numUsed++] = newObject;
 
         if (newObject != nullptr)
             newObject->incReferenceCount();
+
+        return newObject;
     }
 
     /** Inserts a new object into the array at the given index.
@@ -311,8 +314,8 @@ public:
         @param newObject            the new object to add to the array
         @see add, addSorted, addIfNotAlreadyThere, set
     */
-    void insert (int indexToInsertAt,
-                 ObjectClass* const newObject) noexcept
+    ObjectClass* insert (int indexToInsertAt,
+                         ObjectClass* const newObject) noexcept
     {
         if (indexToInsertAt >= 0)
         {
@@ -322,6 +325,7 @@ public:
                 indexToInsertAt = numUsed;
 
             data.ensureAllocatedSize (numUsed + 1);
+            bassert (data.elements != nullptr);
 
             ObjectClass** const e = data.elements + indexToInsertAt;
             const int numToMove = numUsed - indexToInsertAt;
@@ -335,10 +339,12 @@ public:
                 newObject->incReferenceCount();
 
             ++numUsed;
+
+            return newObject;
         }
         else
         {
-            add (newObject);
+            return add (newObject);
         }
     }
 
@@ -388,6 +394,7 @@ public:
             else
             {
                 data.ensureAllocatedSize (numUsed + 1);
+                bassert (data.elements != nullptr);
                 data.elements [numUsed++] = newObject;
             }
         }
@@ -844,7 +851,6 @@ public:
     /** Returns the type of scoped lock to use for locking this array */
     typedef typename TypeOfCriticalSectionToUse::ScopedLockType ScopedLockType;
 
-
 private:
     //==============================================================================
     ArrayAllocationBase <ObjectClass*, TypeOfCriticalSectionToUse> data;
@@ -852,4 +858,4 @@ private:
 };
 
 
-#endif   // BEAST_REFERENCECOUNTEDARRAY_BEASTHEADER
+#endif

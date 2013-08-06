@@ -1,19 +1,104 @@
 --------------------------------------------------------------------------------
-TODO
+RIPPLE TODO
 --------------------------------------------------------------------------------
+
+- See if UniqueNodeList is really used, and if its not used remove it. If
+  only some small part of it is used, then delete the rest. David says
+  that it is broken anyway.
+
+- Roll a simple wrapper for sqlite relational stuff like loading the UNL
+  Completely hide the specifics of SQLite and/or beast::db
+
+- Tidy up convenience functions in RPC.h
+
+- Maybe rename RPCServer to RPCClientServicer
+
+- Take away the "I" prefix from abstract interface classes, in both the class
+  name and the file name. It is messing up sorting in the IDE. Use "Imp" or
+  suffix for implementations.
+
+- Profile/VTune the application to identify hot spots
+  * Determine why rippled has a slow startup on Windows
+  * Improve the performance when running all unit tests on Windows
+
+- Rename "fullBelow" to something like haveAllDescendants or haveAllChildren.
+
+- Class to represent IP and Port number, with members to print, check syntax,
+  etc... replace the boost calls.
+
+- Remove dependence on JobQueue, LoadFeeTrack, and NetworkOPs from LoadManager
+  by providing an observer (beast::ListenerList or Listeners). This way
+  LoadManager does not need stopThread() function.
+
+- Move everything in src/cpp/ripple into ripple_app and sort them into
+  subdirectories within the module as per the project filters.
+  * Make sure there are no pending commits from David
+
+- Rewrite Sustain to use Beast and work on Windows as well
+  * Do not enable watchdog process if a debugger is attached
+
+- Make separate LevelDB VS2012 project for source browsing, leave ony the unity
+  .cpp in the main RippleD project
+
+- Add LevelDB unity .cpp to the LevelDB fork
+
+- Make sure the leak detector output appears on Linux and FreeBSD debug builds.
+
+- Create SharedData <LoadState>, move all load related state variables currently
+  protected by separated mutexes in different classes into the LoadState, and
+  use read/write locking semantics to update the values. Later, use Listeners
+  to notify dependent code to resolve the dependency inversion.
+
+- Merge ripple_Version.h and ripple_BuildVersion.h
+
+- Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
+
+- Rename LedgerMaster to Ledgers, create ILedgers interface.
+
+- Restructure the ripple sources to have this directory structure:
+  /Source/ripple/ripple_core/ripple_core.h
+  /...
+  /Source/Subtrees/... ?
+  PROBLEM: Where to put BeastConfig.h ?
+
+- Figure out where previous ledgers go after a call to LedgerMaster::pushLedger()
+  and see if it is possible to clean up the leaks on exit.
+
+- Replace all NULL with nullptr
+
+- Add ICore interface (incremental replacement for IApplication)
+
+- Make TxFormats a member of ICore instead of a singleton.
+  PROBLEM: STObject derived classes like STInt16 make direct use of the
+           singleton. It might have to remain a singleton. At the very least,
+           it should be a SharedSingleton to resolve ordering issues.
+
+- Rename include guards to boost style, e.g. RIPPLE_LOG_H_INCLUDED
+
+- Replace C11X with BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
+
+- Fix all leaks on exit (!)
+    Say there's a leak, a ledger that can never be accessed is locked in some
+        structure. If the organized teardown code frees that structure, the leak
+        will not be reported.
+    Yes, so you'll detect some small subset of leaks that way.
+    You'll still have to be vigilant for the leaks that won't detect.
+    The problem is ordering. There are lots of circular dependencies.
+    The biggest problem is the order of destruction of global objects. (I think)
+    Getting rid of global objects is a good solution to that.
+    Vinnie Falco: Those I can resolve with my ReferenceCountedSingleton. And
+                  yeah thats a good approach, one that I am doing slowly anyway
+    Yeah, that's good for other reasons too, not just the unpredictability of
+        creation order that can hide bugs.
+    There may also just be some missing destructors.
+    Some of it may be things being shut down in the wrong order. Like if you shut
+        down the cache and then something that uses the cache, objects may get
+        put in the cache after it was shut down.
 
 - Remove "ENABLE_INSECURE" when the time is right.
 
-- Put all the Ripple code in the ripple namespace
-  * boost unit tests create namespace problems
-
-- Remove references to BEASTApplication
-
-- Remove "using namespace" statements
-
-- lift bind, function, and placeholders into ripple namespace
-- lift beast into the ripple namespace, remove ripple's duplicated integer types
-- lift unique_ptr / auto_ptr into ripple namespace, or replace with ScopedPointer
+- lift unique_ptr / auto_ptr into ripple namespace,
+  or replace with ScopedPointer (preferred)
 
 - Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs
 
@@ -35,25 +120,67 @@ TODO
 - Consolidate SQLite database classes: DatabaseCon, Database, SqliteDatabase.
 
 --------------------------------------------------------------------------------
+LEVELDB TODO
+--------------------------------------------------------------------------------
+
+- Add VisualStudio 2012 project file to our fork
+
+- Add LevelDB unity .cpp and .h to our fork
+
+- Replace Beast specific platform macros with universal macros so that the
+  unity doesn't require Beast
+
+- Submit LevelDB fork changes to Bitcoin upstream
+
+--------------------------------------------------------------------------------
+WEBSOCKET TODO
+--------------------------------------------------------------------------------
+
+*** Figure out how hard we want to fork websocket first **
+
+- Think about stripping the ripple specifics out of AutoSocket, make AutoSocket
+  part of our websocketpp fork
+
+- Regroup all the sources together in one directory
+
+- Strip includes and enforce unity
+
+- Put a new front-end on websocket to hide ALL of their classes and templates
+  from the host application, make this part of the websocket fork
+
+--------------------------------------------------------------------------------
+PROTOCOL BUFFERS TODO
+--------------------------------------------------------------------------------
+
+- Create/maintain the protobuf Git repo (original uses SVN)
+
+- Update the subtree
+
+- Make a Visual Studio 2012 Project for source browsing
+
+--------------------------------------------------------------------------------
+NOTES
+--------------------------------------------------------------------------------
 
 LoadEvent
 
     Is referenced with both a shared pointer and an auto pointer.
+    Should be named LoadMeter::ScopedSample. Or possibly ScopedLoadSample
 
 JobQueue
 
     getLoadEvent and getLoadEventAP differ only in the style of pointer
     container which is returned. Unnecessary complexity.
 
---------------------------------------------------------------------------------
-
-Naming
-
-Some names don't make sense.
+Naming: Some names don't make sense.
 
   Index
     Stop using Index to refer to keys in tables. Replace with "Key" ?
     Index implies a small integer, or a data structure.
+
+    This is all over the place in the Ledger API, "Index" of this and
+    "Index" of that, the terminology is imprecise and helps neither
+    understanding nor recall.
     
 Inconsistent names
 
@@ -70,13 +197,14 @@ Verbose names
 
 Ledger "Skip List"
 
-  Is not really a skip list data structure
+  Is not really a skip list data structure. This is more appropriately
+  called an "index" although that name is currently used to identify hashes
+  used as keys.
 
 Duplicate Code
 
   LedgerEntryFormat and TxFormat
-
---------------------------------------------------------------------------------
+  * Resolved with a todo item, create WireFormats<> template class.
 
 Interfaces
 
@@ -92,15 +220,7 @@ Interfaces
     would be more clear:
         bool write (OutputStream& stream);
 
---------------------------------------------------------------------------------
-
-Implementation
-
-  LoadManager
-    
-    What is going on in the destructor
-
---------------------------------------------------------------------------------
+    We have beast for InputStream and OutputStream, we can use those now.
 
 boost
 
@@ -114,7 +234,63 @@ boost
 boost::recursive_mutex
 
     Recursive mutexes should never be necessary.
+
     They require the "mutable" keyword for const members to acquire the lock (yuck)
 
-    Replace recursive_mutex with juce::Mutex to remove boost dependency
+    Replace recursive_mutex with beast::Mutex to remove boost dependency
+
+--------------------------------------------------------------------------------
+Davidisms
+--------------------------------------------------------------------------------
+
+(Figure out a good place to record information like this permanently)
+
+Regarding a defect where a failing transaction was being submitted over and over
+  again on the network (July 3, 2013)
+
+  The core problem was an interaction between two bits of logic.
+  1) Normally, we won't relay a transaction again if we already recently relayed
+     it. But this is bypassed if the transaction failed in a way that could
+     allow it to succeed later. This way, if one server discovers a transaction
+     can now work, it can get all servers to retry it.
+  2) Normally, we won't relay a transaction if we think it can't claim a fee.
+     But if we're not sure it can't claim a fee because we're in an unhealthy
+     state, we propagate the transaction to let other servers decide if they
+     think it can claim a fee.
+  With these two bits of logic, two unhealthy servers could infinitely propagate
+     a transaction back and forth between each other.
+
+A node is "full below" if we believe we have (either in the database or
+  scheduled to be stored in the database) the contents of every node below that
+  node in a hash tree. When trying to acquire a hash tree/map, if a node is
+  full below, we know not to bother with anything below that node.
+
+The fullBelowCache is a cache of hashes of nodes that are full below. Which means
+  there are no missing children
+
+
+What we want from the unique node list:
+  - Some number of trusted roots (known by domain)
+    probably organizations whose job is to provide a list of validators
+  - We imagine the IRGA for example would establish some group whose job is to
+    maintain a list of validators. There would be a public list of criteria
+    that they would use to vet the validator. Things like:
+    * Not anonymous
+    * registered business
+    * Physical location
+    * Agree not to cease operations without notice / arbitrarily
+    * Responsive to complaints
+  - Identifiable jurisdiction
+    * Homogeneity in the jurisdiction is a business risk
+    * If all validators are in the same jurisdiction this is a business risk
+  - OpenCoin sets criteria for the organizations
+  - Rippled will ship with a list of trusted root "certificates"
+    In other words this is a list of trusted domains from which the software
+      can contact each trusted root and retrieve a list of "good" validators
+      and then do something with that information
+  - All the validation information would be public, including the broadcast
+    messages.
+  - The goal is to easily identify bad actors and assess network health
+    * Malicious intent
+    * Or, just hardware problems (faulty drive or memory)
 

@@ -37,7 +37,7 @@ bool PathRequest::isValid (Ledger::ref lrLedger)
 
     if (bValid)
     {
-        AccountState::pointer asSrc = theApp->getOPs ().getAccountState (lrLedger, raSrcAccount);
+        AccountState::pointer asSrc = getApp().getOPs ().getAccountState (lrLedger, raSrcAccount);
 
         if (!asSrc)
         {
@@ -47,7 +47,7 @@ bool PathRequest::isValid (Ledger::ref lrLedger)
         }
         else
         {
-            AccountState::pointer asDst = theApp->getOPs ().getAccountState (lrLedger, raDstAccount);
+            AccountState::pointer asDst = getApp().getOPs ().getAccountState (lrLedger, raDstAccount);
             Json::Value jvDestCur;
 
             if (!asDst)

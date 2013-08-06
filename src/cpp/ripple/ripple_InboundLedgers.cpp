@@ -23,12 +23,12 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
         ptr->addPeers ();
         ptr->setTimer (); // Cannot call in constructor
     }
-    else
+    else if (ptr->isComplete ())
     {
         Ledger::pointer ledger = ptr->getLedger ();
         ledger->setClosed ();
         ledger->setImmutable ();
-        theApp->getLedgerMaster ().storeLedger (ledger);
+        getApp().getLedgerMaster ().storeLedger (ledger);
         WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have: " << hash;
     }
 
@@ -75,6 +75,16 @@ bool InboundLedgers::awaitLedgerData (uint256 const& ledgerHash)
     return true;
 }
 
+/*
+This gets called when
+    "We got some data from an inbound ledger"
+
+inboundLedgerTrigger:
+  "What do we do with this partial data?"
+  Figures out what to do with the responses to our requests for information.
+
+*/
+// means "We got some data from an inbound ledger"
 void InboundLedgers::gotLedgerData (Job&, uint256 hash,
         boost::shared_ptr<protocol::TMLedgerData> packet_ptr, boost::weak_ptr<Peer> wPeer)
 {
@@ -215,16 +225,21 @@ int InboundLedgers::getFetchCount (int& timeoutCount)
 {
     timeoutCount = 0;
     int ret = 0;
+
+    std::map<uint256, InboundLedger::pointer> inboundLedgers;
+
     {
-        typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
         boost::mutex::scoped_lock sl (mLock);
-        BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
+        inboundLedgers = mLedgers;
+    }
+
+    typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
+    BOOST_FOREACH (const u256_acq_pair & it, inboundLedgers)
+    {
+        if (it.second->isActive ())
         {
-            if (it.second->isActive ())
-            {
-                ++ret;
-                timeoutCount += it.second->getTimeouts ();
-            }
+            ++ret;
+            timeoutCount += it.second->getTimeouts ();
         }
     }
     return ret;

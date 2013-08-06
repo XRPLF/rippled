@@ -21,12 +21,14 @@ class SerializedTransaction
     , public CountedObject <SerializedTransaction>
 {
 public:
+    static char const* getCountedObjectName () { return "SerializedTransaction"; }
+
     typedef boost::shared_ptr<SerializedTransaction>        pointer;
     typedef const boost::shared_ptr<SerializedTransaction>& ref;
 
 public:
     SerializedTransaction (SerializerIterator & sit);
-    SerializedTransaction (TransactionType type);
+    SerializedTransaction (TxType type);
     SerializedTransaction (const STObject & object);
 
     // STObject functions
@@ -45,7 +47,7 @@ public:
     }
     uint256 getSigningHash () const;
 
-    TransactionType getTxnType () const
+    TxType getTxnType () const
     {
         return mType;
     }
@@ -112,21 +114,19 @@ public:
     static std::string getSQLValueHeader ();
     static std::string getSQLInsertHeader ();
     static std::string getSQLInsertIgnoreHeader ();
-    static std::string getSQLInsertReplaceHeader ();
     std::string getSQL (std::string & sql, uint32 inLedger, char status) const;
     std::string getSQL (uint32 inLedger, char status) const;
     std::string getSQL (Serializer rawTxn, uint32 inLedger, char status) const;
 
     // SQL Functions with metadata
     static std::string getMetaSQLValueHeader ();
-    static std::string getMetaSQLInsertHeader ();
     static std::string getMetaSQLInsertReplaceHeader ();
     std::string getMetaSQL (uint32 inLedger, const std::string & escapedMetaData) const;
     std::string getMetaSQL (Serializer rawTxn, uint32 inLedger, char status, const std::string & escapedMetaData) const;
 
 private:
-    TransactionType mType;
-    const TxFormat* mFormat;
+    TxType mType;
+    TxFormats::Item const* mFormat;
 
     SerializedTransaction* duplicate () const
     {

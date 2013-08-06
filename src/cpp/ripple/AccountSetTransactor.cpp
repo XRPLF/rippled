@@ -50,7 +50,7 @@ TER AccountSetTransactor::doApply ()
         {
             WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Retry: OwnerCount not zero.";
 
-            return terOWNERS;
+            return isSetBit(mParams, tapRETRY) ? terOWNERS : tecOWNERS;
         }
 
         WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Set RequireAuth.";

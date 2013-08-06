@@ -21,7 +21,7 @@
 #define SECTION_FEE_ACCOUNT_RESERVE     "fee_account_reserve"
 #define SECTION_FEE_OWNER_RESERVE       "fee_owner_reserve"
 #define SECTION_NODE_DB                 "node_db"
-#define SECTION_LDB_EPHEMERAL           "ephemeral_db"
+#define SECTION_FASTNODE_DB             "temp_db"
 #define SECTION_LEDGER_HISTORY          "ledger_history"
 #define SECTION_IPS                     "ips"
 #define SECTION_NETWORK_QUORUM          "network_quorum"
@@ -197,9 +197,9 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
     // Update default values
     load ();
 
-    // std::cerr << "CONFIG FILE: " << CONFIG_FILE << std::endl;
-    // std::cerr << "CONFIG DIR: " << CONFIG_DIR << std::endl;
-    // std::cerr << "DATA DIR: " << DATA_DIR << std::endl;
+    // Log::out() << "CONFIG FILE: " << CONFIG_FILE;
+    // Log::out() << "CONFIG DIR: " << CONFIG_DIR;
+    // Log::out() << "DATA DIR: " << DATA_DIR;
 
     boost::filesystem::create_directories (DATA_DIR, ec);
 
@@ -208,7 +208,8 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
 }
 
 Config::Config ()
-    : SSL_CONTEXT (boost::asio::ssl::context::sslv23)
+    : m_rpcPort (5001)
+    , SSL_CONTEXT (boost::asio::ssl::context::sslv23)
 {
     //
     // Defaults
@@ -218,7 +219,6 @@ Config::Config ()
     NETWORK_START_TIME      = 1319844908;
 
     PEER_PORT               = SYSTEM_PEER_PORT;
-    RPC_PORT                = 5001;
     RPC_SECURE              = 0;
     WEBSOCKET_PORT          = SYSTEM_WEBSOCKET_PORT;
     WEBSOCKET_PUBLIC_PORT   = SYSTEM_WEBSOCKET_PUBLIC_PORT;
@@ -263,9 +263,6 @@ Config::Config ()
 
     SSL_VERIFY              = true;
 
-    NODE_DB                 = "sqlite";
-
-    LDB_IMPORT              = false;
     ELB_SUPPORT             = false;
     RUN_STANDALONE          = false;
     START_UP                = NORMAL;
@@ -274,13 +271,13 @@ Config::Config ()
 void Config::load ()
 {
     if (!QUIET)
-        std::cerr << "Loading: " << CONFIG_FILE << std::endl;
+        Log::out() << "Loading: " << CONFIG_FILE;
 
     std::ifstream   ifsConfig (CONFIG_FILE.c_str (), std::ios::in);
 
     if (!ifsConfig)
     {
-        std::cerr << "Failed to open '" << CONFIG_FILE << "'." << std::endl;
+        Log::out() << "Failed to open '" << CONFIG_FILE << "'.";
     }
     else
     {
@@ -291,7 +288,7 @@ void Config::load ()
 
         if (ifsConfig.bad ())
         {
-            std::cerr << "Failed to read '" << CONFIG_FILE << "'." << std::endl;
+            Log::out() << "Failed to read '" << CONFIG_FILE << "'.";
         }
         else
         {
@@ -373,14 +370,14 @@ void Config::load ()
 
             (void) SectionSingleB (secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
             (void) SectionSingleB (secConfig, SECTION_RPC_ADMIN_USER, RPC_ADMIN_USER);
-            (void) SectionSingleB (secConfig, SECTION_RPC_IP, RPC_IP);
+            (void) SectionSingleB (secConfig, SECTION_RPC_IP, m_rpcIP);
             (void) SectionSingleB (secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
             (void) SectionSingleB (secConfig, SECTION_RPC_USER, RPC_USER);
             (void) SectionSingleB (secConfig, SECTION_NODE_DB, NODE_DB);
-            (void) SectionSingleB (secConfig, SECTION_LDB_EPHEMERAL, LDB_EPHEMERAL);
+            (void) SectionSingleB (secConfig, SECTION_FASTNODE_DB, FASTNODE_DB);
 
             if (SectionSingleB (secConfig, SECTION_RPC_PORT, strTemp))
-                RPC_PORT = boost::lexical_cast<int> (strTemp);
+                m_rpcPort = boost::lexical_cast<int> (strTemp);
 
             if (SectionSingleB (secConfig, "ledger_creator" , strTemp))
                 LEDGER_CREATOR = boost::lexical_cast<bool> (strTemp);
@@ -578,5 +575,23 @@ int Config::getSize (SizedItemName item)
     return -1;
 }
 
+void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
+{
+    String const s (newAddress.c_str ());
+    
+    int const colonPosition = s.lastIndexOfChar (':');
 
-// vim:ts=4
+    if (colonPosition != -1)
+    {
+        String const ipPart = s.substring (0, colonPosition);
+        String const portPart = s.substring (colonPosition + 1, s.length ());
+
+        setRpcIP (ipPart.toRawUTF8 ());
+        setRpcPort (portPart.getIntValue ());
+    }
+    else
+    {
+        setRpcIP (newAddress);
+    }
+}
+

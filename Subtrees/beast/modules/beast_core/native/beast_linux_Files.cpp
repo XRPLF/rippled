@@ -213,7 +213,7 @@ File File::getSpecialLocation (const SpecialLocationType type)
             break;
     }
 
-    return File::nonexistent;
+    return File::nonexistent ();
 }
 
 //==============================================================================
@@ -241,7 +241,7 @@ bool File::moveToTrash() const
 }
 
 //==============================================================================
-class DirectoryIterator::NativeIterator::Pimpl
+class DirectoryIterator::NativeIterator::Pimpl : Uncopyable
 {
 public:
     Pimpl (const File& directory, const String& wildCard_)
@@ -295,8 +295,6 @@ public:
 private:
     String parentDir, wildCard;
     DIR* dir;
-
-    BEAST_DECLARE_NON_COPYABLE (Pimpl)
 };
 
 DirectoryIterator::NativeIterator::NativeIterator (const File& directory, const String& wildCard)

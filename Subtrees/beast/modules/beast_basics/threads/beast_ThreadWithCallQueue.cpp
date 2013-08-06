@@ -32,6 +32,13 @@ ThreadWithCallQueue::~ThreadWithCallQueue ()
     stop (true);
 }
 
+ThreadWithCallQueue::EntryPoints* ThreadWithCallQueue::getDefaultEntryPoints () noexcept
+{
+    static EntryPoints entryPoints;
+
+    return &entryPoints;
+}
+
 void ThreadWithCallQueue::start (EntryPoints* const entryPoints)
 {
     {

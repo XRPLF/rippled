@@ -31,6 +31,7 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tecUNFUNDED_ADD,        "tecUNFUNDED_ADD",          "Insufficient XRP balance for WalletAdd."               },
         {   tecUNFUNDED_OFFER,      "tecUNFUNDED_OFFER",        "Insufficient balance to fund created offer."           },
         {   tecUNFUNDED_PAYMENT,    "tecUNFUNDED_PAYMENT",      "Insufficient XRP balance to send."                     },
+        {   tecOWNERS,              "tecOWNERS",                "Non-zero owner count."                                 },
 
         {   tefFAILURE,             "tefFAILURE",               "Failed to apply."                                      },
         {   tefALREADY,             "tefALREADY",               "The exact transaction was already in this ledger."     },

@@ -33,7 +33,7 @@
 
     You can create a Random object and use it to generate a sequence of random numbers.
 */
-class BEAST_API Random
+class BEAST_API Random : LeakChecked <Random>
 {
 public:
     //==============================================================================
@@ -127,8 +127,6 @@ public:
 private:
     //==============================================================================
     int64 seed;
-
-    BEAST_LEAK_DETECTOR (Random)
 };
 
 

@@ -11,13 +11,16 @@
 Handles incoming connections from people making RPC Requests
 */
 
-class RPCDoor
+class RPCDoor : LeakChecked <RPCDoor>
 {
 public:
-    explicit RPCDoor (boost::asio::io_service& io_service);
+    explicit RPCDoor (
+        boost::asio::io_service& io_service,
+        RPCServer::Handler& handler);
     ~RPCDoor ();
 
 private:
+    RPCServer::Handler& m_rpcServerHandler;
     boost::asio::ip::tcp::acceptor      mAcceptor;
     boost::asio::deadline_timer         mDelayTimer;
     boost::asio::ssl::context           mSSLContext;

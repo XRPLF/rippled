@@ -4,6 +4,8 @@
 */
 //==============================================================================
 
+// VFALCO TODO Tidy this up into a RippleTime object
+
 //
 // Time support
 // We have our own epoch.

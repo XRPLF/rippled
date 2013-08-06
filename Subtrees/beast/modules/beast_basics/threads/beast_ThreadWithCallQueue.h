@@ -20,29 +20,28 @@
 #ifndef BEAST_THREADWITHCALLQUEUE_BEASTHEADER
 #define BEAST_THREADWITHCALLQUEUE_BEASTHEADER
 
-/*============================================================================*/
-/**
-  An InterruptibleThread with a CallQueue.
+/** An InterruptibleThread with a CallQueue.
 
-  This combines an InterruptibleThread with a CallQueue, allowing functors to
-  be queued for asynchronous execution on the thread.
+    This combines an InterruptibleThread with a CallQueue, allowing functors to
+    be queued for asynchronous execution on the thread.
 
-  The thread runs an optional user-defined idle function, which must regularly
-  check for an interruption using the InterruptibleThread interface. When an
-  interruption is signaled, the idle function returns and the CallQueue is
-  synchronized. Then, the idle function is resumed.
+    The thread runs an optional user-defined idle function, which must regularly
+    check for an interruption using the InterruptibleThread interface. When an
+    interruption is signaled, the idle function returns and the CallQueue is
+    synchronized. Then, the idle function is resumed.
 
-  When the ThreadWithCallQueue first starts up, an optional user-defined
-  initialization function is executed on the thread. When the thread exits,
-  a user-defined exit function may be executed on the thread.
+    When the ThreadWithCallQueue first starts up, an optional user-defined
+    initialization function is executed on the thread. When the thread exits,
+    a user-defined exit function may be executed on the thread.
 
-  @see CallQueue
+    @see CallQueue
 
-  @ingroup beast_concurrent
+    @ingroup beast_concurrent
 */
-class ThreadWithCallQueue
+class BEAST_API ThreadWithCallQueue
     : public CallQueue
     , private InterruptibleThread::EntryPoint
+    , LeakChecked <ThreadWithCallQueue>
 {
 public:
     /** Entry points for a ThreadWithCallQueue.
@@ -71,6 +70,12 @@ public:
     */
     explicit ThreadWithCallQueue (String name);
 
+    /** Retrieve the default entry points.
+
+        The default entry points do nothing.
+    */
+    static EntryPoints* getDefaultEntryPoints () noexcept;
+
     /** Destroy a ThreadWithCallQueue.
 
         If the thread is still running it is stopped. The destructor blocks
@@ -78,9 +83,16 @@ public:
     */
     ~ThreadWithCallQueue ();
 
-    /** Start the thread.
+    /** Start the thread, with optional entry points.
+
+        If `entryPoints` is specified then the thread runs using those
+        entry points. If ommitted, the default entry simply do nothing.
+        This is useful for creating a thread whose sole activities are
+        performed through the call queue.
+
+        @param entryPoints An optional pointer to @ref EntryPoints.
     */
-    void start (EntryPoints* const entryPoints);
+    void start (EntryPoints* const entryPoints = getDefaultEntryPoints ());
 
     /* Stop the thread.
 
@@ -102,18 +114,17 @@ public:
 
     void stop (bool const wait);
 
-    /**
-      Determine if the thread needs interruption.
+    /** Determine if the thread needs interruption.
 
-      Should be called periodically by the idle function. If interruptionPoint
-      returns true or throws, it must not be called again until the idle function
-      returns and is re-entered.
+        Should be called periodically by the idle function. If interruptionPoint
+        returns true or throws, it must not be called again until the idle function
+        returns and is re-entered.
 
-      @invariant No previous calls to interruptionPoint() made after the idle
-                 function entry point returned `true`.
+        @invariant No previous calls to interruptionPoint() made after the idle
+                   function entry point returned `true`.
 
-      @return `false` if the idle function may continue, or `true` if the
-              idle function must return as soon as possible.
+        @return `false` if the idle function may continue, or `true` if the
+                idle function must return as soon as possible.
     */
     bool interruptionPoint ();
 

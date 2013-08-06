@@ -14,6 +14,8 @@ class Peer;
 class LedgerConsensus;
 
 class NetworkOPs
+    : public DeadlineTimer::Listener
+    , LeakChecked <NetworkOPs>
 {
 public:
     enum Fault
@@ -34,6 +36,7 @@ public:
     };
 
 #if 0
+    // VFALCO TODO Make this happen
     /** Subscription data interface.
     */
     class Subscriber
@@ -45,13 +48,15 @@ public:
         */
         virtual void onSubscriberReceiveJSON (Json::Value const& json) { }
     };
-    typedef boost::unordered_map <uint64, Subscriber::WeakPtr> subMapType;
+    typedef boost::unordered_map <uint64, Subscriber::WeakPtr> SubMapType;
 #endif
 
-    typedef boost::unordered_map <uint64, InfoSub::wptr> subMapType;
+    typedef boost::unordered_map <uint64, InfoSub::wptr> SubMapType;
 
 public:
-    NetworkOPs (boost::asio::io_service& io_service, LedgerMaster* pLedgerMaster);
+    // VFALCO TODO Make LedgerMaster a SharedObjectPtr or a reference.
+    //
+    explicit NetworkOPs (LedgerMaster* pLedgerMaster);
 
     // network information
     uint32 getNetworkTimeNC ();                 // Our best estimate of wall time in seconds from 1/1/2000
@@ -74,6 +79,10 @@ public:
     Ledger::ref     getValidatedLedger ()
     {
         return mLedgerMaster->getValidatedLedger ();
+    }
+    Ledger::ref     getPublishedLedger ()
+    {
+        return mLedgerMaster->getPublishedLedger ();
     }
     Ledger::ref     getCurrentLedger ()
     {
@@ -225,30 +234,10 @@ public:
     int getFetchSize ();
     void sweepFetchPack ();
 
-    float getJSONHitRate ()
-    {
-        return mJSONCache.getHitRate ();
-    }
-
-    // VFALCO TODO Rename this to getNumberOfCachedJSONItems or something similar
-    int getJSONEntries ()
-    {
-        return mJSONCache.getNumberOfEntries ();
-    }
-
-    void storeJSONCache (JSONCache::Kind kind, const uint256& ledger, const uint160& object,
-                         const boost::shared_ptr <Json::Value>& data)
-    {
-        mJSONCache.storeEntry (kind, ledger, object, data);
-    }
-
-    boost::shared_ptr<Json::Value> getJSONCache (JSONCache::Kind kind, const uint256& ledger, const uint160& object)
-    {
-        return mJSONCache.getEntry (kind, ledger, object);
-    }
-
     // network state machine
-    void checkState (const boost::system::error_code& result);
+
+    // VFALCO TODO Try to make all these private since they seem to be...private
+    //
     void switchLastClosedLedger (Ledger::pointer newLedger, bool duringConsensus); // Used for the "jump" case
     bool checkLastClosedLedger (const std::vector<Peer::pointer>&, uint256& networkClosed);
     int beginConsensus (uint256 const& networkClosed, Ledger::pointer closingLedger);
@@ -323,6 +312,8 @@ public:
     uint256 getConsensusLCL ();
     void reportFeeChange ();
 
+    void doClusterReport ();
+
     //Helper function to generate SQL query to get transactions
     std::string transactionsSQL (std::string selection, const RippleAddress& account,
                                  int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit,
@@ -374,9 +365,24 @@ public:
     InfoSub::pointer    addRpcSub (const std::string& strUrl, InfoSub::ref rspEntry);
 
 private:
-    typedef boost::unordered_map<uint160, subMapType>               subInfoMapType;
-    typedef boost::unordered_map<uint160, subMapType>::value_type   subInfoMapValue;
-    typedef boost::unordered_map<uint160, subMapType>::iterator     subInfoMapIterator;
+    void processNetTimer ();
+    void onDeadlineTimer (DeadlineTimer& timer);
+
+    void setMode (OperatingMode);
+
+    Json::Value transJson (const SerializedTransaction& stTxn, TER terResult, bool bValidated, Ledger::ref lpCurrent);
+    bool haveConsensusObject ();
+
+    Json::Value pubBootstrapAccountInfo (Ledger::ref lpAccepted, const RippleAddress& naAccountID);
+
+    void pubValidatedTransaction (Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
+    void pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLedgerTx& alTransaction, bool isAccepted);
+
+    void pubServer ();
+
+private:
+    typedef boost::unordered_map <uint160, SubMapType>               SubInfoMapType;
+    typedef boost::unordered_map <uint160, SubMapType>::iterator     SubInfoMapIterator;
 
     typedef boost::unordered_map<std::string, InfoSub::pointer>     subRpcMapType;
 
@@ -385,7 +391,8 @@ private:
     bool                                mProposing, mValidating;
     bool                                mFeatureBlocked;
     boost::posix_time::ptime            mConnectTime;
-    boost::asio::deadline_timer         mNetTimer;
+    DeadlineTimer                       m_netTimer;
+    DeadlineTimer                       m_clusterTimer;
     boost::shared_ptr<LedgerConsensus>  mConsensus;
     boost::unordered_map < uint160,
           std::list<LedgerProposal::pointer> > mStoredProposals;
@@ -407,37 +414,27 @@ private:
 
     // XXX Split into more locks.
     boost::recursive_mutex                              mMonitorLock;
-    subInfoMapType                                      mSubAccount;
-    subInfoMapType                                      mSubRTAccount;
+    SubInfoMapType                                      mSubAccount;
+    SubInfoMapType                                      mSubRTAccount;
 
     subRpcMapType                                       mRpcSubMap;
 
-    subMapType                                          mSubLedger;             // accepted ledgers
-    subMapType                                          mSubServer;             // when server changes connectivity state
-    subMapType                                          mSubTransactions;       // all accepted transactions
-    subMapType                                          mSubRTTransactions;     // all proposed and accepted transactions
-
-    JSONCache                                           mJSONCache;
+    SubMapType                                          mSubLedger;             // accepted ledgers
+    SubMapType                                          mSubServer;             // when server changes connectivity state
+    SubMapType                                          mSubTransactions;       // all accepted transactions
+    SubMapType                                          mSubRTTransactions;     // all proposed and accepted transactions
 
     TaggedCache< uint256, Blob , UptimeTimerAdapter >   mFetchPack;
     uint32                                              mLastFetchPack;
+
+    // VFALCO TODO Document the special value uint32(-1) for this member
+    //             and replace uint32(-1) with a constant. It is initialized
+    //             in the ctor-initializer list to this constant.
+    //
     uint32                                              mFetchSeq;
 
     uint32                                              mLastLoadBase;
     uint32                                              mLastLoadFactor;
-
-    void setMode (OperatingMode);
-
-    Json::Value transJson (const SerializedTransaction& stTxn, TER terResult, bool bValidated, Ledger::ref lpCurrent);
-    bool haveConsensusObject ();
-
-    Json::Value pubBootstrapAccountInfo (Ledger::ref lpAccepted, const RippleAddress& naAccountID);
-
-    void pubValidatedTransaction (Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
-    void pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLedgerTx& alTransaction, bool isAccepted);
-
-    void pubServer ();
 };
 
 #endif
-// vim:ts=4

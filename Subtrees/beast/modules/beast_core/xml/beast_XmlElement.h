@@ -139,7 +139,7 @@
 
     @see XmlDocument
 */
-class BEAST_API XmlElement
+class BEAST_API XmlElement : LeakChecked <XmlElement>
 {
 public:
     //==============================================================================
@@ -726,8 +726,6 @@ private:
     void writeElementAsText (OutputStream&, int indentationLevel, int lineWrapLength) const;
     void getChildElementsAsArray (XmlElement**) const noexcept;
     void reorderChildElements (XmlElement**, int) noexcept;
-
-    BEAST_LEAK_DETECTOR (XmlElement)
 };
 
 

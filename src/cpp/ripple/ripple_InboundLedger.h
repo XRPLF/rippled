@@ -15,6 +15,8 @@ class InboundLedger
     , public CountedObject <InboundLedger>
 {
 public:
+    static char const* getCountedObjectName () { return "InboundLedger"; }
+
     typedef boost::shared_ptr <InboundLedger> pointer;
 
 public:
@@ -90,7 +92,7 @@ public:
 private:
     void done ();
 
-    void onTimer (bool progress);
+    void onTimer (bool progress, boost::recursive_mutex::scoped_lock& peerSetLock);
 
     void newPeer (Peer::ref peer)
     {
@@ -100,16 +102,16 @@ private:
     boost::weak_ptr <PeerSet> pmDowncast ();
 
 private:
-    Ledger::pointer mLedger;
-    bool            mHaveBase;
-    bool            mHaveState;
-    bool            mHaveTransactions;
-    bool            mAborted;
-    bool            mSignaled;
-    bool            mAccept;
-    bool            mByHash;
-    int             mWaitCount;
-    uint32          mSeq;
+    Ledger::pointer    mLedger;
+    bool               mHaveBase;
+    bool               mHaveState;
+    bool               mHaveTransactions;
+    bool               mAborted;
+    bool               mSignaled;
+    bool               mAccept;
+    bool               mByHash;
+    beast::Atomic<int> mWaitCount;
+    uint32             mSeq;
 
     std::set <SHAMapNode> mRecentTXNodes;
     std::set <SHAMapNode> mRecentASNodes;

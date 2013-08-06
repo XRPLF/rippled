@@ -131,10 +131,11 @@ public:
         if (start.getAddress() == nullptr || start.isEmpty())
             return getEmpty();
 
-        const size_t numBytes = (size_t) (end.getAddress() - start.getAddress());
-        const CharPointerType dest (createUninitialisedBytes (numBytes + 1));
+        const size_t numBytes = (size_t)(  reinterpret_cast<const char*> (end.getAddress())
+                                         - reinterpret_cast<const char*> (start.getAddress()));
+        const CharPointerType dest (createUninitialisedBytes (numBytes + sizeof (CharType)));
         memcpy (dest.getAddress(), start, numBytes);
-        dest.getAddress()[numBytes] = 0;
+        dest.getAddress()[numBytes / sizeof (CharType)] = 0;
         return dest;
     }
 
@@ -1199,8 +1200,8 @@ public:
         dest = result.getCharPointer();
     }
 
-    StringCreationHelper (const String::CharPointerType& source_)
-        : source (source_), dest (nullptr), allocatedBytes (StringHolder::getAllocatedNumBytes (source)), bytesWritten (0)
+    StringCreationHelper (const String::CharPointerType s)
+        : source (s), dest (nullptr), allocatedBytes (StringHolder::getAllocatedNumBytes (s)), bytesWritten (0)
     {
         result.preallocateBytes (allocatedBytes);
         dest = result.getCharPointer();
@@ -1530,7 +1531,8 @@ String String::quoted (const beast_wchar quoteCharacter) const
 }
 
 //==============================================================================
-static String::CharPointerType findTrimmedEnd (const String::CharPointerType& start, String::CharPointerType end)
+static String::CharPointerType findTrimmedEnd (const String::CharPointerType start,
+                                               String::CharPointerType end)
 {
     while (end > start)
     {

@@ -20,6 +20,8 @@ class SHAMap
     : public CountedObject <SHAMap>
 {
 public:
+    static char const* getCountedObjectName () { return "SHAMap"; }
+
     typedef boost::shared_ptr<SHAMap> pointer;
     typedef const boost::shared_ptr<SHAMap>& ref;
 
@@ -139,7 +141,7 @@ public:
     bool compare (SHAMap::ref otherMap, Delta & differences, int maxCount);
 
     int armDirty ();
-    static int flushDirty (DirtyMap & dirtyMap, int maxNodes, HashedObjectType t, uint32 seq);
+    static int flushDirty (DirtyMap & dirtyMap, int maxNodes, NodeObjectType t, uint32 seq);
     boost::shared_ptr<DirtyMap> disarmDirty ();
 
     void setSeq (uint32 seq)

@@ -7,10 +7,12 @@ var testconfig  = require("./testconfig.js");
 
 exports.accounts = testconfig.accounts;
 
-// Where to find the binary.
-exports.rippled = path.resolve("build/rippled");
-
 exports.server_default  = "alpha";
+
+exports.default_server_config = {
+  // Where to find the binary.
+  rippled_path: path.resolve(__dirname, "../build/rippled")
+};
 
 //
 // Configuration for servers.
@@ -33,6 +35,7 @@ exports.servers = {
     // 'validation_seed' : "shhDFVsmS2GSu5vUyZSPXYfj1r79h",
     // 'validators' : "n9L8LZZCwsdXzKUN9zoVxs4YznYXZ9hEhsQZY7aVpxtFaSceiyDZ beta",
     'local_signing' : false,
+    'node_db': 'type=Memory'
   }
 };
 

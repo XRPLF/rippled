@@ -85,8 +85,8 @@ public:
     boost::filesystem::path     DEBUG_LOGFILE;
     boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
     std::string                 NODE_DB;                // Database to use for nodes
-    std::string                 LDB_EPHEMERAL;          // Database for temporary storage
-    bool                        LDB_IMPORT;             // Import into LevelDB
+    std::string                 FASTNODE_DB;            // Database for temporary storage
+    std::string                 DB_IMPORT;              // Import from old DB
     bool                        ELB_SUPPORT;            // Support Amazon ELB
 
     std::string                 VALIDATORS_SITE;        // Where to find validators.txt on the Internet.
@@ -128,7 +128,7 @@ public:
         - The ledger is not advanced automatically.
         - If no ledger is loaded, the default ledger with the root
           account is created.
-    */  
+    */
     bool                        RUN_STANDALONE;
 
     // Note: The following parameters do not relate to the UNL or trust at all
@@ -160,9 +160,71 @@ public:
     std::string                 WEBSOCKET_SSL_CHAIN;
     std::string                 WEBSOCKET_SSL_KEY;
 
+    //----------------------------------------------------------------------------
+    //
+    // VFALCO NOTE Please follow this style for modifying or adding code in the file.
+    //
+public:
+    /** Get the client or server RPC IP address.
+
+        @note The string may not always be in a valid parsable state.
+
+        @return A string representing the address.
+    */
+    std::string getRpcIP () const { return m_rpcIP; }
+
+    /** Get the client or server RPC port number.
+
+        @note The port number may be invalid (out of range or zero)
+
+        @return The RPC port number.
+    */
+    int getRpcPort () const { return m_rpcPort; }
+
+    /** Set the client or server RPC IP and optional port.
+
+        @note The string is not syntax checked.
+
+        @param newAddress A string in the format <ip-address>[':'<port-number>]
+    */
+    void setRpcIpAndOptionalPort (std::string const& newAddress);
+
+    /** Set the client or server RPC IP.
+
+        @note The string is not syntax-checked.
+
+        @param newIP A string representing the IP address to use.
+    */
+    void setRpcIP (std::string const& newIP) { m_rpcIP = newIP; }
+
+    /** Set the client or server RPC port number.
+
+        @note The port number is not range checked.
+
+        @param newPort The RPC port number to use.
+    */
+    void setRpcPort (int newPort) { m_rpcPort = newPort; }
+
+    /** Convert the RPC/port combination to a readable string.
+    */
+    String const getRpcAddress ()
+    {
+        String s;
+
+        s << m_rpcIP.c_str () << ":" << m_rpcPort;
+
+        return s;
+    }
+
+private:
+    std::string                 m_rpcIP;
+    // VFALCO TODO This should be a short.
+    int                         m_rpcPort;
+    //
+    //----------------------------------------------------------------------------
+
+public:
     // RPC parameters
-    std::string                 RPC_IP;
-    int                         RPC_PORT;
     std::vector<std::string>    RPC_ADMIN_ALLOW;
     std::string                 RPC_ADMIN_PASSWORD;
     std::string                 RPC_ADMIN_USER;
@@ -175,6 +237,7 @@ public:
     std::string                 RPC_SSL_CERT;
     std::string                 RPC_SSL_CHAIN;
     std::string                 RPC_SSL_KEY;
+    //----------------------------------------------------------------------------
 
     // Path searching
     int                         PATH_SEARCH_SIZE;

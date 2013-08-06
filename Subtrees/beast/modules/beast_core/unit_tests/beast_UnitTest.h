@@ -67,7 +67,7 @@ class UnitTestRunner;
 
     @see UnitTestRunner
 */
-class BEAST_API UnitTest
+class BEAST_API UnitTest : Uncopyable
 {
 public:
     //==============================================================================
@@ -164,8 +164,6 @@ private:
     //==============================================================================
     const String name;
     UnitTestRunner* runner;
-
-    BEAST_DECLARE_NON_COPYABLE (UnitTest)
 };
 
 
@@ -181,7 +179,7 @@ private:
 
     @see UnitTest
 */
-class BEAST_API UnitTestRunner
+class BEAST_API UnitTestRunner : Uncopyable
 {
 public:
     //==============================================================================
@@ -277,8 +275,6 @@ private:
 
     void addPass();
     void addFail (const String& failureMessage);
-
-    BEAST_DECLARE_NON_COPYABLE (UnitTestRunner)
 };
 
 

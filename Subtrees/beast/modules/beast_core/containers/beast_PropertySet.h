@@ -39,7 +39,7 @@
     See the PropertiesFile class for a subclass of this, which automatically broadcasts change
     messages and saves/loads the list from a file.
 */
-class BEAST_API PropertySet
+class BEAST_API PropertySet : LeakChecked <PropertySet>
 {
 public:
     //==============================================================================
@@ -206,8 +206,6 @@ private:
     PropertySet* fallbackProperties;
     CriticalSection lock;
     bool ignoreCaseOfKeys;
-
-    BEAST_LEAK_DETECTOR (PropertySet)
 };
 
 

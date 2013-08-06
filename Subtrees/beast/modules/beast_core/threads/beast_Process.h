@@ -35,7 +35,7 @@
 
     @see Thread, BEASTApplication
 */
-class BEAST_API Process
+class BEAST_API Process : Uncopyable
 {
 public:
     //==============================================================================
@@ -90,10 +90,8 @@ public:
     */
     static void lowerPrivilege();
 
-    //==============================================================================
     /** Returns true if this process is being hosted by a debugger. */
     static bool BEAST_CALLTYPE isRunningUnderDebugger();
-
 
     //==============================================================================
     /** Tries to launch the OS's default reader application for a given file or URL. */
@@ -140,7 +138,6 @@ public:
 
 private:
     Process();
-    BEAST_DECLARE_NON_COPYABLE (Process)
 };
 
 

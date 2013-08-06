@@ -20,8 +20,6 @@
 #ifndef BEAST_GLOBALFIFOFREESTORE_BEASTHEADER
 #define BEAST_GLOBALFIFOFREESTORE_BEASTHEADER
 
-#include "beast_FifoFreeStore.h"
-
 /*============================================================================*/
 /**
   A @ref FifoFreeStoreType singleton.
@@ -29,7 +27,7 @@
   @ingroup beast_concurrent
 */
 template <class Tag>
-class GlobalFifoFreeStore : public RefCountedSingleton <GlobalFifoFreeStore <Tag> >
+class GlobalFifoFreeStore : public SharedSingleton <GlobalFifoFreeStore <Tag> >
 {
 public:
     inline void* allocate (size_t bytes)
@@ -49,7 +47,7 @@ public:
 
 private:
     GlobalFifoFreeStore ()
-        : RefCountedSingleton <GlobalFifoFreeStore <Tag> >
+        : SharedSingleton <GlobalFifoFreeStore <Tag> >
         (SingletonLifetime::persistAfterCreation)
     {
     }

@@ -10,6 +10,8 @@
     @ingroup ripple_json
 */
 
+#include "BeastConfig.h"
+
 #include "ripple_json.h"
 
 #include <stdexcept>
@@ -30,15 +32,11 @@
 #define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw
 #define JSON_ASSERT_MESSAGE( condition, message ) if (!( condition )) throw std::runtime_error( message );
 
-#if RIPPLE_USE_NAMESPACE
 namespace ripple
 {
-#endif
 
 #include "json/json_reader.cpp"
 #include "json/json_value.cpp"
 #include "json/json_writer.cpp"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif

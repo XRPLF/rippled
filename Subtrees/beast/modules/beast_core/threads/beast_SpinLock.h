@@ -40,7 +40,7 @@
 
     @see CriticalSection
 */
-class BEAST_API SpinLock
+class BEAST_API SpinLock : Uncopyable
 {
 public:
     inline SpinLock() noexcept {}
@@ -80,8 +80,6 @@ public:
 private:
     //==============================================================================
     mutable Atomic<int> lock;
-
-    BEAST_DECLARE_NON_COPYABLE (SpinLock)
 };
 
 

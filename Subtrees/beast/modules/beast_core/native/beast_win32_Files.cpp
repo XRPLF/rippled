@@ -88,7 +88,7 @@ namespace WindowsFileHelpers
         if (SHGetSpecialFolderPath (0, path, type, FALSE))
             return File (String (path));
 
-        return File::nonexistent;
+        return File::nonexistent ();
     }
 
     File getModuleFileName (HINSTANCE moduleHandle)
@@ -536,7 +536,7 @@ File BEAST_CALLTYPE File::getSpecialLocation (const SpecialLocationType type)
 
         default:
             bassertfalse; // unknown type?
-            return File::nonexistent;
+            return File::nonexistent ();
     }
 
     return WindowsFileHelpers::getSpecialFolderPath (csidlType);
@@ -628,6 +628,8 @@ bool File::createLink (const String& description, const File& linkFileToCreate) 
 
 //==============================================================================
 class DirectoryIterator::NativeIterator::Pimpl
+    : LeakChecked <DirectoryIterator::NativeIterator::Pimpl>
+    , Uncopyable
 {
 public:
     Pimpl (const File& directory, const String& wildCard)
@@ -677,8 +679,6 @@ public:
 private:
     const String directoryWithWildCard;
     HANDLE handle;
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pimpl)
 };
 
 DirectoryIterator::NativeIterator::NativeIterator (const File& directory, const String& wildCard)
@@ -731,7 +731,7 @@ void File::revealToUser() const
 }
 
 //==============================================================================
-class NamedPipe::Pimpl
+class NamedPipe::Pimpl : LeakChecked <NamedPipe::Pimpl>, Uncopyable
 {
 public:
     Pimpl (const String& pipeName, const bool createPipe)
@@ -914,8 +914,6 @@ private:
         CancelIo (pipeH);
         return false;
     }
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pimpl)
 };
 
 void NamedPipe::close()

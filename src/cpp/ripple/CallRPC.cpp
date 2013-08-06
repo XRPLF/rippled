@@ -878,12 +878,13 @@ int commandLineRPC (const std::vector<std::string>& vCmd)
 
             callRPC (
                 isService,
-                theConfig.RPC_IP, theConfig.RPC_PORT,
-                theConfig.RPC_USER, theConfig.RPC_PASSWORD,
+                theConfig.getRpcIP (),
+                theConfig.getRpcPort (),
+                theConfig.RPC_USER,
+                theConfig.RPC_PASSWORD,
                 "",
                 jvRequest.isMember ("method")           // Allow parser to rewrite method.
-                ? jvRequest["method"].asString ()
-                : vCmd[0],
+                    ? jvRequest["method"].asString () : vCmd[0],
                 jvParams,                               // Parsed, execute.
                 false,
                 BIND_TYPE (callRPCHandler, &jvOutput, P_1));
@@ -1014,10 +1015,10 @@ void callRPC (
     // Connect to localhost
     if (!theConfig.QUIET)
     {
-        std::cerr << "Connecting to: " << strIp << ":" << iPort << std::endl;
-        //      std::cerr << "Username: " << strUsername << ":" << strPassword << std::endl;
-        //      std::cerr << "Path: " << strPath << std::endl;
-        //      std::cerr << "Method: " << strMethod << std::endl;
+        Log::out() << "Connecting to: " << strIp << ":" << iPort;
+        //  Log::out() << "Username: " << strUsername << ":" << strPassword;
+        //  Log::out() << "Path: " << strPath;
+        //  Log::out() << "Method: " << strMethod;
     }
 
     // HTTP basic authentication

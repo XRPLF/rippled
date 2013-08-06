@@ -6,15 +6,15 @@
 
 SETUP_LOG (SerializedTransaction)
 
-SerializedTransaction::SerializedTransaction (TransactionType type)
+SerializedTransaction::SerializedTransaction (TxType type)
     : STObject (sfTransaction)
     , mType (type)
     , mSigGood (false)
     , mSigBad (false)
 {
-    mFormat = TxFormats::getInstance ().findByType (type);
+    mFormat = TxFormats::getInstance()->findByType (type);
 
-    if (mFormat == NULL)
+    if (mFormat == nullptr)
     {
         WriteLog (lsWARNING, SerializedTransaction) << "Transaction type: " << type;
         throw std::runtime_error ("invalid transaction type");
@@ -29,9 +29,9 @@ SerializedTransaction::SerializedTransaction (STObject const& object)
     , mSigGood (false)
     , mSigBad (false)
 {
-    mType = static_cast <TransactionType> (getFieldU16 (sfTransactionType));
+    mType = static_cast <TxType> (getFieldU16 (sfTransactionType));
 
-    mFormat = TxFormats::getInstance ().findByType (mType);
+    mFormat = TxFormats::getInstance()->findByType (mType);
 
     if (!mFormat)
     {
@@ -57,9 +57,9 @@ SerializedTransaction::SerializedTransaction (SerializerIterator& sit) : STObjec
     }
 
     set (sit);
-    mType = static_cast<TransactionType> (getFieldU16 (sfTransactionType));
+    mType = static_cast<TxType> (getFieldU16 (sfTransactionType));
 
-    mFormat = TxFormats::getInstance ().findByType (mType);
+    mFormat = TxFormats::getInstance()->findByType (mType);
 
     if (!mFormat)
     {
@@ -248,26 +248,6 @@ std::string SerializedTransaction::getMetaSQLValueHeader ()
     return "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, TxnMeta)";
 }
 
-std::string SerializedTransaction::getSQLInsertHeader ()
-{
-    return "INSERT INTO Transactions " + getSQLValueHeader () + " VALUES ";
-}
-
-std::string SerializedTransaction::getSQLInsertIgnoreHeader ()
-{
-    return "INSERT OR IGNORE INTO Transactions " + getSQLValueHeader () + " VALUES ";
-}
-
-std::string SerializedTransaction::getSQLInsertReplaceHeader ()
-{
-    return "INSERT OR REPLACE INTO Transactions " + getSQLValueHeader () + " VALUES ";
-}
-
-std::string SerializedTransaction::getMetaSQLInsertHeader ()
-{
-    return "INSERT INTO Transactions " + getMetaSQLValueHeader () + " VALUES ";
-}
-
 std::string SerializedTransaction::getMetaSQLInsertReplaceHeader ()
 {
     return "INSERT OR REPLACE INTO Transactions " + getMetaSQLValueHeader () + " VALUES ";
@@ -307,50 +287,3 @@ std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, uint32 inLedge
                 % getTransactionID ().GetHex () % getTransactionType () % getSourceAccount ().humanAccountID ()
                 % getSequence () % inLedger % status % rTxn % escapedMetaData);
 }
-
-
-BOOST_AUTO_TEST_SUITE (SerializedTransactionTS)
-
-BOOST_AUTO_TEST_CASE ( STrans_test )
-{
-    RippleAddress seed;
-    seed.setSeedRandom ();
-    RippleAddress generator = RippleAddress::createGeneratorPublic (seed);
-    RippleAddress publicAcct = RippleAddress::createAccountPublic (generator, 1);
-    RippleAddress privateAcct = RippleAddress::createAccountPrivate (generator, seed, 1);
-
-    SerializedTransaction j (ttACCOUNT_SET);
-    j.setSourceAccount (publicAcct);
-    j.setSigningPubKey (publicAcct);
-    j.setFieldVL (sfMessageKey, publicAcct.getAccountPublic ());
-    j.sign (privateAcct);
-
-    if (!j.checkSign ()) BOOST_FAIL ("Transaction fails signature test");
-
-    Serializer rawTxn;
-    j.add (rawTxn);
-    SerializerIterator sit (rawTxn);
-    SerializedTransaction copy (sit);
-
-    if (copy != j)
-    {
-        Log (lsFATAL) << j.getJson (0);
-        Log (lsFATAL) << copy.getJson (0);
-        BOOST_FAIL ("Transaction fails serialize/deserialize test");
-    }
-
-    UPTR_T<STObject> new_obj = STObject::parseJson (j.getJson (0), sfGeneric);
-
-    if (new_obj.get () == NULL) BOOST_FAIL ("Unable to build object from json");
-
-    if (STObject (j) != *new_obj)
-    {
-        Log (lsINFO) << "ORIG: " << j.getJson (0);
-        Log (lsINFO) << "BUILT " << new_obj->getJson (0);
-        BOOST_FAIL ("Built a different transaction");
-    }
-}
-
-BOOST_AUTO_TEST_SUITE_END ();
-
-// vim:ts=4

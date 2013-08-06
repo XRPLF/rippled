@@ -39,7 +39,9 @@
     by subclassing hasMethod() and invokeMethod(), you can give your object
     methods.
 */
-class BEAST_API DynamicObject  : public ReferenceCountedObject
+class BEAST_API DynamicObject
+    : public ReferenceCountedObject
+    , LeakChecked <DynamicObject>
 {
 public:
     //==============================================================================
@@ -112,8 +114,6 @@ public:
 private:
     //==============================================================================
     NamedValueSet properties;
-
-    BEAST_LEAK_DETECTOR (DynamicObject)
 };
 
 

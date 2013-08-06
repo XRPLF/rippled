@@ -52,10 +52,10 @@ private:
         RippleAddress signer = val->getSignerPublic ();
         bool isCurrent = false;
 
-        if (theApp->getUNL ().nodeInUNL (signer) || val->isTrusted ())
+        if (getApp().getUNL ().nodeInUNL (signer) || val->isTrusted ())
         {
             val->setTrusted ();
-            uint32 now = theApp->getOPs ().getCloseTimeNC ();
+            uint32 now = getApp().getOPs ().getCloseTimeNC ();
             uint32 valClose = val->getSignTime ();
 
             if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
@@ -104,7 +104,7 @@ private:
                                         << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 
         if (val->isTrusted ())
-            theApp->getLedgerMaster ().checkAccept (hash);
+            getApp().getLedgerMaster ().checkAccept (hash);
 
         // FIXME: This never forwards untrusted validations
         return isCurrent;
@@ -136,7 +136,7 @@ private:
 
         if (set)
         {
-            uint32 now = theApp->getOPs ().getNetworkTimeNC ();
+            uint32 now = getApp().getOPs ().getNetworkTimeNC ();
             BOOST_FOREACH (u160_val_pair & it, *set)
             {
                 bool isTrusted = it.second->isTrusted ();
@@ -205,6 +205,36 @@ private:
         return trusted;
     }
 
+    int getFeeAverage (uint256 const& ledger, uint64 ref, uint64& fee)
+    {
+        int trusted = 0;
+        fee = 0;
+
+        boost::mutex::scoped_lock sl (mValidationLock);
+        VSpointer set = findSet (ledger);
+
+        if (set)
+        {
+            BOOST_FOREACH (u160_val_pair & it, *set)
+            {
+                if (it.second->isTrusted ())
+                {
+                    ++trusted;
+                    if (it.second->isFieldPresent(sfLoadFee))
+                        fee += it.second->getFieldU32(sfLoadFee);
+                    else
+                        fee += ref;
+		}
+            }
+        }
+
+        if (trusted == 0)
+            fee = ref;
+        else
+            fee /= trusted;
+        return trusted;
+    }
+
     int getNodesAfter (uint256 const& ledger)
     {
         // Number of trusted nodes that have moved past this ledger
@@ -241,7 +271,7 @@ private:
 
     std::list<SerializedValidation::pointer> getCurrentTrustedValidations ()
     {
-        uint32 cutoff = theApp->getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        uint32 cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
 
         std::list<SerializedValidation::pointer> ret;
 
@@ -276,7 +306,7 @@ private:
     boost::unordered_map<uint256, currentValidationCount>
     getCurrentValidations (uint256 currentLedger, uint256 priorLedger)
     {
-        uint32 cutoff = theApp->getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        uint32 cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
         bool valPriorLedger = priorLedger.isNonZero ();
 
@@ -307,7 +337,7 @@ private:
                          (valPriorLedger && (it->second->getLedgerHash () == priorLedger))))
                 {
                     countPreferred = true;
-                    WriteLog (lsDEBUG, Validations) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash ();
+                    WriteLog (lsTRACE, Validations) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash ();
                 }
 
                 currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash ()];
@@ -358,13 +388,13 @@ private:
             return;
 
         mWriting = true;
-        theApp->getJobQueue ().addJob (jtWRITE, "Validations::doWrite",
+        getApp().getJobQueue ().addJob (jtWRITE, "Validations::doWrite",
                                        BIND_TYPE (&Validations::doWrite, this, P_1));
     }
 
     void doWrite (Job&)
     {
-        LoadEvent::autoptr event (theApp->getJobQueue ().getLoadEventAP (jtDISK, "ValidationWrite"));
+        LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtDISK, "ValidationWrite"));
         boost::format insVal ("INSERT INTO Validations "
                               "(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
 
@@ -378,8 +408,8 @@ private:
             mStaleValidations.swap (vector);
             sl.unlock ();
             {
-                Database* db = theApp->getLedgerDB ()->getDB ();
-                ScopedLock dbl (theApp->getLedgerDB ()->getDBLock ());
+                Database* db = getApp().getLedgerDB ()->getDB ();
+                ScopedLock dbl (getApp().getLedgerDB ()->getDBLock ());
 
                 Serializer s (1024);
                 db->executeSQL ("BEGIN TRANSACTION;");

@@ -11,7 +11,7 @@
 
     A peer set is used to acquire a ledger or a transaction set.
 */
-class PeerSet
+class PeerSet : LeakChecked <PeerSet>
 {
 public:
     uint256 const& getHash () const
@@ -71,7 +71,7 @@ protected:
     virtual ~PeerSet () { }
 
     virtual void newPeer (Peer::ref) = 0;
-    virtual void onTimer (bool progress) = 0;
+    virtual void onTimer (bool progress, boost::recursive_mutex::scoped_lock&) = 0;
     virtual boost::weak_ptr<PeerSet> pmDowncast () = 0;
 
     void setComplete ()

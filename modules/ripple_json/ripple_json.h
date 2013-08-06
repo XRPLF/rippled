@@ -20,10 +20,7 @@
 #ifndef RIPPLE_JSON_RIPPLEHEADER
 #define RIPPLE_JSON_RIPPLEHEADER
 
-#include <deque>
-#include <stack>
-#include <string>
-#include <vector>
+#include "../modules/ripple_basics/ripple_basics.h"
 
 #include "json/json_config.h" // Needed before these cpptl includes
 
@@ -37,10 +34,8 @@
 # include <cpptl/forwards.h>
 #endif
 
-#if RIPPLE_USE_NAMESPACE
 namespace ripple
 {
-#endif
 
 #include "json/json_forwards.h"
 #include "json/json_features.h"
@@ -48,8 +43,6 @@ namespace ripple
 #include "json/json_reader.h"
 #include "json/json_writer.h"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
 
 #endif

@@ -131,7 +131,7 @@
 
   @ingroup beast_concurrent
 */
-class CallQueue
+class BEAST_API CallQueue
 {
 public:
     //============================================================================
@@ -313,11 +313,11 @@ public:
 
         struct SharedState;           // contains data shared between threads
 
-        ConcurrentState <SharedState> sharedState;
+        SharedData <SharedState> sharedState;
 
         void stateChanged ()
         {
-          ConcurrentState <SharedState>::ReadAccess state (sharedState);
+          SharedData <SharedState>::ReadAccess state (sharedState);
 
           // (read state)
         }
@@ -326,7 +326,7 @@ public:
 
         void changeState ()
         {
-          ConcurrentState <State>::WriteAccess state (sharedState);
+          SharedData <State>::WriteAccess state (sharedState);
 
           // (read and write state)
 

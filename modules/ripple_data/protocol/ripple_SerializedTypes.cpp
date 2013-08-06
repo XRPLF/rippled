@@ -33,6 +33,8 @@ bool SerializedType::isEquivalent (const SerializedType& t) const
 
 void STPathSet::printDebug ()
 {
+    // VFALCO NOTE Can't use Log::out() because of std::endl
+    //
     for (int i = 0; i < value.size (); i++)
     {
         std::cerr << i << ": ";
@@ -53,13 +55,13 @@ void STPathSet::printDebug ()
 
 void STPath::printDebug ()
 {
-    std::cerr << "STPath:" << std::endl;
+    Log::out() << "STPath:";
 
     for (int i = 0; i < mPath.size (); i++)
     {
         RippleAddress nad;
         nad.setAccountID (mPath[i].mAccountID);
-        std::cerr << "   " << i << ": " << nad.humanAccountID () << std::endl;
+        Log::out() << "   " << i << ": " << nad.humanAccountID ();
     }
 }
 
@@ -129,18 +131,20 @@ std::string STUInt16::getText () const
 {
     if (getFName () == sfLedgerEntryType)
     {
-        LedgerEntryFormat* f = LedgerEntryFormat::getLgrFormat (value);
+        LedgerFormats::Item const* const item =
+            LedgerFormats::getInstance ()->findByType (static_cast <LedgerEntryType> (value));
 
-        if (f != NULL)
-            return f->t_name;
+        if (item != nullptr)
+            return item->getName ();
     }
 
     if (getFName () == sfTransactionType)
     {
-        TxFormat* f = TxFormats::getInstance ().findByType (static_cast <TransactionType> (value));
+        TxFormats::Item const* const item =
+            TxFormats::getInstance()->findByType (static_cast <TxType> (value));
 
-        if (f != NULL)
-            return f->getName ();
+        if (item != nullptr)
+            return item->getName ();
     }
 
     return boost::lexical_cast<std::string> (value);
@@ -150,18 +154,20 @@ Json::Value STUInt16::getJson (int) const
 {
     if (getFName () == sfLedgerEntryType)
     {
-        LedgerEntryFormat* f = LedgerEntryFormat::getLgrFormat (value);
+        LedgerFormats::Item const* const item =
+            LedgerFormats::getInstance ()->findByType (static_cast <LedgerEntryType> (value));
 
-        if (f != NULL)
-            return f->t_name;
+        if (item != nullptr)
+            return item->getName ();
     }
 
     if (getFName () == sfTransactionType)
     {
-        TxFormat* f = TxFormats::getInstance ().findByType (static_cast <TransactionType> (value));
+        TxFormats::Item const* const item =
+            TxFormats::getInstance()->findByType (static_cast <TxType> (value));
 
-        if (f != NULL)
-            return f->getName ();
+        if (item != nullptr)
+            return item->getName ();
     }
 
     return value;

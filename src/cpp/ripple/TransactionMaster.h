@@ -9,7 +9,7 @@
 
 // Tracks all transactions in memory
 
-class TransactionMaster
+class TransactionMaster : LeakChecked <TransactionMaster>
 {
 public:
     TransactionMaster ();
@@ -20,7 +20,7 @@ public:
 
     // return value: true = we had the transaction already
     bool inLedger (uint256 const& hash, uint32 ledger);
-    bool canonicalize (Transaction::pointer& txn, bool maybeNew);
+    bool canonicalize (Transaction::pointer& txn);
     void sweep (void)
     {
         mCache.sweep ();

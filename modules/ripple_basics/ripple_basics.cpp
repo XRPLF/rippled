@@ -10,10 +10,9 @@
     @ingroup ripple_basics
 */
 
-#include "ripple_basics.h"
+#include "BeastConfig.h"
 
-#include <fstream>
-#include <iostream>
+#include "ripple_basics.h"
 
 // VFALCO TODO Rewrite Sustain to use beast::Process
 //
@@ -28,11 +27,7 @@
 #include <sys/wait.h>
 #endif
 
-#include <boost/algorithm/string.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/test/unit_test.hpp>
-#include <boost/asio.hpp> // VFALCO NOTE just for parseIpPort (!)
-#include <boost/regex.hpp>
+//#include <boost/test/included/unit_test.hpp>
 
 // VFALCO TODO Replace OpenSSL randomness with a dependency-free implementation
 //         Perhaps Schneier's Fortuna or a variant. Abstract the collection of
@@ -50,15 +45,18 @@
 #include <Winsock2.h> // for ripple_ByteOrder.cpp
 #endif
 
-#if RIPPLE_USE_NAMESPACE
+// This brings in the definitions for the Unit Test Framework.
+//
+#include <boost/test/included/unit_test.hpp>
+
 namespace ripple
 {
-#endif
 
 #include "containers/ripple_RangeSet.cpp"
 #include "containers/ripple_TaggedCache.cpp"
 
 #include "utility/ripple_Log.cpp"
+#include "utility/ripple_LogFile.cpp"
 
 #include "utility/ripple_ByteOrder.cpp"
 #include "utility/ripple_CountedObject.cpp"
@@ -74,6 +72,8 @@ namespace ripple
 
 #include "types/ripple_UInt256.cpp"
 
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
+
+// These must be outside the namespace (because of boost)
+#include "containers/ripple_RangeSetUnitTests.cpp"
+#include "utility/ripple_StringUtilitiesUnitTests.cpp"

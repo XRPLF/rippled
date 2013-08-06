@@ -10,18 +10,29 @@
     @ingroup ripple_core
 */
 
+#include "BeastConfig.h"
+
 #include "ripple_core.h"
 
 #include <fstream>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
-#include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
 
+namespace ripple
+{
+
 #include "functional/ripple_Config.cpp"
+#include "functional/ripple_LoadFeeTrack.h" // private
 #include "functional/ripple_LoadFeeTrack.cpp"
 #include "functional/ripple_Job.cpp"
 #include "functional/ripple_JobQueue.cpp"
 #include "functional/ripple_LoadEvent.cpp"
 #include "functional/ripple_LoadMonitor.cpp"
+
+}
+
+// These must be outside the namespace
+
+#include "functional/ripple_LoadFeeTrackUnitTests.cpp"

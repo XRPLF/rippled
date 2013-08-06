@@ -10,6 +10,8 @@
     @ingroup ripple_data
 */
 
+#include "BeastConfig.h"
+
 #include "ripple_data.h"
 
 #include <algorithm>
@@ -33,7 +35,6 @@
 #include <boost/range/adaptor/copied.hpp>
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/test/unit_test.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <openssl/ec.h>
@@ -54,10 +55,8 @@
 #undef min
 #endif
 
-#if RIPPLE_USE_NAMESPACE
 namespace ripple
 {
-#endif
 
 #include "crypto/ripple_Base58.h" // for RippleAddress
 #include "crypto/ripple_CKey.h" // needs RippleAddress VFALCO TODO remove this dependency cycle
@@ -72,7 +71,7 @@ namespace ripple
 #include "crypto/ripple_RFC1751.cpp"
 
 #include "protocol/ripple_FieldNames.cpp"
-#include "protocol/ripple_LedgerFormat.cpp"
+#include "protocol/ripple_LedgerFormats.cpp"
 #include "protocol/ripple_PackedMessage.cpp"
 #include "protocol/ripple_RippleAddress.cpp"
 #include "protocol/ripple_SerializedTypes.cpp"
@@ -80,7 +79,6 @@ namespace ripple
 #include "protocol/ripple_SerializedObjectTemplate.cpp"
 #include "protocol/ripple_SerializedObject.cpp"
 #include "protocol/ripple_TER.cpp"
-#include "protocol/ripple_TxFormat.cpp"
 #include "protocol/ripple_TxFormats.cpp"
 
 // These are for STAmount
@@ -91,11 +89,14 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "protocol/ripple_STAmount.cpp"
 #include "protocol/ripple_STAmountRound.cpp"
 
-#include "utility/ripple_JSONCache.cpp"
-
-#if RIPPLE_USE_NAMESPACE
 }
-#endif
+
+// These must be outside the namespace because of boost
+#include "crypto/ripple_CKeyDeterministicUnitTests.cpp"
+#include "protocol/ripple_RippleAddressUnitTests.cpp"
+#include "protocol/ripple_SerializedObjectUnitTests.cpp"
+#include "protocol/ripple_SerializerUnitTests.cpp"
+#include "protocol/ripple_STAmountUnitTests.cpp"
 
 // VFALCO TODO Fix this for SConstruct
 #if BEAST_MSVC

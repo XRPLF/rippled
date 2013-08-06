@@ -35,7 +35,9 @@
     This can either be used to refer to a shared block of memory, or can make its
     own internal copy of the data when the MemoryInputStream is created.
 */
-class BEAST_API MemoryInputStream  : public InputStream
+class BEAST_API MemoryInputStream
+    : public InputStream
+    , LeakChecked <MemoryInputStream>
 {
 public:
     //==============================================================================
@@ -88,8 +90,6 @@ private:
     HeapBlock<char> internalCopy;
 
     void createInternalCopy();
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MemoryInputStream)
 };
 
 #endif   // BEAST_MEMORYINPUTSTREAM_BEASTHEADER

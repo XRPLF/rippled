@@ -7,9 +7,8 @@ var Remote      = require("ripple-lib").Remote;
 var Transaction = require("ripple-lib").Transaction;
 var Server      = require("./server").Server;
 
-var testutils = require("./testutils");
-
-require('ripple-lib').config.load(require('./config'));
+var testutils   = require("./testutils");
+var config      = testutils.init_config();
 
 buster.testRunner.timeout = 5000;
 
@@ -67,7 +66,7 @@ buster.testCase("Offer tests", {
           }
         ], function (error) {
           // console.log("result: error=%s", error);
-          buster.refute(error);
+          buster.refute(error, self.what || "Unspecifide Error");
 
           done();
         });
@@ -95,7 +94,7 @@ buster.testCase("Offer tests", {
                   buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
                   buster.assert(final_create);
 
-                  if (3 === ++dones) 
+                  if (3 === ++dones)
                     done();
                 })
               .submit();
@@ -116,7 +115,7 @@ buster.testCase("Offer tests", {
                   buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
                   buster.assert(final_create);
 
-                  if (3 === ++dones) 
+                  if (3 === ++dones)
                     done();
                 })
               .submit();
@@ -146,7 +145,7 @@ buster.testCase("Offer tests", {
                   buster.assert.equals('tesSUCCESS', m.metadata.TransactionResult);
                   buster.assert(final_create);
 
-                  if (3 === ++dones) 
+                  if (3 === ++dones)
                     done();
                 })
               .submit();
@@ -161,7 +160,7 @@ buster.testCase("Offer tests", {
           }
         ], function (error) {
           // console.log("result: error=%s", error);
-          buster.refute(error);
+          buster.refute(error, self.what);
 
           done();
         });
@@ -207,21 +206,23 @@ buster.testCase("Offer tests", {
     function (done) {
       var self = this;
 
+      var alices_initial_balance = 499946999680;
+      var bobs_initial_balance = 10199999920;
+
       async.waterfall([
         function (callback) {
           self.what = "Create mtgox account.";
-
-          testutils.payment(self.remote, "root", "mtgox", "1149999730", callback);
+          testutils.payment(self.remote, "root", "mtgox", 1149999730, callback);
         },
         function (callback) {
           self.what = "Create alice account.";
 
-          testutils.payment(self.remote, "root", "alice", "499946999680", callback);
+          testutils.payment(self.remote, "root", "alice", alices_initial_balance, callback);
         },
         function (callback) {
           self.what = "Create bob account.";
 
-          testutils.payment(self.remote, "root", "bob", "10199999920", callback);
+          testutils.payment(self.remote, "root", "bob", bobs_initial_balance, callback);
         },
         function (callback) {
           self.what = "Set transfer rate.";
@@ -286,7 +287,7 @@ buster.testCase("Offer tests", {
             callback);
         },
         function (callback) {
-          self.what = "Verify balances.";
+          self.what = "Verify balances. 1";
 
           testutils.verify_balances(self.remote,
             {
@@ -308,12 +309,36 @@ buster.testCase("Offer tests", {
               .submit();
         },
         function (callback) {
-          self.what = "Verify balances.";
+          self.what = "Verify balances. 2";
+
+          var alices_fees, alices_num_transactions, alices_tx_fee_units_total,
+              alices_tx_fee_units_total, alices_final_balance,
+
+              bobs_fees, bobs_num_transactions, bobs_tx_fee_units_total,
+                            bobs_tx_fee_units_total, bobs_final_balance;
+
+          alices_num_transactions = 3;
+          alices_tx_fee_units_total = alices_num_transactions * Transaction.fee_units["default"]
+          alices_tx_fees_total = self.remote.fee_tx(alices_tx_fee_units_total);
+          alices_final_balance = Amount.from_json(alices_initial_balance)
+                                       .subtract(alices_tx_fees_total);
+
+          bobs_num_transactions = 2;
+          bobs_tx_fee_units_total = bobs_num_transactions * Transaction.fee_units["default"]
+          bobs_tx_fees_total = self.remote.fee_tx(bobs_tx_fee_units_total);
+          bobs_final_balance = Amount.from_json(bobs_initial_balance)
+                                       .subtract(bobs_tx_fees_total);
 
           testutils.verify_balances(self.remote,
             {
-              "alice"   : [ "-50/USD/mtgox", String(499946999680-3*(Transaction.fees['default'].to_number())) ],
-              "bob"     : [   "2710505431213761e-33/USD/mtgox", String(10199999920-2*(Transaction.fees['default'].to_number())) ],
+              "alice"   : [ "-50/USD/mtgox", alices_final_balance.to_json()],
+              "bob"     : [   "2710505431213761e-33/USD/mtgox",
+              
+              bobs_final_balance.to_json()
+
+                  // bobs_final_balance.to_json()
+                  // String(10199999920-(self.remote.fee_tx(2*(Transaction.fee_units['default'])))).to_number()
+                  ],
             },
             callback);
         },
@@ -397,8 +422,9 @@ buster.testCase("Offer tests", {
 
           testutils.verify_balances(self.remote,
             {
-              "alice"   : [ "499/USD/mtgox", String(100000000000+4000000000-2*(Transaction.fees['default'].to_number())) ],
-              "bob"     : [   "1/USD/mtgox", String(100000000000-4000000000-2*(Transaction.fees['default'].to_number())) ],
+              // "bob"     : [   "1/USD/mtgox", String(100000000000-4000000000-(Number(self.remote.fee_tx(Transaction.fee_units['default'] * 2).to_json())))  ],
+              "bob"     : [   "1/USD/mtgox", String(100000000000-4000000000-(self.remote.fee_tx(Transaction.fee_units['default'] * 2).to_number())) ],
+              "alice"   : [ "499/USD/mtgox", String(100000000000+4000000000-(self.remote.fee_tx(Transaction.fee_units['default'] * 2).to_number())) ],
             },
             callback);
         },
@@ -482,8 +508,8 @@ buster.testCase("Offer tests", {
 
           testutils.verify_balances(self.remote,
             {
-              "alice"   : [ "499/USD/mtgox", String(100000000000+3000000000-2*(Transaction.fees['default'].to_number())) ],
-              "bob"     : [   "1/USD/mtgox", String(100000000000-3000000000-2*(Transaction.fees['default'].to_number())) ],
+              "alice"   : [ "499/USD/mtgox", String(100000000000+3000000000-(self.remote.fee_tx(2*(Transaction.fee_units['default'])).to_number())) ],
+              "bob"     : [   "1/USD/mtgox", String(100000000000-3000000000-(self.remote.fee_tx(2*(Transaction.fee_units['default'])).to_number())) ],
             },
             callback);
         },
@@ -561,7 +587,7 @@ buster.testCase("Offer tests", {
           self.what = "Create crossing offer.";
 
           self.remote.transaction()
-            .offer_create("bob", "1/USD/mtgox", "3000.0") // 
+            .offer_create("bob", "1/USD/mtgox", "3000.0") //
               .on('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
@@ -574,8 +600,8 @@ buster.testCase("Offer tests", {
 
           testutils.verify_balances(self.remote,
             {
-              "alice"   : [ "499/USD/mtgox", String(100000000000+3000000000-2*(Transaction.fees['default'].to_number())) ],
-              "bob"     : [   "1/USD/mtgox", String(100000000000-3000000000-1*(Transaction.fees['default'].to_number())) ],
+              "alice"   : [ "499/USD/mtgox", String(100000000000+3000000000-(self.remote.fee_tx(2*(Transaction.fee_units['default'])).to_number())) ],
+              "bob"     : [   "1/USD/mtgox", String(100000000000-3000000000-(self.remote.fee_tx(1*(Transaction.fee_units['default'])).to_number())) ],
             },
             callback);
         },
@@ -676,7 +702,7 @@ buster.testCase("Offer tests", {
           },
         ], function (error) {
           // console.log("result: error=%s", error);
-          buster.refute(error);
+          buster.refute(error, self.what);
 
           if (error) done();
         });
@@ -771,7 +797,7 @@ buster.testCase("Offer tests", {
           },
         ], function (error) {
           // console.log("result: error=%s", error);
-          buster.refute(error);
+          buster.refute(error, self.what);
           if (error) done();
         });
     },
@@ -849,7 +875,7 @@ buster.testCase("Offer tests", {
           }
         ], function (error) {
           // console.log("result: error=%s", error);
-          buster.refute(error);
+          buster.refute(error, self.what);
 
           done();
         });
@@ -947,7 +973,7 @@ buster.testCase("Offer tests", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "0/USD/mtgox", String(10000000000+500-2*(Transaction.fees['default'].to_number())) ],
+                "alice"   : [ "0/USD/mtgox", String(10000000000+500-(self.remote.fee_tx(2*(Transaction.fee_units['default'])).to_number())) ],
                 "bob"     : "100/USD/mtgox",
               },
               callback);
@@ -1110,7 +1136,7 @@ buster.testCase("Offer tests", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "160/USD/mtgox", String(10000000000+200-2*(Transaction.fees['default'].to_number())) ],
+                "alice"   : [ "160/USD/mtgox", String(10000000000+200-(self.remote.fee_tx(2*(Transaction.fee_units['default'])).to_number())) ],
                 "bob"     : "40/USD/mtgox",
               },
               callback);
@@ -1152,7 +1178,7 @@ buster.testCase("Offer tests", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "100/USD/mtgox", String(10000000000+200+300-4*(Transaction.fees['default'].to_number())) ],
+                "alice"   : [ "100/USD/mtgox", String(10000000000+200+300-(self.remote.fee_tx(4*(Transaction.fee_units['default'])).to_number())) ],
                 "bob"     : "100/USD/mtgox",
               },
               callback);
@@ -1456,15 +1482,43 @@ buster.testCase("Offer tests 3", {
             // Provide micro amounts to compensate for fees to make results round nice.
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "350.000020", ["alice", "bob", "mtgox"], callback);
+            // Alice has 3 entries in the ledger, via trust lines
+            var max_owner_count = 3; //
+            // We start off with a
+            var reserve_amount = self.remote.reserve(max_owner_count);
+            // console.log("\n");
+            // console.log("reserve_amount reserve(max_owner_count=%s): %s", max_owner_count,  reserve_amount.to_human());
+
+            // this.tx_json.Fee = this.remote.fee_tx(this.fee_units()).to_json();
+
+             //  1 for each trust limit == 3 (alice < mtgox/amazon/bitstamp)
+             //  1 for payment          == 4
+            var max_txs_per_user = 4;
+
+            // We don't have access to the tx object[s] created below so we
+            // just dig into fee_units straight away
+            var fee_units_for_all_txs = ( Transaction.fee_units["default"] *
+                                          max_txs_per_user );
+
+            starting_xrp = reserve_amount.add(self.remote.fee_tx(fee_units_for_all_txs))
+            // console.log("starting_xrp after %s fee units: ",  fee_units_for_all_txs, starting_xrp.to_human());
+
+            starting_xrp = starting_xrp.add(Amount.from_json('100.0'));
+            // console.log("starting_xrp adding 100 xrp to sell", starting_xrp.to_human());
+
+            testutils.create_accounts(self.remote,
+                "root",
+                starting_xrp.to_json(),
+                ["alice", "bob", "mtgox", "amazon", "bitstamp"],
+                callback);
           },
           function (callback) {
             self.what = "Set limits.";
 
             testutils.credit_limits(self.remote,
               {
-                "alice" : "1000/USD/mtgox",
-                "bob" : "1000/USD/mtgox",
+                "alice" : ["1000/USD/mtgox", "1000/USD/amazon","1000/USD/bitstamp"],
+                "bob" :   ["1000/USD/mtgox", "1000/USD/amazon"],
               },
               callback);
           },
@@ -1485,7 +1539,6 @@ buster.testCase("Offer tests 3", {
               .on('proposed', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
-
                   seq_carol = m.tx_json.sequence;
                 })
               .submit();
@@ -1521,14 +1574,14 @@ buster.testCase("Offer tests 3", {
 
             testutils.verify_balances(self.remote,
               {
-                "alice"   : [ "100/USD/mtgox", "250.0" ],
-                "bob"     : "400/USD/mtgox",
+                "alice"   : [ "100/USD/mtgox", "350.0"],
+                "bob"     : ["400/USD/mtgox", ],
               },
               callback);
           },
         ], function (error) {
           // console.log("result: error=%s", error);
-          buster.refute(error);
+          buster.refute(error, self.what);
 
           done();
         });
@@ -1635,7 +1688,7 @@ buster.testCase("Offer tests 3", {
           },
         ], function (error) {
           // console.log("result: error=%s", error);
-          buster.refute(error);
+          buster.refute(error, self.what);
 
           done();
         });
@@ -1651,14 +1704,16 @@ buster.testCase("Offer tfSell", {
   "basic sell" :
     function (done) {
       var self = this;
-      var final_create;
+      var final_create, seq_carol;
 
       async.waterfall([
           function (callback) {
             // Provide micro amounts to compensate for fees to make results round nice.
             self.what = "Create accounts.";
 
-            testutils.create_accounts(self.remote, "root", "350.000020", ["alice", "bob", "mtgox"], callback);
+            var req_amount = self.remote.reserve(1).add(self.remote.fee_tx(20)).add(100000000);
+            testutils.create_accounts(self.remote, "root", req_amount.to_json(),
+                                      ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set limits.";
@@ -1687,19 +1742,21 @@ buster.testCase("Offer tfSell", {
               .set_flags('Sell')            // Should not matter at all.
               .on('proposed', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  if (m.result !== 'tesSUCCESS') {
+                    throw new Error("Bob's OfferCreate tx did not succeed: "+m.result);
+                  } else callback(null);
 
                   seq_carol = m.tx_json.sequence;
                 })
               .submit();
           },
           function (callback) {
-            // Alice has 350 fees - a reserve of 50 = 250 reserve = 100 available.
+            // Alice has 350 + fees - a reserve of 50 = 250 reserve = 100 available.
             // Ask for more than available to prove reserve works.
             self.what = "Create offer alice.";
 
             self.remote.transaction()
-              .offer_create("alice", "100/USD/mtgox", "100.0")
+              .offer_create("alice", "200/USD/mtgox", "200.0")
               .set_flags('Sell')            // Should not matter at all.
               .on('proposed', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
@@ -1732,7 +1789,7 @@ buster.testCase("Offer tfSell", {
           },
         ], function (error) {
           // console.log("result: error=%s", error);
-          buster.refute(error);
+          buster.refute(error, self.what);
 
           done();
         });
@@ -1741,14 +1798,19 @@ buster.testCase("Offer tfSell", {
   "2x sell exceed limit" :
     function (done) {
       var self = this;
-      var final_create;
+      var final_create, seq_carol;
 
       async.waterfall([
           function (callback) {
             // Provide micro amounts to compensate for fees to make results round nice.
             self.what = "Create accounts.";
-
-            testutils.create_accounts(self.remote, "root", "350.000020", ["alice", "bob", "mtgox"], callback);
+            
+            var starting_xrp = self.amount_for({
+              ledger_entries: 1,
+              default_transactions: 2,
+              extra: '100.0'
+            });
+            testutils.create_accounts(self.remote, "root", starting_xrp, ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set limits.";
@@ -1779,7 +1841,6 @@ buster.testCase("Offer tfSell", {
               .on('proposed', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
-
                   seq_carol = m.tx_json.sequence;
                 })
               .submit();
@@ -1797,7 +1858,9 @@ buster.testCase("Offer tfSell", {
               .set_flags('Sell')
               .on('proposed', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  if (m.result !== 'tesSUCCESS') {
+                    callback(new Error("Alice's OfferCreate didn't succeed: "+m.result));
+                  } else callback(null);
 
                   seq_carol = m.tx_json.sequence;
                 })
@@ -1826,7 +1889,7 @@ buster.testCase("Offer tfSell", {
           },
         ], function (error) {
           // console.log("result: error=%s", error);
-          buster.refute(error);
+          buster.refute(error, self.what);
 
           done();
         });
@@ -1848,8 +1911,14 @@ buster.testCase("Client Issue #535", {
           function (callback) {
             // Provide micro amounts to compensate for fees to make results round nice.
             self.what = "Create accounts.";
+            
+            var starting_xrp = self.amount_for({
+              ledger_entries: 1,
+              default_transactions: 2,
+              extra: '100.0'
+            });
 
-            testutils.create_accounts(self.remote, "root", "350.000020", ["alice", "bob", "mtgox"], callback);
+            testutils.create_accounts(self.remote, "root", starting_xrp, ["alice", "bob", "mtgox"], callback);
           },
           function (callback) {
             self.what = "Set limits.";
@@ -1922,7 +1991,7 @@ buster.testCase("Client Issue #535", {
         ], function (error) {
           if (error)
             console.log("result: %s: error=%s", self.what, error);
-          buster.refute(error);
+          buster.refute(error, self.what);
 
           done();
         });

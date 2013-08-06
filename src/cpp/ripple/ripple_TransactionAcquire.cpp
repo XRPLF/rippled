@@ -18,9 +18,9 @@ TransactionAcquire::TransactionAcquire (uint256 const& hash) : PeerSet (hash, TX
 
 static void TACompletionHandler (uint256 hash, SHAMap::pointer map)
 {
-    boost::recursive_mutex::scoped_lock sl (theApp->getMasterLock ());
-    theApp->getOPs ().mapComplete (hash, map);
-    theApp->getInboundLedgers ().dropLedger (hash);
+    boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
+    getApp().getOPs ().mapComplete (hash, map);
+    getApp().getInboundLedgers ().dropLedger (hash);
 }
 
 void TransactionAcquire::done ()
@@ -39,25 +39,29 @@ void TransactionAcquire::done ()
         map = mMap;
     }
 
-    theApp->getIOService ().post (boost::bind (&TACompletionHandler, mHash, map));
+    getApp().getIOService ().post (BIND_TYPE (&TACompletionHandler, mHash, map));
 }
 
-void TransactionAcquire::onTimer (bool progress)
+void TransactionAcquire::onTimer (bool progress, boost::recursive_mutex::scoped_lock& psl)
 {
     bool aggressive = false;
 
     if (getTimeouts () > 10)
     {
         WriteLog (lsWARNING, TransactionAcquire) << "Ten timeouts on TX set " << getHash ();
-        {
-            boost::recursive_mutex::scoped_lock sl (theApp->getMasterLock ());
-
-            if (theApp->getOPs ().stillNeedTXSet (mHash))
+        { // FIXME: Acquire the master lock here can deadlock
+            psl.unlock();
             {
-                WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
-                mTimeouts = 0;
-                aggressive = true;
-            }
+                boost::recursive_mutex::scoped_lock sl (getApp().getMasterLock ());
+
+                if (getApp().getOPs ().stillNeedTXSet (mHash))
+                {
+                    WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
+                    mTimeouts = 0;
+                    aggressive = true;
+                }
+	    }
+	    psl.lock();
         }
 
         if (!aggressive)
@@ -74,7 +78,7 @@ void TransactionAcquire::onTimer (bool progress)
         WriteLog (lsWARNING, TransactionAcquire) << "Out of peers for TX set " << getHash ();
 
         bool found = false;
-        std::vector<Peer::pointer> peerList = theApp->getPeers ().getPeerVector ();
+        std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
         BOOST_FOREACH (Peer::ref peer, peerList)
         {
             if (peer->hasTxSet (getHash ()))

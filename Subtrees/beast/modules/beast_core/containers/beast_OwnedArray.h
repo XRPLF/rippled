@@ -24,11 +24,6 @@
 #ifndef BEAST_OWNEDARRAY_BEASTHEADER
 #define BEAST_OWNEDARRAY_BEASTHEADER
 
-#include "beast_ArrayAllocationBase.h"
-#include "beast_ElementComparator.h"
-#include "../threads/beast_CriticalSection.h"
-
-
 //==============================================================================
 /** An array designed for holding objects.
 
@@ -52,6 +47,8 @@ template <class ObjectClass,
           class TypeOfCriticalSectionToUse = DummyCriticalSection>
 
 class OwnedArray
+    : LeakChecked <OwnedArray <ObjectClass, TypeOfCriticalSectionToUse> >
+    , Uncopyable
 {
 public:
     //==============================================================================
@@ -124,8 +121,13 @@ public:
     inline ObjectClass* operator[] (const int index) const noexcept
     {
         const ScopedLockType lock (getLock());
-        return isPositiveAndBelow (index, numUsed) ? data.elements [index]
-                                                   : static_cast <ObjectClass*> (nullptr);
+        if (isPositiveAndBelow (index, numUsed))
+        {
+            bassert (data.elements != nullptr);
+            return data.elements [index];
+        }
+
+        return nullptr;
     }
 
     /** Returns a pointer to the object at this index in the array, without checking whether the index is in-range.
@@ -136,7 +138,7 @@ public:
     inline ObjectClass* getUnchecked (const int index) const noexcept
     {
         const ScopedLockType lock (getLock());
-        bassert (isPositiveAndBelow (index, numUsed));
+        bassert (isPositiveAndBelow (index, numUsed) && data.elements != nullptr);
         return data.elements [index];
     }
 
@@ -239,11 +241,13 @@ public:
         @param newObject       the new object to add to the array
         @see set, insert, addIfNotAlreadyThere, addSorted
     */
-    void add (const ObjectClass* const newObject) noexcept
+    ObjectClass* add (ObjectClass* const newObject) noexcept
     {
         const ScopedLockType lock (getLock());
         data.ensureAllocatedSize (numUsed + 1);
+        bassert (data.elements != nullptr);
         data.elements [numUsed++] = const_cast <ObjectClass*> (newObject);
+        return const_cast <ObjectClass*> (newObject);
     }
 
     /** Inserts a new object into the array at the given index.
@@ -264,7 +268,7 @@ public:
         @see add, addSorted, addIfNotAlreadyThere, set
     */
     void insert (int indexToInsertAt,
-                 const ObjectClass* const newObject) noexcept
+                 ObjectClass* const newObject) noexcept
     {
         if (indexToInsertAt >= 0)
         {
@@ -274,6 +278,7 @@ public:
                 indexToInsertAt = numUsed;
 
             data.ensureAllocatedSize (numUsed + 1);
+            bassert (data.elements != nullptr);
 
             ObjectClass** const e = data.elements + indexToInsertAt;
             const int numToMove = numUsed - indexToInsertAt;
@@ -337,7 +342,7 @@ public:
 
         @param newObject   the new object to add to the array
     */
-    void addIfNotAlreadyThere (const ObjectClass* const newObject) noexcept
+    void addIfNotAlreadyThere (ObjectClass* const newObject) noexcept
     {
         const ScopedLockType lock (getLock());
 
@@ -426,6 +431,7 @@ public:
             numElementsToAdd = arrayToAddFrom.size() - startIndex;
 
         data.ensureAllocatedSize (numUsed + numElementsToAdd);
+        bassert (numElementsToAdd <= 0 || data.elements != nullptr);
 
         while (--numElementsToAdd >= 0)
         {
@@ -466,6 +472,7 @@ public:
             numElementsToAdd = arrayToAddFrom.size() - startIndex;
 
         data.ensureAllocatedSize (numUsed + numElementsToAdd);
+        bassert (numElementsToAdd <= 0 || data.elements != nullptr);
 
         while (--numElementsToAdd >= 0)
         {
@@ -857,9 +864,7 @@ private:
         while (numUsed > 0)
             delete data.elements [--numUsed];
     }
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OwnedArray)
 };
 
 
-#endif   // BEAST_OWNEDARRAY_BEASTHEADER
+#endif

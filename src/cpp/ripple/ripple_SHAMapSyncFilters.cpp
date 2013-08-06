@@ -14,7 +14,7 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNode& id, uint25
     if (fromFilter)
         return;
 
-    theApp->getTempNodeCache ().store (nodeHash, nodeData);
+    getApp().getTempNodeCache ().store (nodeHash, nodeData);
 
     if ((type == SHAMapTreeNode::tnTRANSACTION_NM) && (nodeData.size () > 16))
     {
@@ -27,8 +27,8 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNode& id, uint25
             SerializerIterator sit (s);
             SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction> (boost::ref (sit));
             assert (stx->getTransactionID () == nodeHash);
-            theApp->getJobQueue ().addJob (jtTRANSACTION, "TXS->TXN",
-                                           BIND_TYPE (&NetworkOPs::submitTransaction, &theApp->getOPs (), P_1, stx, NetworkOPs::stCallback ()));
+            getApp().getJobQueue ().addJob (jtTRANSACTION, "TXS->TXN",
+                                           BIND_TYPE (&NetworkOPs::submitTransaction, &getApp().getOPs (), P_1, stx, NetworkOPs::stCallback ()));
         }
         catch (...)
         {
@@ -40,7 +40,7 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNode& id, uint25
 bool ConsensusTransSetSF::haveNode (const SHAMapNode& id, uint256 const& nodeHash,
                                     Blob& nodeData)
 {
-    if (theApp->getTempNodeCache ().retrieve (nodeHash, nodeData))
+    if (getApp().getTempNodeCache ().retrieve (nodeHash, nodeData))
         return true;
 
     Transaction::pointer txn = Transaction::load (nodeHash);
@@ -73,14 +73,14 @@ void AccountStateSF::gotNode (bool fromFilter,
                               Blob const& nodeData,
                               SHAMapTreeNode::TNType)
 {
-    theApp->getHashedObjectStore ().store (hotACCOUNT_NODE, mLedgerSeq, nodeData, nodeHash);
+    getApp().getNodeStore ().store (hotACCOUNT_NODE, mLedgerSeq, nodeData, nodeHash);
 }
 
 bool AccountStateSF::haveNode (SHAMapNode const& id,
                                uint256 const& nodeHash,
                                Blob& nodeData)
 {
-    return theApp->getOPs ().getFetchPack (nodeHash, nodeData);
+    return getApp().getOPs ().getFetchPack (nodeHash, nodeData);
 }
 
 //------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ void TransactionStateSF::gotNode (bool fromFilter,
                                   Blob const& nodeData,
                                   SHAMapTreeNode::TNType type)
 {
-    theApp->getHashedObjectStore ().store (
+    getApp().getNodeStore ().store (
         (type == SHAMapTreeNode::tnTRANSACTION_NM) ? hotTRANSACTION : hotTRANSACTION_NODE,
         mLedgerSeq,
         nodeData,
@@ -107,5 +107,5 @@ bool TransactionStateSF::haveNode (SHAMapNode const& id,
                                    uint256 const& nodeHash,
                                    Blob& nodeData)
 {
-    return theApp->getOPs ().getFetchPack (nodeHash, nodeData);
+    return getApp().getOPs ().getFetchPack (nodeHash, nodeData);
 }

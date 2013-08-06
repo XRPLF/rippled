@@ -56,7 +56,7 @@ public:
     {
         return mTxn->getTransactionID ();
     }
-    TransactionType getTxnType () const
+    TxType getTxnType () const
     {
         return mTxn->getTxnType ();
     }

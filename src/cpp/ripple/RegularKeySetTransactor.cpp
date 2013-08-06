@@ -22,7 +22,7 @@ uint64 RegularKeySetTransactor::calculateBaseFee ()
 
 TER RegularKeySetTransactor::doApply ()
 {
-    std::cerr << "RegularKeySet>" << std::endl;
+    Log::out() << "RegularKeySet>";
 
     const uint32        uTxFlags        = mTxn.getFlags ();
 
@@ -50,7 +50,7 @@ TER RegularKeySetTransactor::doApply ()
         mTxnAccount->makeFieldAbsent (sfRegularKey);
     }
 
-    std::cerr << "RegularKeySet<" << std::endl;
+    Log::out() << "RegularKeySet<";
 
     return tesSUCCESS;
 }

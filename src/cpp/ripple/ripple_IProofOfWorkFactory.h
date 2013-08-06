@@ -20,7 +20,7 @@ enum POWResult
 // VFALCO TODO move this to the class as a static member and rename it
 bool powResultInfo (POWResult powCode, std::string& strToken, std::string& strHuman);
 
-class IProofOfWorkFactory
+class IProofOfWorkFactory : LeakChecked <IProofOfWorkFactory>
 {
 public:
     typedef boost::bimap< boost::bimaps::multiset_of<time_t>, boost::bimaps::unordered_set_of<uint256> > powMap_t;

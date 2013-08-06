@@ -9,17 +9,17 @@ import os
 import platform
 import re
 
-LevelDB = bool(1)
-
 OSX = bool(platform.mac_ver()[0])
 FreeBSD = bool('FreeBSD' == platform.system())
 Linux   = bool('Linux' == platform.system())
 Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
 
 if OSX or Ubuntu:
-    CTAGS = '/usr/bin/ctags'
+    CTAGS = 'ctags'
+elif FreeBSD:
+    CTAGS = 'exctags'
 else:
-    CTAGS = '/usr/bin/exuberant-ctags'
+    CTAGS = 'exuberant-ctags'
 
 #
 # scons tools
@@ -35,6 +35,13 @@ GCC_VERSION = re.split('\.', commands.getoutput(env['CXX'] + ' -dumpversion'))
 #env.Replace(CC = 'clang')
 #env.Replace(CXX = 'clang++')
 
+# Use a newer gcc on FreeBSD
+if FreeBSD:
+    env.Replace(CC = 'gcc46')
+    env.Replace(CXX = 'g++46')
+    env.Append(CCFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
+    env.Append(LINKFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
+
 #
 # Builder for CTags
 #
@@ -47,6 +54,16 @@ else:
 
 # Use openssl
 env.ParseConfig('pkg-config --cflags --libs openssl')
+# Use protobuf
+env.ParseConfig('pkg-config --cflags --libs protobuf')
+
+# Beast uses kvm on FreeBSD
+if FreeBSD:
+    env.Append (
+        LIBS = [
+            'kvm'
+        ]
+    )
 
 # The required version of boost is documented in the README file.
 #
@@ -55,6 +72,7 @@ env.ParseConfig('pkg-config --cflags --libs openssl')
 #   If a threading library is included the platform can be whitelisted.
 #
 # FreeBSD and Ubuntu non-mt libs do link with pthreads.
+
 if FreeBSD or Ubuntu:
     env.Append(
         LIBS = [
@@ -103,13 +121,6 @@ INCLUDE_PATHS = [
 COMPILED_FILES = [
     'Subtrees/beast/modules/beast_core/beast_core.cpp',
     'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
-    'modules/ripple_basics/ripple_basics.cpp',
-    'modules/ripple_core/ripple_core.cpp',
-    'modules/ripple_data/ripple_data.cpp',
-    'modules/ripple_json/ripple_json.cpp',
-    'modules/ripple_leveldb/ripple_leveldb.cpp',
-    'modules/ripple_websocket/ripple_websocket.cpp',
-    'modules/ripple_sqlite/ripple_sqlite.c',
     'modules/ripple_app/ripple_app_pt1.cpp',
     'modules/ripple_app/ripple_app_pt2.cpp',
     'modules/ripple_app/ripple_app_pt3.cpp',
@@ -117,7 +128,18 @@ COMPILED_FILES = [
     'modules/ripple_app/ripple_app_pt5.cpp',
     'modules/ripple_app/ripple_app_pt6.cpp',
     'modules/ripple_app/ripple_app_pt7.cpp',
-    'modules/ripple_app/ripple_app_pt8.cpp'
+    'modules/ripple_app/ripple_app_pt8.cpp',
+    'modules/ripple_basics/ripple_basics.cpp',
+    'modules/ripple_basio/ripple_basio.cpp',
+    'modules/ripple_core/ripple_core.cpp',
+    'modules/ripple_data/ripple_data.cpp',
+    'modules/ripple_hyperleveldb/ripple_hyperleveldb.cpp',
+    'modules/ripple_json/ripple_json.cpp',
+    'modules/ripple_leveldb/ripple_leveldb.cpp',
+    'modules/ripple_mdb/ripple_mdb.c',
+    'modules/ripple_net/ripple_net.cpp',
+    'modules/ripple_websocket/ripple_websocket.cpp',
+    'modules/ripple_sqlite/ripple_sqlite.c'
     ]
 
 #-------------------------------------------------------------------------------
@@ -146,25 +168,18 @@ if not FreeBSD:
         ]
     )
 
-# Apparently, pkg-config --libs protobuf on bsd fails to provide this necessary include dir.
-if FreeBSD:
-    env.Append(LINKFLAGS = ['-I/usr/local/include'])
-    env.Append(CXXFLAGS = ['-DOS_FREEBSD'])
-
 env.Append(
     LIBS = [
         'rt',           # for clock_nanosleep in beast
-        'protobuf',
         'z'
     ]
 )
 
 DEBUGFLAGS  = ['-g', '-DDEBUG']
-BOOSTFLAGS  = ['-DBOOST_TEST_DYN_LINK', '-DBOOST_FILESYSTEM_NO_DEPRECATED']
 
 env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts'])
-env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+BOOSTFLAGS+DEBUGFLAGS)
+env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+DEBUGFLAGS)
 
 # RTTI is required for Beast and CountedObject.
 #
@@ -172,6 +187,10 @@ env.Append(CXXFLAGS = ['-frtti'])
 
 if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
     env.Append(CXXFLAGS = ['-std=c++11'])
+
+# FreeBSD doesn't support O_DSYNC
+if FreeBSD:
+    env.Append(CPPFLAGS = ['-DMDB_DSYNC=O_SYNC'])
 
 if OSX:
     env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
@@ -186,7 +205,7 @@ TAG_SRCS    = copy.copy(COMPILED_FILES)
 # Derive the object files from the source files.
 OBJECT_FILES = []
 
-OBJECT_FILES += PROTO_SRCS
+OBJECT_FILES.append(PROTO_SRCS[0])
 
 for file in COMPILED_FILES:
     OBJECT_FILES.append('build/obj/' + file)

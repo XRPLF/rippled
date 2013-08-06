@@ -5,14 +5,9 @@
 //==============================================================================
 
 // Used for logging
-struct RPC
-{
-};
+struct RPC;
 
 SETUP_LOG (RPC)
-
-using namespace boost;
-using namespace boost::asio;
 
 unsigned int const gMaxHTTPHeaderSize = 0x02000000;
 

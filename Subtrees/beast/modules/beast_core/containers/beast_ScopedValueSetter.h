@@ -52,7 +52,7 @@
 
 */
 template <typename ValueType>
-class ScopedValueSetter
+class ScopedValueSetter : Uncopyable
 {
 public:
     /** Creates a ScopedValueSetter that will immediately change the specified value to the
@@ -87,8 +87,6 @@ private:
     //==============================================================================
     ValueType& value;
     const ValueType originalValue;
-
-    BEAST_DECLARE_NON_COPYABLE (ScopedValueSetter)
 };
 
 

@@ -15,7 +15,7 @@
 
 */
 // VFALCO TODO rename to SortedTxSet
-class CanonicalTXSet
+class CanonicalTXSet : LeakChecked <CanonicalTXSet>
 {
 public:
     class Key

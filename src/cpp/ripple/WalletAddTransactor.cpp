@@ -8,7 +8,7 @@ SETUP_LOG (WalletAddTransactor)
 
 TER WalletAddTransactor::doApply ()
 {
-    std::cerr << "WalletAdd>" << std::endl;
+    Log::out() << "WalletAdd>";
 
     Blob const vucPubKey    = mTxn.getFieldVL (sfPublicKey);
     Blob const vucSignature = mTxn.getFieldVL (sfSignature);
@@ -28,7 +28,7 @@ TER WalletAddTransactor::doApply ()
     // FIXME: This should be moved to the transaction's signature check logic and cached
     if (!naMasterPubKey.accountPublicVerify (Serializer::getSHA512Half (uAuthKeyID.begin (), uAuthKeyID.size ()), vucSignature))
     {
-        std::cerr << "WalletAdd: unauthorized: bad signature " << std::endl;
+        Log::out() << "WalletAdd: unauthorized: bad signature ";
 
         return tefBAD_ADD_AUTH;
     }
@@ -37,7 +37,7 @@ TER WalletAddTransactor::doApply ()
 
     if (sleDst)
     {
-        std::cerr << "WalletAdd: account already created" << std::endl;
+        Log::out() << "WalletAdd: account already created";
 
         return tefCREATED;
     }
@@ -71,7 +71,7 @@ TER WalletAddTransactor::doApply ()
     sleDst->setFieldAmount (sfBalance, saDstAmount);
     sleDst->setFieldAccount (sfRegularKey, uAuthKeyID);
 
-    std::cerr << "WalletAdd<" << std::endl;
+    Log::out() << "WalletAdd<";
 
     return tesSUCCESS;
 }

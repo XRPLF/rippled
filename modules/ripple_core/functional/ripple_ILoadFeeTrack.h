@@ -32,20 +32,22 @@ public:
     // Scale using load as well as base rate
     virtual uint64 scaleFeeLoad (uint64 fee, uint64 baseFee, uint32 referenceFeeUnits, bool bAdmin) = 0;
 
-    // VFALCO NOTE These appear to be unused, so I'm hiding the declarations.
-    //
-    //virtual uint32 getRemoteFee () = 0;
-    //virtual uint32 getLocalFee () = 0;
-    //virtual void setRemoteFee (uint32) = 0;
+    virtual void setRemoteFee (uint32) = 0;
+
+    virtual uint32 getRemoteFee () = 0;
+    virtual uint32 getLocalFee () = 0;
+    virtual uint32 getClusterFee () = 0;
 
     virtual uint32 getLoadBase () = 0;
     virtual uint32 getLoadFactor () = 0;
 
     virtual Json::Value getJson (uint64 baseFee, uint32 referenceFeeUnits) = 0;
 
+    virtual void setClusterFee (uint32) = 0;
     virtual bool raiseLocalFee () = 0;
     virtual bool lowerLocalFee () = 0;
-    virtual bool isLoaded () = 0;
+    virtual bool isLoadedLocal () = 0;
+    virtual bool isLoadedCluster () = 0;
 };
 
 #endif

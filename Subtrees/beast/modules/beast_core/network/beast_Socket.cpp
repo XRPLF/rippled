@@ -81,7 +81,7 @@ namespace SocketHelpers
         servTmpAddr.sin_addr.s_addr = htonl (INADDR_ANY);
         servTmpAddr.sin_port = htons ((uint16) port);
 
-        return bind (handle, (struct sockaddr*) &servTmpAddr, sizeof (struct sockaddr_in)) >= 0;
+        return ::bind (handle, (struct sockaddr*) &servTmpAddr, sizeof (struct sockaddr_in)) >= 0;
     }
 
     static int readSocket (const SocketHandle handle,
@@ -415,7 +415,7 @@ bool StreamingSocket::createListener (const int newPortNumber, const String& loc
     const int reuse = 1;
     setsockopt (handle, SOL_SOCKET, SO_REUSEADDR, (const char*) &reuse, sizeof (reuse));
 
-    if (bind (handle, (struct sockaddr*) &servTmpAddr, sizeof (struct sockaddr_in)) < 0
+    if (::bind (handle, (struct sockaddr*) &servTmpAddr, sizeof (struct sockaddr_in)) < 0
          || listen (handle, SOMAXCONN) < 0)
     {
         close();

@@ -53,7 +53,7 @@ private:
     void addCallbacks (const TXQEntry& otherEntry);
 };
 
-class TXQueue
+class TXQueue : LeakChecked <TXQueue>
 {
 public:
     TXQueue () : mRunning (false)

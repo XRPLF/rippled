@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SECUREALLOCATOR_H
-#define RIPPLE_SECUREALLOCATOR_H
+#ifndef RIPPLE_SECUREALLOCATOR_H_INCLUDED
+#define RIPPLE_SECUREALLOCATOR_H_INCLUDED
 
 //
 // Allocator that locks its contents from being paged

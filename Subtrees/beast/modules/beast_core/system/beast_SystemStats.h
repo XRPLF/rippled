@@ -26,19 +26,18 @@
 
 #include "../text/beast_StringArray.h"
 
-
 //==============================================================================
 /**
     Contains methods for finding out about the current hardware and OS configuration.
 */
-class BEAST_API SystemStats
+class BEAST_API SystemStats : Uncopyable
 {
 public:
     //==============================================================================
     /** Returns the current version of BEAST,
         See also the BEAST_VERSION, BEAST_MAJOR_VERSION and BEAST_MINOR_VERSION macros.
     */
-    static String getBEASTVersion();
+    static String getBeastVersion();
 
     //==============================================================================
     /** The set of possible results of the getOperatingSystemType() method. */
@@ -46,15 +45,15 @@ public:
     {
         UnknownOS   = 0,
 
-        Linux       = 0x2000,
-        Android     = 0x3000,
-        iOS         = 0x8000,
-
         MacOSX_10_4 = 0x1004,
         MacOSX_10_5 = 0x1005,
         MacOSX_10_6 = 0x1006,
         MacOSX_10_7 = 0x1007,
         MacOSX_10_8 = 0x1008,
+
+        Linux       = 0x2000,
+        FreeBSD     = 0x2001,
+        Android     = 0x3000,
 
         Win2000     = 0x4105,
         WinXP       = 0x4106,
@@ -64,6 +63,8 @@ public:
 
         Windows     = 0x4000,   /**< To test whether any version of Windows is running,
                                      you can use the expression ((getOperatingSystemType() & Windows) != 0). */
+
+        iOS         = 0x8000
     };
 
     /** Returns the type of operating system we're running on.
@@ -193,8 +194,6 @@ private:
 
     SystemStats();
     static const CPUFlags& getCPUFlags();
-
-    BEAST_DECLARE_NON_COPYABLE (SystemStats)
 };
 
 

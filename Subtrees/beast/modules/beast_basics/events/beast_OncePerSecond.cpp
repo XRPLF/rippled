@@ -18,12 +18,12 @@
 //==============================================================================
 
 class OncePerSecond::TimerSingleton
-    : public RefCountedSingleton <OncePerSecond::TimerSingleton>
+    : public SharedSingleton <OncePerSecond::TimerSingleton>
     , private InterruptibleThread::EntryPoint
 {
 private:
     TimerSingleton ()
-        : RefCountedSingleton <OncePerSecond::TimerSingleton> (
+        : SharedSingleton <OncePerSecond::TimerSingleton> (
             SingletonLifetime::persistAfterCreation)
         , m_thread ("Once Per Second")
     {
@@ -41,7 +41,7 @@ private:
     {
         for (;;)
         {
-            const bool interrupted = m_thread.wait (1000);
+            bool const interrupted = m_thread.wait (1000);
 
             if (interrupted)
                 break;

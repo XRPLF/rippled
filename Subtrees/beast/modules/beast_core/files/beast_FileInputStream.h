@@ -34,7 +34,9 @@
 
     @see InputStream, FileOutputStream, File::createInputStream
 */
-class BEAST_API FileInputStream  : public InputStream
+class BEAST_API FileInputStream
+    : public InputStream
+    , LeakChecked <FileInputStream>
 {
 public:
     //==============================================================================
@@ -87,8 +89,6 @@ private:
     void openHandle();
     void closeHandle();
     size_t readInternal (void* buffer, size_t numBytes);
-
-    BEAST_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FileInputStream)
 };
 
 #endif   // BEAST_FILEINPUTSTREAM_BEASTHEADER
