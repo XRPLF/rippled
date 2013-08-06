@@ -237,7 +237,7 @@ TER RippleCalc::calcNodeAdvance (
 
             // Only a allow a source to be used once, in the first node encountered from initial path scan.
             // This prevents conflicting uses of the same balance when going reverse vs forward.
-            if (bFoundForward && itForward->second != uNode)
+            if (bFoundForward && (itForward->second != uNode) && (uOfrOwnerID != uCurIssuerID))
             {
                 // Temporarily unfunded. Another node uses this source, ignore in this offer.
                 WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: temporarily unfunded offer (forward)";
@@ -250,7 +250,7 @@ TER RippleCalc::calcNodeAdvance (
 
             // For this quality increment, only allow a source to be used from a single node, in the first node encountered from applying offers
             // in reverse.
-            if (bFoundReverse && itReverse->second != uNode)
+            if (bFoundReverse && (itReverse->second != uNode) && (uOfrOwnerID != uCurIssuerID))
             {
                 // Temporarily unfunded. Another node uses this source, ignore in this offer.
                 WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: temporarily unfunded offer (reverse)";
@@ -381,7 +381,7 @@ TER RippleCalc::calcNodeDeliverRev (
         STAmount&       saTakerGets     = pnCur.saTakerGets;
         STAmount&       saRateMax       = pnCur.saRateMax;
 
-        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality, true);      // If needed, advance to next funded offer.
+        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality || saOutAct.isZero(), true);      // If needed, advance to next funded offer.
 
         if (tesSUCCESS != terResult || !uOfferIndex)
         {
@@ -481,7 +481,7 @@ TER RippleCalc::calcNodeDeliverRev (
         if (saInPassReq > saTakerPays)
             saInPassReq = saTakerPays;
 
-        if (!saInPassReq)
+        if (!saInPassReq) // FIXME: This is bogus
         {
             // After rounding did not want anything.
             WriteLog (lsINFO, RippleCalc) << boost::str (boost::format ("calcNodeDeliverRev: micro offer is unfunded."));
@@ -656,7 +656,7 @@ TER RippleCalc::calcNodeDeliverFwd (
         }
 
         // Determine values for pass to adjust saInAct, saInFees, and saCurDeliverAct
-        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality, false);             // If needed, advance to next funded offer.
+        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality || saInAct.isZero(), false);             // If needed, advance to next funded offer.
 
         if (tesSUCCESS != terResult)
         {
@@ -717,7 +717,7 @@ TER RippleCalc::calcNodeDeliverFwd (
                                           % saInPassAct
                                           % saOutPassMax);
 
-            if (!saInSum)
+            if (!saTakerPays || !saInSum) // FIXME: We remove an offer if WE didn't want anything out of it?
             {
                 WriteLog (lsINFO, RippleCalc) << "calcNodeDeliverFwd: Microscopic offer unfunded.";
 
@@ -850,7 +850,7 @@ TER RippleCalc::calcNodeDeliverFwd (
 
             lesActive.entryModify (sleOffer);
 
-            if (saOutPassAct == saOutFunded)
+            if ((saOutPassAct == saOutFunded) || saTakerGetsNew.isZero())
             {
                 // Offer became unfunded.
 
