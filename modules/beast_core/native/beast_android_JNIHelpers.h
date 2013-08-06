@@ -167,7 +167,7 @@ namespace
 }
 
 //==============================================================================
-class JNIClassBase : Uncopyable
+class JNIClassBase : public Uncopyable
 {
 public:
     explicit JNIClassBase (const char* classPath);

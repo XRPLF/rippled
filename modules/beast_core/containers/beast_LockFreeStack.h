@@ -39,10 +39,10 @@ struct LockFreeStackDefaultTag;
   @ingroup beast_core intrusive
 */
 template <class Element, class Tag = LockFreeStackDefaultTag>
-class LockFreeStack : Uncopyable
+class LockFreeStack : public Uncopyable
 {
 public:
-    class Node : Uncopyable
+    class Node : public Uncopyable
     {
     public:
         Node ()

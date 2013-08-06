@@ -304,7 +304,7 @@ struct ListDefaultTag;
     @ingroup beast_core intrusive
 */
 template <class Element, class Tag = ListDefaultTag>
-class List : Uncopyable
+class List : public Uncopyable
 {
 public:
     typedef int size_type;
@@ -323,7 +323,7 @@ public:
         }
     };
 
-    class Node : Uncopyable
+    class Node : public Uncopyable
     {
     public:
         Node () { }

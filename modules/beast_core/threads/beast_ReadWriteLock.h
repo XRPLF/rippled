@@ -50,7 +50,7 @@
 
     @see ScopedReadLock, ScopedWriteLock, CriticalSection
 */
-class BEAST_API ReadWriteLock : Uncopyable
+class BEAST_API ReadWriteLock : public Uncopyable
 {
 public:
     //==============================================================================

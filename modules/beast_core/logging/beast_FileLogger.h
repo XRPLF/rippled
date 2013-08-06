@@ -38,7 +38,7 @@
 class BEAST_API FileLogger
     : public Logger
     , LeakChecked <FileLogger>
-    , Uncopyable
+    , public Uncopyable
 {
 public:
     //==============================================================================

@@ -126,7 +126,7 @@ template <typename KeyType,
           class HashFunctionToUse = DefaultHashFunctions,
           class TypeOfCriticalSectionToUse = DummyCriticalSection>
 class HashMap
-    : Uncopyable
+    : public Uncopyable
     , LeakChecked <HashMap <KeyType,
                             ValueType,
                             HashFunctionToUse,
@@ -378,7 +378,7 @@ public:
 
 private:
     //==============================================================================
-    class HashEntry : Uncopyable
+    class HashEntry : public Uncopyable
     {
     public:
         HashEntry (KeyTypeParameter k, ValueTypeParameter val, HashEntry* const next)
@@ -414,7 +414,7 @@ public:
 
         @see HashMap
     */
-    class Iterator : LeakChecked <Iterator>, Uncopyable
+    class Iterator : LeakChecked <Iterator>, public Uncopyable
     {
     public:
         //==============================================================================

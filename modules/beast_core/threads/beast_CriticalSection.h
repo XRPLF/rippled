@@ -37,7 +37,7 @@
 
     @see ScopedLock, ScopedTryLock, ScopedUnlock, SpinLock, ReadWriteLock, Thread, InterProcessLock
 */
-class BEAST_API CriticalSection : Uncopyable
+class BEAST_API CriticalSection : public Uncopyable
 {
 public:
     //==============================================================================
@@ -124,7 +124,7 @@ private:
 
     @see CriticalSection, Array, OwnedArray, SharedObjectArray
 */
-class BEAST_API DummyCriticalSection : Uncopyable
+class BEAST_API DummyCriticalSection : public Uncopyable
 {
 public:
     inline DummyCriticalSection() noexcept      {}

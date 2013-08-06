@@ -100,7 +100,7 @@ bool Process::openEmailWithAttachments (const String& targetEmailAddress,
 class URLConnectionState
    : public Thread
    , LeakChecked <URLConnectionState>
-   , Uncopyable
+   , public Uncopyable
 {
 public:
     URLConnectionState (NSURLRequest* req)

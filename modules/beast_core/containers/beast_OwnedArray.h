@@ -48,7 +48,7 @@ template <class ObjectClass,
 
 class OwnedArray
     : LeakChecked <OwnedArray <ObjectClass, TypeOfCriticalSectionToUse> >
-    , Uncopyable
+    , public Uncopyable
 {
 public:
     //==============================================================================

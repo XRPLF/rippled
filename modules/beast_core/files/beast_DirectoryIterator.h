@@ -41,7 +41,7 @@
 
     It can also guess how far it's got using a wildly inaccurate algorithm.
 */
-class BEAST_API DirectoryIterator : LeakChecked <DirectoryIterator>, Uncopyable
+class BEAST_API DirectoryIterator : LeakChecked <DirectoryIterator>, public Uncopyable
 {
 public:
     //==============================================================================
@@ -116,7 +116,7 @@ public:
 
 private:
     //==============================================================================
-    class NativeIterator : LeakChecked <NativeIterator>, Uncopyable
+    class NativeIterator : LeakChecked <NativeIterator>, public Uncopyable
     {
     public:
         NativeIterator (const File& directory, const String& wildCard);

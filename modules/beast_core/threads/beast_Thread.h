@@ -42,7 +42,7 @@
     @see CriticalSection, WaitableEvent, Process, ThreadWithProgressWindow,
          MessageManagerLock
 */
-class BEAST_API Thread : LeakChecked <Thread>, Uncopyable
+class BEAST_API Thread : LeakChecked <Thread>, public Uncopyable
 {
 public:
     //==============================================================================

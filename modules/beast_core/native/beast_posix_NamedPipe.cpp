@@ -21,7 +21,7 @@
 */
 //==============================================================================
 
-class NamedPipe::Pimpl : LeakChecked <Pimpl>, Uncopyable
+class NamedPipe::Pimpl : LeakChecked <Pimpl>, public Uncopyable
 {
 public:
     Pimpl (const String& pipePath, bool createPipe)

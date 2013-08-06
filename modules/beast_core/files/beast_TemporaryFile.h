@@ -65,7 +65,7 @@
 
     @see File, FileOutputStream
 */
-class BEAST_API TemporaryFile : LeakChecked <TemporaryFile>, Uncopyable
+class BEAST_API TemporaryFile : LeakChecked <TemporaryFile>, public Uncopyable
 {
 public:
     //==============================================================================

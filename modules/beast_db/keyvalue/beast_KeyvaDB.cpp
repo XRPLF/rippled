@@ -124,7 +124,7 @@ public:
     };
 
     // Key records are indexed starting at one.
-    struct KeyRecord : Uncopyable
+    struct KeyRecord : public Uncopyable
     {
         explicit KeyRecord (void* const keyStorage)
             : key (keyStorage)
@@ -153,7 +153,7 @@ public:
     // are identical to the format on disk. Therefore it is necessary to
     // use the serialization routines to extract or update the key records.
     //
-    class KeyBlock : Uncopyable
+    class KeyBlock : public Uncopyable
     {
     public:
         KeyBlock (int depth, int keyBytes)
@@ -475,7 +475,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    struct FindResult : Uncopyable
+    struct FindResult : public Uncopyable
     {
         FindResult (void* const keyStorage)
             : keyRecord (keyStorage)

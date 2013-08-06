@@ -51,7 +51,7 @@
     @see GenericScopedUnlock, CriticalSection, SpinLock, ScopedLock, ScopedUnlock
 */
 template <class LockType>
-class GenericScopedLock : Uncopyable
+class GenericScopedLock : public Uncopyable
 {
 public:
     //==============================================================================
@@ -118,7 +118,7 @@ private:
     @see GenericScopedLock, CriticalSection, ScopedLock, ScopedUnlock
 */
 template <class LockType>
-class GenericScopedUnlock : Uncopyable
+class GenericScopedUnlock : public Uncopyable
 {
 public:
     //==============================================================================
@@ -186,7 +186,7 @@ private:
     @see CriticalSection::tryEnter, GenericScopedLock, GenericScopedUnlock
 */
 template <class LockType>
-class GenericScopedTryLock : Uncopyable
+class GenericScopedTryLock : public Uncopyable
 {
 public:
     //==============================================================================

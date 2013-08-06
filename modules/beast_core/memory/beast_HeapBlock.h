@@ -82,7 +82,7 @@ namespace HeapBlockHelper
     @see Array, OwnedArray, MemoryBlock
 */
 template <class ElementType, bool throwOnFailure = false>
-class HeapBlock : Uncopyable
+class HeapBlock : public Uncopyable
 {
 public:
     //==============================================================================

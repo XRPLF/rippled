@@ -30,7 +30,7 @@
 /**
     Maps a file into virtual memory for easy reading and/or writing.
 */
-class BEAST_API MemoryMappedFile : LeakChecked <MemoryMappedFile>, Uncopyable
+class BEAST_API MemoryMappedFile : LeakChecked <MemoryMappedFile>, public Uncopyable
 {
 public:
     /** The read/write flags used when opening a memory mapped file. */

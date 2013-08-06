@@ -67,7 +67,7 @@ namespace detail
 {
 
 // used for "once" and "prepare"
-class ref_counted_statement_base : Uncopyable
+class ref_counted_statement_base : public Uncopyable
 {
 public:
     ref_counted_statement_base(session& s);

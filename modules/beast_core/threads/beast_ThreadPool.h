@@ -46,7 +46,7 @@ class ThreadPoolThread;
 
     @see ThreadPool, Thread
 */
-class BEAST_API ThreadPoolJob : LeakChecked <ThreadPoolJob>, Uncopyable
+class BEAST_API ThreadPoolJob : LeakChecked <ThreadPoolJob>, public Uncopyable
 {
 public:
     //==============================================================================
@@ -137,7 +137,7 @@ private:
 
     @see ThreadPoolJob, Thread
 */
-class BEAST_API ThreadPool : LeakChecked <ThreadPool>, Uncopyable
+class BEAST_API ThreadPool : LeakChecked <ThreadPool>, public Uncopyable
 {
 public:
     //==============================================================================

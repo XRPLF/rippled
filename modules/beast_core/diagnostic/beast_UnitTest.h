@@ -331,7 +331,7 @@ private:
 
     @see UnitTest
 */
-class BEAST_API UnitTests : Uncopyable
+class BEAST_API UnitTests : public Uncopyable
 {
 public:
     struct Results

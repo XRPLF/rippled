@@ -38,7 +38,7 @@
 
     @see FileInputStream, FileOutputStream
 */
-class BEAST_API  RandomAccessFile : Uncopyable, LeakChecked <RandomAccessFile>
+class BEAST_API  RandomAccessFile : public Uncopyable, LeakChecked <RandomAccessFile>
 {
 public:
     /** The type of an FileOffset.

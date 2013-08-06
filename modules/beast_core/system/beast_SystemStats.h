@@ -28,7 +28,7 @@
 /**
     Contains methods for finding out about the current hardware and OS configuration.
 */
-class BEAST_API SystemStats : Uncopyable
+class BEAST_API SystemStats : public Uncopyable
 {
 public:
     //==============================================================================

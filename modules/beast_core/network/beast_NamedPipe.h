@@ -34,7 +34,7 @@
 
     @see InterprocessConnection
 */
-class BEAST_API NamedPipe : LeakChecked <NamedPipe>, Uncopyable
+class BEAST_API NamedPipe : LeakChecked <NamedPipe>, public Uncopyable
 {
 public:
     //==============================================================================

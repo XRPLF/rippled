@@ -21,7 +21,7 @@
 */
 //==============================================================================
 
-struct RegistryKeyWrapper : Uncopyable
+struct RegistryKeyWrapper : public Uncopyable
 {
     RegistryKeyWrapper (String name, const bool createForWriting, const DWORD wow64Flags)
         : key (0), wideCharValueName (nullptr)

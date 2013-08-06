@@ -30,7 +30,7 @@
     Contains some static helper functions for manipulating the MS Windows registry
     (Only available on Windows, of course!)
 */
-class WindowsRegistry : Uncopyable
+class WindowsRegistry : public Uncopyable
 {
 public:
     //==============================================================================

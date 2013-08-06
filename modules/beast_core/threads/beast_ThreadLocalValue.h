@@ -51,7 +51,7 @@
     is deleted.
 */
 template <typename Type>
-class ThreadLocalValue : Uncopyable
+class ThreadLocalValue : public Uncopyable
 {
 public:
     /** */
@@ -170,7 +170,7 @@ public:
 private:
     //==============================================================================
    #if BEAST_NO_COMPILER_THREAD_LOCAL
-    struct ObjectHolder : Uncopyable
+    struct ObjectHolder : public Uncopyable
     {
         ObjectHolder (const Thread::ThreadID& tid)
             : threadId (tid), object()

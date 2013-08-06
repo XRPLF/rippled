@@ -30,7 +30,7 @@ struct FifoFreeStoreWithoutTLS::Header
 
 //------------------------------------------------------------------------------
 
-class FifoFreeStoreWithoutTLS::Block : Uncopyable
+class FifoFreeStoreWithoutTLS::Block : public Uncopyable
 {
 public:
     explicit Block (const size_t bytes) : m_refs (1)

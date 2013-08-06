@@ -30,7 +30,7 @@
 
     @ingroup beast_core
 */
-class BEAST_API OncePerSecond : Uncopyable
+class BEAST_API OncePerSecond : public Uncopyable
 {
 public:
     OncePerSecond ();
