@@ -35,7 +35,7 @@
     calling thread until another thread wakes it up by calling the signal()
     method.
 */
-class BEAST_API WaitableEvent : LeakChecked <WaitableEvent>, Uncopyable
+class BEAST_API WaitableEvent : LeakChecked <WaitableEvent>, public Uncopyable
 {
 public:
     //==============================================================================

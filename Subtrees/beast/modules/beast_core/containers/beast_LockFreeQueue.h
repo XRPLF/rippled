@@ -50,7 +50,7 @@ template <class Element, class Tag = LockFreeQueueDefaultTag>
 class LockFreeQueue
 {
 public:
-    class Node : Uncopyable
+    class Node : public Uncopyable
     {
     public:
         Node () { }

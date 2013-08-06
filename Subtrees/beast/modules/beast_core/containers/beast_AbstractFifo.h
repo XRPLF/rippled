@@ -81,7 +81,7 @@
     };
     @endcode
 */
-class BEAST_API AbstractFifo : LeakChecked <AbstractFifo>, Uncopyable
+class BEAST_API AbstractFifo : LeakChecked <AbstractFifo>, public Uncopyable
 {
 public:
     //==============================================================================

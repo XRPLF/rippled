@@ -35,7 +35,7 @@
 
     @see Thread, BEASTApplication
 */
-class BEAST_API Process : Uncopyable
+class BEAST_API Process : public Uncopyable
 {
 public:
     //==============================================================================

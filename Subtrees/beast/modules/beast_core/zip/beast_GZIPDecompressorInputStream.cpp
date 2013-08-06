@@ -82,7 +82,7 @@ namespace zlibNamespace
 //==============================================================================
 // internal helper object that holds the zlib structures so they don't have to be
 // included publicly.
-class GZIPDecompressorInputStream::GZIPDecompressHelper : Uncopyable
+class GZIPDecompressorInputStream::GZIPDecompressHelper : public Uncopyable
 {
 public:
     GZIPDecompressHelper (const bool dontWrap)

@@ -52,7 +52,7 @@
 
   @ingroup beast_concurrent
 */
-class BEAST_API ParallelFor : Uncopyable
+class BEAST_API ParallelFor : public Uncopyable
 {
 public:
     /** Create a parallel for loop.
@@ -153,7 +153,7 @@ private:
     };
 
     template <class Functor>
-    class IterationType : public Iteration, Uncopyable
+    class IterationType : public Iteration, public Uncopyable
     {
     public:
         explicit IterationType (Functor const& f) : m_f (f)
@@ -172,7 +172,7 @@ private:
 private:
     class LoopState
         : public AllocatedBy <ThreadGroup::AllocatorType>
-        , Uncopyable
+        , public Uncopyable
     {
     private:
         Iteration& m_iteration;

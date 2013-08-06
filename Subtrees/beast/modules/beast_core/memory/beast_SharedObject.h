@@ -88,7 +88,6 @@ public:
     /** Returns the object's current reference count. */
     inline int getReferenceCount() const noexcept       { return refCount.get(); }
 
-
 protected:
     //==============================================================================
     /** Creates the reference-counted object (with an initial ref count of zero). */

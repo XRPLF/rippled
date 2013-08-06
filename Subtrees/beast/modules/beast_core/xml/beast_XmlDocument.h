@@ -67,7 +67,7 @@ class InputSource;
 
     @see XmlElement
 */
-class BEAST_API XmlDocument : LeakChecked <XmlDocument>, Uncopyable
+class BEAST_API XmlDocument : LeakChecked <XmlDocument>, public Uncopyable
 {
 public:
     //==============================================================================

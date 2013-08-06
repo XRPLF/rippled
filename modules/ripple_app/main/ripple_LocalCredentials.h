@@ -9,7 +9,7 @@
 
 /** Holds the cryptographic credentials identifying this instance of the server.
 */
-class LocalCredentials : Uncopyable
+class LocalCredentials : public Uncopyable
 {
 public:
     LocalCredentials ();

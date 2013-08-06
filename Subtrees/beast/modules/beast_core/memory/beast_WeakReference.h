@@ -130,7 +130,7 @@ public:
     */
     class SharedPointer
         : public ReferenceCountingType
-        , Uncopyable
+        , public Uncopyable
     {
     public:
         explicit SharedPointer (ObjectType* const obj) noexcept : owner (obj) {}
@@ -150,7 +150,7 @@ public:
         See the WeakReference class notes for an example of how to use this class.
         @see WeakReference
     */
-    class Master : Uncopyable
+    class Master : public Uncopyable
     {
     public:
         Master() noexcept {}

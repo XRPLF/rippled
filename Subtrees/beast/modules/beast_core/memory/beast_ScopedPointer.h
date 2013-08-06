@@ -62,7 +62,7 @@
     you'd need to return a raw pointer (or use a std::auto_ptr instead).
 */
 template <class ObjectType>
-class ScopedPointer : Uncopyable
+class ScopedPointer : public Uncopyable
 {
 public:
     //==============================================================================

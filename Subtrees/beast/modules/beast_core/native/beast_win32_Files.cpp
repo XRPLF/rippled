@@ -786,7 +786,7 @@ bool File::createLink (const String& description, const File& linkFileToCreate) 
 //==============================================================================
 class DirectoryIterator::NativeIterator::Pimpl
     : LeakChecked <DirectoryIterator::NativeIterator::Pimpl>
-    , Uncopyable
+    , public Uncopyable
 {
 public:
     Pimpl (const File& directory, const String& wildCard)
@@ -888,7 +888,7 @@ void File::revealToUser() const
 }
 
 //==============================================================================
-class NamedPipe::Pimpl : LeakChecked <NamedPipe::Pimpl>, Uncopyable
+class NamedPipe::Pimpl : LeakChecked <NamedPipe::Pimpl>, public Uncopyable
 {
 public:
     Pimpl (const String& pipeName, const bool createPipe)

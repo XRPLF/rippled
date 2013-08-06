@@ -34,7 +34,7 @@
 
     @see CriticalSection
 */
-class BEAST_API InterProcessLock : Uncopyable
+class BEAST_API InterProcessLock : public Uncopyable
 {
 public:
     //==============================================================================
@@ -71,7 +71,7 @@ public:
 
         @see ScopedLock
     */
-    class ScopedLockType : Uncopyable
+    class ScopedLockType : public Uncopyable
     {
     public:
         //==============================================================================

@@ -55,7 +55,7 @@
   @ingroup beast_concurrent
 */
 template <class LockType>
-struct GenericScopedReadLock : Uncopyable
+struct GenericScopedReadLock : public Uncopyable
 {
     inline explicit GenericScopedReadLock (LockType const& lock) noexcept
 :
@@ -81,7 +81,7 @@ private:
   @ingroup beast_concurrent
 */
 template <class LockType>
-struct GenericScopedWriteLock : Uncopyable
+struct GenericScopedWriteLock : public Uncopyable
 {
     inline explicit GenericScopedWriteLock (LockType const& lock) noexcept
 :

@@ -26,7 +26,7 @@
   ==============================================================================
 */
 
-class GZIPCompressorOutputStream::GZIPCompressorHelper : Uncopyable
+class GZIPCompressorOutputStream::GZIPCompressorHelper : public Uncopyable
 {
 public:
     GZIPCompressorHelper (const int compressionLevel, const int windowBits)

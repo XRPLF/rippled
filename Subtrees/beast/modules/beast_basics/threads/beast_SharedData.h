@@ -113,7 +113,7 @@
              See @ref CallQueue::queue().
 */
 template <class Object>
-class SharedData : Uncopyable
+class SharedData : public Uncopyable
 {
 public:
     class ReadAccess;
@@ -176,7 +176,7 @@ private:
     Use sparingly.
 */
 template <class Object>
-class SharedData <Object>::UnlockedAccess : Uncopyable
+class SharedData <Object>::UnlockedAccess : public Uncopyable
 {
 public:
     explicit UnlockedAccess (SharedData const& state)
@@ -205,7 +205,7 @@ private:
 
 /** Read only access to a SharedData */
 template <class Object>
-class SharedData <Object>::ReadAccess : Uncopyable
+class SharedData <Object>::ReadAccess : public Uncopyable
 {
 public:
     /** Create a ReadAccess from the specified SharedData */
@@ -242,7 +242,7 @@ private:
 
 /** Read/write access to a SharedData */
 template <class Object>
-class SharedData <Object>::WriteAccess : Uncopyable
+class SharedData <Object>::WriteAccess : public Uncopyable
 {
 public:
     explicit WriteAccess (SharedData& state)

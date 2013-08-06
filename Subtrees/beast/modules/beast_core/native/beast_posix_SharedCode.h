@@ -1169,7 +1169,7 @@ void* DynamicLibrary::getFunction (const String& functionName) noexcept
 
 
 //==============================================================================
-class ChildProcess::ActiveProcess : LeakChecked <ActiveProcess>, Uncopyable
+class ChildProcess::ActiveProcess : LeakChecked <ActiveProcess>, public Uncopyable
 {
 public:
     ActiveProcess (const StringArray& arguments)
@@ -1298,7 +1298,7 @@ bool ChildProcess::kill()
 }
 
 //==============================================================================
-struct HighResolutionTimer::Pimpl : Uncopyable
+struct HighResolutionTimer::Pimpl : public Uncopyable
 {
     Pimpl (HighResolutionTimer& t)  : owner (t), thread (0), shouldStop (false)
     {

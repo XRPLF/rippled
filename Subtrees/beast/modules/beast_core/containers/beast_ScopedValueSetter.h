@@ -52,7 +52,7 @@
 
 */
 template <typename ValueType>
-class ScopedValueSetter : Uncopyable
+class ScopedValueSetter : public Uncopyable
 {
 public:
     /** Creates a ScopedValueSetter that will immediately change the specified value to the

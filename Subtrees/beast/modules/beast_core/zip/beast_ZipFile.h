@@ -42,7 +42,7 @@
     This can enumerate the items in a ZIP file and can create suitable stream objects
     to read each one.
 */
-class BEAST_API ZipFile : LeakChecked <ZipFile>, Uncopyable
+class BEAST_API ZipFile : LeakChecked <ZipFile>, public Uncopyable
 {
 public:
     /** Creates a ZipFile based for a file. */
@@ -184,7 +184,7 @@ public:
         Currently this just stores the files with no compression.. That will be added
         soon!
     */
-    class Builder : LeakChecked <Builder>, Uncopyable
+    class Builder : LeakChecked <Builder>, public Uncopyable
     {
     public:
         Builder();

@@ -39,7 +39,7 @@ class SqliteStatement;
 class Ledger
     : public boost::enable_shared_from_this <Ledger>
     , public CountedObject <Ledger>
-    , Uncopyable
+    , public Uncopyable
 {
 public:
     static char const* getCountedObjectName () { return "Ledger"; }

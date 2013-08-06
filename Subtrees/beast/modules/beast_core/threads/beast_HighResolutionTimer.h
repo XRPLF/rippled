@@ -38,7 +38,7 @@
 
     @see Timer
 */
-class BEAST_API HighResolutionTimer : LeakChecked <HighResolutionTimer>, Uncopyable
+class BEAST_API HighResolutionTimer : LeakChecked <HighResolutionTimer>, public Uncopyable
 {
 protected:
     /** Creates a HighResolutionTimer.

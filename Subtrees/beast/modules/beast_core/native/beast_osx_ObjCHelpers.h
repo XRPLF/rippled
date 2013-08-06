@@ -64,7 +64,7 @@ struct NSObjectRetainer
 
 //==============================================================================
 template <typename SuperclassType>
-struct ObjCClass : Uncopyable
+struct ObjCClass : public Uncopyable
 {
     ObjCClass (const char* nameRoot)
         : cls (objc_allocateClassPair ([SuperclassType class], getRandomisedName (nameRoot).toUTF8(), 0))

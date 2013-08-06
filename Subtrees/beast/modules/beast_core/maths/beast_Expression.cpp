@@ -346,7 +346,7 @@ struct Expression::Helpers
         //==============================================================================
         class EvaluationVisitor
             : public Scope::Visitor
-            , Uncopyable
+            , public Uncopyable
         {
         public:
             EvaluationVisitor (const TermPtr& t, const int recursion)
@@ -361,7 +361,7 @@ struct Expression::Helpers
 
         class SymbolVisitingVisitor
             : public Scope::Visitor
-            , Uncopyable
+            , public Uncopyable
         {
         public:
             SymbolVisitingVisitor (const TermPtr& t, SymbolVisitor& v, const int recursion)
@@ -377,7 +377,7 @@ struct Expression::Helpers
 
         class SymbolRenamingVisitor
             : public Scope::Visitor
-            , Uncopyable
+            , public Uncopyable
         {
         public:
             SymbolRenamingVisitor (const TermPtr& t, const Expression::Symbol& symbol_, const String& newName_, const int recursionCount_)
@@ -607,7 +607,7 @@ struct Expression::Helpers
     //==============================================================================
     class SymbolCheckVisitor
         : public Term::SymbolVisitor
-        , Uncopyable
+        , public Uncopyable
     {
     public:
         SymbolCheckVisitor (const Symbol& symbol_) : wasFound (false), symbol (symbol_) {}
@@ -622,7 +622,7 @@ struct Expression::Helpers
     //==============================================================================
     class SymbolListVisitor
         : public Term::SymbolVisitor
-        , Uncopyable
+        , public Uncopyable
     {
     public:
         SymbolListVisitor (Array<Symbol>& list_) : list (list_) {}
@@ -633,7 +633,7 @@ struct Expression::Helpers
     };
 
     //==============================================================================
-    class Parser : Uncopyable
+    class Parser : public Uncopyable
     {
     public:
         //==============================================================================

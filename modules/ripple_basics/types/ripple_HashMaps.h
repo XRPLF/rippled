@@ -14,7 +14,7 @@
     done by seeding the hashing function with a random number generated
     at program startup.
 */
-class HashMaps : Uncopyable
+class HashMaps : public Uncopyable
 {
 public:
     /** Golden ratio constant used in hashing functions.

@@ -37,7 +37,7 @@
 class BEAST_API FileInputSource
     : public InputSource
     , LeakChecked <FileInputSource>
-    , Uncopyable
+    , public Uncopyable
 {
 public:
     //==============================================================================

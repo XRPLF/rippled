@@ -25,7 +25,7 @@
     To use this, derive your class from @ref Main and implement the
     function run ();
 */
-class BEAST_API Main : Uncopyable
+class BEAST_API Main : public Uncopyable
 {
 public:
     Main ();

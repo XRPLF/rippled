@@ -53,7 +53,7 @@
     @endcode
 */
 template <class ObjectType>
-class LinkedListPointer : Uncopyable
+class LinkedListPointer : public Uncopyable
 {
 public:
     //==============================================================================
@@ -330,7 +330,7 @@ public:
         list, and then repeatedly call Appender::append() to add items to the end
         of the list in O(1) time.
     */
-    class Appender : Uncopyable
+    class Appender : public Uncopyable
     {
     public:
         /** Creates an appender which will add items to the given list.

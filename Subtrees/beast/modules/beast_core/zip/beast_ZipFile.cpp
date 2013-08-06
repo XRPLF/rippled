@@ -442,7 +442,7 @@ Result ZipFile::uncompressEntry (const int index,
 //=============================================================================
 extern unsigned long beast_crc32 (unsigned long crc, const unsigned char*, unsigned len);
 
-class ZipFile::Builder::Item : LeakChecked <ZipFile::Builder::Item>, Uncopyable
+class ZipFile::Builder::Item : LeakChecked <ZipFile::Builder::Item>, public Uncopyable
 {
 public:
     Item (const File& f, const int compression, const String& storedPath)

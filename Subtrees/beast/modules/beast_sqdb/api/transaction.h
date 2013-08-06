@@ -63,7 +63,7 @@
 namespace sqdb
 {
 
-class transaction : Uncopyable
+class transaction : public Uncopyable
 {
 public:
     explicit transaction(session& s);

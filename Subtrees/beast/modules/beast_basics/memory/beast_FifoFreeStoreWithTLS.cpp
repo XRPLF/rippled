@@ -43,7 +43,7 @@ struct FifoFreeStoreWithTLS::Header
 
 //------------------------------------------------------------------------------
 
-class FifoFreeStoreWithTLS::Page : LeakChecked <Page>, Uncopyable
+class FifoFreeStoreWithTLS::Page : LeakChecked <Page>, public Uncopyable
 {
 public:
     explicit Page (const size_t bytes) : m_refs (1)
@@ -94,7 +94,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-class FifoFreeStoreWithTLS::PerThreadData : LeakChecked <PerThreadData>, Uncopyable
+class FifoFreeStoreWithTLS::PerThreadData : LeakChecked <PerThreadData>, public Uncopyable
 {
 public:
     explicit PerThreadData (FifoFreeStoreWithTLS* allocator)

@@ -31,7 +31,7 @@
     the process is terminated, a listener object gets notified so that the
     client application can perform logging or emit further diagnostics.
 */
-class FatalError : Uncopyable
+class FatalError : public Uncopyable
 {
 public:
     struct Reporter

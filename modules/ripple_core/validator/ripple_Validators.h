@@ -14,7 +14,7 @@
 
     All operations are performed asynchronously on an internal thread.
 */
-class Validators : Uncopyable
+class Validators : public Uncopyable
 {
 public:
     /** Provides a ValidatorList.

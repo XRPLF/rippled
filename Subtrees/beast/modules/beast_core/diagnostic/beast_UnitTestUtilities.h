@@ -109,7 +109,7 @@ public:
     @see UnitTest, UnitTests
 */
 
-class JUnitXMLFormatter : Uncopyable
+class JUnitXMLFormatter : public Uncopyable
 {
 public:
     JUnitXMLFormatter (UnitTests const& tests);

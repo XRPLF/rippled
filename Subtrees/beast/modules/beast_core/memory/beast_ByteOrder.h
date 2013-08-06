@@ -29,7 +29,7 @@
 /** Contains static methods for converting the byte order between different
     endiannesses.
 */
-class BEAST_API ByteOrder : Uncopyable
+class BEAST_API ByteOrder : public Uncopyable
 {
 public:
     //==============================================================================

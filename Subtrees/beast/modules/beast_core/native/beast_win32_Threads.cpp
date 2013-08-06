@@ -461,7 +461,7 @@ void InterProcessLock::exit()
 }
 
 //==============================================================================
-class ChildProcess::ActiveProcess : LeakChecked <ChildProcess::ActiveProcess>, Uncopyable
+class ChildProcess::ActiveProcess : LeakChecked <ChildProcess::ActiveProcess>, public Uncopyable
 {
 public:
     ActiveProcess (const String& command)
@@ -584,7 +584,7 @@ bool ChildProcess::kill()
 }
 
 //==============================================================================
-struct HighResolutionTimer::Pimpl : Uncopyable
+struct HighResolutionTimer::Pimpl : public Uncopyable
 {
     Pimpl (HighResolutionTimer& t) noexcept  : owner (t), periodMs (0)
     {

@@ -11,6 +11,15 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl.hpp>
 
+#include <boost/asio.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/bind.hpp>
+#include <boost/array.hpp>
+#include <boost/foreach.hpp>
+#include <boost/unordered_map.hpp> // for unit test
+#include <boost/mpl/at.hpp>
+#include <boost/mpl/vector.hpp>
+
 /** Implementations for boost::asio abstractions.
 
     These require boost::asio header material to be included.

@@ -36,7 +36,7 @@
 
     @see DatagramSocket, InterprocessConnection, InterprocessConnectionServer
 */
-class BEAST_API StreamingSocket : LeakChecked <StreamingSocket>, Uncopyable
+class BEAST_API StreamingSocket : LeakChecked <StreamingSocket>, public Uncopyable
 {
 public:
     //==============================================================================
@@ -175,7 +175,7 @@ private:
 
     @see StreamingSocket, InterprocessConnection, InterprocessConnectionServer
 */
-class BEAST_API DatagramSocket : LeakChecked <DatagramSocket>, Uncopyable
+class BEAST_API DatagramSocket : LeakChecked <DatagramSocket>, public Uncopyable
 {
 public:
     //==============================================================================

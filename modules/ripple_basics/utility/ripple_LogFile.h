@@ -17,7 +17,7 @@
 
     @note None of the listed interfaces are thread-safe.
 */
-class LogFile : Uncopyable
+class LogFile : public Uncopyable
 {
 public:
     /** Construct with no associated system file.
