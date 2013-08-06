@@ -291,7 +291,10 @@ void LedgerMaster::asyncAccept (Ledger::pointer ledger)
         }
 
         if (it->second.first != prevHash)
+        {
+            Writelog (lsINFO, LedgerMaster) << "Acquired hash doesn't match DB at " << seq;
             break;
+        }
 
         prevHash = it->second.second;
     }
