@@ -157,6 +157,9 @@ private:
     { if (beast::beast_isRunningUnderDebugger()) beast_breakDebugger; \
       FatalError ("Assertion '" BEAST_STRINGIFY(expression) "' failed", __FILE__, __LINE__); \
       BEAST_ANALYZER_NORETURN }
+
 #define fatal_assert(condition) { if (! (condition)) { fatal_require_report(condition); } }
+
+#define fatal_error(message) do { FatalError (message, __FILE__, __LINE__); BEAST_ANALYZER_NORETURN } while (0);
 
 #endif
