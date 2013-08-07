@@ -76,6 +76,7 @@
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketInterface.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapper.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapperBase.h" />
+    <ClInclude Include="..\..\modules\beast_asio\system\beast_BoostIncludes.h" />
     <ClInclude Include="..\..\modules\beast_basics\beast_basics.h" />
     <ClInclude Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.h" />
     <ClInclude Include="..\..\modules\beast_basics\events\beast_OncePerSecond.h" />

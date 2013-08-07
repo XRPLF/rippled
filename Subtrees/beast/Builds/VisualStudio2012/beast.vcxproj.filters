@@ -146,6 +146,9 @@
     <Filter Include="beast_asio\sockets">
       <UniqueIdentifier>{af535ad5-a06c-462f-8ac0-8207a708e032}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_asio\system">
+      <UniqueIdentifier>{c7a576bb-27b2-486e-aa14-3c51aa86c50f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -763,6 +766,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketInterface.h">
       <Filter>beast_asio\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\system\beast_BoostIncludes.h">
+      <Filter>beast_asio\system</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
