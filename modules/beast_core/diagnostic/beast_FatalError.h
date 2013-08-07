@@ -160,6 +160,6 @@ private:
 
 #define fatal_assert(condition) { if (! (condition)) { fatal_require_report(condition); } }
 
-#define fatal_error(message) do { FatalError (message, __FILE__, __LINE__); BEAST_ANALYZER_NORETURN } while (0);
+#define fatal_error(message) { FatalError (message, __FILE__, __LINE__); BEAST_ANALYZER_NORETURN }
 
 #endif
