@@ -70,7 +70,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
-    <ClInclude Include="..\..\modules\beast_asio\boost\beast_BoostIncludes.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_Socket.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SharedSocket.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketBase.h" />
