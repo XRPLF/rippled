@@ -351,3 +351,46 @@ void UnitTests::runTest (UnitTest& test)
         Throw (std::runtime_error ("unhandled exception during unit tests"));
     }
 }
+
+//------------------------------------------------------------------------------
+
+/** A UnitTest that prints the list of available unit tests.
+    Not an actual test (it always passes) but if you run it manually it
+    will print a list of the names of all available unit tests in the program.
+*/
+class UnitTestsPrinter : public UnitTest
+{
+public:
+    UnitTestsPrinter () : UnitTest ("print", "print", runManual)
+    {
+    }
+
+    void runTest ()
+    {
+        beginTestCase ("List available unit tests");
+
+        TestList const& list (UnitTest::getAllTests ());
+
+        for (int i = 0; i < list.size (); ++i)
+        {
+            UnitTest const& test (*list [i]);
+
+            String s;
+            switch (test.getWhen ())
+            {
+            default:
+            case UnitTest::runNormal:  s << "         "; break;
+            case UnitTest::runManual:  s << "[manual] "; break;
+            case UnitTest::runStartup: s << "[FORCED] "; break;
+            };
+
+            s << test.getPackageName () << "/" << test.getClassName ();
+
+            logMessage (s);
+        }
+
+        pass ();
+    }
+};
+
+static UnitTestsPrinter unitTestsPrinter;

@@ -323,11 +323,11 @@ public:
     {
         beginTestCase ("backtrace");
 
-        pass ();
-
         String const s = SystemStats::getStackBacktrace ();
 
-        Logger::outputDebugString (s);
+        logMessage (s);
+
+        pass ();
     }
 };
 
