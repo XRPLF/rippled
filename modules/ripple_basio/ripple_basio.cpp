@@ -15,6 +15,7 @@
 #include "BeastConfig.h"
 
 #include "beast/modules/beast_basics/beast_basics.h"
+#include "beast/modules/beast_asio/beast_asio.h"
 
 #include "ripple_basio.h"
 

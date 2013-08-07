@@ -891,6 +891,9 @@
     <ClCompile Include="..\..\modules\ripple_basio\tests\ripple_AsioTests.cpp">
       <Filter>[1] Ripple\ripple_basio\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Subtrees\beast\modules\beast_asio\beast_asio.cpp">
+      <Filter>[0] Subtrees\beast</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">

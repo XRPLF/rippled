@@ -118,6 +118,7 @@ INCLUDE_PATHS = [
     ]
 
 COMPILED_FILES = [
+    'Subtrees/beast/modules/beast_asio/beast_asio.cpp',
     'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
     'Subtrees/beast/modules/beast_core/beast_core.cpp',
     'Subtrees/beast/modules/beast_crypto/beast_crypto.cpp',

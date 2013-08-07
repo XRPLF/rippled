@@ -8,1121 +8,10 @@
 #define BOOST_ASIO_INITFN_RESULT_TYPE(expr,val) void
 #endif
 
-/** Provides abstract interface for parts of boost::asio */
-namespace Asio
-{
-
-using namespace boost;
-
-//------------------------------------------------------------------------------
-
-/** A high level socket abstraction.
-
-    This combines the capabilities of multiple socket interfaces such
-    as listening, connecting, streaming, and handshaking. It brings
-    everything together into a single abstract interface.
-
-    When member functions are called and the underlying implementation does
-    not support the operation, a fatal error is generated.
-
-    Must satisfy these requirements:
-    
-        DefaultConstructible, MoveConstructible, CopyConstructible,
-        MoveAssignable, CopyAssignable, Destructible
-
-    Meets the requirements of these boost concepts:
-
-        SyncReadStream, SyncWriteStream, AsyncReadStream, AsyncWriteStream,
-
-    @see SharedObjectPtr
-*/
-class AbstractSocket
-    : public asio::ssl::stream_base
-    , public asio::socket_base
-{
-protected:
-    //--------------------------------------------------------------------------
-    //
-    // Buffers
-    //
-    //--------------------------------------------------------------------------
-
-    /** Storage for a BufferSequence.
-
-        Meets these requirements:
-            BufferSequence
-            ConstBufferSequence (when Buffer is mutable_buffer)
-            MutableBufferSequence (when Buffer is const_buffer)
-    */
-    template <class Buffer>
-    class Buffers
-    {
-    public:
-        typedef Buffer value_type;
-        typedef typename std::vector <Buffer>::const_iterator const_iterator;
-
-        Buffers ()
-            : m_size (0)
-        {
-        }
-
-        template <class OtherBuffers>
-        explicit Buffers (OtherBuffers const& buffers)
-            : m_size (0)
-        {
-            m_buffers.reserve (std::distance (buffers.begin (), buffers.end ()));
-            BOOST_FOREACH (typename OtherBuffers::value_type buffer, buffers)
-            {
-                m_size += asio::buffer_size (buffer);
-                m_buffers.push_back (buffer);
-            }
-        }
-
-        /** Determine the total size of all buffers.
-            This is faster than calling asio::buffer_size.
-        */
-        std::size_t size () const noexcept
-        {
-            return m_size;
-        }
-
-        const_iterator begin () const noexcept
-        {
-            return m_buffers.begin ();
-        }
-
-        const_iterator end () const noexcept
-        {
-            return m_buffers.end ();
-        }
-
-        /** Retrieve a consumed BufferSequence. */
-        Buffers consumed (std::size_t bytes) const
-        {
-            Buffers result;
-            result.m_buffers.reserve (m_buffers.size ());
-            BOOST_FOREACH (Buffer buffer, m_buffers)
-            {
-                std::size_t const have = asio::buffer_size (buffer);
-                std::size_t const reduce = std::min (bytes, have);
-                bytes -= reduce;
-
-                if (have > reduce)
-                    result.m_buffers.push_back (buffer + reduce);
-            }
-            return result;
-        }
-
-    private:
-        std::size_t m_size;
-        std::vector <Buffer> m_buffers;
-    };
-
-    /** Meets the requirements of ConstBufferSequence */
-    typedef Buffers <asio::const_buffer> ConstBuffers;
-
-    /** Meets the requirements of MutableBufferSequence */
-    typedef Buffers <asio::mutable_buffer> MutableBuffers;
-
-    //--------------------------------------------------------------------------
-    //
-    // Handler abstractions
-    //
-    //--------------------------------------------------------------------------
-
-    //  Meets these requirements:
-    //
-    //      CompletionHandler
-    //      http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/CompletionHandler.html
-    //
-    class CompletionCall
-    {
-    public:
-        typedef void result_type;
-
-        template <class Handler>
-        CompletionCall (BOOST_ASIO_MOVE_ARG (Handler) handler)
-            : m_call (new CallType <Handler> (handler))
-        {
-        }
-
-        CompletionCall (CompletionCall const& other)
-            : m_call (other.m_call)
-        { 
-        }
-
-        void operator() ()
-        {
-            (*m_call) ();
-        }
-
-    private:
-        struct Call : SharedObject, LeakChecked <Call>
-        {
-            virtual void operator() () = 0;
-        };
-
-        template <class Handler>
-        struct CallType : Call
-        {
-            CallType (BOOST_ASIO_MOVE_ARG (Handler) handler)
-                : m_handler (handler)
-            {
-            }
-
-            void operator() ()
-            {
-                m_handler ();
-            }
-
-            Handler m_handler;
-        };
-
-    private:
-        SharedObjectPtr <Call> m_call;
-    };
-
-    //  Meets these requirements:
-    //
-    //      AcceptHandler
-    //      http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AcceptHandler.html
-    //
-    //      ConnectHandler
-    //      http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ConnectHandler.html
-    //
-    //      ShutdownHandler
-    //      http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ShutdownHandler.html
-    //
-    //      HandshakeHandler
-    //      http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/HandshakeHandler.html
-    //
-    class ErrorCall
-    {
-    public:
-        typedef void result_type;
-
-        template <class Handler>
-        ErrorCall (BOOST_ASIO_MOVE_ARG (Handler) handler)
-            : m_call (new CallType <Handler> (handler))
-        {
-        }
-
-        ErrorCall (ErrorCall const& other)
-            : m_call (other.m_call)
-        { 
-        }
-
-        void operator() (system::error_code const& ec)
-        {
-            (*m_call) (ec);
-        }
-
-    private:
-        struct Call : SharedObject, LeakChecked <Call>
-        {
-            virtual void operator() (system::error_code const&) = 0;
-        };
-
-        template <class Handler>
-        struct CallType : Call
-        {
-            CallType (BOOST_ASIO_MOVE_ARG (Handler) handler)
-                : m_handler (handler)
-            {
-            }
-
-            void operator() (system::error_code const& ec)
-            {
-                m_handler (ec);
-            }
-
-            Handler m_handler;
-        };
-
-    private:
-        SharedObjectPtr <Call> m_call;
-    };
-
-    //  Meets these requirements
-    //
-    //      ReadHandler
-    //      http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ReadHandler.html
-    //
-    //      WriteHandler
-    //      http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/WriteHandler.html
-    //
-    //      BUfferedHandshakeHandler
-    //      http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/BufferedHandshakeHandler.html
-    //
-    class TransferCall
-    {
-    public:
-        typedef void result_type;
-
-        template <class Handler>
-        TransferCall (BOOST_ASIO_MOVE_ARG (Handler) handler)
-            : m_call (new CallType <Handler> (handler))
-        {
-        }
-
-        TransferCall (TransferCall const& other)
-            : m_call (other.m_call)
-        { 
-        }
-
-        void operator() (system::error_code const& ec, std::size_t bytes_transferred)
-        {
-            (*m_call) (ec, bytes_transferred);
-        }
-
-    private:
-        struct Call : SharedObject, LeakChecked <Call>
-        {
-            virtual void operator() (system::error_code const&, std::size_t) = 0;
-        };
-
-        template <class Handler>
-        struct CallType : Call
-        {
-            CallType (BOOST_ASIO_MOVE_ARG (Handler) handler)
-                : m_handler (handler)
-            {
-            }
-
-            void operator() (system::error_code const& ec, std::size_t bytes_transferred)
-            {
-                m_handler (ec, bytes_transferred);
-            }
-
-            Handler m_handler;
-        };
-
-    private:
-        SharedObjectPtr <Call> m_call;
-    };
-
-public:
-    typedef SharedObjectPtr <AbstractSocket> Ptr;
-
-    virtual ~AbstractSocket () { }
-
-    //--------------------------------------------------------------------------
-    //
-    // General attributes
-    //
-    //--------------------------------------------------------------------------
-
-    /** Determines if the underlying stream requires a handshake.
-
-        If is_handshaked is true, it will be necessary to call handshake or
-        async_handshake after the connection is established. Furthermore it
-        will be necessary to call the shutdown member from the
-        HandshakeInterface to close the connection. Do not close the underlying
-        socket or else the closure will not be graceful. Only one side should
-        initiate the handshaking shutdon. The other side should observe it.
-        Which side does what is up to the user.
-    */
-    virtual bool is_handshaked () = 0;
-
-    /** Retrieve the underlying object.
-        Returns nullptr if the implementation doesn't match. Usually
-        you will use this if you need to get at the underlying boost::asio
-        object. For example:
-
-        @code
-
-        void set_options (AbstractSocket& socket)
-        {
-            bost::asio::ip::tcp::socket* sock =
-                socket.native_object <bost::asio::ip::tcp::socket> ();
-
-            if (sock != nullptr)
-                sock->set_option (
-                    boost::asio::ip::tcp::no_delay (true));
-        }
-
-        @endcode
-    */
-    template <class Object>
-    Object* native_object ()
-    {
-        void* const object = native_object_raw ();
-        if (object != nullptr)
-            return dynamic_cast <Object> (object);
-        return object;
-    }
-
-    virtual void* native_object_raw () = 0;
-
-    //--------------------------------------------------------------------------
-    //
-    // SocketInterface
-    //
-    //--------------------------------------------------------------------------
-
-    void cancel ()
-    {
-        system::error_code ec;
-        throw_error (cancel (ec));
-    }
-
-    virtual system::error_code cancel (system::error_code& ec) = 0;
-
-    void shutdown (shutdown_type what)
-    {
-        system::error_code ec;
-        throw_error (shutdown (what, ec));
-    }
-
-    virtual system::error_code shutdown (shutdown_type what, system::error_code& ec) = 0;
-
-    void close ()
-    {
-        system::error_code ec;
-        throw_error (close (ec));
-    }
-
-    virtual system::error_code close (system::error_code& ec) = 0;
-
-    //--------------------------------------------------------------------------
-    //
-    // StreamInterface
-    //
-    //--------------------------------------------------------------------------
-
-    // SyncReadStream
-    //
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/SyncReadStream.html
-    //
-    template <class MutableBufferSequence>
-    std::size_t read_some (MutableBufferSequence const& buffers, system::error_code& ec)
-    {
-        return read_some_impl (MutableBuffers (buffers), ec);
-    }
-
-    virtual std::size_t read_some_impl (MutableBuffers const& buffers, system::error_code& ec) = 0;
-
-    // SyncWriteStream
-    //
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/SyncWriteStream.html
-    //
-    template <class ConstBufferSequence>
-    std::size_t write_some (ConstBufferSequence const& buffers, system::error_code &ec)
-    {
-        return write_some_impl (ConstBuffers (buffers), ec);
-    }
-
-    virtual std::size_t write_some_impl (ConstBuffers const& buffers, system::error_code& ec) = 0;
-
-    // AsyncReadStream
-    //
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncReadStream.html
-    //
-    template <class MutableBufferSequence, class ReadHandler>
-    void async_read_some (MutableBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
-    {
-        async_read_some_impl (MutableBuffers (buffers), handler);
-    }
-
-    virtual void async_read_some_impl (MutableBuffers const& buffers, TransferCall const& call) = 0;
-
-    // AsyncWriteStream
-    //
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncWriteStream.html
-    //
-    template <class ConstBufferSequence, class WriteHandler>
-    void async_write_some (ConstBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
-    {
-        async_write_some_impl (ConstBuffers (buffers), handler);
-    }
-
-    virtual void async_write_some_impl (ConstBuffers const& buffers, TransferCall const& call) = 0;
-
-    //--------------------------------------------------------------------------
-    //
-    // HandshakeInterface
-    //
-    //--------------------------------------------------------------------------
-
-    // ssl::stream::handshake (1 of 4)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload1.html
-    //
-    void handshake (handshake_type role)
-    {
-        system::error_code ec;
-        throw_error (handshake (role, ec));
-    }
-
-    // ssl::stream::handshake (2 of 4)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload2.html
-    //
-    virtual system::error_code handshake (handshake_type role, system::error_code& ec) = 0;
-
-#if (BOOST_VERSION / 100) >= 1054
-    // ssl::stream::handshake (3 of 4)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload3.html
-    //
-    template <class ConstBufferSequence>
-    void handshake (handshake_type role, ConstBufferSequence const& buffers)
-    {
-        system::error_code ec;
-        throw_error (handshake (role, buffers, ec));
-    }
-
-    // ssl::stream::handshake (4 of 4)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload4.html
-    //
-    template <class ConstBufferSequence>
-    system::error_code handshake (handshake_type role,
-        ConstBufferSequence const& buffers, system::error_code& ec)
-    {
-        return handshake_impl (role, ConstBuffers (buffers), ec);
-    }
-
-    virtual system::error_code handshake_impl (handshake_type role,
-        ConstBuffers const& buffers, system::error_code& ec) = 0;
-#endif
-
-    // ssl::stream::async_handshake (1 of 2)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload1.html
-    //
-    template <class HandshakeHandler>
-    void async_handshake (handshake_type role, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
-    {
-        async_handshake_impl (role, handler);
-    }
-
-    virtual void async_handshake_impl (handshake_type role, ErrorCall const& calll) = 0;
-
-#if (BOOST_VERSION / 100) >= 1054
-    // ssl::stream::async_handshake (2 of 2)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload2.html
-    //
-    template <class ConstBufferSequence, class BufferedHandshakeHandler>
-    void async_handshake (handshake_type role, ConstBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
-    {
-        async_handshake_impl (role, ConstBuffers (buffers), handler);
-    }
-
-    virtual void async_handshake_impl (handshake_type role,
-        ConstBuffers const& buffers, TransferCall const& call) = 0;
-#endif
-
-    // ssl::stream::shutdown
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/shutdown.html
-    //
-    void shutdown ()
-    {
-        system::error_code ec;
-        throw_error (shutdown (ec));
-    }
-
-    virtual system::error_code shutdown (system::error_code& ec) = 0;
-
-    // ssl::stream::async_shutdown
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_shutdown.html
-    //
-    template <class ShutdownHandler>
-    void async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler)
-    {
-        async_shutdown_impl (handler);
-    }
-
-    virtual void async_shutdown_impl (ErrorCall const& call) = 0;
-
-private:
-    void throw_error (system::error_code const& ec)
-    {
-        if (ec)
-            Throw (system::system_error (ec), __FILE__, __LINE__);
-    }
-};
-
-//------------------------------------------------------------------------------
-
-/** Interfaces compatible with some of basic_socket
-    http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket.html
-*/
-struct SocketInterface { };
-
-/** Interfaces compatible with some of basic_stream_socket
-    http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket.html
-*/
-struct StreamInterface { };
-
-/** Interfaces compatible with some of ssl::stream
-    http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream.html
-*/
-struct HandshakeInterface { };
-
-// Determines the set of interfaces supported by the AsioType
-template <typename Object>
-struct InterfacesOf
-{
-    // This should be changed to UnknownConcept. Why bother wrapping
-    // our own classes if they can just be derived from the abstract
-    // interface? Only classes dervied from the corresponding
-    // boost::asio objects should ever be wrapped.
-    //
-    typedef typename Object::Interfaces type;
-    typedef type value;
-};
-
-// asio::basic_socket
-template <typename Protocol, typename SocketService>
-struct InterfacesOf <boost::asio::basic_socket <Protocol, SocketService> >
-{
-    struct value : SocketInterface { };
-    typedef value type;
-};
-
-// asio::basic_stream_socket
-template <typename Protocol, typename SocketService>
-struct InterfacesOf <boost::asio::basic_stream_socket <Protocol, SocketService> >
-{
-    struct value : SocketInterface, StreamInterface { };
-    typedef value type;
-};
-
-// asio::ssl::Stream
-template <typename Stream>
-struct InterfacesOf <boost::asio::ssl::stream <Stream> >
-{
-    struct value : StreamInterface, HandshakeInterface { };
-    typedef value type;
-};
-
-// ideas from boost::mpl
-template <bool C>
-struct Bool { };
-typedef Bool <true> True;
-typedef Bool <false> False;
-
-// determines if the AsioType supports the specified Interface
-template <typename AsioType, typename Interface, class Enable = void>
-struct HasInterface : False { };
-
-template <typename AsioType, typename Interface>
-struct HasInterface <AsioType, Interface,
-    typename boost::enable_if <boost::is_base_of <
-    Interface, typename InterfacesOf <AsioType>::type> >::type >
-    : True { };
-
-//------------------------------------------------------------------------------
-
-// Common stuff for all Wrapper specializatons
-//
-template <class Object>
-class Wrapper : public AbstractSocket
-{
-public:
-    typedef Object ObjectType;
-    typedef typename remove_reference <Object>::type ObjectT;
-    typedef typename remove_reference <Object>::type next_layer_type;
-    typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
-    typedef asio::ssl::stream_base::handshake_type handshake_type;
-
-    Wrapper (Object& object) noexcept
-        : m_impl (&object)
-    {
-    }
-
-    // Retrieve the underlying object
-    Object& get_object () const noexcept
-    {
-        fatal_assert (m_impl != nullptr);
-        return *m_impl;
-    }
-
-    asio::io_service& get_io_service () noexcept
-    {
-        return get_object ().get_io_service ();
-    }
-
-    next_layer_type& next_layer () noexcept
-    {
-        return get_object ().next_layer ();
-    }
-
-    next_layer_type const& next_layer () const noexcept
-    {
-        return get_object ().next_layer ();
-    }
-
-    lowest_layer_type& lowest_layer () noexcept
-    {
-        return get_object ().lowest_layer ();
-    }
-
-    lowest_layer_type const& lowest_layer () const noexcept
-    {
-        return get_object ().lowest_layer ();
-    }
-
-    // General
-
-    bool to_bool (True) { return true; }
-    bool to_bool (False) { return false; }
-    bool is_handshaked ()
-    {
-        return to_bool (HasInterface <ObjectT, HandshakeInterface> ());
-    }
-
-    void* native_object_raw ()
-    {
-        return m_impl;
-    }
-
-    // SocketInterface
-
-    system::error_code cancel (system::error_code& ec)
-    {
-        return cancel (ec, HasInterface <ObjectT, SocketInterface> ());
-    }
-    
-    system::error_code shutdown (shutdown_type what, system::error_code& ec)
-    {
-        return shutdown (what, ec, HasInterface <ObjectT, SocketInterface> ());
-    }
-
-    system::error_code close (system::error_code& ec)
-    {
-        return close (ec, HasInterface <ObjectT, SocketInterface> ());
-    }
-
-    // StreamInterface
-
-    std::size_t read_some_impl (AbstractSocket::MutableBuffers const& buffers,
-        system::error_code& ec)
-    {
-        return read_some (buffers, ec, HasInterface <ObjectT, StreamInterface> ());
-    }
-
-    std::size_t write_some_impl (AbstractSocket::ConstBuffers const& buffers,
-        system::error_code& ec)
-    {
-        return write_some (buffers, ec, HasInterface <ObjectT, StreamInterface> ());
-    }
-
-    void async_read_some_impl (AbstractSocket::MutableBuffers const& buffers,
-        TransferCall const& call)
-    {
-        async_read_some (buffers, call, HasInterface <ObjectT, StreamInterface> ());
-    }
-
-    void async_write_some_impl (AbstractSocket::ConstBuffers const& buffers,
-        TransferCall const& call)
-    {
-        async_write_some (buffers, call, HasInterface <ObjectT, StreamInterface> ());
-    }
-
-    // HandshakeInterface
-
-    system::error_code handshake (handshake_type type, system::error_code& ec)
-    {
-        return handshake (type, ec, HasInterface <ObjectT, HandshakeInterface> ());
-    }
-
-#if (BOOST_VERSION / 100) >= 1054
-    system::error_code handshake_impl (handshake_type role,
-        AbstractSocket::ConstBuffers const& buffers, system::error_code& ec)
-    {
-        return handshake (role, buffers, ec, HasInterface <ObjectT, HandshakeInterface> ());
-    }
-#endif
-
-    void async_handshake_impl (handshake_type role, ErrorCall const& call)
-    {
-        async_handshake (role, call, HasInterface <ObjectT, HandshakeInterface> ());
-    }
-
-#if (BOOST_VERSION / 100) >= 1054
-    void async_handshake_impl (handshake_type role,
-        AbstractSocket::ConstBuffers const& buffers, TransferCall const& call)
-    {
-        async_handshake (role, buffers, call, HasInterface <ObjectT, HandshakeInterface> ());
-    }
-#endif
-
-    system::error_code shutdown (system::error_code& ec)
-    {
-        return shutdown (ec, HasInterface <ObjectT, HandshakeInterface> ());
-    }
-
-    void async_shutdown_impl (ErrorCall const& call)
-    {
-        async_shutdown (call, HasInterface <ObjectT, HandshakeInterface> ());
-    }
-
-protected:
-    explicit Wrapper (Object* object = nullptr) noexcept
-        : m_impl (object)
-    {
-    }
-
-    void set (Object* ptr) noexcept
-    {
-        m_impl = ptr;
-    }
-
-private:
-    static system::error_code fail (system::error_code const& ec = system::error_code ())
-    {
-        fatal_error ("pure virtual");
-        return ec;
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // SocketInterface
-    //
-    //--------------------------------------------------------------------------
-
-    system::error_code cancel (system::error_code& ec, True)
-    {
-        return get_object ().cancel (ec);
-    }
-
-    system::error_code cancel (system::error_code& ec, False)
-    {
-        return fail ();
-    }
-
-    system::error_code shutdown (AbstractSocket::shutdown_type what, boost::system::error_code& ec, True)
-    {
-        return get_object ().shutdown (what, ec);
-    }
-
-    system::error_code shutdown (AbstractSocket::shutdown_type what, boost::system::error_code& ec, False)
-    {
-        return fail ();
-    }
-
-    system::error_code close (system::error_code& ec, True)
-    {
-        return get_object ().close (ec);
-    }
-
-    system::error_code close (system::error_code& ec, False)
-    {
-       return fail ();
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // StreamInterface
-    //
-    //--------------------------------------------------------------------------
-
-    template <typename MutableBufferSequence>
-    std::size_t read_some (MutableBufferSequence const& buffers, system::error_code& ec, True)
-    {
-        return get_object ().read_some (buffers, ec);
-    }
-
-    template <typename MutableBufferSequence>
-    std::size_t read_some (MutableBufferSequence const& buffers, system::error_code& ec, False)
-    {
-        fail ();
-        return 0;
-    }
-
-    template <typename ConstBufferSequence>
-    std::size_t write_some (ConstBufferSequence const& buffers, system::error_code& ec, True)
-    {
-        return get_object ().write_some (buffers, ec);
-    }
-
-    template <typename ConstBufferSequence>
-    std::size_t write_some (ConstBufferSequence const& buffers, system::error_code& ec, False)
-    {
-        fail ();
-        return 0;
-    }
-
-    template <typename MutableBufferSequence, typename ReadHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
-    async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler, True)
-    {
-        get_object ().async_read_some (buffers, handler);
-    }
-
-    template <typename MutableBufferSequence, typename ReadHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
-    async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler, False)
-    {
-        fail ();
-    }
-
-    template <typename ConstBufferSequence, typename WriteHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
-    async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler, True)
-    {
-        return get_object ().async_write_some (buffers, handler);
-    }
-
-    template <typename ConstBufferSequence, typename WriteHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
-    async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler, False)
-    {
-        fail ();
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // HandshakeInteface
-    //
-    //--------------------------------------------------------------------------
-
-    boost::system::error_code handshake (handshake_type type, boost::system::error_code& ec, True)
-    {
-        return get_object ().handshake (type, ec);
-    }
-
-    boost::system::error_code handshake (handshake_type type, boost::system::error_code& ec, False)
-    {
-        fail ();
-        return boost::system::error_code ();
-    }
-
-#if (BOOST_VERSION / 100) >= 1054
-    template <typename ConstBufferSequence>
-    boost::system::error_code handshake (handshake_type type, ConstBufferSequence const& buffers,
-        boost::system::error_code& ec, True)
-    {
-        return get_object ().handshake (type, buffers, ec);
-    }
-
-    template <typename ConstBufferSequence>
-    boost::system::error_code handshake (handshake_type type, ConstBufferSequence const& buffers,
-        boost::system::error_code& ec, False)
-    {
-        fail ();
-        return boost::system::error_code ();
-    }
-#endif
-
-    template <typename HandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler, True)
-    {
-        return get_object ().async_handshake (type, handler);
-    }
-
-    template <typename HandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler, False)
-    {
-        fail ();
-    }
-
-#if (BOOST_VERSION / 100) >= 1054
-    template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
-    async_handshake (handshake_type type, const ConstBufferSequence& buffers,
-    BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler, True)
-    {
-        return get_object ().async_handshake (type, buffers, handler);
-    }
-
-    template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
-    async_handshake (handshake_type type, const ConstBufferSequence& buffers,
-    BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler, False)
-    {
-        fail ();
-    }
-#endif
-
-    boost::system::error_code shutdown (boost::system::error_code& ec, True)
-    {
-        return get_object ().shutdown (ec);
-    }
-
-    boost::system::error_code shutdown (boost::system::error_code& ec, False)
-    {
-        fail ();
-        return boost::system::error_code ();
-    }
-
-    template <typename ShutdownHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ShutdownHandler, void (boost::system::error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler, True)
-    {
-        return get_object ().async_shutdown (handler);
-    }
-
-    template <typename ShutdownHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ShutdownHandler, void (boost::system::error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler, False)
-    {
-        fail ();
-    }
-
-private:
-    Object* m_impl;
-};
-
-//------------------------------------------------------------------------------
-
-/** A reference counted container for a dynamic object. */
-template <class Object>
-class SharedObjectBase
-{
-protected:
-    explicit SharedObjectBase (Object* object = nullptr)
-        : m_handle ((object == nullptr) ? nullptr : new Handle (object))
-    {
-    }
-
-    template <class Other>
-    explicit SharedObjectBase (SharedObjectBase <Other> const& other) noexcept
-        : m_handle (other.m_handle)
-    {
-    }
-
-    Object* get_object_ptr () const noexcept
-    {
-        return m_handle->get ();
-    }
-
-    template <class Other>
-    static inline Other* get_other (SharedObjectBase <Other> const& other)
-    {
-        return other.m_handle->get ();
-    }
-
-    template <class Other>
-    void set_other (SharedObjectBase <Other> const& other) noexcept
-    {
-        m_handle = other.m_handle;
-    }
-
-private:
-    template <class T>
-    friend bool operator== (SharedObjectBase <T> const& lhs, T const& rhs) noexcept;
-
-    template <class T>
-    friend bool operator== (T const& lhs, SharedObjectBase <T> const& rhs) noexcept;
-
-    template <class T>
-    friend bool operator== (SharedObjectBase <T> const& lhs, SharedObjectBase <T> const& rhs) noexcept;
-
-    template <class T>
-    friend bool operator!= (SharedObjectBase <T> const& lhs, T const& rhs) noexcept;
-
-    template <class T>
-    friend bool operator!= (T const& lhs, SharedObjectBase <T> const& rhs) noexcept;
-
-    template <class T>
-    friend bool operator!= (SharedObjectBase <T> const& lhs, SharedObjectBase <T> const& rhs) noexcept;
-
-    class Handle : public SharedObject
-    {
-    public:
-        typedef SharedObjectPtr <Handle> Ptr;
-        explicit Handle (Object* object) noexcept : m_object (object) { }
-        Object* get () const noexcept { return m_object.get (); }
-    private:
-        ScopedPointer <Object> m_object;
-    };
-
-    typename Handle::Ptr m_handle;
-};
-
-// We explicitly discourage pointer comparisons
-
-template <class Object>
-bool operator== (SharedObjectBase <Object> const& lhs, Object const& rhs) noexcept
-{
-    return lhs.get_object_ptr () == &rhs;
-}
-
-template <class Object>
-bool operator== (Object const& lhs, SharedObjectBase <Object> const& rhs) noexcept
-{
-    return &lhs == rhs.get_object_ptr ();
-}
-
-template <class Object>
-bool operator== (SharedObjectBase <Object> const& lhs, SharedObjectBase <Object> const& rhs) noexcept
-{
-    return lhs.get_object_ptr () == rhs.get_object_ptr ();
-}
-
-template <class Object>
-bool operator!= (SharedObjectBase <Object> const& lhs, Object const& rhs) noexcept
-{
-    return lhs.get_object_ptr () != &rhs;
-}
-
-template <class Object>
-bool operator!= (Object const& lhs, SharedObjectBase <Object> const& rhs) noexcept
-{
-    return &lhs != rhs.get_object_ptr ();
-}
-
-template <class Object>
-bool operator!= (SharedObjectBase <Object> const& lhs, SharedObjectBase <Object> const& rhs) noexcept
-{
-    return lhs.get_object_ptr () != rhs.get_object_ptr ();
-}
-
-//------------------------------------------------------------------------------
-
-/** A reference counted pointer to an object wrapped in an interface.
-
-    This takes control of the underlying object, which must be
-    dynamically allocated via operator new.
-*/
-template <class Object>
-class SharedWrapper
-    : public Wrapper <Object>
-    , public SharedObjectBase <Object>
-{
-public:
-    // Take ownership of existing object
-    // If other shared containers have a reference, undefined behavior results.
-    explicit SharedWrapper (Object* object = nullptr) noexcept
-        : Wrapper <Object> (object)
-        , SharedObjectBase <Object> (object)
-    {
-    }
-
-    // Receive a reference to an existing shared object
-    template <class OtherObject>
-    SharedWrapper (SharedWrapper <OtherObject> const& other) noexcept
-        : Wrapper <Object> (get_other (other))
-        , SharedObjectBase <Object> (other)
-    {
-    }
-
-    // Receive a reference to an existing shared obeject
-    template <class Other>
-    SharedWrapper& operator= (SharedObjectBase <Other> const& other) noexcept
-    {
-        set_other (other);
-        return *this;
-    }
-
-private:
-    // disallowed
-    SharedWrapper& operator= (Object*) const noexcept;
-};
-
-}
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
 namespace AsioUnitTestsNamespace
 {
 
-using namespace Asio;
+using namespace boost;
 
 class SslContext : public Uncopyable
 {
@@ -1241,12 +130,20 @@ private:
 
 // A handshaking stream that can distinguish multiple protocols
 //
+// SSL note:
+//
+// http://stackoverflow.com/questions/8467277/boostasio-and-async-ssl-stream-how-to-detect-end-of-data-connection-close/18024071#18024071
+//
 class RippleHandshakeStream
     : public asio::socket_base
     , public asio::ssl::stream_base
 {
 public:
-    struct Interfaces : SocketInterface, StreamInterface, HandshakeInterface { };
+    struct SocketInterfaces
+        : SocketInterface::Socket
+        , SocketInterface::Stream
+        , SocketInterface::Handshake
+    {};
 
     enum Status
     {
@@ -1300,7 +197,7 @@ public:
         , m_io_service (m_next_layer.get_io_service ())
         , m_strand (m_io_service)
         , m_status (needMore)
-        , m_role (AbstractSocket::client)
+        , m_role (Socket::client)
 
     {
     }
@@ -1334,7 +231,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    AbstractSocket& stream () const noexcept
+    Socket& stream () const noexcept
     {
         fatal_assert (m_stream != nullptr);
         return *m_stream;
@@ -1356,7 +253,7 @@ public:
         return lowest_layer ().close (ec);
     }
 
-    system::error_code shutdown (AbstractSocket::shutdown_type what, boost::system::error_code& ec)
+    system::error_code shutdown (Socket::shutdown_type what, boost::system::error_code& ec)
     {
         return lowest_layer ().shutdown (what, ec);
     }
@@ -1410,7 +307,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    system::error_code handshake (AbstractSocket::handshake_type role, system::error_code& ec)
+    system::error_code handshake (Socket::handshake_type role, system::error_code& ec)
     {
         Action action = calcAction (role);
 
@@ -1574,11 +471,11 @@ public:
     // Determines what action to take based on
     // the stream options and the desired role.
     //
-    Action calcAction (AbstractSocket::handshake_type role)
+    Action calcAction (Socket::handshake_type role)
     {
         m_role = role;
 
-        if (role == AbstractSocket::server)
+        if (role == Socket::server)
         {
             if (! m_options.enableServerSsl &&
                 ! m_options.requireServerSsl &&
@@ -1595,7 +492,7 @@ public:
                 return actionDetect;
             }
         }
-        else if (m_role == AbstractSocket::client)
+        else if (m_role == Socket::client)
         {
             if (m_options.useClientSsl)
             {
@@ -1670,6 +567,8 @@ public:
         return actionFail;
     }
 
+    //--------------------------------------------------------------------------
+
     // called when options disallow handshake
     void failedHandshake (system::error_code& ec)
     {
@@ -1681,7 +580,7 @@ public:
     void createPlainStream ()
     {
         m_status = plain;
-        m_stream = new Wrapper <next_layer_type> (m_next_layer);
+        m_stream = new SocketWrapper <next_layer_type> (m_next_layer);
     }
 
     void handshakePlain (system::error_code& ec)
@@ -1722,7 +621,7 @@ public:
     {
         m_status = ssl;
         m_ssl_stream = new SslStreamType (m_next_layer, m_context.get_object ());
-        m_stream = new Wrapper <SslStreamType> (*m_ssl_stream);
+        m_stream = new SocketWrapper <SslStreamType> (*m_ssl_stream);
     }
 
     void handshakeSsl (system::error_code& ec)
@@ -1905,8 +804,8 @@ private:
     asio::io_service& m_io_service;
     asio::io_service::strand m_strand;
     Status m_status;
-    AbstractSocket::handshake_type m_role;
-    ScopedPointer <AbstractSocket> m_stream;
+    Socket::handshake_type m_role;
+    ScopedPointer <Socket> m_stream;
     ScopedPointer <SslStreamType> m_ssl_stream;
     asio::streambuf m_buffer;
 };
@@ -2071,8 +970,8 @@ public:
 
         BasicTest (UnitTest& test,
                    Scenario& scenario,
-                   AbstractSocket::handshake_type role)
-            : Thread ((role == AbstractSocket::client) ? "client" : "server")
+                   Socket::handshake_type role)
+            : Thread ((role == Socket::client) ? "client" : "server")
             , m_test (test)
             , m_scenario (scenario)
             , m_role (role)
@@ -2101,7 +1000,7 @@ public:
         {
             if (! check_success (ec, eofIsOkay))
             {
-                if (m_role == AbstractSocket::server)
+                if (m_role == Socket::server)
                     m_scenario.server_error = ec;
                 else
                     m_scenario.client_error = ec;
@@ -2120,11 +1019,6 @@ public:
             return true;
         }
 
-        asio::io_service& get_io_service ()
-        {
-            return m_io_service;
-        }
-
         virtual system::error_code start (system::error_code& ec) = 0;
 
         virtual void finish () = 0;
@@ -2132,10 +1026,7 @@ public:
     protected:
         UnitTest& m_test;
         Scenario& m_scenario;
-        AbstractSocket::handshake_type const m_role;
-
-    private:
-        asio::io_service m_io_service;
+        Socket::handshake_type const m_role;
     };
 
     //--------------------------------------------------------------------------
@@ -2147,7 +1038,7 @@ public:
     public:
         BasicSync (UnitTest& test,
                    Scenario& scenario,
-                   AbstractSocket::handshake_type role)
+                   Socket::handshake_type role)
             : BasicTest (test, scenario, role)
         {
         }
@@ -2170,11 +1061,11 @@ public:
     {
     public:
         BasicSyncServer (UnitTest& test, Scenario& scenario)
-            : BasicSync (test, scenario, AbstractSocket::server)
+            : BasicSync (test, scenario, Socket::server)
         {
         }
 
-        void process (AbstractSocket& socket, system::error_code& ec)
+        void process (Socket& socket, system::error_code& ec)
         {
             {
                 asio::streambuf buf (5);
@@ -2210,11 +1101,11 @@ public:
     {
     public:
         BasicSyncClient (UnitTest& test, Scenario& scenario)
-            : BasicSync (test, scenario, AbstractSocket::client)
+            : BasicSync (test, scenario, Socket::client)
         {
         }
 
-        void process (AbstractSocket& socket, system::error_code& ec)
+        void process (Socket& socket, system::error_code& ec)
         {
             {
                 std::size_t const amount = asio::write (socket, asio::buffer ("hello", 5), ec);
@@ -2266,14 +1157,14 @@ public:
     {
     public:
         typedef typename Transport::Protocol    Protocol;
-        typedef typename Protocol::socket       Socket;
+        typedef typename Protocol::socket       SocketType;
         typedef typename Protocol::acceptor     Acceptor;
         typedef typename Protocol::endpoint     Endpoint;
 
         SyncServer (UnitTest& test, Scenario& scenario)
             : BasicSyncServer (test, scenario)
-            , m_acceptor (get_io_service ())
-            , m_socket (get_io_service ())
+            , m_acceptor (m_io_service)
+            , m_socket (m_io_service)
         {
         }
 
@@ -2284,7 +1175,7 @@ public:
             if (! check_success (m_acceptor.open (Transport::server_endpoint ().protocol (), ec)))
                 return ec;
 
-            if (! check_success (m_acceptor.set_option (typename Socket::reuse_address (true), ec)))
+            if (! check_success (m_acceptor.set_option (typename SocketType::reuse_address (true), ec)))
                 return ec;
 
             if (! check_success (m_acceptor.bind (Transport::server_endpoint (), ec)))
@@ -2309,13 +1200,13 @@ public:
             if (! thread_success (m_acceptor.close (ec)))
                 return;
 
-            Wrapper <Socket> socket (m_socket);
+            SocketWrapper <SocketType> socket (m_socket);
 
             process (socket, ec);
 
             if (! ec)
             {
-                if (! thread_success (m_socket.shutdown (Socket::shutdown_both, ec)))
+                if (! thread_success (m_socket.shutdown (SocketType::shutdown_both, ec)))
                     return;
 
                 if (! thread_success (m_socket.close (ec)))
@@ -2324,8 +1215,9 @@ public:
         }
 
     protected:
+        asio::io_service m_io_service;
         Acceptor m_acceptor;
-        Socket m_socket;
+        SocketType m_socket;
     };
 
     //--------------------------------------------------------------------------
@@ -2337,13 +1229,13 @@ public:
     {
     public:
         typedef typename Transport::Protocol    Protocol;
-        typedef typename Protocol::socket       Socket;
+        typedef typename Protocol::socket       SocketType;
         typedef typename Protocol::acceptor     Acceptor;
         typedef typename Protocol::endpoint     Endpoint;
 
         SyncClient (UnitTest& test, Scenario& scenario)
             : BasicSyncClient (test, scenario)
-            , m_socket (get_io_service ())
+            , m_socket (m_io_service)
         {
         }
 
@@ -2364,13 +1256,13 @@ public:
             if (! thread_success (m_socket.connect (Transport::client_endpoint (), ec)))
                 return;
 
-            Wrapper <Socket> socket (m_socket);
+            SocketWrapper <SocketType> socket (m_socket);
 
             process (socket, ec);
 
             if (! ec)
             {
-                if (! thread_success (m_socket.shutdown (Socket::shutdown_both, ec)))
+                if (! thread_success (m_socket.shutdown (SocketType::shutdown_both, ec)))
                     return;
 
                 if (! thread_success (m_socket.close (ec)))
@@ -2379,7 +1271,8 @@ public:
         }
 
     private:
-        Socket m_socket;
+        asio::io_service m_io_service;
+        SocketType m_socket;
     };
 
     //--------------------------------------------------------------------------
@@ -2391,14 +1284,14 @@ public:
     {
     public:
         typedef typename Transport::Protocol    Protocol;
-        typedef typename Protocol::socket       Socket;
+        typedef typename Protocol::socket       SocketType;
         typedef typename Protocol::acceptor     Acceptor;
         typedef typename Protocol::endpoint     Endpoint;
 
         HandshakeSyncServer (UnitTest& test, Scenario& scenario)
             : BasicSyncServer (test, scenario)
-            , m_socket (get_io_service ())
-            , m_acceptor (get_io_service ())
+            , m_socket (m_io_service)
+            , m_acceptor (m_io_service)
             , m_handshake (m_socket, m_scenario.handshakeOptions)
         {
         }
@@ -2410,7 +1303,7 @@ public:
             if (! check_success (m_acceptor.open (Transport::server_endpoint ().protocol (), ec)))
                 return ec;
 
-            if (! check_success (m_acceptor.set_option (typename Socket::reuse_address (true), ec)))
+            if (! check_success (m_acceptor.set_option (typename SocketType::reuse_address (true), ec)))
                 return ec;
 
             if (! check_success (m_acceptor.bind (Transport::server_endpoint (), ec)))
@@ -2435,7 +1328,7 @@ public:
             if (! thread_success (m_acceptor.close (ec)))
                 return;
 
-            Wrapper <HandshakeType <Socket&> > socket (m_handshake);
+            SocketWrapper <HandshakeType <SocketType&> > socket (m_handshake);
 
             if (! thread_success (socket.handshake (m_role, ec)))
                 return;
@@ -2454,9 +1347,10 @@ public:
         }
 
     protected:
-        Socket m_socket;
+        asio::io_service m_io_service;
+        SocketType m_socket;
         Acceptor m_acceptor;
-        HandshakeType <Socket&> m_handshake;
+        HandshakeType <SocketType&> m_handshake;
     };
 
     //--------------------------------------------------------------------------
@@ -2468,13 +1362,13 @@ public:
     {
     public:
         typedef typename Transport::Protocol    Protocol;
-        typedef typename Protocol::socket       Socket;
+        typedef typename Protocol::socket       SocketType;
         typedef typename Protocol::acceptor     Acceptor;
         typedef typename Protocol::endpoint     Endpoint;
 
         HandshakeSyncClient (UnitTest& test, Scenario& scenario)
             : BasicSyncClient (test, scenario)
-            , m_socket (get_io_service ())
+            , m_socket (m_io_service)
             , m_handshake (m_socket, m_scenario.handshakeOptions)
         {
         }
@@ -2496,7 +1390,7 @@ public:
             if (! thread_success (m_socket.connect (Transport::client_endpoint (), ec)))
                 return;
 
-            Wrapper <HandshakeType <Socket&> > socket (m_handshake);
+            SocketWrapper <HandshakeType <SocketType&> > socket (m_handshake);
 
             if (! thread_success (socket.handshake (m_role, ec)))
                 return;
@@ -2516,8 +1410,9 @@ public:
         }
 
     private:
-        Socket m_socket;
-        HandshakeType <Socket&> m_handshake;
+        asio::io_service m_io_service;
+        SocketType m_socket;
+        HandshakeType <SocketType&> m_handshake;
     };
 
     //--------------------------------------------------------------------------
@@ -2529,10 +1424,8 @@ public:
     public:
         BasicAsync (UnitTest& test,
                     Scenario& scenario,
-                    AbstractSocket::handshake_type role,
-                    AbstractSocket& socket)
+                    Socket::handshake_type role)
             : BasicTest (test, scenario, role)
-            , m_socket (socket)
         {
         }
 
@@ -2557,15 +1450,13 @@ public:
         }
 
     protected:
+        virtual asio::io_service& get_io_service () = 0;
+        virtual Socket& socket () = 0;
+
         void run ()
         {
             get_io_service ().run ();
             m_done.signal ();
-        }
-
-        AbstractSocket& socket ()
-        {
-            return m_socket;
         }
 
         virtual void on_start (system::error_code& ec) = 0;
@@ -2579,7 +1470,6 @@ public:
 
     private:
         WaitableEvent m_done;
-        AbstractSocket& m_socket;
     };
 
     //--------------------------------------------------------------------------
@@ -2589,10 +1479,8 @@ public:
     class BasicAsyncServer : public BasicAsync
     {
     public:
-        BasicAsyncServer (UnitTest& test,
-                          Scenario& scenario,
-                          AbstractSocket& socket)
-            : BasicAsync (test, scenario, AbstractSocket::server, socket)
+        BasicAsyncServer (UnitTest& test, Scenario& scenario)
+            : BasicAsync (test, scenario, Socket::server)
         {
         }
 
@@ -2625,7 +1513,7 @@ public:
 
                 {
                     system::error_code ec;
-                    if (! thread_success (socket ().shutdown (AbstractSocket::shutdown_both, ec)))
+                    if (! thread_success (socket ().shutdown (Socket::shutdown_both, ec)))
                         return;
                 }
 
@@ -2639,7 +1527,7 @@ public:
             {
                 system::error_code ec;
 
-                if (! thread_success (socket ().shutdown (AbstractSocket::shutdown_both, ec)))
+                if (! thread_success (socket ().shutdown (Socket::shutdown_both, ec)))
                     return;
 
                 if (! thread_success (socket ().close (ec)))
@@ -2657,10 +1545,8 @@ public:
     class BasicAsyncClient : public BasicAsync
     {
     public:
-        BasicAsyncClient (UnitTest& test,
-                          Scenario& scenario,
-                          AbstractSocket& socket)
-            : BasicAsync (test, scenario, AbstractSocket::client, socket)
+        BasicAsyncClient (UnitTest& test, Scenario& scenario)
+            : BasicAsync (test, scenario, Socket::client)
         {
         }
 
@@ -2709,7 +1595,7 @@ public:
             {
                 system::error_code ec; // to hide the eof
 
-                if (! thread_success (socket ().shutdown (AbstractSocket::shutdown_both, ec)))
+                if (! thread_success (socket ().shutdown (Socket::shutdown_both, ec)))
                     return;
 
                 on_shutdown (ec);
@@ -2726,7 +1612,7 @@ public:
             {
                 system::error_code ec;
 
-                if (! thread_success (socket ().shutdown (AbstractSocket::shutdown_both, ec)))
+                if (! thread_success (socket ().shutdown (Socket::shutdown_both, ec)))
                     return;
 
                 if (! thread_success (socket ().close (ec)))
@@ -2739,23 +1625,31 @@ public:
 
     //--------------------------------------------------------------------------
 
-    // An asynchronous server
-    //
     template <class Transport>
     class AsyncServer : public BasicAsyncServer
     {
     public:
         typedef typename Transport::Protocol    Protocol;
-        typedef typename Protocol::socket       Socket;
+        typedef typename Protocol::socket       SocketType;
         typedef typename Protocol::acceptor     Acceptor;
         typedef typename Protocol::endpoint     Endpoint;
 
         AsyncServer (UnitTest& test, Scenario& scenario)
-            : BasicAsyncServer (test, scenario, m_socketWrapper)
-            , m_acceptor (get_io_service ())
-            , m_socket (get_io_service ())
+            : BasicAsyncServer (test, scenario)
+            , m_acceptor (m_io_service)
+            , m_socket (m_io_service)
             , m_socketWrapper (m_socket)
         {
+        }
+
+        asio::io_service& get_io_service ()
+        {
+            return m_io_service;
+        }
+
+        Socket& socket ()
+        {
+            return m_socketWrapper;
         }
 
         void on_start (system::error_code& ec)
@@ -2763,7 +1657,7 @@ public:
             if (! check_success (m_acceptor.open (Transport::server_endpoint ().protocol (), ec)))
                 return;
 
-            if (! check_success (m_acceptor.set_option (typename Socket::reuse_address (true), ec)))
+            if (! check_success (m_acceptor.set_option (typename SocketType::reuse_address (true), ec)))
                 return;
 
             if (! check_success (m_acceptor.bind (Transport::server_endpoint (), ec)))
@@ -2776,7 +1670,6 @@ public:
                 &BasicAsyncServer::on_accept, this, asio::placeholders::error));
         }
 
-    private:
         void closed ()
         {
             system::error_code ec;
@@ -2785,10 +1678,11 @@ public:
         }
 
     private:
+        asio::io_service m_io_service;
         Acceptor m_acceptor;
-        Socket m_socket;
+        SocketType m_socket;
         asio::streambuf m_buf;
-        Wrapper <Socket> m_socketWrapper;
+        SocketWrapper <SocketType> m_socketWrapper;
     };
 
     //--------------------------------------------------------------------------
@@ -2800,15 +1694,25 @@ public:
     {
     public:
         typedef typename Transport::Protocol    Protocol;
-        typedef typename Protocol::socket       Socket;
+        typedef typename Protocol::socket       SocketType;
         typedef typename Protocol::acceptor     Acceptor;
         typedef typename Protocol::endpoint     Endpoint;
 
         AsyncClient (UnitTest& test, Scenario& scenario)
-            : BasicAsyncClient (test, scenario, m_socketWrapper)
-            , m_socket (get_io_service ())
+            : BasicAsyncClient (test, scenario)
+            , m_socket (m_io_service)
             , m_socketWrapper (m_socket)
         {
+        }
+
+        asio::io_service& get_io_service ()
+        {
+            return m_io_service;
+        }
+
+        Socket& socket ()
+        {
+            return m_socketWrapper;
         }
 
         void on_start (system::error_code& ec)
@@ -2822,9 +1726,10 @@ public:
         }
 
     private:
-        Socket m_socket;
+        asio::io_service m_io_service;
+        SocketType m_socket;
         asio::streambuf m_buf;
-        Wrapper <Socket> m_socketWrapper;
+        SocketWrapper <SocketType> m_socketWrapper;
     };
 
     //--------------------------------------------------------------------------
@@ -2836,19 +1741,29 @@ public:
     {
     public:
         typedef typename Transport::Protocol    Protocol;
-        typedef typename Protocol::socket       Socket;
+        typedef typename Protocol::socket       SocketType;
         typedef typename Protocol::acceptor     Acceptor;
         typedef typename Protocol::endpoint     Endpoint;
-        typedef HandshakeType <Socket&> StreamType;
+        typedef HandshakeType <SocketType&> StreamType;
         typedef HandshakeAsyncServer <Transport, HandshakeType> ThisType;
 
         HandshakeAsyncServer (UnitTest& test, Scenario& scenario)
-            : BasicAsyncServer (test, scenario, m_socketWrapper)
-            , m_acceptor (get_io_service ())
+            : BasicAsyncServer (test, scenario)
+            , m_acceptor (m_io_service)
             , m_socket (m_acceptor.get_io_service ())
             , m_stream (m_socket, m_scenario.handshakeOptions)
             , m_socketWrapper (m_stream)
         {
+        }
+
+        asio::io_service& get_io_service ()
+        {
+            return m_io_service;
+        }
+
+        Socket& socket ()
+        {
+            return m_socketWrapper;
         }
 
         void on_start (system::error_code& ec)
@@ -2856,7 +1771,7 @@ public:
             if (! check_success (m_acceptor.open (Transport::server_endpoint ().protocol (), ec)))
                 return;
 
-            if (! check_success (m_acceptor.set_option (typename Socket::reuse_address (true), ec)))
+            if (! check_success (m_acceptor.set_option (typename SocketType::reuse_address (true), ec)))
                 return;
 
             if (! check_success (m_acceptor.bind (Transport::server_endpoint (), ec)))
@@ -2869,7 +1784,6 @@ public:
                 &ThisType::on_accept, this, asio::placeholders::error));
         }
 
-    private:
         void on_accept (system::error_code const& ec)
         {
             {
@@ -2880,7 +1794,7 @@ public:
 
             if (thread_success (ec))
             {
-                socket ().async_handshake (AbstractSocket::server,
+                socket ().async_handshake (Socket::server,
                     boost::bind (&ThisType::on_handshake, this, asio::placeholders::error));
             }
         }
@@ -2938,11 +1852,12 @@ public:
         }
 
     private:
+        asio::io_service m_io_service;
         Acceptor m_acceptor;
-        Socket m_socket;
+        SocketType m_socket;
         asio::streambuf m_buf;
         StreamType m_stream;
-        Wrapper <StreamType> m_socketWrapper;
+        SocketWrapper <StreamType> m_socketWrapper;
     };
 
     //--------------------------------------------------------------------------
@@ -2954,18 +1869,28 @@ public:
     {
     public:
         typedef typename Transport::Protocol    Protocol;
-        typedef typename Protocol::socket       Socket;
+        typedef typename Protocol::socket       SocketType;
         typedef typename Protocol::acceptor     Acceptor;
         typedef typename Protocol::endpoint     Endpoint;
-        typedef HandshakeType <Socket&> StreamType;
+        typedef HandshakeType <SocketType&> StreamType;
         typedef HandshakeAsyncClient <Transport, HandshakeType> ThisType;
 
         HandshakeAsyncClient (UnitTest& test, Scenario& scenario)
-            : BasicAsyncClient (test, scenario, m_socketWrapper)
-            , m_socket (get_io_service ())
+            : BasicAsyncClient (test, scenario)
+            , m_socket (m_io_service)
             , m_stream (m_socket, m_scenario.handshakeOptions)
             , m_socketWrapper (m_stream)
         {
+        }
+
+        asio::io_service& get_io_service ()
+        {
+            return m_io_service;
+        }
+
+        Socket& socket ()
+        {
+            return m_socketWrapper;
         }
 
         void on_start (system::error_code& ec)
@@ -2974,12 +1899,11 @@ public:
                 &ThisType::on_connect, this, asio::placeholders::error));
         }
 
-    private:
         void on_connect (system::error_code const& ec)
         {
             if (thread_success (ec))
             {
-                socket ().async_handshake (AbstractSocket::client,
+                socket ().async_handshake (Socket::client,
                     boost::bind (&ThisType::on_handshake, this, asio::placeholders::error));
             }
         }
@@ -3052,10 +1976,11 @@ public:
         }
 
     private:
-        Socket m_socket;
+        asio::io_service m_io_service;
+        SocketType m_socket;
         asio::streambuf m_buf;
         StreamType m_stream;
-        Wrapper <StreamType> m_socketWrapper;
+        SocketWrapper <StreamType> m_socketWrapper;
     };
 
     //--------------------------------------------------------------------------
@@ -3156,32 +2081,33 @@ public:
     //
     void testFacade ()
     {
-        beginTestCase ("facade");
-
         typedef asio::ip::tcp Protocol;
-        typedef Protocol::socket Socket;
+        typedef Protocol::socket SocketType;
+
+#if 0
+        beginTestCase ("facade");
 
         asio::io_service ios;
 
         {
-            SharedWrapper <Socket> f1 (new Socket (ios));
-            SharedWrapper <Socket> f2 (f1);
+            SharedWrapper <SocketType> f1 (new SocketType (ios));
+            SharedWrapper <SocketType> f2 (f1);
 
             expect (f1 == f2);
         }
 
         {
-            SharedWrapper <Socket> f1 (new Socket (ios));
-            SharedWrapper <Socket> f2 (new Socket (ios));
+            SharedWrapper <SocketType> f1 (new SocketType (ios));
+            SharedWrapper <SocketType> f2 (new SocketType (ios));
 
             expect (f1 != f2);
             f2 = f1;
             expect (f1 == f2);
         }
-
+#endif
         // test typedef inheritance
         {
-            typedef Wrapper <Socket> SocketWrapper;
+            typedef SocketWrapper <SocketType> SocketWrapper;
             typedef SocketWrapper::lowest_layer_type lowest_layer_type;
         }
     }
@@ -3204,6 +2130,7 @@ public:
     template <class Transport>
     void testTransport ()
     {
+#if 1
         // Synchronous
         testScenario <SyncServer  <Transport>, SyncClient  <Transport> > ();
         testScenario <HandshakeSyncServer <Transport, RippleHandshakeStreamType>,
@@ -3212,9 +2139,11 @@ public:
                       HandshakeSyncClient <Transport, RippleHandshakeStreamType> > ();
         testScenario <HandshakeSyncServer <Transport, RippleHandshakeStreamType>,
                       HandshakeSyncClient <Transport, RippleHandshakeStreamType> > ();
+#endif
 
         // Asynchronous
         testScenario <AsyncServer <Transport>, SyncClient  <Transport> > ();
+#if 1
         testScenario <SyncServer  <Transport>, AsyncClient <Transport> > ();
         testScenario <AsyncServer <Transport>, AsyncClient <Transport> > ();
 
@@ -3235,6 +2164,7 @@ public:
                         HandshakeSyncClient  <Transport, RippleHandshakeStreamType> > ();
         testHandshakes <HandshakeAsyncServer <Transport, RippleHandshakeStreamType>,
                         HandshakeAsyncClient <Transport, RippleHandshakeStreamType> > ();
+#endif
     }
 
 //------------------------------------------------------------------------------
@@ -3243,7 +2173,7 @@ public:
     {
         testFacade ();
         testTransport <TcpV4> ();
-        //testTransport <TcpV6> ();
+        testTransport <TcpV6> ();
     }
 };
 
