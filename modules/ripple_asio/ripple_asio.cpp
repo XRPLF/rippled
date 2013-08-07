@@ -4,10 +4,10 @@
 */
 //==============================================================================
 
-/** Add this to get the @ref ripple_basio module.
+/** Add this to get the @ref ripple_asio module.
 
-    @file ripple_basio.cpp
-    @ingroup ripple_basio
+    @file ripple_asio.cpp
+    @ingroup ripple_asio
 */
 
 //------------------------------------------------------------------------------
@@ -17,9 +17,9 @@
 #include "beast/modules/beast_basics/beast_basics.h"
 #include "beast/modules/beast_asio/beast_asio.h"
 
-#include "ripple_basio.h"
+#include "ripple_asio.h"
 
-#include "ripple_basio_impl.h"
+#include "ripple_asio_impl.h"
 
 namespace ripple
 {

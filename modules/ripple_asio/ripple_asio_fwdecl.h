@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASIO_FWDECL_H_INCLUDED
-#define RIPPLE_BASIO_FWDECL_H_INCLUDED
+#ifndef RIPPLE_ASIO_FWDECL_H_INCLUDED
+#define RIPPLE_ASIO_FWDECL_H_INCLUDED
 
 /** Forward declarations for boost::asio.
 

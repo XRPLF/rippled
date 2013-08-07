@@ -4,14 +4,14 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASIO_H_INCLUDED
-#define RIPPLE_BASIO_H_INCLUDED
+#ifndef RIPPLE_ASIO_H_INCLUDED
+#define RIPPLE_ASIO_H_INCLUDED
 
 #include "beast/modules/beast_core/beast_core.h"
 
 // Must be outside the namespace
 
-#include "ripple_basio_fwdecl.h"
+#include "ripple_asio_fwdecl.h"
 
 /** Abstractions for boost::asio
 
@@ -19,8 +19,8 @@
     These classes are designed to move boost::asio header material out of
     the majority of include paths.
 
-    @ingroup ripple_basio
-    @file ripple_basio.h
+    @ingroup ripple_asio
+    @file ripple_asio.h
 */
 namespace ripple
 {
