@@ -31,12 +31,18 @@ struct SocketInterface
     /** Tag for some compatibility with asio::basic_stream_socket
         http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket.html
     */
-    struct Stream { };
+    struct SyncStream { };
+    struct AsyncStream { };
+    struct Stream : SyncStream, AsyncStream { };
     
-    /** Tag for some compatibility with asio::ssl::stream
+    /** Tags for compatibility with asio::ssl::stream
         http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream.html
     */
-    struct Handshake { };
+    struct SyncHandshake { };
+    struct SyncBufferedHandshake : SyncHandshake { };
+    struct AsyncHandshake { };
+    struct AsyncBufferedHandshake : AsyncHandshake{ };
+    struct Handshake : SyncBufferedHandshake, AsyncBufferedHandshake { };
 };
 
 #endif

@@ -40,12 +40,11 @@ class SocketWrapper
 public:
     typedef Object ObjectType;
     typedef typename boost::remove_reference <Object>::type ObjectT;
-    typedef typename boost::remove_reference <Object>::type next_layer_type;
-    typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
-    typedef boost::asio::ssl::stream_base::handshake_type handshake_type;
 
     SocketWrapper (Object& object) noexcept
         : m_impl (&object)
+        //, m_next_layer (object.next_layer ())
+        //, m_lowest_layer (object.lowest_layer ())
     {
     }
 
@@ -71,6 +70,12 @@ public:
         return get_object ().get_io_service ();
     }
 
+    //--------------------------------------------------------------------------
+
+#if 0
+    typedef typename boost::remove_reference <Object>::type next_layer_type;
+    typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
+
     next_layer_type& next_layer () noexcept
     {
         return get_object ().next_layer ();
@@ -90,6 +95,7 @@ public:
     {
         return get_object ().lowest_layer ();
     }
+#endif
 
     // General
 
@@ -103,85 +109,383 @@ public:
         return m_impl;
     }
 
-    // Socket
+    //--------------------------------------------------------------------------
+    //
+    // SocketInterface::Socket
+    //
+    //--------------------------------------------------------------------------
 
+public:
     boost::system::error_code cancel (boost::system::error_code& ec)
     {
-        return cancel (ec, HasInterface <ObjectT, SocketInterface::Socket> ());
+        return cancel (ec,
+            HasInterface <ObjectT, SocketInterface::Socket> ());
     }
-    
+   
+private:
+    boost::system::error_code cancel (boost::system::error_code& ec,
+        boost::true_type)
+    {
+        return get_object ().cancel (ec);
+    }
+
+    boost::system::error_code cancel (boost::system::error_code& ec,
+        boost::false_type)
+    {
+        return pure_virtual (ec);
+    }
+
+public:
     boost::system::error_code shutdown (shutdown_type what, boost::system::error_code& ec)
     {
-        return shutdown (what, ec, HasInterface <ObjectT, SocketInterface::Socket> ());
+        return shutdown (what, ec,
+            HasInterface <ObjectT, SocketInterface::Socket> ());
     }
 
+private:
+    boost::system::error_code shutdown (Socket::shutdown_type what, boost::system::error_code& ec,
+        boost::true_type)
+    {
+        return get_object ().shutdown (what, ec);
+    }
+
+    boost::system::error_code shutdown (Socket::shutdown_type, boost::system::error_code& ec,
+        boost::false_type)
+    {
+        return pure_virtual (ec);
+    }
+
+public:
     boost::system::error_code close (boost::system::error_code& ec)
     {
-        return close (ec, HasInterface <ObjectT, SocketInterface::Socket> ());
+        return close (ec,
+            HasInterface <ObjectT, SocketInterface::Socket> ());
     }
 
-    // Stream
+private:
+    boost::system::error_code close (boost::system::error_code& ec,
+        boost::true_type)
+    {
+        return get_object ().close (ec);
+    }
 
-    std::size_t read_some_impl (Socket::MutableBuffers const& buffers,
+    boost::system::error_code close (boost::system::error_code& ec,
+        boost::false_type)
+    {
+       return pure_virtual (ec);
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // SocketInterface::Stream
+    //
+    //--------------------------------------------------------------------------
+
+public:
+    std::size_t read_some (BOOST_ASIO_MOVE_ARG(MutableBuffers) buffers,
         boost::system::error_code& ec)
     {
-        return read_some (buffers, ec, HasInterface <ObjectT, SocketInterface::Stream> ());
+        return read_some (buffers, ec,
+            HasInterface <ObjectT, SocketInterface::SyncStream> ());
     }
 
-    std::size_t write_some_impl (Socket::ConstBuffers const& buffers,
-        boost::system::error_code& ec)
+private:
+    template <typename MutableBufferSequence>
+    std::size_t read_some (MutableBufferSequence const& buffers, boost::system::error_code& ec,
+        boost::true_type)
     {
-        return write_some (buffers, ec, HasInterface <ObjectT, SocketInterface::Stream> ());
+        return get_object ().read_some (buffers, ec);
     }
 
-    void async_read_some_impl (Socket::MutableBuffers const& buffers,
-        TransferCall const& call)
+    template <typename MutableBufferSequence>
+    std::size_t read_some (MutableBufferSequence const&, boost::system::error_code& ec,
+        boost::false_type)
     {
-        async_read_some (buffers, call, HasInterface <ObjectT, SocketInterface::Stream> ());
+        pure_virtual (ec);
+        return 0;
     }
 
-    void async_write_some_impl (Socket::ConstBuffers const& buffers,
-        TransferCall const& call)
+public:
+    std::size_t write_some (BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, boost::system::error_code& ec)
     {
-        async_write_some (buffers, call, HasInterface <ObjectT, SocketInterface::Stream> ());
+        return write_some (buffers, ec,
+            HasInterface <ObjectT, SocketInterface::SyncStream> ());
     }
 
+private:
+    template <typename ConstBufferSequence>
+    std::size_t write_some (ConstBufferSequence const& buffers, boost::system::error_code& ec,
+        boost::true_type)
+    {
+        return get_object ().write_some (buffers, ec);
+    }
+
+    template <typename ConstBufferSequence>
+    std::size_t write_some (ConstBufferSequence const&, boost::system::error_code& ec,
+        boost::false_type)
+    {
+        pure_virtual (ec);
+        return 0;
+    }
+
+public:
+    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    async_read_some (BOOST_ASIO_MOVE_ARG(MutableBuffers) buffers, BOOST_ASIO_MOVE_ARG(TransferCall) call)
+    {
+        return async_read_some (buffers, call,
+            HasInterface <ObjectT, SocketInterface::AsyncStream> ());
+    }
+
+private:
+    template <typename MutableBufferSequence, typename ReadHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
+    async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler,
+        boost::true_type)
+    {
+        return get_object ().async_read_some (buffers, handler);
+    }
+
+    template <typename MutableBufferSequence, typename ReadHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
+    async_read_some (MutableBufferSequence const&, BOOST_ASIO_MOVE_ARG(ReadHandler),
+        boost::false_type)
+    {
+#if BOOST_ASIO_HAS_FUTURE_RETURNS
+        boost::asio::detail::async_result_init<
+            ReadHandler, void (boost::system::error_code, std::size_t)> init(
+            BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
+        system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (handler, ec, 0));
+        return init.result.get();
+#else
+        system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (handler, ec, 0));
+#endif
+    }
+
+public:
+    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    async_write_some (BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, BOOST_ASIO_MOVE_ARG(TransferCall) call)
+    {
+        return async_write_some (buffers, call,
+            HasInterface <ObjectT, SocketInterface::AsyncStream> ());
+    }
+
+private:
+    template <typename ConstBufferSequence, typename WriteHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
+    async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler,
+        boost::true_type)
+    {
+        return get_object ().async_write_some (buffers, handler);
+    }
+
+    template <typename ConstBufferSequence, typename WriteHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
+    async_write_some (ConstBufferSequence const&, BOOST_ASIO_MOVE_ARG(WriteHandler),
+        boost::false_type)
+    {
+#if BOOST_ASIO_HAS_FUTURE_RETURNS
+        boost::asio::detail::async_result_init<
+            WriteHandler, void (boost::system::error_code, std::size_t)> init(
+            BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
+        system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (handler, ec, 0));
+        return init.result.get();
+#else
+        system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (handler, ec, 0));
+#endif
+    }
+
+    //--------------------------------------------------------------------------
+    //
     // Handshake
+    //
+    //--------------------------------------------------------------------------
 
+public:
     boost::system::error_code handshake (handshake_type type, boost::system::error_code& ec)
     {
-        return handshake (type, ec, HasInterface <ObjectT, SocketInterface::Handshake> ());
+        return handshake (type, ec,
+            HasInterface <ObjectT, SocketInterface::SyncHandshake> ());
     }
 
-#if (BOOST_VERSION / 100) >= 1054
-    boost::system::error_code handshake_impl (handshake_type role,
-        Socket::ConstBuffers const& buffers, boost::system::error_code& ec)
+private:
+    boost::system::error_code handshake (handshake_type type, boost::system::error_code& ec,
+        boost::true_type)
     {
-        return handshake (role, buffers, ec, HasInterface <ObjectT, SocketInterface::Handshake> ());
+        return get_object ().handshake (type, ec);
+    }
+
+    boost::system::error_code handshake (handshake_type, boost::system::error_code& ec,
+        boost::false_type)
+    {
+        return pure_virtual (ec);
+    }
+
+public:
+    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ErrorCall) call)
+    {
+        return async_handshake (type, call,
+            HasInterface <ObjectT, SocketInterface::AsyncHandshake> ());
+    }
+
+private:
+    template <typename HandshakeHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
+    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler,
+        boost::true_type)
+    {
+        return get_object ().async_handshake (type, handler);
+    }
+
+    template <typename HandshakeHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
+    async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler,
+        boost::false_type)
+    {
+#if BOOST_ASIO_HAS_FUTURE_RETURNS
+        boost::asio::detail::async_result_init<
+            HandshakeHandler, void (boost::system::error_code)> init(
+            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
+        system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (handler, ec));
+        return init.result.get();
+#else
+        system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (handler, ec));
+#endif
+    }
+
+public:
+#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
+    boost::system::error_code handshake (handshake_type type,
+        BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, boost::system::error_code& ec)
+    {
+        return handshake (type, buffers, ec,
+            HasInterface <ObjectT, SocketInterface::SyncBufferedHandshake> ());
+    }
+
+private:
+    template <typename ConstBufferSequence>
+    boost::system::error_code handshake (handshake_type type,
+        ConstBufferSequence const& buffers, boost::system::error_code& ec,
+        boost::true_type)
+    {
+        return get_object ().handshake (type, buffers, ec);
+    }
+
+    template <typename ConstBufferSequence>
+    boost::system::error_code handshake (handshake_type,
+        ConstBufferSequence const&, boost::system::error_code& ec,
+        boost::false_type)
+    {
+        return pure_virtual (ec);
+    }
+
+public:
+    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers,
+        BOOST_ASIO_MOVE_ARG(TransferCall) call)
+    {
+        return async_handshake (type, buffers, call,
+            HasInterface <ObjectT, SocketInterface::AsyncBufferedHandshake> ());
+    }
+
+private:
+    template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
+    async_handshake (handshake_type type, const ConstBufferSequence& buffers,
+        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler,
+        boost::true_type)
+    {
+        return get_object ().async_handshake (type, buffers, handler);
+    }
+
+    template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
+    async_handshake (handshake_type, const ConstBufferSequence&,
+        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler,
+        boost::false_type)
+    {
+#if BOOST_ASIO_HAS_FUTURE_RETURNS
+        boost::asio::detail::async_result_init<
+            BufferedHandshakeHandler, void (boost::system::error_code, std::size_t)> init(
+            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
+        boost::system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (handler, ec, 0));
+        return init.result.get();
+#else
+        system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (handler, ec, 0));
+#endif
     }
 #endif
 
-    void async_handshake_impl (handshake_type role, ErrorCall const& call)
-    {
-        async_handshake (role, call, HasInterface <ObjectT, SocketInterface::Handshake> ());
-    }
-
-#if (BOOST_VERSION / 100) >= 1054
-    void async_handshake_impl (handshake_type role,
-        Socket::ConstBuffers const& buffers, TransferCall const& call)
-    {
-        async_handshake (role, buffers, call, HasInterface <ObjectT, SocketInterface::Handshake> ());
-    }
-#endif
-
+public:
     boost::system::error_code shutdown (boost::system::error_code& ec)
     {
-        return shutdown (ec, HasInterface <ObjectT, SocketInterface::Handshake> ());
+        return shutdown (ec,
+            HasInterface <ObjectT, SocketInterface::SyncHandshake> ());
     }
 
-    void async_shutdown_impl (ErrorCall const& call)
+private:
+    boost::system::error_code shutdown (boost::system::error_code& ec,
+        boost::true_type)
     {
-        async_shutdown (call, HasInterface <ObjectT, SocketInterface::Handshake> ());
+        return get_object ().shutdown (ec);
+    }
+
+    boost::system::error_code shutdown (boost::system::error_code& ec,
+        boost::false_type)
+    {
+        return pure_virtual (ec);
+    }
+
+public:
+    void async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) call)
+    {
+        async_shutdown (call,
+            HasInterface <ObjectT, SocketInterface::AsyncHandshake> ());
+    }
+
+private:
+    template <typename ShutdownHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(ShutdownHandler, void (boost::system::error_code))
+    async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler,
+        boost::true_type)
+    {
+        return get_object ().async_shutdown (handler);
+    }
+
+    template <typename ShutdownHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(ShutdownHandler, void (boost::system::error_code))
+    async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler,
+        boost::false_type)
+    {
+#if BOOST_ASIO_HAS_FUTURE_RETURNS
+        boost::asio::detail::async_result_init<
+            ShutdownHandler, void (boost::system::error_code, std::size_t)> init(
+            BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler));
+        system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (handler, ec));
+        return init.result.get();
+#else
+        system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (handler, ec));
+#endif
     }
 
 protected:
@@ -196,197 +500,16 @@ protected:
     }
 
 private:
-    static boost::system::error_code fail (boost::system::error_code const& ec = boost::system::error_code ())
+    static void pure_virtual ()
     {
-        fatal_error ("pure virtual");
-        return ec;
+        fatal_error ("A beast::Socket function was called on an object that doesn't support the interface");
     }
 
-    //--------------------------------------------------------------------------
-    //
-    // Socket
-    //
-    //--------------------------------------------------------------------------
-
-    boost::system::error_code cancel (boost::system::error_code& ec, boost::true_type)
+    static boost::system::error_code pure_virtual (boost::system::error_code& ec)
     {
-        return get_object ().cancel (ec);
-    }
-
-    boost::system::error_code cancel (boost::system::error_code&, boost::false_type)
-    {
-        return fail ();
-    }
-
-    boost::system::error_code shutdown (Socket::shutdown_type what, boost::system::error_code& ec, boost::true_type)
-    {
-        return get_object ().shutdown (what, ec);
-    }
-
-    boost::system::error_code shutdown (Socket::shutdown_type, boost::system::error_code&, boost::false_type)
-    {
-        return fail ();
-    }
-
-    boost::system::error_code close (boost::system::error_code& ec, boost::true_type)
-    {
-        return get_object ().close (ec);
-    }
-
-    boost::system::error_code close (boost::system::error_code&, boost::false_type)
-    {
-       return fail ();
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // Stream
-    //
-    //--------------------------------------------------------------------------
-
-    template <typename MutableBufferSequence>
-    std::size_t read_some (MutableBufferSequence const& buffers, boost::system::error_code& ec, boost::true_type)
-    {
-        return get_object ().read_some (buffers, ec);
-    }
-
-    template <typename MutableBufferSequence>
-    std::size_t read_some (MutableBufferSequence const&, boost::system::error_code&, boost::false_type)
-    {
-        fail ();
-        return 0;
-    }
-
-    template <typename ConstBufferSequence>
-    std::size_t write_some (ConstBufferSequence const& buffers, boost::system::error_code& ec, boost::true_type)
-    {
-        return get_object ().write_some (buffers, ec);
-    }
-
-    template <typename ConstBufferSequence>
-    std::size_t write_some (ConstBufferSequence const&, boost::system::error_code&, boost::false_type)
-    {
-        fail ();
-        return 0;
-    }
-
-    template <typename MutableBufferSequence, typename ReadHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
-    async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler, boost::true_type)
-    {
-        get_object ().async_read_some (buffers, handler);
-    }
-
-    template <typename MutableBufferSequence, typename ReadHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
-    async_read_some (MutableBufferSequence const&, BOOST_ASIO_MOVE_ARG(ReadHandler), boost::false_type)
-    {
-        fail ();
-    }
-
-    template <typename ConstBufferSequence, typename WriteHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
-    async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler, boost::true_type)
-    {
-        return get_object ().async_write_some (buffers, handler);
-    }
-
-    template <typename ConstBufferSequence, typename WriteHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
-    async_write_some (ConstBufferSequence const&, BOOST_ASIO_MOVE_ARG(WriteHandler), boost::false_type)
-    {
-        fail ();
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // Handshake
-    //
-    //--------------------------------------------------------------------------
-
-    boost::system::error_code handshake (handshake_type type, boost::system::error_code& ec, boost::true_type)
-    {
-        return get_object ().handshake (type, ec);
-    }
-
-    boost::system::error_code handshake (handshake_type, boost::system::error_code&, boost::false_type)
-    {
-        fail ();
-        return boost::system::error_code ();
-    }
-
-#if (BOOST_VERSION / 100) >= 1054
-    template <typename ConstBufferSequence>
-    boost::system::error_code handshake (handshake_type type, ConstBufferSequence const& buffers,
-        boost::system::error_code& ec, boost::true_type)
-    {
-        return get_object ().handshake (type, buffers, ec);
-    }
-
-    template <typename ConstBufferSequence>
-    boost::system::error_code handshake (handshake_type, ConstBufferSequence const&,
-        boost::system::error_code&, boost::false_type)
-    {
-        fail ();
-        return boost::system::error_code ();
-    }
-#endif
-
-    template <typename HandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler, boost::true_type)
-    {
-        return get_object ().async_handshake (type, handler);
-    }
-
-    template <typename HandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
-    async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(HandshakeHandler), boost::false_type)
-    {
-        fail ();
-    }
-
-#if (BOOST_VERSION / 100) >= 1054
-    template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
-    async_handshake (handshake_type type, const ConstBufferSequence& buffers,
-    BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler, boost::true_type)
-    {
-        return get_object ().async_handshake (type, buffers, handler);
-    }
-
-    template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
-    async_handshake (handshake_type, const ConstBufferSequence&,
-    BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler), boost::false_type)
-    {
-        fail ();
-    }
-#endif
-
-    boost::system::error_code shutdown (boost::system::error_code& ec, boost::true_type)
-    {
-        return get_object ().shutdown (ec);
-    }
-
-    boost::system::error_code shutdown (boost::system::error_code&, boost::false_type)
-    {
-        fail ();
-        return boost::system::error_code ();
-    }
-
-    template <typename ShutdownHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ShutdownHandler, void (boost::system::error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler, boost::true_type)
-    {
-        return get_object ().async_shutdown (handler);
-    }
-
-    template <typename ShutdownHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ShutdownHandler, void (boost::system::error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler), boost::false_type)
-    {
-        fail ();
+        pure_virtual ();
+        return ec = boost::system::errc::make_error_code (
+            boost::system::errc::function_not_supported);
     }
 
 private:

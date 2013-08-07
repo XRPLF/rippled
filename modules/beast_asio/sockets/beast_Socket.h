@@ -54,6 +54,19 @@ public:
     //
     //--------------------------------------------------------------------------
 
+#if 0
+    typedef Socket next_layer_type;
+    typedef Socket lowest_layer_type;
+
+    virtual next_layer_type& next_layer () = 0;
+
+    virtual next_layer_type const& next_layer () const = 0;
+
+    virtual lowest_layer_type& lowest_layer () = 0;
+
+    virtual lowest_layer_type const& lowest_layer () const = 0;
+#endif
+
     /** Determines if the underlying stream requires a handshake.
 
         If is_handshaked is true, it will be necessary to call handshake or
@@ -85,20 +98,21 @@ public:
 
         @endcode
     */
+
     template <class Object>
-    Object* native_object ()
+    Object& native_object ()
     {
         void* const object = native_object_raw ();
-        if (object != nullptr)
-            return dynamic_cast <Object> (object);
-        return object;
+        if (object == nullptr)
+            throw std::bad_cast ("null pointer");
+        return *static_cast <Object*> (object);
     }
 
     virtual void* native_object_raw () = 0;
 
     //--------------------------------------------------------------------------
     //
-    // SocketInterface
+    // SocketInterface::Socket
     //
     //--------------------------------------------------------------------------
 
@@ -116,7 +130,8 @@ public:
         throw_error (shutdown (what, ec));
     }
 
-    virtual boost::system::error_code shutdown (shutdown_type what, boost::system::error_code& ec) = 0;
+    virtual boost::system::error_code shutdown (shutdown_type what,
+        boost::system::error_code& ec) = 0;
 
     void close ()
     {
@@ -128,7 +143,7 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // StreamInterface
+    // SocketInterface::Stream
     //
     //--------------------------------------------------------------------------
 
@@ -137,12 +152,14 @@ public:
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/SyncReadStream.html
     //
     template <class MutableBufferSequence>
-    std::size_t read_some (MutableBufferSequence const& buffers, boost::system::error_code& ec)
+    std::size_t read_some (MutableBufferSequence const& buffers,
+        boost::system::error_code& ec)
     {
-        return read_some_impl (MutableBuffers (buffers), ec);
+        return read_some (MutableBuffers (buffers), ec);
     }
 
-    virtual std::size_t read_some_impl (MutableBuffers const& buffers, boost::system::error_code& ec) = 0;
+    virtual std::size_t read_some (BOOST_ASIO_MOVE_ARG(MutableBuffers) buffers,
+        boost::system::error_code& ec) = 0;
 
     // SyncWriteStream
     //
@@ -151,40 +168,44 @@ public:
     template <class ConstBufferSequence>
     std::size_t write_some (ConstBufferSequence const& buffers, boost::system::error_code &ec)
     {
-        return write_some_impl (ConstBuffers (buffers), ec);
+        return write_some (ConstBuffers (buffers), ec);
     }
 
-    virtual std::size_t write_some_impl (ConstBuffers const& buffers, boost::system::error_code& ec) = 0;
+    virtual std::size_t write_some (BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, boost::system::error_code& ec) = 0;
 
     // AsyncReadStream
     //
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncReadStream.html
     //
     template <class MutableBufferSequence, class ReadHandler>
-    void async_read_some (MutableBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
+    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
+    async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
     {
-        async_read_some_impl (MutableBuffers (buffers), handler);
+        return async_read_some (MutableBuffers (buffers), TransferCall(handler));
     }
 
-    virtual void async_read_some_impl (MutableBuffers const& buffers, TransferCall const& call) = 0;
+    virtual
+    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    async_read_some (BOOST_ASIO_MOVE_ARG(MutableBuffers) buffers, BOOST_ASIO_MOVE_ARG(TransferCall) call) = 0;
 
     // AsyncWriteStream
     //
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncWriteStream.html
     //
     template <class ConstBufferSequence, class WriteHandler>
-    void async_write_some (ConstBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
+    BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
+    async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
     {
-        async_write_some_impl (ConstBuffers (buffers), handler);
+        return async_write_some (ConstBuffers (buffers), TransferCall(handler));
     }
 
-    virtual void async_write_some_impl (ConstBuffers const& buffers, TransferCall const& call) = 0;
+    virtual
+    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    async_write_some (BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, BOOST_ASIO_MOVE_ARG(TransferCall) call) = 0;
 
     //--------------------------------------------------------------------------
     //
-    // HandshakeInterface
+    // SocketInterface::Handshake
     //
     //--------------------------------------------------------------------------
 
@@ -200,9 +221,24 @@ public:
     // ssl::stream::handshake (2 of 4)
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload2.html
     //
-    virtual boost::system::error_code handshake (handshake_type role, boost::system::error_code& ec) = 0;
+    virtual boost::system::error_code handshake (handshake_type role,
+        boost::system::error_code& ec) = 0;
 
-#if (BOOST_VERSION / 100) >= 1054
+    // ssl::stream::async_handshake (1 of 2)
+    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload1.html
+    //
+    template <typename HandshakeHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
+    async_handshake (handshake_type role, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
+    {
+        return async_handshake (role, ErrorCall (handler));
+    }
+
+    virtual
+    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_handshake (handshake_type role, BOOST_ASIO_MOVE_ARG(ErrorCall) call) = 0;
+
+#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
     // ssl::stream::handshake (3 of 4)
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload3.html
     //
@@ -220,37 +256,26 @@ public:
     boost::system::error_code handshake (handshake_type role,
         ConstBufferSequence const& buffers, boost::system::error_code& ec)
     {
-        return handshake_impl (role, ConstBuffers (buffers), ec);
+        return handshake (role, ConstBuffers (buffers), ec);
     }
 
-    virtual boost::system::error_code handshake_impl (handshake_type role,
-        ConstBuffers const& buffers, boost::system::error_code& ec) = 0;
-#endif
+    virtual boost::system::error_code handshake (handshake_type role,
+        BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, boost::system::error_code& ec) = 0;
 
-    // ssl::stream::async_handshake (1 of 2)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload1.html
-    //
-    template <class HandshakeHandler>
-    void async_handshake (handshake_type role, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
-    {
-        async_handshake_impl (role, handler);
-    }
-
-    virtual void async_handshake_impl (handshake_type role, ErrorCall const& calll) = 0;
-
-#if (BOOST_VERSION / 100) >= 1054
     // ssl::stream::async_handshake (2 of 2)
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload2.html
     //
     template <class ConstBufferSequence, class BufferedHandshakeHandler>
-    void async_handshake (handshake_type role, ConstBufferSequence const& buffers,
+    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
+    async_handshake (handshake_type role, ConstBufferSequence const& buffers,
         BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
     {
-        async_handshake_impl (role, ConstBuffers (buffers), handler);
+        return async_handshake (role, ConstBuffers (buffers), TransferCall (handler));
     }
 
-    virtual void async_handshake_impl (handshake_type role,
-        ConstBuffers const& buffers, TransferCall const& call) = 0;
+    virtual
+    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    async_handshake (handshake_type role, BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, BOOST_ASIO_MOVE_ARG(TransferCall) call) = 0;
 #endif
 
     // ssl::stream::shutdown
@@ -270,10 +295,12 @@ public:
     template <class ShutdownHandler>
     void async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler)
     {
-        async_shutdown_impl (handler);
+        return async_shutdown (ErrorCall (handler));
     }
 
-    virtual void async_shutdown_impl (ErrorCall const& call) = 0;
+    virtual
+    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) call) = 0;
 };
 
 #endif
