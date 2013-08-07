@@ -104,7 +104,7 @@ public:
     {
         void* const object = native_object_raw ();
         if (object == nullptr)
-            throw std::bad_cast ("null pointer");
+            Throw (std::bad_cast (), __FILE__, __LINE__);
         return *static_cast <Object*> (object);
     }
 
