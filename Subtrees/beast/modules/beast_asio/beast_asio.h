@@ -40,8 +40,42 @@
 // Must come before boost includes to fix the bost placeholders.
 #include "../beast_core/beast_core.h"
 
+//------------------------------------------------------------------------------
+
 /* This module requires boost and possibly OpenSSL */
-#include "boost/beast_BoostIncludes.h"
+
+// Make sure we take care of fixing boost::bind oddities first.
+#if !defined(BEAST_CORE_H_INCLUDED)
+#error beast_core.h must be included before including this file
+#endif
+
+#if BEAST_WIN32
+# ifndef _WIN32_WINNT
+#  define _WIN32_WINNT 0x0600
+# endif
+# ifndef _VARIADIC_MAX
+#  define _VARIADIC_MAX 10
+# endif
+#endif
+
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/foreach.hpp>
+#include <boost/type_traits.hpp>
+
+//#include <boost/mpl/at.hpp>
+//#include <boost/asio/io_service.hpp>
+//#include <boost/array.hpp>
+//#include <boost/bind.hpp>
+//#include <boost/unordered_map.hpp>
+//#include <boost/mpl/vector.hpp>
+
+// VFALCO TODO check for version availability
+#ifndef BOOST_ASIO_INITFN_RESULT_TYPE
+#define BOOST_ASIO_INITFN_RESULT_TYPE(expr,val) void
+#endif
+
+//------------------------------------------------------------------------------
 
 namespace beast
 {

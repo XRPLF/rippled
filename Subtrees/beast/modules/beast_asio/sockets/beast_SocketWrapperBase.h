@@ -74,6 +74,8 @@ struct SocketWrapperBase
         typedef value type;
     };
 
+#if 1
+    // Less elegant, but works.
     // Determines if Object supports the specified Interface
     template <typename Object, typename Interface, class Enable = void>
     struct HasInterface : boost::false_type { };
@@ -83,6 +85,17 @@ struct SocketWrapperBase
         typename boost::enable_if <boost::is_base_of <
         Interface, typename InterfacesOf <Object>::type> >::type >
         : boost::true_type { };
+#else
+    // This should work, but doesn't.
+    // K-ballo from #boost suggested it.
+    //
+    // Determines if Object supports the specified Interface
+    template <typename Object, typename Interface>
+    struct HasInterface : boost::is_base_of <Interface, typename InterfacesOf <Object> >
+    {
+    };
+#endif
+
 };
 
 #endif

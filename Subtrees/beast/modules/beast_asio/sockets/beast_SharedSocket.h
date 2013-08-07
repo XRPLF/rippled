@@ -20,7 +20,14 @@
 #ifndef BEAST_SHAREDSOCKET_H_INCLUDED
 #define BEAST_SHAREDSOCKET_H_INCLUDED
 
-/** A Socket interface with reference counting. */
+/** A Socket interface with reference counting.
+
+    You can keep a pointer to the base class so that you don't have
+    to see the template or underlying object implementation.
+
+    @see SharedSocketTYpe, SharedObjectPtr
+*/
+/** @{ */
 class SharedSocket
     : public SharedObject
     , public virtual Socket
@@ -30,7 +37,28 @@ public:
     typedef SharedObjectPtr <SharedSocket> Ptr;
 };
 
-/** A RAII container for wrapping an object as a Socket. */
+//------------------------------------------------------------------------------
+
+/** A RAII container for wrapping an object as a Socket.
+
+    To use this, construct the class with an instance of your object
+    created with operator new. The constructor will take ownership,
+    and delete it when the last reference is removed. For example:
+
+    @code
+
+    boost::asio::io_service ios;
+    boost::asio::ssl:context ctx;
+
+    SharedSocket::Ptr mySocket (
+        new (boost::asio::ssl::stream (ios, ctx)));
+
+    mySocket->handshake ();
+
+    @endcode
+
+    @see SharedSocket
+*/
 template <class Object>
 class SharedSocketType
     : public SharedSocket
@@ -50,5 +78,6 @@ public:
 private:
     ScopedPointer <Object> m_object;
 };
+/** @} */
 
 #endif
