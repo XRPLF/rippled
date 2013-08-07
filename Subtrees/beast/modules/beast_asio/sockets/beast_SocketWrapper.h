@@ -247,7 +247,7 @@ private:
 
     template <typename MutableBufferSequence, typename ReadHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
-    async_read_some (MutableBufferSequence const&, BOOST_ASIO_MOVE_ARG(ReadHandler),
+    async_read_some (MutableBufferSequence const&, BOOST_ASIO_MOVE_ARG(ReadHandler) handler,
         boost::false_type)
     {
 #if BOOST_ASIO_HAS_FUTURE_RETURNS
@@ -259,7 +259,7 @@ private:
         get_io_service ().post (boost::bind (handler, ec, 0));
         return init.result.get();
 #else
-        system::error_code ec;
+        boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (handler, ec, 0));
 #endif
@@ -284,7 +284,7 @@ private:
 
     template <typename ConstBufferSequence, typename WriteHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
-    async_write_some (ConstBufferSequence const&, BOOST_ASIO_MOVE_ARG(WriteHandler),
+    async_write_some (ConstBufferSequence const&, BOOST_ASIO_MOVE_ARG(WriteHandler) handler,
         boost::false_type)
     {
 #if BOOST_ASIO_HAS_FUTURE_RETURNS
@@ -296,7 +296,7 @@ private:
         get_io_service ().post (boost::bind (handler, ec, 0));
         return init.result.get();
 #else
-        system::error_code ec;
+        boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (handler, ec, 0));
 #endif
@@ -359,7 +359,7 @@ private:
         get_io_service ().post (boost::bind (handler, ec));
         return init.result.get();
 #else
-        system::error_code ec;
+        boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (handler, ec));
 #endif
@@ -425,7 +425,7 @@ private:
         get_io_service ().post (boost::bind (handler, ec, 0));
         return init.result.get();
 #else
-        system::error_code ec;
+        boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (handler, ec, 0));
 #endif
@@ -482,7 +482,7 @@ private:
         get_io_service ().post (boost::bind (handler, ec));
         return init.result.get();
 #else
-        system::error_code ec;
+        boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (handler, ec));
 #endif

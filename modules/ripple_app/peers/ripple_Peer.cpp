@@ -63,7 +63,7 @@ private:
 public:
     static char const* getCountedObjectName () { return "Peer"; }
 
-    PeerImp::PeerImp (boost::asio::io_service& io_service,
+    PeerImp (boost::asio::io_service& io_service,
                       boost::asio::ssl::context& ctx,
                       uint64 peerID,
                       bool inbound)
