@@ -34,6 +34,9 @@
 //
 #include "../modules/ripple_basics/ripple_basics.h"
 
+// This should be in the .cpp
+#include "beast/modules/beast_asio/beast_asio.h"
+
 //------------------------------------------------------------------------------
 
 #include "websocket/src/common.hpp"

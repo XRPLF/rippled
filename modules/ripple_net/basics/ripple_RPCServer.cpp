@@ -16,6 +16,10 @@ public:
         : m_handler (handler)
         , mSocket (io_service, context)
         , mStrand (io_service)
+#if RIPPLE_USES_BEAST_SOCKETS
+        , m_socketWrapper (mSocket)
+#endif
+
     {
     }
 
@@ -221,10 +225,17 @@ private:
 
     //--------------------------------------------------------------------------
 
+#if RIPPLE_USES_BEAST_SOCKETS
+    Socket& getSocket ()
+    {
+        return m_socketWrapper;
+    }
+#else
     AutoSocket& getSocket ()
     {
         return mSocket;
     }
+#endif
 
     //--------------------------------------------------------------------------
 
@@ -248,6 +259,9 @@ private:
     Handler& m_handler;
 
     AutoSocket mSocket;
+#if RIPPLE_USES_BEAST_SOCKETS
+    SocketWrapper <AutoSocket> m_socketWrapper;
+#endif
     boost::asio::io_service::strand mStrand;
 
     boost::asio::streambuf mLineBuffer;

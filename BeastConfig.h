@@ -146,4 +146,7 @@
 //#define RIPPLE_VERIFY_NODEOBJECT_KEYS 1
 #endif
 
+
+#define RIPPLE_USES_BEAST_SOCKETS 1
+
 #endif

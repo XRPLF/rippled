@@ -2108,7 +2108,7 @@ public:
         // test typedef inheritance
         {
             typedef SocketWrapper <SocketType> SocketWrapper;
-            typedef SocketWrapper::lowest_layer_type lowest_layer_type;
+            //typedef SocketWrapper::lowest_layer_type lowest_layer_type;
         }
     }
 

@@ -20,13 +20,76 @@ class PeerImp;
 class PeerImp : public Peer
     , public CountedObject <PeerImp>
 {
+private:
+    bool            mInbound;           // Connection is inbound
+    bool            mClientConnect;     // In process of connecting as client.
+    bool            mHelloed;           // True, if hello accepted.
+    bool            mDetaching;         // True, if detaching.
+    int             mActive;            // 0=idle, 1=pingsent, 2=active
+    bool            mCluster;           // Node in our cluster
+    RippleAddress   mNodePublic;        // Node public key of peer.
+    std::string     mNodeName;
+    IPAndPortNumber          mIpPort;
+    IPAndPortNumber          mIpPortConnect;
+    uint256         mCookieHash;
+    uint64          mPeerId;
+    bool            mPrivate;           // Keep peer IP private.
+    LoadSource      mLoad;
+    uint32          mMinLedger, mMaxLedger;
+
+    uint256         mClosedLedgerHash;
+    uint256         mPreviousLedgerHash;
+    std::list<uint256>  mRecentLedgers;
+    std::list<uint256>  mRecentTxSets;
+
+    SocketType m_socket;
+#if RIPPLE_USES_BEAST_SOCKETS
+    StreamType mSocketSslImpl;
+    SocketWrapper <StreamType> mSocketSslWrapper;
+    beast::Socket& mSocketSsl;
+#else
+    StreamType      mSocketSsl;
+#endif
+
+    boost::asio::deadline_timer                                 mActivityTimer;
+
+    boost::asio::io_service::strand     mIOStrand;
+    std::vector<uint8_t>                mReadbuf;
+    std::list<PackedMessage::pointer>   mSendQ;
+    PackedMessage::pointer              mSendingPacket;
+    protocol::TMStatusChange              mLastStatus;
+    protocol::TMHello                     mHello;
+
 public:
     static char const* getCountedObjectName () { return "Peer"; }
 
-    PeerImp (boost::asio::io_service & io_service,
-             boost::asio::ssl::context & ctx,
-             uint64 peerId,
-             bool inbound);
+    PeerImp::PeerImp (boost::asio::io_service& io_service,
+                      boost::asio::ssl::context& ctx,
+                      uint64 peerID,
+                      bool inbound)
+        : mInbound (inbound)
+        , mHelloed (false)
+        , mDetaching (false)
+        , mActive (2)
+        , mCluster (false)
+        , mPeerId (peerID)
+        , mPrivate (false)
+        , mLoad (std::string())
+        , mMinLedger (0)
+        , mMaxLedger (0)
+        , m_socket (io_service)
+#if RIPPLE_USES_BEAST_SOCKETS
+        , mSocketSslImpl (m_socket, ctx)
+        , mSocketSslWrapper (mSocketSslImpl)
+        , mSocketSsl (mSocketSslWrapper)
+#else
+        , mSocketSsl (m_socket, ctx)
+#endif
+        , mActivityTimer (io_service)
+        , mIOStrand (io_service)
+    {
+        WriteLog (lsDEBUG, Peer) << "CREATING PEER: " << addressToString (this);
+    }
 
     void handleConnect (const boost::system::error_code & error, boost::asio::ip::tcp::resolver::iterator it);
 
@@ -46,9 +109,10 @@ public:
 
     void setIpPort (const std::string & strIP, int iPort);
 
-    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::lowest_layer_type& getSocket ()
+    SocketType& getSocket ()
     {
-        return mSocketSsl.lowest_layer ();
+        //return mSocketSsl.lowest_layer ();
+        return m_socket;
     }
 
     void connect (const std::string & strIp, int iPort);
@@ -110,39 +174,6 @@ public:
     }
 
 private:
-    bool            mInbound;           // Connection is inbound
-    bool            mClientConnect;     // In process of connecting as client.
-    bool            mHelloed;           // True, if hello accepted.
-    bool            mDetaching;         // True, if detaching.
-    int             mActive;            // 0=idle, 1=pingsent, 2=active
-    bool            mCluster;           // Node in our cluster
-    RippleAddress   mNodePublic;        // Node public key of peer.
-    std::string     mNodeName;
-    IPAndPortNumber          mIpPort;
-    IPAndPortNumber          mIpPortConnect;
-    uint256         mCookieHash;
-    uint64          mPeerId;
-    bool            mPrivate;           // Keep peer IP private.
-    LoadSource      mLoad;
-    uint32          mMinLedger, mMaxLedger;
-
-    uint256         mClosedLedgerHash;
-    uint256         mPreviousLedgerHash;
-    std::list<uint256>  mRecentLedgers;
-    std::list<uint256>  mRecentTxSets;
-
-    boost::asio::ssl::stream<boost::asio::ip::tcp::socket>      mSocketSsl;
-
-    boost::asio::deadline_timer                                 mActivityTimer;
-
-    boost::asio::io_service::strand     mIOStrand;
-    std::vector<uint8_t>                mReadbuf;
-    std::list<PackedMessage::pointer>   mSendQ;
-    PackedMessage::pointer              mSendingPacket;
-    protocol::TMStatusChange              mLastStatus;
-    protocol::TMHello                     mHello;
-
-private:
     void handleShutdown (const boost::system::error_code & error)
     {
         ;
@@ -194,24 +225,6 @@ private:
 
     static void doProofOfWork (Job&, boost::weak_ptr <Peer>, ProofOfWork::pointer);
 };
-
-PeerImp::PeerImp (boost::asio::io_service& io_service, boost::asio::ssl::context& ctx, uint64 peerID, bool inbound) :
-    mInbound (inbound),
-    mHelloed (false),
-    mDetaching (false),
-    mActive (2),
-    mCluster (false),
-    mPeerId (peerID),
-    mPrivate (false),
-    mLoad (std::string()),
-    mMinLedger (0),
-    mMaxLedger (0),
-    mSocketSsl (io_service, ctx),
-    mActivityTimer (io_service),
-    mIOStrand (io_service)
-{
-    WriteLog (lsDEBUG, Peer) << "CREATING PEER: " << addressToString (this);
-}
 
 void PeerImp::handleWrite (const boost::system::error_code& error, size_t bytes_transferred)
 {
@@ -451,7 +464,11 @@ void PeerImp::handleConnect (const boost::system::error_code& error, boost::asio
     {
         WriteLog (lsINFO, Peer) << "Connect peer: success.";
 
+#if RIPPLE_USES_BEAST_SOCKETS
+        mSocketSsl.native_object <StreamType> ().set_verify_mode (boost::asio::ssl::verify_none);
+#else
         mSocketSsl.set_verify_mode (boost::asio::ssl::verify_none);
+#endif
 
         mSocketSsl.async_handshake (boost::asio::ssl::stream <boost::asio::ip::tcp::socket>::client,
                                     mIOStrand.wrap (boost::bind (
@@ -493,11 +510,15 @@ void PeerImp::connected (const boost::system::error_code& error)
 
         WriteLog (lsINFO, Peer) << "Peer: Inbound: Accepted: " << addressToString (this) << ": " << strIp << " " << iPort;
 
-
+#if RIPPLE_USES_BEAST_SOCKETS
+        mSocketSsl.native_object <StreamType> ().set_verify_mode (boost::asio::ssl::verify_none);
+#else
         mSocketSsl.set_verify_mode (boost::asio::ssl::verify_none);
+#endif
 
-        mSocketSsl.async_handshake (boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::server,
-                                    mIOStrand.wrap (boost::bind (&PeerImp::handleStart, boost::static_pointer_cast <PeerImp> (shared_from_this ()), boost::asio::placeholders::error)));
+        mSocketSsl.async_handshake (StreamType::server, mIOStrand.wrap (boost::bind (
+            &PeerImp::handleStart, boost::static_pointer_cast <PeerImp> (shared_from_this ()),
+            boost::asio::placeholders::error)));
     }
     else if (!mDetaching)
     {
@@ -2199,7 +2220,11 @@ void PeerImp::addTxSet (uint256 const& hash)
 // (both sides get the same information, neither side controls it)
 void PeerImp::getSessionCookie (std::string& strDst)
 {
+#if RIPPLE_USES_BEAST_SOCKETS
+    SSL* ssl = mSocketSsl.native_object <StreamType> ().native_handle ();
+#else
     SSL* ssl = mSocketSsl.native_handle ();
+#endif
 
     if (!ssl) throw std::runtime_error ("No underlying connection");
 

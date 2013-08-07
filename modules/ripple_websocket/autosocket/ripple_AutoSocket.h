@@ -24,15 +24,27 @@ public:
     typedef boost::function<void (error_code)>       callback;
 
 public:
-    AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c) : mSecure (false), mBuffer (4)
+    struct SocketInterfaces
+        : beast::SocketInterface::AsyncStream
+        , beast::SocketInterface::AsyncHandshake { };
+
+    AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c)
+        : mSecure (false)
+        , mBuffer (4)
     {
         mSocket = boost::make_shared<ssl_socket> (boost::ref (s), boost::ref (c));
     }
 
     AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c, bool secureOnly, bool plainOnly)
-        : mSecure (secureOnly), mBuffer ((plainOnly || secureOnly) ? 0 : 4)
+        : mSecure (secureOnly)
+        , mBuffer ((plainOnly || secureOnly) ? 0 : 4)
     {
         mSocket = boost::make_shared<ssl_socket> (boost::ref (s), boost::ref (c));
+    }
+
+    boost::asio::io_service& get_io_service () noexcept
+    {
+        return mSocket->get_io_service ();
     }
 
     bool            isSecure ()
@@ -68,6 +80,12 @@ public:
         std::swap (mSecure, s.mSecure);
     }
 
+    boost::system::error_code cancel (boost::system::error_code& ec)
+    {
+        return lowest_layer ().cancel (ec);
+    }
+
+
     static bool rfc2818_verify (const std::string& domain, bool preverified, boost::asio::ssl::verify_context& ctx)
     {
         using namespace ripple;
@@ -92,7 +110,14 @@ public:
         return ec;
     }
 
-    void async_handshake (handshake_type type, callback cbFunc)
+    template <typename HandshakeHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
+    async_handshake (handshake_type role, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
+    {
+        return async_handshake_cb (role, handler);
+    }
+
+    void async_handshake_cb (handshake_type type, callback cbFunc)
     {
         if ((type == ssl_socket::client) || (mSecure))
         {
@@ -262,7 +287,6 @@ private:
     static ripple::LogPartition AutoSocketPartition;
     socket_ptr          mSocket;
     bool                mSecure;
-
     std::vector<char>   mBuffer;
 };
 

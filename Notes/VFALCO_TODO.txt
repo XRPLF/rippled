@@ -7,9 +7,10 @@ REMINDER: KEEP CHANGE LOG UP TO DATE
 Vinnie's List: Changes day to day, descending priority
   (Items marked '*' can be handled by others.)
 
-- Unit tests for boost::asio wrappers
+- beast::Socket integration in Ripple
 - Socket implementation for PROXY protocol
 - Socket that supports multiple protcols
+- Unit tests for boost::asio wrappers
 - Review boost::asio wrappers and consolidation of network code in ripple_net
 - Deeply create directories specified in config settings
 - Finish unit tests and code for Validators

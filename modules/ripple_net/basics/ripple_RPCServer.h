@@ -54,7 +54,11 @@ public:
     virtual void connected () = 0;
 
     // VFALCO TODO AutoSocket exposes all sorts of boost::asio interface
+#if RIPPLE_USES_BEAST_SOCKETS
+    virtual beast::Socket& getSocket () = 0;
+#else
     virtual AutoSocket& getSocket () = 0;
+#endif
 
     // VFALCO TODO Remove this since it exposes boost
     virtual boost::asio::ip::tcp::socket& getRawSocket () = 0;

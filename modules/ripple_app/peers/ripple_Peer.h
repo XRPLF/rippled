@@ -21,6 +21,9 @@ public:
     typedef pointer const& ref;
 
 public:
+    typedef boost::asio::ip::tcp::socket SocketType;
+    typedef boost::asio::ssl::stream <SocketType&> StreamType;
+
     static pointer New (boost::asio::io_service& io_service,
                         boost::asio::ssl::context& ctx,
                         uint64 id,
@@ -38,7 +41,7 @@ public:
 
     virtual void setIpPort (const std::string& strIP, int iPort) = 0;
 
-    virtual boost::asio::ssl::stream<boost::asio::ip::tcp::socket>::lowest_layer_type& getSocket () = 0;
+    virtual SocketType& getSocket () = 0;
 
     virtual void connect (const std::string& strIp, int iPort) = 0;
 

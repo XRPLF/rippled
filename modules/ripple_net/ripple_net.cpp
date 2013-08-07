@@ -17,6 +17,8 @@
 // VFALCO TODO Remove this dependency on theConfig
 #include "../modules/ripple_core/ripple_core.h" // theConfig for HttpsClient
 
+#include "beast/modules/beast_asio/beast_asio.h"
+
 namespace ripple
 {
 
