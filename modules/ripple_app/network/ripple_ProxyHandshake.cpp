@@ -269,7 +269,7 @@ bool ProxyHandshake::Version1::parse (void const* headerData, size_t headerBytes
 class ProxyHandshakeTests : public UnitTest
 {
 public:
-    ProxyHandshakeTests () : UnitTest ("ProxyHandshake", "ripple", runManual)
+    ProxyHandshakeTests () : UnitTest ("ProxyHandshake", "ripple")
     {
     }
 
