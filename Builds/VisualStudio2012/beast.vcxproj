@@ -69,6 +69,14 @@
     <None Include="..\..\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
+    <ClInclude Include="..\..\modules\beast_asio\boost\beast_BoostIncludes.h" />
+    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_Socket.h" />
+    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SharedSocket.h" />
+    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketBase.h" />
+    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketInterface.h" />
+    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapper.h" />
+    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapperBase.h" />
     <ClInclude Include="..\..\modules\beast_basics\beast_basics.h" />
     <ClInclude Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.h" />
     <ClInclude Include="..\..\modules\beast_basics\events\beast_OncePerSecond.h" />
@@ -270,6 +278,7 @@
     <ClInclude Include="BeastConfig.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp" />
     <ClCompile Include="..\..\modules\beast_basics\beast_basics.cpp" />
     <ClCompile Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1129,7 +1138,7 @@
       </PrecompiledHeader>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
