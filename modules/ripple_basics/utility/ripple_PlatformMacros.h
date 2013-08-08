@@ -16,18 +16,17 @@
 
 // VFALCO TODO Clean this up
 
-#if (!defined(FORCE_NO_C11X) && (__cplusplus > 201100L)) || defined(FORCE_C11X)
-
-// VFALCO TODO Get rid of the C11X macro
-#define C11X
-#define UPTR_T          std::unique_ptr
-#define MOVE_P(p)       std::move(p)
-
+#ifdef BOOST_NO_AUTO_PTR
+# define UPTR_T          std::auto_ptr
 #else
+# define UPTR_T          std::unique_ptr
+#endif
 
-#define UPTR_T          std::auto_ptr
+#if (!defined(FORCE_NO_C11X) && (__cplusplus > 201100L)) || defined(FORCE_C11X)
+//#define C11X
+#define MOVE_P(p)       std::move(p)
+#else
 #define MOVE_P(p)       (p)
-
 #endif
 
 // VFALCO TODO Clean this stuff up. Remove as much as possible
