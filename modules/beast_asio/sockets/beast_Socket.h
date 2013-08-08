@@ -168,7 +168,7 @@ public:
     template <class ConstBufferSequence>
     std::size_t write_some (ConstBufferSequence const& buffers, boost::system::error_code &ec)
     {
-        return write_some (ConstBuffers (buffers), ec);
+        return write_some (BOOST_ASIO_MOVE_CAST(ConstBuffers)(ConstBuffers (buffers)), ec);
     }
 
     virtual std::size_t write_some (BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, boost::system::error_code& ec) = 0;
@@ -181,7 +181,8 @@ public:
     BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
     async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
     {
-        return async_read_some (MutableBuffers (buffers), TransferCall(handler));
+        return async_read_some (BOOST_ASIO_MOVE_CAST(MutableBuffers)(MutableBuffers (buffers)),
+                                BOOST_ASIO_MOVE_CAST(TransferCall)(TransferCall(handler)));
     }
 
     virtual
@@ -196,7 +197,8 @@ public:
     BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
     async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
     {
-        return async_write_some (ConstBuffers (buffers), TransferCall(handler));
+        return async_write_some (BOOST_ASIO_MOVE_CAST(ConstBuffers)(ConstBuffers (buffers)),
+                                 BOOST_ASIO_MOVE_CAST(TransferCall)(TransferCall(handler)));
     }
 
     virtual
@@ -231,7 +233,7 @@ public:
     BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
     async_handshake (handshake_type role, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
     {
-        return async_handshake (role, ErrorCall (handler));
+        return async_handshake (role, BOOST_ASIO_MOVE_CAST(ErrorCall)(ErrorCall (handler)));
     }
 
     virtual
@@ -256,7 +258,7 @@ public:
     boost::system::error_code handshake (handshake_type role,
         ConstBufferSequence const& buffers, boost::system::error_code& ec)
     {
-        return handshake (role, ConstBuffers (buffers), ec);
+        return handshake (role, BOOST_ASIO_MOVE_CAST(ConstBuffers)(ConstBuffers (buffers)), ec);
     }
 
     virtual boost::system::error_code handshake (handshake_type role,
@@ -270,7 +272,8 @@ public:
     async_handshake (handshake_type role, ConstBufferSequence const& buffers,
         BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
     {
-        return async_handshake (role, ConstBuffers (buffers), TransferCall (handler));
+        return async_handshake (role, BOOST_ASIO_MOVE_CAST(ConstBuffers)(ConstBuffers (buffers)),
+                                      BOOST_ASIO_MOVE_CAST(TransferCall)(TransferCall (handler)));
     }
 
     virtual
@@ -295,7 +298,7 @@ public:
     template <class ShutdownHandler>
     void async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler)
     {
-        return async_shutdown (ErrorCall (handler));
+        return async_shutdown (BOOST_ASIO_MOVE_CAST(ErrorCall)(ErrorCall (handler)));
     }
 
     virtual
