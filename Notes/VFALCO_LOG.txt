@@ -3,6 +3,7 @@ Vinnie Falco's Change Log
 2013/08/07
 
 - Add 'print' test that shows all the tests
+- Improved "package.test" match string format when choosing tests to run
 
 2013/08/04
 
