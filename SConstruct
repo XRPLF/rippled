@@ -42,6 +42,14 @@ if FreeBSD:
     env.Append(CCFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
     env.Append(LINKFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
 
+ccache = ARGUMENTS.get('ccache', 0)
+if int(ccache):
+    env.Prepend(CC = ['ccache'])
+    env.Prepend(CXX = ['ccache'])
+    ccache_dir = os.getenv('CCACHE_DIR')
+    if ccache_dir:
+        env.Replace(CCACHE_DIR = ccache_dir)
+
 #
 # Builder for CTags
 #
