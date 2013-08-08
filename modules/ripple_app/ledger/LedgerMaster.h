@@ -150,6 +150,8 @@ public:
         mCompleteLedgers.setRange (minV, maxV);
     }
 
+    uint256 getLedgerHash(uint32 desiredSeq, Ledger::ref knownGoodLedger);
+
     void addHeldTransaction (Transaction::ref trans);
     void fixMismatch (Ledger::ref ledger);
 

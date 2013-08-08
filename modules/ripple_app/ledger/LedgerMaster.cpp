@@ -776,7 +776,7 @@ void LedgerMaster::tryPublish ()
 
             if (!ledger && (++acq < 4))
             { // We can try to acquire the ledger we need
-	        InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (hash, seq);
+                InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (hash, seq);
 
                 if (!acq->isDone ())
                 {
@@ -800,7 +800,7 @@ void LedgerMaster::tryPublish ()
             if (ledger && (ledger->getLedgerSeq() == (mPubLedger->getLedgerSeq() + 1)))
             { // We acquired the next ledger we need to publish
                 ledger->setValidated();
-	        mPubLedger = ledger;
+                mPubLedger = ledger;
                 mPubLedgers.push_back (mPubLedger);
             }
 
@@ -822,6 +822,36 @@ void LedgerMaster::tryPublish ()
                                            BIND_TYPE (&LedgerMaster::updatePaths, this));
         }
     }
+}
+
+uint256 LedgerMaster::getLedgerHash(uint32 desiredSeq, Ledger::ref knownGoodLedger)
+{ // Get the hash of the valid ledger with a particular sequence, given a subsequent ledger known valid
+
+    assert(desiredSeq < knownGoodLedger->getLedgerSeq());
+
+    uint256 hash = knownGoodLedger->getLedgerHash(desiredSeq);
+
+    if (hash.isZero ())
+    { // Not directly in the given ledger
+
+        uint32 seq = (desiredSeq + 255) % 256;
+        assert(seq < desiredSeq);
+
+        uint256 i = knownGoodLedger->getLedgerHash(seq);
+        if (i.isNonZero())
+        {
+            Ledger::pointer l = getLedgerByHash(i);
+            if (l)
+            {
+                hash = l->getLedgerHash(desiredSeq);
+                assert (hash.isNonZero());
+            }
+        }
+        else
+            assert(false);
+    }
+
+    return hash;
 }
 
 void LedgerMaster::pubThread ()
