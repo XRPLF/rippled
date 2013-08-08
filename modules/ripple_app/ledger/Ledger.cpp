@@ -746,7 +746,10 @@ Ledger::pointer Ledger::getSQL (const std::string& sql)
     ret->setClosed ();
 
     if (getApp().getOPs ().haveLedger (ledgerSeq))
+    {
         ret->setAccepted ();
+        ret->setValidated ();
+    }
 
     if (ret->getHash () != ledgerHash)
     {
