@@ -44,13 +44,6 @@
 #include <boost/foreach.hpp>
 #include <boost/type_traits.hpp>
 
-//#include <boost/mpl/at.hpp>
-//#include <boost/asio/io_service.hpp>
-//#include <boost/array.hpp>
-//#include <boost/bind.hpp>
-//#include <boost/unordered_map.hpp>
-//#include <boost/mpl/vector.hpp>
-
 //------------------------------------------------------------------------------
 
 // Configure some options based on the version of boost
@@ -72,10 +65,10 @@
    void_or_deduced
 # elif defined(_MSC_VER) && (_MSC_VER < 1500)
 #  define BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
-   ::boost::asio::detail::async_result_type_helper<h, sig>::type
+   boost::asio::detail::async_result_type_helper<h, sig>::type
 # else
 #  define BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
-   ::boost::asio::async_result <::boost::asio::handler_type<h, sig>::type>::type
+   boost::asio::async_result <boost::asio::handler_type<h, sig>::type>::type
 # endif
 #endif
 

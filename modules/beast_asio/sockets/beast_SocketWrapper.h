@@ -34,7 +34,7 @@
 */
 template <class Object>
 class SocketWrapper
-    : public SocketWrapperBase
+    : public SocketInterface
     , public virtual Socket
 {
 public:

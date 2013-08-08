@@ -34,7 +34,7 @@ struct SocketInterface
     struct SyncStream { };
     struct AsyncStream { };
     struct Stream : SyncStream, AsyncStream { };
-    
+
     /** Tags for compatibility with asio::ssl::stream
         http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream.html
     */
@@ -43,6 +43,82 @@ struct SocketInterface
     struct AsyncHandshake { };
     struct AsyncBufferedHandshake : AsyncHandshake{ };
     struct Handshake : SyncBufferedHandshake, AsyncBufferedHandshake { };
+
+protected:
+    //--------------------------------------------------------------------------
+
+    /** Template specialization to determine available interfaces. */
+    template <typename Object>
+    struct InterfacesOf
+    {
+        /** Intrusive tag support.
+
+            To use this, add a struct called SocketInterfaces to your
+            class and derive it from the interfaces that you support.
+            For example:
+
+            @code
+
+            struct MyHandshakingStream
+            {
+                struct SocketInterfaces
+                    : SocketInterface::Stream
+                    , SocketInterface::Handshake
+                {
+                };
+            }
+
+            @endcode
+        */
+        typedef typename Object::SocketInterfaces type;
+        typedef type value;
+    };
+
+    // Specialization for boost::asio::basic_socket
+    template <typename Protocol, typename SocketService>
+    struct InterfacesOf <boost::asio::basic_socket <Protocol, SocketService> >
+    {
+        struct value : SocketInterface::Socket { };
+        typedef value type;
+    };
+
+    // Specialization for boost::asio::basic_stream_socket
+    template <typename Protocol, typename SocketService>
+    struct InterfacesOf <boost::asio::basic_stream_socket <Protocol, SocketService> >
+    {
+        struct value : SocketInterface::Socket, SocketInterface::Stream { };
+        typedef value type;
+    };
+
+    // Specialization for boost::asio::ssl::stream
+    template <typename Stream>
+    struct InterfacesOf <boost::asio::ssl::stream <Stream> >
+    {
+        struct value : SocketInterface::Stream , SocketInterface::Handshake { };
+        typedef value type;
+    };
+
+#if 1
+    // Less elegant, but works.
+    // Determines if Object supports the specified Interface
+    template <typename Object, typename Interface, class Enable = void>
+    struct HasInterface : boost::false_type { };
+
+    template <typename Object, typename Interface>
+    struct HasInterface <Object, Interface,
+        typename boost::enable_if <boost::is_base_of <
+        Interface, typename InterfacesOf <Object>::type> >::type >
+        : boost::true_type { };
+#else
+    // This should work, but doesn't.
+    // K-ballo from #boost suggested it.
+    //
+    // Determines if Object supports the specified Interface
+    template <typename Object, typename Interface>
+    struct HasInterface : boost::is_base_of <Interface, typename InterfacesOf <Object> >
+    {
+    };
+#endif
 };
 
 #endif
