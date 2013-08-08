@@ -126,7 +126,7 @@ protected:
         typedef void result_type;
 
         template <class Handler>
-        CompletionCall (BOOST_ASIO_MOVE_ARG (Handler) handler)
+        CompletionCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
             : m_call (new CallType <Handler> (handler))
         {
         }
@@ -150,7 +150,7 @@ protected:
         template <class Handler>
         struct CallType : Call
         {
-            CallType (BOOST_ASIO_MOVE_ARG (Handler) handler)
+            CallType (BOOST_ASIO_MOVE_ARG(Handler) handler)
                 : m_handler (handler)
             {
             }
@@ -187,7 +187,7 @@ protected:
         typedef void result_type;
 
         template <class Handler>
-        ErrorCall (BOOST_ASIO_MOVE_ARG (Handler) handler)
+        ErrorCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
             : m_call (new CallType <Handler> (handler))
         {
         }
@@ -211,7 +211,7 @@ protected:
         template <class Handler>
         struct CallType : Call
         {
-            CallType (BOOST_ASIO_MOVE_ARG (Handler) handler)
+            CallType (BOOST_ASIO_MOVE_ARG(Handler) handler)
                 : m_handler (handler)
             {
             }
@@ -245,7 +245,7 @@ protected:
         typedef void result_type;
 
         template <class Handler>
-        TransferCall (BOOST_ASIO_MOVE_ARG (Handler) handler)
+        TransferCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
             : m_call (new CallType <Handler> (handler))
         {
         }
@@ -269,7 +269,7 @@ protected:
         template <class Handler>
         struct CallType : Call
         {
-            CallType (BOOST_ASIO_MOVE_ARG (Handler) handler)
+            CallType (BOOST_ASIO_MOVE_ARG(Handler) handler)
                 : m_handler (handler)
             {
             }
