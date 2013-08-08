@@ -16,14 +16,3 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
-#include "BeastConfig.h"
-
-#include "beast_asio.h"
-
-namespace beast
-{
-
-#include "sockets/beast_SslContext.cpp"
-
-}

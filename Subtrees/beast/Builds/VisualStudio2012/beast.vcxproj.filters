@@ -752,9 +752,6 @@
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketBase.h">
       <Filter>beast_asio\sockets</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapperBase.h">
-      <Filter>beast_asio\sockets</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapper.h">
       <Filter>beast_asio\sockets</Filter>
     </ClInclude>
@@ -769,6 +766,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\system\beast_BoostIncludes.h">
       <Filter>beast_asio\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SslContext.h">
+      <Filter>beast_asio\sockets</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1188,6 +1188,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp">
       <Filter>beast_asio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\sockets\beast_SslContext.cpp">
+      <Filter>beast_asio\sockets</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

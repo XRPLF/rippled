@@ -75,7 +75,7 @@
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketBase.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketInterface.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapper.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapperBase.h" />
+    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SslContext.h" />
     <ClInclude Include="..\..\modules\beast_asio\system\beast_BoostIncludes.h" />
     <ClInclude Include="..\..\modules\beast_basics\beast_basics.h" />
     <ClInclude Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.h" />
@@ -279,6 +279,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp" />
+    <ClCompile Include="..\..\modules\beast_asio\sockets\beast_SslContext.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\beast_basics.cpp" />
     <ClCompile Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
