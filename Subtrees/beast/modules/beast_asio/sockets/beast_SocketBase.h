@@ -127,8 +127,7 @@ protected:
 
         template <class Handler>
         CompletionCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
-            : m_call (new CallType <Handler> (
-                BOOST_ASIO_MOVE_CAST(Handler)(handler)))
+            : m_call (new CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler)))
         {
         }
 
@@ -189,8 +188,7 @@ protected:
 
         template <class Handler>
         ErrorCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
-            : m_call (new CallType <Handler> (
-                BOOST_ASIO_MOVE_CAST(Handler)(handler)))
+            : m_call (new CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler)))
         {
         }
 
@@ -248,8 +246,7 @@ protected:
 
         template <class Handler>
         TransferCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
-            : m_call (new CallType <Handler> (
-                BOOST_ASIO_MOVE_CAST(Handler)(handler)))
+            : m_call (new CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler)))
         {
         }
 

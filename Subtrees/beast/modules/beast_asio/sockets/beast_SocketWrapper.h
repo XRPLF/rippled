@@ -182,8 +182,7 @@ private:
     //--------------------------------------------------------------------------
 
 public:
-    std::size_t read_some (BOOST_ASIO_MOVE_ARG(MutableBuffers) buffers,
-        boost::system::error_code& ec)
+    std::size_t read_some (MutableBuffers const& buffers, boost::system::error_code& ec)
     {
         return read_some (buffers, ec,
             HasInterface <ObjectT, SocketInterface::SyncStream> ());
@@ -206,7 +205,7 @@ private:
     }
 
 public:
-    std::size_t write_some (BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, boost::system::error_code& ec)
+    std::size_t write_some (ConstBuffers const& buffers, boost::system::error_code& ec)
     {
         return write_some (buffers, ec,
             HasInterface <ObjectT, SocketInterface::SyncStream> ());
@@ -230,9 +229,9 @@ private:
 
 public:
     BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
-    async_read_some (BOOST_ASIO_MOVE_ARG(MutableBuffers) buffers, BOOST_ASIO_MOVE_ARG(TransferCall) call)
+    async_read_some (MutableBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
-        return async_read_some (buffers, call,
+        return async_read_some (buffers, BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
             HasInterface <ObjectT, SocketInterface::AsyncStream> ());
     }
 
@@ -242,7 +241,8 @@ private:
     async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler,
         boost::true_type)
     {
-        return get_object ().async_read_some (buffers, handler);
+        return get_object ().async_read_some (buffers,
+            BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
     }
 
     template <typename MutableBufferSequence, typename ReadHandler>
@@ -256,20 +256,20 @@ private:
             BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
         system::error_code ec;
         ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (handler, ec, 0));
+        get_io_service ().post (boost::bind (BOOST_ASIO_MOVE_CAST(ReadHandler)(handler), ec, 0));
         return init.result.get();
 #else
         boost::system::error_code ec;
         ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (handler, ec, 0));
+        get_io_service ().post (boost::bind (BOOST_ASIO_MOVE_CAST(ReadHandler)(handler), ec, 0));
 #endif
     }
 
 public:
     BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
-    async_write_some (BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, BOOST_ASIO_MOVE_ARG(TransferCall) call)
+    async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
-        return async_write_some (buffers, call,
+        return async_write_some (buffers, BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
             HasInterface <ObjectT, SocketInterface::AsyncStream> ());
     }
 
@@ -279,7 +279,8 @@ private:
     async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler,
         boost::true_type)
     {
-        return get_object ().async_write_some (buffers, handler);
+        return get_object ().async_write_some (buffers,
+            BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
     }
 
     template <typename ConstBufferSequence, typename WriteHandler>
@@ -293,12 +294,14 @@ private:
             BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
         system::error_code ec;
         ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (handler, ec, 0));
+        get_io_service ().post (boost::bind (
+            BOOST_ASIO_MOVE_CAST(WriteHandler)(handler), ec, 0));
         return init.result.get();
 #else
         boost::system::error_code ec;
         ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (handler, ec, 0));
+        get_io_service ().post (boost::bind (
+            BOOST_ASIO_MOVE_CAST(WriteHandler)(handler), ec, 0));
 #endif
     }
 
@@ -330,9 +333,9 @@ private:
 
 public:
     BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ErrorCall) call)
+    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
-        return async_handshake (type, call,
+        return async_handshake (type, BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
             HasInterface <ObjectT, SocketInterface::AsyncHandshake> ());
     }
 
@@ -342,7 +345,8 @@ private:
     async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler,
         boost::true_type)
     {
-        return get_object ().async_handshake (type, handler);
+        return get_object ().async_handshake (type,
+            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
     }
 
     template <typename HandshakeHandler>
@@ -356,19 +360,21 @@ private:
             BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
         system::error_code ec;
         ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (handler, ec));
+        get_io_service ().post (boost::bind (
+            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler), ec));
         return init.result.get();
 #else
         boost::system::error_code ec;
         ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (handler, ec));
+        get_io_service ().post (boost::bind (
+            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler), ec));
 #endif
     }
 
 public:
 #if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
     boost::system::error_code handshake (handshake_type type,
-        BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers, boost::system::error_code& ec)
+        ConstBuffers const& buffers, boost::system::error_code& ec)
     {
         return handshake (type, buffers, ec,
             HasInterface <ObjectT, SocketInterface::SyncBufferedHandshake> ());
@@ -393,10 +399,11 @@ private:
 
 public:
     BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ConstBuffers) buffers,
-        BOOST_ASIO_MOVE_ARG(TransferCall) call)
+    async_handshake (handshake_type type, ConstBuffers const& buffers,
+        BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
-        return async_handshake (type, buffers, call,
+        return async_handshake (type, buffers,
+            BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
             HasInterface <ObjectT, SocketInterface::AsyncBufferedHandshake> ());
     }
 
@@ -407,7 +414,8 @@ private:
         BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler,
         boost::true_type)
     {
-        return get_object ().async_handshake (type, buffers, handler);
+        return get_object ().async_handshake (type, buffers,
+            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
     }
 
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
@@ -422,12 +430,14 @@ private:
             BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
         boost::system::error_code ec;
         ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (handler, ec, 0));
+        get_io_service ().post (boost::bind (
+            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler), ec, 0));
         return init.result.get();
 #else
         boost::system::error_code ec;
         ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (handler, ec, 0));
+        get_io_service ().post (boost::bind (
+            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler), ec, 0));
 #endif
     }
 #endif
@@ -453,9 +463,9 @@ private:
     }
 
 public:
-    void async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) call)
+    void async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
-        async_shutdown (call,
+        async_shutdown (BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
             HasInterface <ObjectT, SocketInterface::AsyncHandshake> ());
     }
 
@@ -465,7 +475,8 @@ private:
     async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler,
         boost::true_type)
     {
-        return get_object ().async_shutdown (handler);
+        return get_object ().async_shutdown (
+            BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler));
     }
 
     template <typename ShutdownHandler>
@@ -479,12 +490,14 @@ private:
             BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler));
         system::error_code ec;
         ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (handler, ec));
+        get_io_service ().post (boost::bind (
+            BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler), ec));
         return init.result.get();
 #else
         boost::system::error_code ec;
         ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (handler, ec));
+        get_io_service ().post (boost::bind (
+            BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler), ec));
 #endif
     }
 
