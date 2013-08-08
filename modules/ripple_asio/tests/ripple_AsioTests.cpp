@@ -13,119 +13,6 @@ namespace AsioUnitTestsNamespace
 
 using namespace boost;
 
-class SslContext : public Uncopyable
-{
-public:
-    SslContext ()
-    {
-    }
-
-    virtual ~SslContext () { }
-
-    virtual asio::ssl::context& get_object () = 0;
-
-protected:
-};
-
-//------------------------------------------------------------------------------
-
-class RippleSslContext : public SslContext
-{
-public:
-    RippleSslContext ()
-        : m_context (asio::ssl::context::sslv23)
-    {
-        init_ssl_context (m_context);
-    }
-
-    asio::ssl::context& get_object ()
-    {
-        return m_context;
-    }
-
-public:
-    static char const* get_ciphers ()
-    {
-        static char const* ciphers = "ALL:!LOW:!EXP:!MD5:@STRENGTH";
-
-        return ciphers;
-    }
-
-    static DH* get_dh_params (int /*key_length*/)
-    {
-        static const unsigned char raw512DHParams [] =
-        {
-            0x30, 0x46, 0x02, 0x41, 0x00, 0x98, 0x15, 0xd2, 0xd0, 0x08, 0x32, 0xda,
-            0xaa, 0xac, 0xc4, 0x71, 0xa3, 0x1b, 0x11, 0xf0, 0x6c, 0x62, 0xb2, 0x35,
-            0x8a, 0x10, 0x92, 0xc6, 0x0a, 0xa3, 0x84, 0x7e, 0xaf, 0x17, 0x29, 0x0b,
-            0x70, 0xef, 0x07, 0x4f, 0xfc, 0x9d, 0x6d, 0x87, 0x99, 0x19, 0x09, 0x5b,
-            0x6e, 0xdb, 0x57, 0x72, 0x4a, 0x7e, 0xcd, 0xaf, 0xbd, 0x3a, 0x97, 0x55,
-            0x51, 0x77, 0x5a, 0x34, 0x7c, 0xe8, 0xc5, 0x71, 0x63, 0x02, 0x01, 0x02
-        };
-
-        struct ScopedDH
-        {
-            explicit ScopedDH (DH* dh)
-                : m_dh (dh)
-            {
-            }
-
-            explicit ScopedDH (unsigned char const* rawData, std::size_t bytes)
-                : m_dh (d2i_DHparams (nullptr, &rawData, bytes))
-            {
-            }
-
-            ~ScopedDH ()
-            {
-                if (m_dh != nullptr)
-                    DH_free (m_dh);
-            }
-
-            DH* get () const
-            {
-                return m_dh;
-            }
-
-            operator DH* () const
-            {
-                return get ();
-            }
-
-        private:
-            DH* m_dh;
-        };
-
-        static ScopedDH dh512 (raw512DHParams, sizeof (raw512DHParams));
-
-        return dh512;
-    }
-
-    static DH* tmp_dh_handler (SSL* /*ssl*/, int /*is_export*/, int key_length)
-    {
-        return DHparams_dup (get_dh_params (key_length));
-    }
-
-    static void init_ssl_context (asio::ssl::context& context)
-    {
-        context.set_options (
-            asio::ssl::context::default_workarounds |
-            asio::ssl::context::no_sslv2 |
-            asio::ssl::context::single_dh_use);
-
-        context.set_verify_mode (asio::ssl::verify_none);
-
-        SSL_CTX_set_tmp_dh_callback (context.native_handle (), tmp_dh_handler);
-
-        int const result = SSL_CTX_set_cipher_list (context.native_handle (), get_ciphers ());
-
-        if (result != 1)
-            FatalError ("invalid cipher list", __FILE__, __LINE__);
-    }
-
-private:
-    asio::ssl::context m_context;
-};
-
 //------------------------------------------------------------------------------
 
 // A handshaking stream that can distinguish multiple protocols
@@ -193,6 +80,7 @@ public:
     template <class Arg>
     explicit RippleHandshakeStreamType (Arg& arg, Options options = Options ())
         : m_options (options)
+        , m_context (RippleTlsContext::New ())
         , m_next_layer (arg)
         , m_io_service (m_next_layer.get_io_service ())
         , m_strand (m_io_service)
@@ -293,16 +181,19 @@ public:
             std::size_t const amount = asio::buffer_copy (buffers, m_buffer.data ());
             m_buffer.consume (amount);
             return m_io_service.post (m_strand.wrap (boost::bind (
-                handler, system::error_code (), amount)));
+                BOOST_ASIO_MOVE_CAST(ReadHandler)(handler), system::error_code (), amount)));
         }
-        return stream ().async_read_some (buffers, m_strand.wrap (handler));
+        return stream ().async_read_some (buffers, m_strand.wrap (boost::bind (
+            BOOST_ASIO_MOVE_CAST(ReadHandler)(handler), boost::asio::placeholders::error,
+            boost::asio::placeholders::bytes_transferred)));
     }
 
     template <typename ConstBufferSequence, typename WriteHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
     async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
     {
-        return stream ().async_write_some (buffers, handler);
+        return stream ().async_write_some (buffers,
+            BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
     }
 
     //--------------------------------------------------------------------------
@@ -344,7 +235,7 @@ public:
         return ec;
     }
 
-#if (BOOST_VERSION / 100) >= 1054
+#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence>
     boost::system::error_code handshake (handshake_type type,
         ConstBufferSequence const& buffers, boost::system::error_code& ec)
@@ -391,39 +282,42 @@ public:
         {
         default:
         case actionPlain:
-            return handshakePlainAsync (handler);
+            return handshakePlainAsync (BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
             break;
 
         case actionSsl:
-            return handshakeSslAsync (handler);
+            return handshakeSslAsync (BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
             break;
 
         case actionDetect:
-            return detectHandshakeAsync (handler);
+            return detectHandshakeAsync (BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
             break;
         }
     }
 
-#if (BOOST_VERSION / 100) >= 1054
+#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
     async_handshake (handshake_type type, const ConstBufferSequence& buffers,
-    BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
+        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
     {
         Action const action = calcAction (type);
         switch (action)
         {
         default:
         case actionPlain:
-            return handshakePlainAsync (buffers, handler);
+            return handshakePlainAsync (buffers,
+                BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
             break;
 
         case actionSsl:
-            return handshakeSslAsync (buffers, handler);
+            return handshakeSslAsync (buffers,
+                BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
             break;
 
         case actionDetect:
-            return detectHandshakeAsync (buffers, handler);
+            return detectHandshakeAsync (buffers,
+                BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
             break;
         }
     }
@@ -448,13 +342,16 @@ public:
     {
         if (m_status == ssl)
         {
-            m_ssl_stream->async_shutdown (m_strand.wrap (handler));
+            m_ssl_stream->async_shutdown (m_strand.wrap (boost::bind (
+                BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler),
+                boost::asio::placeholders::error)));
         }
         else
         {
             system::error_code ec;
             m_next_layer.shutdown (next_layer_type::shutdown_both, ec);
-            m_io_service.post (m_strand.wrap (boost::bind (handler, ec)));
+            m_io_service.post (m_strand.wrap (boost::bind (
+                BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler), ec)));
         }
     }
 
@@ -602,10 +499,11 @@ public:
     handshakePlainAsync (BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
     {
         createPlainStream ();
-        return m_io_service.post (m_strand.wrap (boost::bind (handler, system::error_code())));
+        return m_io_service.post (m_strand.wrap (boost::bind (
+            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler), system::error_code())));
     }
 
-#if (BOOST_VERSION / 100) >= 1054
+#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
     handshakePlainAsync (ConstBufferSequence const& buffers,
@@ -613,14 +511,16 @@ public:
     {
         fatal_assert (asio::buffer_size (buffers) == 0);
         createPlainStream ();
-        return m_io_service.post (m_strand.wrap (boost::bind (handler, system::error_code(), 0)));
+        return m_io_service.post (m_strand.wrap (boost::bind (
+            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler),
+            system::error_code(), 0)));
     }
 #endif
 
     void createSslStream ()
     {
         m_status = ssl;
-        m_ssl_stream = new SslStreamType (m_next_layer, m_context.get_object ());
+        m_ssl_stream = new SslStreamType (m_next_layer, m_context->getBoostContext ());
         m_stream = new SocketWrapper <SslStreamType> (*m_ssl_stream);
     }
 
@@ -630,7 +530,7 @@ public:
         m_ssl_stream->handshake (m_role, ec);
     }
 
-#if (BOOST_VERSION / 100) >= 1054
+#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence>
     void handshakeSsl (ConstBufferSequence const& buffers, system::error_code& ec)
     {
@@ -644,17 +544,19 @@ public:
     handshakeSslAsync (BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
     {
         createSslStream ();
-        return m_ssl_stream->async_handshake (m_role, handler);
+        return m_ssl_stream->async_handshake (m_role,
+            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
     }
 
-#if (BOOST_VERSION / 100) >= 1054
+#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE (BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
     handshakeSslAsync (ConstBufferSequence const& buffers,
         BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
     {
         createSslStream ();
-        return m_ssl_stream->async_handshake (m_role, buffers, handler);
+        return m_ssl_stream->async_handshake (m_role, buffers,
+            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
     }
 #endif
 
@@ -682,7 +584,7 @@ public:
         }
     }
 
-#if (BOOST_VERSION / 100) >= 1054
+#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <class ConstBufferSequence>
     void detectHandshake (ConstBufferSequence const& buffers, system::error_code& ec)
     {
@@ -695,7 +597,7 @@ public:
     //--------------------------------------------------------------------------
 
     template <typename HandshakeHandler>
-    void onDetectRead (HandshakeHandler handler,
+    void onDetectRead (BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler,
         system::error_code const& ec, std::size_t bytes_transferred)
     {
         m_buffer.commit (bytes_transferred);
@@ -717,10 +619,12 @@ public:
                     {
                     default:
                     case actionPlain:
-                        handshakePlainAsync (handler);
+                        handshakePlainAsync (
+                            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
                         break;
                     case actionSsl:
-                        handshakeSslAsync (handler);
+                        handshakeSslAsync (
+                            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
                         break;
                     };
                 }
@@ -732,7 +636,8 @@ public:
 
             if (ec)
             {
-                m_io_service.post (m_strand.wrap (boost::bind (handler, ec)));
+                m_io_service.post (m_strand.wrap (boost::bind (
+                    BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler), ec)));
             }
         }
     }
@@ -744,14 +649,16 @@ public:
         bassert (m_buffer.size () == 0);
         return m_next_layer.async_receive (
             m_buffer.prepare (autoDetectBytes), asio::socket_base::message_peek,
-            m_strand.wrap (boost::bind (&ThisType::onDetectRead <HandshakeHandler>, this, handler,
+            m_strand.wrap (boost::bind (&ThisType::onDetectRead <HandshakeHandler>, this,
+            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler),
             asio::placeholders::error, asio::placeholders::bytes_transferred)));
     }
 
-#if (BOOST_VERSION / 100) >= 1054
+#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
-    detectHandshakeAsync (ConstBufferSequence const& buffers, BufferedHandshakeHandler handler)
+    detectHandshakeAsync (ConstBufferSequence const& buffers,
+        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
     {
         fatal_error ("unimplemented");
     }
@@ -799,7 +706,8 @@ public:
 
 private:
     Options m_options;
-    RippleSslContext m_context;
+    //RippleSslContext m_context;
+    ScopedPointer <RippleTlsContext> m_context;
     Stream m_next_layer;
     asio::io_service& m_io_service;
     asio::io_service::strand m_strand;
@@ -2180,3 +2088,14 @@ public:
 static AsioUnitTests asioUnitTests;
 
 }
+
+
+/*
+
+What we want is a MultiSocket
+    Derived from beast::Socket so it can be used generically
+
+BUT, conforms to 
+
+
+*/

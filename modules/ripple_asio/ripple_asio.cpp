@@ -15,7 +15,6 @@
 #include "BeastConfig.h"
 
 #include "beast/modules/beast_basics/beast_basics.h"
-#include "beast/modules/beast_asio/beast_asio.h"
 
 #include "ripple_asio.h"
 
@@ -26,6 +25,10 @@ namespace ripple
 
 #include "boost/ripple_IoService.cpp"
 #include "boost/ripple_SslContext.cpp"
+
+#include "sockets/ripple_RippleTlsContext.h" // private
+#include "sockets/ripple_RippleTlsContext.cpp"
+#include "sockets/ripple_MultiSocket.cpp"
 
 #ifdef _MSC_VER
 #pragma warning (push)

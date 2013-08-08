@@ -8,6 +8,7 @@
 #define RIPPLE_ASIO_H_INCLUDED
 
 #include "beast/modules/beast_core/beast_core.h"
+#include "beast/modules/beast_asio/beast_asio.h"
 
 // Must be outside the namespace
 
@@ -29,6 +30,8 @@ using namespace beast;
 
 #include "boost/ripple_IoService.h"
 #include "boost/ripple_SslContext.h"
+
+#include "sockets/ripple_MultiSocket.h"
 
 }
 

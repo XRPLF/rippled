@@ -7,6 +7,8 @@
 #ifndef RIPPLE_ASIO_IMPL_H_INCLUDED
 #define RIPPLE_ASIO_IMPL_H_INCLUDED
 
+#include <boost/version.hpp>
+
 // Once everything is converted, these can be moved to ripple_asio.cpp
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl.hpp>
