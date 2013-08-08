@@ -199,6 +199,9 @@ public:
     /** Destructor. */
     virtual ~UnitTest();
 
+    /** Returns the fully qualified test name in the form <package>.<class> */
+    String getTestName() const noexcept;
+
     /** Returns the class name of the test. */
     const String& getClassName() const noexcept;
 
@@ -334,6 +337,8 @@ private:
 class BEAST_API UnitTests : public Uncopyable
 {
 public:
+    typedef UnitTest::TestList TestList;
+
     struct Results
     {
         Results ()
@@ -374,21 +379,99 @@ public:
 
     //--------------------------------------------------------------------------
 
+    /** Selects zero or more tests from specified packages or test names.
+
+        The name can be in these formats:
+            ""
+            <package | testname>
+            <package> "."
+            <package> "." <testname>
+            "." <testname>
+
+        ""
+            An empty string will match all tests objects which are not
+            marked to be run manually.
+
+        <package | testname>
+            Selects all tests which belong to that package, excluding those
+            which must be run manually. If no package with that name exists,
+            then this will select the first test from any package which matches
+            the name. If the test is a manual test, it will be selected.
+
+        <package> "."
+            Selects all tests which belong to that package, excluding those
+            which must be run manually. If no package with that name exists,
+            then no tests will be selected.
+
+        <package> "." <testname>
+            Selects only the first test that matches the given testname and
+            package, regardless of the manual run setting. If no test with a
+            matching package and test name is found, then no test is selected.
+
+        "/" <testname>
+            Selects the first test which matches the testname, even if it
+            is a manual test.
+
+        Some examples of names:
+
+            "beast"             All unit tests in beast
+            "beast.File"        Just the File beast unit test
+            ".Random"           The first test with the name Random
+
+        @note Matching is not case-sensitive.
+
+        @param match The string used to match tests
+        @param tests An optional parameter containing a list of tests to match.
+    */
+    TestList selectTests (String const& match = "",
+                          TestList const& tests = UnitTest::getAllTests ()) const noexcept;
+
+    /** Selects all tests which match the specified package.
+
+        Tests marked to be run manually are not included.
+        
+        @note Matching is not case-sensitive.
+
+        @param match The string used to match tests
+        @param tests An optional parameter containing a list of tests to match.
+    */
+    TestList selectPackage (String const& package,
+                            TestList const& tests = UnitTest::getAllTests ()) const noexcept;
+
+    /** Selects the first test whose name matches, from any package.
+
+        This can include tests marked to be run manually.
+        
+        @note Matching is not case-sensitive.
+        
+        @param match The name of the test to match.
+        @param tests An optional parameter containing a list of tests to match.
+    */
+    TestList selectTest (String const& testname,
+                         TestList const& tests = UnitTest::getAllTests ()) const noexcept;
+
+    /** Selects the startup tests.
+        A test marked as runStartup will be forced to run on launch.
+        Typically these are lightweight tests that ensure the system
+        environment will not cause the program to exhibit undefined behavior.
+
+        @param tests An optional parameter containing a list of tests to match.
+    */
+    TestList selectStartupTests (TestList const& tests = UnitTest::getAllTests ()) const noexcept;
+
+    /** Run a list of matching tests.
+        This first calls selectTests and then runTeests on the resulting list.
+        @param match The string used for matching.
+        @param tests An optional parameter containing a list of tests to match.
+    */
+    void runSelectedTests (String const& match = "",
+                           TestList const& tests = UnitTest::getAllTests ());
+
     /** Runs the specified list of tests.
-        This is used internally and won't normally need to be called.
+        @note The tests are run regardless of the run settings.
+        @param tests The list of tests to run.
     */
-    void runTests (Array <UnitTest*> const& tests);
-
-    /** Runs all the UnitTest objects that currently exist.
-        This calls @ref runTests for all the objects listed in @ref UnitTest::getAllTests.
-    */
-    void runAllTests ();
-
-    /** Runs the startup tests. */
-    void runStartupTests ();
-
-    /** Run a particular test or group. */
-    void runTestsByName (String const& name);
+    void runTests (TestList const& tests);
 
 protected:
     friend class UnitTest;

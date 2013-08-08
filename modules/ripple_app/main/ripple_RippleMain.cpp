@@ -174,7 +174,7 @@ private:
     bool const m_shouldLog;
 };
 
-static int runUnitTests (String const& whichTests, String const& format)
+static int runUnitTests (String const& match, String const& format)
 {
     bool const shouldLog = format != "junit";
 
@@ -187,14 +187,7 @@ static int runUnitTests (String const& whichTests, String const& format)
 
     RippleUnitTests tr (shouldLog);
 
-    if (whichTests == "")
-    {
-        tr.runAllTests ();
-    }
-    else
-    {
-        tr.runTestsByName (whichTests);
-    }
+    tr.runSelectedTests (match);
 
     if (format == "junit")
     {

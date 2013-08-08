@@ -37,6 +37,13 @@ UnitTest::~UnitTest()
     getAllTests().removeFirstMatchingValue (this);
 }
 
+String UnitTest::getTestName() const noexcept
+{
+    String s;
+    s << m_packageName << "." << m_className;
+    return s;
+}
+
 String const& UnitTest::getClassName() const noexcept
 {
     return m_className;
@@ -100,7 +107,7 @@ void UnitTest::beginTestCase (String const& name)
     finishCase ();
 
     String s;
-    s << m_packageName << "/" << m_className << ": " << name;
+    s << getTestName () << " : " << name;
     logMessage (s);
 
     m_case = new Case (name, m_className);
@@ -231,90 +238,125 @@ bool UnitTests::anyTestsFailed () const noexcept
     return m_results->failures > 0;
 }
 
-void UnitTests::runTests (Array <UnitTest*> const& tests)
+UnitTests::TestList UnitTests::selectTests (
+    String const& match, TestList const& tests) const noexcept
+{
+    TestList list;
+    list.ensureStorageAllocated (tests.size ());
+
+    int const indexOfDot = match.indexOfChar ('.');
+    String const package = (indexOfDot == -1) ? match : match.substring (0, indexOfDot);
+    String const testname = (indexOfDot == -1) ? ""
+        : match.substring (indexOfDot + 1, match.length () + 1);
+
+    if (package != String::empty)
+    {
+        if (testname != String::empty)
+        {
+            // "package.testname" : First test which matches
+            for (int i = 0; i < tests.size(); ++i)
+            {
+                UnitTest* const test = tests [i];
+                if (package.equalsIgnoreCase (test->getPackageName ()) &&
+                    testname.equalsIgnoreCase (test->getClassName ()))
+                {
+                    list.add (test);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            // Get all tests in the package
+            list = selectPackage (package, tests);
+
+            // If no trailing slash on package, try tests
+            if (list.size () == 0 && indexOfDot == -1)
+            {
+                std::cout << "Trying package as test" << std::endl;
+
+                // Try "package" as a testname
+                list = selectTest (package, tests);
+            }
+        }
+    }
+    else if (testname != String::empty)
+    {
+        list = selectTest (testname, tests);
+    }
+    else
+    {
+        // All non manual tests
+        for (int i = 0; i < tests.size(); ++i)
+        {
+            UnitTest* const test = tests [i];
+            if (test->getWhen () != UnitTest::runManual)
+                list.add (test);
+        }
+    }
+
+    return list;
+}
+
+UnitTests::TestList UnitTests::selectPackage (
+    String const& package, TestList const& tests) const noexcept
+{
+    TestList list;
+    list.ensureStorageAllocated (tests.size ());
+    for (int i = 0; i < tests.size(); ++i)
+    {
+        UnitTest* const test = tests [i];
+        if (package.equalsIgnoreCase (test->getPackageName ()) &&
+            test->getWhen () != UnitTest::runManual)
+            list.add (test);
+    }
+    return list;
+}
+
+UnitTests::TestList UnitTests::selectTest (
+    String const& testname, TestList const& tests) const noexcept
+{
+    TestList list;
+    for (int i = 0; i < tests.size(); ++i)
+    {
+        UnitTest* const test = tests [i];
+        if (testname.equalsIgnoreCase (test->getClassName ()))
+        {
+            list.add (test);
+            break;
+        }
+    }
+    return list;
+}
+
+UnitTests::TestList UnitTests::selectStartupTests (TestList const& tests) const noexcept
+{
+    TestList list;
+    for (int i = 0; i < tests.size(); ++i)
+    {
+        UnitTest* const test = tests [i];
+        if (test->getWhen () == UnitTest::runStartup)
+            list.add (test);
+    }
+    return list;
+}
+
+void UnitTests::runSelectedTests (String const& match, TestList const& tests)
+{
+    runTests (selectTests (match, tests));
+}
+
+void UnitTests::runTests (TestList const& tests)
 {
     m_results = new Results;
-
     for (int i = 0; i < tests.size (); ++i)
     {
         if (shouldAbortTests())
             break;
-
         runTest (*tests [i]);
     }
-
     m_results->secondsElapsed = RelativeTime (
         Time::getCurrentTime () - m_results->whenStarted).inSeconds ();
-}
-
-void UnitTests::runAllTests ()
-{
-    UnitTest::TestList const& allTests (UnitTest::getAllTests ());
-
-    Array <UnitTest*> tests;
-
-    tests.ensureStorageAllocated (allTests.size ());
-
-    for (int i = 0; i < allTests.size(); ++i)
-    {
-        UnitTest* const test = allTests [i];
-
-        if (test->getWhen () == UnitTest::runNormal)
-        {
-            tests.add (test);
-        }
-    }
-
-    runTests (tests);
-}
-
-void UnitTests::runStartupTests ()
-{
-    UnitTest::TestList const& allTests (UnitTest::getAllTests ());
-
-    Array <UnitTest*> tests;
-
-    tests.ensureStorageAllocated (allTests.size ());
-
-    for (int i = 0; i < allTests.size(); ++i)
-    {
-        UnitTest* const test = allTests [i];
-
-        if (test->getWhen () == UnitTest::runStartup)
-        {
-            tests.add (test);
-        }
-    }
-
-    runTests (tests);
-}
-
-void UnitTests::runTestsByName (String const& name)
-{
-    UnitTest::TestList const& allTests (UnitTest::getAllTests ());
-
-    Array <UnitTest*> tests;
-
-    tests.ensureStorageAllocated (allTests.size ());
-
-    for (int i = 0; i < allTests.size(); ++i)
-    {
-        UnitTest* const test = allTests [i];
-
-        if (test->getPackageName () == name && 
-            (test->getWhen () == UnitTest::runNormal ||
-             test->getWhen () == UnitTest::runStartup))
-        {
-            tests.add (test);
-        }
-        else if (test->getClassName () == name)
-        {
-            tests.add (test);
-            break;
-        }
-    }
-
-    runTests (tests);
 }
  
 void UnitTests::onFailure ()
@@ -384,7 +426,7 @@ public:
             case UnitTest::runStartup: s << "[FORCED] "; break;
             };
 
-            s << test.getPackageName () << "/" << test.getClassName ();
+            s << test.getTestName ();
 
             logMessage (s);
         }

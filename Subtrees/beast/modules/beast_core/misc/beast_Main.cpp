@@ -99,7 +99,7 @@ void Main::runStartupUnitTests ()
 
     StartupUnitTests tests;
 
-    tests.runStartupTests ();
+    tests.runTests (tests.selectStartupTests ());
 
     if (tests.anyTestsFailed ())
     {
