@@ -609,7 +609,7 @@ public:
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
     handshakePlainAsync (ConstBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG (BufferedHandshakeHandler) handler)
+        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
     {
         fatal_assert (asio::buffer_size (buffers) == 0);
         createPlainStream ();
@@ -651,7 +651,7 @@ public:
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE (BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
     handshakeSslAsync (ConstBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG (BufferedHandshakeHandler) handler)
+        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
     {
         createSslStream ();
         return m_ssl_stream->async_handshake (m_role, buffers, handler);
