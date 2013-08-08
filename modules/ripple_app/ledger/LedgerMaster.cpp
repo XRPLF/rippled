@@ -93,21 +93,18 @@ void LedgerMaster::pushLedger (Ledger::pointer newLedger)
 
     boost::recursive_mutex::scoped_lock ml (mLock);
 
-    if (!mPubLedger)
-        mPubLedger = newLedger;
-
-    if (!!mFinalizedLedger)
+    if (mClosedLedger)
     {
-        mFinalizedLedger->setClosed ();
-        WriteLog (lsTRACE, LedgerMaster) << "Finalizes: " << mFinalizedLedger->getHash ();
+        mClosedLedger->setClosed ();
+        WriteLog (lsTRACE, LedgerMaster) << "Finalizes: " << mClosedLedger->getHash ();
     }
 
-    mFinalizedLedger = mCurrentLedger;
+    mClosedLedger = mCurrentLedger;
     mCurrentLedger = newLedger;
     mEngine.setLedger (newLedger);
 }
 
-void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL, bool fromConsensus)
+void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
 {
     assert (newLCL->isClosed () && newLCL->isAccepted ());
     assert (!newOL->isClosed () && !newOL->isAccepted ());
@@ -118,13 +115,13 @@ void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL, bo
     {
         assert (newLCL->isClosed ());
         assert (newLCL->isImmutable ());
-        mLedgerHistory.addAcceptedLedger (newLCL, fromConsensus);
+        mLedgerHistory.addAcceptedLedger (newLCL);
         WriteLog (lsINFO, LedgerMaster) << "StashAccepted: " << newLCL->getHash ();
     }
 
     {
         boost::recursive_mutex::scoped_lock ml (mLock);
-        mFinalizedLedger = newLCL;
+        mClosedLedger = newLCL;
         mCurrentLedger = newOL;
         mEngine.setLedger (newOL);
     }
@@ -138,9 +135,9 @@ void LedgerMaster::switchLedgers (Ledger::pointer lastClosed, Ledger::pointer cu
 
     {
         boost::recursive_mutex::scoped_lock ml (mLock);
-        mFinalizedLedger = lastClosed;
-        mFinalizedLedger->setClosed ();
-        mFinalizedLedger->setAccepted ();
+        mClosedLedger = lastClosed;
+        mClosedLedger->setClosed ();
+        mClosedLedger->setAccepted ();
         mCurrentLedger = current;
 
         assert (!mCurrentLedger->isClosed ());
@@ -154,7 +151,7 @@ void LedgerMaster::storeLedger (Ledger::pointer ledger)
     mLedgerHistory.addLedger (ledger);
 
     if (ledger->isAccepted ())
-        mLedgerHistory.addAcceptedLedger (ledger, false);
+        mLedgerHistory.addAcceptedLedger (ledger);
 }
 
 void LedgerMaster::forceValid (Ledger::pointer ledger)
@@ -344,8 +341,9 @@ void LedgerMaster::asyncAccept (Ledger::pointer ledger)
     resumeAcquiring ();
 }
 
-bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& ledgerHash, uint32 ledgerSeq)
+void LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& ledgerHash, uint32 ledgerSeq)
 {
+#if 0
     // return: false = already gave up recently
     Ledger::pointer ledger = mLedgerHistory.getLedgerBySeq (ledgerSeq);
 
@@ -382,12 +380,6 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
     }
 
     mMissingSeq = ledgerSeq;
-
-    if (mMissingLedger->setAccept ())
-    {
-        if (!mMissingLedger->addOnComplete (BIND_TYPE (&LedgerMaster::missingAcquireComplete, this, P_1)))
-            getApp().getIOService ().post (BIND_TYPE (&LedgerMaster::missingAcquireComplete, this, mMissingLedger));
-    }
 
     int fetchMax = getConfig ().getSize (siLedgerFetch);
     int timeoutCount;
@@ -462,10 +454,13 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
     }
 
     return true;
+
+#endif
 }
 
 void LedgerMaster::missingAcquireComplete (InboundLedger::pointer acq)
 {
+#if 0
     boost::recursive_mutex::scoped_lock ml (mLock);
 
     if (acq->isFailed () && (mMissingSeq != 0))
@@ -482,6 +477,7 @@ void LedgerMaster::missingAcquireComplete (InboundLedger::pointer acq)
         setFullLedger (acq->getLedger ());
         mLedgerHistory.addAcceptedLedger (acq->getLedger (), false);
     }
+#endif
 }
 
 bool LedgerMaster::shouldAcquire (uint32 currentLedger, uint32 ledgerHistory, uint32 candidateLedger)
@@ -518,7 +514,7 @@ void LedgerMaster::resumeAcquiring ()
         return;
     }
 
-    uint32 prevMissing = mCompleteLedgers.prevMissing (mFinalizedLedger->getLedgerSeq ());
+    uint32 prevMissing = mCompleteLedgers.prevMissing (mClosedLedger->getLedgerSeq ());
 
     if (prevMissing == RangeSet::absent)
     {
@@ -573,7 +569,7 @@ void LedgerMaster::fixMismatch (Ledger::ref ledger)
     CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "All " << invalidate << " prior ledgers invalidated";
 }
 
-void LedgerMaster::setFullLedger (Ledger::pointer ledger)
+void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bool isCurrent)
 {
     // A new ledger has been accepted as part of the trusted chain
     WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->getLedgerSeq () << " accepted :" << ledger->getHash ();
@@ -587,7 +583,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger)
     mCompleteLedgers.setValue (ledger->getLedgerSeq ());
 
     if (Ledger::getHashByIndex (ledger->getLedgerSeq ()) != ledger->getHash ())
-        ledger->pendSave (false);
+        ledger->pendSaveValidated (isSynchronous, isCurrent);
 
     if ((ledger->getLedgerSeq () != 0) && mCompleteLedgers.hasValue (ledger->getLedgerSeq () - 1))
     {
@@ -780,7 +776,7 @@ void LedgerMaster::tryPublish ()
 
                 if (!acq->isDone ())
                 {
-                    acq->setAccept ();
+                    nothing ();
                 }
                 else if (acq->isComplete () && !acq->isFailed ())
                 {
@@ -791,7 +787,7 @@ void LedgerMaster::tryPublish ()
                     WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
                     getApp().getInboundLedgers().dropLedger(hash);
                     acq = getApp().getInboundLedgers().findCreate(hash, seq);
-                    acq->setAccept();
+                    nothing ();
                     if (acq->isDone())
                         ledger = acq->getLedger();
                 }
@@ -885,7 +881,7 @@ void LedgerMaster::pubThread ()
         BOOST_FOREACH (Ledger::ref l, ledgers)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "Publishing ledger " << l->getLedgerSeq ();
-            setFullLedger (l); // OPTIMIZEME: This is actually more work than we need to do
+            setFullLedger (l, true, true);
             getApp().getOPs ().pubLedger (l);
             published = true;
         }

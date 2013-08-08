@@ -236,7 +236,7 @@ public:
     static uint256 getHashByIndex (uint32 index);
     static bool getHashesByIndex (uint32 index, uint256 & ledgerHash, uint256 & parentHash);
     static std::map< uint32, std::pair<uint256, uint256> > getHashesByIndex (uint32 minSeq, uint32 maxSeq);
-    void pendSave (bool fromConsensus);
+    bool pendSaveValidated (bool isSynchronous, bool isCurrent);
 
     // next/prev function
     SLE::pointer getSLE (uint256 const & uHash); // SLE is mutable
@@ -435,7 +435,11 @@ protected:
     // returned SLE is immutable
     SLE::pointer getASNodeI (uint256 const & nodeID, LedgerEntryType let);
 
-    void saveAcceptedLedger (Job&, bool fromConsensus);
+    void saveValidatedLedgerAsync(Job&, bool current)
+    {
+        saveValidatedLedger(current);
+    }
+    void saveValidatedLedger (bool current);
 
     void updateFees ();
 

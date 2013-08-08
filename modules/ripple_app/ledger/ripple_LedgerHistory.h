@@ -15,7 +15,7 @@ public:
 
     void addLedger (Ledger::pointer ledger);
 
-    void addAcceptedLedger (Ledger::pointer ledger, bool fromConsensus);
+    void addAcceptedLedger (Ledger::pointer ledger);
 
     float getCacheHitRate ()
     {

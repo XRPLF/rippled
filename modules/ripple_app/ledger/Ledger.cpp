@@ -504,9 +504,9 @@ uint256 Ledger::getHash ()
     return mHash;
 }
 
-void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
+void Ledger::saveValidatedLedger (bool current)
 {
-    WriteLog (lsTRACE, Ledger) << "saveAcceptedLedger " << (fromConsensus ? "fromConsensus " : "fromAcquire ") << getLedgerSeq ();
+    WriteLog (lsTRACE, Ledger) << "saveValidatedLedger " << (current ? "" : "fromAcquire ") << getLedgerSeq ();
     static boost::format deleteLedger ("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
     static boost::format deleteTrans1 ("DELETE FROM Transactions WHERE LedgerSeq = %u;");
     static boost::format deleteTrans2 ("DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
@@ -527,7 +527,7 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
     if (getAccountHash () != mAccountStateMap->getHash ())
     {
         WriteLog (lsFATAL, Ledger) << "sAL: " << getAccountHash () << " != " << mAccountStateMap->getHash ();
-        WriteLog (lsFATAL, Ledger) << "saveAcceptedLedger: seq=" << mLedgerSeq << ", fromcons=" << fromConsensus;
+        WriteLog (lsFATAL, Ledger) << "saveAcceptedLedger: seq=" << mLedgerSeq << ", current=" << current;
         assert (false);
     }
 
@@ -611,9 +611,6 @@ void Ledger::saveAcceptedLedger (Job&, bool fromConsensus)
                 lexicalCastThrow <std::string> (mTotCoins) % mCloseTime % mParentCloseTime %
                 mCloseResolution % mCloseFlags % mAccountHash.GetHex () % mTransHash.GetHex ()));
     }
-
-    if (!fromConsensus && (getConfig ().NODE_SIZE < 2)) // tiny or small
-        dropCache ();
 
     { // Clients can now trust the database for information about this ledger sequence
         boost::mutex::scoped_lock sl (sPendingSaveLock);
@@ -1817,24 +1814,32 @@ uint32 Ledger::roundCloseTime (uint32 closeTime, uint32 closeResolution)
     return closeTime - (closeTime % closeResolution);
 }
 
-void Ledger::pendSave (bool fromConsensus)
+bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
 {
-    if (!fromConsensus && !getApp().getHashRouter ().setFlag (getHash (), SF_SAVED))
-        return;
+    if (!getApp().getHashRouter ().setFlag (getHash (), SF_SAVED))
+        return false;
 
     assert (isImmutable ());
 
     {
         boost::mutex::scoped_lock sl (sPendingSaveLock);
         if (!sPendingSaves.insert(getLedgerSeq()).second)
-            return;
+            return false;
     }
 
-    getApp().getJobQueue ().addJob (
-        fromConsensus ? jtPUBLEDGER : jtPUBOLDLEDGER,
-        fromConsensus ? "Ledger::pendSave" : "Ledger::pendOldSave",
-        BIND_TYPE (&Ledger::saveAcceptedLedger, shared_from_this (), P_1, fromConsensus));
+    if (isSynchronous)
+    {
+        saveValidatedLedger(isCurrent);
+    }
+    else
+    {
+        getApp().getJobQueue ().addJob (
+            isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER,
+            isCurrent ? "Ledger::pendSave" : "Ledger::pendOldSave",
+            BIND_TYPE (&Ledger::saveValidatedLedgerAsync, shared_from_this (), P_1, isCurrent));
+    }
 
+    return true;
 }
 
 std::set<uint32> Ledger::getPendingSaves()

@@ -56,17 +56,6 @@ public:
         return mSeq;
     }
 
-    // VFALCO NOTE what is the meaning of the return value?
-    bool setAccept ()
-    {
-        if (mAccept)
-            return false;
-
-        mAccept = true;
-
-        return true;
-    }
-
     // VFALCO TODO Make thise the Listener / Observer pattern
     bool addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)>);
 
@@ -112,7 +101,6 @@ private:
     bool               mHaveTransactions;
     bool               mAborted;
     bool               mSignaled;
-    bool               mAccept;
     bool               mByHash;
     beast::Atomic<int> mWaitCount;
     uint32             mSeq;

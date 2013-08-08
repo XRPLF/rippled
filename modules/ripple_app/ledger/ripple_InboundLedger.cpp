@@ -19,7 +19,6 @@ InboundLedger::InboundLedger (uint256 const& hash, uint32 seq)
     , mHaveTransactions (false)
     , mAborted (false)
     , mSignaled (false)
-    , mAccept (false)
     , mByHash (true)
     , mWaitCount (0)
     , mSeq (seq)
@@ -267,10 +266,6 @@ void InboundLedger::done ()
     {
         mLedger->setClosed ();
         mLedger->setImmutable ();
-
-        if (mAccept)
-            mLedger->setAccepted ();
-
         getApp().getLedgerMaster ().storeLedger (mLedger);
     }
     else

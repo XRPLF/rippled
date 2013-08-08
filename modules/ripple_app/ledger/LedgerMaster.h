@@ -55,7 +55,7 @@ public:
     // The finalized ledger is the last closed/accepted ledger
     Ledger::ref getClosedLedger ()
     {
-        return mFinalizedLedger;
+        return mClosedLedger;
     }
 
     // The validated ledger is the last fully validated ledger
@@ -86,11 +86,11 @@ public:
     }
 
     void pushLedger (Ledger::pointer newLedger);
-    void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL, bool fromConsensus);
+    void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL);
     void storeLedger (Ledger::pointer);
     void forceValid (Ledger::pointer);
 
-    void setFullLedger (Ledger::pointer ledger);
+    void setFullLedger (Ledger::pointer ledger, bool isSynchronous, bool isCurrent);
 
     void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer newCurrent);
 
@@ -117,8 +117,8 @@ public:
         if (mCurrentLedger && (mCurrentLedger->getLedgerSeq () == index))
             return mCurrentLedger;
 
-        if (mFinalizedLedger && (mFinalizedLedger->getLedgerSeq () == index))
-            return mFinalizedLedger;
+        if (mClosedLedger && (mClosedLedger->getLedgerSeq () == index))
+            return mClosedLedger;
 
         Ledger::pointer ret = mLedgerHistory.getLedgerBySeq (index);
 
@@ -138,8 +138,8 @@ public:
         if (mCurrentLedger && (mCurrentLedger->getHash () == hash))
             return boost::make_shared<Ledger> (boost::ref (*mCurrentLedger), false);
 
-        if (mFinalizedLedger && (mFinalizedLedger->getHash () == hash))
-            return mFinalizedLedger;
+        if (mClosedLedger && (mClosedLedger->getHash () == hash))
+            return mClosedLedger;
 
         return mLedgerHistory.getLedgerByHash (hash);
     }
@@ -191,7 +191,7 @@ private:
     bool isValidTransaction (Transaction::ref trans);
     bool isTransactionOnFutureList (Transaction::ref trans);
 
-    bool acquireMissingLedger (Ledger::ref from, uint256 const& ledgerHash, uint32 ledgerSeq);
+    void acquireMissingLedger (Ledger::ref from, uint256 const& ledgerHash, uint32 ledgerSeq);
     void asyncAccept (Ledger::pointer);
     void missingAcquireComplete (InboundLedger::pointer);
     void pubThread ();
@@ -204,7 +204,7 @@ private:
 
     Ledger::pointer mCurrentLedger;     // The ledger we are currently processiong
     Ledger::pointer mCurrentSnapshot;   // Snapshot of the current ledger
-    Ledger::pointer mFinalizedLedger;   // The ledger that most recently closed
+    Ledger::pointer mClosedLedger;   // The ledger that most recently closed
     Ledger::pointer mValidLedger;       // The highest-sequence ledger we have fully accepted
     Ledger::pointer mPubLedger;         // The last ledger we have published
 

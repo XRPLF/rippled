@@ -27,7 +27,7 @@ void LedgerHistory::addLedger (Ledger::pointer ledger)
     mLedgersByHash.canonicalize (ledger->getHash (), ledger, true);
 }
 
-void LedgerHistory::addAcceptedLedger (Ledger::pointer ledger, bool fromConsensus)
+void LedgerHistory::addAcceptedLedger (Ledger::pointer ledger)
 {
     assert (ledger && ledger->isAccepted () && ledger->isImmutable ());
     assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
@@ -37,9 +37,6 @@ void LedgerHistory::addAcceptedLedger (Ledger::pointer ledger, bool fromConsensu
     assert (ledger);
     assert (ledger->isAccepted ());
     assert (ledger->isImmutable ());
-    mLedgersByIndex[ledger->getLedgerSeq ()] = ledger->getHash ();
-
-    ledger->pendSave (fromConsensus);
 }
 
 uint256 LedgerHistory::getLedgerHash (uint32 index)

@@ -1302,7 +1302,7 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
         WriteLog (lsDEBUG, LedgerConsensus) << "Applying transactions from current open ledger";
         applyTransactions (getApp().getLedgerMaster ().getCurrentLedger ()->peekTransactionMap (), newOL, newLCL,
                            failedTransactions, true);
-        getApp().getLedgerMaster ().pushLedger (newLCL, newOL, !mConsensusFail);
+        getApp().getLedgerMaster ().pushLedger (newLCL, newOL);
         mNewLedgerHash = newLCL->getHash ();
         mState = lcsACCEPTED;
         sl.unlock ();
