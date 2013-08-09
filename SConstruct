@@ -14,6 +14,12 @@ FreeBSD = bool('FreeBSD' == platform.system())
 Linux   = bool('Linux' == platform.system())
 Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
 
+#
+# We expect this to be set
+# 
+BOOST_HOME = os.environ.get("RIPPLED_BOOST_HOME", None) 
+
+
 if OSX or Ubuntu:
     CTAGS = 'ctags'
 elif FreeBSD:
@@ -31,9 +37,6 @@ env = Environment(
 
 GCC_VERSION = re.split('\.', commands.getoutput(env['CXX'] + ' -dumpversion'))
 
-# Use clang
-#env.Replace(CC = 'clang')
-#env.Replace(CXX = 'clang++')
 
 # Use a newer gcc on FreeBSD
 if FreeBSD:
@@ -41,6 +44,13 @@ if FreeBSD:
     env.Replace(CXX = 'g++46')
     env.Append(CCFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
     env.Append(LINKFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
+
+if OSX:
+    env.Replace(CC= 'clang')
+    env.Replace(CXX= 'clang++')
+    env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libc++'])
+    env.Append(LINKFLAGS='-stdlib=libc++')
+    env['FRAMEWORKS'] = ['AppKit']
 
 #
 # Builder for CTags
@@ -66,36 +76,27 @@ if FreeBSD:
     )
 
 # The required version of boost is documented in the README file.
-#
-# We whitelist platforms where the non -mt version is linked with pthreads.
-#   This can be verified with: ldd libboost_filesystem.*
-#   If a threading library is included the platform can be whitelisted.
-#
-# FreeBSD and Ubuntu non-mt libs do link with pthreads.
+BOOST_LIBS = [
+    'boost_date_time',
+    'boost_filesystem',
+    'boost_program_options',
+    'boost_regex',
+    'boost_system',
+    'boost_thread',
+    'boost_random',
+]
 
-if FreeBSD or Ubuntu:
+# We whitelist platforms where the non -mt version is linked with pthreads. This
+# can be verified with: ldd libboost_filesystem.* If a threading library is
+# included the platform can be whitelisted.
+if FreeBSD or Ubuntu or OSX:
+    # non-mt libs do link with pthreads.
     env.Append(
-        LIBS = [
-            'boost_date_time',
-            'boost_filesystem',
-            'boost_program_options',
-            'boost_regex',
-            'boost_system',
-            'boost_thread',
-            'boost_random',
-        ]
+        LIBS = BOOST_LIBS
     )
 else:
     env.Append(
-        LIBS = [
-            'boost_date_time-mt',
-            'boost_filesystem-mt',
-            'boost_program_options-mt',
-            'boost_regex-mt',
-            'boost_system-mt',
-            'boost_thread-mt',
-            'boost_random-mt',
-        ]
+        LIBS = [l + '-mt' for l in BOOST_LIBS]
     )
 
 #-------------------------------------------------------------------------------
@@ -114,13 +115,23 @@ INCLUDE_PATHS = [
     'Subtrees/leveldb',
     'Subtrees/leveldb/port',
     'Subtrees/leveldb/include',
-    'Subtrees/beast'
+    'Subtrees/beast',
     ]
 
-COMPILED_FILES = [
-    'Subtrees/beast/modules/beast_asio/beast_asio.cpp',
+# if BOOST_HOME:
+#     INCLUDE_PATHS.append(BOOST_HOME)
+
+if OSX:
+    COMPILED_FILES = [
+        'Subtrees/beast/modules/beast_core/beast_core.mm'
+    ]
+else:
+    COMPILED_FILES = [
+        'Subtrees/beast/modules/beast_core/beast_core.cpp'
+    ]
+
+COMPILED_FILES.extend([
     'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
-    'Subtrees/beast/modules/beast_core/beast_core.cpp',
     'Subtrees/beast/modules/beast_crypto/beast_crypto.cpp',
     'Subtrees/beast/modules/beast_db/beast_db.cpp',
     'Subtrees/beast/modules/beast_sqdb/beast_sqdb.cpp',
@@ -133,8 +144,8 @@ COMPILED_FILES = [
     'modules/ripple_app/ripple_app_pt6.cpp',
     'modules/ripple_app/ripple_app_pt7.cpp',
     'modules/ripple_app/ripple_app_pt8.cpp',
-    'modules/ripple_asio/ripple_asio.cpp',
     'modules/ripple_basics/ripple_basics.cpp',
+    'modules/ripple_basio/ripple_basio.cpp',
     'modules/ripple_core/ripple_core.cpp',
     'modules/ripple_data/ripple_data.cpp',
     'modules/ripple_hyperleveldb/ripple_hyperleveldb.cpp',
@@ -143,7 +154,7 @@ COMPILED_FILES = [
     'modules/ripple_mdb/ripple_mdb.c',
     'modules/ripple_net/ripple_net.cpp',
     'modules/ripple_websocket/ripple_websocket.cpp'
-    ]
+    ])
 
 #-------------------------------------------------------------------------------
 
@@ -161,10 +172,13 @@ VariantDir('build/obj/Subtrees', 'Subtrees', duplicate=0)
 for path in INCLUDE_PATHS:
     env.Append (CPPPATH = [ path ])
 
+if BOOST_HOME:
+    env.Prepend (CPPPATH = [ BOOST_HOME ])
+
 #-------------------------------------------------------------------------------
 
 # Apparently, only linux uses -ldl
-if not FreeBSD:
+if Linux: # not FreeBSD:
     env.Append(
         LIBS = [
             'dl', # dynamic linking for linux
@@ -172,17 +186,30 @@ if not FreeBSD:
     )
 
 env.Append(
-    LIBS = [
-        'rt',           # for clock_nanosleep in beast
-        'z'
-    ]
+    LIBS = \
+        # rt is for clock_nanosleep in beast
+        ['rt'] if not OSX else [] +\
+        [
+            'z'
+        ] 
 )
+
+# We prepend, in case there's another BOOST somewhere on the path
+# such, as installed into `/usr/lib/`
+if BOOST_HOME is not None:
+    env.Prepend(
+        LIBPATH = ["%s/stage/lib" % BOOST_HOME])
+
+if not OSX:
+    env.Append(LINKFLAGS = [
+        '-rdynamic', '-pthread', 
+        ])
 
 DEBUGFLAGS  = ['-g', '-DDEBUG']
 
-env.Append(LINKFLAGS = ['-rdynamic', '-pthread'])
-env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts'])
+env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts']+DEBUGFLAGS)
 env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+DEBUGFLAGS)
+
 
 # RTTI is required for Beast and CountedObject.
 #
