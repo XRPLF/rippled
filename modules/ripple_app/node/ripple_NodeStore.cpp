@@ -447,6 +447,11 @@ public:
 
     //------------------------------------------------------------------------------
 
+    static void missing_backend ()
+    {
+        fatal_error ("Your rippled.cfg is missing a [node_db] entry, please see the rippled-example.cfg file!");
+    }
+
     static NodeStore::Backend* createBackend (
         Parameters const& parameters, Scheduler& scheduler = getSynchronousScheduler ())
     {
@@ -473,12 +478,12 @@ public:
             }
             else
             {
-                Throw (std::runtime_error ("unknown backend type"));
+                missing_backend ();
             }
         }
         else
         {
-            Throw (std::runtime_error ("missing backend type"));
+            missing_backend ();
         }
 
         return backend;
