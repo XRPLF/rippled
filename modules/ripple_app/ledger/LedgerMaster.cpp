@@ -575,9 +575,6 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
     WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->getLedgerSeq () << " accepted :" << ledger->getHash ();
     assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
 
-    if (getApp().getOPs ().isNeedNetworkLedger ())
-        return;
-
     boost::recursive_mutex::scoped_lock ml (mLock);
 
     mCompleteLedgers.setValue (ledger->getLedgerSeq ());
@@ -803,12 +800,16 @@ void LedgerMaster::tryPublish ()
         }
     }
 
-    if (!mPubLedgers.empty () && !mPubThread)
+    if (!mPubLedgers.empty ())
     {
         getApp().getOPs ().clearNeedNetworkLedger ();
-        mPubThread = true;
-        getApp().getJobQueue ().addJob (jtPUBLEDGER, "Ledger::pubThread",
-                                       BIND_TYPE (&LedgerMaster::pubThread, this));
+
+        if (!mPubThread)
+        {
+            mPubThread = true;
+            getApp().getJobQueue ().addJob (jtPUBLEDGER, "Ledger::pubThread",
+                                           BIND_TYPE (&LedgerMaster::pubThread, this));
+        }
         mPathFindNewLedger = true;
 
         if (!mPathFindThread)
