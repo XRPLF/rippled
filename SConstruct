@@ -131,7 +131,9 @@ else:
     ]
 
 COMPILED_FILES.extend([
+    'Subtrees/beast/modules/beast_asio/beast_asio.cpp',
     'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
+    # 'Subtrees/beast/modules/beast_core/beast_core.cpp',
     'Subtrees/beast/modules/beast_crypto/beast_crypto.cpp',
     'Subtrees/beast/modules/beast_db/beast_db.cpp',
     'Subtrees/beast/modules/beast_sqdb/beast_sqdb.cpp',
@@ -144,8 +146,8 @@ COMPILED_FILES.extend([
     'modules/ripple_app/ripple_app_pt6.cpp',
     'modules/ripple_app/ripple_app_pt7.cpp',
     'modules/ripple_app/ripple_app_pt8.cpp',
+    'modules/ripple_asio/ripple_asio.cpp',
     'modules/ripple_basics/ripple_basics.cpp',
-    'modules/ripple_basio/ripple_basio.cpp',
     'modules/ripple_core/ripple_core.cpp',
     'modules/ripple_data/ripple_data.cpp',
     'modules/ripple_hyperleveldb/ripple_hyperleveldb.cpp',
