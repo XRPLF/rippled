@@ -1703,6 +1703,9 @@
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocket.cpp">
       <Filter>[1] Ripple\ripple_asio\sockets</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocketType.h">
+      <Filter>[1] Ripple\ripple_asio\sockets</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\modules\ripple_data\protocol\ripple.proto">

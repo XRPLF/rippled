@@ -26,7 +26,6 @@ namespace ripple
 #include "boost/ripple_IoService.cpp"
 #include "boost/ripple_SslContext.cpp"
 
-#include "sockets/ripple_RippleTlsContext.h" // private
 #include "sockets/ripple_RippleTlsContext.cpp"
 #include "sockets/ripple_MultiSocket.cpp"
 

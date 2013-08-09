@@ -465,7 +465,7 @@ void PeerImp::handleConnect (const boost::system::error_code& error, boost::asio
         WriteLog (lsINFO, Peer) << "Connect peer: success.";
 
 #if RIPPLE_USES_BEAST_SOCKETS
-        mSocketSsl.native_object <StreamType> ().set_verify_mode (boost::asio::ssl::verify_none);
+        mSocketSsl.this_layer <StreamType> ().set_verify_mode (boost::asio::ssl::verify_none);
 #else
         mSocketSsl.set_verify_mode (boost::asio::ssl::verify_none);
 #endif
@@ -511,7 +511,7 @@ void PeerImp::connected (const boost::system::error_code& error)
         WriteLog (lsINFO, Peer) << "Peer: Inbound: Accepted: " << addressToString (this) << ": " << strIp << " " << iPort;
 
 #if RIPPLE_USES_BEAST_SOCKETS
-        mSocketSsl.native_object <StreamType> ().set_verify_mode (boost::asio::ssl::verify_none);
+        mSocketSsl.this_layer <StreamType> ().set_verify_mode (boost::asio::ssl::verify_none);
 #else
         mSocketSsl.set_verify_mode (boost::asio::ssl::verify_none);
 #endif
@@ -2221,7 +2221,7 @@ void PeerImp::addTxSet (uint256 const& hash)
 void PeerImp::getSessionCookie (std::string& strDst)
 {
 #if RIPPLE_USES_BEAST_SOCKETS
-    SSL* ssl = mSocketSsl.native_object <StreamType> ().native_handle ();
+    SSL* ssl = mSocketSsl.this_layer <StreamType> ().native_handle ();
 #else
     SSL* ssl = mSocketSsl.native_handle ();
 #endif

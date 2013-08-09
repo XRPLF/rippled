@@ -235,7 +235,7 @@ public:
         return ec;
     }
 
-#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
+#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence>
     boost::system::error_code handshake (handshake_type type,
         ConstBufferSequence const& buffers, boost::system::error_code& ec)
@@ -295,7 +295,7 @@ public:
         }
     }
 
-#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
+#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
     async_handshake (handshake_type type, const ConstBufferSequence& buffers,
@@ -503,7 +503,7 @@ public:
             BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler), system::error_code())));
     }
 
-#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
+#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
     handshakePlainAsync (ConstBufferSequence const& buffers,
@@ -530,7 +530,7 @@ public:
         m_ssl_stream->handshake (m_role, ec);
     }
 
-#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
+#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence>
     void handshakeSsl (ConstBufferSequence const& buffers, system::error_code& ec)
     {
@@ -548,7 +548,7 @@ public:
             BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
     }
 
-#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
+#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE (BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
     handshakeSslAsync (ConstBufferSequence const& buffers,
@@ -584,7 +584,7 @@ public:
         }
     }
 
-#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
+#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <class ConstBufferSequence>
     void detectHandshake (ConstBufferSequence const& buffers, system::error_code& ec)
     {
@@ -654,7 +654,7 @@ public:
             asio::placeholders::error, asio::placeholders::bytes_transferred)));
     }
 
-#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
+#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
     detectHandshakeAsync (ConstBufferSequence const& buffers,

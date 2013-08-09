@@ -26,7 +26,8 @@ public:
 public:
     struct SocketInterfaces
         : beast::SocketInterface::AsyncStream
-        , beast::SocketInterface::AsyncHandshake { };
+        , beast::SocketInterface::AsyncHandshake
+        , beast::SocketInterface::LowestLayer { };
 
     AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c)
         : mSecure (false)

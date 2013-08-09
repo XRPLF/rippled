@@ -1499,6 +1499,7 @@
     <ClInclude Include="..\..\modules\ripple_asio\ripple_asio_impl.h" />
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocket.cpp" />
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocket.h" />
+    <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocketType.h" />
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_RippleTlsContext.h" />
     <ClInclude Include="..\..\modules\ripple_basics\containers\ripple_KeyCache.h" />
     <ClInclude Include="..\..\modules\ripple_basics\containers\ripple_RangeSet.h" />

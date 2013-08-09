@@ -9,7 +9,7 @@
 
 /** A Socket that can handshake with multiple protocols.
 */
-class RippleMultiSocket : public Socket
+class MultiSocket : public Socket
 {
 public:
     enum Flags
@@ -42,7 +42,7 @@ public:
         void setFromFlags (Flags flags);
     };
 
-    static RippleMultiSocket* New (boost::asio::io_service& io_service,
+    static MultiSocket* New (boost::asio::io_service& io_service,
                                    Options const& options = none);
 };
 
