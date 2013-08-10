@@ -17,6 +17,51 @@
 */
 //==============================================================================
 
+TestPeerBasics::Role::Role (role_t role)
+    : m_role (role)
+{
+}
+
+String TestPeerBasics::Role::name () const noexcept
+{
+    if (m_role == server)
+        return "server";
+    return "client";
+}
+
+bool TestPeerBasics::Role::operator== (role_t role) const noexcept
+{
+    return m_role == role;
+}
+
+TestPeerBasics::Role::operator Socket::handshake_type () const noexcept
+{
+    if (m_role == server)
+        return Socket::server;
+    return Socket::client;
+}
+
+//------------------------------------------------------------------------------
+
+TestPeerBasics::Model::Model (model_t model)
+    : m_model (model)
+{
+}
+
+String TestPeerBasics::Model::name () const noexcept
+{
+    if (m_model == async)
+        return "async";
+    return "sync";
+}
+
+bool TestPeerBasics::Model::operator== (model_t model) const noexcept
+{
+    return m_model == model;
+}
+
+//------------------------------------------------------------------------------
+
 boost::system::error_category const& TestPeerBasics::test_category () noexcept
 {
     struct test_category_type : boost::system::error_category
@@ -98,4 +143,6 @@ bool TestPeerBasics::unexpected (bool condition, boost::system::error_code& ec) 
 {
     return ! expected (condition, ec);
 }
+
+//------------------------------------------------------------------------------
 

@@ -60,15 +60,13 @@ namespace beast
 #include "tests/beast_TestPeer.h"
 #include "tests/beast_TestPeerDetails.h"
 #include "tests/beast_TestPeerLogic.h"
-#include "tests/beast_TestPeerTest.h"
-
-#include "tests/detail/beast_TestPeerLogicSyncServer.h"
-#include "tests/detail/beast_TestPeerLogicSyncClient.h"
-#include "tests/detail/beast_TestPeerLogicAsyncServer.h"
-#include "tests/detail/beast_TestPeerLogicAsyncClient.h"
-#include "tests/detail/beast_TestPeerType.h"
-#include "tests/detail/beast_TestPeerTestType.h"
-#include "tests/detail/beast_TestPeerDetailsTcp.h"
+#include "tests/beast_TestPeerLogicSyncServer.h"
+#include "tests/beast_TestPeerLogicSyncClient.h"
+#include "tests/beast_TestPeerLogicAsyncServer.h"
+#include "tests/beast_TestPeerLogicAsyncClient.h"
+#include "tests/beast_TestPeerType.h"
+#include "tests/beast_TestPeerDetailsTcp.h"
+#include "tests/beast_PeerTest.h"
 
 }
 
