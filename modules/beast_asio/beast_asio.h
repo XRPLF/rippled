@@ -56,6 +56,8 @@ namespace beast
 #include "sockets/beast_SharedSocket.h"
 #include "sockets/beast_SslContext.h"
 
+#include "protocol/beast_ProxyHandshake.h"
+
 #include "tests/beast_TestPeerBasics.h"
 #include "tests/beast_TestPeer.h"
 #include "tests/beast_TestPeerDetails.h"
