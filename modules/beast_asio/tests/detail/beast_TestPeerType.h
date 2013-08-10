@@ -20,19 +20,49 @@
 #ifndef BEAST_TESTPEERTYPE_H_INCLUDED
 #define BEAST_TESTPEERTYPE_H_INCLUDED
 
-template <typename Logic, typename DetailsType>
+template <typename Logic, typename Details>
 class TestPeerType
-    : public DetailsType
+    : public Details
     , public Logic
     , public TestPeer
     , public Thread
 {
+protected:
+    // TestPeerDetails
+    using Details::get_socket;
+    using Details::get_acceptor;
+    using Details::get_io_service;
+
+    // Details
+    typedef typename Details::protocol_type protocol_type;
+    typedef typename Details::socket_type   socket_type;
+    typedef typename Details::acceptor_type acceptor_type;
+    typedef typename Details::endpoint_type endpoint_type;
+    typedef typename Details::resolver_type resolver_type;
+
+    using Details::get_native_socket;
+    using Details::get_native_acceptor;
+    using Details::get_endpoint;
+
+    // TestPeerLogic
+    using Logic::error;
+    using Logic::socket;
+    using Logic::get_role;
+    using Logic::get_model;
+    using Logic::on_connect;
+    using Logic::on_connect_async;
+    using Logic::pure_virtual;
+
 public:
-    typedef typename DetailsType::arg_type arg_type;
-    typedef TestPeerType <Logic, DetailsType> ThisType;
+    // Details
+    typedef typename Details::arg_type arg_type;
+    typedef typename Details::native_socket_type   native_socket_type;
+    typedef typename Details::native_acceptor_type native_acceptor_type;
+
+    typedef TestPeerType <Logic, Details> ThisType;
 
     TestPeerType (arg_type const& arg)
-        : DetailsType (arg)
+        : Details (arg)
         , Logic (get_socket ())
         , Thread (name ())
     {
@@ -162,13 +192,17 @@ public:
         if (failure (get_native_acceptor ().open (get_endpoint (get_role ()).protocol (), error ())))
             return;
 
-        if (failure (get_native_acceptor ().set_option (socket_type::reuse_address (true), error ())))
+        // VFALCO TODO Figure out how to not hard code boost::asio::socket_base
+        if (failure (get_native_acceptor ().set_option (
+                boost::asio::socket_base::reuse_address (true), error ())))
             return;
 
         if (failure (get_native_acceptor ().bind (get_endpoint (get_role ()), error ())))
             return;
 
-        if (failure (get_native_acceptor ().listen (socket_type::max_connections, error ())))
+        // VFALCO TODO Figure out how to not hard code boost::asio::socket_base
+        if (failure (get_native_acceptor ().listen (
+                boost::asio::socket_base::max_connections, error ())))
             return;
     }
 };

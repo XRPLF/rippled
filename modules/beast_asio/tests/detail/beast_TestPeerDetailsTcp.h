@@ -31,8 +31,6 @@ protected:
     typedef protocol_type::endpoint endpoint_type;
     typedef protocol_type::resolver resolver_type;
 
-    struct NoArg { }; // dummy
-
 public:
     typedef protocol_type arg_type;
     typedef socket_type   native_socket_type;
