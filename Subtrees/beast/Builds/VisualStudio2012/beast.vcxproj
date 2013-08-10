@@ -86,6 +86,7 @@
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogic.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicAsyncClient.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicAsyncServer.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicProxyClient.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicSyncClient.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicSyncServer.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_PeerTest.h" />
@@ -333,6 +334,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicProxyClient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicSyncClient.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

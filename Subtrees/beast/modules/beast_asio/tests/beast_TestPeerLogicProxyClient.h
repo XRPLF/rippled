@@ -17,17 +17,15 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERLOGICSYNCCLIENT_H_INCLUDED
-#define BEAST_TESTPEERLOGICSYNCCLIENT_H_INCLUDED
+#ifndef BEAST_TESTPEERLOGICPROXYCLIENT_H_INCLUDED
+#define BEAST_TESTPEERLOGICPROXYCLIENT_H_INCLUDED
 
-class TestPeerLogicSyncClient : public TestPeerLogic
+/** A synchronous client logic that sends a PROXY protocol pre-handshake. */
+class TestPeerLogicProxyClient : public TestPeerLogicSyncClient
 {
 public:
-    explicit TestPeerLogicSyncClient (Socket& socket);
-    Role get_role () const noexcept;
-    Model get_model () const noexcept;
-    void on_connect ();
-    virtual void on_pre_handshake ();
+    explicit TestPeerLogicProxyClient (Socket& socket);
+    void on_pre_handshake ();
 };
 
 #endif
