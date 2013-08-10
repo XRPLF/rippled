@@ -498,7 +498,7 @@ public:
         createPlainStreamSocket ();
     }
 
-    BOOST_ASIO_INITFN_RESULT_TYPE(ErrorCall, void (boost::system::error_code))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
     handshakePlainAsync (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
         createPlainStreamSocket ();
@@ -519,7 +519,7 @@ public:
         m_ssl_stream->handshake (m_role, ec);
     }
 
-    BOOST_ASIO_INITFN_RESULT_TYPE(ErrorCall, void (boost::system::error_code))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
     handshakeSslAsync (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
         createSslStreamSocket ();
@@ -528,7 +528,7 @@ public:
     }
 
 #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
-    BOOST_ASIO_INITFN_RESULT_TYPE(TransferCall, void (boost::system::error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
     handshakePlainAsync (ConstBuffers const& buffers,
         BOOST_ASIO_MOVE_ARG (TransferCall) handler)
     {
@@ -545,7 +545,7 @@ public:
         m_ssl_stream->handshake (m_role, buffers, ec);
     }
 
-    BOOST_ASIO_INITFN_RESULT_TYPE (TransferCall, void (boost::system::error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
     handshakeSslAsync (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
         createSslStreamSocket ();
@@ -589,7 +589,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void onDetectRead (BOOST_ASIO_MOVE_ARG(ErrorCall) handler,
+    void onDetectRead (ErrorCall handler,
         boost::system::error_code const& ec, std::size_t bytes_transferred)
     {
         m_buffer.commit (bytes_transferred);
@@ -634,19 +634,18 @@ public:
         }
     }
 
-    BOOST_ASIO_INITFN_RESULT_TYPE(ErrorCall, void (boost::system::error_code))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
     detectHandshakeAsync (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
         bassert (m_buffer.size () == 0);
         return m_next_layer.async_receive (
             m_buffer.prepare (autoDetectBytes), boost::asio::socket_base::message_peek,
-            m_strand.wrap (boost::bind (&ThisType::onDetectRead, this,
-            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
-            boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)));
+            m_strand.wrap (boost::bind (&ThisType::onDetectRead, this, handler,
+            boost::asio::placeholders::error, 0)));
     }
 
 #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
-    BOOST_ASIO_INITFN_RESULT_TYPE(TransferCall, void (boost::system::error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
     detectHandshakeAsync (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
         fatal_error ("unimplemented");

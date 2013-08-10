@@ -67,8 +67,8 @@ public:
         , Logic (get_socket ())
         , Thread (name ())
         , m_timer (get_io_service ())
-        , m_timed_out (false)
         , m_timer_set (false)
+        , m_timed_out (false)
     {
     }
 
