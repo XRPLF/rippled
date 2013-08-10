@@ -155,6 +155,9 @@
     <Filter Include="beast_asio\protocol">
       <UniqueIdentifier>{c4a7b6bb-88ec-4ff1-bc56-7c432a467500}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_asio\basics">
+      <UniqueIdentifier>{ccdc0c8e-f77a-486e-ba2f-29c10ec97f18}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -817,6 +820,18 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicProxyClient.h">
       <Filter>beast_asio\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_BufferType.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_CompletionCall.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_ErrorCall.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_TransferCall.h">
+      <Filter>beast_asio\basics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

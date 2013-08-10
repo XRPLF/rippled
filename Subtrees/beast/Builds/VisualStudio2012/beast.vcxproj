@@ -69,6 +69,10 @@
     <None Include="..\..\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_BufferType.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_CompletionCall.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_ErrorCall.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_TransferCall.h" />
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\beast_ProxyHandshake.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_Socket.h" />

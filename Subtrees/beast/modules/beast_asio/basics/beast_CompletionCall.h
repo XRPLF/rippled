@@ -17,25 +17,59 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SOCKETBASE_H_INCLUDED
-#define BEAST_SOCKETBASE_H_INCLUDED
+#ifndef BEAST_COMPLETIONCALL_H_INCLUDED
+#define BEAST_COMPLETIONCALL_H_INCLUDED
 
-/** Implementation details for Socket.
-    Normally you wont need to use this.
-*/
-class SocketBase
+//  Meets these requirements:
+//
+//      CompletionHandler
+//      http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/CompletionHandler.html
+//
+class CompletionCall
 {
-protected:
-    static void pure_virtual ();
-    static boost::system::error_code pure_virtual (boost::system::error_code& ec);
+public:
+    typedef void result_type;
 
-protected:
-    /** Called when the underlying object does not support the interface. */
-    void throw_error (boost::system::error_code const& ec)
+    template <class Handler>
+    CompletionCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
+        : m_call (new CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler)))
     {
-        if (ec)
-            Throw (boost::system::system_error (ec), __FILE__, __LINE__);
     }
+
+    CompletionCall (CompletionCall const& other)
+        : m_call (other.m_call)
+    { 
+    }
+
+    void operator() ()
+    {
+        (*m_call) ();
+    }
+
+private:
+    struct Call : SharedObject, LeakChecked <Call>
+    {
+        virtual void operator() () = 0;
+    };
+
+    template <class Handler>
+    struct CallType : Call
+    {
+        CallType (BOOST_ASIO_MOVE_ARG(Handler) handler)
+            : m_handler (handler)
+        {
+        }
+
+        void operator() ()
+        {
+            m_handler ();
+        }
+
+        Handler m_handler;
+    };
+
+private:
+    SharedObjectPtr <Call> m_call;
 };
 
 #endif
