@@ -17,23 +17,30 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
-
-#include "beast_asio.h"
-
-namespace beast
+class TestPeerTests : public UnitTest
 {
+public:
+    enum
+    {
+        timeoutSeconds = 3
+    };
 
-#include "sockets/beast_SocketBase.cpp"
-#include "sockets/beast_Socket.cpp"
-#include "sockets/beast_SslContext.cpp"
+    TestPeerTests () : UnitTest ("TestPeer", "beast")
+    {
+    }
 
-#include "tests/beast_TestPeerBasics.cpp"
-#include "tests/beast_TestPeerTests.cpp"
+    template <typename Details, typename Arg >
+    void testDetails (Arg const& arg = Arg ())
+    {
+        TestPeerTestType::test <Details> (*this, arg, timeoutSeconds);
+    }
 
-#include "tests/detail/beast_TestPeerLogicSyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicSyncClient.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncClient.cpp"
+    void runTest ()
+    {
+        typedef boost::asio::ip::tcp protocol;
+        testDetails <TcpDetails, TcpDetails::arg_type> (protocol::v4 ());
+        testDetails <TcpDetails, TcpDetails::arg_type> (protocol::v6 ());
+    }
+};
 
-}
+static TestPeerTests testPeerTests;

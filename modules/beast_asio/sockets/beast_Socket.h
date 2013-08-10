@@ -46,38 +46,29 @@ class Socket
     , public boost::asio::socket_base
 {
 public:
-    virtual ~Socket () { }
+    virtual ~Socket ();
 
     //--------------------------------------------------------------------------
     //
-    // General attributes
+    // General
     //
     //--------------------------------------------------------------------------
 
-#if 0
-    typedef Socket next_layer_type;
-    typedef Socket lowest_layer_type;
-
-    virtual next_layer_type& next_layer () = 0;
-
-    virtual next_layer_type const& next_layer () const = 0;
-
-    virtual lowest_layer_type& lowest_layer () = 0;
-
-    virtual lowest_layer_type const& lowest_layer () const = 0;
-#endif
+    virtual boost::asio::io_service& get_io_service () = 0;
 
     /** Determines if the underlying stream requires a handshake.
 
-        If is_handshaked is true, it will be necessary to call handshake or
+        If requires_handshake is true, it will be necessary to call handshake or
         async_handshake after the connection is established. Furthermore it
         will be necessary to call the shutdown member from the
         HandshakeInterface to close the connection. Do not close the underlying
         socket or else the closure will not be graceful. Only one side should
         initiate the handshaking shutdon. The other side should observe it.
         Which side does what is up to the user.
+
+        The default version returns false
     */
-    virtual bool is_handshaked () = 0;
+    virtual bool requires_handshake ();
 
     /** Retrieve the underlying object.
         Returns nullptr if the implementation doesn't match. Usually
@@ -88,27 +79,127 @@ public:
 
         void set_options (Socket& socket)
         {
-            bost::boost::asio::ip::tcp::socket* sock =
-                socket.native_object <bost::boost::asio::ip::tcp::socket> ();
+            typedef bost::boost::asio::ip::tcp Protocol;
+            typedef Protocol::socket;
+            Protocol::socket* const sock =
+                socket.this_layer <Protocol::socket> ();
 
             if (sock != nullptr)
                 sock->set_option (
-                    boost::boost::asio::ip::tcp::no_delay (true));
+                    Protocol::no_delay (true));
         }
 
         @endcode
     */
-
     template <class Object>
-    Object& native_object ()
+    Object& this_layer ()
     {
-        void* const object = native_object_raw ();
+        Object* object (this_layer_ptr <Object> ());
         if (object == nullptr)
             Throw (std::bad_cast (), __FILE__, __LINE__);
-        return *static_cast <Object*> (object);
+        return *object;
     }
 
-    virtual void* native_object_raw () = 0;
+    template <class Object>
+    Object const& this_layer () const
+    {
+        Object const* object (this_layer_ptr <Object> ());
+        if (object == nullptr)
+            Throw (std::bad_cast (), __FILE__, __LINE__);
+        return *object;
+    }
+
+    template <class Object>
+    Object* this_layer_ptr ()
+    {
+        return static_cast <Object*> (
+            this_layer_raw (typeid (Object).name ()));
+    }
+
+    template <class Object>
+    Object const* this_layer_ptr () const
+    {
+        return static_cast <Object const*> (
+            this_layer_raw (typeid (Object).name ()));
+    }
+
+    // Shouldn't call this directly, use this_layer<> instead
+    virtual void* this_layer_raw (char const* type_name) const = 0;
+
+    //--------------------------------------------------------------------------
+    //
+    // SocketInterface::Close
+    //
+    //--------------------------------------------------------------------------
+
+    void close ()
+    {
+        boost::system::error_code ec;
+        throw_error (close (ec));
+    }
+
+    virtual boost::system::error_code close (boost::system::error_code& ec);
+
+    //--------------------------------------------------------------------------
+    //
+    // SocketInterface::Acceptor
+    //
+    //--------------------------------------------------------------------------
+
+    virtual boost::system::error_code accept (Socket& peer, boost::system::error_code& ec);
+
+    template <class AcceptHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(AcceptHandler, void (boost::system::error_code))
+    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler)
+    {
+        return async_accept (peer, ErrorCall (
+            BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler)));
+    }
+
+    virtual
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(ErrorCall) handler);
+
+    //--------------------------------------------------------------------------
+    //
+    // SocketInterface::LowestLayer
+    //
+    //--------------------------------------------------------------------------
+
+    template <class Object>
+    Object& lowest_layer ()
+    {
+        Object* object (lowest_layer_ptr <Object> ());
+        if (object == nullptr)
+            Throw (std::bad_cast (), __FILE__, __LINE__);
+        return *object;
+    }
+
+    template <class Object>
+    Object const& lowest_layer () const
+    {
+        Object const* object (lowest_layer_ptr <Object> ());
+        if (object == nullptr)
+            Throw (std::bad_cast (), __FILE__, __LINE__);
+        return *object;
+    }
+
+    template <class Object>
+    Object* lowest_layer_ptr ()
+    {
+        return static_cast <Object*> (
+            lowest_layer_raw (typeid (Object).name ()));
+    }
+
+    template <class Object>
+    Object const* lowest_layer_ptr () const
+    {
+        return static_cast <Object const*> (
+            lowest_layer_raw (typeid (Object).name ()));
+    }
+
+    // Shouldn't call this directly, use lowest_layer<> instead
+    virtual void* lowest_layer_raw (char const* type_name) const;
 
     //--------------------------------------------------------------------------
     //
@@ -122,7 +213,7 @@ public:
         throw_error (cancel (ec));
     }
 
-    virtual boost::system::error_code cancel (boost::system::error_code& ec) = 0;
+    virtual boost::system::error_code cancel (boost::system::error_code& ec);
 
     void shutdown (shutdown_type what)
     {
@@ -131,15 +222,7 @@ public:
     }
 
     virtual boost::system::error_code shutdown (shutdown_type what,
-        boost::system::error_code& ec) = 0;
-
-    void close ()
-    {
-        boost::system::error_code ec;
-        throw_error (close (ec));
-    }
-
-    virtual boost::system::error_code close (boost::system::error_code& ec) = 0;
+        boost::system::error_code& ec);
 
     //--------------------------------------------------------------------------
     //
@@ -158,7 +241,7 @@ public:
         return read_some (MutableBuffers (buffers), ec);
     }
 
-    virtual std::size_t read_some (MutableBuffers const& buffers, boost::system::error_code& ec) = 0;
+    virtual std::size_t read_some (MutableBuffers const& buffers, boost::system::error_code& ec);
 
     // SyncWriteStream
     //
@@ -170,7 +253,7 @@ public:
         return write_some (BOOST_ASIO_MOVE_CAST(ConstBuffers)(ConstBuffers (buffers)), ec);
     }
 
-    virtual std::size_t write_some (ConstBuffers const& buffers, boost::system::error_code& ec) = 0;
+    virtual std::size_t write_some (ConstBuffers const& buffers, boost::system::error_code& ec);
 
     // AsyncReadStream
     //
@@ -185,8 +268,8 @@ public:
     }
 
     virtual
-    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
-    async_read_some (MutableBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler) = 0;
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    async_read_some (MutableBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler);
 
     // AsyncWriteStream
     //
@@ -201,8 +284,8 @@ public:
     }
 
     virtual
-    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
-    async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler) = 0;
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler);
 
     //--------------------------------------------------------------------------
     //
@@ -223,7 +306,7 @@ public:
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload2.html
     //
     virtual boost::system::error_code handshake (handshake_type type,
-        boost::system::error_code& ec) = 0;
+        boost::system::error_code& ec);
 
     // ssl::stream::async_handshake (1 of 2)
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload1.html
@@ -237,12 +320,12 @@ public:
     }
 
     virtual
-    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler) = 0;
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler);
 
     //--------------------------------------------------------------------------
 
-#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
+#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     // ssl::stream::handshake (3 of 4)
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload3.html
     //
@@ -264,7 +347,7 @@ public:
     }
 
     virtual boost::system::error_code handshake (handshake_type type,
-        ConstBuffers const& buffers, boost::system::error_code& ec) = 0;
+        ConstBuffers const& buffers, boost::system::error_code& ec);
 
     // ssl::stream::async_handshake (2 of 2)
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload2.html
@@ -279,9 +362,9 @@ public:
     }
 
     virtual
-    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
     async_handshake (handshake_type type, ConstBuffers const& buffers,
-        BOOST_ASIO_MOVE_ARG(TransferCall) handler) = 0;
+        BOOST_ASIO_MOVE_ARG(TransferCall) handler);
 #endif
 
     //--------------------------------------------------------------------------
@@ -295,7 +378,7 @@ public:
         throw_error (shutdown (ec));
     }
 
-    virtual boost::system::error_code shutdown (boost::system::error_code& ec) = 0;
+    virtual boost::system::error_code shutdown (boost::system::error_code& ec);
 
     // ssl::stream::async_shutdown
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_shutdown.html
@@ -307,8 +390,8 @@ public:
     }
 
     virtual
-    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler) = 0;
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler);
 };
 
 #endif

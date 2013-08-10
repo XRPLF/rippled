@@ -34,17 +34,14 @@
 */
 template <class Object>
 class SocketWrapper
-    : public SocketInterface
-    , public virtual Socket
+    : public virtual Socket
+    , protected SocketWrapperBasics
 {
 public:
-    typedef Object ObjectType;
-    typedef typename boost::remove_reference <Object>::type ObjectT;
+    typedef typename boost::remove_reference <Object>::type ObjectType;
 
     SocketWrapper (Object& object) noexcept
         : m_impl (&object)
-        //, m_next_layer (object.next_layer ())
-        //, m_lowest_layer (object.lowest_layer ())
     {
     }
 
@@ -65,10 +62,40 @@ public:
         return *m_impl;
     }
 
-    boost::asio::io_service& get_io_service () noexcept
+    // Retrieves a reference to the underlying socket.
+    // usually asio::basic_socket or asio::basic_stream_socket
+    // It must be compatible with our Protocol and SocketService
+    // or else a std::bad cast will be thrown.
+    //
+    // The reason its a template class and not a function is
+    // because it would otherwise generate a compile error
+    // if Object did not have a declaration for
+    // protocol_type::socket
+    //
+    template <typename Object, class Enable = void>
+    struct native_socket
     {
-        return get_object ().get_io_service ();
-    }
+        typedef void* native_socket_type;
+        native_socket (Socket&) { pure_virtual (); }
+        native_socket_type& get () { pure_virtual (); return m_socket; }
+        native_socket_type& operator-> () noexcept { return get(); }
+    private:
+        native_socket_type m_socket;
+    };
+
+    template <typename Object>
+    struct native_socket <Object, typename boost::enable_if <boost::is_class <
+        typename Object::protocol_type::socket> >::type>
+    {
+        typedef typename Object::protocol_type::socket native_socket_type;
+        native_socket (Socket& peer)
+            : m_socket (&peer.this_layer <native_socket_type> ()) { }
+        native_socket_type& get () noexcept { return *m_socket; }
+        native_socket_type& operator-> () noexcept { return *m_socket; }
+
+    private:
+        native_socket_type* m_socket;
+    };
 
     //--------------------------------------------------------------------------
 
@@ -95,74 +122,44 @@ public:
     {
         return get_object ().lowest_layer ();
     }
+
 #endif
-
+    //--------------------------------------------------------------------------
+    //
     // General
+    //
+    //--------------------------------------------------------------------------
 
-    bool is_handshaked ()
+    boost::asio::io_service& get_io_service ()
     {
-        return HasInterface <ObjectT, SocketInterface::Handshake>::value;
+        return get_object ().get_io_service ();
     }
 
-    void* native_object_raw ()
+    bool requires_handshake ()
     {
-        return m_impl;
+        return Has <SocketInterface::AnyHandshake>::value;
+    }
+
+    void* this_layer_raw (char const* type_name) const
+    {
+        char const* const this_type_name (typeid (ObjectType).name ());
+        if (strcmp (type_name, this_type_name) == 0)
+            return const_cast <void*> (static_cast <void const*>(m_impl));
+        return nullptr;
     }
 
     //--------------------------------------------------------------------------
     //
-    // SocketInterface::Socket
+    // SocketInterface::Close
     //
     //--------------------------------------------------------------------------
 
-public:
-    boost::system::error_code cancel (boost::system::error_code& ec)
-    {
-        return cancel (ec,
-            HasInterface <ObjectT, SocketInterface::Socket> ());
-    }
-   
-private:
-    boost::system::error_code cancel (boost::system::error_code& ec,
-        boost::true_type)
-    {
-        return get_object ().cancel (ec);
-    }
-
-    boost::system::error_code cancel (boost::system::error_code& ec,
-        boost::false_type)
-    {
-        return pure_virtual (ec);
-    }
-
-public:
-    boost::system::error_code shutdown (shutdown_type what, boost::system::error_code& ec)
-    {
-        return shutdown (what, ec,
-            HasInterface <ObjectT, SocketInterface::Socket> ());
-    }
-
-private:
-    boost::system::error_code shutdown (Socket::shutdown_type what, boost::system::error_code& ec,
-        boost::true_type)
-    {
-        return get_object ().shutdown (what, ec);
-    }
-
-    boost::system::error_code shutdown (Socket::shutdown_type, boost::system::error_code& ec,
-        boost::false_type)
-    {
-        return pure_virtual (ec);
-    }
-
-public:
     boost::system::error_code close (boost::system::error_code& ec)
     {
         return close (ec,
-            HasInterface <ObjectT, SocketInterface::Socket> ());
+            Has <SocketInterface::Close> ());
     }
 
-private:
     boost::system::error_code close (boost::system::error_code& ec,
         boost::true_type)
     {
@@ -177,18 +174,162 @@ private:
 
     //--------------------------------------------------------------------------
     //
+    // SocketInterface::Acceptor
+    //
+    //--------------------------------------------------------------------------
+
+    boost::system::error_code accept (Socket& peer, boost::system::error_code& ec)
+    {
+        return accept (peer, ec,
+            Has <SocketInterface::Acceptor> ());
+    }
+
+    boost::system::error_code accept (Socket& peer, boost::system::error_code& ec,
+        boost::true_type)
+    {
+#if 1
+        return get_object ().accept (
+            native_socket <Object> (peer).get (), ec);
+#else
+        typedef ObjectType::protocol_type::socket socket_type;
+        socket_type& socket (peer.this_layer <socket_type> ());
+        return get_object ().accept (socket, ec);
+#endif
+    }
+
+    boost::system::error_code accept (Socket&, boost::system::error_code& ec,
+        boost::false_type)
+    {
+        return pure_virtual (ec);
+    }
+
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
+    {
+        return async_accept (peer, BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
+            Has <SocketInterface::Acceptor> ());
+    }
+
+    template <typename AcceptHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(ErrorCall, void (boost::system::error_code))
+    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler,
+        boost::true_type)
+    {
+#if 1
+        return get_object ().async_accept (
+            native_socket <Object> (peer).get (), handler);
+#else
+        typedef ObjectType::protocol_type::socket socket_type;
+        socket_type& socket (peer.this_layer <socket_type> ());
+        return get_object ().async_accept (socket, handler);
+#endif
+    }
+
+    template <typename AcceptHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(AcceptHandler, void (boost::system::error_code))
+    async_accept (Socket&, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler,
+        boost::false_type)
+    {
+#if BEAST_ASIO_HAS_FUTURE_RETURNS
+        boost::asio::detail::async_result_init<
+            AcceptHandler, void (boost::system::error_code)> init(
+            BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler));
+        boost::system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (
+            BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler), ec));
+        return init.result.get();
+#else
+        boost::system::error_code ec;
+        ec = pure_virtual (ec);
+        get_io_service ().post (boost::bind (
+            BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler), ec));
+#endif
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // SocketInterface::LowestLayer
+    //
+    //--------------------------------------------------------------------------
+
+    void* lowest_layer_raw (char const* type_name) const
+    {
+        return lowest_layer_raw (type_name,
+            Has <SocketInterface::LowestLayer> ());
+    }
+
+    void* lowest_layer_raw (char const* type_name,
+        boost::true_type) const
+    {
+        typedef typename ObjectType::lowest_layer_type lowest_layer_type;
+        char const* const lowest_layer_type_name (typeid (lowest_layer_type).name ());
+        if (strcmp (type_name, lowest_layer_type_name) == 0)
+            return const_cast <void*> (static_cast <void const*>(&get_object ().lowest_layer ()));
+        return nullptr;
+    }
+
+    void* lowest_layer_raw (char const*,
+        boost::false_type) const
+    {
+        pure_virtual ();
+        return nullptr;
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // SocketInterface::Socket
+    //
+    //--------------------------------------------------------------------------
+
+    boost::system::error_code cancel (boost::system::error_code& ec)
+    {
+        return cancel (ec,
+            Has <SocketInterface::Socket> ());
+    }
+   
+    boost::system::error_code cancel (boost::system::error_code& ec,
+        boost::true_type)
+    {
+        return get_object ().cancel (ec);
+    }
+
+    boost::system::error_code cancel (boost::system::error_code& ec,
+        boost::false_type)
+    {
+        return pure_virtual (ec);
+    }
+
+    boost::system::error_code shutdown (shutdown_type what, boost::system::error_code& ec)
+    {
+        return shutdown (what, ec,
+            Has <SocketInterface::Socket> ());
+    }
+
+    boost::system::error_code shutdown (Socket::shutdown_type what, boost::system::error_code& ec,
+        boost::true_type)
+    {
+        return get_object ().shutdown (what, ec);
+    }
+
+    boost::system::error_code shutdown (Socket::shutdown_type, boost::system::error_code& ec,
+        boost::false_type)
+    {
+        return pure_virtual (ec);
+    }
+
+    //--------------------------------------------------------------------------
+    //
     // SocketInterface::Stream
     //
     //--------------------------------------------------------------------------
 
-public:
     std::size_t read_some (MutableBuffers const& buffers, boost::system::error_code& ec)
     {
         return read_some (buffers, ec,
-            HasInterface <ObjectT, SocketInterface::SyncStream> ());
+            Has <SocketInterface::SyncStream> ());
     }
 
-private:
     template <typename MutableBufferSequence>
     std::size_t read_some (MutableBufferSequence const& buffers, boost::system::error_code& ec,
         boost::true_type)
@@ -204,14 +345,12 @@ private:
         return 0;
     }
 
-public:
     std::size_t write_some (ConstBuffers const& buffers, boost::system::error_code& ec)
     {
         return write_some (buffers, ec,
-            HasInterface <ObjectT, SocketInterface::SyncStream> ());
+            Has <SocketInterface::SyncStream> ());
     }
 
-private:
     template <typename ConstBufferSequence>
     std::size_t write_some (ConstBufferSequence const& buffers, boost::system::error_code& ec,
         boost::true_type)
@@ -227,15 +366,13 @@ private:
         return 0;
     }
 
-public:
-    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
     async_read_some (MutableBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
         return async_read_some (buffers, BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
-            HasInterface <ObjectT, SocketInterface::AsyncStream> ());
+            Has <SocketInterface::AsyncStream> ());
     }
 
-private:
     template <typename MutableBufferSequence, typename ReadHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
     async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler,
@@ -250,11 +387,11 @@ private:
     async_read_some (MutableBufferSequence const&, BOOST_ASIO_MOVE_ARG(ReadHandler) handler,
         boost::false_type)
     {
-#if BOOST_ASIO_HAS_FUTURE_RETURNS
+#if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
             ReadHandler, void (boost::system::error_code, std::size_t)> init(
             BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
-        system::error_code ec;
+        boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (BOOST_ASIO_MOVE_CAST(ReadHandler)(handler), ec, 0));
         return init.result.get();
@@ -265,15 +402,13 @@ private:
 #endif
     }
 
-public:
-    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
     async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
         return async_write_some (buffers, BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
-            HasInterface <ObjectT, SocketInterface::AsyncStream> ());
+            Has <SocketInterface::AsyncStream> ());
     }
 
-private:
     template <typename ConstBufferSequence, typename WriteHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
     async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler,
@@ -288,11 +423,11 @@ private:
     async_write_some (ConstBufferSequence const&, BOOST_ASIO_MOVE_ARG(WriteHandler) handler,
         boost::false_type)
     {
-#if BOOST_ASIO_HAS_FUTURE_RETURNS
+#if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
             WriteHandler, void (boost::system::error_code, std::size_t)> init(
             BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
-        system::error_code ec;
+        boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (
             BOOST_ASIO_MOVE_CAST(WriteHandler)(handler), ec, 0));
@@ -307,18 +442,16 @@ private:
 
     //--------------------------------------------------------------------------
     //
-    // Handshake
+    // SocketInterface::Handshake
     //
     //--------------------------------------------------------------------------
 
-public:
     boost::system::error_code handshake (handshake_type type, boost::system::error_code& ec)
     {
         return handshake (type, ec,
-            HasInterface <ObjectT, SocketInterface::SyncHandshake> ());
+            Has <SocketInterface::SyncHandshake> ());
     }
 
-private:
     boost::system::error_code handshake (handshake_type type, boost::system::error_code& ec,
         boost::true_type)
     {
@@ -331,15 +464,13 @@ private:
         return pure_virtual (ec);
     }
 
-public:
-    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
     async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
         return async_handshake (type, BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
-            HasInterface <ObjectT, SocketInterface::AsyncHandshake> ());
+            Has <SocketInterface::AsyncHandshake> ());
     }
 
-private:
     template <typename HandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
     async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler,
@@ -354,11 +485,11 @@ private:
     async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler,
         boost::false_type)
     {
-#if BOOST_ASIO_HAS_FUTURE_RETURNS
+#if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
             HandshakeHandler, void (boost::system::error_code)> init(
             BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
-        system::error_code ec;
+        boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (
             BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler), ec));
@@ -371,16 +502,14 @@ private:
 #endif
     }
 
-public:
-#if BOOST_ASIO_HAS_BUFFEREDHANDSHAKE
+#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     boost::system::error_code handshake (handshake_type type,
         ConstBuffers const& buffers, boost::system::error_code& ec)
     {
         return handshake (type, buffers, ec,
-            HasInterface <ObjectT, SocketInterface::SyncBufferedHandshake> ());
+            Has <SocketInterface::BufferedSyncHandshake> ());
     }
 
-private:
     template <typename ConstBufferSequence>
     boost::system::error_code handshake (handshake_type type,
         ConstBufferSequence const& buffers, boost::system::error_code& ec,
@@ -397,17 +526,15 @@ private:
         return pure_virtual (ec);
     }
 
-public:
-    BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
     async_handshake (handshake_type type, ConstBuffers const& buffers,
         BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
         return async_handshake (type, buffers,
             BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
-            HasInterface <ObjectT, SocketInterface::AsyncBufferedHandshake> ());
+            Has <SocketInterface::BufferedAsyncHandshake> ());
     }
 
-private:
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
     async_handshake (handshake_type type, const ConstBufferSequence& buffers,
@@ -424,7 +551,7 @@ private:
         BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler,
         boost::false_type)
     {
-#if BOOST_ASIO_HAS_FUTURE_RETURNS
+#if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
             BufferedHandshakeHandler, void (boost::system::error_code, std::size_t)> init(
             BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
@@ -442,14 +569,12 @@ private:
     }
 #endif
 
-public:
     boost::system::error_code shutdown (boost::system::error_code& ec)
     {
         return shutdown (ec,
-            HasInterface <ObjectT, SocketInterface::SyncHandshake> ());
+            Has <SocketInterface::SyncHandshake> ());
     }
 
-private:
     boost::system::error_code shutdown (boost::system::error_code& ec,
         boost::true_type)
     {
@@ -462,14 +587,12 @@ private:
         return pure_virtual (ec);
     }
 
-public:
     void async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
         async_shutdown (BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
-            HasInterface <ObjectT, SocketInterface::AsyncHandshake> ());
+            Has <SocketInterface::AsyncHandshake> ());
     }
 
-private:
     template <typename ShutdownHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(ShutdownHandler, void (boost::system::error_code))
     async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler,
@@ -484,11 +607,11 @@ private:
     async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler,
         boost::false_type)
     {
-#if BOOST_ASIO_HAS_FUTURE_RETURNS
+#if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
             ShutdownHandler, void (boost::system::error_code, std::size_t)> init(
             BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler));
-        system::error_code ec;
+        boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (
             BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler), ec));
@@ -512,20 +635,10 @@ protected:
         m_impl = ptr;
     }
 
-private:
-    static void pure_virtual ()
-    {
-        fatal_error ("A beast::Socket function was called on an object that doesn't support the interface");
-    }
+    template <typename Interface>
+    struct Has : HasInterface <ObjectType, Interface> { };
 
-    static boost::system::error_code pure_virtual (boost::system::error_code& ec)
-    {
-        pure_virtual ();
-        return ec = boost::system::errc::make_error_code (
-            boost::system::errc::function_not_supported);
-    }
-
-private:
+public:
     Object* m_impl;
 };
 

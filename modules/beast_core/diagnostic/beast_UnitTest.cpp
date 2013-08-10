@@ -129,16 +129,7 @@ bool UnitTest::expect (bool trueCondition, String const& failureMessage)
 
 bool UnitTest::unexpected (bool falseCondition, String const& failureMessage)
 {
-    if (! falseCondition)
-    {
-        pass ();
-    }
-    else
-    {
-        fail (failureMessage);
-    }
-
-    return ! falseCondition;
+    return expect (! falseCondition, failureMessage);
 }
 
 void UnitTest::pass ()

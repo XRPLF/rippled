@@ -17,23 +17,29 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_TESTPEERDETAILS_H_INCLUDED
+#define BEAST_TESTPEERDETAILS_H_INCLUDED
 
-#include "beast_asio.h"
-
-namespace beast
+/** Base class of all detail objects.
+*/
+class TestPeerDetails : public Uncopyable
 {
+public:
+    virtual ~TestPeerDetails () { }
 
-#include "sockets/beast_SocketBase.cpp"
-#include "sockets/beast_Socket.cpp"
-#include "sockets/beast_SslContext.cpp"
+    virtual String name () = 0;
 
-#include "tests/beast_TestPeerBasics.cpp"
-#include "tests/beast_TestPeerTests.cpp"
+    virtual Socket& get_socket () = 0;
 
-#include "tests/detail/beast_TestPeerLogicSyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicSyncClient.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncClient.cpp"
+    virtual Socket& get_acceptor () = 0;
 
-}
+    boost::asio::io_service& get_io_service ()
+    {
+        return m_io_service;
+    }
+
+private:
+    boost::asio::io_service m_io_service;
+};
+
+#endif
