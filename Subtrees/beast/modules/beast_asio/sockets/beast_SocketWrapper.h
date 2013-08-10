@@ -38,7 +38,10 @@ class SocketWrapper
     , protected SocketWrapperBasics
 {
 public:
-    typedef typename boost::remove_reference <Object>::type ObjectType;
+    typedef typename boost::remove_pointer <
+            typename boost::remove_reference <
+            typename boost::remove_cv <Object>::type >::type >::type
+                ObjectType;
 
     SocketWrapper (Object& object) noexcept
         : m_impl (&object)
