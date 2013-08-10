@@ -178,21 +178,43 @@ public:
     {
     }
 
+    //--------------------------------------------------------------------------
+
     enum
     {
-        timeoutSeconds = 3
+        timeoutSeconds = 1
     };
 
     template <typename InternetProtocol, class Arg>
-    void testProtocol (Arg const& arg)
+    PeerTest::Results runProtocol (Arg const& arg)
     {
-        PeerTest::report_async <MultiSocketDetailsType <InternetProtocol>, Arg>
-            (*this, timeoutSeconds, true);
+        return PeerTest::run <MultiSocketDetailsType <InternetProtocol>,
+            TestPeerLogicAsyncServer, TestPeerLogicAsyncClient> (arg, timeoutSeconds);
+    }
+
+    // Analyzes the results of the test based on the flags
+    //
+    void reportResults (int flags, PeerTest::Results const& results)
+    {
+        if ( (flags & MultiSocketDetails::client_ssl) != 0)
+        {
+            if ( ((flags & MultiSocketDetails::server_ssl) == 0) &&
+                 ((flags & MultiSocketDetails::server_ssl_required) == 0))
+            {
+            }
+        }
+        else
+        {
+        }
+
+        results.report (*this);
     }
 
     void testOptions (int flags)
     {
-        testProtocol <boost::asio::ip::tcp> (flags);
+        PeerTest::Results const results = runProtocol <boost::asio::ip::tcp> (flags);
+
+        results.report (*this);
     }
 
     //--------------------------------------------------------------------------
