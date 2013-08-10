@@ -144,5 +144,10 @@ bool TestPeerBasics::unexpected (bool condition, boost::system::error_code& ec) 
     return ! expected (condition, ec);
 }
 
+bool TestPeerBasics::aborted (boost::system::error_code const& ec) noexcept
+{
+    return ec == boost::asio::error::operation_aborted;
+}
+
 //------------------------------------------------------------------------------
 

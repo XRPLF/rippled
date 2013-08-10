@@ -50,6 +50,11 @@ public:
         */
         explicit Result (boost::system::error_code const& ec, String const& prefix = "");
 
+        /** Returns true if the error codes match (message is ignored).
+        */
+        bool operator== (Result const& other) const noexcept;
+        bool operator!= (Result const& other) const noexcept;
+
         /** Returns true if the peer failed.
         */
         bool failed () const noexcept;
@@ -66,7 +71,7 @@ public:
         /** Report the result to a UnitTest object.
             A return value of true indicates success.
         */
-        bool report (UnitTest& test, bool reportPassingTests = false);
+        bool report (UnitTest& test, bool reportPassingTests = false) const;
 
     private:
         boost::system::error_code m_ec;
@@ -85,11 +90,15 @@ public:
 
         Results ();
 
+        /** Determines if client and server results match. */
+        bool operator== (Results const& other) const noexcept;
+        bool operator!= (Results const& other) const noexcept;
+
         /** Report the results to a UnitTest object.
             A return value of true indicates success.
             @param beginTestCase `true` to call test.beginTestCase for you
         */
-        bool report (UnitTest& test, bool beginTestCase = true);
+        bool report (UnitTest& test, bool beginTestCase = true) const;
     };
 
     //--------------------------------------------------------------------------
@@ -117,21 +126,19 @@ public:
 
                 try
                 {
-                    server.start ();
+                    server.start (timeoutSeconds);
 
                     try
                     {
-                        client.start ();
+                        client.start (timeoutSeconds);
 
-                        boost::system::error_code const ec =
-                            client.join (timeoutSeconds);
+                        boost::system::error_code const ec = client.join ();
 
                         results.client = Result (ec, client.name ());
 
                         try
                         {
-                            boost::system::error_code const ec =
-                                server.join (timeoutSeconds);
+                            boost::system::error_code const ec = server.join ();
 
                             results.server = Result (ec, server.name ());
 

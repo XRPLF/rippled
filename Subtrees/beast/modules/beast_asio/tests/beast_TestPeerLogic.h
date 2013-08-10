@@ -36,12 +36,17 @@ public:
     Socket& socket () noexcept;
 
     virtual Role get_role () const noexcept = 0;
+    
     virtual Model get_model () const noexcept = 0;
 
     virtual void on_connect ();
+    
     virtual void on_connect_async (error_code const&);
 
-protected:
+    // asynchronous logic classes
+    // must call this when they are done
+    virtual void finished ();
+
     static void pure_virtual ();
 
 private:

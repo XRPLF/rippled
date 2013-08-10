@@ -45,6 +45,7 @@ protected:
     using Details::get_endpoint;
 
     // TestPeerLogic
+    typedef typename Logic::error_code error_code;
     using Logic::error;
     using Logic::socket;
     using Logic::get_role;
@@ -53,18 +54,21 @@ protected:
     using Logic::on_connect_async;
     using Logic::pure_virtual;
 
+    typedef TestPeerType <Logic, Details> This;
+
 public:
     // Details
     typedef typename Details::arg_type arg_type;
     typedef typename Details::native_socket_type   native_socket_type;
     typedef typename Details::native_acceptor_type native_acceptor_type;
 
-    typedef TestPeerType <Logic, Details> ThisType;
-
     TestPeerType (arg_type const& arg)
         : Details (arg)
         , Logic (get_socket ())
         , Thread (name ())
+        , m_timer (get_io_service ())
+        , m_timed_out (false)
+        , m_timer_set (false)
     {
     }
 
@@ -77,17 +81,89 @@ public:
         return get_model ().name () + "_" + get_role ().name ();
     }
 
-    void start ()
+    bool is_async () const noexcept
     {
+        return get_model () == Model::async;
+    }
+
+    void start (int timeoutSeconds)
+    {
+        if (is_async ())
+        {
+            if (timeoutSeconds > 0)
+            {
+                m_timer.expires_from_now (
+                    boost::posix_time::seconds (timeoutSeconds));
+
+                m_timer.async_wait (boost::bind (&This::on_deadline,
+                    this, boost::asio::placeholders::error));
+
+                m_timer_set = true;
+            }
+            else
+            {
+                // Don't set the timer, so infinite wait.
+            }
+        }
+        else
+        {
+            // Save the value for when join() is called later.
+            //
+            m_timeoutSeconds = timeoutSeconds;
+        }
+
         startThread ();
     }
 
-    boost::system::error_code join (int timeoutSeconds)
+    error_code join ()
     {
-        if (! wait (timeoutSeconds * 1000))
+        if (is_async ())
         {
-            stopThread (0);
-            return error (make_error (errc::timeout));
+            // If the timer expired, then all our i/o should be
+            // aborted and the thread will exit. So we will wait
+            // for the thread for an infinite amount of time to
+            // prevent undefined behavior. If an asynchronous logic
+            // fails to end when the deadline timer expires, it
+            // means there's a bug in the logic code.
+            //
+            m_join.wait ();
+
+            // The wait was satisfied but now the thread is still on
+            // it's way out of the thread function, so block until
+            // we know its done.
+            //
+            stopThread ();
+
+            // If we timed out then always report the custom error
+            if (m_timed_out)
+                return error (make_error (errc::timeout));
+        }
+        else
+        {
+            if (m_timeoutSeconds > 0)
+            {
+                // Wait for the thread to finish
+                //
+                if (! m_join.wait (m_timeoutSeconds * 1000))
+                {
+                    // Uh oh, we timed out! This is bad.
+                    // The synchronous model requires that the thread
+                    // be forcibly killed, which can result in undefined
+                    // behavior. It's best not to perform tests with
+                    // synchronous Logic objects that are supposed to time out.
+
+                    // Force the thread to be killed, without waiting.
+                    stopThread (0);
+
+                    error () = make_error (errc::timeout);
+                }
+            }
+            else
+            {
+                // They requested an infinite wait.
+                //
+                m_join.wait ();
+            }
         }
 
         return error ();
@@ -97,7 +173,7 @@ public:
 
     void run ()
     {
-        if (get_model () == Model::async)
+        if (is_async ())
         {
             if (get_role () == Role::server)
             {
@@ -133,8 +209,6 @@ public:
         }
 
         get_io_service ().run ();
-
-        notify ();
     }
 
     //--------------------------------------------------------------------------
@@ -144,15 +218,35 @@ public:
         do_listen ();
 
         if (failure (error ()))
-            return;
+            return finished ();
 
         if (failure (get_acceptor ().accept (get_socket (), error ())))
-            return;
+            return finished ();
+
+        if (failure (get_acceptor ().close (error ())))
+            return finished ();
 
         this->on_connect ();
 
-        if (failure (error ()))
-            return ;
+        finished ();
+    }
+
+    //--------------------------------------------------------------------------
+
+    void on_accept (error_code const& ec)
+    {
+        if (failure (ec))
+            return finished ();
+
+        // Close the acceptor down so we don't block the io_service forever
+        //
+        // VFALCO NOTE what difference between cancel and close?
+#if 0
+        if (failure (get_acceptor ().close (error ())))
+            return finished ();
+#endif
+
+        this->on_connect_async (ec);
     }
 
     void run_async_server ()
@@ -160,10 +254,10 @@ public:
         do_listen ();
 
         if (failure (error ()))
-            return;
+            return finished ();
 
         get_acceptor ().async_accept (get_socket (), boost::bind (
-            &Logic::on_connect_async, this, boost::asio::placeholders::error));
+            &This::on_accept, this, boost::asio::placeholders::error));
     }
 
     //--------------------------------------------------------------------------
@@ -171,12 +265,11 @@ public:
     void run_sync_client ()
     {
         if (failure (get_native_socket ().connect (get_endpoint (get_role ()), error ())))
-            return;
+            return finished ();
 
         this->on_connect ();
 
-        if (failure (error ()))
-            return;
+        finished ();
     }
 
     void run_async_client ()
@@ -205,6 +298,76 @@ public:
                 boost::asio::socket_base::max_connections, error ())))
             return;
     }
+
+    void on_deadline (error_code const& ec)
+    {
+        m_timer_set = false;
+
+        if (ec != boost::asio::error::operation_aborted)
+        {
+            // We expect that ec represents no error, since the
+            // timer expired and the operation wasn't aborted.
+            //
+            // If by some chance there is an error in ec we will
+            // report that as an unexpected test condition instead
+            // of a timeout.
+            //
+            if (expected (! ec, error ()))
+                m_timed_out = true;
+        }
+        else
+        {
+            // The timer was canceled because the Logic
+            // called finished(), so we do nothing here.
+        }
+
+        finished ();
+    }
+
+    void finished ()
+    {
+        if (m_timer_set)
+        {
+            error_code ec;
+            std::size_t const amount = m_timer.cancel (ec);
+
+            // The Logic should not have any I/O pending when
+            // it calls finished, so amount should be zero.
+            //
+            unexpected (amount == 0, ec);
+        }
+
+        // The logic should close the socket at the end of
+        // its operations, unless it encounters an error.
+        // Therefore, we will clean everything up and squelch
+        // any errors, so that io_service::run() will return.
+        //
+        {
+            error_code ec;
+            this->get_socket ().close (ec);
+        }
+
+        // The acceptor will not have closed if the client
+        // never established the connection, so do it here.
+        {
+            error_code ec;
+            this->get_acceptor ().close (ec);
+        }
+
+        // Wake up the thread blocked on join()
+        m_join.signal ();
+    }
+
+private:
+    WaitableEvent m_join;
+
+    // for async peers
+    boost::asio::deadline_timer m_timer;
+    bool m_timer_set;
+    bool m_timed_out;
+
+    // for sync peers
+    int m_timeoutSeconds;
 };
 
 #endif

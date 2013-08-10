@@ -107,6 +107,9 @@ public:
     /** Set the error based on a passed condition and return the success.
     */
     static bool unexpected (bool condition, boost::system::error_code& ec) noexcept;
+
+    /** Returns true if the error condition indicates an aborted I/O. */
+    static bool aborted (boost::system::error_code const& ec) noexcept;
 };
 
 #endif

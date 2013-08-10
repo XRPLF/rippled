@@ -25,26 +25,29 @@
 class TestPeer : public TestPeerBasics
 {
 public:
+    enum
+    {
+        // This should be long enough to go about your business.
+        defaultTimeout = 10
+    };
+
     virtual ~TestPeer () { }
 
     /** Get the name of this peer. */
     virtual String name () const = 0;
 
     /** Start the peer.
-        If the peer is a server, the call will block until the
-        listening socket is ready to receive connections.
+        If timeoutSeconds is 0 or less, the wait is infinite.
+        @param timeoutSeconds How long until the peer should be
+                              considered timed out.
     */
-    virtual void start () = 0;
+    virtual void start (int timeoutSeconds = defaultTimeout) = 0;
 
     /** Wait for the peer to finish.
 
-        If the peer does not complete before the timout expires
-        then a timeout error is returned. If timeoutSeconds is less
-        than 0, then the wait is infinite.
-
         @return Any error code generated during the server operation.
     */
-    virtual boost::system::error_code join (int timeoutSeconds = -1) = 0;
+    virtual boost::system::error_code join () = 0;
 };
 
 #endif
