@@ -160,9 +160,6 @@
     <Filter Include="[1] Ripple\ripple_asio\boost">
       <UniqueIdentifier>{f4e4fbf0-3dd2-4413-8318-9d6bc15ada57}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\ripple_asio\tests">
-      <UniqueIdentifier>{2fdf2a12-4f97-45f6-a63d-7e99e97835dd}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\ripple_asio\sockets">
       <UniqueIdentifier>{625992a9-7333-4782-8ee3-6ed072d02fe5}</UniqueIdentifier>
     </Filter>
@@ -887,9 +884,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_asio\ripple_asio.cpp">
       <Filter>[1] Ripple\ripple_asio</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_asio\tests\ripple_AsioTests.cpp">
-      <Filter>[1] Ripple\ripple_asio\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_asio\boost\ripple_SslContext.cpp">
       <Filter>[1] Ripple\ripple_asio\boost</Filter>

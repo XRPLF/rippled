@@ -29,16 +29,4 @@ namespace ripple
 #include "sockets/ripple_RippleTlsContext.cpp"
 #include "sockets/ripple_MultiSocket.cpp"
 
-#ifdef _MSC_VER
-#pragma warning (push)
-#pragma warning (disable: 4100)
-#pragma warning (disable: 4127) // conditional expression is constant
-#endif
-
-#include "tests/ripple_AsioTests.cpp"
-
-#ifdef _MSC_VER
-#pragma warning (pop)
-#endif
-
 }
