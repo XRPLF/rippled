@@ -190,8 +190,6 @@ env.Append(CXXFLAGS = ['-frtti'])
 
 if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
     env.Append(CXXFLAGS = ['-std=c++11'])
-elif (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) == 6):
-    env.Append(CXXFLAGS = ['-std=c++0x'])
 
 # FreeBSD doesn't support O_DSYNC
 if FreeBSD:
