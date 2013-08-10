@@ -873,9 +873,6 @@
     <ClCompile Include="..\..\modules\ripple_app\main\ripple_FatalErrorReporter.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\network\ripple_ProxyHandshake.cpp">
-      <Filter>[1] Ripple\ripple_app\network</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\main\ripple_RippleMain.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClCompile>
@@ -1666,9 +1663,6 @@
     </ClInclude>
     <ClInclude Include="..\..\BeastConfig.h">
       <Filter>[2] Build</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\network\ripple_ProxyHandshake.h">
-      <Filter>[1] Ripple\ripple_app\network</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\main\ripple_RippleMain.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
