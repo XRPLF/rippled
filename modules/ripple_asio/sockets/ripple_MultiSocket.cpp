@@ -183,17 +183,11 @@ public:
         timeoutSeconds = 3
     };
 
-    template <typename Details, class Arg>
-    void testAsync (Arg const& arg)
-    {
-        TestPeerTestType::run <Details, TestPeerLogicAsyncServer, TestPeerLogicAsyncClient, Arg>
-            (arg, timeoutSeconds).report (*this);
-    }
-
     template <typename InternetProtocol, class Arg>
     void testProtocol (Arg const& arg)
     {
-        testAsync <MultiSocketDetailsType <InternetProtocol> > (arg);
+        PeerTest::report_async <MultiSocketDetailsType <InternetProtocol>, Arg>
+            (*this, timeoutSeconds, true);
     }
 
     void testOptions (int flags)

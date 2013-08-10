@@ -17,34 +17,42 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEER_H_INCLUDED
-#define BEAST_TESTPEER_H_INCLUDED
-
-/** An abstract peer for unit tests.
-*/
-class TestPeer : public TestPeerBasics
+TestPeerLogic::TestPeerLogic (Socket& socket)
+    : m_socket (&socket)
 {
-public:
-    virtual ~TestPeer () { }
+}
 
-    /** Get the name of this peer. */
-    virtual String name () const = 0;
+TestPeerLogic::error_code& TestPeerLogic::error () noexcept
+{
+    return m_ec;
+}
 
-    /** Start the peer.
-        If the peer is a server, the call will block until the
-        listening socket is ready to receive connections.
-    */
-    virtual void start () = 0;
+TestPeerLogic::error_code const& TestPeerLogic::error () const noexcept
+{
+    return m_ec;
+}
 
-    /** Wait for the peer to finish.
+TestPeerLogic::error_code const& TestPeerLogic::error (error_code const& ec) noexcept
+{
+    return m_ec = ec;
+}
 
-        If the peer does not complete before the timout expires
-        then a timeout error is returned. If timeoutSeconds is less
-        than 0, then the wait is infinite.
+Socket& TestPeerLogic::socket () noexcept
+{
+    return *m_socket;
+}
 
-        @return Any error code generated during the server operation.
-    */
-    virtual boost::system::error_code join (int timeoutSeconds = -1) = 0;
-};
+void TestPeerLogic::on_connect ()
+{
+    pure_virtual ();
+}
 
-#endif
+void TestPeerLogic::on_connect_async (error_code const&)
+{
+    pure_virtual ();
+}
+
+void TestPeerLogic::pure_virtual ()
+{
+    fatal_error ("A TestPeerLogic function was called incorrectly");
+}

@@ -264,8 +264,6 @@ UnitTests::TestList UnitTests::selectTests (
             // If no trailing slash on package, try tests
             if (list.size () == 0 && indexOfDot == -1)
             {
-                std::cout << "Trying package as test" << std::endl;
-
                 // Try "package" as a testname
                 list = selectTest (package, tests);
             }

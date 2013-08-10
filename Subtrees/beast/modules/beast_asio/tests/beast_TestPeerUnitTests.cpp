@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
-class TestPeerTests : public UnitTest
+/** UnitTest for the TestPeer family of objects.
+*/
+class TestPeerUnitTests : public UnitTest
 {
 public:
     enum
@@ -25,14 +27,14 @@ public:
         timeoutSeconds = 3
     };
 
-    TestPeerTests () : UnitTest ("TestPeer", "beast", runManual)
+    TestPeerUnitTests () : UnitTest ("TestPeer", "beast")
     {
     }
 
     template <typename Details, typename Arg >
     void testDetails (Arg const& arg = Arg ())
     {
-        TestPeerTestType::test <Details> (*this, arg, timeoutSeconds);
+        PeerTest::report <Details> (*this, arg, timeoutSeconds);
     }
 
     void runTest ()
@@ -43,4 +45,4 @@ public:
     }
 };
 
-static TestPeerTests testPeerTests;
+static TestPeerUnitTests testPeerUnitTests;

@@ -22,7 +22,7 @@
 
 /** Base class of all detail objects.
 */
-class TestPeerDetails : public Uncopyable
+class TestPeerDetails
 {
 public:
     virtual ~TestPeerDetails () { }

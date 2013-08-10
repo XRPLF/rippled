@@ -24,8 +24,48 @@
 
     @see TestPeer
 */
-struct TestPeerBasics
+class TestPeerBasics
 {
+public:
+    /** Identifies if the peer is a client or a server. */
+    struct Role
+    {
+        enum role_t
+        {
+            client,
+            server
+        };
+
+        Role (role_t role);
+        String name () const noexcept;
+        bool operator== (role_t role) const noexcept;
+        operator Socket::handshake_type () const noexcept;
+
+    private:
+        role_t m_role;
+    };
+
+    //--------------------------------------------------------------------------
+
+    /** Selects between synchronous or asynchronous networking i/o usage. */
+    struct Model
+    {
+        enum model_t
+        {
+            sync,
+            async
+        };
+
+        Model (model_t model);
+        String name () const noexcept;
+        bool operator== (model_t model) const noexcept;
+
+    private:
+        model_t m_model;
+    };
+
+    //--------------------------------------------------------------------------
+
     // Custom error codes for distinguishing test conditions
     struct errc
     {
@@ -67,77 +107,6 @@ struct TestPeerBasics
     /** Set the error based on a passed condition and return the success.
     */
     static bool unexpected (bool condition, boost::system::error_code& ec) noexcept;
-
-    //--------------------------------------------------------------------------
-
-    struct Role
-    {
-        enum role_t
-        {
-            client,
-            server
-        };
-
-        Role (role_t role)
-            : m_role (role)
-        {
-        }
-
-        String name () const noexcept
-        {
-            if (m_role == server)
-                return "server";
-            return "client";
-        }
-
-        bool operator== (role_t role) const noexcept
-        {
-            return m_role == role;
-        }
-
-        operator Socket::handshake_type () const noexcept
-        {
-            if (m_role == server)
-                return Socket::server;
-            return Socket::client;
-        }
-
-    private:
-        role_t m_role;
-    };
-
-    //--------------------------------------------------------------------------
-
-    struct Model
-    {
-        enum model_t
-        {
-            sync,
-            async
-        };
-
-        Model (model_t model)
-            : m_model (model)
-        {
-        }
-
-        String name () const noexcept
-        {
-            if (m_model == async)
-                return "async";
-            return "sync";
-        }
-
-        bool operator== (model_t model) const noexcept
-        {
-            return m_model == model;
-        }
-
-    private:
-        model_t m_model;
-    };
-
-    //--------------------------------------------------------------------------
 };
 
 #endif

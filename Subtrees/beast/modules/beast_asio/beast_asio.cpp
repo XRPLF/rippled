@@ -29,11 +29,13 @@ namespace beast
 #include "sockets/beast_SslContext.cpp"
 
 #include "tests/beast_TestPeerBasics.cpp"
-#include "tests/beast_TestPeerTests.cpp"
+#include "tests/beast_TestPeerLogic.cpp"
+#include "tests/beast_TestPeerLogicSyncServer.cpp"
+#include "tests/beast_TestPeerLogicSyncClient.cpp"
+#include "tests/beast_TestPeerLogicAsyncServer.cpp"
+#include "tests/beast_TestPeerLogicAsyncClient.cpp"
 
-#include "tests/detail/beast_TestPeerLogicSyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicSyncClient.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncClient.cpp"
+#include "tests/beast_PeerTest.cpp"
+#include "tests/beast_TestPeerUnitTests.cpp"
 
 }
