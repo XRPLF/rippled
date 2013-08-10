@@ -316,7 +316,7 @@ public:
 
             expect (h.getStatus () == ProxyHandshake::statusHandshake);
 
-            for (int i = 0; i < s.size () && h.getStatus () == ProxyHandshake::statusHandshake ; ++i)
+            for (std::size_t i = 0; i < s.size () && h.getStatus () == ProxyHandshake::statusHandshake ; ++i)
             {
                 std::size_t const bytesConsumed = h.feed (& s[i], 1);
 
@@ -354,7 +354,7 @@ public:
             unexpected (p.parse (s.c_str (), s.size ()));
         }
 
-        for (int i = 1; i < s.size () - 1; ++i)
+        for (std::size_t i = 1; i < s.size () - 1; ++i)
         {
             String const partial = String (s).dropLastCharacters (i);
             std::string ss (partial.toStdString ());

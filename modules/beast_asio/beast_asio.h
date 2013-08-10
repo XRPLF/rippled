@@ -64,6 +64,7 @@ namespace beast
 #include "tests/beast_TestPeerLogic.h"
 #include "tests/beast_TestPeerLogicSyncServer.h"
 #include "tests/beast_TestPeerLogicSyncClient.h"
+#include "tests/beast_TestPeerLogicProxyClient.h"
 #include "tests/beast_TestPeerLogicAsyncServer.h"
 #include "tests/beast_TestPeerLogicAsyncClient.h"
 #include "tests/beast_TestPeerType.h"

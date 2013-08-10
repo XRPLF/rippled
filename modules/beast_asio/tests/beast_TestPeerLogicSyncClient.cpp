@@ -34,6 +34,13 @@ TestPeerBasics::Model TestPeerLogicSyncClient::get_model () const noexcept
 
 void TestPeerLogicSyncClient::on_connect ()
 {
+    {
+        // pre-handshake hook is optional
+        on_pre_handshake ();
+        if (failure (error ()))
+            return ;
+    }
+
     if (socket ().requires_handshake ())
     {
         if (failure (socket ().handshake (get_role (), error ())))
@@ -94,4 +101,8 @@ void TestPeerLogicSyncClient::on_connect ()
 
     if (failure (socket ().close (error ())))
         return;
+}
+
+void TestPeerLogicSyncClient::on_pre_handshake ()
+{
 }
