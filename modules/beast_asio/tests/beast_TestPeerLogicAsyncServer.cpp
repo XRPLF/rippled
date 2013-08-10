@@ -34,8 +34,8 @@ TestPeerBasics::Model TestPeerLogicAsyncServer::get_model () const noexcept
 
 void TestPeerLogicAsyncServer::on_connect_async (error_code const& ec)
 {
-    if (failure (error (ec)))
-        return;
+    if (aborted (ec) || failure (error (ec)))
+        return finished ();
 
     if (socket ().requires_handshake ())
     {
@@ -51,8 +51,8 @@ void TestPeerLogicAsyncServer::on_connect_async (error_code const& ec)
 
 void TestPeerLogicAsyncServer::on_handshake (error_code const& ec)
 {
-    if (failure (error (ec)))
-        return;
+    if (aborted (ec) || failure (error (ec)))
+        return finished ();
 
     boost::asio::async_read_until (socket (), m_buf, std::string ("hello"),
         boost::bind (&TestPeerLogicAsyncServer::on_read, this,
@@ -61,11 +61,11 @@ void TestPeerLogicAsyncServer::on_handshake (error_code const& ec)
 
 void TestPeerLogicAsyncServer::on_read (error_code const& ec, std::size_t bytes_transferred)
 {
-    if (failure (error (ec)))
-        return;
+    if (aborted (ec) || failure (error (ec)))
+        return finished ();
 
     if (unexpected (bytes_transferred == 5, error ()))
-        return;
+        return finished ();
 
     boost::asio::async_write (socket (), boost::asio::buffer ("goodbye", 7),
         boost::bind (&TestPeerLogicAsyncServer::on_write, this,
@@ -74,11 +74,11 @@ void TestPeerLogicAsyncServer::on_read (error_code const& ec, std::size_t bytes_
 
 void TestPeerLogicAsyncServer::on_write (error_code const& ec, std::size_t bytes_transferred)
 {
-    if (failure (error (ec)))
-        return;
+    if (aborted (ec) || failure (error (ec)))
+        return finished ();
 
     if (unexpected (bytes_transferred == 7, error ()))
-        return;
+        return finished ();
 
     if (socket ().requires_handshake ())
     {
@@ -87,6 +87,7 @@ void TestPeerLogicAsyncServer::on_write (error_code const& ec, std::size_t bytes
     }
     else
     {
+        // on_shutdown will call finished ()
         // we need another instance of ec so we can call on_shutdown()
         error_code ec;
         on_shutdown (socket ().shutdown (Socket::shutdown_both, ec));
@@ -95,10 +96,17 @@ void TestPeerLogicAsyncServer::on_write (error_code const& ec, std::size_t bytes
 
 void TestPeerLogicAsyncServer::on_shutdown (error_code const& ec)
 {
-    if (failure (error (ec), true))
-        return;
+    if (! aborted (ec))
+    {
+        if (success (error (ec), true))
+        {
+            if (success (socket ().close (error ())))
+            {
+                // doing nothing here is intended,
+                // as the calls to success() may set error()
+            }
+        }
+    }
 
-    if (failure (socket ().close (error ())))
-        return;
+    finished ();
 }
-

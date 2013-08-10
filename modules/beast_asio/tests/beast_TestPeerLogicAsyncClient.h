@@ -31,6 +31,7 @@ public:
     void on_write (error_code const& ec, std::size_t bytes_transferred);
     void on_read (error_code const& ec, std::size_t bytes_transferred);
     void on_read_final (error_code const& ec, std::size_t);
+    void on_shutdown (error_code const& ec);
 private:
     boost::asio::streambuf m_buf;
 };

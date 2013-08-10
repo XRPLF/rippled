@@ -52,6 +52,11 @@ void TestPeerLogic::on_connect_async (error_code const&)
     pure_virtual ();
 }
 
+void TestPeerLogic::finished ()
+{
+    pure_virtual ();
+}
+
 void TestPeerLogic::pure_virtual ()
 {
     fatal_error ("A TestPeerLogic function was called incorrectly");

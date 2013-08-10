@@ -34,8 +34,8 @@ TestPeerBasics::Model TestPeerLogicAsyncClient::get_model () const noexcept
 
 void TestPeerLogicAsyncClient::on_connect_async (error_code const& ec)
 {
-    if (failure (error (ec)))
-        return;
+    if (aborted (ec) || failure (error (ec)))
+        return finished ();
 
     if (socket ().requires_handshake ())
     {
@@ -51,8 +51,8 @@ void TestPeerLogicAsyncClient::on_connect_async (error_code const& ec)
 
 void TestPeerLogicAsyncClient::on_handshake (error_code const& ec)
 {
-    if (failure (error (ec)))
-        return;
+    if (aborted (ec) || failure (error (ec)))
+        return finished ();
 
     boost::asio::async_write (socket (), boost::asio::buffer ("hello", 5),
         boost::bind (&TestPeerLogicAsyncClient::on_write, this,
@@ -61,11 +61,11 @@ void TestPeerLogicAsyncClient::on_handshake (error_code const& ec)
 
 void TestPeerLogicAsyncClient::on_write (error_code const& ec, std::size_t bytes_transferred)
 {
-    if (failure (error (ec)))
-        return;
+    if (aborted (ec) || failure (error (ec)))
+        return finished ();
 
     if (unexpected (bytes_transferred == 5, error ()))
-        return;
+        return finished ();
 
     boost::asio::async_read_until (socket (), m_buf, std::string ("goodbye"),
         boost::bind (&TestPeerLogicAsyncClient::on_read, this,
@@ -74,15 +74,17 @@ void TestPeerLogicAsyncClient::on_write (error_code const& ec, std::size_t bytes
 
 void TestPeerLogicAsyncClient::on_read (error_code const& ec, std::size_t bytes_transferred)
 {
-    if (failure (error (ec)))
-        return;
+    if (aborted (ec) || failure (error (ec)))
+        return finished ();
 
     if (unexpected (bytes_transferred == 7, error ()))
-        return;
+        return finished ();
 
     // should check the data here?
     m_buf.consume (bytes_transferred);
 
+    // Fire up a 1 byte read, to wait for the server to
+    // shut down its end of the connection.
     boost::asio::async_read (socket (), m_buf.prepare (1),
         boost::bind (&TestPeerLogicAsyncClient::on_read_final, this,
         boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
@@ -90,19 +92,56 @@ void TestPeerLogicAsyncClient::on_read (error_code const& ec, std::size_t bytes_
 
 void TestPeerLogicAsyncClient::on_read_final (error_code const& ec, std::size_t)
 {
+    if (aborted (ec))
+        return finished ();
+
+    // An eof is the normal case. The server should have closed shop.
+    //
     if (ec == boost::asio::error::eof)
     {
-        if (failure (socket ().shutdown (Socket::shutdown_both, error ())))
-            return;
-
-        if (failure (socket ().close (error ())))
-            return;
+        if (socket ().requires_handshake ())
+        {
+            socket ().async_shutdown (boost::bind (&TestPeerLogicAsyncClient::on_shutdown, this,
+                boost::asio::placeholders::error));
+        }
+        else
+        {
+            // on_shutdown will call finished ()
+            error_code ec;
+            on_shutdown (socket ().shutdown (Socket::shutdown_both, ec));
+        }
     }
     else
     {
         // If we don't get eof, then there should be some other
         // error in there. We don't expect the server to send more bytes!
         //
+        // This statement will do the following:
+        //
+        // error (ec)     save ec into our error state
+        // success ()     return true if ec represents success
+        // unexpected ()  changes error() to 'unexpected' result if
+        //                success() returned true
+        //
         unexpected (success (error (ec)), error ());
-    }            
+
+        return finished ();
+    }
+}
+
+void TestPeerLogicAsyncClient::on_shutdown (error_code const& ec)
+{
+    if (! aborted (ec))
+    {
+        if (success (error (ec), true))
+        {
+            if (success (socket ().close (error ())))
+            {
+                // doing nothing here is intended,
+                // as the calls to success() may set error()
+            }
+        }
+    }
+
+    finished ();
 }

@@ -30,6 +30,16 @@ PeerTest::Result::Result (boost::system::error_code const& ec, String const& pre
 {
 }
 
+bool PeerTest::Result::operator== (Result const& other) const noexcept
+{
+    return m_ec == other.m_ec;
+}
+
+bool PeerTest::Result::operator!= (Result const& other) const noexcept
+{
+    return m_ec != other.m_ec;
+}
+
 bool PeerTest::Result::failed () const noexcept
 {
     return TestPeerBasics::failure (m_ec);
@@ -45,7 +55,7 @@ String PeerTest::Result::message () const noexcept
     return m_message;
 }
 
-bool PeerTest::Result::report (UnitTest& test, bool reportPassingTests)
+bool PeerTest::Result::report (UnitTest& test, bool reportPassingTests) const
 {
     bool const success = test.unexpected (failed (), message ());
     if (reportPassingTests && success)
@@ -60,7 +70,17 @@ PeerTest::Results::Results ()
 {
 }
 
-bool PeerTest::Results::report (UnitTest& test, bool beginTestCase)
+bool PeerTest::Results::operator== (Results const& other) const noexcept
+{
+    return (client == other.client) && (server == other.server);
+}
+
+bool PeerTest::Results::operator!= (Results const& other) const noexcept
+{
+    return (client != other.client) || (server != other.server);
+}
+
+bool PeerTest::Results::report (UnitTest& test, bool beginTestCase) const
 {
     if (beginTestCase)
         test.beginTestCase (name);
