@@ -48,6 +48,7 @@ namespace beast
 
 // Order matters
 
+#include "basics/beast_PeerRole.h"
 #include "basics/beast_BufferType.h"
 #include "basics/beast_CompletionCall.h"
 #include "basics/beast_ErrorCall.h"

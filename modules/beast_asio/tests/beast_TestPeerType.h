@@ -175,11 +175,11 @@ public:
     {
         if (is_async ())
         {
-            if (get_role () == Role::server)
+            if (get_role () == PeerRole::server)
             {
                 run_async_server ();
             }
-            else if (get_role () == Role::client)
+            else if (get_role () == PeerRole::client)
             {
                 run_async_client ();
             }
@@ -190,11 +190,11 @@ public:
         }
         else if (get_model () == Model::sync)
         {
-            if (get_role () == Role::server)
+            if (get_role () == PeerRole::server)
             {
                 run_sync_server ();
             }
-            else if (get_role () == Role::client)
+            else if (get_role () == PeerRole::client)
             {
                 run_sync_client ();
             }

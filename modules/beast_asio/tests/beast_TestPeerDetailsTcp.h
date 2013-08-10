@@ -79,18 +79,18 @@ public:
         return m_acceptor;
     }
 
-    endpoint_type get_endpoint (TestPeer::Role role)
+    endpoint_type get_endpoint (PeerRole role)
     {
         if (m_protocol == protocol_type::v4 ())
         {
-            if (role == TestPeer::Role::server)
+            if (role == PeerRole::server)
                 return endpoint_type (m_protocol, 1053);
             else
                 return endpoint_type (boost::asio::ip::address_v4::loopback (), 1053);
         }
         else
         {
-            if (role == TestPeer::Role::server)
+            if (role == PeerRole::server)
                 return endpoint_type (m_protocol, 1052);
             else
                 return endpoint_type (boost::asio::ip::address_v6 ().from_string ("::1"), 1052);

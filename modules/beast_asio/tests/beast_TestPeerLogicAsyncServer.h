@@ -24,7 +24,7 @@ class TestPeerLogicAsyncServer : public TestPeerLogic
 {
 public:
     explicit TestPeerLogicAsyncServer (Socket& socket);
-    Role get_role () const noexcept;
+    PeerRole get_role () const noexcept;
     Model get_model () const noexcept;
     void on_connect_async (error_code const& ec);
     void on_handshake (error_code const& ec);

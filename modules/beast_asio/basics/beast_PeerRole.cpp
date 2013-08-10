@@ -17,23 +17,28 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
-#define BEAST_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
-
-class TestPeerLogicAsyncClient : public TestPeerLogic
+PeerRole::PeerRole (role_t role)
+    : m_role (role)
 {
-public:
-    explicit TestPeerLogicAsyncClient (Socket& socket);
-    PeerRole get_role () const noexcept;
-    Model get_model () const noexcept;
-    void on_connect_async (error_code const& ec);
-    void on_handshake (error_code const& ec);
-    void on_write (error_code const& ec, std::size_t bytes_transferred);
-    void on_read (error_code const& ec, std::size_t bytes_transferred);
-    void on_read_final (error_code const& ec, std::size_t);
-    void on_shutdown (error_code const& ec);
-private:
-    boost::asio::streambuf m_buf;
-};
+}
 
+String PeerRole::name () const noexcept
+{
+    if (m_role == server)
+        return "server";
+    return "client";
+}
+
+bool PeerRole::operator== (role_t role) const noexcept
+{
+    return m_role == role;
+}
+
+#if 0
+PeerRole::operator Socket::handshake_type () const noexcept
+{
+    if (m_role == server)
+        return Socket::server;
+    return Socket::client;
+}
 #endif

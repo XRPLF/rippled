@@ -22,9 +22,9 @@ TestPeerLogicAsyncServer::TestPeerLogicAsyncServer (Socket& socket)
 {
 }
 
-TestPeerBasics::Role TestPeerLogicAsyncServer::get_role () const noexcept
+PeerRole TestPeerLogicAsyncServer::get_role () const noexcept
 {
-    return Role::server;
+    return PeerRole::server;
 }
 
 TestPeerBasics::Model TestPeerLogicAsyncServer::get_model () const noexcept

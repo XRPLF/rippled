@@ -17,32 +17,6 @@
 */
 //==============================================================================
 
-TestPeerBasics::Role::Role (role_t role)
-    : m_role (role)
-{
-}
-
-String TestPeerBasics::Role::name () const noexcept
-{
-    if (m_role == server)
-        return "server";
-    return "client";
-}
-
-bool TestPeerBasics::Role::operator== (role_t role) const noexcept
-{
-    return m_role == role;
-}
-
-TestPeerBasics::Role::operator Socket::handshake_type () const noexcept
-{
-    if (m_role == server)
-        return Socket::server;
-    return Socket::client;
-}
-
-//------------------------------------------------------------------------------
-
 TestPeerBasics::Model::Model (model_t model)
     : m_model (model)
 {
@@ -58,6 +32,14 @@ String TestPeerBasics::Model::name () const noexcept
 bool TestPeerBasics::Model::operator== (model_t model) const noexcept
 {
     return m_model == model;
+}
+
+boost::asio::ssl::stream_base::handshake_type
+    TestPeerBasics::to_handshake_type (PeerRole const& role)
+{
+    if (role == PeerRole::client)
+        return boost::asio::ssl::stream_base::client;
+    return boost::asio::ssl::stream_base::server;
 }
 
 //------------------------------------------------------------------------------

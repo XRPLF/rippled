@@ -22,9 +22,9 @@ TestPeerLogicSyncServer::TestPeerLogicSyncServer (Socket& socket)
 {
 }
 
-TestPeerBasics::Role TestPeerLogicSyncServer::get_role () const noexcept
+PeerRole TestPeerLogicSyncServer::get_role () const noexcept
 {
-    return Role::server;
+    return PeerRole::server;
 }
 
 TestPeerBasics::Model TestPeerLogicSyncServer::get_model () const noexcept
@@ -36,7 +36,7 @@ void TestPeerLogicSyncServer::on_connect ()
 {
     if (socket ().requires_handshake ())
     {
-        if (failure (socket ().handshake (get_role (), error ())))
+        if (failure (socket ().handshake (to_handshake_type (get_role ()), error ())))
             return;
     }
 

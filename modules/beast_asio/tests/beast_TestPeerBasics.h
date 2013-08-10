@@ -27,26 +27,6 @@
 class TestPeerBasics
 {
 public:
-    /** Identifies if the peer is a client or a server. */
-    struct Role
-    {
-        enum role_t
-        {
-            client,
-            server
-        };
-
-        Role (role_t role);
-        String name () const noexcept;
-        bool operator== (role_t role) const noexcept;
-        operator Socket::handshake_type () const noexcept;
-
-    private:
-        role_t m_role;
-    };
-
-    //--------------------------------------------------------------------------
-
     /** Selects between synchronous or asynchronous networking i/o usage. */
     struct Model
     {
@@ -63,6 +43,11 @@ public:
     private:
         model_t m_model;
     };
+
+    //--------------------------------------------------------------------------
+
+    /** Convert a PeerRole to boost::asio::ssl::stream_base_handshake_type */
+    static boost::asio::ssl::stream_base::handshake_type to_handshake_type (PeerRole const& role);
 
     //--------------------------------------------------------------------------
 
