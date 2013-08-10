@@ -27,7 +27,7 @@ public:
         timeoutSeconds = 3
     };
 
-    TestPeerUnitTests () : UnitTest ("TestPeer", "beast")
+    TestPeerUnitTests () : UnitTest ("TestPeer", "beast", runManual)
     {
     }
 
