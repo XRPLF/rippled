@@ -149,6 +149,12 @@
     <Filter Include="beast_asio\system">
       <UniqueIdentifier>{c7a576bb-27b2-486e-aa14-3c51aa86c50f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_asio\tests">
+      <UniqueIdentifier>{422da6a1-e57e-4a96-9fce-e5958c16026e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_asio\tests\detail">
+      <UniqueIdentifier>{5d8ed68a-e3b5-49f3-938b-fbe7365f6293}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -770,6 +776,45 @@
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SslContext.h">
       <Filter>beast_asio\sockets</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeer.h">
+      <Filter>beast_asio\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerBasics.h">
+      <Filter>beast_asio\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapperBasics.h">
+      <Filter>beast_asio\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerType.h">
+      <Filter>beast_asio\tests\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogic.h">
+      <Filter>beast_asio\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerDetailsTcp.h">
+      <Filter>beast_asio\tests\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerDetails.h">
+      <Filter>beast_asio\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerTest.h">
+      <Filter>beast_asio\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerTestType.h">
+      <Filter>beast_asio\tests\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerLogicAsyncClient.h">
+      <Filter>beast_asio\tests\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerLogicAsyncServer.h">
+      <Filter>beast_asio\tests\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerLogicSyncClient.h">
+      <Filter>beast_asio\tests\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerLogicSyncServer.h">
+      <Filter>beast_asio\tests\detail</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -1191,6 +1236,30 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\sockets\beast_SslContext.cpp">
       <Filter>beast_asio\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerBasics.cpp">
+      <Filter>beast_asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerTests.cpp">
+      <Filter>beast_asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\sockets\beast_Socket.cpp">
+      <Filter>beast_asio\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\sockets\beast_SocketBase.cpp">
+      <Filter>beast_asio\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerLogicAsyncClient.cpp">
+      <Filter>beast_asio\tests\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerLogicAsyncServer.cpp">
+      <Filter>beast_asio\tests\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerLogicSyncClient.cpp">
+      <Filter>beast_asio\tests\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\detail\beast_TestPeerLogicSyncServer.cpp">
+      <Filter>beast_asio\tests\detail</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

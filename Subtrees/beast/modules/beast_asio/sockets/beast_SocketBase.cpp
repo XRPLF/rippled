@@ -17,23 +17,14 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
-
-#include "beast_asio.h"
-
-namespace beast
+void SocketBase::pure_virtual ()
 {
+    fatal_error ("A beast::Socket function was called on an object that doesn't support the interface");
+}
 
-#include "sockets/beast_SocketBase.cpp"
-#include "sockets/beast_Socket.cpp"
-#include "sockets/beast_SslContext.cpp"
-
-#include "tests/beast_TestPeerBasics.cpp"
-#include "tests/beast_TestPeerTests.cpp"
-
-#include "tests/detail/beast_TestPeerLogicSyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicSyncClient.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncClient.cpp"
-
+boost::system::error_code SocketBase::pure_virtual (boost::system::error_code& ec)
+{
+    pure_virtual ();
+    return ec = boost::system::errc::make_error_code (
+        boost::system::errc::function_not_supported);
 }

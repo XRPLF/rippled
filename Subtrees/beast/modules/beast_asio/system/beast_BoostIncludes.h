@@ -49,25 +49,25 @@
 // Configure some options based on the version of boost
 #include <boost/version.hpp>
 #if (BOOST_VERSION / 100) >= 1054
-# define BOOST_ASIO_HAS_BUFFEREDHANDSHAKE 1
-# define BOOST_ASIO_HAS_FUTURE_RETURNS 1
+# define BEAST_ASIO_HAS_BUFFEREDHANDSHAKE 1
+# define BEAST_ASIO_HAS_FUTURE_RETURNS 1
 #else
-# define BOOST_ASIO_HAS_BUFFEREDHANDSHAKE 0
-# define BOOST_ASIO_HAS_FUTURE_RETURNS 0
+# define BEAST_ASIO_HAS_BUFFEREDHANDSHAKE 0
+# define BEAST_ASIO_HAS_FUTURE_RETURNS 0
 #endif
 
-#if ! BOOST_ASIO_HAS_FUTURE_RETURNS
+#if ! BEAST_ASIO_HAS_FUTURE_RETURNS
 # define BOOST_ASIO_INITFN_RESULT_TYPE(expr,val) void
-# define BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(expr,val) void
+# define BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(expr,val) void
 #else
 # if defined(GENERATING_DOCUMENTATION)
-#  define BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
+#  define BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
    void_or_deduced
 # elif defined(_MSC_VER) && (_MSC_VER < 1500)
-#  define BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
+#  define BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
    boost::asio::detail::async_result_type_helper<h, sig>::type
 # else
-#  define BOOST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
+#  define BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
    boost::asio::async_result <boost::asio::handler_type<h, sig>::type>::type
 # endif
 #endif

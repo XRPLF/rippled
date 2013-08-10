@@ -20,11 +20,15 @@
 #ifndef BEAST_SOCKETBASE_H_INCLUDED
 #define BEAST_SOCKETBASE_H_INCLUDED
 
-/** Implementation details for AbstractSocket.
+/** Implementation details for Socket.
     Normally you wont need to use this.
 */
 class SocketBase
 {
+protected:
+    static void pure_virtual ();
+    static boost::system::error_code pure_virtual (boost::system::error_code& ec);
+
 protected:
     //--------------------------------------------------------------------------
     //

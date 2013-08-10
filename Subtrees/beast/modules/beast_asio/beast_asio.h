@@ -51,9 +51,24 @@ namespace beast
 #include "sockets/beast_SocketBase.h"
 #include "sockets/beast_Socket.h"
 #include "sockets/beast_SocketInterface.h"
+#include "sockets/beast_SocketWrapperBasics.h"
 #include "sockets/beast_SocketWrapper.h"
 #include "sockets/beast_SharedSocket.h"
 #include "sockets/beast_SslContext.h"
+
+#include "tests/beast_TestPeerBasics.h"
+#include "tests/beast_TestPeer.h"
+#include "tests/beast_TestPeerDetails.h"
+#include "tests/beast_TestPeerLogic.h"
+#include "tests/beast_TestPeerTest.h"
+
+#include "tests/detail/beast_TestPeerType.h"
+#include "tests/detail/beast_TestPeerTestType.h"
+#include "tests/detail/beast_TestPeerDetailsTcp.h"
+#include "tests/detail/beast_TestPeerLogicSyncServer.h"
+#include "tests/detail/beast_TestPeerLogicSyncClient.h"
+#include "tests/detail/beast_TestPeerLogicAsyncServer.h"
+#include "tests/detail/beast_TestPeerLogicAsyncClient.h"
 
 }
 

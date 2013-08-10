@@ -17,23 +17,22 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_TESTPEERLOGICASYNCSERVER_H_INCLUDED
+#define BEAST_TESTPEERLOGICASYNCSERVER_H_INCLUDED
 
-#include "beast_asio.h"
-
-namespace beast
+class TestPeerLogicAsyncServer : public TestPeerLogic
 {
+public:
+    explicit TestPeerLogicAsyncServer (Socket& socket);
+    Role get_role () const noexcept;
+    Model get_model () const noexcept;
+    void on_connect_async (error_code const& ec);
+    void on_handshake (error_code const& ec);
+    void on_read (error_code const& ec, std::size_t bytes_transferred);
+    void on_write (error_code const& ec, std::size_t bytes_transferred);
+    void on_shutdown (error_code const& ec);
+private:
+    boost::asio::streambuf m_buf;
+};
 
-#include "sockets/beast_SocketBase.cpp"
-#include "sockets/beast_Socket.cpp"
-#include "sockets/beast_SslContext.cpp"
-
-#include "tests/beast_TestPeerBasics.cpp"
-#include "tests/beast_TestPeerTests.cpp"
-
-#include "tests/detail/beast_TestPeerLogicSyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicSyncClient.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncClient.cpp"
-
-}
+#endif

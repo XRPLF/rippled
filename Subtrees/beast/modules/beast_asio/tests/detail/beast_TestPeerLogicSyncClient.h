@@ -17,23 +17,16 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_TESTPEERLOGICSYNCCLIENT_H_INCLUDED
+#define BEAST_TESTPEERLOGICSYNCCLIENT_H_INCLUDED
 
-#include "beast_asio.h"
-
-namespace beast
+class TestPeerLogicSyncClient : public TestPeerLogic
 {
+public:
+    explicit TestPeerLogicSyncClient (Socket& socket);
+    Role get_role () const noexcept;
+    Model get_model () const noexcept;
+    void on_connect ();
+};
 
-#include "sockets/beast_SocketBase.cpp"
-#include "sockets/beast_Socket.cpp"
-#include "sockets/beast_SslContext.cpp"
-
-#include "tests/beast_TestPeerBasics.cpp"
-#include "tests/beast_TestPeerTests.cpp"
-
-#include "tests/detail/beast_TestPeerLogicSyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicSyncClient.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncServer.cpp"
-#include "tests/detail/beast_TestPeerLogicAsyncClient.cpp"
-
-}
+#endif
