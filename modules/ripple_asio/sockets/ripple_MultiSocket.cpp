@@ -149,18 +149,18 @@ public:
             return m_acceptor;
         }
 
-        endpoint_type get_endpoint (TestPeer::Role role)
+        endpoint_type get_endpoint (PeerRole role)
         {
             if (getFlags () & MultiSocketDetails::tcpv6)
             {
-                if (role == TestPeer::Role::server)
+                if (role == PeerRole::server)
                     return endpoint_type (boost::asio::ip::tcp::v6 (), 1052);
                 else
                     return endpoint_type (boost::asio::ip::address_v6 ().from_string ("::1"), 1052);
             }
             else
             {
-                if (role == TestPeer::Role::server)
+                if (role == PeerRole::server)
                     return endpoint_type (boost::asio::ip::address_v4::any (), 1053);
                 else
                     return endpoint_type (boost::asio::ip::address_v4::loopback (), 1053);

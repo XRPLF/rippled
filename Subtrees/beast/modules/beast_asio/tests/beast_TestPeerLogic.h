@@ -35,7 +35,7 @@ public:
 
     Socket& socket () noexcept;
 
-    virtual Role get_role () const noexcept = 0;
+    virtual PeerRole get_role () const noexcept = 0;
     
     virtual Model get_model () const noexcept = 0;
 

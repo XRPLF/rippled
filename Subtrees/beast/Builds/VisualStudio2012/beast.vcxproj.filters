@@ -833,6 +833,9 @@
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_TransferCall.h">
       <Filter>beast_asio\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_PeerRole.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -1290,6 +1293,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicProxyClient.cpp">
       <Filter>beast_asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\basics\beast_PeerRole.cpp">
+      <Filter>beast_asio\basics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
