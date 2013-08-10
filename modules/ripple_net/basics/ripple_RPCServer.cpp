@@ -14,12 +14,11 @@ public:
         boost::asio::ssl::context& context,
         Handler& handler)
         : m_handler (handler)
-        , mSocket (io_service, context)
         , mStrand (io_service)
+        , mSocket (io_service, context)
 #if RIPPLE_USES_BEAST_SOCKETS
         , m_socketWrapper (mSocket)
 #endif
-
     {
     }
 
@@ -258,11 +257,11 @@ private:
 private:
     Handler& m_handler;
 
+    boost::asio::io_service::strand mStrand;
     AutoSocket mSocket;
 #if RIPPLE_USES_BEAST_SOCKETS
     SocketWrapper <AutoSocket> m_socketWrapper;
 #endif
-    boost::asio::io_service::strand mStrand;
 
     boost::asio::streambuf mLineBuffer;
     Blob mQueryVec;

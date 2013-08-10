@@ -72,7 +72,7 @@ public:
     // if Object did not have a declaration for
     // protocol_type::socket
     //
-    template <typename Object, class Enable = void>
+    template <typename AsioObject, class Enable = void>
     struct native_socket
     {
         typedef void* native_socket_type;
@@ -83,16 +83,15 @@ public:
         native_socket_type m_socket;
     };
 
-    template <typename Object>
-    struct native_socket <Object, typename boost::enable_if <boost::is_class <
-        typename Object::protocol_type::socket> >::type>
+    template <typename AsioObject>
+    struct native_socket <AsioObject, typename boost::enable_if <boost::is_class <
+        typename AsioObject::protocol_type::socket> >::type>
     {
-        typedef typename Object::protocol_type::socket native_socket_type;
+        typedef typename AsioObject::protocol_type::socket native_socket_type;
         native_socket (Socket& peer)
             : m_socket (&peer.this_layer <native_socket_type> ()) { }
         native_socket_type& get () noexcept { return *m_socket; }
         native_socket_type& operator-> () noexcept { return *m_socket; }
-
     private:
         native_socket_type* m_socket;
     };
