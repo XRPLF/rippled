@@ -230,6 +230,8 @@ namespace beast
 #include "time/beast_PerformedAtExit.h"
 #include "diagnostic/beast_LeakChecked.h"
 #include "memory/beast_ByteOrder.h"
+#include "memory/beast_ByteSwap.h"
+#include "maths/beast_uint24.h"
 #include "logging/beast_Logger.h"
 #include "threads/beast_Thread.h"
 #include "diagnostic/beast_FPUFlags.h"
