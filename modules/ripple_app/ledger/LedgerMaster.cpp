@@ -91,20 +91,27 @@ void LedgerMaster::pushLedger (Ledger::pointer newLedger)
     // all candidate transactions must already be applied
     WriteLog (lsINFO, LedgerMaster) << "PushLedger: " << newLedger->getHash ();
 
-    if (getConfig().RUN_STANDALONE)
-        setFullLedger(newLedger, true, false);
-
-    boost::recursive_mutex::scoped_lock ml (mLock);
-
-    if (mClosedLedger)
     {
-        mClosedLedger->setClosed ();
-        WriteLog (lsTRACE, LedgerMaster) << "Finalizes: " << mClosedLedger->getHash ();
+        boost::recursive_mutex::scoped_lock ml (mLock);
+
+        if (mClosedLedger)
+        {
+            mClosedLedger->setClosed ();
+            WriteLog (lsTRACE, LedgerMaster) << "Finalizes: " << mClosedLedger->getHash ();
+        }
+
+        mClosedLedger = mCurrentLedger;
+        mCurrentLedger = newLedger;
+        mEngine.setLedger (newLedger);
     }
 
-    mClosedLedger = mCurrentLedger;
-    mCurrentLedger = newLedger;
-    mEngine.setLedger (newLedger);
+    if (getConfig().RUN_STANDALONE)
+    {
+        setFullLedger(newLedger, true, false);
+        tryAdvance();
+    }
+    else
+        checkAccept(newLedger->getHash(), newLedger->getLedgerSeq());
 }
 
 void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
@@ -112,19 +119,6 @@ void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
     assert (newLCL->isClosed () && newLCL->isAccepted ());
     assert (!newOL->isClosed () && !newOL->isAccepted ());
 
-    if (getConfig().RUN_STANDALONE)
-        setFullLedger(newLCL, true, false);
-
-    boost::recursive_mutex::scoped_lock ml (mLock);
-
-    if (newLCL->isAccepted ())
-    {
-        assert (newLCL->isClosed ());
-        assert (newLCL->isImmutable ());
-        WriteLog (lsINFO, LedgerMaster) << "StashAccepted: " << newLCL->getHash ();
-        if (getConfig().RUN_STANDALONE)
-            newLCL->setValidated();
-    }
 
     {
         boost::recursive_mutex::scoped_lock ml (mLock);
@@ -133,7 +127,13 @@ void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
         mEngine.setLedger (newOL);
     }
 
-    checkAccept (newLCL->getHash (), newLCL->getLedgerSeq ());
+    if (getConfig().RUN_STANDALONE)
+    {
+        setFullLedger(newLCL, true, false);
+        tryAdvance();
+    }
+    else
+        checkAccept (newLCL->getHash (), newLCL->getLedgerSeq ());
 }
 
 void LedgerMaster::switchLedgers (Ledger::pointer lastClosed, Ledger::pointer current)
@@ -431,11 +431,17 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
     WriteLog (lsDEBUG, LedgerMaster) << "Ledger " << ledger->getLedgerSeq () << " accepted :" << ledger->getHash ();
     assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
 
+    ledger->setValidated();
+    mLedgerHistory.addLedger(ledger);
+
     boost::recursive_mutex::scoped_lock ml (mLock);
 
     mCompleteLedgers.setValue (ledger->getLedgerSeq ());
 
     ledger->pendSaveValidated (isSynchronous, isCurrent);
+
+    if (!mValidLedger || (ledger->getLedgerSeq() > mValidLedger->getLedgerSeq()))
+        mValidLedger = ledger;
 
     if ((ledger->getLedgerSeq () != 0) && mCompleteLedgers.hasValue (ledger->getLedgerSeq () - 1))
     {
