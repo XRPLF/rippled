@@ -110,6 +110,9 @@ public:
     {
         Results results;
 
+        if (Process::isRunningUnderDebugger ())
+            timeoutSeconds = -1;
+
         results.name = Details::getArgName (arg);
 
         try
