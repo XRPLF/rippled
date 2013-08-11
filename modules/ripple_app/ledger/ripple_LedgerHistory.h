@@ -15,8 +15,6 @@ public:
 
     void addLedger (Ledger::pointer ledger);
 
-    void addAcceptedLedger (Ledger::pointer ledger);
-
     float getCacheHitRate ()
     {
         return mLedgersByHash.getHitRate ();
@@ -42,7 +40,7 @@ private:
     TaggedCache <LedgerHash, Ledger, UptimeTimerAdapter> mLedgersByHash;
 
     // Maps ledger indexes to the corresponding hash.
-    std::map <LedgerIndex, LedgerHash> mLedgersByIndex; // accepted ledgers
+    std::map <LedgerIndex, LedgerHash> mLedgersByIndex; // validated ledgers
 };
 
 #endif

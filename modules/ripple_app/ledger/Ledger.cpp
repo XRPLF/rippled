@@ -616,11 +616,6 @@ void Ledger::saveValidatedLedger (bool current)
         boost::mutex::scoped_lock sl (sPendingSaveLock);
         sPendingSaves.erase(getLedgerSeq());
     }
-
-    if (getApp().getJobQueue ().getJobCountTotal (jtPUBOLDLEDGER) < 2)
-        getApp().getLedgerMaster ().resumeAcquiring ();
-    else
-        WriteLog (lsTRACE, Ledger) << "no resume, too many pending ledger saves";
 }
 
 #ifndef NO_SQLITE3_PREPARE

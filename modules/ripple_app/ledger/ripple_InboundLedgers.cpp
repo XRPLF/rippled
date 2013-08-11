@@ -261,6 +261,8 @@ void InboundLedgers::gotFetchPack (Job&)
     {
         acquire->checkLocal ();
     }
+
+    getApp().getLedgerMaster().tryAdvance();
 }
 
 void InboundLedgers::clearFailures ()

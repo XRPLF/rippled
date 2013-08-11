@@ -22,10 +22,9 @@ public:
 public:
     LedgerMaster ()
         : mHeldTransactions (uint256 ())
-        , mMissingSeq (0)
         , mMinValidations (0)
         , mLastValidateSeq (0)
-        , mPubThread (false)
+        , mAdvanceThread (false)
         , mPathFindThread (false)
         , mPathFindNewLedger (false)
         , mPathFindNewRequest (false)
@@ -159,8 +158,6 @@ public:
     bool haveLedger (uint32 seq);
     bool getValidatedRange (uint32& minVal, uint32& maxVal);
 
-    void resumeAcquiring ();
-
     void tune (int size, int age)
     {
         mLedgerHistory.tune (size, age);
@@ -181,7 +178,8 @@ public:
 
     void checkAccept (uint256 const& hash);
     void checkAccept (uint256 const& hash, uint32 seq);
-    void tryPublish ();
+    std::list<Ledger::pointer> findNewLedgersToPublish();
+    void tryAdvance ();
     void newPathRequest ();
 
     static bool shouldAcquire (uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
@@ -191,10 +189,9 @@ private:
     bool isValidTransaction (Transaction::ref trans);
     bool isTransactionOnFutureList (Transaction::ref trans);
 
-    void acquireMissingLedger (Ledger::ref from, uint256 const& ledgerHash, uint32 ledgerSeq);
-    void asyncAccept (Ledger::pointer);
-    void missingAcquireComplete (InboundLedger::pointer);
-    void pubThread ();
+    void getFetchPack (Ledger::ref have);
+    void tryFill (Ledger::pointer);
+    void advanceThread ();
     void updatePaths ();
 
 private:
@@ -213,8 +210,6 @@ private:
     CanonicalTXSet mHeldTransactions;
 
     RangeSet mCompleteLedgers;
-    InboundLedger::pointer mMissingLedger;
-    uint32 mMissingSeq;
 
     int                         mMinValidations;    // The minimum validations to publish a ledger
     uint256                     mLastValidateHash;
@@ -222,7 +217,7 @@ private:
     std::list<callback>         mOnValidate;        // Called when a ledger has enough validations
 
     std::list<Ledger::pointer>  mPubLedgers;        // List of ledgers to publish
-    bool                        mPubThread;         // Publish thread is running
+    bool                        mAdvanceThread;     // Publish thread is running
 
     bool                        mPathFindThread;    // Pathfind thread is running
     bool                        mPathFindNewLedger;
