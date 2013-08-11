@@ -409,7 +409,7 @@ bool LedgerMaster::acquireMissingLedger (Ledger::ref origLedger, uint256 const& 
                 {
                     if (count++ == 0)
                         target = peer;
-                    else if ((rand () % ++count) == 0)
+                    else if ((rand () % count) == 0)
                         target = peer;
                 }
             }
