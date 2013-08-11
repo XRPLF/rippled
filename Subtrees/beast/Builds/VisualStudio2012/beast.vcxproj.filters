@@ -836,6 +836,12 @@
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_PeerRole.h">
       <Filter>beast_asio\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\maths\beast_uint24.h">
+      <Filter>beast_core\maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\beast_ByteSwap.h">
+      <Filter>beast_core\memory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">

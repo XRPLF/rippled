@@ -170,12 +170,14 @@
     <ClInclude Include="..\..\modules\beast_core\maths\beast_MurmurHash.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\beast_Random.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\beast_Range.h" />
+    <ClInclude Include="..\..\modules\beast_core\maths\beast_uint24.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_Atomic.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_AtomicCounter.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_AtomicFlag.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_AtomicPointer.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_AtomicState.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ByteOrder.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\beast_ByteSwap.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_CacheLine.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_HeapBlock.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_Memory.h" />
