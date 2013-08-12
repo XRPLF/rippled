@@ -43,8 +43,12 @@ public:
 
         A number of initial threads may be optionally specified. The
         default is to create one thread per CPU.
+
+        @param threadNames The name given to each created worker thread.
     */
-    explicit Workers (Callback& callback, int numberOfThreads = SystemStats::getNumCpus ());
+    explicit Workers (Callback& callback,
+                      String const& threadNames = "Worker",
+                      int numberOfThreads = SystemStats::getNumCpus ());
 
     ~Workers ();
 
@@ -108,7 +112,7 @@ private:
         , public Thread
     {
     public:
-        explicit Worker (Workers& workers);
+        Worker (Workers& workers, String const& threadName);
 
         ~Worker ();
 
@@ -117,6 +121,7 @@ private:
 
     private:
         Workers& m_workers;
+        String m_threadName;
     };
 
 private:
@@ -125,6 +130,7 @@ private:
 private:
     Callback& m_callback;
     WaitableEvent m_allPaused;                   // signaled when all threads paused
+    String m_threadNames;                        // The name to give each thread
     Semaphore m_semaphore;                       // each pending task is 1 resource
     int m_numberOfThreads;                       // how many we want active now
     Atomic <int> m_activeCount;                  // to know when all are paused
