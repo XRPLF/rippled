@@ -31,7 +31,6 @@ enum JobType
     jtPROPOSAL_t    = 16,   // A proposal from a trusted source
     jtSWEEP         = 17,   // Sweep for stale structures
     jtADMIN         = 18,   // An administrative operation
-    jtDEATH         = 19,   // job of death, used internally
 
     // special types not dispatched by the job pool
     jtPEER          = 24,
@@ -69,7 +68,6 @@ public:
     // VFALCO TODO try to remove the dependency on LoadMonitor.
     Job (JobType type,
          std::string const& name,
-         int limit,
          uint64 index,
          LoadMonitor& lm,
          FUNCTION_TYPE <void (Job&)> const& job);
@@ -79,8 +77,6 @@ public:
     void doJob ();
 
     void rename (const std::string& n);
-
-    int getLimit () const;
 
     LoadEvent& peekEvent() const;
 
@@ -98,7 +94,6 @@ private:
     FUNCTION_TYPE <void (Job&)> mJob;
     LoadEvent::pointer          m_loadEvent;
     std::string                 mName;
-    int                         m_limit;
 };
 
 #endif

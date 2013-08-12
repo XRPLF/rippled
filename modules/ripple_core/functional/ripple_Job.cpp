@@ -7,20 +7,17 @@
 Job::Job ()
     : mType (jtINVALID)
     , mJobIndex (0)
-    , m_limit (0)
 {
 }
 
 Job::Job (JobType type, uint64 index)
     : mType (type)
     , mJobIndex (index)
-    , m_limit (0)
 {
 }
 
 Job::Job (JobType type,
           std::string const& name,
-          int limit,
           uint64 index,
           LoadMonitor& lm,
           FUNCTION_TYPE <void (Job&)> const& job)
@@ -28,7 +25,6 @@ Job::Job (JobType type,
     , mJobIndex (index)
     , mJob (job)
     , mName (name)
-    , m_limit(limit)
 {
     m_loadEvent = boost::make_shared <LoadEvent> (boost::ref (lm), name, false);
 }
@@ -48,11 +44,6 @@ void Job::doJob ()
 void Job::rename (std::string const& newName)
 {
     mName = newName;
-}
-
-int Job::getLimit () const
-{
-    return m_limit;
 }
 
 LoadEvent& Job::peekEvent() const
@@ -114,9 +105,6 @@ const char* Job::toString (JobType t)
 
     case jtADMIN:
         return "administration";
-
-    case jtDEATH:
-        return "jobOfDeath";
 
     case jtPEER:
         return "peerCommand";

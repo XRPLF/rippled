@@ -2160,7 +2160,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
     }
 
     if (getApp().getInboundLedgers ().awaitLedgerData (hash))
-        getApp().getJobQueue ().addLimitJob (jtLEDGER_DATA, "gotLedgerData", 2,
+        getApp().getJobQueue ().addJob (jtLEDGER_DATA, "gotLedgerData",
                                        BIND_TYPE (&InboundLedgers::gotLedgerData, &getApp().getInboundLedgers (),
                                                P_1, hash, packet_ptr, boost::weak_ptr<Peer> (shared_from_this ())));
     else
@@ -2399,7 +2399,7 @@ void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>&
         return;
     }
 
-    getApp().getJobQueue ().addLimitJob (jtPACK, "MakeFetchPack", 1,
+    getApp().getJobQueue ().addJob (jtPACK, "MakeFetchPack",
                                    BIND_TYPE (&NetworkOPs::makeFetchPack, &getApp().getOPs (), P_1,
                                            boost::weak_ptr<Peer> (shared_from_this ()), packet, wantLedger, haveLedger, UptimeTimer::getInstance ().getElapsedSeconds ()));
 }

@@ -20,7 +20,6 @@ public:
     //             have to call bind.
     //
     void addJob (JobType type, const std::string& name, const FUNCTION_TYPE<void (Job&)>& job);
-    void addLimitJob (JobType type, const std::string& name, int limit, const FUNCTION_TYPE<void (Job&)>& job);
 
     int getJobCount (JobType t);        // Jobs waiting at this priority
     int getJobCountTotal (JobType t);   // Jobs waiting plus running at this priority
@@ -50,15 +49,24 @@ public:
     Json::Value getJson (int c = 0);
 
 private:
-    bool getJob (Job& job);
+    typedef boost::mutex JobLockType;
+    typedef JobLockType::scoped_lock ScopedLockType;
+    typedef std::set <Job> JobSet;
+
+    int freeTaskSlots (JobType type, ScopedLockType const&);
+    void queueJobForRunning (Job const& job, ScopedLockType const&);
+    void getNextJobToRun (Job& job, ScopedLockType const&);
+    void setRunningJobFinished (Job const& job);
+
     void processTask ();
+
+    static int getJobLimit (JobType type);
 
 private:
     Workers m_workers;
-    
-    boost::mutex mJobLock; // VFALCO TODO Replace with CriticalSection
+    JobLockType mJobLock;
     uint64 mLastJob;
-    std::set <Job> mJobSet;
+    JobSet mJobSet;
     LoadMonitor mJobLoads [NUM_JOB_TYPES];
     JobCounts mJobCounts;
 };

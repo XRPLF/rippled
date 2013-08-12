@@ -1839,7 +1839,7 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
     }
     else
     {
-        getApp().getJobQueue ().addLimitJob (jtPUBOLDLEDGER, "Ledger::pendOldSave", 2,
+        getApp().getJobQueue ().addJob (jtPUBOLDLEDGER, "Ledger::pendOldSave",
             BIND_TYPE (&Ledger::saveValidatedLedgerAsync, shared_from_this (), P_1, isCurrent));
     }
 
