@@ -563,7 +563,7 @@ void LedgerMaster::advanceThread()
                             {
                                 sl.unlock();
 
-                                if (getApp().getOPs().shouldFetchPack(missing) && (missing > 40000))
+                                if ((missing > 40000) && getApp().getOPs().shouldFetchPack(missing))
                                     getFetchPack(nextLedger);
 
                                 InboundLedger::pointer acq =

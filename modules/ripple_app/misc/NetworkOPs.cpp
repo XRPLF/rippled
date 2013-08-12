@@ -2369,7 +2369,7 @@ bool NetworkOPs::shouldFetchPack (uint32 seq)
         //
         mFetchSeq = static_cast<uint32> (-1);
     }
-    else if (mFetchPack.getCacheSize () > 64)
+    else if (size > 64)
     {
         return false;
     }
