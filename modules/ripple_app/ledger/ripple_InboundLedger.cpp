@@ -167,10 +167,9 @@ void InboundLedger::onTimer (bool progress, boost::recursive_mutex::scoped_lock&
         int pc = getPeerCount ();
         WriteLog (lsDEBUG, InboundLedger) << "No progress(" << pc << ") for ledger " << mHash;
 
+        trigger (Peer::pointer ());
         if (pc < 3)
             addPeers ();
-        else
-            trigger (Peer::pointer ());
     }
 }
 
@@ -211,10 +210,8 @@ void InboundLedger::addPeers ()
 
         if (peer->hasLedger (getHash (), mSeq))
         {
-            peerHas (peer);
-
-            if (++found == 3)
-                break;
+           if (peerHas (peer) && (++found == 3))
+               break;
         }
     }
 
@@ -812,8 +809,12 @@ Json::Value InboundLedger::getJson (int)
         ret["peers"] = static_cast<int>(mPeers.size());
 
     ret["have_base"] = mHaveBase;
-    ret["have_state"] = mHaveState;
-    ret["have_transactions"] = mHaveTransactions;
+
+    if (mHaveBase)
+    {
+        ret["have_state"] = mHaveState;
+        ret["have_transactions"] = mHaveTransactions;
+    }
 
     if (mAborted)
         ret["aborted"] = true;
@@ -823,7 +824,7 @@ Json::Value InboundLedger::getJson (int)
     if (mHaveBase && !mHaveState)
     {
         Json::Value hv (Json::arrayValue);
-        std::vector<uint256> v = mLedger->peekAccountStateMap ()->getNeededHashes (16, NULL);
+        std::vector<uint256> v = mLedger->getNeededAccountStateHashes (16, NULL);
         BOOST_FOREACH (uint256 const & h, v)
         {
             hv.append (h.GetHex ());
@@ -834,7 +835,7 @@ Json::Value InboundLedger::getJson (int)
     if (mHaveBase && !mHaveTransactions)
     {
         Json::Value hv (Json::arrayValue);
-        std::vector<uint256> v = mLedger->peekTransactionMap ()->getNeededHashes (16, NULL);
+        std::vector<uint256> v = mLedger->getNeededTransactionHashes (16, NULL);
         BOOST_FOREACH (uint256 const & h, v)
         {
             hv.append (h.GetHex ());

@@ -21,14 +21,15 @@ PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)
     assert ((mTimerInterval > 10) && (mTimerInterval < 30000));
 }
 
-void PeerSet::peerHas (Peer::ref ptr)
+bool PeerSet::peerHas (Peer::ref ptr)
 {
     boost::recursive_mutex::scoped_lock sl (mLock);
 
     if (!mPeers.insert (std::make_pair (ptr->getPeerId (), 0)).second)
-        return;
+        return false;
 
     newPeer (ptr);
+    return true;
 }
 
 void PeerSet::badPeer (Peer::ref ptr)

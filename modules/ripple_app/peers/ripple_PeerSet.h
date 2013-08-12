@@ -50,7 +50,7 @@ public:
         return mLastAction;
     }
 
-    void peerHas (Peer::ref);
+    bool peerHas (Peer::ref);
     void badPeer (Peer::ref);
     void setTimer ();
 
