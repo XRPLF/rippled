@@ -10,6 +10,9 @@ JobQueue::JobQueue ()
     : m_workers (*this, "JobQueue", 0)
     , mLastJob (0)
 {
+    for (int i = 0; i < NUM_JOB_TYPES; ++i)
+        mJobCounts[static_cast<JobType>(i)] = std::make_pair<int, int>(0, 0);
+
     mJobLoads [ jtPUBOLDLEDGER  ].setTargetLatency (10000, 15000);
     mJobLoads [ jtVALIDATION_ut ].setTargetLatency (2000, 5000);
     mJobLoads [ jtPROOFWORK     ].setTargetLatency (2000, 5000);
@@ -236,8 +239,6 @@ bool JobQueue::getJob(Job& job)
 
         for (;;)
         {
-            // VFALCO NOTE how can we be out of jobs if we just checked mJobSet.empty ()?
-            //
             // Are we out of jobs?
             if (it == mJobSet.end())
                 return false; // VFALCO TODO get rid of this return from the middle
@@ -265,9 +266,11 @@ bool JobQueue::getJob(Job& job)
 
 void JobQueue::processTask ()
 {
+    boost::mutex::scoped_lock lock (mJobLock);
+
+    while (1)
     {
         // This lock shouldn't be needed
-        boost::mutex::scoped_lock lock (mJobLock);
 
         JobType type (jtINVALID);
 
@@ -292,6 +295,8 @@ void JobQueue::processTask ()
 
                 job.doJob ();
             }
+            else
+                return;
 
             // must destroy job, here, without holding lock
         }
