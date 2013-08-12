@@ -130,4 +130,16 @@
 //#define BEAST_BIND_USES_TR1   1
 //#define BEAST_BIND_USES_BOOST 1
 
+//------------------------------------------------------------------------------
+
+/** Config: BEAST_DISABLE_CONTRACT_CHECKS
+
+    Set this to 1 to prevent check_contract macros from evaluating their
+    conditions, which might be expensive. meet_contract macros will still
+    evaluate their conditions since their return values are checked.
+*/
+#ifndef BEAST_DISABLE_CONTRACT_CHECKS
+#define BEAST_DISABLE_CONTRACT_CHECKS 0
+#endif
+
 #endif

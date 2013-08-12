@@ -148,18 +148,94 @@ private:
     static Static::Storage <Atomic <Reporter*>, FatalError> s_reporter;
 };
 
-/** Fatal assertion macro.
-    These get compiled into the code regardless of the BEAST_DEBUG
-    setting, and call FatalError.
+//------------------------------------------------------------------------------
+
+#if defined (fatal_error) || \
+    defined (fatal_condition) || \
+    defined (fatal_assert) || \
+    defined (meets_condition) || \
+    defined (meets_precondition) || \
+    defined (meets_postcondition) || \
+    defined (meets_invariant) || \
+    defined (check_precondition) || \
+    defined (check_postcondition) || \
+    defined (check_invariant)
+#error "Programming by contract macros cannot be overriden!"
+#endif
+
+//------------------------------------------------------------------------------
+
+/** Report a fatal error message and terminate the application.
+    Normally you won't call this directly.
+*/
+inline void reportFatalError (char const* message, char const* fileName, int lineNumber)
+{
+    if (beast::beast_isRunningUnderDebugger())
+        beast_breakDebugger;
+    FatalError (message, fileName, lineNumber);
+    BEAST_ANALYZER_NORETURN
+}
+
+/** Report a fatal error message and terminate the application.
+    This macro automatically fills in the file and line number
+    Meets this declaration syntax:
+    @code inline void fatal_error (char const* message); @endif
     @see FatalError
 */
-#define fatal_require_report(expression) \
-    { if (beast::beast_isRunningUnderDebugger()) beast_breakDebugger; \
-      FatalError ("Assertion '" BEAST_STRINGIFY(expression) "' failed", __FILE__, __LINE__); \
-      BEAST_ANALYZER_NORETURN }
+#define fatal_error(message) reportFatalError (message, __FILE__, __LINE__)
 
-#define fatal_assert(condition) { if (! (condition)) { fatal_require_report(condition); } }
+/** Reports a fatal error message type if the condition is false
+    The condition is always evaluated regardless of settings.
+    Meets this declaration syntax:
+    @code inline void fatal_condition (bool condition, char const* category); @endcode
+*/
+#define fatal_condition(condition,category) static_cast <void> \
+    (((!!(condition)) || (reportFatalError ( \
+        category " '" BEAST_STRINGIFY(condition) "' failed.", __FILE__, __LINE__), 0)))
 
-#define fatal_error(message) { FatalError (message, __FILE__, __LINE__); BEAST_ANALYZER_NORETURN }
+/** Replacement for assert which generates a fatal error if the condition is false.
+    The condition is always evaluated regardless of compilation settings.
+    Meets this declaration syntax:
+    @code inline void fatal_assert (bool condition); @endcode
+*/
+#define fatal_assert(condition) fatal_condition(condition,"Assertion")
+
+/** Reports a fatal error message type if the condition is false
+    The condition is always evaluated regardless of settings.
+    Meets this declaration syntax:
+    @code inline void fatal_condition (bool condition, char const* category); @endcode
+*/
+#define meets_condition(condition,category) static_cast <bool> \
+    (((!!(condition)) || (reportFatalError ( \
+        category " '" BEAST_STRINGIFY(condition) "' failed.", __FILE__, __LINE__), false)))
+
+/** Condition tests for programming by contract.
+    The condition is always evaluated regardless of settings, and gets returned.
+    Meets this declaration syntax:
+    @code inline bool meets_condition (bool); @endcode
+*/
+/** @{ */
+#define meets_precondition(condition)  meets_condition(condition,"Pre-condition")
+#define meets_postcondition(condition) meets_condition(condition,"Post-condition")
+#define meets_invariant(condition)     meets_condition(condition,"Invariant")
+/** @} */
+
+/** Condition tests for programming by contract.
+    The condition is evaluated only if BEAST_DISABLE_CONTRACT_CHECKS is 0.
+    Meets this declaration syntax:
+    @code inline void check_condition (bool); @endcode
+    @see BEAST_DISABLE_CONTRACT_CHECKS
+*/
+/** @{ */
+#if ! BEAST_DISABLE_CONTRACT_CHECKS
+# define check_precondition(condition)  meets_precondition(condition)
+# define check_postcondition(condition) meets_postcondition(condition)
+# define check_invariant(condition)     meets_invariant(condition)
+#else
+# define check_precondition(condition)  ((void)0)
+# define check_postcondition(condition) ((void)0)
+# define check_invariant(condition)     ((void)0)
+#endif
+/** @} */
 
 #endif
