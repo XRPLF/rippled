@@ -393,7 +393,7 @@ void LedgerMaster::getFetchPack (Ledger::ref nextLedger)
         target->sendPacket (packet, false);
     }
     else
-        WriteLog (lsTRACE, LedgerMaster) << "No peer for fetch pack";
+        WriteLog (lsDEBUG, LedgerMaster) << "No peer for fetch pack";
 }
 
 bool LedgerMaster::shouldAcquire (uint32 currentLedger, uint32 ledgerHistory, uint32 candidateLedger)

@@ -26,25 +26,16 @@ InboundLedger::InboundLedger (uint256 const& hash, uint32 seq)
 #ifdef LA_DEBUG
     WriteLog (lsTRACE, InboundLedger) << "Acquiring ledger " << mHash;
 #endif
-    tryLocal ();
+    if (tryLocal ())
+        done();
 }
 
-// Returns true if progress is made
-bool InboundLedger::checkLocal ()
+void InboundLedger::checkLocal ()
 {
-    bool ret = false;
+    boost::recursive_mutex::scoped_lock sl (mLock);
 
-    {
-        boost::recursive_mutex::scoped_lock sl (mLock);
-
-        if (!isDone () && tryLocal())
-        {
-            done();
-            ret = true;
-        }
-    }
-
-    return ret;
+    if (!isDone () && tryLocal())
+        done();
 }
 
 bool InboundLedger::tryLocal ()
