@@ -480,6 +480,8 @@ void LedgerMaster::checkAccept (uint256 const& hash)
 
     if (ledger)
         checkAccept (hash, ledger->getLedgerSeq ());
+    else
+        getApp().getInboundLedgers().findCreate(hash, 0);
 }
 
 void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)

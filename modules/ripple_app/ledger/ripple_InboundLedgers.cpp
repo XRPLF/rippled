@@ -11,7 +11,7 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
     InboundLedger::pointer& ptr = mLedgers[hash];
 
     if (ptr)
-    {
+    { // FIXME: Should set the sequence if it's not set
         ptr->touch ();
         return ptr;
     }
