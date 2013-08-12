@@ -561,11 +561,15 @@ void LedgerMaster::advanceThread()
                                 getFetchPack(nextLedger);
                             if (!getApp().getInboundLedgers().isFailure(nextLedger->getParentHash()))
                             {
+                                sl.unlock();
                                 InboundLedger::pointer acq =
                                     getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
                                                                             nextLedger->getLedgerSeq() - 1);
                                 if (acq && acq->isComplete() && !acq->isFailed())
                                     ledger = acq->getLedger();
+                                sl.lock();
+                                if (mValidLedger->getLedgerSeq() != mPubLedger->getLedgerSeq())
+                                    progress = true;
                             }
                         }
                         if (ledger)
@@ -632,23 +636,20 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish()
     }
     else if (mValidLedger->getLedgerSeq () > mPubLedger->getLedgerSeq ())
     {
-        int acq = 0;
+        int acqCount = 0;
         for (uint32 seq = mPubLedger->getLedgerSeq () + 1; seq <= mValidLedger->getLedgerSeq (); ++seq)
         {
             WriteLog (lsTRACE, LedgerMaster) << "Trying to publish ledger " << seq;
 
             Ledger::pointer ledger;
-            uint256 hash;
+            uint256 hash = mValidLedger->getLedgerHash (seq);
 
             if (seq == mValidLedger->getLedgerSeq ())
             { // We need to publish the ledger we just fully validated
                 ledger = mValidLedger;
-                hash = ledger->getHash ();
             }
             else
             {
-                hash = mValidLedger->getLedgerHash (seq);
-
                 if (hash.isZero ())
                 {
                     WriteLog (lsFATAL, LedgerMaster) << "Ledger: " << mValidLedger->getLedgerSeq () << " does not have hash for " <<
@@ -659,7 +660,7 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish()
                 ledger = mLedgerHistory.getLedgerByHash (hash);
             }
 
-            if (!ledger && (++acq < 4))
+            if (!ledger && (++acqCount < 4))
             { // We can try to acquire the ledger we need
                 InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (hash, seq);
 

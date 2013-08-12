@@ -257,12 +257,15 @@ void InboundLedgers::gotFetchPack (Job&)
         acquires.push_back (it.second);
     }
 
+    bool progress = false;
     BOOST_FOREACH (const InboundLedger::pointer & acquire, acquires)
     {
-        acquire->checkLocal ();
+        if (acquire->checkLocal ())
+            progress = true;
     }
 
-    getApp().getLedgerMaster().tryAdvance();
+    if (progress)
+        getApp().getLedgerMaster().tryAdvance();
 }
 
 void InboundLedgers::clearFailures ()

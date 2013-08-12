@@ -71,7 +71,7 @@ public:
     void addPeers ();
     void awaitData ();
     void noAwaitData ();
-    void checkLocal ();
+    bool checkLocal ();
 
     typedef std::pair <protocol::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
 

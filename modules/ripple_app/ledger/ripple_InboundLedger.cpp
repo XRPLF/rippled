@@ -29,15 +29,22 @@ InboundLedger::InboundLedger (uint256 const& hash, uint32 seq)
     tryLocal ();
 }
 
-void InboundLedger::checkLocal ()
+// Returns true if progress is made
+bool InboundLedger::checkLocal ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    bool ret = false;
 
-    if (isDone ())
-        return;
+    {
+        boost::recursive_mutex::scoped_lock sl (mLock);
 
-    if (tryLocal ())
-        done ();
+        if (!isDone () && tryLocal())
+        {
+            done();
+            ret = true;
+        }
+    }
+
+    return ret;
 }
 
 bool InboundLedger::tryLocal ()
