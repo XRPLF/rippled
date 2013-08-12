@@ -707,8 +707,8 @@ void PeerImp::processReadBuffer ()
 
                 if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
                     recvCluster (msg);
-	        else
-	            WriteLog (lsWARNING, Peer) << "parse error: " << type;
+                else
+                    WriteLog (lsWARNING, Peer) << "parse error: " << type;
             }
 
             case protocol::mtERROR_MSG:
@@ -1431,11 +1431,11 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
 
         bool isTrusted = getApp().getUNL ().nodeInUNL (val->getSignerPublic ());
         if (isTrusted || !getApp().getFeeTrack ().isLoadedLocal ())
-	        getApp().getJobQueue ().addJob (isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
+            getApp().getJobQueue ().addJob (isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
                                        BIND_TYPE (&checkValidation, P_1, val, signingHash, isTrusted, mCluster, packet,
                                                boost::weak_ptr<Peer> (shared_from_this ())));
-	else
-	    WriteLog(lsDEBUG, Peer) << "Dropping untrusted validation due to load";
+        else
+            WriteLog(lsDEBUG, Peer) << "Dropping untrusted validation due to load";
     }
 
 #ifndef TRUST_NETWORK
@@ -1462,7 +1462,7 @@ void PeerImp::recvCluster (protocol::TMCluster& packet)
 
         std::string name;
         if (node.has_nodename())
-	    name = node.nodename();
+            name = node.nodename();
         ClusterNodeStatus s(name, node.nodeload(), node.reporttime());
 
         RippleAddress nodePub;
@@ -2173,9 +2173,10 @@ bool PeerImp::hasLedger (uint256 const& hash, uint32 seq) const
         return true;
 
     BOOST_FOREACH (uint256 const & ledger, mRecentLedgers)
-
-    if (ledger == hash)
-        return true;
+    {
+        if (ledger == hash)
+            return true;
+    }
 
     return false;
 }
