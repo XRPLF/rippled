@@ -2353,7 +2353,7 @@ bool NetworkOPs::shouldFetchPack (uint32 seq)
 {
     uint32 now = getNetworkTimeNC ();
 
-    if ((mLastFetchPack == now) || ((mLastFetchPack + 1) == now))
+    if (mLastFetchPack == now)
         return false;
 
     if (seq < mFetchSeq) // fetch pack has only data for ledgers ahead of where we are
@@ -2362,14 +2362,11 @@ bool NetworkOPs::shouldFetchPack (uint32 seq)
         mFetchPack.sweep ();
 
     int size = mFetchPack.getCacheSize ();
-
     if (size == 0)
     {
-        // VFALCO TODO Give this magic number a name
-        //
-        mFetchSeq = static_cast<uint32> (-1);
+        mFetchSeq = 0;
     }
-    else if (size > 64)
+    else if (size > 128)
     {
         return false;
     }

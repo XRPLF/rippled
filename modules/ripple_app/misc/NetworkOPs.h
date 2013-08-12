@@ -120,6 +120,10 @@ public:
     {
         return mLedgerMaster->getValidatedRange (minVal, maxVal);
     }
+    bool getFullValidatedRange (uint32& minVal, uint32& maxVal)
+    {
+        return mLedgerMaster->getFullValidatedRange (minVal, maxVal);
+    }
 
     SerializedValidation::ref getLastValidation ()
     {

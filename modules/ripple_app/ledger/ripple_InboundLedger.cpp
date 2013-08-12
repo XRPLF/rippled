@@ -228,7 +228,7 @@ void InboundLedger::addPeers ()
     }
 
     if (!found)
-        for (int i = 0; i < ((vSize > 3) ? 3 : vSize); ++i)
+        for (int i = 0; i < ((vSize > 6) ? 6 : vSize); ++i)
             peerHas (peerList[ (i + firstPeer) % vSize]);
 }
 

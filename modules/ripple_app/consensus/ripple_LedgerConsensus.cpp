@@ -413,7 +413,7 @@ void LedgerConsensus::statusChange (protocol::NodeEvent event, Ledger& ledger)
     s.set_ledgerhash (hash.begin (), hash.size ());
 
     uint32 uMin, uMax;
-    getApp().getOPs ().getValidatedRange (uMin, uMax);
+    getApp().getOPs ().getFullValidatedRange (uMin, uMax);
     s.set_firstseq (uMin);
     s.set_lastseq (uMax);
 

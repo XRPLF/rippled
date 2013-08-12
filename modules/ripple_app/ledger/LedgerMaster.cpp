@@ -235,8 +235,30 @@ bool LedgerMaster::haveLedger (uint32 seq)
     return mCompleteLedgers.hasValue (seq);
 }
 
+bool LedgerMaster::getFullValidatedRange (uint32& minVal, uint32& maxVal)
+{ // Ledgers we have all the nodes for
+    boost::recursive_mutex::scoped_lock sl (mLock);
+
+    if (!mPubLedger)
+        return false;
+
+    maxVal = mPubLedger->getLedgerSeq ();
+
+    if (maxVal == 0)
+        return false;
+
+    minVal = mCompleteLedgers.prevMissing (maxVal);
+
+    if (minVal == RangeSet::absent)
+        minVal = 0;
+    else
+        ++minVal;
+
+    return true;
+}
+
 bool LedgerMaster::getValidatedRange (uint32& minVal, uint32& maxVal)
-{
+{ // Ledgers we have all the nodes for and are indexed
     boost::recursive_mutex::scoped_lock sl (mLock);
 
     if (!mPubLedger)
