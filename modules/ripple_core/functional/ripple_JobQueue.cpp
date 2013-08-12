@@ -7,7 +7,7 @@
 SETUP_LOG (JobQueue)
 
 JobQueue::JobQueue ()
-    : m_workers (*this, 0)
+    : m_workers (*this, "JobQueue", 0)
     , mLastJob (0)
 {
     mJobLoads [ jtPUBOLDLEDGER  ].setTargetLatency (10000, 15000);
