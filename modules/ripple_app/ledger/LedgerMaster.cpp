@@ -579,9 +579,11 @@ void LedgerMaster::advanceThread()
         }
         else
         {
+            WriteLog (lsTRACE, LedgerMaster) << "Found " << pubLedgers.size() << " ledgers to publish";
             BOOST_FOREACH(Ledger::ref ledger, pubLedgers)
             {
                 sl.unlock();
+                WriteLog(lsDEBUG, LedgerMaster) << "Publishing seq " << ledger->getLedgerSeq();
 
                 setFullLedger(ledger, true, true);
                 getApp().getOPs().pubLedger(ledger);
@@ -589,6 +591,14 @@ void LedgerMaster::advanceThread()
                 sl.lock();
                 mPubLedger = ledger;
                 progress = true;
+            }
+            getApp().getOPs().clearNeedNetworkLedger();
+            mPathFindNewLedger = true;
+            if (!mPathFindThread)
+            {
+                mPathFindThread = true;
+                getApp().getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
+                    BIND_TYPE (&LedgerMaster::updatePaths, this));
             }
         }
     } while (progress);
@@ -601,7 +611,10 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish()
     std::list<Ledger::pointer> ret;
 
     if (!mPubLedger)
+    {
+        WriteLog (lsINFO, LedgerMaster) << "First published ledger will be " << mValidLedger->getLedgerSeq();
         ret.push_back (mValidLedger);
+    }
     else if (mValidLedger->getLedgerSeq () > (mPubLedger->getLedgerSeq () + MAX_LEDGER_GAP))
     {
         WriteLog (lsWARNING, LedgerMaster) << "Gap in validated ledger stream " << mPubLedger->getLedgerSeq () << " - " <<
@@ -663,7 +676,7 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish()
             if (ledger && (ledger->getLedgerSeq() == (mPubLedger->getLedgerSeq() + 1)))
             { // We acquired the next ledger we need to publish
                 ledger->setValidated();
-                ret.push_back (mPubLedger);
+                ret.push_back (ledger);
             }
 
         }
