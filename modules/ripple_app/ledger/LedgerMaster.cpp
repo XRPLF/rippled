@@ -546,7 +546,7 @@ void LedgerMaster::advanceThread()
         if (pubLedgers.empty())
         {
             if (!getConfig().RUN_STANDALONE && !getApp().getFeeTrack().isLoadedLocal() &&
-                (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 3) &&
+                (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
                 (mValidLedger->getLedgerSeq() == mPubLedger->getLedgerSeq()))
             { // We are in sync, so can acquire
                 uint32 missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
@@ -570,7 +570,11 @@ void LedgerMaster::advanceThread()
                                     getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
                                                                             nextLedger->getLedgerSeq() - 1);
                                 if (acq && acq->isComplete() && !acq->isFailed())
+                                {
                                     ledger = acq->getLedger();
+                                    getApp().getInboundLedgers().findCreate(ledger->getParentHash(),
+                                                                            ledger->getLedgerSeq() - 1);
+                                }
 
                                 sl.lock();
 
