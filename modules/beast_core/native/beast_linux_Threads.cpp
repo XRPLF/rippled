@@ -49,7 +49,8 @@ void Process::setPriority (const ProcessPriority prior)
 
 void Process::terminate()
 {
-    exit (0);
+    // http://linux.die.net/man/2/_exit
+    ::_exit (EXIT_FAILURE);
 }
 
 BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger()
