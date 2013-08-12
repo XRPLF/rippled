@@ -600,6 +600,8 @@ void LedgerMaster::advanceThread()
                     }
                 }
             }
+            else
+                WriteLog (lsTRACE, LedgerMaster) << "Not fetching history";
         }
         else
         {
@@ -690,8 +692,7 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish()
                     WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
                     getApp().getInboundLedgers().dropLedger(hash);
                     acq = getApp().getInboundLedgers().findCreate(hash, seq);
-                    nothing ();
-                    if (acq->isDone())
+                    if (acq->isComplete() && !acq->isFailed())
                         ledger = acq->getLedger();
                 }
             }

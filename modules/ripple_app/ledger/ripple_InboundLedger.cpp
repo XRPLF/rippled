@@ -817,6 +817,9 @@ Json::Value InboundLedger::getJson (int)
     if (mFailed)
         ret["failed"] = true;
 
+    if (!mComplete && !mFailed)
+        ret["peers"] = static_cast<int>(mPeers.size());
+
     ret["have_base"] = mHaveBase;
     ret["have_state"] = mHaveState;
     ret["have_transactions"] = mHaveTransactions;
