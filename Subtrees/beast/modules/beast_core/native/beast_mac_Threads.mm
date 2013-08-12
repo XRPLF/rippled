@@ -55,7 +55,8 @@ void Process::lowerPrivilege()
 
 void Process::terminate()
 {
-    exit (0);
+    // https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man2/_exit.2.html
+    ::_exit(EXIT_FAILURE);
 }
 
 void Process::setPriority (ProcessPriority)
