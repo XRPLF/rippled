@@ -17,7 +17,7 @@ class InboundLedgers : LeakChecked <InboundLedger>
 {
 public:
     // How long before we try again to acquire the same ledger
-    static const int kReacquireIntervalSeconds = 600;
+    static const int kReacquireIntervalSeconds = 300;
 
     InboundLedgers ()
         : mRecentFailures ("LedgerAcquireRecentFailures", 0, kReacquireIntervalSeconds)

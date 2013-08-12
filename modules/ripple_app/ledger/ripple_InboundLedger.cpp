@@ -210,7 +210,7 @@ void InboundLedger::addPeers ()
         return;
 
     // We traverse the peer list in random order so as not to favor any particular peer
-    int firstPeer = rand () & vSize;
+    int firstPeer = rand () % vSize;
 
     int found = 0;
 
@@ -228,7 +228,7 @@ void InboundLedger::addPeers ()
     }
 
     if (!found)
-        for (int i = 0; i < vSize; ++i)
+        for (int i = 0; i < ((vSize > 3) ? 3 : vSize); ++i)
             peerHas (peerList[ (i + firstPeer) % vSize]);
 }
 

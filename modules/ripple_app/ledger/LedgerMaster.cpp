@@ -557,16 +557,19 @@ void LedgerMaster::advanceThread()
                         Ledger::pointer ledger = getLedgerByHash(nextLedger->getParentHash());
                         if (!ledger)
                         {
-                            if (getApp().getOPs().shouldFetchPack(missing) && (missing > 40000))
-                                getFetchPack(nextLedger);
                             if (!getApp().getInboundLedgers().isFailure(nextLedger->getParentHash()))
                             {
                                 sl.unlock();
+
+                                if (getApp().getOPs().shouldFetchPack(missing) && (missing > 40000))
+                                    getFetchPack(nextLedger);
+
                                 InboundLedger::pointer acq =
                                     getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
                                                                             nextLedger->getLedgerSeq() - 1);
                                 if (acq && acq->isComplete() && !acq->isFailed())
                                     ledger = acq->getLedger();
+
                                 sl.lock();
                                 if (mValidLedger->getLedgerSeq() != mPubLedger->getLedgerSeq())
                                     progress = true;
