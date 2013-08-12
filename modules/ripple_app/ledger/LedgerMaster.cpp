@@ -497,8 +497,10 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 
     if (!ledger)
     {
-        getApp().getInboundLedgers ().findCreate (hash, seq);
-        return;
+        InboundLedger::pointer i = getApp().getInboundLedgers ().findCreate (hash, seq);
+        if (!i->isDone() || !i->isComplete() || i->isFailed())
+            return;
+        ledger = i->getLedger();
     }
 
     if (ledger->getLedgerSeq() != seq)
@@ -529,7 +531,7 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 void LedgerMaster::advanceThread()
 {
     boost::recursive_mutex::scoped_lock sl (mLock);
-    assert (mValidLedger);
+    assert (mValidLedger && mAdvanceThread);
 
     bool progress;
 
@@ -562,7 +564,7 @@ void LedgerMaster::advanceThread()
                                 if (acq && acq->isComplete())
                                     ledger = acq->getLedger();
                             }
-                }
+                        }
                         if (ledger)
                         {
                             sl.unlock();
@@ -574,19 +576,19 @@ void LedgerMaster::advanceThread()
                     }
                 }
             }
-            else
+        }
+        else
+        {
+            BOOST_FOREACH(Ledger::ref ledger, pubLedgers)
             {
-                BOOST_FOREACH(Ledger::ref ledger, pubLedgers)
-                {
-                    sl.unlock();
+                sl.unlock();
 
-                    setFullLedger(ledger, true, true);
-                    getApp().getOPs().pubLedger(ledger);
+                setFullLedger(ledger, true, true);
+                getApp().getOPs().pubLedger(ledger);
 
-                    sl.lock();
-                    mPubLedger = ledger;
-                    progress = true;
-                }
+                sl.lock();
+                mPubLedger = ledger;
+                progress = true;
             }
         }
     } while (progress);
