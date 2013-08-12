@@ -1812,14 +1812,20 @@ uint32 Ledger::roundCloseTime (uint32 closeTime, uint32 closeResolution)
 bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
 {
     if (!getApp().getHashRouter ().setFlag (getHash (), SF_SAVED))
+    {
+        WriteLog (lsDEBUG, Ledger) << "Double pend save for " << getLedgerSeq();
         return false;
+    }
 
     assert (isImmutable ());
 
     {
         boost::mutex::scoped_lock sl (sPendingSaveLock);
         if (!sPendingSaves.insert(getLedgerSeq()).second)
+        {
+            WriteLog (lsDEBUG, Ledger) << "Pend save with seq in pending saves " << getLedgerSeq();
             return false;
+        }
     }
 
     if (isSynchronous)

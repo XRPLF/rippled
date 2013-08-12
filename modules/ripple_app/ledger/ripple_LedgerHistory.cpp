@@ -26,16 +26,11 @@ void LedgerHistory::addLedger (Ledger::pointer ledger)
     assert (ledger && ledger->isImmutable ());
     assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
 
-    bool v = ledger->isValidated();
-
-    uint256 h (ledger->getHash ());
     boost::recursive_mutex::scoped_lock sl (mLedgersByHash.peekMutex ());
-    mLedgersByHash.canonicalize (h, ledger, true);
-    if (v || ledger->isValidated())
-    {
-        ledger->setValidated();
+
+    mLedgersByHash.canonicalize (ledger->getHash(), ledger, true);
+    if (ledger->isValidated())
         mLedgersByIndex[ledger->getLedgerSeq()] = h;
-    }
 }
 
 uint256 LedgerHistory::getLedgerHash (uint32 index)

@@ -462,7 +462,7 @@ void LedgerMaster::checkAccept (uint256 const& hash)
 
 void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 {
-    // Can we advance the last fully accepted ledger? If so, can we publish?
+    // Can we advance the last fully-validated ledger? If so, can we publish?
     boost::recursive_mutex::scoped_lock ml (mLock);
 
     if (mValidLedger && (seq <= mValidLedger->getLedgerSeq ()))
@@ -493,7 +493,7 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
     mLastValidateHash = hash;
     mLastValidateSeq = seq;
 
-    Ledger::pointer ledger = mLedgerHistory.getLedgerByHash (hash);
+    Ledger::pointer ledger = getLedgerByHash (hash);
 
     if (!ledger)
     {
@@ -505,7 +505,7 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 
     if (ledger->getLedgerSeq() != seq)
     {
-        WriteLog (lsWARNING, LedgerMaster) << "Acquired ledger " << hash.GetHex() << "didn't have expected seq " << seq;
+        WriteLog (lsWARNING, LedgerMaster) << "Acquired ledger " << hash.GetHex() << " didn't have expected seq " << seq;
         return;
     }
 
@@ -545,8 +545,8 @@ void LedgerMaster::advanceThread()
             if (!getConfig().RUN_STANDALONE && (mValidLedger->getLedgerSeq() == mPubLedger->getLedgerSeq()))
             { // We are in sync, so can acquire
                 uint32 missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
-
-                if (shouldAcquire(mValidLedger->getLedgerSeq(), getConfig().LEDGER_HISTORY, missing))
+                if ((missing != RangeSet::absent) &&
+                    shouldAcquire(mValidLedger->getLedgerSeq(), getConfig().LEDGER_HISTORY, missing))
                 {
                     Ledger::pointer nextLedger = mLedgerHistory.getLedgerBySeq(missing + 1);
                     if (nextLedger)
@@ -561,7 +561,7 @@ void LedgerMaster::advanceThread()
                                 InboundLedger::pointer acq =
                                     getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
                                                                             nextLedger->getLedgerSeq() - 1);
-                                if (acq && acq->isComplete())
+                                if (acq && acq->isComplete() && !acq->isFailed())
                                     ledger = acq->getLedger();
                             }
                         }
@@ -573,6 +573,12 @@ void LedgerMaster::advanceThread()
                             sl.lock();
                             progress = true;
                         }
+                    }
+                    else
+                    {
+                        WriteLog (lsFATAL, LedgerMaster) << "Unable to find ledger following prevMissing " << missing;
+                        WriteLog (lsFATAL, LedgerMaster) << "Pub:" << mPubLedger->getLedgerSeq() << " Val:" << mValidLedger->getLedgerSeq();
+                        assert(false);
                     }
                 }
             }
@@ -703,6 +709,7 @@ void LedgerMaster::tryAdvance()
 {
     boost::recursive_mutex::scoped_lock ml (mLock);
 
+    // Can't advance without at least one fully-valid ledger
     if (!mAdvanceThread && mValidLedger)
     {
         mAdvanceThread = true;
