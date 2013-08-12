@@ -174,7 +174,7 @@ void InboundLedger::onTimer (bool progress, boost::recursive_mutex::scoped_lock&
         mAggressive = true;
         mByHash = true;
         int pc = getPeerCount ();
-        WriteLog (lsDEBUG, InboundLedger) << "No progress(" << pc << ") for ledger " << pc <<  mHash;
+        WriteLog (lsDEBUG, InboundLedger) << "No progress(" << pc << ") for ledger " << mHash;
 
         if (pc < 3)
             addPeers ();
