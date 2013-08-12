@@ -161,13 +161,6 @@ void LedgerMaster::storeLedger (Ledger::pointer ledger)
 void LedgerMaster::forceValid (Ledger::pointer ledger)
 {
     ledger->setValidated();
-
-    boost::recursive_mutex::scoped_lock sl (mLock);
-
-    if (!mValidLedger || (mPubLedger->getLedgerSeq() < ledger->getLedgerSeq()))
-        mValidLedger = ledger;
-    if (!mPubLedger || (mPubLedger->getLedgerSeq() < 2))
-        mPubLedger = ledger;
     setFullLedger(ledger, true, false);
 }
 
@@ -442,6 +435,8 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
 
     if (!mValidLedger || (ledger->getLedgerSeq() > mValidLedger->getLedgerSeq()))
         mValidLedger = ledger;
+    if (!mPubLedger)
+        mPubLedger = ledger;
 
     if ((ledger->getLedgerSeq () != 0) && mCompleteLedgers.hasValue (ledger->getLedgerSeq () - 1))
     {
@@ -514,6 +509,8 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 
     ledger->setValidated();
     mValidLedger = ledger;
+    if (!mPubLedger)
+        mPubLedger = ledger;
 
     uint64 fee, fee2, ref;
     ref = getApp().getFeeTrack().getLoadBase();
@@ -691,7 +688,7 @@ void LedgerMaster::tryAdvance()
 {
     boost::recursive_mutex::scoped_lock ml (mLock);
 
-    if (!mAdvanceThread)
+    if (!mAdvanceThread && mValidLedger)
     {
         mAdvanceThread = true;
         getApp().getJobQueue ().addJob (jtPUBLEDGER, "Ledger::advanceThread",
