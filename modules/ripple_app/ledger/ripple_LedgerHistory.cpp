@@ -30,7 +30,7 @@ void LedgerHistory::addLedger (Ledger::pointer ledger)
 
     mLedgersByHash.canonicalize (ledger->getHash(), ledger, true);
     if (ledger->isValidated())
-        mLedgersByIndex[ledger->getLedgerSeq()] = h;
+        mLedgersByIndex[ledger->getLedgerSeq()] = ledger->getHash();
 }
 
 uint256 LedgerHistory::getLedgerHash (uint32 index)

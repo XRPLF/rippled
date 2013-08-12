@@ -512,7 +512,10 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
     ledger->setValidated();
     mValidLedger = ledger;
     if (!mPubLedger)
+    {
+        ledger->pendSaveValidated(true, true);
         mPubLedger = ledger;
+    }
 
     uint64 fee, fee2, ref;
     ref = getApp().getFeeTrack().getLoadBase();
