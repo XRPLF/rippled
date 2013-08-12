@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-Workers::Workers (Callback& callback, int numberOfThreads)
+Workers::Workers (Callback& callback, String const& threadNames, int numberOfThreads)
     : m_callback (callback)
+    , m_threadNames (threadNames)
     , m_allPaused (true, true)
     , m_semaphore (0)
     , m_numberOfThreads (0)
@@ -66,7 +67,7 @@ void Workers::setNumberOfThreads (int numberOfThreads)
                 }
                 else
                 {
-                    worker = new Worker (*this);
+                    worker = new Worker (*this, m_threadNames);
                 }
 
                 m_everyone.push_front (worker);
@@ -130,8 +131,8 @@ void Workers::deleteWorkers (LockFreeStack <Worker>& stack)
 
 //------------------------------------------------------------------------------
 
-Workers::Worker::Worker (Workers& workers)
-    : Thread ("Worker")
+Workers::Worker::Worker (Workers& workers, String const& threadName)
+    : Thread (threadName)
     , m_workers (workers)
 {
     startThread ();
@@ -186,6 +187,9 @@ void Workers::Worker::run ()
             ++m_workers.m_runningTaskCount;
             m_workers.m_callback.processTask ();
             --m_workers.m_runningTaskCount;
+
+            // Put the name back in case the callback changed it
+            Thread::setCurrentThreadName (m_threadName);
         }
 
         // Any worker that goes into the paused list must
@@ -199,6 +203,8 @@ void Workers::Worker::run ()
         //
         if (--m_workers.m_activeCount == 0)
             m_workers.m_allPaused.signal ();
+
+        Thread::setCurrentThreadName (m_threadName + " (paused)");
 
         // [1] We will be here when the paused list is popped
         //
@@ -246,7 +252,7 @@ public:
 
         TestCallback cb (threadCount);
 
-        Workers w (cb, 0);
+        Workers w (cb, "Test", 0);
         expect (w.getNumberOfThreads () == 0);
 
         w.setNumberOfThreads (threadCount);
