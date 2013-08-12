@@ -545,7 +545,9 @@ void LedgerMaster::advanceThread()
         std::list<Ledger::pointer> pubLedgers = findNewLedgersToPublish();
         if (pubLedgers.empty())
         {
-            if (!getConfig().RUN_STANDALONE && (mValidLedger->getLedgerSeq() == mPubLedger->getLedgerSeq()))
+            if (!getConfig().RUN_STANDALONE && !getApp().getFeeTrack().isLoadedLocal() &&
+                (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 3) &&
+                (mValidLedger->getLedgerSeq() == mPubLedger->getLedgerSeq()))
             { // We are in sync, so can acquire
                 uint32 missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
                 if ((missing != RangeSet::absent) &&
@@ -571,6 +573,8 @@ void LedgerMaster::advanceThread()
                                     ledger = acq->getLedger();
 
                                 sl.lock();
+
+                                // If things changed while we released the lock, we need another pass
                                 if (mValidLedger->getLedgerSeq() != mPubLedger->getLedgerSeq())
                                     progress = true;
                             }
@@ -608,7 +612,9 @@ void LedgerMaster::advanceThread()
                 mPubLedger = ledger;
                 progress = true;
             }
+
             getApp().getOPs().clearNeedNetworkLedger();
+
             mPathFindNewLedger = true;
             if (!mPathFindThread)
             {
@@ -692,20 +698,6 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish()
                 ret.push_back (ledger);
             }
 
-        }
-    }
-
-    if (!ret.empty ())
-    {
-        getApp().getOPs ().clearNeedNetworkLedger ();
-
-        mPathFindNewLedger = true;
-
-        if (!mPathFindThread)
-        {
-            mPathFindThread = true;
-            getApp().getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
-                                           BIND_TYPE (&LedgerMaster::updatePaths, this));
         }
     }
 
