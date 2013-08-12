@@ -29,7 +29,12 @@ public:
     struct Callback
     {
         /** Perform a task.
-            The call is made on a thread owned by Workers.
+
+            The call is made on a thread owned by Workers. It is important
+            that you only process one task from inside your callback. Each
+            call to addTask will result in exactly one call to processTask.
+
+            @see Workers::addTask
         */
         virtual void processTask () = 0;
     };
@@ -68,11 +73,21 @@ public:
     */
     void pauseAllThreadsAndWait ();
 
-    /** Increment the number of tasks.
-        The callback will be called for each task.
+    /** Add a task to be performed.
+
+        Every call to addTask will eventually result in a call to
+        Callback::processTask unless the Workers object is destroyed or
+        the number of threads is never set above zero.
+
         @note This function is thread-safe.
     */
     void addTask ();
+
+    /** Get the number of currently executing calls of Callback::processTask.
+        While this function is thread-safe, the value may not stay
+        accurate for very long. It's mainly for diagnostic purposes.
+    */
+    int numberOfCurrentlyRunningTasks () const noexcept;
 
     //--------------------------------------------------------------------------
 
@@ -87,7 +102,6 @@ private:
         Idle:   Active, but blocked on waiting for a task.
         Pausd:  Blocked waiting to exit or become active.
     */
-
     class Worker
         : public LockFreeStack <Worker>::Node
         , public LockFreeStack <Worker, PausedTag>::Node
@@ -115,6 +129,7 @@ private:
     int m_numberOfThreads;                       // how many we want active now
     Atomic <int> m_activeCount;                  // to know when all are paused
     Atomic <int> m_pauseCount;                   // how many threads need to pause now
+    Atomic <int> m_runningTaskCount;             // how many calls to processTask() active
     LockFreeStack <Worker> m_everyone;           // holds all created workers
     LockFreeStack <Worker, PausedTag> m_paused;  // holds just paused workers
 };

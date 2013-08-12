@@ -96,11 +96,18 @@ void Workers::pauseAllThreadsAndWait ()
     setNumberOfThreads (0);
 
     m_allPaused.wait ();
+
+    bassert (numberOfCurrentlyRunningTasks () == 0);
 }
 
 void Workers::addTask ()
 {
     m_semaphore.signal ();
+}
+
+int Workers::numberOfCurrentlyRunningTasks () const noexcept
+{
+    return m_runningTaskCount.get ();
 }
 
 void Workers::deleteWorkers (LockFreeStack <Worker>& stack)
@@ -176,7 +183,9 @@ void Workers::Worker::run ()
             // We couldn't pause so we must have gotten
             // unblocked in order to process a task.
             //
+            ++m_workers.m_runningTaskCount;
             m_workers.m_callback.processTask ();
+            --m_workers.m_runningTaskCount;
         }
 
         // Any worker that goes into the paused list must
