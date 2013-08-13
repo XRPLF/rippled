@@ -364,13 +364,11 @@ void LedgerMaster::tryFill (Ledger::pointer ledger)
 
 void LedgerMaster::getFetchPack (Ledger::ref nextLedger)
 {
-    uint32 fetchSeq = nextLedger->getLedgerSeq () - 1;
-
     protocol::TMGetObjectByHash tmBH;
     tmBH.set_type (protocol::TMGetObjectByHash::otFETCH_PACK);
     tmBH.set_query (true);
-    tmBH.set_seq (fetchSeq);
-    tmBH.set_ledgerhash (nextLedger->getParentHash().begin (), 32);
+    tmBH.set_seq (nextLedger->getLedgerSeq());
+    tmBH.set_ledgerhash (nextLedger->getHash().begin (), 32);
     std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
 
     Peer::pointer target;
@@ -378,7 +376,7 @@ void LedgerMaster::getFetchPack (Ledger::ref nextLedger)
 
     BOOST_FOREACH (const Peer::pointer & peer, peerList)
     {
-        if (peer->hasRange (fetchSeq, fetchSeq + 1))
+        if (peer->hasRange (nextLedger->getLedgerSeq() - 1, nextLedger->getLedgerSeq()))
         {
             if (count++ == 0)
                 target = peer;
@@ -585,26 +583,13 @@ void LedgerMaster::advanceThread()
                         {
                             if (!getApp().getInboundLedgers().isFailure(nextLedger->getParentHash()))
                             {
-                                sl.unlock();
-
-                                if ((missing > 40000) && getApp().getOPs().shouldFetchPack(missing))
-                                    getFetchPack(nextLedger);
-
                                 InboundLedger::pointer acq =
                                     getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
                                                                             nextLedger->getLedgerSeq() - 1);
                                 if (acq && acq->isComplete() && !acq->isFailed())
-                                {
                                     ledger = acq->getLedger();
-                                    getApp().getInboundLedgers().findCreate(ledger->getParentHash(),
-                                                                            ledger->getLedgerSeq() - 1);
-                                }
-
-                                sl.lock();
-
-                                // If things changed while we released the lock, we need another pass
-                                if (mValidLedger->getLedgerSeq() != mPubLedger->getLedgerSeq())
-                                    progress = true;
+                                else if ((missing > 40000) && getApp().getOPs().shouldFetchPack(missing))
+                                    getFetchPack(nextLedger);
                             }
                         }
                         if (ledger)
