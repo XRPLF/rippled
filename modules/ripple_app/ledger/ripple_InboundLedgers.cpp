@@ -32,27 +32,34 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
         WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have: " << hash;
     }
 
+    assert (mLedgers[hash]);
     return ptr;
 }
 
 InboundLedger::pointer InboundLedgers::find (uint256 const& hash)
 {
     assert (hash.isNonZero ());
-    boost::mutex::scoped_lock sl (mLock);
-    std::map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
 
-    if (it != mLedgers.end ())
+    InboundLedger::pointer ret;
+
     {
-        it->second->touch ();
-        return it->second;
+        boost::mutex::scoped_lock sl (mLock);
+
+        std::map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
+        if (it != mLedgers.end ())
+        {
+            it->second->touch ();
+            ret = it->second;
+        }
     }
 
-    return InboundLedger::pointer ();
+    return ret;
 }
 
 bool InboundLedgers::hasLedger (uint256 const& hash)
 {
     assert (hash.isNonZero ());
+
     boost::mutex::scoped_lock sl (mLock);
     return mLedgers.find (hash) != mLedgers.end ();
 }
@@ -60,6 +67,7 @@ bool InboundLedgers::hasLedger (uint256 const& hash)
 void InboundLedgers::dropLedger (uint256 const& hash)
 {
     assert (hash.isNonZero ());
+
     boost::mutex::scoped_lock sl (mLock);
     mLedgers.erase (hash);
 }
@@ -254,7 +262,10 @@ void InboundLedgers::gotFetchPack (Job&)
         acquires.reserve (mLedgers.size ());
         typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
         BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
-        acquires.push_back (it.second);
+        {
+            assert (it.second);
+            acquires.push_back (it.second);
+        }
     }
 
     BOOST_FOREACH (const InboundLedger::pointer & acquire, acquires)
@@ -282,7 +293,10 @@ Json::Value InboundLedgers::getInfo()
 
         acquires.reserve (mLedgers.size ());
         BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
-           acquires.push_back (it);
+        {
+            assert (it.second);
+            acquires.push_back (it);
+        }
     }
 
     BOOST_FOREACH (const u256_acq_pair& it, acquires)
