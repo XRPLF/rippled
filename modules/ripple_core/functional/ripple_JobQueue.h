@@ -10,7 +10,21 @@
 class JobQueue : private Workers::Callback
 {
 public:
-    typedef std::map<JobType, std::pair<int, int > > JobCounts;
+    // Statistics on a particular JobType
+    struct Count
+    {
+        Count () noexcept;
+        explicit Count (JobType type) noexcept;
+
+        JobType type;    // The type of Job these counts reflect
+        int waiting;     // The number waiting
+        int running;     // How many are running
+        int deferred;    // Number of jobs we didn't signal due to limits
+    };
+
+    typedef std::map <JobType, Count> JobCounts;
+
+    //--------------------------------------------------------------------------
 
     JobQueue ();
 
@@ -22,11 +36,15 @@ public:
     void addJob (JobType type, const std::string& name, const FUNCTION_TYPE<void (Job&)>& job);
 
     int getJobCount (JobType t);        // Jobs waiting at this priority
+
     int getJobCountTotal (JobType t);   // Jobs waiting plus running at this priority
+
     int getJobCountGE (JobType t);      // All waiting jobs at or greater than this priority
+
     std::vector< std::pair<JobType, std::pair<int, int> > > getJobCounts (); // jobs waiting, threads doing
 
     void shutdown ();
+
     void setThreadCount (int c, bool const standaloneMode);
 
     // VFALCO TODO Rename these to newLoadEventMeasurement or something similar
@@ -46,6 +64,7 @@ public:
     }
 
     bool isOverloaded ();
+
     Json::Value getJson (int c = 0);
 
 private:
@@ -53,10 +72,9 @@ private:
     typedef JobLockType::scoped_lock ScopedLockType;
     typedef std::set <Job> JobSet;
 
-    int freeTaskSlots (JobType type, ScopedLockType const&);
-    void queueJobForRunning (Job const& job, ScopedLockType const&);
-    void getNextJobToRun (Job& job, ScopedLockType const&);
-    void setRunningJobFinished (Job const& job);
+    void queueJob (Job const& job, ScopedLockType&);
+    void getNextJob (Job& job, ScopedLockType&);
+    void finishJob (Job const& job);
 
     void processTask ();
 
