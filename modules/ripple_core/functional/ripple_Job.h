@@ -22,15 +22,16 @@ enum JobType
     jtLEDGER_DATA   = 7,    // Received data for a ledger we're acquiring
     jtUPDATE_PF     = 8,    // Update pathfinding requests
     jtCLIENT        = 9,    // A websocket command from the client
-    jtTRANSACTION   = 10,    // A transaction received from the network
-    jtPUBLEDGER     = 11,   // Publish a fully-accepted ledger
-    jtTXN_DATA      = 12,   // Fetch a proposed set
-    jtWAL           = 13,   // Write-ahead logging
-    jtVALIDATION_t  = 14,   // A validation from a trusted source
-    jtWRITE         = 15,   // Write out hashed objects
-    jtPROPOSAL_t    = 16,   // A proposal from a trusted source
-    jtSWEEP         = 17,   // Sweep for stale structures
-    jtADMIN         = 18,   // An administrative operation
+    jtTRANSACTION   = 10,   // A transaction received from the network
+    jtADVANCE       = 11,   // Advance validated/acquired ledgers
+    jtPUBLEDGER     = 12,   // Publish a fully-accepted ledger
+    jtTXN_DATA      = 13,   // Fetch a proposed set
+    jtWAL           = 14,   // Write-ahead logging
+    jtVALIDATION_t  = 15,   // A validation from a trusted source
+    jtWRITE         = 16,   // Write out hashed objects
+    jtPROPOSAL_t    = 17,   // A proposal from a trusted source
+    jtSWEEP         = 18,   // Sweep for stale structures
+    jtADMIN         = 19,   // An administrative operation
 
     // special types not dispatched by the job pool
     jtPEER          = 24,

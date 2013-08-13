@@ -88,6 +88,9 @@ const char* Job::toString (JobType t)
     case jtPUBLEDGER:
         return "publishNewLedger";
 
+    case jtADVANCE:
+        return "advanceLedger";
+
     case jtVALIDATION_t:
         return "trustedValidation";
 

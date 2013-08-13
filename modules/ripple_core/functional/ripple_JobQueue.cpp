@@ -454,6 +454,7 @@ int JobQueue::getJobLimit (JobType type)
     case jtCLIENT:
     case jtTRANSACTION:
     case jtPUBLEDGER:
+    case jtADVANCE:
     case jtWAL:
     case jtVALIDATION_t:
     case jtWRITE:

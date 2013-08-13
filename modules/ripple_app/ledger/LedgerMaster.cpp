@@ -746,7 +746,7 @@ void LedgerMaster::tryAdvance()
     if (!mAdvanceThread && mValidLedger)
     {
         mAdvanceThread = true;
-        getApp().getJobQueue ().addJob (jtPUBLEDGER, "Ledger::advanceThread",
+        getApp().getJobQueue ().addJob (jtADVANCE, "advanceLedger",
                                         BIND_TYPE (&LedgerMaster::advanceThread, this));
     }
 }
