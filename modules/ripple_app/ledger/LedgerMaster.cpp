@@ -572,6 +572,7 @@ void LedgerMaster::advanceThread()
                 (mValidLedger->getLedgerSeq() == mPubLedger->getLedgerSeq()))
             { // We are in sync, so can acquire
                 uint32 missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
+                WriteLog (lsTRACE, LedgerMaster) << "tryAdvance discovered missing " << missing;
                 if ((missing != RangeSet::absent) &&
                     shouldAcquire(mValidLedger->getLedgerSeq(), getConfig().LEDGER_HISTORY, missing))
                 {
@@ -579,6 +580,7 @@ void LedgerMaster::advanceThread()
                     Ledger::pointer nextLedger = mLedgerHistory.getLedgerBySeq(missing + 1);
                     if (nextLedger)
                     {
+                        assert (nextLedger->getLedgerSeq() == (missing + 1));
                         Ledger::pointer ledger = getLedgerByHash(nextLedger->getParentHash());
                         if (!ledger)
                         {
@@ -590,11 +592,17 @@ void LedgerMaster::advanceThread()
                                 if (acq && acq->isComplete() && !acq->isFailed())
                                     ledger = acq->getLedger();
                                 else if ((missing > 40000) && getApp().getOPs().shouldFetchPack(missing))
+                                {
+                                    WriteLog (lsTRACE, LedgerMaster) << "tryAdvance want fetch pack " << missing;
                                     getFetchPack(nextLedger);
+                                }
                             }
+                            else
+                                WriteLog (lsDEBUG, LedgerMaster) << "tryAdvance found failed acquire";
                         }
                         if (ledger)
                         {
+                            WriteLog (lsTRACE, LedgerMaster) << "tryAdvance acquired " << ledger->getLedgerSeq();
                             setFullLedger(ledger, false, false);
                             tryFill(ledger);
                             progress = true;
@@ -608,19 +616,22 @@ void LedgerMaster::advanceThread()
                     }
                     sl.lock();
                     if (mValidLedger->getLedgerSeq() != mPubLedger->getLedgerSeq())
+                    {
+                        WriteLog (lsDEBUG, LedgerMaster) << "tryAdvance found last valid changed";
                         progress = true;
+		    }
                 }
             }
             else
-                WriteLog (lsTRACE, LedgerMaster) << "Not fetching history";
+                WriteLog (lsTRACE, LedgerMaster) << "tryAdvance not fetching history";
         }
         else
         {
-            WriteLog (lsTRACE, LedgerMaster) << "Found " << pubLedgers.size() << " ledgers to publish";
+            WriteLog (lsTRACE, LedgerMaster) << "tryAdvance found " << pubLedgers.size() << " ledgers to publish";
             BOOST_FOREACH(Ledger::ref ledger, pubLedgers)
             {
                 sl.unlock();
-                WriteLog(lsDEBUG, LedgerMaster) << "Publishing seq " << ledger->getLedgerSeq();
+                WriteLog(lsDEBUG, LedgerMaster) << "tryAdvance publishing seq " << ledger->getLedgerSeq();
 
                 setFullLedger(ledger, true, true);
                 getApp().getOPs().pubLedger(ledger);
@@ -649,6 +660,7 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish()
 { // Call with a lock
     std::list<Ledger::pointer> ret;
 
+    WriteLog (lsTRACE, LedgerMaster) << "findNewLedgersToPublish<";
     if (!mPubLedger)
     {
         WriteLog (lsINFO, LedgerMaster) << "First published ledger will be " << mValidLedger->getLedgerSeq();
@@ -663,9 +675,10 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish()
     else if (mValidLedger->getLedgerSeq () > mPubLedger->getLedgerSeq ())
     {
         int acqCount = 0;
-        for (uint32 seq = mPubLedger->getLedgerSeq () + 1; seq <= mValidLedger->getLedgerSeq (); ++seq)
+        uint32 pubSeq = mPubLedger->getLedgerSeq() + 1; // Next sequence to publish
+        for (uint32 seq = pubSeq; seq <= mValidLedger->getLedgerSeq (); ++seq)
         {
-            WriteLog (lsTRACE, LedgerMaster) << "Trying to publish ledger " << seq;
+            WriteLog (lsTRACE, LedgerMaster) << "Trying to fetch/publish valid ledger " << seq;
 
             Ledger::pointer ledger;
             uint256 hash = mValidLedger->getLedgerHash (seq);
@@ -708,15 +721,17 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish()
                 }
             }
 
-            if (ledger && (ledger->getLedgerSeq() == (mPubLedger->getLedgerSeq() + 1)))
+            if (ledger && (ledger->getLedgerSeq() == pubSeq))
             { // We acquired the next ledger we need to publish
                 ledger->setValidated();
                 ret.push_back (ledger);
+                ++pubSeq;
             }
 
         }
     }
 
+    WriteLog (lsTRACE, LedgerMaster) << "findNewLedgersToPublish> " << ret.size();
     return ret;
 }
 
