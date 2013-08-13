@@ -179,7 +179,7 @@ public:
 
     void checkAccept (uint256 const& hash);
     void checkAccept (uint256 const& hash, uint32 seq);
-    std::list<Ledger::pointer> findNewLedgersToPublish();
+    std::list<Ledger::pointer> findNewLedgersToPublish(boost::recursive_mutex::scoped_lock& sl);
     void tryAdvance ();
     void newPathRequest ();
 
