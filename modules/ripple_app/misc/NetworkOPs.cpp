@@ -32,9 +32,7 @@ NetworkOPs::NetworkOPs (LedgerMaster* pLedgerMaster)
     , mLastCloseTime (0)
     , mLastValidationTime (0)
     , mFetchPack ("FetchPack", 2048, 20)
-    , mLastFetchPack (0)
-    // VFALCO TODO Give this magic number a name
-    , mFetchSeq (static_cast <uint32> (-1))
+    , mFetchSeq (0)
     , mLastLoadBase (256)
     , mLastLoadFactor (256)
 {
@@ -2351,28 +2349,9 @@ bool NetworkOPs::getFetchPack (uint256 const& hash, Blob& data)
 
 bool NetworkOPs::shouldFetchPack (uint32 seq)
 {
-    uint32 now = getNetworkTimeNC ();
-
-    if (mLastFetchPack == now)
+    if (mFetchSeq == seq);
         return false;
-
-    if (seq < mFetchSeq) // fetch pack has only data for ledgers ahead of where we are
-        mFetchPack.clear ();
-    else
-        mFetchPack.sweep ();
-
-    int size = mFetchPack.getCacheSize ();
-    if (size == 0)
-    {
-        mFetchSeq = 0;
-    }
-    else if (size > 128)
-    {
-        return false;
-    }
-
-    mLastFetchPack = now;
-
+    mFetchSeq = seq;
     return true;
 }
 
@@ -2383,8 +2362,6 @@ int NetworkOPs::getFetchSize ()
 
 void NetworkOPs::gotFetchPack (bool progress, uint32 seq)
 {
-    mLastFetchPack = 0;
-    mFetchSeq = seq;        // earliest pack we have data on
     getApp().getJobQueue ().addJob (jtLEDGER_DATA, "gotFetchPack",
                                    BIND_TYPE (&InboundLedgers::gotFetchPack, &getApp().getInboundLedgers (), P_1));
 }
