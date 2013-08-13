@@ -24,8 +24,8 @@
 UnitTest::UnitTest (String const& className,
                     String const& packageName,
                     When when)
-    : m_className (className)
-    , m_packageName (packageName)
+    : m_className (className.removeCharacters (" "))
+    , m_packageName (packageName.removeCharacters (" "))
     , m_when (when)
     , m_runner (nullptr)
 {
