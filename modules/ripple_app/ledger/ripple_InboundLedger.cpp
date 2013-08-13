@@ -230,6 +230,8 @@ static void LADispatch (
     InboundLedger::pointer la,
     std::vector< FUNCTION_TYPE<void (InboundLedger::pointer)> > trig)
 {
+    if (la->isComplete() && !la->isFailed())
+        getApp().getLedgerMaster().checkAccept(la->getLedger()->getHash(), la->getLedger()->getLedgerSeq());
     for (unsigned int i = 0; i < trig.size (); ++i)
         trig[i] (la);
 }
@@ -264,9 +266,8 @@ void InboundLedger::done ()
         getApp().getInboundLedgers ().logFailure (mHash);
 
     // We hold the PeerSet lock, so must dispatch
-    if (!triggers.empty())
-        getApp().getJobQueue ().addJob (jtLEDGER_DATA, "triggers",
-                                       BIND_TYPE (LADispatch, P_1, shared_from_this (), triggers));
+    getApp().getJobQueue ().addJob (jtLEDGER_DATA, "triggers",
+                                    BIND_TYPE (LADispatch, P_1, shared_from_this (), triggers));
     getApp().getLedgerMaster().tryAdvance();
 }
 
