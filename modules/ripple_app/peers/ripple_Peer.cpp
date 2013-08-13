@@ -1614,7 +1614,7 @@ void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObject
                 {
                     if (obj.ledgerseq () != pLSeq)
                     {
-                        CondLog (pLDo && (pLSeq != 0), lsDEBUG, Peer) << "Recevied full fetch pack for " << pLSeq;
+                        CondLog (pLDo && (pLSeq != 0), lsDEBUG, Peer) << "Received full fetch pack for " << pLSeq;
                         pLSeq = obj.ledgerseq ();
                         pLDo = !getApp().getOPs ().haveLedger (pLSeq);
 
