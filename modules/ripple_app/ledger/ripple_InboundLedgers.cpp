@@ -7,33 +7,38 @@
 InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 seq)
 {
     assert (hash.isNonZero ());
-    boost::mutex::scoped_lock sl (mLock);
-    InboundLedger::pointer& ptr = mLedgers[hash];
+    InboundLedger::pointer ret;
 
-    if (ptr)
-    { // FIXME: Should set the sequence if it's not set
-        ptr->touch ();
-        return ptr;
-    }
-
-    ptr = boost::make_shared<InboundLedger> (hash, seq);
-
-    if (!ptr->isDone ())
     {
-        ptr->addPeers ();
-        ptr->setTimer (); // Cannot call in constructor
-    }
-    else if (ptr->isComplete ())
-    {
-        Ledger::pointer ledger = ptr->getLedger ();
-        ledger->setClosed ();
-        ledger->setImmutable ();
-        getApp().getLedgerMaster ().storeLedger (ledger);
-        WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have: " << hash;
+        boost::mutex::scoped_lock sl (mLock);
+        InboundLedger::pointer& ptr = mLedgers[hash];
+
+        if (ptr)
+        { // FIXME: Should set the sequence if it's not set
+            ptr->touch ();
+            ret = ptr;
+        }
+        else
+        {
+            ptr = ret = boost::make_shared<InboundLedger> (hash, seq);
+
+            if (!ret->isDone ())
+            {
+                ret->addPeers ();
+                ret->setTimer (); // Cannot call in constructor
+            }
+            else if (ret->isComplete ())
+            {
+                Ledger::pointer ledger = ret->getLedger ();
+                ledger->setClosed ();
+                ledger->setImmutable ();
+                getApp().getLedgerMaster ().storeLedger (ledger);
+                WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have locally: " << hash;
+            }
+        }
     }
 
-    assert (mLedgers[hash]);
-    return ptr;
+    return ret;
 }
 
 InboundLedger::pointer InboundLedgers::find (uint256 const& hash)
@@ -45,7 +50,7 @@ InboundLedger::pointer InboundLedgers::find (uint256 const& hash)
     {
         boost::mutex::scoped_lock sl (mLock);
 
-        std::map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
+        boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
         if (it != mLedgers.end ())
         {
             it->second->touch ();
@@ -213,7 +218,7 @@ void InboundLedgers::sweep ()
     int now = UptimeTimer::getInstance ().getElapsedSeconds ();
     boost::mutex::scoped_lock sl (mLock);
 
-    std::map<uint256, InboundLedger::pointer>::iterator it = mLedgers.begin ();
+    boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.begin ();
 
     while (it != mLedgers.end ())
     {
@@ -223,7 +228,7 @@ void InboundLedgers::sweep ()
             ++it;
         }
         else if ((it->second->getLastAction () + 60) < now)
-            mLedgers.erase (it++);
+            it = mLedgers.erase (it);
         else
             ++it;
     }
@@ -234,14 +239,19 @@ int InboundLedgers::getFetchCount (int& timeoutCount)
     timeoutCount = 0;
     int ret = 0;
 
-    std::map<uint256, InboundLedger::pointer> inboundLedgers;
+    typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
+    std::vector<u256_acq_pair> inboundLedgers;
 
     {
         boost::mutex::scoped_lock sl (mLock);
-        inboundLedgers = mLedgers;
+
+        inboundLedgers.reserve(mLedgers.size());
+        BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
+        {
+            inboundLedgers.push_back(it);
+        }
     }
 
-    typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
     BOOST_FOREACH (const u256_acq_pair & it, inboundLedgers)
     {
         if (it.second->isActive ())

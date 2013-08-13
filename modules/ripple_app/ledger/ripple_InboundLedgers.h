@@ -65,7 +65,7 @@ public:
 
 private:
     boost::mutex mLock;
-    std::map <uint256, InboundLedger::pointer> mLedgers;
+    boost::unordered_map <uint256, InboundLedger::pointer> mLedgers;
     KeyCache <uint256, UptimeTimerAdapter> mRecentFailures;
 };
 
