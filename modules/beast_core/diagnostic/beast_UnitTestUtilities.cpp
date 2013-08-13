@@ -148,7 +148,7 @@ public:
 
     void runTest ()
     {
-        beginTestCase ("pass");
+        beginTestCase ("fail");
 
         fail ("Intentional failure");
     }
