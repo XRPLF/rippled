@@ -389,6 +389,7 @@ void LedgerMaster::getFetchPack (Ledger::ref nextLedger)
     {
         PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmBH, protocol::mtGET_OBJECTS);
         target->sendPacket (packet, false);
+        WriteLog (lsTRACE, LedgerMaster) << "Requested fetch pack for " << nextLedger->getLedgerSeq() - 1;
     }
     else
         WriteLog (lsDEBUG, LedgerMaster) << "No peer for fetch pack";
@@ -589,19 +590,22 @@ void LedgerMaster::advanceThread()
                                 InboundLedger::pointer acq =
                                     getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
                                                                             nextLedger->getLedgerSeq() - 1);
-                                if (acq && acq->isComplete() && !acq->isFailed())
+                                if (acq->isComplete() && !acq->isFailed())
                                     ledger = acq->getLedger();
                                 else if ((missing > 40000) && getApp().getOPs().shouldFetchPack(missing))
                                 {
                                     WriteLog (lsTRACE, LedgerMaster) << "tryAdvance want fetch pack " << missing;
                                     getFetchPack(nextLedger);
                                 }
+                                else
+                                    WriteLog (lsTRACE, LedgerMaster) << "tryAdvance no fetch pack for " << missing;
                             }
                             else
                                 WriteLog (lsDEBUG, LedgerMaster) << "tryAdvance found failed acquire";
                         }
                         if (ledger)
                         {
+                            assert(ledger->getLedgerSeq() == missing);
                             WriteLog (lsTRACE, LedgerMaster) << "tryAdvance acquired " << ledger->getLedgerSeq();
                             setFullLedger(ledger, false, false);
                             tryFill(ledger);
