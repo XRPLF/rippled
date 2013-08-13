@@ -2349,7 +2349,7 @@ bool NetworkOPs::getFetchPack (uint256 const& hash, Blob& data)
 
 bool NetworkOPs::shouldFetchPack (uint32 seq)
 {
-    if (mFetchSeq == seq);
+    if (mFetchSeq == seq)
         return false;
     mFetchSeq = seq;
     return true;
