@@ -44,7 +44,7 @@ JobQueue::JobQueue ()
     mJobLoads [ jtPUBLEDGER     ].setTargetLatency (3000, 4500);
     mJobLoads [ jtWAL           ].setTargetLatency (1000, 2500);
     mJobLoads [ jtVALIDATION_t  ].setTargetLatency (500, 1500);
-    mJobLoads [ jtWRITE         ].setTargetLatency (750, 1500);
+    mJobLoads [ jtWRITE         ].setTargetLatency (1750, 2500);
     mJobLoads [ jtTRANSACTION_l ].setTargetLatency (100, 500);
     mJobLoads [ jtPROPOSAL_t    ].setTargetLatency (100, 500);
 
