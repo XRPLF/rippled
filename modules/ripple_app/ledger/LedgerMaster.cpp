@@ -575,6 +575,7 @@ void LedgerMaster::advanceThread()
                 if ((missing != RangeSet::absent) &&
                     shouldAcquire(mValidLedger->getLedgerSeq(), getConfig().LEDGER_HISTORY, missing))
                 {
+                    sl.unlock();
                     Ledger::pointer nextLedger = mLedgerHistory.getLedgerBySeq(missing + 1);
                     if (nextLedger)
                     {
@@ -594,10 +595,8 @@ void LedgerMaster::advanceThread()
                         }
                         if (ledger)
                         {
-                            sl.unlock();
                             setFullLedger(ledger, false, false);
                             tryFill(ledger);
-                            sl.lock();
                             progress = true;
                         }
                     }
@@ -607,6 +606,9 @@ void LedgerMaster::advanceThread()
                         WriteLog (lsFATAL, LedgerMaster) << "Pub:" << mPubLedger->getLedgerSeq() << " Val:" << mValidLedger->getLedgerSeq();
                         assert(false);
                     }
+                    sl.lock();
+                    if (mValidLedger->getLedgerSeq() != mPubLedger->getLedgerSeq())
+                        progress = true;
                 }
             }
             else
