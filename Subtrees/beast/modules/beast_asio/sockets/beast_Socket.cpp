@@ -247,3 +247,71 @@ Socket::async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
 #endif
 }
 
+//------------------------------------------------------------------------------
+
+
+#if 0
+/* Stream, SyncReadStream, AsyncReadStream, WriteStream, AsyncWriteStream */
+// Note, missing std::future<> returns
+class Stream
+{
+public:
+    // Stream
+    typedef typename remove_reference<Stream>::type next_layer_type;
+    typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
+    next_layer_type& next_layer()
+    next_layer_type const& next_layer() const
+    lowest_layer_type& lowest_layer()
+    const lowest_layer_type& lowest_layer() const
+    boost::asio::io_service& get_io_service()
+    void close()
+    boost::system::error_code close(boost::system::error_code& ec)
+
+    // SyncWriteStream
+    template <typename ConstBufferSequence>
+    std::size_t write_some (const ConstBufferSequence& buffers)
+    template <typename ConstBufferSequence>
+    std::size_t write_some (const ConstBufferSequence& buffers, boost::system::error_code& ec)
+
+    // AsyncWriteStream
+    template <typename ConstBufferSequence, typename WriteHandler>
+    void async_write_some (const ConstBufferSequence& buffers, WriteHandler handler)
+
+    // ReadStream
+    template <typename MutableBufferSequence>
+    std::size_t read_some (const MutableBufferSequence& buffers)
+    template <typename MutableBufferSequence>
+    std::size_t read_some (const MutableBufferSequence& buffers, boost::system::error_code& ec)
+
+    // AsyncReadStream
+    template <typename MutableBufferSequence, typename ReadHandler>
+    void async_read_some (const MutableBufferSequence& buffers, ReadHandler handler)
+};
+#endif
+/* members, and the most common base class in which they appear:
+
+basic_io_object
+    io_service& get_io_service ()
+
+basic_socket <Protocol> : basic_io_object
+    typedef protocol_type
+    typedef lowest_layer_type
+    lowest_layer_type& lowest_layer ()
+    native_handle () // Socket::native_handle() would return void* and we'd use the templates to do the static_cast
+    cancel ()
+    shutdon (shutdown_type)
+    close ()
+    <various>
+
+basic_socket_acceptor <Protocol> : basic_io_object
+    typedef protocol_type
+    native_handle ()
+    listen ()
+    accept ()
+    async_accept ()
+    cancel ()
+    close ()
+
+basic_stream_socket <Protocol> : basic_socket <Protocol>
+
+*/

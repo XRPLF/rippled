@@ -26,7 +26,7 @@ PeerTest::Result::Result ()
 PeerTest::Result::Result (boost::system::error_code const& ec, String const& prefix)
     : m_ec (ec)
     , m_message ((prefix == String::empty) ? ec.message ()
-                : prefix + " " + ec.message ())
+                : prefix + ": " + ec.message ())
 {
 }
 
