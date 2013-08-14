@@ -842,6 +842,12 @@
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ByteSwap.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\protocol\beast_HandshakeDetectorType.h">
+      <Filter>beast_asio\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\protocol\beast_StreamHandshakeDetectorType.h">
+      <Filter>beast_asio\protocol</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -1302,6 +1308,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\basics\beast_PeerRole.cpp">
       <Filter>beast_asio\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\protocol\beast_StreamHandshakeDetectorType.cpp">
+      <Filter>beast_asio\protocol</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

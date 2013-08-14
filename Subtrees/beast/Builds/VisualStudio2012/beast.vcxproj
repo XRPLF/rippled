@@ -75,6 +75,8 @@
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_PeerRole.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_TransferCall.h" />
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
+    <ClInclude Include="..\..\modules\beast_asio\protocol\beast_HandshakeDetectorType.h" />
+    <ClInclude Include="..\..\modules\beast_asio\protocol\beast_StreamHandshakeDetectorType.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\beast_ProxyHandshake.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_Socket.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SharedSocket.h" />
@@ -306,6 +308,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp" />
+    <ClCompile Include="..\..\modules\beast_asio\protocol\beast_StreamHandshakeDetectorType.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\protocol\beast_ProxyHandshake.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

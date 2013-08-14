@@ -63,6 +63,8 @@ namespace beast
 #include "sockets/beast_SslContext.h"
 
 #include "protocol/beast_ProxyHandshake.h"
+#include "protocol/beast_HandshakeDetectorType.h"
+#include "protocol/beast_StreamHandshakeDetectorType.h"
 
 #include "tests/beast_TestPeerBasics.h"
 #include "tests/beast_TestPeer.h"

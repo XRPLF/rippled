@@ -17,20 +17,3 @@
 */
 //==============================================================================
 
-TestPeerLogicProxyClient::TestPeerLogicProxyClient (Socket& socket)
-    : TestPeerLogicSyncClient (socket)
-{
-}
-
-void TestPeerLogicProxyClient::on_pre_handshake ()
-{
-    ProxyHandshake h;
- 
-    static std::string line (
-        "PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535\r\n"
-        // 56 chars
-        );
-
-    std::size_t const amount = boost::asio::write (
-    socket (), boost::asio::buffer (line), error ());
-}
