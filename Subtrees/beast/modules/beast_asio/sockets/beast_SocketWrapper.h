@@ -644,4 +644,15 @@ public:
     Object* m_impl;
 };
 
+//------------------------------------------------------------------------------
+
+/** Dynamically allocate a SocketWrapper.
+    This deduces the template arguments for convenience.
+*/
+template <typename Object>
+SocketWrapper <Object>* newSocketWrapper (Object& object)
+{
+    return new SocketWrapper <Object> (object);
+}
+
 #endif

@@ -76,6 +76,30 @@ protected:
         typedef value type;
     };
 
+    // Specialization for boost::asio::buffered_stream
+    template <typename Stream>
+    struct InterfacesOf <boost::asio::buffered_stream <Stream> >
+    {
+        struct value : SocketInterface::Stream { };
+        typedef value type;
+    };
+
+    // Specialization for boost::asio::buffered_read_stream
+    template <typename Stream>
+    struct InterfacesOf <boost::asio::buffered_read_stream <Stream> >
+    {
+        struct value : SocketInterface::Stream { };
+        typedef value type;
+    };
+
+    // Specialization for boost::asio::buffered_write_stream
+    template <typename Stream>
+    struct InterfacesOf <boost::asio::buffered_write_stream <Stream> >
+    {
+        struct value : SocketInterface::Stream { };
+        typedef value type;
+    };
+
     // Specialization for boost::asio::ssl::stream
     template <typename Stream>
     struct InterfacesOf <boost::asio::ssl::stream <Stream> >
