@@ -91,10 +91,13 @@ private:
     std::vector <Buffer> m_buffers;
 };
 
+typedef boost::asio::const_buffer ConstBuffer;
+typedef boost::asio::mutable_buffer MutableBuffer;
+
 /** Meets the requirements of ConstBufferSequence */
-typedef BufferType <boost::asio::const_buffer> ConstBuffers;
+typedef BufferType <ConstBuffer> ConstBuffers;
 
 /** Meets the requirements of MutableBufferSequence */
-typedef BufferType <boost::asio::mutable_buffer> MutableBuffers;
+typedef BufferType <MutableBuffer> MutableBuffers;
 
 #endif
