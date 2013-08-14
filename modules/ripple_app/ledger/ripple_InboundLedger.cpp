@@ -26,16 +26,18 @@ InboundLedger::InboundLedger (uint256 const& hash, uint32 seq)
 #ifdef LA_DEBUG
     WriteLog (lsTRACE, InboundLedger) << "Acquiring ledger " << mHash;
 #endif
-    if (tryLocal ())
-        done();
 }
 
-void InboundLedger::checkLocal ()
+bool InboundLedger::checkLocal ()
 {
     boost::recursive_mutex::scoped_lock sl (mLock);
 
     if (!isDone () && tryLocal())
+    {
         done();
+        return true;
+    }
+    return false;
 }
 
 bool InboundLedger::tryLocal ()
@@ -232,6 +234,7 @@ static void LADispatch (
 {
     if (la->isComplete() && !la->isFailed())
         getApp().getLedgerMaster().checkAccept(la->getLedger()->getHash(), la->getLedger()->getLedgerSeq());
+    getApp().getLedgerMaster().tryAdvance();
     for (unsigned int i = 0; i < trig.size (); ++i)
         trig[i] (la);
 }
@@ -244,9 +247,7 @@ void InboundLedger::done ()
     mSignaled = true;
     touch ();
 
-#ifdef LA_DEBUG
     WriteLog (lsTRACE, InboundLedger) << "Done acquiring ledger " << mHash;
-#endif
 
     assert (isComplete () || isFailed ());
 
@@ -268,7 +269,6 @@ void InboundLedger::done ()
     // We hold the PeerSet lock, so must dispatch
     getApp().getJobQueue ().addJob (jtLEDGER_DATA, "triggers",
                                     BIND_TYPE (LADispatch, P_1, shared_from_this (), triggers));
-    getApp().getLedgerMaster().tryAdvance();
 }
 
 bool InboundLedger::addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)> trigger)

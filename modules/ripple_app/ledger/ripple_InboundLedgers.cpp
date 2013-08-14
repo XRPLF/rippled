@@ -4,6 +4,8 @@
 */
 //==============================================================================
 
+typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
+
 InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 seq)
 {
     assert (hash.isNonZero ());
@@ -11,29 +13,32 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
 
     {
         boost::mutex::scoped_lock sl (mLock);
-        InboundLedger::pointer& ptr = mLedgers[hash];
 
-        if (ptr)
-        { // FIXME: Should set the sequence if it's not set
-            ptr->touch ();
-            ret = ptr;
+        boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
+        if (it != mLedgers.end ())
+        {
+            ret = it->second;
+            ret->touch ();
+            // FIXME: Should set the sequence if it's not set
         }
         else
         {
-            ptr = ret = boost::make_shared<InboundLedger> (hash, seq);
+            ret = boost::make_shared<InboundLedger> (hash, seq);
+            assert (ret);
+            mLedgers.insert (std::make_pair (hash, ret));
 
-            if (!ret->isDone ())
+            if (!ret->tryLocal())
             {
                 ret->addPeers ();
                 ret->setTimer (); // Cannot call in constructor
             }
-            else if (ret->isComplete ())
+            else if (!ret->isFailed ())
             {
+                WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have locally: " << hash;
                 Ledger::pointer ledger = ret->getLedger ();
                 ledger->setClosed ();
                 ledger->setImmutable ();
                 getApp().getLedgerMaster ().storeLedger (ledger);
-                WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have locally: " << hash;
             }
         }
     }
@@ -75,6 +80,7 @@ void InboundLedgers::dropLedger (uint256 const& hash)
 
     boost::mutex::scoped_lock sl (mLock);
     mLedgers.erase (hash);
+
 }
 
 bool InboundLedgers::awaitLedgerData (uint256 const& ledgerHash)
@@ -239,7 +245,6 @@ int InboundLedgers::getFetchCount (int& timeoutCount)
     timeoutCount = 0;
     int ret = 0;
 
-    typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
     std::vector<u256_acq_pair> inboundLedgers;
 
     {
@@ -270,7 +275,6 @@ void InboundLedgers::gotFetchPack (Job&)
         boost::mutex::scoped_lock sl (mLock);
 
         acquires.reserve (mLedgers.size ());
-        typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
         BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
         {
             assert (it.second);
@@ -296,7 +300,6 @@ Json::Value InboundLedgers::getInfo()
 {
     Json::Value ret(Json::objectValue);
 
-    typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
     std::vector<u256_acq_pair> acquires;
     {
         boost::mutex::scoped_lock sl (mLock);
