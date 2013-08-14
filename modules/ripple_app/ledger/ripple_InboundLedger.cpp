@@ -170,7 +170,7 @@ void InboundLedger::onTimer (bool progress, boost::recursive_mutex::scoped_lock&
         WriteLog (lsDEBUG, InboundLedger) << "No progress(" << pc << ") for ledger " << mHash;
 
         trigger (Peer::pointer ());
-        if (pc < 3)
+        if (pc < 4)
             addPeers ();
     }
 }
@@ -212,13 +212,13 @@ void InboundLedger::addPeers ()
 
         if (peer->hasLedger (getHash (), mSeq))
         {
-           if (peerHas (peer) && (++found == 3))
+           if (peerHas (peer) && (++found > 6))
                break;
         }
     }
 
     if (!found)
-        for (int i = 0; i < ((vSize > 6) ? 6 : vSize); ++i)
+        for (int i = 0; (i < 6) && (i < vSize); ++i)
             peerHas (peerList[ (i + firstPeer) % vSize]);
 }
 
