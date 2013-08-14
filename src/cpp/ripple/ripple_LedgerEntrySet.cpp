@@ -944,7 +944,7 @@ bool LedgerEntrySet::dirNext (
     STVector256             svIndexes   = sleNode->getFieldV256 (sfIndexes);
     std::vector<uint256>&   vuiIndexes  = svIndexes.peekValue ();
 
-    if (uDirEntry == vuiIndexes.size ())
+    if (uDirEntry >= vuiIndexes.size ())
     {
         uint64              uNodeNext   = sleNode->getFieldU64 (sfIndexNext);
 
