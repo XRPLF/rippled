@@ -48,10 +48,10 @@ public:
     static String getArgName (arg_type arg)
     {
         if (arg == protocol_type::v4 ())
-            return "tcpv4";
+            return ".tcpv4";
         else if (arg == protocol_type::v6 ())
-            return "tcpv6";
-        return "tcp?";
+            return ".tcpv6";
+        return ".tcp?";
     }
 
     String name ()

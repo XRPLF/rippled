@@ -22,14 +22,6 @@
 class TestPeerUnitTests : public UnitTest
 {
 public:
-    enum
-    {
-        timeoutSeconds = 3
-    };
-
-    TestPeerUnitTests () : UnitTest ("TestPeer", "beast", runManual)
-    {
-    }
 
     template <typename Details, typename Arg >
     void testDetails (Arg const& arg = Arg ())
@@ -42,6 +34,17 @@ public:
         typedef boost::asio::ip::tcp protocol;
         testDetails <TcpDetails, TcpDetails::arg_type> (protocol::v4 ());
         testDetails <TcpDetails, TcpDetails::arg_type> (protocol::v6 ());
+    }
+
+    //--------------------------------------------------------------------------
+
+    enum
+    {
+        timeoutSeconds = 10
+    };
+
+    TestPeerUnitTests () : UnitTest ("TestPeer", "beast", runManual)
+    {
     }
 };
 

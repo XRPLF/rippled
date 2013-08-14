@@ -135,10 +135,18 @@ void TestPeerLogicAsyncClient::on_shutdown (error_code const& ec)
     {
         if (success (error (ec), true))
         {
-            if (success (socket ().close (error ())))
+            if (socket ().requires_handshake ())
             {
-                // doing nothing here is intended,
-                // as the calls to success() may set error()
+                socket ().shutdown (Socket::shutdown_both, error ());
+            }
+
+            if (! error ())
+            {
+                if (success (socket ().close (error ())))
+                {
+                    // doing nothing here is intended,
+                    // as the calls to success() may set error()
+                }
             }
         }
     }
