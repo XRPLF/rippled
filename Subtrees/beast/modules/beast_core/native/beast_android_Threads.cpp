@@ -57,12 +57,6 @@ void Process::setPriority (ProcessPriority prior)
     pthread_setschedparam (pthread_self(), policy, &param);
 }
 
-void Process::terminate()
-{
-    // TODO
-    exit (0);
-}
-
 BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger()
 {
     return false;
