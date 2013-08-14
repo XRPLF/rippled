@@ -202,6 +202,7 @@ private:
 
     SHAMapTreeNode::pointer getNode (const SHAMapNode & id);
     SHAMapTreeNode::pointer getNode (const SHAMapNode & id, uint256 const & hash, bool modify);
+    SHAMapTreeNode* getNodePointer (const SHAMapNode & id);
     SHAMapTreeNode* getNodePointer (const SHAMapNode & id, uint256 const & hash);
     SHAMapTreeNode* getNodePointerNT (const SHAMapNode & id, uint256 const & hash);
     SHAMapTreeNode* getNodePointer (const SHAMapNode & id, uint256 const & hash, SHAMapSyncFilter * filter);

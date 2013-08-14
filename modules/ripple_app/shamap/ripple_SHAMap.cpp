@@ -985,6 +985,34 @@ SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& nodeID)
     return node;
 }
 
+// This function returns NULL if no node with that ID exists in the map
+// It throws if the map is incomplete
+SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& nodeID)
+{
+    boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find (nodeID);
+    if (it != mTNByID.end())
+    {
+        it->second->touch(mSeq);
+        return it->second.get();
+    }
+
+    SHAMapTreeNode* node = root.get();
+
+    while (nodeID != *node)
+    {
+        int branch = node->selectBranch (nodeID.getNodeID ());
+        assert (branch >= 0);
+
+        if ((branch < 0) || node->isEmptyBranch (branch))
+            return NULL;
+
+        node = getNodePointer (node->getChildNodeID (branch), node->getChildHash (branch));
+        assert (node);
+    }
+
+    return node;
+}
+
 bool SHAMap::getPath (uint256 const& index, std::vector< Blob >& nodes, SHANodeFormat format)
 {
     // Return the path of nodes to the specified index in the specified format
