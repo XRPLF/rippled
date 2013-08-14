@@ -2073,9 +2073,8 @@ void NetworkOPs::getBookPage (Ledger::pointer lpLedger, const uint160& uTakerPay
             {
                 uTipIndex       = sleOfferDir->getIndex ();
                 saDirRate       = STAmount::setRate (Ledger::getQuality (uTipIndex));
-                SLE::pointer    sleBookNode;
 
-                lesActive.dirFirst (uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
+                lesActive.dirFirst (uTipIndex, sleOfferDir, uBookEntry, uOfferIndex);
 
                 WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("getBookPage:   uTipIndex=%s") % uTipIndex);
                 WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("getBookPage: uOfferIndex=%s") % uOfferIndex);
