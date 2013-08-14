@@ -1798,11 +1798,17 @@ void PeerImp::recvStatus (protocol::TMStatusChange& packet)
     }
     else mPreviousLedgerHash.zero ();
 
-    if (packet.has_firstseq ())
+    if (packet.has_firstseq () && packet.has_lastseq())
+    {
         mMinLedger = packet.firstseq ();
-
-    if (packet.has_lastseq ())
         mMaxLedger = packet.lastseq ();
+
+        // Work around some servers that report sequences incorrectly
+        if (mMinLedger == 0)
+            mMaxLedger = 0;
+        if (mMaxLedger == 0)
+            mMinLedger = 0;
+    }
 }
 
 void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedLockType& masterLockHolder)
