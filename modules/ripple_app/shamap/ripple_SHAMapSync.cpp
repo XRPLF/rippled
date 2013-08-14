@@ -161,7 +161,7 @@ bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& node
     // Gets a node and some of its children
     boost::recursive_mutex::scoped_lock sl (mLock);
 
-    SHAMapTreeNode::pointer node = getNode (wanted);
+    SHAMapTreeNode* node = getNodePointer(wanted);
 
     if (!node)
     {
@@ -175,28 +175,39 @@ bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& node
         return false;
     }
 
-    nodeIDs.push_back (*node);
-    Serializer s;
-    node->addRaw (s, snfWIRE);
-    rawNodes.push_back (s.peekData ());
+    int count;
+    do
+    {
 
-    if ((!fatRoot && node->isRoot ()) || node->isLeaf ()) // don't get a fat root, can't get a fat leaf
-        return true;
+        Serializer s;
+        node->addRaw (s, snfWIRE);
+        nodeIDs.push_back(*node);
+        rawNodes.push_back (s.peekData ());
 
-    for (int i = 0; i < 16; ++i)
-        if (!node->isEmptyBranch (i))
-        {
-            SHAMapTreeNode::pointer nextNode = getNode (node->getChildNodeID (i), node->getChildHash (i), false);
-            assert (nextNode);
+        if ((!fatRoot && node->isRoot ()) || node->isLeaf ()) // don't get a fat root, can't get a fat leaf
+            return true;
 
-            if (nextNode && (fatLeaves || !nextNode->isLeaf ()))
+        SHAMapTreeNode* nextNode;
+
+        count = 0;
+        for (int i = 0; i < 16; ++i)
+            if (!node->isEmptyBranch (i))
             {
-                nodeIDs.push_back (*nextNode);
-                Serializer s;
-                nextNode->addRaw (s, snfWIRE);
-                rawNodes.push_back (s.peekData ());
+                nextNode = getNodePointer (node->getChildNodeID (i), node->getChildHash (i));
+                ++count;
+                if (fatLeaves || nextNode->isInner ())
+                {
+                    Serializer s;
+                    nextNode->addRaw (s, snfWIRE);
+                    nodeIDs.push_back (*nextNode);
+                    rawNodes.push_back (s.peekData ());
+                }
             }
-        }
+
+        node = nextNode;
+
+    // So long as there's exactly one inner node, we take it
+    } while ((count == 1) && node->isInner());
 
     return true;
 }
