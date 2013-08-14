@@ -47,12 +47,6 @@ void Process::setPriority (const ProcessPriority prior)
     pthread_setschedparam (pthread_self(), policy, &param);
 }
 
-void Process::terminate()
-{
-    // http://linux.die.net/man/2/_exit
-    ::_exit (EXIT_FAILURE);
-}
-
 BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger()
 {
     static char testResult = 0;
