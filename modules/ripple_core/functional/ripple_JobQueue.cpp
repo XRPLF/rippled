@@ -272,8 +272,6 @@ void JobQueue::queueJob (Job const& job, ScopedLockType& lock)
 
     Count& count (mJobCounts [type]);
 
-    ++count.waiting;
-
     if (count.waiting + count.running < getJobLimit (type))
     {
         m_workers.addTask ();
@@ -284,6 +282,7 @@ void JobQueue::queueJob (Job const& job, ScopedLockType& lock)
         //
         ++count.deferred;
     }
+    ++count.waiting;
 }
 
 //------------------------------------------------------------------------------
