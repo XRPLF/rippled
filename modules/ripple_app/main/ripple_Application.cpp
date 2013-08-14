@@ -719,6 +719,7 @@ void ApplicationImp::run ()
     //             so this hack makes them start later.
     //
     m_mainService.runExtraThreads ();
+    m_auxService.runExtraThreads ();
 
     if (!getConfig ().RUN_STANDALONE)
     {
