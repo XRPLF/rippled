@@ -31,10 +31,6 @@ using namespace beast;
 #include "boost/ripple_IoService.h"
 #include "boost/ripple_SslContext.h"
 
-#include "sockets/ripple_MultiSocket.h"
-# include "sockets/ripple_RippleTlsContext.h"
-#include "sockets/ripple_MultiSocketType.h"
-
 }
 
 #endif
