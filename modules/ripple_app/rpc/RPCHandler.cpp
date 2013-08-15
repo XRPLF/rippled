@@ -2993,6 +2993,9 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, LoadType* loadType, A
     {
         SLE::pointer    sleNode = mNetOps->getSLEi (lpLedger, uNodeIndex);
 
+        if (params.isMember("binary"))
+            bNodeBinary = params["binary"].asBool();
+
         if (!sleNode)
         {
             // Not found.
