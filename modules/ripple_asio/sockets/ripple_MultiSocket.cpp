@@ -23,10 +23,16 @@ void MultiSocket::Options::setFromFlags (Flags flags)
 
 //------------------------------------------------------------------------------
 
-MultiSocket* MultiSocket::New (boost::asio::io_service& io_service,
-                                           Options const& options)
+MultiSocket* MultiSocket::New (boost::asio::io_service& io_service, int flags)
 {
-    return new MultiSocketType <boost::asio::ip::tcp::socket> (io_service, options);
+    return new MultiSocketType <boost::asio::ip::tcp::socket> (io_service, flags);
+}
+
+SslContextBase::BoostContextType &MultiSocket::getRippleTlsBoostContext ()
+{
+    static ScopedPointer <RippleTlsContext> context (RippleTlsContext::New ());
+
+    return context->getBoostContext ();
 }
 
 //------------------------------------------------------------------------------
@@ -39,48 +45,35 @@ public:
     public:
         typedef int arg_type;
 
-        // These flags get combined to determine the multisocket attributes
-        //
-        enum Flags
-        {
-            none                = 0,
-            client_ssl          = 1,
-            server_ssl          = 2,
-            server_ssl_required = 4,
-            server_proxy        = 8,
-
-            // these are for producing the endpoint test parameters
-            tcpv4               = 16,
-            tcpv6               = 32
-        };
-
-        MultiSocketDetails (arg_type flags)
+        MultiSocketDetails (int flags)
             : m_flags (flags)
         {
-            m_socketOptions.useClientSsl = (flags & client_ssl) != 0;
-            m_socketOptions.enableServerSsl = (flags & (server_ssl | server_ssl_required)) != 0;
-            m_socketOptions.requireServerSsl = (flags & server_ssl_required) != 0;
-            m_socketOptions.requireServerProxy = (flags & server_proxy) !=0;
         }
 
         static String getArgName (arg_type arg)
         {
             String s;
-            if (arg & tcpv4) s << "tcpv4:";
-            if (arg & tcpv6) s << "tcpv6:";
-            if (arg != 0)
+
+            if (arg & MultiSocket::Flag::client_role)
+                s << "client,";
+
+            if (arg & MultiSocket::Flag::server_role)
+                s << "server,";
+
+            if (arg & MultiSocket::Flag::ssl)
+                s << "ssl,";
+
+            if (arg & MultiSocket::Flag::ssl_required)
+                s << "ssl_required,";
+
+            if (arg & MultiSocket::Flag::proxy)
+                s << "proxy,";
+
+            if (s != String::empty)
             {
-                s << "[";
-                if (arg & client_ssl)           s << "client_ssl,";
-                if (arg & server_ssl)           s << "server_ssl,";
-                if (arg & server_ssl_required)  s << "server_ssl_required,";
-                if (arg & server_proxy)         s << "server_proxy,";
-                s = s.substring (0, s.length () - 1) + "]";
+                s = "(" + s.substring (0, s.length () - 1) + ")";
             }
-            else
-            {
-                s = "[plain]";
-            }
+
             return s;
         }
 
@@ -94,23 +87,17 @@ public:
             return m_flags;
         }
 
-        MultiSocket::Options const& getSocketOptions () const noexcept
-        {
-            return m_socketOptions;
-        }
-
     protected:
         arg_type m_flags;
-        MultiSocket::Options m_socketOptions;
     };
 
     //--------------------------------------------------------------------------
 
-    template <class InternetProtocol>
+    template <class Protocol>
     class MultiSocketDetailsType : public MultiSocketDetails
     {
     protected:
-        typedef InternetProtocol                 protocol_type;
+        typedef Protocol                         protocol_type;
         typedef typename protocol_type::socket   socket_type;
         typedef typename protocol_type::acceptor acceptor_type;
         typedef typename protocol_type::endpoint endpoint_type;
@@ -120,11 +107,11 @@ public:
         typedef socket_type             native_socket_type;
         typedef acceptor_type           native_acceptor_type;
 
-        explicit MultiSocketDetailsType (arg_type flags = none)
+        explicit MultiSocketDetailsType (arg_type flags)
             : MultiSocketDetails (flags)
             , m_socket (get_io_service ())
             , m_acceptor (get_io_service ())
-            , m_multiSocket (m_socket, getSocketOptions ())
+            , m_multiSocket (m_socket, flags)
             , m_acceptor_wrapper (m_acceptor)
         {
         }
@@ -151,27 +138,17 @@ public:
 
         endpoint_type get_endpoint (PeerRole role)
         {
-            if (getFlags () & MultiSocketDetails::tcpv6)
-            {
-                if (role == PeerRole::server)
-                    return endpoint_type (boost::asio::ip::tcp::v6 (), 1052);
-                else
-                    return endpoint_type (boost::asio::ip::address_v6 ().from_string ("::1"), 1052);
-            }
+            if (role == PeerRole::server)
+                return endpoint_type (boost::asio::ip::tcp::v6 (), 1052);
             else
-            {
-                if (role == PeerRole::server)
-                    return endpoint_type (boost::asio::ip::address_v4::any (), 1053);
-                else
-                    return endpoint_type (boost::asio::ip::address_v4::loopback (), 1053);
-            }
+                return endpoint_type (boost::asio::ip::address_v6 ().from_string ("::1"), 1052);
         }
 
     protected:
         socket_type m_socket;
         acceptor_type m_acceptor;
         MultiSocketType <socket_type&> m_multiSocket;
-        SocketWrapper <acceptor_type> m_acceptor_wrapper;
+        SocketWrapper <acceptor_type&> m_acceptor_wrapper;
     };
 
     MultiSocketTests () : UnitTest ("MultiSocket", "ripple", runManual)
@@ -185,51 +162,65 @@ public:
         timeoutSeconds = 1
     };
 
-    template <typename InternetProtocol, class Arg>
-    PeerTest::Results runProtocol (Arg const& arg)
+    template <typename Protocol, typename ClientArg, typename ServerArg>
+    void run_async (ClientArg const& clientArg, ServerArg const& serverArg)
     {
-        return PeerTest::run <MultiSocketDetailsType <InternetProtocol>,
-            TestPeerLogicAsyncServer, TestPeerLogicAsyncClient> (arg, timeoutSeconds);
+        PeerTest::run <MultiSocketDetailsType <Protocol>,
+            TestPeerLogicAsyncClient, TestPeerLogicAsyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
     }
 
-    // Analyzes the results of the test based on the flags
-    //
-    void reportResults (int flags, PeerTest::Results const& results)
+    template <typename Protocol, typename ClientArg, typename ServerArg>
+    void run (ClientArg const& clientArg, ServerArg const& serverArg)
     {
-        if ( (flags & MultiSocketDetails::client_ssl) != 0)
-        {
-            if ( ((flags & MultiSocketDetails::server_ssl) == 0) &&
-                 ((flags & MultiSocketDetails::server_ssl_required) == 0))
-            {
-            }
-        }
-        else
-        {
-        }
+        PeerTest::run <MultiSocketDetailsType <Protocol>,
+            TestPeerLogicSyncClient, TestPeerLogicSyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
 
-        results.report (*this);
-    }
+        PeerTest::run <MultiSocketDetailsType <Protocol>,
+            TestPeerLogicAsyncClient, TestPeerLogicSyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
 
-    void testOptions (int flags)
-    {
-        PeerTest::Results const results = runProtocol <boost::asio::ip::tcp> (flags);
+        PeerTest::run <MultiSocketDetailsType <Protocol>,
+            TestPeerLogicSyncClient, TestPeerLogicAsyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
 
-        results.report (*this);
+        run_async <Protocol> (clientArg, serverArg);
     }
 
     //--------------------------------------------------------------------------
 
+    template <typename Protocol>
+    void testFlags (int extraClientFlags, int extraServerFlags)
+    {
+        check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
+
+#if 1
+        run <Protocol> (MultiSocket::Flag::client_role | extraClientFlags, MultiSocket::Flag::server_role | extraServerFlags);
+#else
+        run_async <Protocol> (MultiSocket::Flag::client_role | extraClientFlags, MultiSocket::Flag::server_role | extraServerFlags);
+#endif
+    }
+
+    template <typename Protocol>
+    void testProtocol ()
+    {
+
+#if 1
+        // These should pass.
+        run <Protocol> (0, 0);
+        run <Protocol> (MultiSocket::Flag::client_role, 0);
+        run <Protocol> (0, MultiSocket::Flag::server_role);
+        run <Protocol> (MultiSocket::Flag::client_role, MultiSocket::Flag::server_role);
+#endif
+
+#if 0
+        // These should pass
+        testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl_required);
+        testFlags <Protocol> (0, MultiSocket::Flag::ssl);
+        testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl);
+#endif
+    }
+
     void runTest ()
     {
-        // These should pass
-        testOptions (MultiSocketDetails::none);
-        testOptions (MultiSocketDetails::server_ssl);
-        testOptions (MultiSocketDetails::client_ssl | MultiSocketDetails::server_ssl);
-        testOptions (MultiSocketDetails::client_ssl | MultiSocketDetails::server_ssl_required);
-
-        // These should fail
-        testOptions (MultiSocketDetails::client_ssl);
-        testOptions (MultiSocketDetails::server_ssl_required);
+        testProtocol <boost::asio::ip::tcp> ();
     }
 };
 

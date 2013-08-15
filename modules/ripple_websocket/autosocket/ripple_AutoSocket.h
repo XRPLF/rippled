@@ -24,10 +24,12 @@ public:
     typedef boost::function<void (error_code)>       callback;
 
 public:
+#if 0
     struct SocketInterfaces
         : beast::SocketInterface::AsyncStream
         , beast::SocketInterface::AsyncHandshake
         , beast::SocketInterface::LowestLayer { };
+#endif
 
     AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c)
         : mSecure (false)
