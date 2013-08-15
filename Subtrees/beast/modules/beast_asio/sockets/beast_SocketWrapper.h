@@ -28,141 +28,279 @@
     Note that only a reference to the underlying is stored. Management
     of the lifetime of the object is controlled by the caller.
 
-    Supports these concepts:
+    Examples of the type of WrappedObject:
 
-        CopyConstructible, CopyAssignable, Destructible
+    asio::ip::tcp::socket
+        arg must be an io_context
+        SocketWrapper will create and take ownership of the tcp::socket
+        WrappedObjectType will be tcp::socket
+        next_layer () returns a asio::ip::tcp::socket&
+        lowest_layer () returns a asio::ip::tcp::socket&
+
+    asio::ip::tcp::socket&
+        arg must be an existing socket&
+        The caller owns the underlying socket object
+        WrappedObjectType will be tcp::socket
+        next_layer () returns a asio::ip::tcp::socket&
+        lowest_layer () returns a asio::ip::tcp::socket&
+
+    asio::ssl::stream <asio::ip::tcp::socket>
+        arg must be an io_context
+        SocketWrapper creates and takes ownership of the ssl::stream
+        WrappedObjecType will be asio::ssl::stream <asio::ip::tcp::socket>
+        next_layer () returns a asio::ip::tcp::socket&
+        lowest_layer () returns a asio::ip::tcp::socket&
+
+    asio::ssl::stream <asio::ip::tcp::socket&>
+        arg must be an existing socket&
+        The caller owns the socket, but SocketWrapper owns the ssl::stream
+        WrappedObjectType will be asio::ssl::stream <asio::ip::tcp::socket&>
+        next_layer () returns a asio::ip::tcp::socket&
+        lowest_layer () returns a asio::ip::tcp::socket&
+
+    asio::ssl::stream <asio::buffered_stream <asio::ip::tcp::socket> > >
+        This makes my head explode
 */
-template <class Object>
-class SocketWrapper
-    : public virtual Socket
-    , protected SocketWrapperBasics
+
+//------------------------------------------------------------------------------
+
+namespace SocketWrapperMemberChecks
 {
-public:
-    typedef typename boost::remove_reference <Object>::type ObjectType;
+    template <bool Enable>
+    struct EnableIf : boost::false_type { };
 
-    SocketWrapper (Object& object) noexcept
-        : m_impl (&object)
-    {
-    }
+    template <>
+    struct EnableIf <true> : boost::true_type { };
 
-    SocketWrapper (SocketWrapper const& other) noexcept
-        : m_impl (other.m_impl)
-    {
-    }
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_get_io_service, get_io_service);
 
-    SocketWrapper& operator= (SocketWrapper const& other) noexcept
-    {
-        m_impl = other.m_impl;
-    }
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_lowest_layer, lowest_layer);
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_cancel, cancel);
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_shutdown, shutdown);
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_close, close);
 
-    // Retrieve the underlying object
-    Object& get_object () const noexcept
-    {
-        fatal_assert (m_impl != nullptr);
-        return *m_impl;
-    }
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_accept, accept);
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_async_accept, async_accept);
 
-    // Retrieves a reference to the underlying socket.
-    // usually asio::basic_socket or asio::basic_stream_socket
-    // It must be compatible with our Protocol and SocketService
-    // or else a std::bad cast will be thrown.
-    //
-    // The reason its a template class and not a function is
-    // because it would otherwise generate a compile error
-    // if Object did not have a declaration for
-    // protocol_type::socket
-    //
-    template <typename AsioObject, class Enable = void>
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_read_some, read_some);
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_write_some, write_some);
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_async_read_some, async_read_some);
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_async_write_some, async_write_some);
+
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_handshake, handshake);
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_async_handshake, async_handshake);
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_async_shutdown, async_shutdown);
+
+    // Extracts the underlying socket type from the protocol of another asio object
+    template <typename T, typename Enable = void>
     struct native_socket
     {
-        typedef void* native_socket_type;
-        native_socket (Socket&) { pure_virtual (); }
-        native_socket_type& get () { pure_virtual (); return m_socket; }
-        native_socket_type& operator-> () noexcept { return get(); }
+        typedef void* socket_type;
+        inline native_socket (Socket&) : m_socket (nullptr) { SocketBase::pure_virtual (); }
+        inline socket_type& get () { SocketBase::pure_virtual (); return m_socket; }
+        inline socket_type& operator-> () { return get (); }
     private:
-        native_socket_type m_socket;
+        socket_type m_socket;
     };
 
-    template <typename AsioObject>
-    struct native_socket <AsioObject, typename boost::enable_if <boost::is_class <
-        typename AsioObject::protocol_type::socket> >::type>
+    // Enabled if T::protocol_type::socket exists as a type
+    template <typename T>
+    struct native_socket <T, typename boost::enable_if <boost::is_class <
+        typename T::protocol_type::socket> >::type>
     {
-        typedef typename AsioObject::protocol_type::socket native_socket_type;
-        native_socket (Socket& peer)
-            : m_socket (&peer.this_layer <native_socket_type> ()) { }
-        native_socket_type& get () noexcept { return *m_socket; }
-        native_socket_type& operator-> () noexcept { return *m_socket; }
+        typedef typename T::protocol_type::socket socket_type;
+        inline native_socket (Socket& peer) : m_socket_ptr (&peer.native_handle <socket_type> ()) { }
+        inline socket_type& get () noexcept { return *m_socket_ptr; }
+        inline socket_type& operator-> () noexcept { return get (); }
     private:
-        native_socket_type* m_socket;
+        socket_type* m_socket_ptr;
     };
+};
 
-    //--------------------------------------------------------------------------
+template <typename WrappedObject>
+class SocketWrapper
+    : public virtual Socket
+    , public SocketWrapperBasics
+    , public Uncopyable
+{
+private:
+    typedef typename boost::remove_reference <WrappedObject>::type wrapped_type;
 
-#if 0
-    typedef typename boost::remove_reference <Object>::type next_layer_type;
-    typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
+public:
+    typedef typename boost::remove_reference <WrappedObject>::type WrappedObjectType;
 
-    next_layer_type& next_layer () noexcept
+    template <typename Arg>
+    explicit SocketWrapper (Arg& arg)
+        : m_object (arg)
     {
-        return get_object ().next_layer ();
     }
 
-    next_layer_type const& next_layer () const noexcept
+    template <typename Arg1, typename Arg2>
+    SocketWrapper (Arg1& arg1, Arg2& arg2)
+        : m_object (arg1, arg2)
     {
-        return get_object ().next_layer ();
     }
 
-    lowest_layer_type& lowest_layer () noexcept
-    {
-        return get_object ().lowest_layer ();
-    }
-
-    lowest_layer_type const& lowest_layer () const noexcept
-    {
-        return get_object ().lowest_layer ();
-    }
-
-#endif
     //--------------------------------------------------------------------------
     //
-    // General
+    // basic_io_object
     //
-    //--------------------------------------------------------------------------
 
     boost::asio::io_service& get_io_service ()
     {
-        return get_object ().get_io_service ();
+        using namespace boost::asio;
+        using namespace SocketWrapperMemberChecks;
+#if 0
+        // This is the one that doesn't work, (void) arg lists
+        return get_io_service (
+            EnableIf <has_get_io_service <wrapped_type,
+                io_service ()>::value> ());
+#else
+        return get_io_service (boost::true_type ());
+#endif
     }
 
-    bool requires_handshake ()
+    boost::asio::io_service& get_io_service (
+        boost::true_type)
     {
-        return Has <SocketInterface::AnyHandshake>::value;
+        return m_object.get_io_service ();
     }
 
-    void* this_layer_raw (char const* type_name) const
+    boost::asio::io_service& get_io_service (
+        boost::false_type)
     {
-        char const* const this_type_name (typeid (ObjectType).name ());
-        if (strcmp (type_name, this_type_name) == 0)
-            return const_cast <void*> (static_cast <void const*>(m_impl));
+        pure_virtual ();
+        return *static_cast <boost::asio::io_service*>(nullptr);
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // basic_socket
+    //
+
+#if 0
+    // This is a potential work-around for the problem with
+    // the has_type_lowest_layer_type template, but requires
+    // Boost 1.54 or later.
+    //
+    // This include will be needed:
+    //
+    // #include <boost/tti/has_type.hpp>
+    //
+    //
+    BOOST_TTI_HAS_TYPE(lowest_layer_type)
+#endif
+
+    template <class T>
+    struct has_type_lowest_layer_type
+    {
+        typedef char yes; 
+        typedef struct {char dummy[2];} no;
+        template <class C> static yes f(typename C::lowest_layer_type*);
+        template <class C> static no f(...);
+#ifdef _MSC_VER
+        static bool const value = sizeof(f<T>(0)) == 1;
+#else
+        // This line fails to compile under Visual Studio 2012
+        static bool const value = sizeof(has_type_lowest_layer_type<T>::f<T>(0)) == 1;
+#endif
+    }; 
+
+    void* lowest_layer (char const* type_name) const
+    {
+        using namespace SocketWrapperMemberChecks;
+        return lowest_layer (type_name,
+            EnableIf <has_type_lowest_layer_type <wrapped_type>::value> ());
+    }
+
+    void* lowest_layer (char const* type_name,
+        boost::true_type) const
+    {
+        char const* const name (typeid (typename wrapped_type::lowest_layer_type).name ());
+        if (strcmp (name, type_name) == 0)
+            return const_cast <void*> (static_cast <void const*> (&m_object.lowest_layer ()));
+        return nullptr;
+    }
+
+    void* lowest_layer (char const*,
+        boost::false_type) const
+    {
+        pure_virtual ();
         return nullptr;
     }
 
     //--------------------------------------------------------------------------
-    //
-    // SocketInterface::Close
-    //
+
+    void* native_handle (char const* type_name) const
+    {
+        char const* const name (typeid (wrapped_type).name ());
+        if (strcmp (name, type_name) == 0)
+            return const_cast <void*> (static_cast <void const*> (&m_object));
+        return nullptr;
+    }
+
+    //--------------------------------------------------------------------------
+
+    boost::system::error_code cancel (boost::system::error_code& ec)
+    {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
+        return cancel (ec,
+            EnableIf <has_cancel <wrapped_type,
+                system::error_code (system::error_code&)>::value> ());
+    }
+   
+    boost::system::error_code cancel (boost::system::error_code& ec,
+        boost::true_type)
+    {
+        return m_object.cancel (ec);
+    }
+
+    boost::system::error_code cancel (boost::system::error_code& ec,
+        boost::false_type)
+    {
+        return pure_virtual (ec);
+    }
+
+    //--------------------------------------------------------------------------
+
+    boost::system::error_code shutdown (shutdown_type what, boost::system::error_code& ec)
+    {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
+        return shutdown (what, ec,
+            EnableIf <has_shutdown <wrapped_type,
+                system::error_code (shutdown_type, system::error_code&)>::value> ());
+    }
+
+
+    boost::system::error_code shutdown (shutdown_type what, boost::system::error_code& ec,
+        boost::true_type)
+    {
+        return m_object.shutdown (what, ec);
+    }
+
+    boost::system::error_code shutdown (shutdown_type, boost::system::error_code& ec,
+        boost::false_type)
+    {
+        return pure_virtual (ec);
+    }
+
     //--------------------------------------------------------------------------
 
     boost::system::error_code close (boost::system::error_code& ec)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
         return close (ec,
-            Has <SocketInterface::Close> ());
+            EnableIf <has_close <wrapped_type,
+                system::error_code (system::error_code&)>::value> ());
     }
 
     boost::system::error_code close (boost::system::error_code& ec,
         boost::true_type)
     {
-        return get_object ().close (ec);
+        return m_object.close (ec);
     }
 
     boost::system::error_code close (boost::system::error_code& ec,
@@ -173,27 +311,25 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // SocketInterface::Acceptor
+    // basic_socket_acceptor
     //
-    //--------------------------------------------------------------------------
 
     boost::system::error_code accept (Socket& peer, boost::system::error_code& ec)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
+        typedef typename native_socket <wrapped_type>::socket_type socket_type;
         return accept (peer, ec,
-            Has <SocketInterface::Acceptor> ());
+            EnableIf <has_accept <wrapped_type,
+                system::error_code (socket_type&, system::error_code&)>::value> ());
     }
 
     boost::system::error_code accept (Socket& peer, boost::system::error_code& ec,
         boost::true_type)
     {
-#if 1
-        return get_object ().accept (
-            native_socket <Object> (peer).get (), ec);
-#else
-        typedef ObjectType::protocol_type::socket socket_type;
-        socket_type& socket (peer.this_layer <socket_type> ());
-        return get_object ().accept (socket, ec);
-#endif
+        using namespace SocketWrapperMemberChecks;
+        return m_object.accept (
+            native_socket <wrapped_type> (peer).get (), ec);
     }
 
     boost::system::error_code accept (Socket&, boost::system::error_code& ec,
@@ -202,11 +338,18 @@ public:
         return pure_virtual (ec);
     }
 
+    //--------------------------------------------------------------------------
+
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
     async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
+        typedef typename native_socket <wrapped_type>::socket_type socket_type;
         return async_accept (peer, BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
-            Has <SocketInterface::Acceptor> ());
+            EnableIf <has_async_accept <wrapped_type,
+                BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (system::error_code))
+                    (socket_type&, BOOST_ASIO_MOVE_ARG(TransferCall))>::value> ());
     }
 
     template <typename AcceptHandler>
@@ -214,14 +357,10 @@ public:
     async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler,
         boost::true_type)
     {
-#if 1
-        return get_object ().async_accept (
-            native_socket <Object> (peer).get (), handler);
-#else
-        typedef ObjectType::protocol_type::socket socket_type;
-        socket_type& socket (peer.this_layer <socket_type> ());
-        return get_object ().async_accept (socket, handler);
-#endif
+        using namespace SocketWrapperMemberChecks;
+        return m_object.async_accept (
+            native_socket <wrapped_type> (peer).get (),
+                BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler));
     }
 
     template <typename AcceptHandler>
@@ -248,92 +387,23 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // SocketInterface::LowestLayer
+    // basic_stream_socket
     //
-    //--------------------------------------------------------------------------
-
-    void* lowest_layer_raw (char const* type_name) const
-    {
-        return lowest_layer_raw (type_name,
-            Has <SocketInterface::LowestLayer> ());
-    }
-
-    void* lowest_layer_raw (char const* type_name,
-        boost::true_type) const
-    {
-        typedef typename ObjectType::lowest_layer_type lowest_layer_type;
-        char const* const lowest_layer_type_name (typeid (lowest_layer_type).name ());
-        if (strcmp (type_name, lowest_layer_type_name) == 0)
-            return const_cast <void*> (static_cast <void const*>(&get_object ().lowest_layer ()));
-        return nullptr;
-    }
-
-    void* lowest_layer_raw (char const*,
-        boost::false_type) const
-    {
-        pure_virtual ();
-        return nullptr;
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // SocketInterface::Socket
-    //
-    //--------------------------------------------------------------------------
-
-    boost::system::error_code cancel (boost::system::error_code& ec)
-    {
-        return cancel (ec,
-            Has <SocketInterface::Socket> ());
-    }
-   
-    boost::system::error_code cancel (boost::system::error_code& ec,
-        boost::true_type)
-    {
-        return get_object ().cancel (ec);
-    }
-
-    boost::system::error_code cancel (boost::system::error_code& ec,
-        boost::false_type)
-    {
-        return pure_virtual (ec);
-    }
-
-    boost::system::error_code shutdown (shutdown_type what, boost::system::error_code& ec)
-    {
-        return shutdown (what, ec,
-            Has <SocketInterface::Socket> ());
-    }
-
-    boost::system::error_code shutdown (Socket::shutdown_type what, boost::system::error_code& ec,
-        boost::true_type)
-    {
-        return get_object ().shutdown (what, ec);
-    }
-
-    boost::system::error_code shutdown (Socket::shutdown_type, boost::system::error_code& ec,
-        boost::false_type)
-    {
-        return pure_virtual (ec);
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // SocketInterface::Stream
-    //
-    //--------------------------------------------------------------------------
 
     std::size_t read_some (MutableBuffers const& buffers, boost::system::error_code& ec)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
         return read_some (buffers, ec,
-            Has <SocketInterface::SyncStream> ());
+            EnableIf <has_read_some <wrapped_type,
+                std::size_t (MutableBuffers const&, system::error_code&)>::value> ());
     }
 
     template <typename MutableBufferSequence>
     std::size_t read_some (MutableBufferSequence const& buffers, boost::system::error_code& ec,
         boost::true_type)
     {
-        return get_object ().read_some (buffers, ec);
+        return m_object.read_some (buffers, ec);
     }
 
     template <typename MutableBufferSequence>
@@ -344,17 +414,22 @@ public:
         return 0;
     }
 
+    //--------------------------------------------------------------------------
+
     std::size_t write_some (ConstBuffers const& buffers, boost::system::error_code& ec)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
         return write_some (buffers, ec,
-            Has <SocketInterface::SyncStream> ());
+            EnableIf <has_write_some <wrapped_type,
+                std::size_t (ConstBuffers const&, system::error_code&)>::value> ());
     }
 
     template <typename ConstBufferSequence>
     std::size_t write_some (ConstBufferSequence const& buffers, boost::system::error_code& ec,
         boost::true_type)
     {
-        return get_object ().write_some (buffers, ec);
+        return m_object.write_some (buffers, ec);
     }
 
     template <typename ConstBufferSequence>
@@ -365,11 +440,17 @@ public:
         return 0;
     }
 
+    //--------------------------------------------------------------------------
+
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
     async_read_some (MutableBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
         return async_read_some (buffers, BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
-            Has <SocketInterface::AsyncStream> ());
+            EnableIf <has_async_read_some <wrapped_type,
+                BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (system::error_code, std::size_t))
+                    (MutableBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall))>::value> ());
     }
 
     template <typename MutableBufferSequence, typename ReadHandler>
@@ -377,7 +458,7 @@ public:
     async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler,
         boost::true_type)
     {
-        return get_object ().async_read_some (buffers,
+        return m_object.async_read_some (buffers,
             BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
     }
 
@@ -401,11 +482,17 @@ public:
 #endif
     }
 
+    //--------------------------------------------------------------------------
+
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
     async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
         return async_write_some (buffers, BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
-            Has <SocketInterface::AsyncStream> ());
+            EnableIf <has_async_write_some <wrapped_type,
+                BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (system::error_code, std::size_t))
+                    (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall))>::value> ());
     }
 
     template <typename ConstBufferSequence, typename WriteHandler>
@@ -413,7 +500,7 @@ public:
     async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler,
         boost::true_type)
     {
-        return get_object ().async_write_some (buffers,
+        return m_object.async_write_some (buffers,
             BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
     }
 
@@ -441,20 +528,36 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // SocketInterface::Handshake
+    // ssl::stream
     //
+
+    bool requires_handshake ()
+    {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
+        return
+            has_handshake <wrapped_type,
+                system::error_code (handshake_type, system::error_code&)>::value ||
+            has_async_handshake <wrapped_type,
+                BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+                    (handshake_type, BOOST_ASIO_MOVE_ARG(ErrorCall))>::value;
+    }
+
     //--------------------------------------------------------------------------
 
     boost::system::error_code handshake (handshake_type type, boost::system::error_code& ec)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
         return handshake (type, ec,
-            Has <SocketInterface::SyncHandshake> ());
+            EnableIf <has_handshake <wrapped_type,
+                system::error_code (handshake_type, system::error_code&)>::value> ());
     }
 
     boost::system::error_code handshake (handshake_type type, boost::system::error_code& ec,
         boost::true_type)
     {
-        return get_object ().handshake (type, ec);
+        return m_object.handshake (type, ec);
     }
 
     boost::system::error_code handshake (handshake_type, boost::system::error_code& ec,
@@ -463,50 +566,60 @@ public:
         return pure_virtual (ec);
     }
 
+    //--------------------------------------------------------------------------
+
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
     async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
         return async_handshake (type, BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
-            Has <SocketInterface::AsyncHandshake> ());
+            EnableIf <has_async_handshake <wrapped_type,
+                BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (system::error_code))
+                    (handshake_type, BOOST_ASIO_MOVE_ARG(ErrorCall))>::value> ());
     }
 
-    template <typename HandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler,
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler,
         boost::true_type)
     {
-        return get_object ().async_handshake (type,
-            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
+        return m_object.async_handshake (type,
+            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler));
     }
 
-    template <typename HandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
-    async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler,
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler,
         boost::false_type)
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
-            HandshakeHandler, void (boost::system::error_code)> init(
-            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
+            ErrorCall, void (boost::system::error_code)> init(
+            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler));
         boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler), ec));
+            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler), ec));
         return init.result.get();
 #else
         boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler), ec));
+            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler), ec));
 #endif
     }
 
+    //--------------------------------------------------------------------------
+
 #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
+
     boost::system::error_code handshake (handshake_type type,
         ConstBuffers const& buffers, boost::system::error_code& ec)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
         return handshake (type, buffers, ec,
-            Has <SocketInterface::BufferedSyncHandshake> ());
+            EnableIf <has_handshake <wrapped_type,
+                system::error_code (handshake_type, ConstBuffers const&, system::error_code&)>::value> ());
     }
 
     template <typename ConstBufferSequence>
@@ -514,7 +627,7 @@ public:
         ConstBufferSequence const& buffers, boost::system::error_code& ec,
         boost::true_type)
     {
-        return get_object ().handshake (type, buffers, ec);
+        return m_object.handshake (type, buffers, ec);
     }
 
     template <typename ConstBufferSequence>
@@ -525,59 +638,65 @@ public:
         return pure_virtual (ec);
     }
 
+    //--------------------------------------------------------------------------
+
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
     async_handshake (handshake_type type, ConstBuffers const& buffers,
         BOOST_ASIO_MOVE_ARG(TransferCall) handler)
     {
-        return async_handshake (type, buffers,
-            BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
-            Has <SocketInterface::BufferedAsyncHandshake> ());
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
+        return async_handshake (type, buffers, BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
+            EnableIf <has_async_handshake <wrapped_type,
+                BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (system::error_code, std::size_t))
+                    (handshake_type, ConstBuffers const&, system::error_code&)>::value> ());
     }
 
-    template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
-    async_handshake (handshake_type type, const ConstBufferSequence& buffers,
-        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler,
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    async_handshake (handshake_type type, ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler,
         boost::true_type)
     {
-        return get_object ().async_handshake (type, buffers,
-            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
+        return m_object.async_handshake (type, buffers,
+            BOOST_ASIO_MOVE_CAST(TransferCall)(handler));
     }
 
-    template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (boost::system::error_code, std::size_t))
-    async_handshake (handshake_type, const ConstBufferSequence&,
-        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler,
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
+    async_handshake (handshake_type, ConstBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall) handler,
         boost::false_type)
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
-            BufferedHandshakeHandler, void (boost::system::error_code, std::size_t)> init(
-            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
+            TransferCall, void (boost::system::error_code, std::size_t)> init(
+            BOOST_ASIO_MOVE_CAST(TransferCall)(handler));
         boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler), ec, 0));
+            BOOST_ASIO_MOVE_CAST(TransferCall)(handler), ec, 0));
         return init.result.get();
 #else
         boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler), ec, 0));
+            BOOST_ASIO_MOVE_CAST(TransferCall)(handler), ec, 0));
 #endif
     }
 #endif
 
+    //--------------------------------------------------------------------------
+
     boost::system::error_code shutdown (boost::system::error_code& ec)
     {
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
         return shutdown (ec,
-            Has <SocketInterface::SyncHandshake> ());
+            EnableIf <has_shutdown <wrapped_type,
+                system::error_code (system::error_code&)>::value> ());
     }
 
     boost::system::error_code shutdown (boost::system::error_code& ec,
         boost::true_type)
     {
-        return get_object ().shutdown (ec);
+        return m_object.shutdown (ec);
     }
 
     boost::system::error_code shutdown (boost::system::error_code& ec,
@@ -586,59 +705,49 @@ public:
         return pure_virtual (ec);
     }
 
+    //--------------------------------------------------------------------------
+
     void async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
-        async_shutdown (BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
-            Has <SocketInterface::AsyncHandshake> ());
+        using namespace boost;
+        using namespace SocketWrapperMemberChecks;
+        return async_shutdown (BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
+            EnableIf <has_async_shutdown <wrapped_type,
+                BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (system::error_code))
+                    (BOOST_ASIO_MOVE_ARG(ErrorCall))>::value> ());
     }
 
-    template <typename ShutdownHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ShutdownHandler, void (boost::system::error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler,
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler,
         boost::true_type)
     {
-        return get_object ().async_shutdown (
-            BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler));
+        return m_object.async_shutdown (
+            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler));
     }
 
-    template <typename ShutdownHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ShutdownHandler, void (boost::system::error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler,
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler,
         boost::false_type)
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
-            ShutdownHandler, void (boost::system::error_code, std::size_t)> init(
-            BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler));
+            ErrorCall, void (boost::system::error_code, std::size_t)> init(
+            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler));
         boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler), ec));
+            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler), ec));
         return init.result.get();
 #else
         boost::system::error_code ec;
         ec = pure_virtual (ec);
         get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler), ec));
+            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler), ec));
 #endif
     }
 
-protected:
-    explicit SocketWrapper (Object* object = nullptr) noexcept
-        : m_impl (object)
-    {
-    }
-
-    void set (Object* ptr) noexcept
-    {
-        m_impl = ptr;
-    }
-
-    template <typename Interface>
-    struct Has : HasInterface <ObjectType, Interface> { };
-
-public:
-    Object* m_impl;
+private:
+    WrappedObject m_object;
 };
 
 #endif

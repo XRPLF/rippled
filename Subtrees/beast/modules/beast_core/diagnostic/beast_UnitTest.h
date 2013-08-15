@@ -408,7 +408,7 @@ public:
             package, regardless of the manual run setting. If no test with a
             matching package and test name is found, then no test is selected.
 
-        "/" <testname>
+        "." <testname>
             Selects the first test which matches the testname, even if it
             is a manual test.
 

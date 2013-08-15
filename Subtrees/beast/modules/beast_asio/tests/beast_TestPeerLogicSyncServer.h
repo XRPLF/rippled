@@ -24,7 +24,7 @@ class TestPeerLogicSyncServer : public TestPeerLogic
 {
 public:
     explicit TestPeerLogicSyncServer (Socket& socket);
-    Role get_role () const noexcept;
+    PeerRole get_role () const noexcept;
     Model get_model () const noexcept;
     void on_connect ();
 };

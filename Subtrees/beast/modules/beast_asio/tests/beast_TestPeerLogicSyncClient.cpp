@@ -22,9 +22,9 @@ TestPeerLogicSyncClient::TestPeerLogicSyncClient (Socket& socket)
 {
 }
 
-TestPeerBasics::Role TestPeerLogicSyncClient::get_role () const noexcept
+PeerRole TestPeerLogicSyncClient::get_role () const noexcept
 {
-    return Role::client;
+    return PeerRole::client;
 }
 
 TestPeerBasics::Model TestPeerLogicSyncClient::get_model () const noexcept
@@ -34,9 +34,16 @@ TestPeerBasics::Model TestPeerLogicSyncClient::get_model () const noexcept
 
 void TestPeerLogicSyncClient::on_connect ()
 {
+    {
+        // pre-handshake hook is optional
+        on_pre_handshake ();
+        if (failure (error ()))
+            return ;
+    }
+
     if (socket ().requires_handshake ())
     {
-        if (failure (socket ().handshake (get_role (), error ())))
+        if (failure (socket ().handshake (to_handshake_type (get_role ()), error ())))
             return;
     }
 
@@ -94,4 +101,8 @@ void TestPeerLogicSyncClient::on_connect ()
 
     if (failure (socket ().close (error ())))
         return;
+}
+
+void TestPeerLogicSyncClient::on_pre_handshake ()
+{
 }

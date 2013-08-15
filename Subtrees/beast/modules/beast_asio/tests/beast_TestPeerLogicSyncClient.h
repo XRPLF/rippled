@@ -24,9 +24,10 @@ class TestPeerLogicSyncClient : public TestPeerLogic
 {
 public:
     explicit TestPeerLogicSyncClient (Socket& socket);
-    Role get_role () const noexcept;
+    PeerRole get_role () const noexcept;
     Model get_model () const noexcept;
     void on_connect ();
+    virtual void on_pre_handshake ();
 };
 
 #endif

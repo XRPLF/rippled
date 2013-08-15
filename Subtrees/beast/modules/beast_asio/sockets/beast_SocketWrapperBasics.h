@@ -24,7 +24,8 @@
 */
 class SocketWrapperBasics
 {
-protected:
+public:
+#if 0
     /** Template specialization to determine available interfaces. */
     template <typename Object>
     struct InterfacesOf
@@ -76,6 +77,30 @@ protected:
         typedef value type;
     };
 
+    // Specialization for boost::asio::buffered_stream
+    template <typename Stream>
+    struct InterfacesOf <boost::asio::buffered_stream <Stream> >
+    {
+        struct value : SocketInterface::Stream { };
+        typedef value type;
+    };
+
+    // Specialization for boost::asio::buffered_read_stream
+    template <typename Stream>
+    struct InterfacesOf <boost::asio::buffered_read_stream <Stream> >
+    {
+        struct value : SocketInterface::Stream { };
+        typedef value type;
+    };
+
+    // Specialization for boost::asio::buffered_write_stream
+    template <typename Stream>
+    struct InterfacesOf <boost::asio::buffered_write_stream <Stream> >
+    {
+        struct value : SocketInterface::Stream { };
+        typedef value type;
+    };
+
     // Specialization for boost::asio::ssl::stream
     template <typename Stream>
     struct InterfacesOf <boost::asio::ssl::stream <Stream> >
@@ -104,6 +129,7 @@ protected:
     struct HasInterface : boost::is_base_of <Interface, typename InterfacesOf <Object> >
     {
     };
+#endif
 #endif
 };
 

@@ -48,10 +48,10 @@ public:
     static String getArgName (arg_type arg)
     {
         if (arg == protocol_type::v4 ())
-            return "tcpv4";
+            return ".tcpv4";
         else if (arg == protocol_type::v6 ())
-            return "tcpv6";
-        return "tcp?";
+            return ".tcpv6";
+        return ".tcp?";
     }
 
     String name ()
@@ -79,18 +79,18 @@ public:
         return m_acceptor;
     }
 
-    endpoint_type get_endpoint (TestPeer::Role role)
+    endpoint_type get_endpoint (PeerRole role)
     {
         if (m_protocol == protocol_type::v4 ())
         {
-            if (role == TestPeer::Role::server)
+            if (role == PeerRole::server)
                 return endpoint_type (m_protocol, 1053);
             else
                 return endpoint_type (boost::asio::ip::address_v4::loopback (), 1053);
         }
         else
         {
-            if (role == TestPeer::Role::server)
+            if (role == PeerRole::server)
                 return endpoint_type (m_protocol, 1052);
             else
                 return endpoint_type (boost::asio::ip::address_v6 ().from_string ("::1"), 1052);
@@ -101,8 +101,8 @@ protected:
     protocol_type m_protocol;
     socket_type m_socket;
     acceptor_type m_acceptor;
-    SocketWrapper <socket_type> m_socket_wrapper;
-    SocketWrapper <acceptor_type> m_acceptor_wrapper;
+    SocketWrapper <socket_type&> m_socket_wrapper;
+    SocketWrapper <acceptor_type&> m_acceptor_wrapper;
 };
 
 #endif

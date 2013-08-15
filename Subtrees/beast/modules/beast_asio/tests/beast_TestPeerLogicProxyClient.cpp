@@ -17,23 +17,20 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
-#define BEAST_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
-
-class TestPeerLogicAsyncClient : public TestPeerLogic
+TestPeerLogicProxyClient::TestPeerLogicProxyClient (Socket& socket)
+    : TestPeerLogicSyncClient (socket)
 {
-public:
-    explicit TestPeerLogicAsyncClient (Socket& socket);
-    PeerRole get_role () const noexcept;
-    Model get_model () const noexcept;
-    void on_connect_async (error_code const& ec);
-    void on_handshake (error_code const& ec);
-    void on_write (error_code const& ec, std::size_t bytes_transferred);
-    void on_read (error_code const& ec, std::size_t bytes_transferred);
-    void on_read_final (error_code const& ec, std::size_t);
-    void on_shutdown (error_code const& ec);
-private:
-    boost::asio::streambuf m_buf;
-};
+}
 
-#endif
+void TestPeerLogicProxyClient::on_pre_handshake ()
+{
+    ProxyHandshake h;
+ 
+    static std::string line (
+        "PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535\r\n"
+        // 56 chars
+        );
+
+    std::size_t const amount = boost::asio::write (
+    socket (), boost::asio::buffer (line), error ());
+}

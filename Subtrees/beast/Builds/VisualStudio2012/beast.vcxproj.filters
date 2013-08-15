@@ -152,6 +152,12 @@
     <Filter Include="beast_asio\tests">
       <UniqueIdentifier>{422da6a1-e57e-4a96-9fce-e5958c16026e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_asio\protocol">
+      <UniqueIdentifier>{c4a7b6bb-88ec-4ff1-bc56-7c432a467500}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_asio\basics">
+      <UniqueIdentifier>{ccdc0c8e-f77a-486e-ba2f-29c10ec97f18}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -809,6 +815,39 @@
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_PeerTest.h">
       <Filter>beast_asio\tests</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\protocol\beast_ProxyHandshake.h">
+      <Filter>beast_asio\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicProxyClient.h">
+      <Filter>beast_asio\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_BufferType.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_CompletionCall.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_ErrorCall.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_TransferCall.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_PeerRole.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\maths\beast_uint24.h">
+      <Filter>beast_core\maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\beast_ByteSwap.h">
+      <Filter>beast_core\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\protocol\beast_HandshakeDetectorType.h">
+      <Filter>beast_asio\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\protocol\beast_StreamHandshakeDetectorType.h">
+      <Filter>beast_asio\protocol</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -1260,6 +1299,18 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerUnitTests.cpp">
       <Filter>beast_asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\protocol\beast_ProxyHandshake.cpp">
+      <Filter>beast_asio\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicProxyClient.cpp">
+      <Filter>beast_asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\basics\beast_PeerRole.cpp">
+      <Filter>beast_asio\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\protocol\beast_StreamHandshakeDetectorType.cpp">
+      <Filter>beast_asio\protocol</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

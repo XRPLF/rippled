@@ -21,9 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_BYTEORDER_BEASTHEADER
-#define BEAST_BYTEORDER_BEASTHEADER
-
+#ifndef BEAST_BYTEORDER_H_INCLUDED
+#define BEAST_BYTEORDER_H_INCLUDED
 
 //==============================================================================
 /** Contains static methods for converting the byte order between different
@@ -62,17 +61,23 @@ public:
     static uint64 swapIfLittleEndian (uint64 value);
 
     //==============================================================================
+    /** Turns 2 bytes into a little-endian integer. */
+    static uint16 littleEndianShort (const void* bytes);
+
     /** Turns 4 bytes into a little-endian integer. */
     static uint32 littleEndianInt (const void* bytes);
 
-    /** Turns 2 bytes into a little-endian integer. */
-    static uint16 littleEndianShort (const void* bytes);
+    /** Turns 4 bytes into a little-endian integer. */
+    static uint64 littleEndianInt64 (const void* bytes);
+
+    /** Turns 2 bytes into a big-endian integer. */
+    static uint16 bigEndianShort (const void* bytes);
 
     /** Turns 4 bytes into a big-endian integer. */
     static uint32 bigEndianInt (const void* bytes);
 
-    /** Turns 2 bytes into a big-endian integer. */
-    static uint16 bigEndianShort (const void* bytes);
+    /** Turns 4 bytes into a big-endian integer. */
+    static uint64 bigEndianInt64 (const void* bytes);
 
     //==============================================================================
     /** Converts 3 little-endian bytes into a signed 24-bit value (which is sign-extended to 32 bits). */
@@ -94,7 +99,6 @@ public:
 private:
     ByteOrder();
 };
-
 
 //==============================================================================
 #if BEAST_USE_INTRINSICS && ! defined (__INTEL_COMPILER)
@@ -151,10 +155,12 @@ inline uint64 ByteOrder::swap (uint64 value)
  inline uint16 ByteOrder::swapIfLittleEndian (const uint16 v)                               { return swap (v); }
  inline uint32 ByteOrder::swapIfLittleEndian (const uint32 v)                               { return swap (v); }
  inline uint64 ByteOrder::swapIfLittleEndian (const uint64 v)                               { return swap (v); }
- inline uint32 ByteOrder::littleEndianInt (const void* const bytes)                         { return *static_cast <const uint32*> (bytes); }
  inline uint16 ByteOrder::littleEndianShort (const void* const bytes)                       { return *static_cast <const uint16*> (bytes); }
- inline uint32 ByteOrder::bigEndianInt (const void* const bytes)                            { return swap (*static_cast <const uint32*> (bytes)); }
+ inline uint32 ByteOrder::littleEndianInt (const void* const bytes)                         { return *static_cast <const uint32*> (bytes); }
+ inline uint64 ByteOrder::littleEndianInt64 (const void* const bytes)                       { return *static_cast <const uint64*> (bytes); }
  inline uint16 ByteOrder::bigEndianShort (const void* const bytes)                          { return swap (*static_cast <const uint16*> (bytes)); }
+ inline uint32 ByteOrder::bigEndianInt (const void* const bytes)                            { return swap (*static_cast <const uint32*> (bytes)); }
+ inline uint64 ByteOrder::bigEndianInt64 (const void* const bytes)                          { return swap (*static_cast <const uint64*> (bytes)); }
  inline bool ByteOrder::isBigEndian()                                                       { return false; }
 #else
  inline uint16 ByteOrder::swapIfBigEndian (const uint16 v)                                  { return swap (v); }
@@ -165,8 +171,9 @@ inline uint64 ByteOrder::swap (uint64 value)
  inline uint64 ByteOrder::swapIfLittleEndian (const uint64 v)                               { return v; }
  inline uint32 ByteOrder::littleEndianInt (const void* const bytes)                         { return swap (*static_cast <const uint32*> (bytes)); }
  inline uint16 ByteOrder::littleEndianShort (const void* const bytes)                       { return swap (*static_cast <const uint16*> (bytes)); }
- inline uint32 ByteOrder::bigEndianInt (const void* const bytes)                            { return *static_cast <const uint32*> (bytes); }
  inline uint16 ByteOrder::bigEndianShort (const void* const bytes)                          { return *static_cast <const uint16*> (bytes); }
+ inline uint32 ByteOrder::bigEndianInt (const void* const bytes)                            { return *static_cast <const uint32*> (bytes); }
+ inline uint64 ByteOrder::bigEndianInt64 (const void* const bytes)                          { return *static_cast <const uint64*> (bytes); }
  inline bool ByteOrder::isBigEndian()                                                       { return true; }
 #endif
 
@@ -175,5 +182,5 @@ inline int  ByteOrder::bigEndian24Bit (const char* const bytes)                 
 inline void ByteOrder::littleEndian24BitToChars (const int value, char* const destBytes)    { destBytes[0] = (char)(value & 0xff); destBytes[1] = (char)((value >> 8) & 0xff); destBytes[2] = (char)((value >> 16) & 0xff); }
 inline void ByteOrder::bigEndian24BitToChars (const int value, char* const destBytes)       { destBytes[0] = (char)((value >> 16) & 0xff); destBytes[1] = (char)((value >> 8) & 0xff); destBytes[2] = (char)(value & 0xff); }
 
+#endif
 
-#endif   // BEAST_BYTEORDER_BEASTHEADER

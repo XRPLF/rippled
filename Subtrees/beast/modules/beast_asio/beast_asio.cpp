@@ -24,9 +24,14 @@
 namespace beast
 {
 
+#include "basics/beast_PeerRole.cpp"
+
 #include "sockets/beast_SocketBase.cpp"
 #include "sockets/beast_Socket.cpp"
 #include "sockets/beast_SslContext.cpp"
+
+#include "protocol/beast_ProxyHandshake.cpp"
+#include "protocol/beast_StreamHandshakeDetectorType.cpp"
 
 #include "tests/beast_TestPeerBasics.cpp"
 #include "tests/beast_TestPeerLogic.cpp"

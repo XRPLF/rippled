@@ -105,24 +105,25 @@ public:
 
     /** Test two peers and return the results.
     */
-    template <typename Details, typename ServerLogic, typename ClientLogic, class Arg>
-    static Results run (Arg const& arg, int timeoutSeconds = defaultTimeoutSeconds)
+    template <typename Details, typename ClientLogic, typename ServerLogic, typename ClientArg, typename ServerArg>
+    static Results run (ClientArg const& clientArg, ServerArg const& serverArg, int timeoutSeconds = defaultTimeoutSeconds)
     {
         Results results;
 
-        results.name = Details::getArgName (arg);
+        if (Process::isRunningUnderDebugger ())
+            timeoutSeconds = -1;
 
         try
         {
-            TestPeerType <ServerLogic, Details> server (arg);
+            TestPeerType <ServerLogic, Details> server (serverArg);
 
-            results.name << " / " << server.name ();
+            results.name = server.name () + Details::getArgName (serverArg);
 
             try
             {
-                TestPeerType <ClientLogic, Details> client (arg);
+                TestPeerType <ClientLogic, Details> client (clientArg);
 
-                results.name << " / " << client.name ();
+                results.name << " / " + client.name () + Details::getArgName (clientArg);
 
                 try
                 {
@@ -176,6 +177,12 @@ public:
         return results;
     }
 
+    template <typename Details, typename ClientLogic, typename ServerLogic, class Arg>
+    static Results run (Arg const& arg, int timeoutSeconds = defaultTimeoutSeconds)
+    {
+        return run <Details, ClientLogic, ServerLogic, Arg, Arg> (arg, arg, timeoutSeconds);
+    }
+
     //--------------------------------------------------------------------------
 
     /** Reports tests of Details for all known asynchronous logic combinations to a UnitTest.
@@ -185,7 +192,7 @@ public:
                               int timeoutSeconds = defaultTimeoutSeconds,
                               bool beginTestCase = true)
     {
-        run <Details, TestPeerLogicAsyncServer, TestPeerLogicAsyncClient>
+        run <Details, TestPeerLogicAsyncClient, TestPeerLogicAsyncServer>
             (arg, timeoutSeconds).report (test, beginTestCase);
     }
 
@@ -196,13 +203,13 @@ public:
                         int timeoutSeconds = defaultTimeoutSeconds,
                         bool beginTestCase = true)
     {
-        run <Details, TestPeerLogicSyncServer,  TestPeerLogicSyncClient>
+        run <Details, TestPeerLogicSyncClient, TestPeerLogicSyncServer>
             (arg, timeoutSeconds).report (test, beginTestCase);
         
-        run <Details, TestPeerLogicSyncServer,  TestPeerLogicAsyncClient>
+        run <Details, TestPeerLogicAsyncClient, TestPeerLogicSyncServer>
             (arg, timeoutSeconds).report (test, beginTestCase);
         
-        run <Details, TestPeerLogicAsyncServer, TestPeerLogicSyncClient>
+        run <Details, TestPeerLogicSyncClient, TestPeerLogicAsyncServer>
             (arg, timeoutSeconds).report (test, beginTestCase);
 
         report_async <Details> (test, arg, timeoutSeconds, beginTestCase);

@@ -17,23 +17,59 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
-#define BEAST_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
+#ifndef BEAST_COMPLETIONCALL_H_INCLUDED
+#define BEAST_COMPLETIONCALL_H_INCLUDED
 
-class TestPeerLogicAsyncClient : public TestPeerLogic
+//  Meets these requirements:
+//
+//      CompletionHandler
+//      http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/CompletionHandler.html
+//
+class CompletionCall
 {
 public:
-    explicit TestPeerLogicAsyncClient (Socket& socket);
-    PeerRole get_role () const noexcept;
-    Model get_model () const noexcept;
-    void on_connect_async (error_code const& ec);
-    void on_handshake (error_code const& ec);
-    void on_write (error_code const& ec, std::size_t bytes_transferred);
-    void on_read (error_code const& ec, std::size_t bytes_transferred);
-    void on_read_final (error_code const& ec, std::size_t);
-    void on_shutdown (error_code const& ec);
+    typedef void result_type;
+
+    template <class Handler>
+    CompletionCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
+        : m_call (new CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler)))
+    {
+    }
+
+    CompletionCall (CompletionCall const& other)
+        : m_call (other.m_call)
+    { 
+    }
+
+    void operator() ()
+    {
+        (*m_call) ();
+    }
+
 private:
-    boost::asio::streambuf m_buf;
+    struct Call : SharedObject, LeakChecked <Call>
+    {
+        virtual void operator() () = 0;
+    };
+
+    template <class Handler>
+    struct CallType : Call
+    {
+        CallType (BOOST_ASIO_MOVE_ARG(Handler) handler)
+            : m_handler (handler)
+        {
+        }
+
+        void operator() ()
+        {
+            m_handler ();
+        }
+
+        Handler m_handler;
+    };
+
+private:
+    SharedObjectPtr <Call> m_call;
 };
 
 #endif

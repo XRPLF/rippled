@@ -17,23 +17,3 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
-#define BEAST_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
-
-class TestPeerLogicAsyncClient : public TestPeerLogic
-{
-public:
-    explicit TestPeerLogicAsyncClient (Socket& socket);
-    PeerRole get_role () const noexcept;
-    Model get_model () const noexcept;
-    void on_connect_async (error_code const& ec);
-    void on_handshake (error_code const& ec);
-    void on_write (error_code const& ec, std::size_t bytes_transferred);
-    void on_read (error_code const& ec, std::size_t bytes_transferred);
-    void on_read_final (error_code const& ec, std::size_t);
-    void on_shutdown (error_code const& ec);
-private:
-    boost::asio::streambuf m_buf;
-};
-
-#endif

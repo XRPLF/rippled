@@ -21,22 +21,43 @@ Socket::~Socket ()
 {
 }
 
-//------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 //
-// General
+// basic_io_object
 //
-//------------------------------------------------------------------------------
 
-bool Socket::requires_handshake ()
+boost::asio::io_service& Socket::get_io_service ()
 {
-    return false;
+    pure_virtual ();
+    return *static_cast <boost::asio::io_service*>(nullptr);
 }
 
-//------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 //
-// SocketInterface::Close
+// basic_socket
 //
-//------------------------------------------------------------------------------
+
+void* Socket::lowest_layer (char const*) const
+{
+    pure_virtual ();
+    return nullptr;
+}
+
+void* Socket::native_handle (char const*) const
+{
+    pure_virtual ();
+    return nullptr;
+}
+
+boost::system::error_code Socket::cancel (boost::system::error_code& ec)
+{
+    return pure_virtual (ec);
+}
+
+boost::system::error_code Socket::shutdown (shutdown_type, boost::system::error_code& ec)
+{
+    return pure_virtual (ec);
+}
 
 boost::system::error_code Socket::close (boost::system::error_code& ec)
 {
@@ -45,16 +66,15 @@ boost::system::error_code Socket::close (boost::system::error_code& ec)
 
 //------------------------------------------------------------------------------
 //
-// SocketInterface::Acceptor
+// basic_socket_acceptor
 //
-//------------------------------------------------------------------------------
 
 boost::system::error_code Socket::accept (Socket&, boost::system::error_code& ec)
 {
     return pure_virtual (ec);
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(Socket::ErrorCall, void (boost::system::error_code))
+BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
 Socket::async_accept (Socket&, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
 {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
@@ -76,37 +96,8 @@ Socket::async_accept (Socket&, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
 
 //------------------------------------------------------------------------------
 //
-// SocketInterface::LowestLayer
+// basic_stream_socket
 //
-//------------------------------------------------------------------------------
-
-void* Socket::lowest_layer_raw (char const*) const
-{
-    pure_virtual ();
-    return nullptr;
-}
-
-//--------------------------------------------------------------------------
-//
-// SocketInterface::Socket
-//
-//--------------------------------------------------------------------------
-
-boost::system::error_code Socket::cancel (boost::system::error_code& ec)
-{
-    return pure_virtual (ec);
-}
-
-boost::system::error_code Socket::shutdown (shutdown_type, boost::system::error_code& ec)
-{
-    return pure_virtual (ec);
-}
-
-//--------------------------------------------------------------------------
-//
-// SocketInterface::Stream
-//
-//--------------------------------------------------------------------------
 
 std::size_t Socket::read_some (MutableBuffers const&, boost::system::error_code& ec)
 {
@@ -120,7 +111,7 @@ std::size_t Socket::write_some (ConstBuffers const&, boost::system::error_code& 
     return 0;
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(Socket::TransferCall, void (boost::system::error_code, std::size_t))
+BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
 Socket::async_read_some (MutableBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
 {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
@@ -138,7 +129,7 @@ Socket::async_read_some (MutableBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall
 #endif
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(Socket::TransferCall, void (boost::system::error_code, std::size_t))
+BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
 Socket::async_write_some (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
 {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
@@ -160,16 +151,20 @@ Socket::async_write_some (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall)
 
 //--------------------------------------------------------------------------
 //
-// SocketInterface::Handshake
+// ssl::stream
 //
-//--------------------------------------------------------------------------
+
+bool Socket::requires_handshake ()
+{
+    return false;
+}
 
 boost::system::error_code Socket::handshake (handshake_type, boost::system::error_code& ec)
 {
     return pure_virtual (ec);
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(Socket::ErrorCall, void (boost::system::error_code))
+BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
 Socket::async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
 {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
@@ -189,8 +184,6 @@ Socket::async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
 #endif
 }
 
-//--------------------------------------------------------------------------
-
 #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
 
 boost::system::error_code Socket::handshake (handshake_type,
@@ -199,7 +192,7 @@ boost::system::error_code Socket::handshake (handshake_type,
     return pure_virtual (ec);
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(Socket::TransferCall, void (boost::system::error_code, std::size_t))
+BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (boost::system::error_code, std::size_t))
 Socket::async_handshake (handshake_type, ConstBuffers const&,
     BOOST_ASIO_MOVE_ARG(TransferCall) handler)
 {
@@ -227,7 +220,7 @@ boost::system::error_code Socket::shutdown (boost::system::error_code& ec)
     return pure_virtual (ec);
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(Socket::ErrorCall, void (boost::system::error_code))
+BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
 Socket::async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
 {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
@@ -247,3 +240,38 @@ Socket::async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
 #endif
 }
 
+//------------------------------------------------------------------------------
+
+/* members, and the most common base class in which they appear:
+
+basic_io_object
+    io_service& get_io_service ()
+
+basic_socket <Protocol> : basic_io_object
+    typedef protocol_type
+    typedef lowest_layer_type
+
+    lowest_layer_type& lowest_layer ()
+    lowest_layer_type const& lowest_layer () const
+    native_handle ()
+    cancel ()
+    shutdon (shutdown_type)
+    close ()
+    <various>
+
+basic_socket_acceptor <Protocol> : basic_io_object
+    typedef protocol_type
+    native_handle ()
+    listen ()
+    accept ()
+    async_accept ()
+    cancel ()
+    close ()
+
+basic_stream_socket <Protocol> : basic_socket <Protocol>
+
+ssl::stream
+    handshake ()
+    async_handshake ()
+    shutdown ()
+*/

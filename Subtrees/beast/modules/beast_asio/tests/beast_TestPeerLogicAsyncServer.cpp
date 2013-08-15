@@ -22,9 +22,9 @@ TestPeerLogicAsyncServer::TestPeerLogicAsyncServer (Socket& socket)
 {
 }
 
-TestPeerBasics::Role TestPeerLogicAsyncServer::get_role () const noexcept
+PeerRole TestPeerLogicAsyncServer::get_role () const noexcept
 {
-    return Role::server;
+    return PeerRole::server;
 }
 
 TestPeerBasics::Model TestPeerLogicAsyncServer::get_model () const noexcept
@@ -100,6 +100,11 @@ void TestPeerLogicAsyncServer::on_shutdown (error_code const& ec)
     {
         if (success (error (ec), true))
         {
+            if (socket ().requires_handshake ())
+            {
+                socket ().shutdown (Socket::shutdown_both, error ());
+            }
+
             if (success (socket ().close (error ())))
             {
                 // doing nothing here is intended,

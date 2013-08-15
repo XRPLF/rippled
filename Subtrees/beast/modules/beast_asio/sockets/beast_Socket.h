@@ -28,17 +28,6 @@
 
     When member functions are called and the underlying implementation does
     not support the operation, a fatal error is generated.
-
-    Must satisfy these requirements:
-    
-        DefaultConstructible, MoveConstructible, CopyConstructible,
-        MoveAssignable, CopyAssignable, Destructible
-
-    Meets the requirements of these boost concepts:
-
-        SyncReadStream, SyncWriteStream, AsyncReadStream, AsyncWriteStream,
-
-    @see SharedObjectPtr
 */
 class Socket
     : public SocketBase
@@ -50,126 +39,25 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // General
+    // basic_io_object
     //
+
+    virtual boost::asio::io_service& get_io_service ();
+
     //--------------------------------------------------------------------------
+    //
+    // basic_socket
+    //
 
-    virtual boost::asio::io_service& get_io_service () = 0;
-
-    /** Determines if the underlying stream requires a handshake.
-
-        If requires_handshake is true, it will be necessary to call handshake or
-        async_handshake after the connection is established. Furthermore it
-        will be necessary to call the shutdown member from the
-        HandshakeInterface to close the connection. Do not close the underlying
-        socket or else the closure will not be graceful. Only one side should
-        initiate the handshaking shutdon. The other side should observe it.
-        Which side does what is up to the user.
-
-        The default version returns false
+    /** Retrieve the lowest layer object.
+        Note that you must know the type name for this to work, or
+        else a fatal error will occur.
     */
-    virtual bool requires_handshake ();
-
-    /** Retrieve the underlying object.
-        Returns nullptr if the implementation doesn't match. Usually
-        you will use this if you need to get at the underlying boost::asio
-        object. For example:
-
-        @code
-
-        void set_options (Socket& socket)
-        {
-            typedef bost::boost::asio::ip::tcp Protocol;
-            typedef Protocol::socket;
-            Protocol::socket* const sock =
-                socket.this_layer <Protocol::socket> ();
-
-            if (sock != nullptr)
-                sock->set_option (
-                    Protocol::no_delay (true));
-        }
-
-        @endcode
-    */
-    template <class Object>
-    Object& this_layer ()
-    {
-        Object* object (this_layer_ptr <Object> ());
-        if (object == nullptr)
-            Throw (std::bad_cast (), __FILE__, __LINE__);
-        return *object;
-    }
-
-    template <class Object>
-    Object const& this_layer () const
-    {
-        Object const* object (this_layer_ptr <Object> ());
-        if (object == nullptr)
-            Throw (std::bad_cast (), __FILE__, __LINE__);
-        return *object;
-    }
-
-    template <class Object>
-    Object* this_layer_ptr ()
-    {
-        return static_cast <Object*> (
-            this_layer_raw (typeid (Object).name ()));
-    }
-
-    template <class Object>
-    Object const* this_layer_ptr () const
-    {
-        return static_cast <Object const*> (
-            this_layer_raw (typeid (Object).name ()));
-    }
-
-    // Shouldn't call this directly, use this_layer<> instead
-    virtual void* this_layer_raw (char const* type_name) const = 0;
-
-    //--------------------------------------------------------------------------
-    //
-    // SocketInterface::Close
-    //
-    //--------------------------------------------------------------------------
-
-    void close ()
-    {
-        boost::system::error_code ec;
-        throw_error (close (ec));
-    }
-
-    virtual boost::system::error_code close (boost::system::error_code& ec);
-
-    //--------------------------------------------------------------------------
-    //
-    // SocketInterface::Acceptor
-    //
-    //--------------------------------------------------------------------------
-
-    virtual boost::system::error_code accept (Socket& peer, boost::system::error_code& ec);
-
-    template <class AcceptHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(AcceptHandler, void (boost::system::error_code))
-    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler)
-    {
-        return async_accept (peer, ErrorCall (
-            BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler)));
-    }
-
-    virtual
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
-    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(ErrorCall) handler);
-
-    //--------------------------------------------------------------------------
-    //
-    // SocketInterface::LowestLayer
-    //
-    //--------------------------------------------------------------------------
-
+    /** @{ */
     template <class Object>
     Object& lowest_layer ()
     {
-        Object* object (lowest_layer_ptr <Object> ());
+        Object* object (this->lowest_layer_ptr <Object> ());
         if (object == nullptr)
             Throw (std::bad_cast (), __FILE__, __LINE__);
         return *object;
@@ -178,7 +66,7 @@ public:
     template <class Object>
     Object const& lowest_layer () const
     {
-        Object const* object (lowest_layer_ptr <Object> ());
+        Object const* object (this->lowest_layer_ptr <Object> ());
         if (object == nullptr)
             Throw (std::bad_cast (), __FILE__, __LINE__);
         return *object;
@@ -188,24 +76,58 @@ public:
     Object* lowest_layer_ptr ()
     {
         return static_cast <Object*> (
-            lowest_layer_raw (typeid (Object).name ()));
+            this->lowest_layer (typeid (Object).name ()));
     }
 
     template <class Object>
     Object const* lowest_layer_ptr () const
     {
         return static_cast <Object const*> (
-            lowest_layer_raw (typeid (Object).name ()));
+            this->lowest_layer (typeid (Object).name ()));
+    }
+    /** @} */
+
+    virtual void* lowest_layer (char const* type_name) const;
+
+    /** Retrieve the underlying object.
+        Note that you must know the type name for this to work, or
+        else a fatal error will occur.
+    */
+    /** @{ */
+    template <class Object>
+    Object& native_handle ()
+    {
+        Object* object (this->native_handle_ptr <Object> ());
+        if (object == nullptr)
+            Throw (std::bad_cast (), __FILE__, __LINE__);
+        return *object;
     }
 
-    // Shouldn't call this directly, use lowest_layer<> instead
-    virtual void* lowest_layer_raw (char const* type_name) const;
+    template <class Object>
+    Object const& native_handle () const
+    {
+        Object const* object (this->native_handle_ptr <Object> ());
+        if (object == nullptr)
+            Throw (std::bad_cast (), __FILE__, __LINE__);
+        return *object;
+    }
 
-    //--------------------------------------------------------------------------
-    //
-    // SocketInterface::Socket
-    //
-    //--------------------------------------------------------------------------
+    template <class Object>
+    Object* native_handle_ptr ()
+    {
+        return static_cast <Object*> (
+            this->native_handle (typeid (Object).name ()));
+    }
+
+    template <class Object>
+    Object const* native_handle_ptr () const
+    {
+        return static_cast <Object const*> (
+            this->native_handle (typeid (Object).name ()));
+    }
+    /** @} */
+
+    virtual void* native_handle (char const* type_name) const;
 
     void cancel ()
     {
@@ -224,16 +146,40 @@ public:
     virtual boost::system::error_code shutdown (shutdown_type what,
         boost::system::error_code& ec);
 
+    void close ()
+    {
+        boost::system::error_code ec;
+        throw_error (close (ec));
+    }
+
+    virtual boost::system::error_code close (boost::system::error_code& ec);
+
     //--------------------------------------------------------------------------
     //
-    // SocketInterface::Stream
+    // basic_socket_acceptor
     //
+
+    virtual boost::system::error_code accept (Socket& peer, boost::system::error_code& ec);
+
+    template <class AcceptHandler>
+    BOOST_ASIO_INITFN_RESULT_TYPE(AcceptHandler, void (boost::system::error_code))
+    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler)
+    {
+        return async_accept (peer, ErrorCall (
+            BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler)));
+    }
+
+    virtual
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (boost::system::error_code))
+    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(ErrorCall) handler);
+
     //--------------------------------------------------------------------------
+    //
+    // basic_stream_socket
+    //
 
     // SyncReadStream
-    //
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/SyncReadStream.html
-    //
     template <class MutableBufferSequence>
     std::size_t read_some (MutableBufferSequence const& buffers,
         boost::system::error_code& ec)
@@ -244,9 +190,7 @@ public:
     virtual std::size_t read_some (MutableBuffers const& buffers, boost::system::error_code& ec);
 
     // SyncWriteStream
-    //
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/SyncWriteStream.html
-    //
     template <class ConstBufferSequence>
     std::size_t write_some (ConstBufferSequence const& buffers, boost::system::error_code &ec)
     {
@@ -256,9 +200,7 @@ public:
     virtual std::size_t write_some (ConstBuffers const& buffers, boost::system::error_code& ec);
 
     // AsyncReadStream
-    //
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncReadStream.html
-    //
     template <class MutableBufferSequence, class ReadHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (boost::system::error_code, std::size_t))
     async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
@@ -272,9 +214,7 @@ public:
     async_read_some (MutableBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler);
 
     // AsyncWriteStream
-    //
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncWriteStream.html
-    //
     template <class ConstBufferSequence, class WriteHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (boost::system::error_code, std::size_t))
     async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
@@ -289,9 +229,22 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // SocketInterface::Handshake
+    // ssl::stream
     //
-    //--------------------------------------------------------------------------
+
+    /** Determines if the underlying stream requires a handshake.
+
+        If requires_handshake is true, it will be necessary to call handshake or
+        async_handshake after the connection is established. Furthermore it
+        will be necessary to call the shutdown member from the
+        HandshakeInterface to close the connection. Do not close the underlying
+        socket or else the closure will not be graceful. Only one side should
+        initiate the handshaking shutdon. The other side should observe it.
+        Which side does what is up to the user.
+
+        The default version returns false.
+    */
+    virtual bool requires_handshake ();
 
     // ssl::stream::handshake (1 of 4)
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload1.html
