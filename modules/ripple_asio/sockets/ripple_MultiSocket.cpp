@@ -151,10 +151,6 @@ public:
         SocketWrapper <acceptor_type&> m_acceptor_wrapper;
     };
 
-    MultiSocketTests () : UnitTest ("MultiSocket", "ripple", runManual)
-    {
-    }
-
     //--------------------------------------------------------------------------
 
     enum
@@ -221,6 +217,10 @@ public:
     void runTest ()
     {
         testProtocol <boost::asio::ip::tcp> ();
+    }
+
+    MultiSocketTests () : UnitTest ("MultiSocket", "ripple")
+    {
     }
 };
 
