@@ -21,22 +21,43 @@ Socket::~Socket ()
 {
 }
 
-//------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 //
-// General
+// basic_io_object
 //
-//------------------------------------------------------------------------------
 
-bool Socket::requires_handshake ()
+boost::asio::io_service& Socket::get_io_service ()
 {
-    return false;
+    pure_virtual ();
+    return *static_cast <boost::asio::io_service*>(nullptr);
 }
 
-//------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 //
-// SocketInterface::Close
+// basic_socket
 //
-//------------------------------------------------------------------------------
+
+void* Socket::lowest_layer (char const*) const
+{
+    pure_virtual ();
+    return nullptr;
+}
+
+void* Socket::native_handle (char const*) const
+{
+    pure_virtual ();
+    return nullptr;
+}
+
+boost::system::error_code Socket::cancel (boost::system::error_code& ec)
+{
+    return pure_virtual (ec);
+}
+
+boost::system::error_code Socket::shutdown (shutdown_type, boost::system::error_code& ec)
+{
+    return pure_virtual (ec);
+}
 
 boost::system::error_code Socket::close (boost::system::error_code& ec)
 {
@@ -45,9 +66,8 @@ boost::system::error_code Socket::close (boost::system::error_code& ec)
 
 //------------------------------------------------------------------------------
 //
-// SocketInterface::Acceptor
+// basic_socket_acceptor
 //
-//------------------------------------------------------------------------------
 
 boost::system::error_code Socket::accept (Socket&, boost::system::error_code& ec)
 {
@@ -76,37 +96,8 @@ Socket::async_accept (Socket&, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
 
 //------------------------------------------------------------------------------
 //
-// SocketInterface::LowestLayer
+// basic_stream_socket
 //
-//------------------------------------------------------------------------------
-
-void* Socket::lowest_layer_raw (char const*) const
-{
-    pure_virtual ();
-    return nullptr;
-}
-
-//--------------------------------------------------------------------------
-//
-// SocketInterface::Socket
-//
-//--------------------------------------------------------------------------
-
-boost::system::error_code Socket::cancel (boost::system::error_code& ec)
-{
-    return pure_virtual (ec);
-}
-
-boost::system::error_code Socket::shutdown (shutdown_type, boost::system::error_code& ec)
-{
-    return pure_virtual (ec);
-}
-
-//--------------------------------------------------------------------------
-//
-// SocketInterface::Stream
-//
-//--------------------------------------------------------------------------
 
 std::size_t Socket::read_some (MutableBuffers const&, boost::system::error_code& ec)
 {
@@ -160,9 +151,13 @@ Socket::async_write_some (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall)
 
 //--------------------------------------------------------------------------
 //
-// SocketInterface::Handshake
+// ssl::stream
 //
-//--------------------------------------------------------------------------
+
+bool Socket::requires_handshake ()
+{
+    return false;
+}
 
 boost::system::error_code Socket::handshake (handshake_type, boost::system::error_code& ec)
 {
@@ -188,8 +183,6 @@ Socket::async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
         BOOST_ASIO_MOVE_CAST(ErrorCall)(handler), ec));
 #endif
 }
-
-//--------------------------------------------------------------------------
 
 #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
 
@@ -249,45 +242,6 @@ Socket::async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
 
 //------------------------------------------------------------------------------
 
-
-#if 0
-/* Stream, SyncReadStream, AsyncReadStream, WriteStream, AsyncWriteStream */
-// Note, missing std::future<> returns
-class Stream
-{
-public:
-    // Stream
-    typedef typename remove_reference<Stream>::type next_layer_type;
-    typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
-    next_layer_type& next_layer()
-    next_layer_type const& next_layer() const
-    lowest_layer_type& lowest_layer()
-    const lowest_layer_type& lowest_layer() const
-    boost::asio::io_service& get_io_service()
-    void close()
-    boost::system::error_code close(boost::system::error_code& ec)
-
-    // SyncWriteStream
-    template <typename ConstBufferSequence>
-    std::size_t write_some (const ConstBufferSequence& buffers)
-    template <typename ConstBufferSequence>
-    std::size_t write_some (const ConstBufferSequence& buffers, boost::system::error_code& ec)
-
-    // AsyncWriteStream
-    template <typename ConstBufferSequence, typename WriteHandler>
-    void async_write_some (const ConstBufferSequence& buffers, WriteHandler handler)
-
-    // ReadStream
-    template <typename MutableBufferSequence>
-    std::size_t read_some (const MutableBufferSequence& buffers)
-    template <typename MutableBufferSequence>
-    std::size_t read_some (const MutableBufferSequence& buffers, boost::system::error_code& ec)
-
-    // AsyncReadStream
-    template <typename MutableBufferSequence, typename ReadHandler>
-    void async_read_some (const MutableBufferSequence& buffers, ReadHandler handler)
-};
-#endif
 /* members, and the most common base class in which they appear:
 
 basic_io_object
@@ -296,8 +250,10 @@ basic_io_object
 basic_socket <Protocol> : basic_io_object
     typedef protocol_type
     typedef lowest_layer_type
+
     lowest_layer_type& lowest_layer ()
-    native_handle () // Socket::native_handle() would return void* and we'd use the templates to do the static_cast
+    lowest_layer_type const& lowest_layer () const
+    native_handle ()
     cancel ()
     shutdon (shutdown_type)
     close ()
@@ -314,4 +270,8 @@ basic_socket_acceptor <Protocol> : basic_io_object
 
 basic_stream_socket <Protocol> : basic_socket <Protocol>
 
+ssl::stream
+    handshake ()
+    async_handshake ()
+    shutdown ()
 */

@@ -24,7 +24,8 @@
 */
 class SocketWrapperBasics
 {
-protected:
+public:
+#if 0
     /** Template specialization to determine available interfaces. */
     template <typename Object>
     struct InterfacesOf
@@ -128,6 +129,7 @@ protected:
     struct HasInterface : boost::is_base_of <Interface, typename InterfacesOf <Object> >
     {
     };
+#endif
 #endif
 };
 

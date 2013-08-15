@@ -23,13 +23,11 @@
 /** Implementation details for Socket.
     Normally you wont need to use this.
 */
-class SocketBase
+struct SocketBase
 {
-protected:
     static void pure_virtual ();
     static boost::system::error_code pure_virtual (boost::system::error_code& ec);
 
-protected:
     /** Called when the underlying object does not support the interface. */
     void throw_error (boost::system::error_code const& ec)
     {
