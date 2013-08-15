@@ -2649,6 +2649,9 @@ Json::Value RPCHandler::doTransactionEntry (Json::Value params, LoadType* loadTy
     if (!lpLedger)
         return jvResult;
 
+    if (lpLedger->isImmutable())
+        masterLockHolder.unlock();
+
     if (!params.isMember ("tx_hash"))
     {
         jvResult["error"]   = "fieldNotFoundTransaction";
@@ -2681,7 +2684,8 @@ Json::Value RPCHandler::doTransactionEntry (Json::Value params, LoadType* loadTy
             else
             {
                 jvResult["tx_json"]     = tpTrans->getJson (0);
-                jvResult["metadata"]    = tmTrans->getJson (0);
+                if (tmTrans)
+                    jvResult["metadata"]    = tmTrans->getJson (0);
                 // 'accounts'
                 // 'engine_...'
                 // 'ledger_...'
