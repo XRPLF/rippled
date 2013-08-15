@@ -330,7 +330,7 @@ void JobQueue::getNextJob (Job& job, ScopedLockType&)
 
     Count& count (mJobCounts [type]);
 
-    check_postcondition (type != JobType::jtINVALID);
+    check_postcondition (type != jtINVALID);
 
     job = *iter;
 
@@ -363,7 +363,7 @@ void JobQueue::finishJob (Job const& job)
         ScopedLockType lock (mJobLock);
 
         check_precondition (mJobSet.find (job) == mJobSet.end ());
-        check_precondition (type != JobType::jtINVALID);
+        check_precondition (type != jtINVALID);
 
         Count& count (mJobCounts [type]);
 
