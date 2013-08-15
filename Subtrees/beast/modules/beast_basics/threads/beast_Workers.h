@@ -129,8 +129,8 @@ private:
 
 private:
     Callback& m_callback;
-    WaitableEvent m_allPaused;                   // signaled when all threads paused
     String m_threadNames;                        // The name to give each thread
+    WaitableEvent m_allPaused;                   // signaled when all threads paused
     Semaphore m_semaphore;                       // each pending task is 1 resource
     int m_numberOfThreads;                       // how many we want active now
     Atomic <int> m_activeCount;                  // to know when all are paused
