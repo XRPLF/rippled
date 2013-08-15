@@ -318,9 +318,9 @@ public:
 
         if (result.wasOk ())
         {
-            MasterRecord mr;
+            //MasterRecord mr;
 
-            mr.version = 1;
+            //mr.version = 1;
 
             result = state->keyFile.write (buffer.getData (), buffer.getSize ());
         }
