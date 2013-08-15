@@ -101,8 +101,8 @@ protected:
     protocol_type m_protocol;
     socket_type m_socket;
     acceptor_type m_acceptor;
-    SocketWrapper <socket_type> m_socket_wrapper;
-    SocketWrapper <acceptor_type> m_acceptor_wrapper;
+    SocketWrapper <socket_type&> m_socket_wrapper;
+    SocketWrapper <acceptor_type&> m_acceptor_wrapper;
 };
 
 #endif
