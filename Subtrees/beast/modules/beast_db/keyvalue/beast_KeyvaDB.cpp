@@ -708,10 +708,6 @@ public:
         maxPayloadBytes = 8 * 1024
     };
 
-    KeyvaDBTests () : UnitTest ("KeyvaDB", "beast")
-    {
-    }
-
     // Retrieval callback stores the value in a Payload object for comparison
     struct PayloadGetCallback : KeyvaDB::GetCallback
     {
@@ -855,6 +851,10 @@ public:
     {
         testKeySize <4> (500);
         testKeySize <32> (4000);
+    }
+
+    KeyvaDBTests () : UnitTest ("KeyvaDB", "beast", runManual)
+    {
     }
 };
 
