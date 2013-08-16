@@ -74,33 +74,12 @@ public:
         server_proxy = 8
     };
 
-    struct Options
-    {
-        Options (Flags flags = none);
-
-        // Always perform SSL handshake as client role
-        bool useClientSsl;
-
-        // Enable optional SSL capability as server role
-        bool enableServerSsl;
-
-        // Require SSL as server role.
-        // Does not require that enableServerSsl is set
-        bool requireServerSsl;
-
-        // Require PROXY protocol handshake as server role
-        bool requireServerProxy;
-
-    private:
-        void setFromFlags (Flags flags);
-    };
-
     static MultiSocket* New (boost::asio::io_service& io_service, int flags = 0);
 
     // Ripple uses a SSL/TLS context with specific parameters and this returns
     // a reference to the corresponding boost::asio::ssl::context object.
     //
-    static SslContextBase::BoostContextType &getRippleTlsBoostContext ();
+    static SslContextBase::BoostContextType& getRippleTlsBoostContext ();
 };
 
 #endif

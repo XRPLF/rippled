@@ -4,35 +4,36 @@
 */
 //==============================================================================
 
-MultiSocket::Options::Options (Flags flags)
-    : useClientSsl (false)
-    , enableServerSsl (false)
-    , requireServerSsl (false)
-    , requireServerProxy (false)
-{
-    setFromFlags (flags);
-}
-
-void MultiSocket::Options::setFromFlags (Flags flags)
-{
-   useClientSsl = (flags & client_ssl) != 0;
-   enableServerSsl = (flags & (server_ssl | server_ssl_required)) != 0;
-   requireServerSsl = (flags & server_ssl_required) != 0;
-   requireServerProxy = (flags & server_proxy) !=0;
-}
-
-//------------------------------------------------------------------------------
-
 MultiSocket* MultiSocket::New (boost::asio::io_service& io_service, int flags)
 {
     return new MultiSocketType <boost::asio::ip::tcp::socket> (io_service, flags);
 }
 
+struct RippleTlsContextHolder
+{
+    RippleTlsContextHolder ()
+        : m_context (RippleTlsContext::New ())
+    {
+    }
+
+    RippleTlsContext& get ()
+    {
+        return *m_context;
+    }
+
+private:
+    ScopedPointer <RippleTlsContext> m_context;
+};
+
+static RippleTlsContextHolder s_context_holder;
+
 SslContextBase::BoostContextType &MultiSocket::getRippleTlsBoostContext ()
 {
-    static ScopedPointer <RippleTlsContext> context (RippleTlsContext::New ());
+    // This doesn't work because VS2012 doesn't wrap
+    // it with a thread-safety preamble!!
+    //static ScopedPointer <RippleTlsContext> context (RippleTlsContext::New ());
 
-    return context->getBoostContext ();
+    return s_context_holder.get ().getBoostContext ();
 }
 
 //------------------------------------------------------------------------------
@@ -182,29 +183,21 @@ public:
     {
         check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
 
-#if 0
         run <Protocol> (MultiSocket::Flag::client_role | extraClientFlags, MultiSocket::Flag::server_role | extraServerFlags);
-#else
-        run_async <Protocol> (MultiSocket::Flag::client_role | extraClientFlags, MultiSocket::Flag::server_role | extraServerFlags);
-#endif
     }
 
     template <typename Protocol>
     void testProtocol ()
     {
-#if 0
         // These should pass.
         run <Protocol> (0, 0);
         run <Protocol> (MultiSocket::Flag::client_role, 0);
         run <Protocol> (0, MultiSocket::Flag::server_role);
         run <Protocol> (MultiSocket::Flag::client_role, MultiSocket::Flag::server_role);
-#endif
 
-#if 0
         // These should pass
         testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl_required);
         testFlags <Protocol> (0, MultiSocket::Flag::ssl);
-#endif
         testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl);
     }
 
