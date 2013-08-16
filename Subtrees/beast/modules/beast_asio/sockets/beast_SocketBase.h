@@ -25,8 +25,9 @@
 */
 struct SocketBase
 {
-    static void pure_virtual ();
+    static boost::system::error_code pure_virtual_error ();
     static boost::system::error_code pure_virtual (boost::system::error_code& ec);
+    static void pure_virtual ();
 
     /** Called when the underlying object does not support the interface. */
     void throw_error (boost::system::error_code const& ec)

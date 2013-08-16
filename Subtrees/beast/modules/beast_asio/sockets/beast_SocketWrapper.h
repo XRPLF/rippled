@@ -394,18 +394,15 @@ public:
         boost::asio::detail::async_result_init<
             AcceptHandler, void (error_code)> init(
                 BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler));
-        error_code ec;
-        ec = pure_virtual (ec);
         // init.handler is copied
         get_io_service ().post (CompletionCall (
-            AcceptHandler (init.handler), ec));
+            AcceptHandler (init.handler), pure_virtual_error ()));
         return init.result.get();
 
 #else
-        error_code ec;
-        ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler), ec));
+        get_io_service ().post (CompletionCall (
+            BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler),
+                pure_virtual_error ()));
 
 #endif
     }
@@ -493,18 +490,15 @@ public:
         boost::asio::detail::async_result_init<
             ReadHandler, void (error_code, std::size_t)> init(
                 BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
-        error_code ec;
-        ec = pure_virtual (ec);
         // init.handler is copied
         get_io_service ().post (CompletionCall (
-            ReadHandler (init.handler), ec, 0));
+            ReadHandler (init.handler), pure_virtual_error (), 0));
         return init.result.get();
 
 #else
-        error_code ec;
-        ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(ReadHandler)(handler), ec, 0));
+        get_io_service ().post (CompletionCall (
+            BOOST_ASIO_MOVE_CAST(ReadHandler)(handler),
+                pure_virtual_error (), 0));
 
 #endif
     }
@@ -537,18 +531,15 @@ public:
         boost::asio::detail::async_result_init<
             TransferCall, void (error_code, std::size_t)> init(
                 BOOST_ASIO_MOVE_CAST(TransferCall)(handler));
-        error_code ec;
-        ec = pure_virtual (ec);
         // init.handler is copied
         get_io_service ().post (CompletionCall (
-            TransferCall (init.handler), ec, 0));
+            TransferCall (init.handler), pure_virtual_error (), 0));
         return init.result.get();
 
 #else
-        error_code ec;
-        ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(TransferCall)(handler), ec, 0));
+        get_io_service ().post (CompletionCall (
+            BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
+                pure_virtual_error (), 0));
 
 #endif
     }
@@ -619,17 +610,14 @@ public:
         boost::asio::detail::async_result_init<
             ErrorCall, void (error_code)> init(
                 BOOST_ASIO_MOVE_CAST(ErrorCall)(handler));
-        error_code ec;
-        ec = pure_virtual (ec);
         // init.handler is copied
         get_io_service ().post (CompletionCall (
-            ErrorCall (init.handler), ec));
+            ErrorCall (init.handler), pure_virtual_error ()));
         return init.result.get();
 #else
-        error_code ec;
-        ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler), ec));
+        get_io_service ().post (CompletionCall (
+            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
+                pure_virtual_error ()));
 #endif
     }
 
@@ -686,18 +674,15 @@ public:
         boost::asio::detail::async_result_init<
             TransferCall, void (error_code, std::size_t)> init(
             BOOST_ASIO_MOVE_CAST(TransferCall)(handler));
-        error_code ec;
-        ec = pure_virtual (ec);
         // init.handler is copied
         get_io_service ().post (CompletionCall (
-            TransferCall (init.handler), ec, 0));
+            TransferCall (init.handler), pure_virtual_error (), 0));
         return init.result.get();
 
 #else
-        error_code ec;
-        ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(TransferCall)(handler), ec, 0));
+        get_io_service ().post (CompletionCall (
+            BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
+                pure_virtual_error (), 0));
 
 #endif
     }
@@ -753,18 +738,15 @@ public:
         boost::asio::detail::async_result_init<
             ErrorCall, void (error_code, std::size_t)> init(
                 BOOST_ASIO_MOVE_CAST(ErrorCall)(handler));
-        error_code ec;
-        ec = pure_virtual (ec);
         // init.handler is copied
         get_io_service ().post (CompletionCall (
-            ErrorCall (init.handler), ec));
+            ErrorCall (init.handler), pure_virtual_error ()));
         return init.result.get();
 
 #else
-        error_code ec;
-        ec = pure_virtual (ec);
-        get_io_service ().post (boost::bind (
-            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler), ec));
+        get_io_service ().post (CompletionCall (
+            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
+                pure_virtual_error ()));
 
 #endif
     }
