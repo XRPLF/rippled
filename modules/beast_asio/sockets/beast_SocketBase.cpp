@@ -17,6 +17,12 @@
 */
 //==============================================================================
 
+boost::system::error_code SocketBase::pure_virtual_error ()
+{
+    return boost::system::errc::make_error_code (
+        boost::system::errc::function_not_supported);
+}
+
 void SocketBase::pure_virtual ()
 {
     fatal_error ("A beast::Socket function was called on an object that doesn't support the interface");
@@ -25,6 +31,6 @@ void SocketBase::pure_virtual ()
 boost::system::error_code SocketBase::pure_virtual (boost::system::error_code& ec)
 {
     pure_virtual ();
-    return ec = boost::system::errc::make_error_code (
-        boost::system::errc::function_not_supported);
+    ec = pure_virtual_error ();
+    return ec;
 }
