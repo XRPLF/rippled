@@ -39,6 +39,10 @@ class ErrorCall
 public:
     typedef void result_type;
 
+    ErrorCall () noexcept
+    {
+    }
+
     template <class Handler>
     ErrorCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
         : m_call (new CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler)))
@@ -48,6 +52,11 @@ public:
     ErrorCall (ErrorCall const& other)
         : m_call (other.m_call)
     { 
+    }
+
+    bool isNull () const noexcept
+    {
+        return m_call == nullptr;
     }
 
     void operator() (boost::system::error_code const& ec)
