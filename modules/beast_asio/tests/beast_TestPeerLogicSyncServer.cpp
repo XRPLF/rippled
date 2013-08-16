@@ -34,7 +34,7 @@ TestPeerBasics::Model TestPeerLogicSyncServer::get_model () const noexcept
 
 void TestPeerLogicSyncServer::on_connect ()
 {
-    if (socket ().requires_handshake ())
+    if (socket ().needs_handshake ())
     {
         if (failure (socket ().handshake (to_handshake_type (get_role ()), error ())))
             return;
@@ -66,7 +66,7 @@ void TestPeerLogicSyncServer::on_connect ()
             return;
     }
 
-    if (socket ().requires_handshake ())
+    if (socket ().needs_handshake ())
     {
         if (failure (socket ().shutdown (error ()), true))
             return;

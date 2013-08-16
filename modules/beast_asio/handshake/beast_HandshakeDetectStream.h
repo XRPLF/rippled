@@ -146,15 +146,18 @@ public:
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
-            ErrorCall, void (error_code)> init(
+            HandshakeHandler, void (error_code)> init(
                 BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
         // init.handler is copied
-        m_origHandler = ErrorCall (HandshakeHandler(init.handler));
+        m_origHandler = ErrorCall (
+            BOOST_ASIO_MOVE_CAST(HandshakeHandler)
+                (HandshakeHandler(init.handler)));
         bassert (m_origBufferedHandler.isNull ());
         async_do_handshake (type, ConstBuffers ());
         return init.result.get();
 #else
-        m_origHandler = ErrorCall (handler);
+        m_origHandler = ErrorCall (
+            BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
         bassert (m_origBufferedHandler.isNull ());
         async_do_handshake (type, ConstBuffers ());
 #endif
@@ -165,7 +168,7 @@ public:
     error_code handshake (handshake_type type,
         const ConstBufferSequence& buffers, error_code& ec)
     {
-        return do_handshake (type, ec, ConstBuffers (buffers));;
+        return do_handshake (type, ec, ConstBuffers (buffers));
     }
 
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
@@ -178,12 +181,15 @@ public:
             BufferedHandshakeHandler, void (error_code, std::size_t)> init(
                 BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
         // init.handler is copied
-        m_origBufferedHandler = TransferCall (BufferedHandshakeHandler(init.handler));
+        m_origBufferedHandler = TransferCall (
+            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)
+                (BufferedHandshakeHandler(init.handler)));
         bassert (m_origHandler.isNull ());
         async_do_handshake (type, ConstBuffers (buffers));
         return init.result.get();
 #else
-        m_origBufferedHandler = TransferCall (handler);
+        m_origBufferedHandler = TransferCall (
+            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler(handler)));
         bassert (m_origHandler.isNull ());
         async_do_handshake (type, ConstBuffers (buffers));
 #endif
@@ -240,6 +246,8 @@ public:
     void async_do_handshake (handshake_type type, ConstBuffers const& buffers)
     {
         // Transfer caller data to our buffer.
+        // We commit the bytes in on_async_read_some.
+        //
         std::size_t const bytes_transferred (boost::asio::buffer_copy (
             m_buffer.prepare (boost::asio::buffer_size (buffers)), buffers));
 
@@ -275,6 +283,7 @@ public:
                     // continuation?
                     m_callback->on_async_detect (m_logic.get (), ec,
                         ConstBuffers (m_buffer.data ()), m_origBufferedHandler);
+                    
                     return;
                 }
             #endif
@@ -283,6 +292,7 @@ public:
                 // continuation?
                 m_callback->on_async_detect (m_logic.get (), ec,
                     ConstBuffers (m_buffer.data ()), m_origHandler);
+
                 return;
             }
 

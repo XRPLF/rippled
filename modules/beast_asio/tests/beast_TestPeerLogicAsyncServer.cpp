@@ -37,7 +37,7 @@ void TestPeerLogicAsyncServer::on_connect_async (error_code const& ec)
     if (aborted (ec) || failure (error (ec)))
         return finished ();
 
-    if (socket ().requires_handshake ())
+    if (socket ().needs_handshake ())
     {
         socket ().async_handshake (Socket::server,
             boost::bind (&TestPeerLogicAsyncServer::on_handshake, this,
@@ -80,7 +80,7 @@ void TestPeerLogicAsyncServer::on_write (error_code const& ec, std::size_t bytes
     if (unexpected (bytes_transferred == 7, error ()))
         return finished ();
 
-    if (socket ().requires_handshake ())
+    if (socket ().needs_handshake ())
     {
         socket ().async_shutdown (boost::bind (&TestPeerLogicAsyncServer::on_shutdown, this,
             boost::asio::placeholders::error));
@@ -100,7 +100,7 @@ void TestPeerLogicAsyncServer::on_shutdown (error_code const& ec)
     {
         if (success (error (ec), true))
         {
-            if (socket ().requires_handshake ())
+            if (socket ().needs_handshake ())
             {
                 socket ().shutdown (Socket::shutdown_both, error ());
             }
