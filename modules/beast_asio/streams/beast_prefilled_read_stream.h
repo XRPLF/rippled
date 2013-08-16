@@ -143,7 +143,7 @@ public:
     }
 
     template <typename MutableBufferSequence, typename ReadHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
     async_read_some (MutableBufferSequence const& buffers,
         BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
     {
@@ -178,7 +178,7 @@ public:
     }
 
     template <typename ConstBufferSequence, typename WriteHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (error_code, std::size_t))
     async_write_some (ConstBufferSequence const& buffers,
         BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
     {

@@ -375,7 +375,7 @@ public:
     }
 
     template <typename AcceptHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ErrorCall, void (error_code))
+    BEAST_ASIO_INITFN_RESULT_TYPE(ErrorCall, void (error_code))
     async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler,
         boost::true_type)
     {
@@ -386,7 +386,7 @@ public:
     }
 
     template <typename AcceptHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(AcceptHandler, void (error_code))
+    BEAST_ASIO_INITFN_RESULT_TYPE(AcceptHandler, void (error_code))
     async_accept (Socket&, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler,
         boost::false_type)
     {
@@ -485,7 +485,7 @@ public:
     }
 
     template <typename MutableBufferSequence, typename ReadHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
     async_read_some (MutableBufferSequence const&, BOOST_ASIO_MOVE_ARG(ReadHandler) handler,
         boost::false_type)
     {
