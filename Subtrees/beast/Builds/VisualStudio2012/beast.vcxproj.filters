@@ -158,6 +158,9 @@
     <Filter Include="beast_asio\basics">
       <UniqueIdentifier>{ccdc0c8e-f77a-486e-ba2f-29c10ec97f18}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_asio\streams">
+      <UniqueIdentifier>{dfa79046-33ef-4653-a6f9-83954b76a10f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -844,6 +847,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\protocol\beast_StreamHandshakeDetectorType.h">
       <Filter>beast_asio\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\streams\beast_prefilled_read_stream.h">
+      <Filter>beast_asio\streams</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

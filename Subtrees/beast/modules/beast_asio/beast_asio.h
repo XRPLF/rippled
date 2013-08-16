@@ -65,6 +65,8 @@ namespace beast
 #include "protocol/beast_HandshakeDetectorType.h"
 #include "protocol/beast_StreamHandshakeDetectorType.h"
 
+#include "streams/beast_prefilled_read_stream.h"
+
 #include "tests/beast_TestPeerBasics.h"
 #include "tests/beast_TestPeer.h"
 #include "tests/beast_TestPeerDetails.h"
