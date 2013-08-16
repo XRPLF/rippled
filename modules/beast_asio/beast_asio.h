@@ -48,24 +48,25 @@ namespace beast
 
 // Order matters
 
-#include "basics/beast_PeerRole.h"
 #include "basics/beast_BufferType.h"
 #include "basics/beast_CompletionCall.h"
 #include "basics/beast_ErrorCall.h"
+#include "basics/beast_FixedInputBuffer.h"
+#include "basics/beast_PeerRole.h"
 #include "basics/beast_TransferCall.h"
 
 #include "sockets/beast_SocketBase.h"
 #include "sockets/beast_Socket.h"
-#include "sockets/beast_SocketInterface.h"
 #include "sockets/beast_SocketWrapper.h"
-#include "sockets/beast_SharedSocket.h"
 #include "sockets/beast_SslContext.h"
 
-#include "protocol/beast_ProxyHandshake.h"
-#include "protocol/beast_HandshakeDetectorType.h"
-#include "protocol/beast_StreamHandshakeDetectorType.h"
+#include "handshake/beast_ProxyHandshake.h"
+ #include "handshake/beast_HandshakeDetectLogic.h"
+#include "handshake/beast_HandshakeDetectLogicSSL2.h"
+#include "handshake/beast_HandshakeDetectLogicSSL3.h"
+#include "handshake/beast_HandshakeDetectStream.h"
 
-#include "streams/beast_prefilled_read_stream.h"
+#include "streams/beast_PrefilledReadStream.h"
 
 #include "tests/beast_TestPeerBasics.h"
 #include "tests/beast_TestPeer.h"

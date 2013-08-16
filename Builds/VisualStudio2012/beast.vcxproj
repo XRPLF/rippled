@@ -72,19 +72,20 @@
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_BufferType.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_CompletionCall.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_ErrorCall.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_FixedInputBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_PeerRole.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_TransferCall.h" />
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
-    <ClInclude Include="..\..\modules\beast_asio\protocol\beast_HandshakeDetectorType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\protocol\beast_StreamHandshakeDetectorType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\protocol\beast_ProxyHandshake.h" />
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogic.h" />
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicSSL2.h" />
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicSSL3.h" />
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectStream.h" />
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_ProxyHandshake.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_Socket.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SharedSocket.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketBase.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketInterface.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapper.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SslContext.h" />
-    <ClInclude Include="..\..\modules\beast_asio\streams\beast_prefilled_read_stream.h" />
+    <ClInclude Include="..\..\modules\beast_asio\streams\beast_PrefilledReadStream.h" />
     <ClInclude Include="..\..\modules\beast_asio\system\beast_BoostIncludes.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeer.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerBasics.h" />
@@ -308,13 +309,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp" />
-    <ClCompile Include="..\..\modules\beast_asio\protocol\beast_StreamHandshakeDetectorType.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\protocol\beast_ProxyHandshake.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\handshake\beast_ProxyHandshake.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
