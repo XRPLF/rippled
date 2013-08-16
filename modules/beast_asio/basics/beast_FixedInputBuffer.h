@@ -24,68 +24,88 @@
     This provides a convenient interface for doing a bytewise
     verification/reject test on a handshake protocol.
 */
-template <int Bytes>
-struct FixedInputBuffer
+/** @{ */
+class FixedInputBuffer
 {
-    template <typename ConstBufferSequence>
-    explicit FixedInputBuffer (ConstBufferSequence const& buffer)
-        : m_buffer (boost::asio::buffer (m_storage))
-        , m_size (boost::asio::buffer_copy (m_buffer, buffer))
-        , m_data (boost::asio::buffer_cast <uint8 const*> (m_buffer))
+protected:
+    struct CtorParams
+    {
+        CtorParams (uint8 const* begin_, std::size_t bytes_)
+            : begin (begin_)
+            , bytes (bytes_)
+        {
+        }
+
+        uint8 const* begin;
+        std::size_t bytes;
+    };
+
+    FixedInputBuffer (CtorParams const& params)
+        : m_begin (params.begin)
+        , m_iter (m_begin)
+        , m_end (m_begin + params.bytes)
     {
     }
 
-    uint8 operator[] (std::size_t index) const noexcept
+public:
+    FixedInputBuffer (FixedInputBuffer const& other)
+        : m_begin (other.m_begin)
+        , m_iter (other.m_iter)
+        , m_end (other.m_end)
     {
-        bassert (index >= 0 && index < m_size);
-        return m_data [index];
     }
 
-    bool peek (std::size_t bytes) const noexcept
+    FixedInputBuffer& operator= (FixedInputBuffer const& other)
     {
-        if (m_size >= bytes)
-            return true;
-        return false;
+        m_begin = other.m_begin;
+        m_iter = other.m_iter;
+        m_end = other.m_end;
+        return *this;
+    }
+
+    // Returns the number of bytes consumed
+    std::size_t used () const noexcept
+    {
+        return m_iter - m_begin;
+    }
+
+    // Returns the size of what's remaining
+    std::size_t size () const noexcept
+    {
+        return m_end - m_iter;
+    }
+
+    void const* peek (std::size_t bytes)
+    {
+        return peek_impl (bytes, nullptr);
     }
 
     template <typename T>
-    bool peek (T* t) noexcept
+    bool peek (T* t) const noexcept
     {
-        std::size_t const bytes = sizeof (T);
-        if (m_size >= bytes)
-        {
-            std::copy (m_data, m_data + bytes, t);
-            return true;
-        }
-        return false;
+        return peek_impl (sizeof (T), t) != nullptr;
     }
 
     bool consume (std::size_t bytes) noexcept
     {
-        if (m_size >= bytes)
-        {
-            m_data += bytes;
-            m_size -= bytes;
-            return true;
-        }
-        return false;
+        return read_impl (bytes, nullptr) != nullptr;
+    }
+
+    bool read (std::size_t bytes) noexcept
+    {
+        return read_impl (bytes, nullptr) != nullptr;
     }
 
     template <typename T>
     bool read (T* t) noexcept
     {
-        std::size_t const bytes = sizeof (T);
-        if (m_size >= bytes)
-        {
-            //this causes a stack corruption.
-            //std::copy (m_data, m_data + bytes, t);
+        return read_impl (sizeof (T), t) != nullptr;
+    }
 
-            memcpy (t, m_data, bytes);
-            m_data += bytes;
-            m_size -= bytes;
-            return true;
-        }
-        return false;
+    uint8 operator[] (std::size_t index) const noexcept
+    {
+        bassert (index >= 0 && index < size ());
+        return m_iter [index];
     }
 
     // Reads an integraltype in network byte order
@@ -97,16 +117,77 @@ struct FixedInputBuffer
         //static_bassert (std::is_integral <IntegerType>::value);
         IntegerType networkValue;
         if (! read (&networkValue))
-            return;
+            return false;
         *value = fromNetworkByteOrder (networkValue);
         return true;
+    }
+
+protected:
+    void const* peek_impl (std::size_t bytes, void* buffer) const noexcept
+    {
+        if (size () >= bytes)
+        {
+            if (buffer != nullptr)
+                memcpy (buffer, m_iter, bytes);
+            return m_iter;
+        }
+        return nullptr;
+    }
+
+    void const* read_impl (std::size_t bytes, void* buffer) noexcept
+    {
+        if (size () >= bytes)
+        {
+            if (buffer != nullptr)
+                memcpy (buffer, m_iter, bytes);
+            void const* data = m_iter;
+            m_iter += bytes;
+            return data;
+        }
+        return nullptr;
+    }
+
+private:
+    uint8 const* m_begin;
+    uint8 const* m_iter;
+    uint8 const* m_end;
+};
+
+//------------------------------------------------------------------------------
+
+template <int Bytes>
+class FixedInputBufferSize : public FixedInputBuffer
+{
+protected:
+    struct SizedCtorParams
+    {
+        template <typename ConstBufferSequence, typename Storage>
+        SizedCtorParams (ConstBufferSequence const& buffers, Storage& storage)
+        {
+            MutableBuffer buffer (boost::asio::buffer (storage));
+            data = boost::asio::buffer_cast <uint8 const*> (buffer);
+            bytes = boost::asio::buffer_copy (buffer, buffers);
+        }
+
+        operator CtorParams () const noexcept
+        {
+            return CtorParams (data, bytes);
+        }
+
+        uint8 const* data;
+        std::size_t bytes;
+    };
+
+public:
+    template <typename ConstBufferSequence>
+    explicit FixedInputBufferSize (ConstBufferSequence const& buffers)
+        : FixedInputBuffer (SizedCtorParams (buffers, m_storage))
+    {
     }
 
 private:
     boost::array <uint8, Bytes> m_storage;
     MutableBuffer m_buffer;
-    std::size_t m_size;
-    uint8 const* m_data;
 };
 
 #endif

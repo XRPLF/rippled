@@ -60,8 +60,9 @@ namespace beast
 #include "sockets/beast_SocketWrapper.h"
 #include "sockets/beast_SslContext.h"
 
-#include "handshake/beast_ProxyHandshake.h"
- #include "handshake/beast_HandshakeDetectLogic.h"
+  #include "handshake/beast_InputParser.h"
+  #include "handshake/beast_HandshakeDetectLogic.h"
+#include "handshake/beast_HandshakeDetectLogicPROXY.h"
 #include "handshake/beast_HandshakeDetectLogicSSL2.h"
 #include "handshake/beast_HandshakeDetectLogicSSL3.h"
 #include "handshake/beast_HandshakeDetectStream.h"
