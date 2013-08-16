@@ -4,6 +4,8 @@
 */
 //==============================================================================
 
+#define MULTISOCKET_TEST_PROXY 1
+
 MultiSocket* MultiSocket::New (boost::asio::io_service& io_service, int flags)
 {
     return new MultiSocketType <boost::asio::ip::tcp::socket> (io_service, flags);
@@ -155,25 +157,46 @@ public:
     //--------------------------------------------------------------------------
 
     template <typename Protocol, typename ClientArg, typename ServerArg>
-    void run_async (ClientArg const& clientArg, ServerArg const& serverArg)
+    void runProxy (ClientArg const& clientArg, ServerArg const& serverArg)
     {
         PeerTest::run <MultiSocketDetailsType <Protocol>,
-            TestPeerLogicAsyncClient, TestPeerLogicAsyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
+            TestPeerLogicProxyClient, TestPeerLogicSyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
+
+        PeerTest::run <MultiSocketDetailsType <Protocol>,
+            TestPeerLogicProxyClient, TestPeerLogicAsyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
     }
+
+    //--------------------------------------------------------------------------
 
     template <typename Protocol, typename ClientArg, typename ServerArg>
     void run (ClientArg const& clientArg, ServerArg const& serverArg)
     {
         PeerTest::run <MultiSocketDetailsType <Protocol>,
-            TestPeerLogicSyncClient, TestPeerLogicSyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
+            TestPeerLogicSyncClient, TestPeerLogicSyncServer>
+                (clientArg, serverArg, timeoutSeconds).report (*this);
 
         PeerTest::run <MultiSocketDetailsType <Protocol>,
-            TestPeerLogicAsyncClient, TestPeerLogicSyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
+            TestPeerLogicAsyncClient, TestPeerLogicSyncServer>
+                (clientArg, serverArg, timeoutSeconds).report (*this);
 
         PeerTest::run <MultiSocketDetailsType <Protocol>,
-            TestPeerLogicSyncClient, TestPeerLogicAsyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
+            TestPeerLogicSyncClient, TestPeerLogicAsyncServer>
+                (clientArg, serverArg, timeoutSeconds).report (*this);
 
-        run_async <Protocol> (clientArg, serverArg);
+        PeerTest::run <MultiSocketDetailsType <Protocol>,
+            TestPeerLogicAsyncClient, TestPeerLogicAsyncServer>
+                (clientArg, serverArg, timeoutSeconds).report (*this);
+    }
+
+    //--------------------------------------------------------------------------
+
+    template <typename Protocol>
+    void testProxyFlags (int extraClientFlags, int extraServerFlags)
+    {
+        check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
+
+        runProxy <Protocol> (MultiSocket::Flag::client_role | extraClientFlags,
+                             MultiSocket::Flag::server_role | extraServerFlags);
     }
 
     //--------------------------------------------------------------------------
@@ -183,7 +206,8 @@ public:
     {
         check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
 
-        run <Protocol> (MultiSocket::Flag::client_role | extraClientFlags, MultiSocket::Flag::server_role | extraServerFlags);
+        run <Protocol> (MultiSocket::Flag::client_role | extraClientFlags,
+                        MultiSocket::Flag::server_role | extraServerFlags);
     }
 
     template <typename Protocol>
@@ -199,6 +223,11 @@ public:
         testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl_required);
         testFlags <Protocol> (0, MultiSocket::Flag::ssl);
         testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl);
+
+        testProxyFlags <Protocol> (MultiSocket::Flag::proxy, MultiSocket::Flag::proxy);
+        testProxyFlags <Protocol> (MultiSocket::Flag::proxy, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
+        testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
+        testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl_required);
     }
 
     void runTest ()
