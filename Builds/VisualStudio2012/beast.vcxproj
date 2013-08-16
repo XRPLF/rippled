@@ -83,7 +83,6 @@
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketBase.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketInterface.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapper.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapperBasics.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SslContext.h" />
     <ClInclude Include="..\..\modules\beast_asio\system\beast_BoostIncludes.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeer.h" />
