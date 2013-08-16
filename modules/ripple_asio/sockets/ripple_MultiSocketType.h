@@ -54,7 +54,7 @@ public:
         ec = boost::system::error_code ();
 
         m_buffer.commit (boost::asio::read (m_next_layer,
-            m_buffer.prepare (m_detector.needed ()), ec));
+            m_buffer.prepare (m_detector.max_needed ()), ec));
 
         if (!ec)
         {

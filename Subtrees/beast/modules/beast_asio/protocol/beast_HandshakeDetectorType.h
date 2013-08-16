@@ -29,9 +29,15 @@ public:
     {
     }
 
-    /** Returns the minimum number of bytes we need to succeed.
+    /** How many bytes maximum we might need.
+
+        This is the largest number of bytes that the detector
+        might need in order to come to a conclusion about
+        whether or not the handshake is a match. Depending
+        on the data, it could come to that conclusion sooner
+        though.
     */
-    virtual std::size_t needed () = 0;
+    virtual std::size_t max_needed () = 0;
 
     /** Returns true if the return value of success() is valid.
     */
@@ -190,7 +196,7 @@ public:
         bytesNeeded = 3
     };
 
-    std::size_t needed ()
+    std::size_t max_needed ()
     {
         return bytesNeeded;
     }
@@ -262,7 +268,7 @@ public:
         bytesNeeded = 6
     };
 
-    std::size_t needed ()
+    std::size_t max_needed ()
     {
         return bytesNeeded;
     }
@@ -309,9 +315,9 @@ public:
     {
     }
 
-    std::size_t needed ()  noexcept
+    std::size_t max_needed ()  noexcept
     {
-        return m_logic.needed ();
+        return m_logic.max_needed ();
     }
 
     bool finished ()  noexcept
