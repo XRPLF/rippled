@@ -145,7 +145,7 @@ protected:
             //static_bassert (std::is_integral <IntegerType>::value);
             IntegerType networkValue;
             if (! read (&networkValue))
-                return;
+                return false;
             *value = fromNetworkByteOrder (networkValue);
             return true;
         }
