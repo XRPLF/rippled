@@ -165,7 +165,7 @@ public:
     virtual error_code accept (Socket& peer, error_code& ec);
 
     template <class AcceptHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(AcceptHandler, void (error_code))
+    BEAST_ASIO_INITFN_RESULT_TYPE(AcceptHandler, void (error_code))
     async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler)
     {
         return async_accept (peer,
@@ -206,7 +206,7 @@ public:
     // AsyncReadStream
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncReadStream.html
     template <class MutableBufferSequence, class ReadHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
     async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
     {
         return async_read_some (MutableBuffers (buffers),
@@ -221,7 +221,7 @@ public:
     // AsyncWriteStream
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncWriteStream.html
     template <class ConstBufferSequence, class WriteHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (error_code, std::size_t))
     async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
     {
         return async_write_some (ConstBuffers (buffers),
@@ -271,7 +271,7 @@ public:
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload1.html
     //
     template <typename HandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (error_code))
+    BEAST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (error_code))
     async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
     {
         return async_handshake (type,
@@ -313,7 +313,7 @@ public:
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload2.html
     //
     template <class ConstBufferSequence, class BufferedHandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (error_code, std::size_t))
     async_handshake (handshake_type type, ConstBufferSequence const& buffers,
         BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
     {

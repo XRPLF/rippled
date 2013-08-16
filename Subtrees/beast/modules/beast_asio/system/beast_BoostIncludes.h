@@ -66,9 +66,10 @@
 #endif
 
 #if ! BEAST_ASIO_HAS_FUTURE_RETURNS
-# define BOOST_ASIO_INITFN_RESULT_TYPE(expr,val) void
+# define BEAST_ASIO_INITFN_RESULT_TYPE(expr,val) void
 # define BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(expr,val) void
 #else
+# define BEAST_ASIO_INITFN_RESULT_TYPE(expr,val) BOOST_ASIO_INITFN_RESULT_TYPE(expr,val)
 # if defined(GENERATING_DOCUMENTATION)
 #  define BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
    void_or_deduced
