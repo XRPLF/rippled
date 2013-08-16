@@ -77,10 +77,11 @@
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_TransferCall.h" />
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogic.h" />
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicPROXY.h" />
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicSSL2.h" />
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicSSL3.h" />
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectStream.h" />
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_ProxyHandshake.h" />
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_InputParser.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_Socket.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketBase.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapper.h" />
@@ -309,7 +310,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp" />
-    <ClCompile Include="..\..\modules\beast_asio\handshake\beast_ProxyHandshake.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicPROXY.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

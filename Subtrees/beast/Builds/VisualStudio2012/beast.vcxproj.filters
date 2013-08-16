@@ -836,9 +836,6 @@
     <ClInclude Include="..\..\modules\beast_asio\streams\beast_PrefilledReadStream.h">
       <Filter>beast_asio\streams</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_ProxyHandshake.h">
-      <Filter>beast_asio\handshake</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogic.h">
       <Filter>beast_asio\handshake</Filter>
     </ClInclude>
@@ -852,6 +849,12 @@
       <Filter>beast_asio\handshake</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectStream.h">
+      <Filter>beast_asio\handshake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicPROXY.h">
+      <Filter>beast_asio\handshake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_InputParser.h">
       <Filter>beast_asio\handshake</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1312,7 +1315,7 @@
     <ClCompile Include="..\..\modules\beast_asio\basics\beast_PeerRole.cpp">
       <Filter>beast_asio\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\handshake\beast_ProxyHandshake.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicPROXY.cpp">
       <Filter>beast_asio\handshake</Filter>
     </ClCompile>
   </ItemGroup>

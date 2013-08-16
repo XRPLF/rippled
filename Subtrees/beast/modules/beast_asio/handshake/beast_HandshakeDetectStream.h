@@ -97,6 +97,18 @@ public:
     {
     }
 
+    // This puts bytes that you already have into the detector buffer
+    // Any leftovers will be given to the callback.
+    // A copy of the data is made.
+    //
+    template <typename ConstBufferSequence>
+    void fill (ConstBufferSequence const& buffers)
+    {
+        m_buffer.commit (boost::asio::buffer_copy (
+            m_buffer.prepare (boost::asio::buffer_size (buffers)),
+                buffers));
+    }
+
     // basic_io_object
 
     boost::asio::io_service& get_io_service ()
@@ -203,6 +215,10 @@ public:
 
                 if (m_logic.finished ())
                 {
+                    // consume what we used (for SSL its 0)
+                    std::size_t const consumed = m_logic.bytes_consumed ();
+                    bassert (consumed <= m_buffer.size ());
+                    m_buffer.consume (consumed);
                     m_callback->on_detect (m_logic.get (), ec,
                         ConstBuffers (m_buffer.data ()));
                     break;
@@ -240,10 +256,16 @@ public:
             std::size_t const available = m_buffer.size ();
             std::size_t const needed = m_logic.max_needed ();
 
-            m_logic.analyze (m_buffer.data ());
+            if (bytes_transferred > 0)
+                m_logic.analyze (m_buffer.data ());
 
             if (m_logic.finished ())
             {
+                // consume what we used (for SSL its 0)
+                std::size_t const consumed = m_logic.bytes_consumed ();
+                bassert (consumed <= m_buffer.size ());
+                m_buffer.consume (consumed);
+
             #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
                 if (! m_origBufferedHandler.isNull ())
                 {

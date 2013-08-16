@@ -17,30 +17,4 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
 
-#include "beast_asio.h"
-
-namespace beast
-{
-
-#include "basics/beast_PeerRole.cpp"
-
-#include "sockets/beast_SocketBase.cpp"
-#include "sockets/beast_Socket.cpp"
-#include "sockets/beast_SslContext.cpp"
-
-#include "handshake/beast_HandshakeDetectLogicPROXY.cpp"
-
-#include "tests/beast_TestPeerBasics.cpp"
-#include "tests/beast_TestPeerLogic.cpp"
-#include "tests/beast_TestPeerLogicProxyClient.cpp"
-#include "tests/beast_TestPeerLogicSyncServer.cpp"
-#include "tests/beast_TestPeerLogicSyncClient.cpp"
-#include "tests/beast_TestPeerLogicAsyncServer.cpp"
-#include "tests/beast_TestPeerLogicAsyncClient.cpp"
-
-#include "tests/beast_PeerTest.cpp"
-#include "tests/beast_TestPeerUnitTests.cpp"
-
-}

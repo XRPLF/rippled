@@ -42,6 +42,13 @@ public:
     */
     virtual std::size_t max_needed () = 0;
 
+    /** How many bytes the handshake consumes.
+        If the detector processes the entire handshake this will
+        be non zero. The SSL detector would return 0, since we
+        want all the existing bytes to be passed on.
+    */
+    virtual std::size_t bytes_consumed () = 0;
+
     /** Return true if we have enough data to form a conclusion.
     */
     bool finished () const noexcept
@@ -94,19 +101,24 @@ public:
         return m_logic;
     }
 
-    std::size_t max_needed ()  noexcept
+    std::size_t max_needed ()
     {
         return m_logic.max_needed ();
     }
 
-    bool finished ()  noexcept
+    std::size_t bytes_consumed ()
+    {
+        return m_logic.bytes_consumed ();
+    }
+
+    bool finished ()
     {
         return m_logic.finished ();
     }
 
     /** If finished is true, this tells us if the handshake was detected.
     */
-    bool success ()  noexcept
+    bool success ()
     {
         return m_logic.success ();
     }

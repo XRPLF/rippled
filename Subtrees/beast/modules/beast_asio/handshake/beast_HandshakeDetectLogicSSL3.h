@@ -45,11 +45,16 @@ public:
         return bytesNeeded;
     }
 
+    std::size_t bytes_consumed ()
+    {
+        return 0;
+    }
+
     template <typename ConstBufferSequence>
     void analyze (ConstBufferSequence const& buffer)
     {
         uint16 version;
-        FixedInputBuffer <bytesNeeded> in (buffer);
+        FixedInputBufferSize <bytesNeeded> in (buffer);
 
         uint8 msg_type;
         if (! in.read (&msg_type))

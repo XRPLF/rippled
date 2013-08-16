@@ -24,7 +24,7 @@ TestPeerLogicProxyClient::TestPeerLogicProxyClient (Socket& socket)
 
 void TestPeerLogicProxyClient::on_pre_handshake ()
 {
-    ProxyHandshake h;
+    //ProxyHandshakeParser h;
  
     static std::string line (
         "PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535\r\n"
