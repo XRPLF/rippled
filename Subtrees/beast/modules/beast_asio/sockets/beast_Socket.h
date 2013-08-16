@@ -240,7 +240,7 @@ public:
 
     /** Determines if the underlying stream requires a handshake.
 
-        If requires_handshake is true, it will be necessary to call handshake or
+        If needs_handshake is true, it will be necessary to call handshake or
         async_handshake after the connection is established. Furthermore it
         will be necessary to call the shutdown member from the
         HandshakeInterface to close the connection. Do not close the underlying
@@ -250,7 +250,7 @@ public:
 
         The default version returns false.
     */
-    virtual bool requires_handshake ();
+    virtual bool needs_handshake ();
 
     // ssl::stream::handshake (1 of 4)
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload1.html

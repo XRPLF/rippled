@@ -154,7 +154,7 @@ Socket::async_write_some (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall)
 // ssl::stream
 //
 
-bool Socket::requires_handshake ()
+bool Socket::needs_handshake ()
 {
     return false;
 }

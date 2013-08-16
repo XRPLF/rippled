@@ -549,7 +549,7 @@ public:
     // ssl::stream
     //
 
-    bool requires_handshake ()
+    bool needs_handshake ()
     {
         using namespace SocketWrapperMemberChecks;
         return
