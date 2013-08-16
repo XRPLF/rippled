@@ -50,12 +50,16 @@
 // Configure some options based on the version of boost
 #include <boost/version.hpp>
 #if (BOOST_VERSION / 100) >= 1054
-# define BEAST_ASIO_HAS_BUFFEREDHANDSHAKE 1
+# ifndef BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
+#  define BEAST_ASIO_HAS_BUFFEREDHANDSHAKE 1
+# endif
 # ifndef BEAST_ASIO_HAS_FUTURE_RETURNS
 #  define BEAST_ASIO_HAS_FUTURE_RETURNS 1
 # endif
 #else
-# define BEAST_ASIO_HAS_BUFFEREDHANDSHAKE 0
+# ifndef BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
+#  define BEAST_ASIO_HAS_BUFFEREDHANDSHAKE 0
+# endif
 # ifndef BEAST_ASIO_HAS_FUTURE_RETURNS
 #  define BEAST_ASIO_HAS_FUTURE_RETURNS 0
 # endif
