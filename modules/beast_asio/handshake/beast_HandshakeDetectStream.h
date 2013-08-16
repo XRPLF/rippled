@@ -79,18 +79,20 @@ class HandshakeDetectStreamType
     , public boost::asio::socket_base
 {
 private:
+    typedef boost::system::error_code error_code;
+
     typedef HandshakeDetectStreamType <Stream, Logic> this_type;
     typedef boost::asio::streambuf buffer_type;
     typedef typename boost::remove_reference <Stream>::type stream_type;
 
 public:
-    typedef typename HandshakeDetectStream <Logic> CallbackType;
+    typedef typename HandshakeDetectStream <Logic>::Callback CallbackType;
 
     /** This takes ownership of the callback.
         The callback must be allocated with operator new.
     */
     template <typename Arg>
-    HandshakeDetectStreamType (Callback* callback, Arg& arg)
+    HandshakeDetectStreamType (CallbackType* callback, Arg& arg)
         : m_callback (callback)
         , m_next_layer (arg)
         , m_stream (m_next_layer)
@@ -139,7 +141,7 @@ public:
     }
 
     template <typename HandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (error_code))
+    BEAST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (error_code))
     async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
@@ -167,7 +169,7 @@ public:
     }
 
     template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (error_code, std::size_t))
     async_handshake(handshake_type type, const ConstBufferSequence& buffers,
         BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
     {
@@ -316,7 +318,7 @@ public:
     }
 
 private:
-    ScopedPointer <typename HandshakeDetectStream <Logic>::Callback> m_callback;
+    ScopedPointer <CallbackType> m_callback;
     Stream m_next_layer;
     buffer_type m_buffer;
     boost::asio::buffered_read_stream <stream_type&> m_stream;

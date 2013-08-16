@@ -95,7 +95,7 @@ public:
     {
         using namespace InputParser;
 
-        if (! match (in, "PROXY "), state)
+        if (! match (in, "PROXY ", state))
             return;
 
         if (match (in, "TCP4 "))
