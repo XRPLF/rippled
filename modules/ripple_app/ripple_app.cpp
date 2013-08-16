@@ -157,6 +157,8 @@ namespace ripple
 #include "tx/TransactionMaster.h"
 #include "main/ripple_LocalCredentials.h"
 #include "network/WSDoor.h"
+ #include "boost/ripple_IoService.h"
+ #include "boost/ripple_SslContext.h"
 #include "main/ripple_Application.h"
 #include "rpc/RPCHandler.h"
 #include "tx/TransactionQueue.h"
@@ -294,6 +296,9 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "data/ripple_DatabaseCon.cpp"
 #include "data/ripple_SqliteDatabase.cpp"
 #include "data/ripple_DBInit.cpp"
+
+#include "boost/ripple_IoService.cpp"
+#include "boost/ripple_SslContext.cpp"
 
 #endif
 

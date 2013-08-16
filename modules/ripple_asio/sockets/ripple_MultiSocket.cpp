@@ -182,7 +182,7 @@ public:
     {
         check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
 
-#if 1
+#if 0
         run <Protocol> (MultiSocket::Flag::client_role | extraClientFlags, MultiSocket::Flag::server_role | extraServerFlags);
 #else
         run_async <Protocol> (MultiSocket::Flag::client_role | extraClientFlags, MultiSocket::Flag::server_role | extraServerFlags);
@@ -192,7 +192,7 @@ public:
     template <typename Protocol>
     void testProtocol ()
     {
-#if 1
+#if 0
         // These should pass.
         run <Protocol> (0, 0);
         run <Protocol> (MultiSocket::Flag::client_role, 0);
@@ -204,8 +204,8 @@ public:
         // These should pass
         testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl_required);
         testFlags <Protocol> (0, MultiSocket::Flag::ssl);
-        testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl);
 #endif
+        testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl);
     }
 
     void runTest ()

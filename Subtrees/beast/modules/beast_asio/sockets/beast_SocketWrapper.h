@@ -119,8 +119,7 @@ namespace SocketWrapperMemberChecks
 
 template <typename WrappedObject>
 class SocketWrapper
-    : public virtual Socket
-    , public SocketWrapperBasics
+    : public Socket
     , public Uncopyable
 {
 private:

@@ -785,9 +785,6 @@
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerBasics.h">
       <Filter>beast_asio\tests</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapperBasics.h">
-      <Filter>beast_asio\sockets</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogic.h">
       <Filter>beast_asio\tests</Filter>
     </ClInclude>

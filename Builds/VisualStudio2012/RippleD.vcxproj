@@ -31,6 +31,18 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\boost\ripple_IoService.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\boost\ripple_SslContext.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\consensus\ripple_DisputedTx.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -670,18 +682,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_asio\boost\ripple_IoService.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_asio\boost\ripple_SslContext.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_asio\ripple_asio.cpp" />
     <ClCompile Include="..\..\modules\ripple_asio\sockets\ripple_RippleTlsContext.cpp">
@@ -1379,6 +1379,8 @@
     <ClInclude Include="..\..\BeastConfig.h" />
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_BuildInfo.h" />
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.h" />
+    <ClInclude Include="..\..\modules\ripple_app\boost\ripple_IoService.h" />
+    <ClInclude Include="..\..\modules\ripple_app\boost\ripple_SslContext.h" />
     <ClInclude Include="..\..\modules\ripple_app\consensus\ripple_DisputedTx.h" />
     <ClInclude Include="..\..\modules\ripple_app\consensus\ripple_LedgerConsensus.h" />
     <ClInclude Include="..\..\modules\ripple_app\contracts\ripple_Contract.h" />
@@ -1479,11 +1481,7 @@
     <ClInclude Include="..\..\modules\ripple_app\tx\Transactor.h" />
     <ClInclude Include="..\..\modules\ripple_app\tx\TrustSetTransactor.h" />
     <ClInclude Include="..\..\modules\ripple_app\tx\WalletAddTransactor.h" />
-    <ClInclude Include="..\..\modules\ripple_asio\boost\ripple_IoService.h" />
-    <ClInclude Include="..\..\modules\ripple_asio\boost\ripple_SslContext.h" />
     <ClInclude Include="..\..\modules\ripple_asio\ripple_asio.h" />
-    <ClInclude Include="..\..\modules\ripple_asio\ripple_asio_fwdecl.h" />
-    <ClInclude Include="..\..\modules\ripple_asio\ripple_asio_impl.h" />
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocket.cpp" />
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocket.h" />
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocketType.h" />

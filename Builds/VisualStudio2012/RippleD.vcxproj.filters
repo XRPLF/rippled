@@ -157,11 +157,11 @@
     <Filter Include="[1] Ripple\ripple_asio">
       <UniqueIdentifier>{a8c5d8be-1e90-4e9c-be7f-d2da53920cd4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\ripple_asio\boost">
-      <UniqueIdentifier>{f4e4fbf0-3dd2-4413-8318-9d6bc15ada57}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\ripple_asio\sockets">
       <UniqueIdentifier>{625992a9-7333-4782-8ee3-6ed072d02fe5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_app\boost">
+      <UniqueIdentifier>{8476f6e8-7411-460f-bdef-68e3166078eb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -882,14 +882,14 @@
     <ClCompile Include="..\..\modules\ripple_asio\ripple_asio.cpp">
       <Filter>[1] Ripple\ripple_asio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_asio\boost\ripple_SslContext.cpp">
-      <Filter>[1] Ripple\ripple_asio\boost</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_asio\boost\ripple_IoService.cpp">
-      <Filter>[1] Ripple\ripple_asio\boost</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_asio\sockets\ripple_RippleTlsContext.cpp">
       <Filter>[1] Ripple\ripple_asio\sockets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\boost\ripple_IoService.cpp">
+      <Filter>[1] Ripple\ripple_app\boost</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\boost\ripple_SslContext.cpp">
+      <Filter>[1] Ripple\ripple_app\boost</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1670,18 +1670,6 @@
     <ClInclude Include="..\..\modules\ripple_asio\ripple_asio.h">
       <Filter>[1] Ripple\ripple_asio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_asio\ripple_asio_fwdecl.h">
-      <Filter>[1] Ripple\ripple_asio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_asio\ripple_asio_impl.h">
-      <Filter>[1] Ripple\ripple_asio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_asio\boost\ripple_SslContext.h">
-      <Filter>[1] Ripple\ripple_asio\boost</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_asio\boost\ripple_IoService.h">
-      <Filter>[1] Ripple\ripple_asio\boost</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocket.h">
       <Filter>[1] Ripple\ripple_asio\sockets</Filter>
     </ClInclude>
@@ -1693,6 +1681,12 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocketType.h">
       <Filter>[1] Ripple\ripple_asio\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\boost\ripple_IoService.h">
+      <Filter>[1] Ripple\ripple_app\boost</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\boost\ripple_SslContext.h">
+      <Filter>[1] Ripple\ripple_app\boost</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

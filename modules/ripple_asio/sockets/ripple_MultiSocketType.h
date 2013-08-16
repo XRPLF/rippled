@@ -18,12 +18,6 @@ private:
     typedef typename boost::remove_reference <Stream>::type stream_type;
 
 public:
-#if 0
-    struct SocketInterfaces
-        : SocketInterface::Handshake
-    { };
-#endif
-
     template <typename Arg>
     ssl_detector (Arg& arg)
         : m_next_layer (arg)
@@ -108,7 +102,6 @@ private:
 template <class StreamSocket>
 class MultiSocketType
     : public MultiSocket
-    , protected SocketWrapperBasics
 {
 public:
     typedef typename boost::remove_reference <StreamSocket>::type next_layer_type;
