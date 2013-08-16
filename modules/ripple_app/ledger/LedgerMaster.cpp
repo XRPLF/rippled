@@ -359,6 +359,8 @@ void LedgerMaster::tryFill (Ledger::pointer ledger)
     {
         boost::recursive_mutex::scoped_lock ml (mLock);
         mCompleteLedgers.setRange (minHas, maxHas);
+        mFillInProgress = false;
+        tryAdvance();
     }
 }
 
@@ -569,7 +571,7 @@ void LedgerMaster::advanceThread()
         std::list<Ledger::pointer> pubLedgers = findNewLedgersToPublish (sl);
         if (pubLedgers.empty())
         {
-            if (!getConfig().RUN_STANDALONE && !getApp().getFeeTrack().isLoadedLocal() &&
+            if (!mFillInProgress && !getConfig().RUN_STANDALONE && !getApp().getFeeTrack().isLoadedLocal() &&
                 (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
                 (mValidLedger->getLedgerSeq() == mPubLedger->getLedgerSeq()))
             { // We are in sync, so can acquire
@@ -610,7 +612,13 @@ void LedgerMaster::advanceThread()
                             assert(ledger->getLedgerSeq() == missing);
                             WriteLog (lsTRACE, LedgerMaster) << "tryAdvance acquired " << ledger->getLedgerSeq();
                             setFullLedger(ledger, false, false);
-                            tryFill(ledger);
+                            if (Ledger::getHashByIndex(ledger->getLedgerSeq() - 1) == ledger->getParentHash())
+                            { // Previous ledger is in DB
+                                sl.lock();
+                                mFillInProgress = true;
+                                getApp().getJobQueue().addJob(jtADVANCE, "tryFill", BIND_TYPE (&LedgerMaster::tryFill, this, ledger));
+                                sl.unlock();
+			    }
                             progress = true;
                         }
                         else

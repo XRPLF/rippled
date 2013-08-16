@@ -25,6 +25,7 @@ public:
         , mMinValidations (0)
         , mLastValidateSeq (0)
         , mAdvanceThread (false)
+        , mFillInProgress (false)
         , mPathFindThread (false)
         , mPathFindNewLedger (false)
         , mPathFindNewRequest (false)
@@ -219,6 +220,7 @@ private:
 
     std::list<Ledger::pointer>  mPubLedgers;        // List of ledgers to publish
     bool                        mAdvanceThread;     // Publish thread is running
+    bool                        mFillInProgress;
 
     bool                        mPathFindThread;    // Pathfind thread is running
     bool                        mPathFindNewLedger;
