@@ -28,19 +28,19 @@
     Note that only a reference to the underlying is stored. Management
     of the lifetime of the object is controlled by the caller.
 
-    Examples of the type of WrappedObject:
+    Examples of the type of Object:
 
     asio::ip::tcp::socket
         arg must be an io_context
         SocketWrapper will create and take ownership of the tcp::socket
-        WrappedObjectType will be tcp::socket
+        this_layer_type will be tcp::socket
         next_layer () returns a asio::ip::tcp::socket&
         lowest_layer () returns a asio::ip::tcp::socket&
 
     asio::ip::tcp::socket&
         arg must be an existing socket&
         The caller owns the underlying socket object
-        WrappedObjectType will be tcp::socket
+        this_layer_type will be tcp::socket
         next_layer () returns a asio::ip::tcp::socket&
         lowest_layer () returns a asio::ip::tcp::socket&
 
@@ -54,7 +54,7 @@
     asio::ssl::stream <asio::ip::tcp::socket&>
         arg must be an existing socket&
         The caller owns the socket, but SocketWrapper owns the ssl::stream
-        WrappedObjectType will be asio::ssl::stream <asio::ip::tcp::socket&>
+        this_layer_type will be asio::ssl::stream <asio::ip::tcp::socket&>
         next_layer () returns a asio::ip::tcp::socket&
         lowest_layer () returns a asio::ip::tcp::socket&
 
@@ -117,17 +117,14 @@ namespace SocketWrapperMemberChecks
     };
 };
 
-template <typename WrappedObject>
+//------------------------------------------------------------------------------
+
+template <typename Object>
 class SocketWrapper
     : public Socket
     , public Uncopyable
 {
-private:
-    typedef typename boost::remove_reference <WrappedObject>::type wrapped_type;
-
 public:
-    typedef typename boost::remove_reference <WrappedObject>::type WrappedObjectType;
-
     template <typename Arg>
     explicit SocketWrapper (Arg& arg)
         : m_object (arg)
@@ -142,6 +139,38 @@ public:
 
     //--------------------------------------------------------------------------
     //
+    // accessors
+    //
+
+    // If you have access to the SocketWrapper itself instead of the Socket,
+    // then these types and functions become available to you. If you want
+    // to access things like next_layer() and lowest_layer() directly on the
+    // underlying object, you might write:
+    //
+    //      wrapper->this_layer().next_layer()
+    //
+    // We can't expose native versions of next_layer_type or next_layer()
+    // because they may not exist in the underlying object and would cause
+    // a compile error if we tried.
+    //
+
+    /** The type of the object being wrapped. */
+    typedef typename boost::remove_reference <Object>::type this_layer_type;
+
+    /** Get a reference to this layer. */
+    this_layer_type& this_layer () noexcept
+    {
+        return m_object;
+    }
+
+    /** Get a const reference to this layer. */
+    this_layer_type const& this_layer () const noexcept
+    {
+        return m_object;
+    }
+
+    //--------------------------------------------------------------------------
+    //
     // basic_io_object
     //
 
@@ -151,7 +180,7 @@ public:
 #if 0
         // This is the one that doesn't work, (void) arg lists
         return get_io_service (
-            EnableIf <has_get_io_service <wrapped_type,
+            EnableIf <has_get_io_service <this_layer_type,
                 io_service ()>::value> ());
 #else
         return get_io_service (boost::true_type ());
@@ -208,13 +237,13 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return lowest_layer (type_name,
-            EnableIf <has_type_lowest_layer_type <wrapped_type>::value> ());
+            EnableIf <has_type_lowest_layer_type <this_layer_type>::value> ());
     }
 
     void* lowest_layer (char const* type_name,
         boost::true_type) const
     {
-        char const* const name (typeid (typename wrapped_type::lowest_layer_type).name ());
+        char const* const name (typeid (typename this_layer_type::lowest_layer_type).name ());
         if (strcmp (name, type_name) == 0)
             return const_cast <void*> (static_cast <void const*> (&m_object.lowest_layer ()));
         return nullptr;
@@ -231,7 +260,7 @@ public:
 
     void* native_handle (char const* type_name) const
     {
-        char const* const name (typeid (wrapped_type).name ());
+        char const* const name (typeid (this_layer_type).name ());
         if (strcmp (name, type_name) == 0)
             return const_cast <void*> (static_cast <void const*> (&m_object));
         return nullptr;
@@ -243,7 +272,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return cancel (ec,
-            EnableIf <has_cancel <wrapped_type,
+            EnableIf <has_cancel <this_layer_type,
                 error_code (error_code&)>::value> ());
     }
    
@@ -265,7 +294,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return shutdown (what, ec,
-            EnableIf <has_shutdown <wrapped_type,
+            EnableIf <has_shutdown <this_layer_type,
                 error_code (shutdown_type, error_code&)>::value> ());
     }
 
@@ -288,7 +317,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return close (ec,
-            EnableIf <has_close <wrapped_type,
+            EnableIf <has_close <this_layer_type,
                 error_code (error_code&)>::value> ());
     }
 
@@ -312,9 +341,9 @@ public:
     error_code accept (Socket& peer, error_code& ec)
     {
         using namespace SocketWrapperMemberChecks;
-        typedef typename native_socket <wrapped_type>::socket_type socket_type;
+        typedef typename native_socket <this_layer_type>::socket_type socket_type;
         return accept (peer, ec,
-            EnableIf <has_accept <wrapped_type,
+            EnableIf <has_accept <this_layer_type,
                 error_code (socket_type&, error_code&)>::value> ());
     }
 
@@ -323,7 +352,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return m_object.accept (
-            native_socket <wrapped_type> (peer).get (), ec);
+            native_socket <this_layer_type> (peer).get (), ec);
     }
 
     error_code accept (Socket&, error_code& ec,
@@ -338,9 +367,9 @@ public:
     async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
     {
         using namespace SocketWrapperMemberChecks;
-        typedef typename native_socket <wrapped_type>::socket_type socket_type;
+        typedef typename native_socket <this_layer_type>::socket_type socket_type;
         return async_accept (peer, BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
-            EnableIf <has_async_accept <wrapped_type,
+            EnableIf <has_async_accept <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (error_code))
                     (socket_type&, BOOST_ASIO_MOVE_ARG(TransferCall))>::value> ());
     }
@@ -352,7 +381,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return m_object.async_accept (
-            native_socket <wrapped_type> (peer).get (),
+            native_socket <this_layer_type> (peer).get (),
                 BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler));
     }
 
@@ -387,7 +416,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return read_some (buffers, ec,
-            EnableIf <has_read_some <wrapped_type,
+            EnableIf <has_read_some <this_layer_type,
                 std::size_t (MutableBuffers const&, error_code&)>::value> ());
     }
 
@@ -412,7 +441,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return write_some (buffers, ec,
-            EnableIf <has_write_some <wrapped_type,
+            EnableIf <has_write_some <this_layer_type,
                 std::size_t (ConstBuffers const&, error_code&)>::value> ());
     }
 
@@ -438,7 +467,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return async_read_some (buffers, BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
-            EnableIf <has_async_read_some <wrapped_type,
+            EnableIf <has_async_read_some <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (error_code, std::size_t))
                     (MutableBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall))>::value> ());
     }
@@ -479,7 +508,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return async_write_some (buffers, BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
-            EnableIf <has_async_write_some <wrapped_type,
+            EnableIf <has_async_write_some <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (error_code, std::size_t))
                     (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(TransferCall))>::value> ());
     }
@@ -522,9 +551,9 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return
-            has_handshake <wrapped_type,
+            has_handshake <this_layer_type,
                 error_code (handshake_type, error_code&)>::value ||
-            has_async_handshake <wrapped_type,
+            has_async_handshake <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (error_code))
                     (handshake_type, BOOST_ASIO_MOVE_ARG(ErrorCall))>::value;
     }
@@ -535,7 +564,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return handshake (type, ec,
-            EnableIf <has_handshake <wrapped_type,
+            EnableIf <has_handshake <this_layer_type,
                 error_code (handshake_type, error_code&)>::value> ());
     }
 
@@ -558,7 +587,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return async_handshake (type, BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
-            EnableIf <has_async_handshake <wrapped_type,
+            EnableIf <has_async_handshake <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (error_code))
                     (handshake_type, BOOST_ASIO_MOVE_ARG(ErrorCall))>::value> ());
     }
@@ -600,7 +629,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return handshake (type, buffers, ec,
-            EnableIf <has_handshake <wrapped_type,
+            EnableIf <has_handshake <this_layer_type,
                 error_code (handshake_type, ConstBuffers const&, error_code&)>::value> ());
     }
 
@@ -624,7 +653,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return async_handshake (type, buffers, BOOST_ASIO_MOVE_CAST(TransferCall)(handler),
-            EnableIf <has_async_handshake <wrapped_type,
+            EnableIf <has_async_handshake <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (error_code, std::size_t))
                     (handshake_type, ConstBuffers const&, error_code&)>::value> ());
     }
@@ -665,7 +694,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return shutdown (ec,
-            EnableIf <has_shutdown <wrapped_type,
+            EnableIf <has_shutdown <this_layer_type,
                 error_code (error_code&)>::value> ());
     }
 
@@ -687,7 +716,7 @@ public:
     {
         using namespace SocketWrapperMemberChecks;
         return async_shutdown (BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
-            EnableIf <has_async_shutdown <wrapped_type,
+            EnableIf <has_async_shutdown <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (error_code))
                     (BOOST_ASIO_MOVE_ARG(ErrorCall))>::value> ());
     }
@@ -722,7 +751,7 @@ public:
     }
 
 private:
-    WrappedObject m_object;
+    Object m_object;
 };
 
 #endif
