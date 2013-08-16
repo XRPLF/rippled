@@ -476,7 +476,7 @@ public:
     }
 
     template <typename MutableBufferSequence, typename ReadHandler>
-    BOOST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
     async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler,
         boost::true_type)
     {

@@ -106,14 +106,16 @@ public:
         return ec;
     }
 
+/*
     template <typename HandshakeHandler>
     BOOST_ASIO_INITFN_RESULT_TYPE(HandshakeHandler, void (boost::system::error_code))
     async_handshake (handshake_type role, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
     {
         return async_handshake_cb (role, handler);
     }
+*/
 
-    void async_handshake_cb (handshake_type type, callback cbFunc)
+    void async_handshake (handshake_type type, callback cbFunc)
     {
         if ((type == ssl_socket::client) || (mSecure))
         {
