@@ -36,6 +36,10 @@ class TransferCall
 public:
     typedef void result_type;
 
+    TransferCall () noexcept
+    {
+    }
+
     template <class Handler>
     TransferCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
         : m_call (new CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler)))
@@ -45,6 +49,11 @@ public:
     TransferCall (TransferCall const& other)
         : m_call (other.m_call)
     { 
+    }
+
+    bool isNull () const noexcept
+    {
+        return m_call == nullptr;
     }
 
     void operator() (boost::system::error_code const& ec, std::size_t bytes_transferred)

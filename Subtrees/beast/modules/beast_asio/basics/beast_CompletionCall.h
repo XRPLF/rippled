@@ -30,6 +30,10 @@ class CompletionCall
 public:
     typedef void result_type;
 
+    CompletionCall () noexcept
+    {
+    }
+
     // Construction from Handler with zero arguments
     //
     template <typename Handler>
@@ -61,6 +65,11 @@ public:
     CompletionCall (CompletionCall const& other)
         : m_call (other.m_call)
     { 
+    }
+
+    bool isNull () const noexcept
+    {
+        return m_call == nullptr;
     }
 
     void operator() ()
