@@ -142,7 +142,6 @@ public:
                             boost::system::error_code const ec = server.join ();
 
                             results.server = Result (ec, server.name ());
-
                         }
                         catch (...)
                         {
@@ -205,10 +204,10 @@ public:
     {
         run <Details, TestPeerLogicSyncClient, TestPeerLogicSyncServer>
             (arg, timeoutSeconds).report (test, beginTestCase);
-        
+
         run <Details, TestPeerLogicAsyncClient, TestPeerLogicSyncServer>
             (arg, timeoutSeconds).report (test, beginTestCase);
-        
+
         run <Details, TestPeerLogicSyncClient, TestPeerLogicAsyncServer>
             (arg, timeoutSeconds).report (test, beginTestCase);
 

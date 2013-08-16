@@ -113,6 +113,11 @@ public:
         }
 
         startThread ();
+
+        // For server roles block until the thread is litening.
+        //
+        if (get_role () == PeerRole::server)
+            m_listening.wait ();
     }
 
     error_code join ()
@@ -282,8 +287,9 @@ public:
 
     void do_listen ()
     {
-        if (failure (get_native_acceptor ().open (get_endpoint (get_role ()).protocol (), error ())))
-            return;
+        if (failure (get_native_acceptor ().open (
+            get_endpoint (get_role ()).protocol (), error ())))
+                return;
 
         // VFALCO TODO Figure out how to not hard code boost::asio::socket_base
         if (failure (get_native_acceptor ().set_option (
@@ -297,6 +303,8 @@ public:
         if (failure (get_native_acceptor ().listen (
                 boost::asio::socket_base::max_connections, error ())))
             return;
+
+        m_listening.signal ();
     }
 
     void on_deadline (error_code const& ec)
@@ -326,6 +334,13 @@ public:
 
     void finished ()
     {
+        // If the server errors out it will come through
+        // here so signal the listening event and unblock
+        // the main thread.
+        //
+        if (get_role () == PeerRole::server)
+            m_listening.signal ();
+
         if (m_timer_set)
         {
             error_code ec;
@@ -359,6 +374,7 @@ public:
     }
 
 private:
+    WaitableEvent m_listening;
     WaitableEvent m_join;
 
     // for async peers
