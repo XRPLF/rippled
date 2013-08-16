@@ -34,6 +34,7 @@ namespace beast
 
 #include "tests/beast_TestPeerBasics.cpp"
 #include "tests/beast_TestPeerLogic.cpp"
+#include "tests/beast_TestPeerLogicProxyClient.cpp"
 #include "tests/beast_TestPeerLogicSyncServer.cpp"
 #include "tests/beast_TestPeerLogicSyncClient.cpp"
 #include "tests/beast_TestPeerLogicAsyncServer.cpp"

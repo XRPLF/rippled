@@ -31,6 +31,5 @@ void TestPeerLogicProxyClient::on_pre_handshake ()
         // 56 chars
         );
 
-    std::size_t const amount = boost::asio::write (
-    socket (), boost::asio::buffer (line), error ());
+    boost::asio::write (socket (), boost::asio::buffer (line), error ());
 }
