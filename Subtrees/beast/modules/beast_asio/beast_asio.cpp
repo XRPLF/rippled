@@ -30,8 +30,7 @@ namespace beast
 #include "sockets/beast_Socket.cpp"
 #include "sockets/beast_SslContext.cpp"
 
-#include "protocol/beast_ProxyHandshake.cpp"
-#include "protocol/beast_StreamHandshakeDetectorType.cpp"
+#include "handshake/beast_ProxyHandshake.cpp"
 
 #include "tests/beast_TestPeerBasics.cpp"
 #include "tests/beast_TestPeerLogic.cpp"
