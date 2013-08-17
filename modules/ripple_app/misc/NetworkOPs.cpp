@@ -1219,7 +1219,7 @@ NetworkOPs::transactionsSQL (std::string selection, const RippleAddress& account
 
     if (count)
         sql =
-            boost::str (boost::format ("SELECT %s FROM AccountTransactions WHERE Account = '%s' %s %s LIMIT %u %u;")
+            boost::str (boost::format ("SELECT %s FROM AccountTransactions WHERE Account = '%s' %s %s LIMIT %u, %u;")
 		    % selection
 		    % account.humanAccountID ()
 		    % maxClause
