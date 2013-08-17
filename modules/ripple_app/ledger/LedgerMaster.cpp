@@ -745,8 +745,13 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish(boost::recursiv
                     WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
                     getApp().getInboundLedgers().dropLedger(hash);
                     acq = getApp().getInboundLedgers().findCreate(hash, seq);
-                    if (acq->isComplete() && !acq->isFailed())
-                        ledger = acq->getLedger();
+                    if (acq->isComplete())
+                    {
+                        if (acq->isFailed())
+                            getApp().getInboundLedgers().dropLedger(hash);
+                        else
+                            ledger = acq->getLedger();
+	            }
                 }
             }
 
