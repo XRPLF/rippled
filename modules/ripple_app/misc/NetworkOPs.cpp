@@ -1215,12 +1215,25 @@ NetworkOPs::transactionsSQL (std::string selection, const RippleAddress& account
     if (minLedger != -1)
         minClause = boost::str (boost::format ("AND AccountTransactions.LedgerSeq >= '%u'") % minLedger);
 
-    std::string sql =
-        boost::str (boost::format ("SELECT %s FROM "
-                                   "AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
-                                   "WHERE Account = '%s' %s %s "
-                                   "ORDER BY AccountTransactions.LedgerSeq %s, AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
-                                   "LIMIT %u, %u;")
+    std::string sql;
+
+    if (count)
+        sql =
+            boost::str (boost::format ("SELECT %s FROM AccountTransactions WHERE Account = '%s' %s %s LIMIT %u %u;")
+		    % selection
+		    % account.humanAccountID ()
+		    % maxClause
+		    % minClause
+		    % lexicalCastThrow <std::string> (offset)
+		    % lexicalCastThrow <std::string> (numberOfResults)
+		);
+    else
+        sql =
+            boost::str (boost::format ("SELECT %s FROM "
+                                       "AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
+                                       "WHERE Account = '%s' %s %s "
+                                       "ORDER BY AccountTransactions.LedgerSeq %s, AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
+                                       "LIMIT %u, %u;")
                     % selection
                     % account.humanAccountID ()
                     % maxClause
@@ -1335,7 +1348,7 @@ NetworkOPs::countAccountTxs (const RippleAddress& account, int32 minLedger, int3
 {
     // can be called with no locks
     uint32 ret = 0;
-    std::string sql = NetworkOPs::transactionsSQL ("COUNT(*) AS 'TransactionCount'", account,
+    std::string sql = NetworkOPs::transactionsSQL ("COUNT(DISCTINCT TransID) AS 'TransactionCount'", account,
                       minLedger, maxLedger, false, 0, -1, true, true, true);
 
     Database* db = getApp().getTxnDB ()->getDB ();
