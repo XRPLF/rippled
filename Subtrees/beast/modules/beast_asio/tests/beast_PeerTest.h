@@ -49,6 +49,7 @@ public:
             The prefix is prepended to the error message.
         */
         explicit Result (boost::system::error_code const& ec, String const& prefix = "");
+        explicit Result (std::exception const& e, String const& prefix = "");
 
         /** Returns true if the error codes match (message is ignored).
         */
@@ -143,11 +144,19 @@ public:
 
                             results.server = Result (ec, server.name ());
                         }
+                        catch (std::exception& e)
+                        {
+                            results.server = Result (e, server.name ());
+                        }
                         catch (...)
                         {
                             results.server = Result (TestPeerBasics::make_error (
                                 TestPeerBasics::errc::exceptioned), server.name ());
                         }
+                    }
+                    catch (std::exception& e)
+                    {
+                        results.server = Result (e, client.name ());
                     }
                     catch (...)
                     {
@@ -155,17 +164,29 @@ public:
                             TestPeerBasics::errc::exceptioned), client.name ());
                     }
                 }
+                catch (std::exception& e)
+                {
+                    results.server = Result (e, server.name ());
+                }
                 catch (...)
                 {
                     results.server = Result (TestPeerBasics::make_error (
                         TestPeerBasics::errc::exceptioned), server.name ());
                 }
             }
+            catch (std::exception& e)
+            {
+                results.server = Result (e, "client");
+            }
             catch (...)
             {
                 results.client = Result (TestPeerBasics::make_error (
                     TestPeerBasics::errc::exceptioned), "client");
             }
+        }
+        catch (std::exception& e)
+        {
+            results.server = Result (e, "server");
         }
         catch (...)
         {
