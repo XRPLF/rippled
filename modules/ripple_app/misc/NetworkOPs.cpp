@@ -1348,7 +1348,7 @@ NetworkOPs::countAccountTxs (const RippleAddress& account, int32 minLedger, int3
 {
     // can be called with no locks
     uint32 ret = 0;
-    std::string sql = NetworkOPs::transactionsSQL ("COUNT(DISCTINCT TransID) AS 'TransactionCount'", account,
+    std::string sql = NetworkOPs::transactionsSQL ("COUNT(DISTINCT TransID) AS 'TransactionCount'", account,
                       minLedger, maxLedger, false, 0, -1, true, true, true);
 
     Database* db = getApp().getTxnDB ()->getDB ();
