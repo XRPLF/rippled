@@ -1217,7 +1217,8 @@ NetworkOPs::transactionsSQL (std::string selection, const RippleAddress& account
 
     std::string sql =
         boost::str (boost::format ("SELECT %s FROM "
-                                   "AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
+                                   "AccountTransactions INDEXED BY AcctTxIndex INNER JOIN Transactions "
+                                   "ON Transactions.TransID = AccountTransactions.TransID "
                                    "WHERE Account = '%s' %s %s "
                                    "ORDER BY AccountTransactions.LedgerSeq %s, AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
                                    "LIMIT %u, %u;")
