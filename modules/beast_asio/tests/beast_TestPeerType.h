@@ -162,12 +162,18 @@ public:
 
                     error () = make_error (errc::timeout);
                 }
+                else
+                {
+                    stopThread ();
+                }
             }
             else
             {
                 // They requested an infinite wait.
                 //
                 m_join.wait ();
+
+                stopThread ();
             }
         }
 

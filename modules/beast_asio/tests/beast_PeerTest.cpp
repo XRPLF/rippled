@@ -30,6 +30,13 @@ PeerTest::Result::Result (boost::system::error_code const& ec, String const& pre
 {
 }
 
+PeerTest::Result::Result (std::exception const& e, String const& prefix)
+    : m_ec (TestPeerBasics::make_error (TestPeerBasics::errc::exceptioned))
+    , m_message ((prefix == String::empty) ? e.what ()
+                : prefix + ": " + e.what ())
+{
+}
+
 bool PeerTest::Result::operator== (Result const& other) const noexcept
 {
     return m_ec == other.m_ec;
