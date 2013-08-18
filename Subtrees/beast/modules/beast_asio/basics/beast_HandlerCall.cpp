@@ -280,6 +280,13 @@ void HandlerCall::operator() (error_code const& ec, std::size_t bytes_transferre
 //
 //------------------------------------------------------------------------------
 
+void ContainerDeletePolicy <HandlerCall::Call>::destroy (HandlerCall::Call* call)
+{
+    call->destroy ();
+}
+
+//------------------------------------------------------------------------------
+
 void* asio_handler_allocate (std::size_t size, HandlerCall* call)
 {
     // Always go through the call's context.
