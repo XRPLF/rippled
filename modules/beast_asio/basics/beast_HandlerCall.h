@@ -964,10 +964,7 @@ struct ContainerDeletePolicy <HandlerCall::Call>
     // SharedObjectPtr will use this when
     // the reference count drops to zero.
     //
-    static void destroy (HandlerCall::Call* call)
-    {
-        call->destroy ();
-    }
+    static void destroy (HandlerCall::Call* call);
 };
 
 template <class Function>
