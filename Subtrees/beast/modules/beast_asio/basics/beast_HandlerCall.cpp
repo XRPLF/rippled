@@ -216,21 +216,6 @@ HandlerCall& HandlerCall::operator= (HandlerCall const& other) noexcept
     return *this;
 }
 
-#if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
-HandlerCall::HandlerCall (HandlerCall&& other) noexcept
-    : m_call (other.m_call)
-{
-    other.m_call = nullptr;
-}
-
-HandlerCall& HandlerCall::operator= (HandlerCall&& other) noexcept
-{
-    m_call = other.m_call;
-    other.m_call = nullptr;
-    return *this;
-}
-#endif
-
 bool HandlerCall::isNull () const noexcept
 {
     return m_call == nullptr;
