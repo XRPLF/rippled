@@ -70,11 +70,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_BufferType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\beast_CompletionCall.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\beast_ErrorCall.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_FixedInputBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_PeerRole.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\beast_TransferCall.h" />
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogic.h" />
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicPROXY.h" />
@@ -183,6 +180,7 @@
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ByteOrder.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ByteSwap.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_CacheLine.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\beast_ContainerDeletePolicy.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_HeapBlock.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_Memory.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_MemoryAlignment.h" />

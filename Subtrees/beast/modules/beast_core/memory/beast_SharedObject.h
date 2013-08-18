@@ -21,11 +21,10 @@
 */
 //==============================================================================
 
-#ifndef BEAST_REFERENCECOUNTEDOBJECT_BEASTHEADER
-#define BEAST_REFERENCECOUNTEDOBJECT_BEASTHEADER
+#ifndef BEAST_SHAREDOBJECT_H_INCLUDED
+#define BEAST_SHAREDOBJECT_H_INCLUDED
 
 #include "beast_Atomic.h"
-
 
 //==============================================================================
 /**
@@ -75,14 +74,23 @@ public:
 
     /** Decreases the object's reference count.
 
-        If the count gets to zero, the object will be deleted.
+        If doDelete is true the object will be deleted when the reference
+        count drops to zero. The delete is performed using the regular
+        operator and does NOT go through the ContainerDeletePolicy.
+
+        The return value indicates if the reference count dropped to zero,
+        so callers who know the derived type can use the ContainerDeletePolicy.
     */
-    inline void decReferenceCount() noexcept
+    inline bool decReferenceCount (bool doDelete = true) noexcept
     {
         bassert (getReferenceCount() > 0);
-
         if (--refCount == 0)
-            delete this;
+        {
+            if (doDelete)
+                delete this;
+            return true;
+        }
+        return false;
     }
 
     /** Returns the object's current reference count. */
@@ -115,7 +123,6 @@ private:
     Atomic <int> refCount;
 };
 
-
 //==============================================================================
 /**
     Adds reference-counting to an object.
@@ -143,15 +150,25 @@ public:
 
     /** Decreases the object's reference count.
 
-        If the count gets to zero, the object will be deleted.
+        If doDelete is true the object will be deleted when the reference
+        count drops to zero. The delete is performed using the regular
+        operator and does NOT go through the ContainerDeletePolicy.
+
+        The return value indicates if the reference count dropped to zero,
+        so callers who know the derived type can use the ContainerDeletePolicy.
     */
-    inline void decReferenceCount() noexcept
+    inline bool decReferenceCount (bool doDelete = true) noexcept
     {
         bassert (getReferenceCount() > 0);
-
         if (--refCount == 0)
-            delete this;
+        {
+            if (doDelete)
+                delete this;
+            return true;
+        }
+        return false;
     }
+
 
     /** Returns the object's current reference count. */
     inline int getReferenceCount() const noexcept       { return refCount; }
@@ -190,12 +207,12 @@ private:
 
     @see SharedObject, SharedObjectArray
 */
-template <class SharedObjectClass>
+template <class Object>
 class SharedObjectPtr
 {
 public:
     /** The class being referenced by this pointer. */
-    typedef SharedObjectClass ReferencedType;
+    typedef Object ReferencedType;
 
     //==============================================================================
     /** Creates a pointer to a null object. */
@@ -208,7 +225,7 @@ public:
 
         This will increment the object's reference-count if it is non-null.
     */
-    inline SharedObjectPtr (SharedObjectClass* const refCountedObject) noexcept
+    inline SharedObjectPtr (Object* const refCountedObject) noexcept
         : referencedObject (refCountedObject)
     {
         if (refCountedObject != nullptr)
@@ -239,7 +256,7 @@ public:
     */
     template <class DerivedClass>
     inline SharedObjectPtr (const SharedObjectPtr<DerivedClass>& other) noexcept
-        : referencedObject (static_cast <SharedObjectClass*> (other.get()))
+        : referencedObject (static_cast <Object*> (other.get()))
     {
         if (referencedObject != nullptr)
             referencedObject->incReferenceCount();
@@ -263,7 +280,7 @@ public:
     template <class DerivedClass>
     SharedObjectPtr& operator= (const SharedObjectPtr<DerivedClass>& other)
     {
-        return operator= (static_cast <SharedObjectClass*> (other.get()));
+        return operator= (static_cast <Object*> (other.get()));
     }
 
    #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
@@ -280,18 +297,21 @@ public:
         The reference count of the old object is decremented, and it might be
         deleted if it hits zero. The new object's count is incremented.
     */
-    SharedObjectPtr& operator= (SharedObjectClass* const newObject)
+    SharedObjectPtr& operator= (Object* const newObject)
     {
         if (referencedObject != newObject)
         {
             if (newObject != nullptr)
                 newObject->incReferenceCount();
 
-            SharedObjectClass* const oldObject = referencedObject;
+            Object* const oldObject = referencedObject;
             referencedObject = newObject;
 
             if (oldObject != nullptr)
-                oldObject->decReferenceCount();
+            {
+                if (oldObject->decReferenceCount (false))
+                    ContainerDeletePolicy <Object>::destroy (oldObject);
+            }
         }
 
         return *this;
@@ -305,19 +325,22 @@ public:
     inline ~SharedObjectPtr()
     {
         if (referencedObject != nullptr)
-            referencedObject->decReferenceCount();
+        {
+            if (referencedObject->decReferenceCount (false))
+                ContainerDeletePolicy <Object>::destroy (referencedObject);
+        }
     }
 
     /** Returns the object that this pointer references.
         The pointer returned may be zero, of course.
     */
-    inline operator SharedObjectClass*() const noexcept
+    inline operator Object*() const noexcept
     {
         return referencedObject;
     }
 
     // the -> operator is called on the referenced object
-    inline SharedObjectClass* operator->() const noexcept
+    inline Object* operator->() const noexcept
     {
         return referencedObject;
     }
@@ -325,7 +348,7 @@ public:
     /** Returns the object that this pointer references.
         The pointer returned may be zero, of course.
     */
-    inline SharedObjectClass* get() const noexcept
+    inline Object* get() const noexcept
     {
         return referencedObject;
     }
@@ -333,55 +356,55 @@ public:
     /** Returns the object that this pointer references.
         The pointer returned may be zero, of course.
     */
-    inline SharedObjectClass* getObject() const noexcept
+    inline Object* getObject() const noexcept
     {
         return referencedObject;
     }
 
 private:
     //==============================================================================
-    SharedObjectClass* referencedObject;
+    Object* referencedObject;
 };
 
 
 /** Compares two SharedObjectPointers. */
-template <class SharedObjectClass>
-bool operator== (const SharedObjectPtr<SharedObjectClass>& object1, SharedObjectClass* const object2) noexcept
+template <class Object>
+bool operator== (const SharedObjectPtr<Object>& object1, Object* const object2) noexcept
 {
     return object1.get() == object2;
 }
 
 /** Compares two SharedObjectPointers. */
-template <class SharedObjectClass>
-bool operator== (const SharedObjectPtr<SharedObjectClass>& object1, const SharedObjectPtr<SharedObjectClass>& object2) noexcept
+template <class Object>
+bool operator== (const SharedObjectPtr<Object>& object1, const SharedObjectPtr<Object>& object2) noexcept
 {
     return object1.get() == object2.get();
 }
 
 /** Compares two SharedObjectPointers. */
-template <class SharedObjectClass>
-bool operator== (SharedObjectClass* object1, SharedObjectPtr<SharedObjectClass>& object2) noexcept
+template <class Object>
+bool operator== (Object* object1, SharedObjectPtr<Object>& object2) noexcept
 {
     return object1 == object2.get();
 }
 
 /** Compares two SharedObjectPointers. */
-template <class SharedObjectClass>
-bool operator!= (const SharedObjectPtr<SharedObjectClass>& object1, const SharedObjectClass* object2) noexcept
+template <class Object>
+bool operator!= (const SharedObjectPtr<Object>& object1, const Object* object2) noexcept
 {
     return object1.get() != object2;
 }
 
 /** Compares two SharedObjectPointers. */
-template <class SharedObjectClass>
-bool operator!= (const SharedObjectPtr<SharedObjectClass>& object1, SharedObjectPtr<SharedObjectClass>& object2) noexcept
+template <class Object>
+bool operator!= (const SharedObjectPtr<Object>& object1, SharedObjectPtr<Object>& object2) noexcept
 {
     return object1.get() != object2.get();
 }
 
 /** Compares two SharedObjectPointers. */
-template <class SharedObjectClass>
-bool operator!= (SharedObjectClass* object1, SharedObjectPtr<SharedObjectClass>& object2) noexcept
+template <class Object>
+bool operator!= (Object* object1, SharedObjectPtr<Object>& object2) noexcept
 {
     return object1 != object2.get();
 }

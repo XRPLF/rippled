@@ -409,9 +409,10 @@ public:
                 }
             }
 
-            delete toDelete; // don't want to use a ScopedPointer here because if the
-                             // object has a private destructor, both OwnedArray and
-                             // ScopedPointer would need to be friend classes..
+            // don't want to use a ScopedPointer here because if the
+            // object has a private destructor, both OwnedArray and
+            // ScopedPointer would need to be friend classes..
+            ContainerDeletePolicy <ObjectClass>::destroy (toDelete);
         }
         else
         {
@@ -591,9 +592,10 @@ public:
             }
         }
 
-        delete toDelete; // don't want to use a ScopedPointer here because if the
-                         // object has a private destructor, both OwnedArray and
-                         // ScopedPointer would need to be friend classes..
+        // don't want to use a ScopedPointer here because if the
+        // object has a private destructor, both OwnedArray and
+        // ScopedPointer would need to be friend classes..
+        ContainerDeletePolicy <ObjectClass>::destroy (toDelete);
 
         if ((numUsed << 1) < data.numAllocated)
             minimiseStorageOverheads();
@@ -682,7 +684,7 @@ public:
             {
                 for (int i = startIndex; i < endIndex; ++i)
                 {
-                    delete data.elements [i];
+                    ContainerDeletePolicy <ObjectClass>::destroy (data.elements [i]);
                     data.elements [i] = nullptr; // (in case one of the destructors accesses this array and hits a dangling pointer)
                 }
             }
@@ -879,7 +881,7 @@ private:
     void deleteAllObjects()
     {
         while (numUsed > 0)
-            delete data.elements [--numUsed];
+            ContainerDeletePolicy <ObjectClass>::destroy (data.elements [--numUsed]);
     }
 };
 

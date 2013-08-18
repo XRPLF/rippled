@@ -62,7 +62,7 @@ namespace sqdb
 
 class session::Sqlite3 : public SharedSingleton <Sqlite3>
 {
-private:
+public:
     friend class SharedSingleton <Sqlite3>;
 
     Sqlite3() : SharedSingleton <Sqlite3> (SingletonLifetime::persistAfterCreation)

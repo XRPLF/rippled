@@ -17,43 +17,32 @@
 */
 //==============================================================================
 
-#ifndef BEAST_GLOBALPAGEDFREESTORE_BEASTHEADER
-#define BEAST_GLOBALPAGEDFREESTORE_BEASTHEADER
+#ifndef BEAST_CONTAINERDELETEPOLICY_H_INCLUDED
+#define BEAST_CONTAINERDELETEPOLICY_H_INCLUDED
 
-/*============================================================================*/
-/**
-  A PagedFreeStore singleton.
+/** The DeletePolicy provides a way to destroy objects stored in containers.
 
-  @ingroup beast_concurrent
+    This is a specialized class. The default implementation
+    calls operator delete. You can customize it for your classes
+    by providing a suitable specialization.
+
+    A DeletePolicy must support these concepts:
+        DefaultConstructible
+        MoveConstructible (C++11)
+        CopyConstructible
+        MoveAssignable (C++11)
+        Destructible
 */
-class BEAST_API GlobalPagedFreeStore
-    : public SharedSingleton <GlobalPagedFreeStore>
-    , LeakChecked <GlobalPagedFreeStore>
+
+/** The DefaultDeletePolicy simply calls operator delete.
+*/
+template <typename T>
+struct ContainerDeletePolicy
 {
-public:
-    GlobalPagedFreeStore ();
-    ~GlobalPagedFreeStore ();
-
-public:
-    inline size_t getPageBytes ()
+    static inline void destroy (T* t)
     {
-        return m_allocator.getPageBytes ();
+        delete t;
     }
-
-    inline void* allocate ()
-    {
-        return m_allocator.allocate ();
-    }
-
-    static inline void deallocate (void* const p)
-    {
-        PagedFreeStore::deallocate (p);
-    }
-
-    static GlobalPagedFreeStore* createInstance ();
-
-private:
-    PagedFreeStore m_allocator;
 };
 
 #endif

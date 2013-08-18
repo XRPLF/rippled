@@ -45,7 +45,7 @@ public:
         return new GlobalFifoFreeStore;
     }
 
-private:
+public:
     GlobalFifoFreeStore ()
         : SharedSingleton <GlobalFifoFreeStore <Tag> >
         (SingletonLifetime::persistAfterCreation)

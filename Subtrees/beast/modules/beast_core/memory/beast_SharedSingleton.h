@@ -139,10 +139,13 @@ public:
         m_refs.addref ();
     }
 
-    inline void decReferenceCount () noexcept
+    inline bool decReferenceCount (bool = true) noexcept
     {
         if (m_refs.release ())
             destroySingleton ();
+
+        // We let destroySingleton enforce the ContainerDeletePolicy
+        return false;
     }
 
     // Caller must synchronize.
@@ -183,7 +186,7 @@ private:
         {
             bassert (m_lifetime != neverDestroyed);
 
-            delete this;
+            ContainerDeletePolicy <Object>::destroy (static_cast <Object*>(this));
         }
     }
 
