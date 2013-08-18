@@ -48,12 +48,10 @@ namespace beast
 
 // Order matters
 
+#include "basics/beast_HandlerCall.h"
 #include "basics/beast_BufferType.h"
-#include "basics/beast_CompletionCall.h"
-#include "basics/beast_ErrorCall.h"
 #include "basics/beast_FixedInputBuffer.h"
 #include "basics/beast_PeerRole.h"
-#include "basics/beast_TransferCall.h"
 
 #include "sockets/beast_SocketBase.h"
 #include "sockets/beast_Socket.h"
