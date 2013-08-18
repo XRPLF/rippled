@@ -60,13 +60,7 @@ public:
 
         virtual void on_async_detect (Logic& logic,
             error_code const& ec, ConstBuffers const& buffers,
-                ErrorCall const& origHandler) = 0;
-
-    #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
-        virtual void on_async_detect (Logic& logic,
-            error_code const& ec, ConstBuffers const& buffers,
-                TransferCall const& origHandler) = 0;
-    #endif
+                HandlerCall const& origHandler) = 0;
     };
 };
 
@@ -149,48 +143,17 @@ public:
             HandshakeHandler, void (error_code)> init(
                 BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
         // init.handler is copied
-        m_origHandler = ErrorCall (
+        m_origHandler = HandlerCall (
             BOOST_ASIO_MOVE_CAST(HandshakeHandler)
                 (HandshakeHandler(init.handler)));
         async_do_handshake (type, ConstBuffers ());
         return init.result.get();
 #else
-        m_origHandler = ErrorCall (
+        m_origHandler = HandlerCall (
             BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
         async_do_handshake (type, ConstBuffers ());
 #endif
     }
-
-#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
-    template <typename ConstBufferSequence>
-    error_code handshake (handshake_type type,
-        const ConstBufferSequence& buffers, error_code& ec)
-    {
-        return do_handshake (type, ec, ConstBuffers (buffers));
-    }
-
-    template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
-    BEAST_ASIO_INITFN_RESULT_TYPE(BufferedHandshakeHandler, void (error_code, std::size_t))
-    async_handshake(handshake_type type, const ConstBufferSequence& buffers,
-        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
-    {
-#if BEAST_ASIO_HAS_FUTURE_RETURNS
-        boost::asio::detail::async_result_init<
-            BufferedHandshakeHandler, void (error_code, std::size_t)> init(
-                BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler));
-        // init.handler is copied
-        m_origBufferedHandler = TransferCall (
-            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)
-                (BufferedHandshakeHandler(init.handler)));
-        async_do_handshake (type, ConstBuffers (buffers));
-        return init.result.get();
-#else
-        m_origBufferedHandler = TransferCall (
-            BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler(handler)));
-        async_do_handshake (type, ConstBuffers (buffers));
-#endif
-    }
-#endif
 
     //--------------------------------------------------------------------------
 
@@ -244,16 +207,8 @@ public:
         // Get the execution context from the original handler
         // and signal the beginning of our composed operation.
         //
-        if (m_origHandler.isNotNull ())
-        {
-            m_origHandler.beginComposed ();
-            m_context = m_origHandler.getContext ();
-        }
-        else
-        {
-            m_origBufferedHandler.beginComposed ();
-            m_context = m_origBufferedHandler.getContext ();
-        }
+        m_origHandler.beginComposed ();
+        m_context = m_origHandler.getContext ();
 
         bassert (m_context.isNotNull ());
 
@@ -288,22 +243,6 @@ public:
                 bassert (consumed <= m_buffer.size ());
                 m_buffer.consume (consumed);
 
-            #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
-                if (! m_origBufferedHandler.isNull ())
-                {
-                    bassert (m_origHandler.isNull ());
-
-                    // The composed operation has completed and
-                    // the original handler will eventually get called.
-                    //
-                    m_origBufferedHandler.endComposed ();
-                    m_callback->on_async_detect (m_logic.get (), ec,
-                        ConstBuffers (m_buffer.data ()), m_origBufferedHandler);
-                    
-                    return;
-                }
-            #endif
-
                 // The composed operation has completed and
                 // the original handler will eventually get called.
                 //
@@ -323,11 +262,10 @@ public:
             // of the original handler. This ensures that we meet the
             // execution safety requirements of the handler.
             //
-            HandlerCall handler (boost::bind (
-                &this_type::on_async_read_some, this,
+            HandlerCall handler (HandlerCall::Read (), m_context,
+                boost::bind (&this_type::on_async_read_some, this,
                     boost::asio::placeholders::error,
-                        boost::asio::placeholders::bytes_transferred),
-                            HandlerCall::Read (), m_context);
+                        boost::asio::placeholders::bytes_transferred));
             m_next_layer.async_read_some (buffers, handler);
 
             return;
@@ -335,17 +273,7 @@ public:
 
         // Error condition
 
-    #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
-        if (! m_origBufferedHandler.isNull ())
-        {
-            m_origBufferedHandler.endComposed ();
-            m_callback->on_async_detect (m_logic.get (), ec,
-                ConstBuffers (m_buffer.data ()), m_origBufferedHandler);
-            return;
-        }
-    #endif
-
-        m_origBufferedHandler.endComposed ();
+        m_origHandler.endComposed ();
         m_callback->on_async_detect (m_logic.get (), ec,
             ConstBuffers (m_buffer.data ()), m_origHandler);
     }
@@ -356,8 +284,8 @@ private:
     buffer_type m_buffer;
     boost::asio::buffered_read_stream <stream_type&> m_stream;
     HandshakeDetectLogicType <Logic> m_logic;
-    ErrorCall m_origHandler;
-    TransferCall m_origBufferedHandler;
+    HandlerCall m_origHandler;
+    HandlerCall m_origBufferedHandler;
     HandlerCall::Context m_context;
 };
 /** @} */
