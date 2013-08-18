@@ -33,9 +33,7 @@
 
     Supports these concepts:
         DefaultConstructible
-        MoveConstructible (C++11)
         CopyConstructible
-        MoveAssignable (C++11)
         CopyAssignable
         Destructible
 */
@@ -324,11 +322,6 @@ public:
     /** @{ */
     HandlerCall (HandlerCall const& other) noexcept;
     HandlerCall& operator= (HandlerCall const& other) noexcept;
-
-#if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
-    HandlerCall (HandlerCall&& other) noexcept;
-    HandlerCall& operator= (HandlerCall&& other) noexcept;
-#endif
     /** @} */
 
     //--------------------------------------------------------------------------
