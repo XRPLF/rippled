@@ -169,13 +169,13 @@ public:
     async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler)
     {
         return async_accept (peer,
-            BOOST_ASIO_MOVE_CAST(ErrorCall)(ErrorCall (
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(HandlerCall (HandlerCall::Accept (),
                 BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler))));
     }
 
     virtual
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (error_code))
-    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(ErrorCall) handler);
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
+    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(HandlerCall) handler);
 
     //--------------------------------------------------------------------------
     //
@@ -210,13 +210,13 @@ public:
     async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
     {
         return async_read_some (MutableBuffers (buffers),
-            BOOST_ASIO_MOVE_CAST(TransferCall)(TransferCall (
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(HandlerCall (HandlerCall::Transfer (),
                 BOOST_ASIO_MOVE_CAST(ReadHandler)(handler))));
     }
 
     virtual
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (error_code, std::size_t))
-    async_read_some (MutableBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler);
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
+    async_read_some (MutableBuffers const& buffers, BOOST_ASIO_MOVE_ARG(HandlerCall) handler);
 
     // AsyncWriteStream
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncWriteStream.html
@@ -225,13 +225,13 @@ public:
     async_write_some (ConstBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
     {
         return async_write_some (ConstBuffers (buffers),
-            BOOST_ASIO_MOVE_CAST(TransferCall)(TransferCall (
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(HandlerCall (HandlerCall::Transfer (),
                 BOOST_ASIO_MOVE_CAST(WriteHandler)(handler))));
     }
 
     virtual
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (error_code, std::size_t))
-    async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler);
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
+    async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(HandlerCall) handler);
 
     //--------------------------------------------------------------------------
     //
@@ -275,13 +275,13 @@ public:
     async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
     {
         return async_handshake (type,
-            BOOST_ASIO_MOVE_CAST(ErrorCall)(ErrorCall (
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(HandlerCall (HandlerCall::Error (),
                 BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler))));
     }
 
     virtual
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (error_code))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler);
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
+    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandlerCall) handler);
 
     //--------------------------------------------------------------------------
 
@@ -318,14 +318,14 @@ public:
         BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
     {
         return async_handshake (type, ConstBuffers (buffers),
-            BOOST_ASIO_MOVE_CAST(TransferCall)(TransferCall (
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(HandlerCall (
                 BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler))));
     }
 
     virtual
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
     async_handshake (handshake_type type, ConstBuffers const& buffers,
-        BOOST_ASIO_MOVE_ARG(TransferCall) handler);
+        BOOST_ASIO_MOVE_ARG(HandlerCall) handler);
 #endif
 
     //--------------------------------------------------------------------------
@@ -348,13 +348,13 @@ public:
     void async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler)
     {
         return async_shutdown (
-            BOOST_ASIO_MOVE_CAST(ErrorCall)(ErrorCall (
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(HandlerCall (HandlerCall::Error (),
                 BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler))));
     }
 
     virtual
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler);
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
+    async_shutdown (BOOST_ASIO_MOVE_ARG(HandlerCall) handler);
 };
 
 #endif

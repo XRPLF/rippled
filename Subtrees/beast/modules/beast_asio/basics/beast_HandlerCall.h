@@ -156,14 +156,21 @@ public:
         HandlerCall will meet this requirement:
             CompletionHandler
     */
+    /** @{ */
     template <typename Handler>
-    HandlerCall (BOOST_ASIO_MOVE_ARG(Handler) handler, Completion,
-        Context context = Context ())
-        : m_call (construct <PostCallType> (
-            BOOST_ASIO_MOVE_CAST(Handler)(handler),
-                context))
+    HandlerCall (Post, BOOST_ASIO_MOVE_ARG(Handler) handler)
+        : m_call (construct <PostCallType> (Context (),
+            BOOST_ASIO_MOVE_CAST(Handler)(handler)))
     {
     }
+
+    template <typename Handler>
+    HandlerCall (Post, Context context, BOOST_ASIO_MOVE_ARG(Handler) handler)
+        : m_call (construct <PostCallType> (context,
+            BOOST_ASIO_MOVE_CAST(Handler)(handler)))
+    {
+    }
+    /** @} */
 
     /** Construct a HandlerCall with one bound parameter.
 
@@ -189,14 +196,21 @@ public:
         HandlerCall will meet this requirement:
             CompletionHandler
     */
+    /** @{ */
     template <typename Handler, typename Arg1>
-    HandlerCall (BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1, Completion,
-        Context context = Context ())
-        : m_call (construct <PostCallType1> (
-            BOOST_ASIO_MOVE_CAST(Handler)(handler),
-                context, arg1))
+    HandlerCall (Post, BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1)
+        : m_call (construct <PostCallType1> (Context (),
+            BOOST_ASIO_MOVE_CAST(Handler)(handler), arg1))
     {
     }
+
+    template <typename Handler, typename Arg1>
+    HandlerCall (Post, Context context, BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1)
+        : m_call (construct <PostCallType1> (context,
+            BOOST_ASIO_MOVE_CAST(Handler)(handler), arg1))
+    {
+    }
+    /** @} */
 
     /** Construct a HandlerCall with two bound parameters.
 
@@ -221,14 +235,21 @@ public:
         The HandlerCall will meet these requirements:
             CompletionHandler
     */
+    /** @{ */
     template <typename Handler, typename Arg1, typename Arg2>
-    HandlerCall (BOOST_ASIO_MOVE_ARG(Handler) handler,
-        Arg1 arg1, Arg2 arg2, Completion, Context context = Context ())
-        : m_call (construct <PostCallType2> (
-            BOOST_ASIO_MOVE_CAST(Handler)(handler),
-                context, arg1, arg2))
+    HandlerCall (Post, BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1, Arg2 arg2)
+        : m_call (construct <PostCallType2> (Context (),
+            BOOST_ASIO_MOVE_CAST(Handler)(handler), arg1, arg2))
     {
     }
+
+    template <typename Handler, typename Arg1, typename Arg2>
+    HandlerCall (Post, Context context, BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1, Arg2 arg2)
+        : m_call (construct <PostCallType2> (context,
+            BOOST_ASIO_MOVE_CAST(Handler)(handler), arg1, arg2))
+    {
+    }
+    /** @} */
 
     /** Construct a HandlerCall from a handler that takes an error_code
 
@@ -244,14 +265,21 @@ public:
             ShutdownHandler
             HandshakeHandler
     */
+    /** @{ */
     template <typename Handler>
-    HandlerCall (BOOST_ASIO_MOVE_ARG(Handler) handler, Error,
-        Context context = Context ())
-        : m_call (construct <ErrorCallType> (
-            BOOST_ASIO_MOVE_CAST(Handler)(handler),
-                context))
+    HandlerCall (Error, BOOST_ASIO_MOVE_ARG(Handler) handler)
+        : m_call (construct <ErrorCallType> (Context (),
+            BOOST_ASIO_MOVE_CAST(Handler)(handler)))
     {
     }
+
+    template <typename Handler>
+    HandlerCall (Error, Context context, BOOST_ASIO_MOVE_ARG(Handler) handler)
+        : m_call (construct <ErrorCallType> (context,
+            BOOST_ASIO_MOVE_CAST(Handler)(handler)))
+    {
+    }
+    /** @} */
 
     /** Construct a HandlerCall from a handler that takes an error_code and std::size
 
@@ -265,14 +293,21 @@ public:
             WriteHandler
             BufferedHandshakeHandler
     */
+    /** @{ */
     template <typename Handler>
-    HandlerCall (BOOST_ASIO_MOVE_ARG(Handler) handler, Transfer,
-        Context context = Context ())
-        : m_call (construct <TransferCallType> (
-            BOOST_ASIO_MOVE_CAST(Handler)(handler),
-                context))
+    HandlerCall (Transfer, BOOST_ASIO_MOVE_ARG(Handler) handler)
+        : m_call (construct <TransferCallType> (Context (),
+            BOOST_ASIO_MOVE_CAST(Handler)(handler)))
     {
     }
+
+    template <typename Handler>
+    HandlerCall (Transfer, Context context, BOOST_ASIO_MOVE_ARG(Handler) handler)
+        : m_call (construct <TransferCallType> (context,
+            BOOST_ASIO_MOVE_CAST(Handler)(handler)))
+    {
+    }
+    /** @} */
 
     /** Copy construction and assignment.
 
@@ -532,46 +567,41 @@ private:
     // ownership of the handler from the stack.
 
     template <template <typename> class Container, typename Handler>
-    static Call* construct (BOOST_ASIO_MOVE_ARG(Handler) handler,
-        Context context)
+    static Call* construct (Context context, BOOST_ASIO_MOVE_ARG(Handler) handler)
     {
         typedef Container <Handler> ContainerType;
         Handler local (BOOST_ASIO_MOVE_CAST(Handler)(handler));
         std::size_t const size (sizeof (ContainerType));
         void* const p = boost_asio_handler_alloc_helpers::
             allocate <Handler> (size, local);
-        return ::new (p) ContainerType (
-            BOOST_ASIO_MOVE_CAST(Handler)(local), size, context);
+        return ::new (p) ContainerType (context, size,
+            BOOST_ASIO_MOVE_CAST(Handler)(local));
     }
 
     template <template <typename, typename> class Container,
         typename Handler, typename Arg1>
-    static Call* construct (BOOST_ASIO_MOVE_ARG(Handler) handler,
-        Context context, Arg1 arg1)
+    static Call* construct (Context context, BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1)
     {
         typedef Container <Handler, Arg1> ContainerType;
         Handler local (BOOST_ASIO_MOVE_CAST(Handler)(handler));
         std::size_t const size (sizeof (ContainerType));
         void* const p = boost_asio_handler_alloc_helpers::
             allocate <Handler> (size, local);
-        return ::new (p) ContainerType (
-            BOOST_ASIO_MOVE_CAST(Handler)(local),
-                size, context, arg1);
+        return ::new (p) ContainerType (context, size,
+            BOOST_ASIO_MOVE_CAST(Handler)(local), arg1);
     }
 
     template <template <typename, typename, typename> class Container,
         typename Handler, typename Arg1, typename Arg2>
-    static Call* construct (BOOST_ASIO_MOVE_ARG(Handler) handler,
-        Context context, Arg1 arg1, Arg2 arg2)
+    static Call* construct (Context context, BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1, Arg2 arg2)
     {
         typedef Container <Handler, Arg1, Arg2> ContainerType;
         Handler local (BOOST_ASIO_MOVE_CAST(Handler)(handler));
         std::size_t const size (sizeof (ContainerType));
         void* const p = boost_asio_handler_alloc_helpers::
             allocate <Handler> (size, local);
-        return ::new (p) ContainerType (
-            BOOST_ASIO_MOVE_CAST(Handler)(local),
-                size, context, arg1, arg2);
+        return ::new (p) ContainerType (context, size,
+            BOOST_ASIO_MOVE_CAST(Handler)(local), arg1, arg2);
     }
 
     //--------------------------------------------------------------------------
@@ -734,8 +764,7 @@ private:
         // Context must have Call as a base or this will result in
         // undefined behavior.
         //
-        CallType (BOOST_ASIO_MOVE_ARG(Handler) handler,
-                std::size_t size, Context context)
+        CallType (Context context, std::size_t size, BOOST_ASIO_MOVE_ARG(Handler) handler)
             : Call (context)
             , m_size (size)
             , m_handler (BOOST_ASIO_MOVE_CAST(Handler)(handler))
@@ -833,10 +862,8 @@ private:
     template <typename Handler>
     struct PostCallType : CallType <Handler>
     {
-        PostCallType (BOOST_ASIO_MOVE_ARG(Handler) handler,
-            std::size_t size, Context context)
-            : CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler),
-                size, context)
+        PostCallType (Context context, std::size_t size, BOOST_ASIO_MOVE_ARG(Handler) handler)
+            : CallType <Handler> (context, size, BOOST_ASIO_MOVE_CAST(Handler)(handler))
         {
         }
 
@@ -849,10 +876,8 @@ private:
     template <typename Handler, typename Arg1>
     struct PostCallType1 : CallType <Handler>
     {
-        PostCallType1 (BOOST_ASIO_MOVE_ARG(Handler) handler,
-            std::size_t size, Context context, Arg1 arg1)
-            : CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler),
-                size, context)
+        PostCallType1 (Context context, std::size_t size, BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1)
+            : CallType <Handler> (context, size, BOOST_ASIO_MOVE_CAST(Handler)(handler))
             , m_arg1 (arg1)
         {
         }
@@ -868,10 +893,8 @@ private:
     template <typename Handler, typename Arg1, typename Arg2>
     struct PostCallType2 : CallType <Handler>
     {
-        PostCallType2 (BOOST_ASIO_MOVE_ARG(Handler) handler,
-            std::size_t size, Context context, Arg1 arg1, Arg2 arg2)
-            : CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler),
-                size, context)
+        PostCallType2 (Context context, std::size_t size, BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1, Arg2 arg2)
+            : CallType <Handler> (context, size, BOOST_ASIO_MOVE_CAST(Handler)(handler))
             , m_arg1 (arg1)
             , m_arg2 (arg2)
         {
@@ -889,10 +912,8 @@ private:
     template <typename Handler>
     struct ErrorCallType : CallType <Handler>
     {
-        ErrorCallType (BOOST_ASIO_MOVE_ARG(Handler) handler,
-            std::size_t size, Context context)
-            : CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler),
-                size, context)
+        ErrorCallType (Context context, std::size_t size, BOOST_ASIO_MOVE_ARG(Handler) handler)
+            : CallType <Handler> (context, size, BOOST_ASIO_MOVE_CAST(Handler)(handler))
         {
         }
 
@@ -905,10 +926,8 @@ private:
     template <typename Handler>
     struct TransferCallType : CallType <Handler>
     {
-        TransferCallType (BOOST_ASIO_MOVE_ARG(Handler) handler,
-                std::size_t size, Context context)
-            : CallType <Handler> (BOOST_ASIO_MOVE_CAST(Handler)(handler),
-                size, context)
+        TransferCallType (Context context, std::size_t size, BOOST_ASIO_MOVE_ARG(Handler) handler)
+            : CallType <Handler> (context, size, BOOST_ASIO_MOVE_CAST(Handler)(handler))
         {
         }
 
@@ -934,65 +953,6 @@ private:
     friend bool asio_handler_is_continuation (HandlerCall::Context* context);
 
     SharedObjectPtr <Call> m_call;
-};
-
-//------------------------------------------------------------------------------
-
-class CompletionCall : public HandlerCall
-{
-public:
-    CompletionCall ()
-    {
-    }
-
-    template <typename Handler>
-    explicit CompletionCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
-        : HandlerCall (BOOST_ASIO_MOVE_CAST(Handler)(handler), HandlerCall::Post ())
-    {
-    }
-
-    template <typename Handler, typename Arg1>
-    explicit CompletionCall (BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1)
-        : HandlerCall (BOOST_ASIO_MOVE_CAST(Handler)(handler), arg1, HandlerCall::Post ())
-    {
-    }
-    template <typename Handler, typename Arg1, typename Arg2>
-    explicit CompletionCall (BOOST_ASIO_MOVE_ARG(Handler) handler, Arg1 arg1, Arg2 arg2)
-        : HandlerCall (BOOST_ASIO_MOVE_CAST(Handler)(handler), arg1, arg2, HandlerCall::Post ())
-    {
-    }
-};
-
-//------------------------------------------------------------------------------
-
-class ErrorCall : public HandlerCall
-{
-public:
-    ErrorCall ()
-    {
-    }
-
-    template <typename Handler>
-    explicit ErrorCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
-        : HandlerCall (BOOST_ASIO_MOVE_CAST(Handler)(handler), HandlerCall::Error ())
-    {
-    }
-};
-
-//------------------------------------------------------------------------------
-
-class TransferCall : public HandlerCall
-{
-public:
-    TransferCall ()
-    {
-    }
-
-    template <typename Handler>
-    explicit TransferCall (BOOST_ASIO_MOVE_ARG(Handler) handler)
-        : HandlerCall (BOOST_ASIO_MOVE_CAST(Handler)(handler), HandlerCall::Transfer ())
-    {
-    }
 };
 
 //------------------------------------------------------------------------------

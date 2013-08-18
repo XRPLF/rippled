@@ -136,19 +136,19 @@ protected:
         return stream ().write_some (buffers, ec);
     }
 
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (error_code, std::size_t))
-    async_read_some (MutableBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
+    async_read_some (MutableBuffers const& buffers, BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
     {
         return stream ().async_read_some (buffers, m_strand.wrap (boost::bind (
-            BOOST_ASIO_MOVE_CAST(TransferCall)(handler), boost::asio::placeholders::error,
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler), boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred)));
     }
 
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (error_code, std::size_t))
-    async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(TransferCall) handler)
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
+    async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
     {
         return stream ().async_write_some (buffers, m_strand.wrap (boost::bind (
-            BOOST_ASIO_MOVE_CAST(TransferCall)(handler), boost::asio::placeholders::error,
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler), boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred)));
     }
 
@@ -160,34 +160,7 @@ protected:
     /** Determine if the caller needs to call a handshaking function. */
     bool needs_handshake ()
     {
-#if 1
         return m_needs_handshake;
-#else
-        if (is_server ())
-        {
-            // If the PROXY flag is on, we need that first
-            if (m_flags.set (Flag::proxy))
-                return true;
-
-            if (m_flags.any_set (Flag::ssl | Flag::ssl_required))
-                return true;
-
-            return false;
-        }
-        else if (is_client ())
-        {
-            // Client sends PROXY on the initial connect
-            // before We even get to this function.
-
-            if (m_flags.set (Flag::ssl))
-                return true;
-
-            return false;
-        }
-
-        bassert (is_peer ());
-        return false;
-#endif
     }
 
     error_code handshake (Socket::handshake_type type, error_code& ec)
@@ -197,15 +170,25 @@ protected:
         return ec;
     }
 
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (error_code))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
+    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
     {
+        bassert (m_context.isNull ());
+
         error_code ec;
         if (init_handshake (type, ec))
-            return stream ().async_handshake (type,
-                BOOST_ASIO_MOVE_CAST(ErrorCall)(handler));
-        return get_io_service ().post (CompletionCall (
-            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler), ec));
+        {
+            // The original handler has already been wrapped for us
+            // so set the context and indicate the beginning of the
+            // composed operation.
+            //
+            //handler.beginComposed ();
+            //m_context = handler.getContext ();
+            return stream ().async_handshake (type, handler);
+        }
+
+        return get_io_service ().post (HandlerCall (HandlerCall::Post (),
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler), ec));
     }
 
 #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
@@ -217,15 +200,15 @@ protected:
         return ec;
     }
 
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(TransferCall, void (error_code, std::size_t))
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
     async_handshake (handshake_type type, ConstBuffers const& buffers,
-        BOOST_ASIO_MOVE_ARG(TransferCall) handler)
+        BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
     {
         error_code ec;
         if (init_handshake (type, ec))
             return stream ().async_handshake (type, buffers,
-                BOOST_ASIO_MOVE_CAST(TransferCall)(handler));
-        return get_io_service ().post (CompletionCall (handler, ec, 0));
+                BOOST_ASIO_MOVE_CAST(HandlerCall)(handler));
+        return get_io_service ().post (HandlerCall (handler, ec, 0));
     }
 #endif
 
@@ -240,23 +223,23 @@ protected:
         return handshake_error (ec);
     }
 
-    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(ErrorCall, void (error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(ErrorCall) handler)
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
+    async_shutdown (BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
     {
         error_code ec;
         if (m_needs_shutdown)
         {
             if (m_needs_shutdown_stream)
                 return stream ().async_shutdown (
-                    BOOST_ASIO_MOVE_CAST(ErrorCall)(handler));
+                    BOOST_ASIO_MOVE_CAST(HandlerCall)(handler));
         }
         else
         {
             ec = handshake_error ();
         }
 
-        return get_io_service ().post (CompletionCall (
-            BOOST_ASIO_MOVE_CAST(ErrorCall)(handler),
+        return get_io_service ().post (HandlerCall (HandlerCall::Post (),
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler),
                 ec));
     }
 
@@ -568,14 +551,14 @@ protected:
         }
 
         void on_async_detect (LogicType& logic, error_code const& ec,
-            ConstBuffers const& buffers, ErrorCall const& origHandler)
+            ConstBuffers const& buffers, HandlerCall const& origHandler)
         {
             m_owner->on_async_detect_proxy (logic, ec, buffers, origHandler);
         }
 
     #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
         void on_async_detect (LogicType& logic, error_code const& ec,
-            ConstBuffers const& buffers, TransferCall const& origHandler)
+            ConstBuffers const& buffers, HandlerCall const& origHandler)
         {
             m_owner->on_async_detect_proxy (logic, ec, buffers, origHandler);
         }
@@ -620,7 +603,7 @@ protected:
 
     // origHandler cannot be a reference since it gets move-copied
     void on_async_detect_proxy (HandshakeDetectLogicPROXY& logic,
-        error_code ec, ConstBuffers const& buffers, ErrorCall origHandler)
+        error_code ec, ConstBuffers const& buffers, HandlerCall origHandler)
     {
         if (! ec)
         {
@@ -646,14 +629,14 @@ protected:
             }
         }
 
-        get_io_service ().post (CompletionCall (
-            BOOST_ASIO_MOVE_CAST(ErrorCall)(origHandler), ec));
+        get_io_service ().post (HandlerCall (HandlerCall::Post (),
+            BOOST_ASIO_MOVE_CAST(HandlerCall)(origHandler), ec));
     }
 
 #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     // origHandler cannot be a reference since it gets move-copied
     void on_async_detect_proxy (HandshakeDetectLogicPROXY& logic,
-        error_code const& ec, ConstBuffers const& buffers, TransferCall origHandler)
+        error_code const& ec, ConstBuffers const& buffers, HandlerCall origHandler)
     {
         std::size_t bytes_transferred = 0;
 
@@ -699,7 +682,7 @@ protected:
 
     // origHandler cannot be a reference since it gets move-copied
     void on_async_detect_ssl (HandshakeDetectLogicSSL3& logic,
-        error_code const& ec, ConstBuffers const& buffers, ErrorCall origHandler)
+        error_code const& ec, ConstBuffers const& buffers, HandlerCall origHandler)
     {
         if (! ec)
         {
@@ -718,14 +701,14 @@ protected:
         }
 
         // Is this a continuation?
-        get_io_service ().post (CompletionCall (
+        get_io_service ().post (HandlerCall (HandlerCall::Post (),
             origHandler, ec));
     }
 
 #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
     // origHandler cannot be a reference since it gets move-copied
     void on_async_detect_ssl (HandshakeDetectLogicSSL3& logic,
-        error_code const& ec, ConstBuffers const& buffers, TransferCall origHandler)
+        error_code const& ec, ConstBuffers const& buffers, HandlerCall origHandler)
     {
         std::size_t bytes_transferred = 0;
 
@@ -748,7 +731,7 @@ protected:
         }
 
         // Is this a continuation?
-        get_io_service ().post (CompletionCall (
+        get_io_service ().post (HandlerCall (
             origHandler, ec, bytes_transferred));
     }
 #endif
@@ -775,14 +758,14 @@ protected:
         }
 
         void on_async_detect (LogicType& logic, error_code const& ec,
-            ConstBuffers const& buffers, ErrorCall const& origHandler)
+            ConstBuffers const& buffers, HandlerCall const& origHandler)
         {
             m_owner->on_async_detect_ssl (logic, ec, buffers, origHandler);
         }
 
     #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
         void on_async_detect (LogicType& logic, error_code const& ec,
-            ConstBuffers const& buffers, TransferCall const& origHandler)
+            ConstBuffers const& buffers, HandlerCall const& origHandler)
         {
             m_owner->on_async_detect_ssl (logic, ec, buffers, origHandler);
         }
@@ -821,6 +804,7 @@ private:
     StreamSocket m_next_layer;
     ScopedPointer <Socket> m_stream;
     boost::asio::io_service::strand m_strand;
+    HandlerCall::Context m_context;
 };
 
 #endif

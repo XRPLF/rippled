@@ -159,14 +159,14 @@ public:
                 ReadHandler, void (error_code, std::size_t)> init (
                     BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
 
-            get_io_service ().post (CompletionCall (
+            get_io_service ().post (HandlerCall (HandlerCall::Post (),
                 ReadHandler(init.handler), // handler is copied
                     error_code (), bytes_transferred));
 
             return init.result.get();
 
 #else
-            return get_io_service ().post (CompletionCall (
+            return get_io_service ().post (HandlerCall (HandlerCall::Post (),
                 BOOST_ASIO_MOVE_CAST(ReadHandler)(handler),
                     error_code (), bytes_transferred));
 
