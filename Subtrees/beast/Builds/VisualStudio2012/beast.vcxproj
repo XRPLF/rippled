@@ -69,6 +69,7 @@
     <None Include="..\..\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_HandlerCall.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_BufferType.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_FixedInputBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_PeerRole.h" />
