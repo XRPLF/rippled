@@ -259,17 +259,17 @@ HandlerCall const& HandlerCall::endComposed () const noexcept
     return *this;
 }
 
-void HandlerCall::operator() ()
+void HandlerCall::operator() () const
 {
     (*m_call)();
 }
 
-void HandlerCall::operator() (error_code const& ec)
+void HandlerCall::operator() (error_code const& ec) const
 {
     (*m_call)(ec);
 }
 
-void HandlerCall::operator() (error_code const& ec, std::size_t bytes_transferred)
+void HandlerCall::operator() (error_code const& ec, std::size_t bytes_transferred) const
 {
     (*m_call)(ec, bytes_transferred);
 }

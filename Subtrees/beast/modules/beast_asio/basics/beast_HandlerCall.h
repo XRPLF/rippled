@@ -397,9 +397,9 @@ public:
         error at run-time.
     */
     /** @{ */
-    void operator() ();
-    void operator() (error_code const& ec);
-    void operator() (error_code const& ec, std::size_t bytes_transferred);
+    void operator() () const;
+    void operator() (error_code const& ec) const;
+    void operator() (error_code const& ec, std::size_t bytes_transferred) const;
     /** @} */
 
     //--------------------------------------------------------------------------

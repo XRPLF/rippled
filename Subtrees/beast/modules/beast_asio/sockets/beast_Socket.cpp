@@ -152,7 +152,7 @@ boost::system::error_code Socket::handshake (handshake_type, boost::system::erro
 }
 
 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (boost::system::error_code))
-Socket::async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
+Socket::async_handshake (handshake_type, HandlerCall const& handler)
 {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
     boost::asio::detail::async_result_init<

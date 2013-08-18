@@ -699,7 +699,7 @@ public:
     }
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(HandlerCall) handler,
+    async_shutdown (HandlerCall const& handler,
         boost::true_type)
     {
         return m_object.async_shutdown (handler);
