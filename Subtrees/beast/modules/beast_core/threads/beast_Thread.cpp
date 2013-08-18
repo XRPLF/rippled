@@ -40,7 +40,9 @@ Thread::~Thread()
        To avoid this type of nastiness, always make sure you call stopThread() before or during
        your subclass's destructor.
     */
-    fatal_assert (! isThreadRunning());
+    check_precondition (! isThreadRunning());
+
+    stopThread ();
 }
 
 //==============================================================================
