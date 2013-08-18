@@ -17,33 +17,24 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_OPENSSLINCLUDES_H_INCLUDED
+#define BEAST_OPENSSLINCLUDES_H_INCLUDED
 
-#include "system/beast_OpenSSLIncludes.h"
+#define OPENSSL_THREAD_DEFINES
+#include <openssl/opensslconf.h>
 
-#include "beast_asio.h"
+//------------------------------------------------------------------------------
 
-namespace beast
-{
+// Configure our settings based on what we find
+//
+#if defined(OPENSSL_THREADS)
+# ifndef BEAST_OPENSSL_MULTITHREADED
+#   define BEAST_OPENSSL_MULTITHREADED 1
+# endif
+#else
+# ifndef BEAST_OPENSSL_MULTITHREADED
+#  define BEAST_OPENSSL_MULTITHREADED 0
+# endif
+#endif
 
-#include "basics/beast_HandlerCall.cpp"
-#include "basics/beast_PeerRole.cpp"
-
-#include "sockets/beast_SocketBase.cpp"
-#include "sockets/beast_Socket.cpp"
-#include "sockets/beast_SslContext.cpp"
-
-#include "handshake/beast_HandshakeDetectLogicPROXY.cpp"
-
-#include "tests/beast_TestPeerBasics.cpp"
-#include "tests/beast_TestPeerLogic.cpp"
-#include "tests/beast_TestPeerLogicProxyClient.cpp"
-#include "tests/beast_TestPeerLogicSyncServer.cpp"
-#include "tests/beast_TestPeerLogicSyncClient.cpp"
-#include "tests/beast_TestPeerLogicAsyncServer.cpp"
-#include "tests/beast_TestPeerLogicAsyncClient.cpp"
-
-#include "tests/beast_PeerTest.cpp"
-#include "tests/beast_TestPeerUnitTests.cpp"
-
-}
+#endif
