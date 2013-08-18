@@ -214,7 +214,6 @@ public:
     void testProtocol ()
     {
         // These should pass.
-#if 0
         run <Protocol> (0, 0);
         run <Protocol> (MultiSocket::Flag::client_role, 0);
         run <Protocol> (0, MultiSocket::Flag::server_role);
@@ -226,13 +225,9 @@ public:
         testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl);
 
         testProxyFlags <Protocol> (MultiSocket::Flag::proxy, MultiSocket::Flag::proxy);
-#endif
-        for (int i = 0; i < 100; ++i)
-        testProxyFlags <Protocol> (MultiSocket::Flag::proxy, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
-#if 0
-        testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
         testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl_required);
-#endif
+//        testProxyFlags <Protocol> (MultiSocket::Flag::proxy, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
+//        testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
     }
 
     void runTest ()
