@@ -1315,6 +1315,9 @@
     <ClCompile Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicPROXY.cpp">
       <Filter>beast_asio\handshake</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\basics\beast_HandlerCall.cpp">
+      <Filter>beast_asio\basics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\TODO.txt" />
