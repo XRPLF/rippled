@@ -21,7 +21,7 @@ class OncePerSecond::TimerSingleton
     : public SharedSingleton <OncePerSecond::TimerSingleton>
     , private InterruptibleThread::EntryPoint
 {
-private:
+public:
     TimerSingleton ()
         : SharedSingleton <OncePerSecond::TimerSingleton> (
             SingletonLifetime::persistAfterCreation)

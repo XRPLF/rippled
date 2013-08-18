@@ -815,15 +815,6 @@
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_BufferType.h">
       <Filter>beast_asio\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\basics\beast_CompletionCall.h">
-      <Filter>beast_asio\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\basics\beast_ErrorCall.h">
-      <Filter>beast_asio\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\basics\beast_TransferCall.h">
-      <Filter>beast_asio\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\basics\beast_PeerRole.h">
       <Filter>beast_asio\basics</Filter>
     </ClInclude>
@@ -856,6 +847,12 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_InputParser.h">
       <Filter>beast_asio\handshake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\beast_HandlerCall.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\beast_ContainerDeletePolicy.h">
+      <Filter>beast_core\memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

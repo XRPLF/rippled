@@ -227,6 +227,7 @@ namespace beast
 #include "text/beast_CharPointer_UTF8.h"
 #include "text/beast_LexicalCast.h"
 
+#include "memory/beast_ContainerDeletePolicy.h"
 #include "time/beast_PerformedAtExit.h"
 #include "diagnostic/beast_LeakChecked.h"
 #include "memory/beast_ByteOrder.h"
