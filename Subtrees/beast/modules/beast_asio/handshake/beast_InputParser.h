@@ -80,8 +80,8 @@ struct Match
         if (state.passed ())
         {
             if (t == other)
-                return State::passed;
-            return State::failed;
+                return State::pass;
+            return State::fail;
         }
         return state;
     }
