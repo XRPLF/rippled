@@ -152,13 +152,11 @@ public:
         m_origHandler = ErrorCall (
             BOOST_ASIO_MOVE_CAST(HandshakeHandler)
                 (HandshakeHandler(init.handler)));
-        bassert (m_origBufferedHandler.isNull ());
         async_do_handshake (type, ConstBuffers ());
         return init.result.get();
 #else
         m_origHandler = ErrorCall (
             BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler));
-        bassert (m_origBufferedHandler.isNull ());
         async_do_handshake (type, ConstBuffers ());
 #endif
     }
@@ -184,13 +182,11 @@ public:
         m_origBufferedHandler = TransferCall (
             BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)
                 (BufferedHandshakeHandler(init.handler)));
-        bassert (m_origHandler.isNull ());
         async_do_handshake (type, ConstBuffers (buffers));
         return init.result.get();
 #else
         m_origBufferedHandler = TransferCall (
             BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler(handler)));
-        bassert (m_origHandler.isNull ());
         async_do_handshake (type, ConstBuffers (buffers));
 #endif
     }
@@ -245,6 +241,22 @@ public:
 
     void async_do_handshake (handshake_type type, ConstBuffers const& buffers)
     {
+        // Get the execution context from the original handler
+        // and signal the beginning of our composed operation.
+        //
+        if (m_origHandler.isNotNull ())
+        {
+            m_origHandler.beginComposed ();
+            m_context = m_origHandler.getContext ();
+        }
+        else
+        {
+            m_origBufferedHandler.beginComposed ();
+            m_context = m_origBufferedHandler.getContext ();
+        }
+
+        bassert (m_context.isNotNull ());
+
         // Transfer caller data to our buffer.
         // We commit the bytes in on_async_read_some.
         //
@@ -280,7 +292,11 @@ public:
                 if (! m_origBufferedHandler.isNull ())
                 {
                     bassert (m_origHandler.isNull ());
-                    // continuation?
+
+                    // The composed operation has completed and
+                    // the original handler will eventually get called.
+                    //
+                    m_origBufferedHandler.endComposed ();
                     m_callback->on_async_detect (m_logic.get (), ec,
                         ConstBuffers (m_buffer.data ()), m_origBufferedHandler);
                     
@@ -288,11 +304,12 @@ public:
                 }
             #endif
 
-                bassert (! m_origHandler.isNull ())
-                // continuation?
+                // The composed operation has completed and
+                // the original handler will eventually get called.
+                //
+                m_origHandler.endComposed ();
                 m_callback->on_async_detect (m_logic.get (), ec,
-                    ConstBuffers (m_buffer.data ()), m_origHandler);
-
+                   ConstBuffers (m_buffer.data ()), m_origHandler);
                 return;
             }
 
@@ -302,27 +319,33 @@ public:
             buffer_type::mutable_buffers_type buffers (m_buffer.prepare (
                 needed - available));
 
-            // need a continuation hook here?
-            m_next_layer.async_read_some (buffers, boost::bind (
-                &this_type::on_async_read_some, this, boost::asio::placeholders::error,
-                    boost::asio::placeholders::bytes_transferred));
+            // Perform the asynchronous operation using the context
+            // of the original handler. This ensures that we meet the
+            // execution safety requirements of the handler.
+            //
+            HandlerCall handler (boost::bind (
+                &this_type::on_async_read_some, this,
+                    boost::asio::placeholders::error,
+                        boost::asio::placeholders::bytes_transferred),
+                            HandlerCall::Read (), m_context);
+            m_next_layer.async_read_some (buffers, handler);
 
             return;
         }
 
+        // Error condition
+
     #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
         if (! m_origBufferedHandler.isNull ())
         {
-            bassert (m_origHandler.isNull ());
-            // continuation?
+            m_origBufferedHandler.endComposed ();
             m_callback->on_async_detect (m_logic.get (), ec,
                 ConstBuffers (m_buffer.data ()), m_origBufferedHandler);
             return;
         }
     #endif
 
-        bassert (! m_origHandler.isNull ())
-        // continuation?
+        m_origBufferedHandler.endComposed ();
         m_callback->on_async_detect (m_logic.get (), ec,
             ConstBuffers (m_buffer.data ()), m_origHandler);
     }
@@ -335,6 +358,7 @@ private:
     HandshakeDetectLogicType <Logic> m_logic;
     ErrorCall m_origHandler;
     TransferCall m_origBufferedHandler;
+    HandlerCall::Context m_context;
 };
 /** @} */
 

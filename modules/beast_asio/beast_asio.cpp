@@ -24,6 +24,7 @@
 namespace beast
 {
 
+#include "basics/beast_HandlerCall.cpp"
 #include "basics/beast_PeerRole.cpp"
 
 #include "sockets/beast_SocketBase.cpp"
