@@ -364,45 +364,39 @@ public:
     //--------------------------------------------------------------------------
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
-    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
+    async_accept (Socket& peer, HandlerCall const& handler)
     {
         using namespace SocketWrapperMemberChecks;
         typedef typename native_socket <this_layer_type>::socket_type socket_type;
-        return async_accept (peer, BOOST_ASIO_MOVE_CAST(HandlerCall)(handler),
+        return async_accept (peer, handler,
             EnableIf <has_async_accept <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
                     (socket_type&, BOOST_ASIO_MOVE_ARG(HandlerCall))>::value> ());
     }
 
-    template <typename AcceptHandler>
-    BEAST_ASIO_INITFN_RESULT_TYPE(HandlerCall, void (error_code))
-    async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler,
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
+    async_accept (Socket& peer, HandlerCall const& handler,
         boost::true_type)
     {
         using namespace SocketWrapperMemberChecks;
         return m_object.async_accept (
-            native_socket <this_layer_type> (peer).get (),
-                BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler));
+            native_socket <this_layer_type> (peer).get (), handler);
     }
 
-    template <typename AcceptHandler>
-    BEAST_ASIO_INITFN_RESULT_TYPE(AcceptHandler, void (error_code))
-    async_accept (Socket&, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler,
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
+    async_accept (Socket&, HandlerCall const& handler,
         boost::false_type)
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
-            AcceptHandler, void (error_code)> init(
-                BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler));
-        // init.handler is copied
+            HandlerCall, void (error_code)> init(handler);
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            AcceptHandler (init.handler), pure_virtual_error ()));
+            init.handler, pure_virtual_error ()));
         return init.result.get();
 
 #else
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler),
-                pure_virtual_error ()));
+            handler, pure_virtual_error ()));
 
 #endif
     }
@@ -472,33 +466,27 @@ public:
                     (MutableBuffers const&, BOOST_ASIO_MOVE_ARG(HandlerCall))>::value> ());
     }
 
-    template <typename MutableBufferSequence, typename ReadHandler>
-    BEAST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
-    async_read_some (MutableBufferSequence const& buffers, BOOST_ASIO_MOVE_ARG(ReadHandler) handler,
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
+    async_read_some (MutableBuffers const& buffers, HandlerCall const& handler,
         boost::true_type)
     {
-        return m_object.async_read_some (buffers,
-            BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
+        return m_object.async_read_some (buffers, handler);
     }
 
-    template <typename MutableBufferSequence, typename ReadHandler>
-    BEAST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
-    async_read_some (MutableBufferSequence const&, BOOST_ASIO_MOVE_ARG(ReadHandler) handler,
+    BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
+    async_read_some (MutableBuffers const&, HandlerCall const& handler,
         boost::false_type)
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
-            ReadHandler, void (error_code, std::size_t)> init(
-                BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
-        // init.handler is copied
+            HandlerCall, void (error_code, std::size_t)> init(handler);
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            ReadHandler (init.handler), pure_virtual_error (), 0));
+            init.handler, pure_virtual_error (), 0));
         return init.result.get();
 
 #else
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            BOOST_ASIO_MOVE_CAST(ReadHandler)(handler),
-                pure_virtual_error (), 0));
+            handler, pure_virtual_error (), 0));
 
 #endif
     }
@@ -506,40 +494,36 @@ public:
     //--------------------------------------------------------------------------
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
-    async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
+    async_write_some (ConstBuffers const& buffers, HandlerCall const& handler)
     {
         using namespace SocketWrapperMemberChecks;
-        return async_write_some (buffers, BOOST_ASIO_MOVE_CAST(HandlerCall)(handler),
+        return async_write_some (buffers, handler,
             EnableIf <has_async_write_some <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
-                    (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(HandlerCall))>::value> ());
+                    (ConstBuffers const&, HandlerCall const&)>::value> ());
     }
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
-    async_write_some (ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(HandlerCall) handler,
+    async_write_some (ConstBuffers const& buffers, HandlerCall const& handler,
         boost::true_type)
     {
-        return m_object.async_write_some (buffers,
-            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler));
+        return m_object.async_write_some (buffers, handler);
     }
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
-    async_write_some (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(HandlerCall) handler,
+    async_write_some (ConstBuffers const&, HandlerCall const& handler,
         boost::false_type)
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
-            HandlerCall, void (error_code, std::size_t)> init(
-                BOOST_ASIO_MOVE_CAST(HandlerCall)(handler));
-        // init.handler is copied
+            HandlerCall, void (error_code, std::size_t)> init(handler);
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            HandlerCall (init.handler), pure_virtual_error (), 0));
+            init.handler, pure_virtual_error (), 0));
         return init.result.get();
 
 #else
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler),
-                pure_virtual_error (), 0));
+            handler, pure_virtual_error (), 0));
 
 #endif
     }
@@ -585,39 +569,35 @@ public:
     //--------------------------------------------------------------------------
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
+    async_handshake (handshake_type type, HandlerCall const& handler)
     {
         using namespace SocketWrapperMemberChecks;
-        return async_handshake (type, BOOST_ASIO_MOVE_CAST(HandlerCall)(handler),
+        return async_handshake (type, handler,
             EnableIf <has_async_handshake <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
-                    (handshake_type, BOOST_ASIO_MOVE_ARG(HandlerCall))>::value> ());
+                    (handshake_type, HandlerCall const& handler)>::value> ());
     }
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
-    async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandlerCall) handler,
+    async_handshake (handshake_type type, HandlerCall const& handler,
         boost::true_type)
     {
-        return m_object.async_handshake (type,
-            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler));
+        return m_object.async_handshake (type, handler);
     }
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
-    async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(HandlerCall) handler,
+    async_handshake (handshake_type, HandlerCall const& handler,
         boost::false_type)
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
-            HandlerCall, void (error_code)> init(
-                BOOST_ASIO_MOVE_CAST(HandlerCall)(handler));
-        // init.handler is copied
+            HandlerCall, void (error_code)> init(handler);
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            HandlerCall (init.handler), pure_virtual_error ()));
+            init.handler, pure_virtual_error ()));
         return init.result.get();
 #else
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler),
-                pure_virtual_error ()));
+            handler, pure_virtual_error ()));
 #endif
     }
 
@@ -649,40 +629,36 @@ public:
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
     async_handshake (handshake_type type, ConstBuffers const& buffers,
-        BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
+        HandlerCall const& handler)
     {
         using namespace SocketWrapperMemberChecks;
-        return async_handshake (type, buffers, BOOST_ASIO_MOVE_CAST(HandlerCall)(handler),
+        return async_handshake (type, buffers, handler,
             EnableIf <has_async_handshake <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
                     (handshake_type, ConstBuffers const&, error_code&)>::value> ());
     }
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
-    async_handshake (handshake_type type, ConstBuffers const& buffers, BOOST_ASIO_MOVE_ARG(HandlerCall) handler,
+    async_handshake (handshake_type type, ConstBuffers const& buffers, HandlerCall const& handler,
         boost::true_type)
     {
-        return m_object.async_handshake (type, buffers,
-            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler));
+        return m_object.async_handshake (type, buffers, handler);
     }
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code, std::size_t))
-    async_handshake (handshake_type, ConstBuffers const&, BOOST_ASIO_MOVE_ARG(HandlerCall) handler,
+    async_handshake (handshake_type, ConstBuffers const&, HandlerCall const& handler,
         boost::false_type)
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
-            HandlerCall, void (error_code, std::size_t)> init(
-            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler));
-        // init.handler is copied
+            HandlerCall, void (error_code, std::size_t)> init(handler);
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            HandlerCall (init.handler), pure_virtual_error (), 0));
+            init.handler, pure_virtual_error (), 0));
         return init.result.get();
 
 #else
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler),
-                pure_virtual_error (), 0));
+            handler, pure_virtual_error (), 0));
 
 #endif
     }
@@ -713,40 +689,36 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void async_shutdown (BOOST_ASIO_MOVE_ARG(HandlerCall) handler)
+    void async_shutdown (HandlerCall const& handler)
     {
         using namespace SocketWrapperMemberChecks;
-        return async_shutdown (BOOST_ASIO_MOVE_CAST(HandlerCall)(handler),
+        return async_shutdown (handler,
             EnableIf <has_async_shutdown <this_layer_type,
                 BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
-                    (BOOST_ASIO_MOVE_ARG(HandlerCall))>::value> ());
+                    (HandlerCall const& handler)>::value> ());
     }
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
     async_shutdown (BOOST_ASIO_MOVE_ARG(HandlerCall) handler,
         boost::true_type)
     {
-        return m_object.async_shutdown (
-            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler));
+        return m_object.async_shutdown (handler);
     }
 
     BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (error_code))
-    async_shutdown (BOOST_ASIO_MOVE_ARG(HandlerCall) handler,
+    async_shutdown (HandlerCall const& handler,
         boost::false_type)
     {
 #if BEAST_ASIO_HAS_FUTURE_RETURNS
         boost::asio::detail::async_result_init<
-            HandlerCall, void (error_code, std::size_t)> init(
-                BOOST_ASIO_MOVE_CAST(HandlerCall)(handler));
-        // init.handler is copied
+            HandlerCall, void (error_code, std::size_t)> init(handler);
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            HandlerCall (init.handler), pure_virtual_error ()));
+            init.handler, pure_virtual_error ()));
         return init.result.get();
 
 #else
         get_io_service ().post (HandlerCall (HandlerCall::Post (),
-            BOOST_ASIO_MOVE_CAST(HandlerCall)(handler),
-                pure_virtual_error ()));
+            handler, pure_virtual_error ()));
 
 #endif
     }

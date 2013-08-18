@@ -252,7 +252,7 @@ bool HandlerCall::isFinal () const noexcept
     return m_call->getContext () == m_call.get ();
 }
 
-HandlerCall& HandlerCall::beginComposed () noexcept
+HandlerCall const& HandlerCall::beginComposed () const noexcept
 {
     // If this goes off it means that your handler is
     // already sharing a context with another handler!
@@ -263,7 +263,7 @@ HandlerCall& HandlerCall::beginComposed () noexcept
     return *this;
 }
 
-HandlerCall& HandlerCall::endComposed () noexcept
+HandlerCall const& HandlerCall::endComposed () const noexcept
 {
     // If this goes off it means that your handler is
     // already sharing a context with another handler!

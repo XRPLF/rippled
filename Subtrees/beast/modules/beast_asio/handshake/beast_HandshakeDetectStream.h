@@ -207,7 +207,7 @@ public:
         // Get the execution context from the original handler
         // and signal the beginning of our composed operation.
         //
-        m_origHandler.beginComposed ();
+        //m_origHandler.beginComposed ();
         m_context = m_origHandler.getContext ();
 
         bassert (m_context.isNotNull ());
@@ -246,7 +246,7 @@ public:
                 // The composed operation has completed and
                 // the original handler will eventually get called.
                 //
-                m_origHandler.endComposed ();
+                //m_origHandler.endComposed ();
                 m_callback->on_async_detect (m_logic.get (), ec,
                    ConstBuffers (m_buffer.data ()), m_origHandler);
                 return;
@@ -273,7 +273,7 @@ public:
 
         // Error condition
 
-        m_origHandler.endComposed ();
+        //m_origHandler.endComposed ();
         m_callback->on_async_detect (m_logic.get (), ec,
             ConstBuffers (m_buffer.data ()), m_origHandler);
     }

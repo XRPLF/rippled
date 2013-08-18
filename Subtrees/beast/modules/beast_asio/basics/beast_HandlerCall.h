@@ -384,7 +384,7 @@ public:
 
         @see isComposed, endComposed
     */
-    HandlerCall& beginComposed () noexcept;
+    HandlerCall const& beginComposed () const noexcept;
 
     /** Indicate the end of a composed operation.
 
@@ -393,7 +393,7 @@ public:
         own callback, using the original handler's context. To optimize the
         strategy for calling completion handlers, call beginComposed.
     */
-    HandlerCall& endComposed () noexcept;
+    HandlerCall const& endComposed () const noexcept;
 
     /** Invoke the wrapped handler.
 

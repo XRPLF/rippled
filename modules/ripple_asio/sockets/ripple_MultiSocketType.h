@@ -183,7 +183,7 @@ protected:
             // composed operation.
             //
             //handler.beginComposed ();
-            //m_context = handler.getContext ();
+            m_context = handler.getContext ();
             return stream ().async_handshake (type, handler);
         }
 

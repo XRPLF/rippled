@@ -226,8 +226,8 @@ public:
 
         testProxyFlags <Protocol> (MultiSocket::Flag::proxy, MultiSocket::Flag::proxy);
         testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl_required);
-//        testProxyFlags <Protocol> (MultiSocket::Flag::proxy, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
-//        testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
+        testProxyFlags <Protocol> (MultiSocket::Flag::proxy, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
+        testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
     }
 
     void runTest ()
