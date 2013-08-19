@@ -843,7 +843,7 @@ bool NetworkOPs::checkLastClosedLedger (const std::vector<Peer::pointer>& peerLi
         WriteLog (lsINFO, NetworkOPs) << "Acquiring consensus ledger " << closedLedger;
 
         if (!mAcquiringLedger || (mAcquiringLedger->getHash () != closedLedger))
-            mAcquiringLedger = getApp().getInboundLedgers ().findCreate (closedLedger, 0);
+            mAcquiringLedger = getApp().getInboundLedgers ().findCreate (closedLedger, 0, true);
 
         if (!mAcquiringLedger || mAcquiringLedger->isFailed ())
         {
@@ -2384,7 +2384,7 @@ void NetworkOPs::missingNodeInLedger (uint32 seq)
     uint256 hash = getApp().getLedgerMaster ().getHashBySeq (seq);
 
     if (hash.isNonZero ())
-        getApp().getInboundLedgers ().findCreate (hash, seq);
+        getApp().getInboundLedgers ().findCreate (hash, seq, false);
 }
 
 void NetworkOPs::doClusterReport ()

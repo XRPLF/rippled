@@ -480,7 +480,7 @@ void LedgerMaster::checkAccept (uint256 const& hash)
 
     if (!ledger)
     {
-        InboundLedger::pointer l = getApp().getInboundLedgers().findCreate(hash, 0);
+        InboundLedger::pointer l = getApp().getInboundLedgers().findCreate(hash, 0, false);
         if (l->isComplete() && !l->isFailed())
             ledger = l->getLedger();
     }
@@ -526,7 +526,7 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 
     if (!ledger)
     {
-        InboundLedger::pointer i = getApp().getInboundLedgers ().findCreate (hash, seq);
+        InboundLedger::pointer i = getApp().getInboundLedgers ().findCreate (hash, seq, false);
         if (!i->isDone() || !i->isComplete() || i->isFailed())
             return;
         ledger = i->getLedger();
@@ -598,7 +598,7 @@ void LedgerMaster::advanceThread()
                             {
                                 InboundLedger::pointer acq =
                                     getApp().getInboundLedgers().findCreate(nextLedger->getParentHash(),
-                                                                            nextLedger->getLedgerSeq() - 1);
+                                                                            nextLedger->getLedgerSeq() - 1, false);
                                 if (acq->isComplete() && !acq->isFailed())
                                     ledger = acq->getLedger();
                                 else if ((missing > 40000) && getApp().getOPs().shouldFetchPack(missing))
@@ -633,7 +633,7 @@ void LedgerMaster::advanceThread()
                                 uint32 seq = missing - i;
                                 uint256 hash = nextLedger->getLedgerHash(seq);
                                 if (hash.isNonZero())
-                                    getApp().getInboundLedgers().findCreate(hash, seq);
+                                    getApp().getInboundLedgers().findCreate(hash, seq, false);
                             }
                         }
                     }
@@ -735,7 +735,7 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish(boost::recursiv
 
             if (!ledger && (++acqCount < 4))
             { // We can try to acquire the ledger we need
-                InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (hash, seq);
+                InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (hash, seq, false);
 
                 if (!acq->isDone ())
                 {
@@ -749,7 +749,7 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish(boost::recursiv
                 {
                     WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
                     getApp().getInboundLedgers().dropLedger(hash);
-                    acq = getApp().getInboundLedgers().findCreate(hash, seq);
+                    acq = getApp().getInboundLedgers().findCreate(hash, seq, false);
                     if (acq->isComplete())
                     {
                         if (acq->isFailed())

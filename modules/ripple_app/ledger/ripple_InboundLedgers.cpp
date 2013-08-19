@@ -6,7 +6,7 @@
 
 typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
 
-InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 seq)
+InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 seq, bool couldBeNew)
 {
     assert (hash.isNonZero ());
     InboundLedger::pointer ret;
@@ -39,6 +39,8 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
                 ledger->setClosed ();
                 ledger->setImmutable ();
                 getApp().getLedgerMaster ().storeLedger (ledger);
+                if (couldBeNew)
+                    getApp().getLedgerMaster().checkAccept(ledger->getHash(), ledger->getLedgerSeq());
             }
         }
     }

@@ -26,7 +26,7 @@ public:
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
-    InboundLedger::pointer findCreate (uint256 const& hash, uint32 seq);
+    InboundLedger::pointer findCreate (uint256 const& hash, uint32 seq, bool bCouldBeNew);
 
     InboundLedger::pointer find (uint256 const& hash);
 
