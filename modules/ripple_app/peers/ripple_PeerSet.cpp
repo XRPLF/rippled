@@ -12,12 +12,11 @@ PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)
     , mTimeouts (0)
     , mComplete (false)
     , mFailed (false)
-    , mProgress (true)
     , mAggressive (false)
     , mTxnData (txnData)
     , mTimer (getApp().getIOService ())
 {
-    mLastAction = UptimeTimer::getInstance ().getElapsedSeconds ();
+    mLastAction = mLastProgress = UptimeTimer::getInstance ().getElapsedSeconds ();
     assert ((mTimerInterval > 10) && (mTimerInterval < 30000));
 }
 
@@ -51,17 +50,14 @@ void PeerSet::invokeOnTimer ()
     if (isDone ())
         return;
 
-    if (!mProgress)
+    if (!isProgress())
     {
         ++mTimeouts;
         WriteLog (lsWARNING, InboundLedger) << "Timeout(" << mTimeouts << ") pc=" << mPeers.size () << " acquiring " << mHash;
         onTimer (false, sl);
     }
     else
-    {
-        mProgress = false;
         onTimer (true, sl);
-    }
 
     if (!isDone ())
         setTimer ();

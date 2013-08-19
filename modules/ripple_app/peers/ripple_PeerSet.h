@@ -34,12 +34,12 @@ public:
     bool isActive ();
     void progress ()
     {
-        mProgress = true;
+        mLastProgress = UptimeTimer::getInstance().getElapsedSeconds();
         mAggressive = false;
     }
     bool isProgress ()
     {
-        return mProgress;
+        return (mLastProgress + (mTimerInterval / 1000)) > UptimeTimer::getInstance().getElapsedSeconds();
     }
     void touch ()
     {
@@ -93,10 +93,10 @@ protected:
     int mTimeouts;
     bool mComplete;
     bool mFailed;
-    bool mProgress;
     bool mAggressive;
     bool mTxnData;
     int mLastAction;
+    int mLastProgress;
 
 
     boost::recursive_mutex                  mLock;
