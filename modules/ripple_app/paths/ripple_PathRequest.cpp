@@ -332,21 +332,26 @@ void PathRequest::updateAll (Ledger::ref ledger, bool newOnly)
         bool remove = true;
         PathRequest::pointer pRequest = wRequest.lock ();
 
-        if (pRequest && (!newOnly || pRequest->isNew ()))
+        if (pRequest)
         {
-            InfoSub::pointer ipSub = pRequest->wpSubscriber.lock ();
-
-            if (ipSub)
-            {
-                Json::Value update;
-                {
-                    boost::recursive_mutex::scoped_lock sl (pRequest->mLock);
-                    pRequest->doUpdate (cache, false);
-                    update = pRequest->jvStatus;
-                }
-                update["type"] = "path_find";
-                ipSub->send (update, false);
+            if (newOnly && !pRequest->isNew ())
                 remove = false;
+            else
+            {
+                InfoSub::pointer ipSub = pRequest->wpSubscriber.lock ();
+
+                if (ipSub)
+                {
+                    Json::Value update;
+                    {
+                        boost::recursive_mutex::scoped_lock sl (pRequest->mLock);
+                        pRequest->doUpdate (cache, false);
+                        update = pRequest->jvStatus;
+                    }
+                    update["type"] = "path_find";
+                    ipSub->send (update, false);
+                    remove = false;
+                }
             }
         }
 
