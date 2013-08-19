@@ -18,7 +18,6 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
         if (it != mLedgers.end ())
         {
             ret = it->second;
-            ret->touch ();
             // FIXME: Should set the sequence if it's not set
         }
         else
@@ -60,7 +59,6 @@ InboundLedger::pointer InboundLedgers::find (uint256 const& hash)
         boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
         if (it != mLedgers.end ())
         {
-            it->second->touch ();
             ret = it->second;
         }
     }
