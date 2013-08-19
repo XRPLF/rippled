@@ -8,10 +8,7 @@ Vinnie's List: Changes day to day, descending priority
   (Items marked '*' can be handled by others.)
 
 - beast::Socket integration in Ripple
-- Socket implementation for PROXY protocol
-- Socket that supports multiple protcols
-- Unit tests for boost::asio wrappers
-- Review boost::asio wrappers and consolidation of network code in ripple_net
+- Configuration list for Jenkins
 - Deeply create directories specified in config settings
 - Finish unit tests and code for Validators
 * Document the command line options for the beast unit test framework
