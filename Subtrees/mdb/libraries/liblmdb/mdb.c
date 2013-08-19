@@ -383,7 +383,7 @@ static txnid_t mdb_debug_start;
 	 */
 #define	DKEY(x)	mdb_dkey(x, kbuf)
 #else
-#define	DKBUF	typedef int dummy_kbuf	/* so we can put ';' after */
+#define	DKBUF	do { } while (0)	/* so we can put ';' after */
 #define DKEY(x)	0
 #endif
 
