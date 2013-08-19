@@ -31,7 +31,7 @@ TEMPLATE = app
 CONFIG += console thread warn_off
 CONFIG -= qt gui
 
-linux-gg++:QMAKE_CXXFLAGS += \
+linux-g++:QMAKE_CXXFLAGS += \
     -Wall \
     -Wno-sign-compare \
     -Wno-char-subscripts \
@@ -39,6 +39,7 @@ linux-gg++:QMAKE_CXXFLAGS += \
     -Wno-unused-parameter \
     -Wformat \
     -O0 \
+    -std=c++11 \
     -pthread
 
 INCLUDEPATH += \
@@ -50,9 +51,8 @@ INCLUDEPATH += \
     $${PROTOS_DIR}
 
 OTHER_FILES += \
-    $$files(../../Subtrees/beast/*) \
-    $$files(../../Subtrees/beast/modules/beast_basics/diagnostic/*)
-
+#   $$files(../../Subtrees/beast/*) \
+#   $$files(../../Subtrees/beast/modules/beast_basics/diagnostic/*)
 #   $$files(../../Subtrees/beast/modules/beast_core/, true)
 #   $$files(../../modules/*, true) \
 
