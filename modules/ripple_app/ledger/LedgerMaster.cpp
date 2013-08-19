@@ -478,10 +478,15 @@ void LedgerMaster::checkAccept (uint256 const& hash)
 {
     Ledger::pointer ledger = mLedgerHistory.getLedgerByHash (hash);
 
+    if (!ledger)
+    {
+        InboundLedger::pointer l = getApp().getInboundLedgers().findCreate(hash, 0);
+        if (l->isComplete() && !l->isFailed())
+            ledger = l->getLedger();
+    }
+
     if (ledger)
         checkAccept (hash, ledger->getLedgerSeq ());
-    else
-        getApp().getInboundLedgers().findCreate(hash, 0);
 }
 
 void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
