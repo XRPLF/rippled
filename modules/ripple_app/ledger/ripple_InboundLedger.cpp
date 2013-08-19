@@ -137,7 +137,7 @@ bool InboundLedger::tryLocal ()
     return mComplete;
 }
 
-void InboundLedger::onTimer (bool progress, boost::recursive_mutex::scoped_lock&)
+void InboundLedger::onTimer (bool wasProgress, boost::recursive_mutex::scoped_lock&)
 {
     mRecentTXNodes.clear ();
     mRecentASNodes.clear ();
@@ -150,7 +150,7 @@ void InboundLedger::onTimer (bool progress, boost::recursive_mutex::scoped_lock&
         return;
     }
 
-    if (!progress)
+    if (!wasProgress)
     {
         if (isDone())
         {
