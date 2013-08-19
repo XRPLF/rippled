@@ -483,6 +483,10 @@ void LedgerMaster::checkAccept (uint256 const& hash)
         InboundLedger::pointer l = getApp().getInboundLedgers().findCreate(hash, 0, false);
         if (l->isComplete() && !l->isFailed())
             ledger = l->getLedger();
+        else
+        {
+            WriteLog (lsDEBUG, LedgerMaster) << "checkAccept triggers acquire " << hash.GetHex();
+        }
     }
 
     if (ledger)
@@ -514,8 +518,12 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
     else if (getApp().getOPs ().isNeedNetworkLedger ())
         minVal = 1;
 
-    if (getApp().getValidations ().getTrustedValidationCount (hash) < minVal) // nothing we can do
+    int tvc = getApp().getValidations().getTrustedValidationCount(hash);
+    if (tvc < minVal) // nothing we can do
+    {
+        WriteLog (lsTRACE, LedgerMaster) << "Only " << tvc << " validations for " << hash;
         return;
+    }
 
     WriteLog (lsINFO, LedgerMaster) << "Advancing accepted ledger to " << seq << " with >= " << minVal << " validations";
 
@@ -623,7 +631,7 @@ void LedgerMaster::advanceThread()
                                 mFillInProgress = true;
                                 getApp().getJobQueue().addJob(jtADVANCE, "tryFill", BIND_TYPE (&LedgerMaster::tryFill, this, ledger));
                                 sl.unlock();
-			    }
+                            }
                             progress = true;
                         }
                         else
@@ -648,7 +656,7 @@ void LedgerMaster::advanceThread()
                     {
                         WriteLog (lsDEBUG, LedgerMaster) << "tryAdvance found last valid changed";
                         progress = true;
-		    }
+                    }
                 }
             }
             else
@@ -756,7 +764,7 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish(boost::recursiv
                             getApp().getInboundLedgers().dropLedger(hash);
                         else
                             ledger = acq->getLedger();
-	            }
+                    }
                 }
             }
 
