@@ -8,7 +8,7 @@ SETUP_LOG (InboundLedger)
 
 // VFALCO TODO replace macros
 #define LA_DEBUG
-#define LEDGER_ACQUIRE_TIMEOUT      2000    // millisecond for each ledger timeout
+#define LEDGER_ACQUIRE_TIMEOUT      6000    // millisecond for each ledger timeout
 #define LEDGER_TIMEOUT_COUNT        10      // how many timeouts before we giveup
 #define LEDGER_TIMEOUT_AGGRESSIVE   6       // how many timeouts before we get aggressive
 
