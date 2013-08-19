@@ -213,6 +213,8 @@ void LedgerConsensus::handleLCL (uint256 const& lclHash)
         mHaveCorrectLCL = false;
         return;
     }
+    else
+        return;
 
     WriteLog (lsINFO, LedgerConsensus) << "Have the consensus ledger " << mPrevLedgerHash;
     mHaveCorrectLCL = true;
