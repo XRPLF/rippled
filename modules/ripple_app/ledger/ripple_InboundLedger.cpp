@@ -527,13 +527,15 @@ void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<u
 
     int dupCount = 0;
 
-    for (unsigned int i = 0; i < nodeIDs.size (); ++i)
+    BOOST_FOREACH(SHAMapNode const& nodeID, nodeIDs)
     {
-        bool isDup = recentNodes.count (nodeIDs[i]) != 0;
-        duplicates.push_back (isDup);
-
-        if (isDup)
+        if (recentNodes.count (nodeID) != 0)
+        {
+            duplicates.push_back (true);
             ++dupCount;
+        }
+        else
+            duplicates.push_back (false);
     }
 
     if (dupCount == nodeIDs.size ())
@@ -543,6 +545,7 @@ void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<u
         {
             nodeIDs.clear ();
             nodeHashes.clear ();
+            WriteLog (lsTRACE, InboundLedger) << "filterNodes: all are duplicates";
             return;
         }
     }
