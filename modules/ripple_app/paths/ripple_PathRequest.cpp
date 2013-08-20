@@ -16,6 +16,8 @@ PathRequest::PathRequest (const boost::shared_ptr<InfoSub>& subscriber)
     , jvStatus (Json::objectValue)
     , bValid (false)
     , bNew (true)
+    , iLastLevel (0)
+    , bLastSuccess (false)
 {
 }
 
@@ -266,6 +268,43 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
     Json::Value jvArray = Json::arrayValue;
 
+    int iLevel = iLastLevel;
+    bool loaded = getApp().getFeeTrack().isLoadedLocal();
+
+    if (iLevel == 0)
+    { // first pass
+        if (loaded)
+            iLevel = getConfig().PATH_SEARCH_FAST;
+        else if (!fast)
+            iLevel = getConfig().PATH_SEARCH_OLD;
+        else if (getConfig().PATH_SEARCH < getConfig().PATH_SEARCH_MAX)
+            iLevel = getConfig().PATH_SEARCH + 1; // start with an extra boost
+        else
+            iLevel = getConfig().PATH_SEARCH;
+    }
+    else if ((iLevel == getConfig().PATH_SEARCH_FAST) && !fast)
+    { // leaving fast pathfinding
+        iLevel = getConfig().PATH_SEARCH;
+        if (loaded && (iLevel > getConfig().PATH_SEARCH_FAST))
+            --iLevel;
+        else if (!loaded && (iLevel < getConfig().PATH_SEARCH))
+            ++iLevel;
+    }
+    else if (bLastSuccess)
+    { // decrement, if possible
+        if ((iLevel > getConfig().PATH_SEARCH) || (loaded && (iLevel > getConfig().PATH_SEARCH_FAST)))
+            --iLevel;
+    }
+    else
+    { // adjust as needed
+        if (!loaded && (iLevel < getConfig().PATH_SEARCH_MAX))
+            ++iLevel;
+        if (loaded && (iLevel > getConfig().PATH_SEARCH_FAST))
+            --iLevel;
+    }
+
+    bool found = false;
+
     BOOST_FOREACH (const currIssuer_t & currIssuer, sourceCurrencies)
     {
         {
@@ -273,12 +312,12 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             WriteLog (lsDEBUG, PathRequest) << "Trying to find paths: " << test.getFullText ();
         }
         bool valid;
-        STPathSet spsPaths;
+        STPathSet& spsPaths = mContext[currIssuer];
         Pathfinder pf (cache, raSrcAccount, raDstAccount,
                        currIssuer.first, currIssuer.second, saDstAmount, valid);
         CondLog (!valid, lsINFO, PathRequest) << "PF request not valid";
 
-        if (valid && pf.findPaths (getConfig ().PATH_SEARCH_SIZE - (fast ? 1 : 0), 3, spsPaths))
+        if (valid && pf.findPaths (iLevel, 4, spsPaths))
         {
             LedgerEntrySet                      lesSandbox (cache->getLedger (), tapNONE);
             std::vector<PathState::pointer>     vpsExpanded;
@@ -298,6 +337,7 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                 Json::Value jvEntry (Json::objectValue);
                 jvEntry["source_amount"]    = saMaxAmountAct.getJson (0);
                 jvEntry["paths_computed"]   = spsPaths.getJson (0);
+                found  = true;
                 jvArray.append (jvEntry);
             }
             else
@@ -310,6 +350,10 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             WriteLog (lsINFO, PathRequest) << "No paths found";
         }
     }
+
+    iLastLevel = iLevel;
+    bLastSuccess = found;
+
     jvStatus["alternatives"] = jvArray;
     return true;
 }

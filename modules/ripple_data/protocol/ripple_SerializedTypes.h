@@ -1164,6 +1164,12 @@ public:
         ;
     }
 
+    STPathElement ()
+        : mType (0)
+    {
+        ;
+    }
+
     int getNodeType () const
     {
         return mType;
@@ -1193,8 +1199,8 @@ public:
 
     bool operator== (const STPathElement& t) const
     {
-        return mType == t.mType && mAccountID == t.mAccountID && mCurrencyID == t.mCurrencyID &&
-               mIssuerID == t.mIssuerID;
+        return ((mType & typeAccount) == (t.mType & typeAccount)) && 
+            (mAccountID == t.mAccountID) && (mCurrencyID == t.mCurrencyID) && (mIssuerID == t.mIssuerID);
     }
 
 private:
@@ -1368,6 +1374,15 @@ public:
     {
         value.push_back (e);
     }
+    void addUniquePath (const STPath& e)
+    {
+        BOOST_FOREACH(const STPath& p, value)
+        {
+            if (p == e)
+                return;
+        }
+        value.push_back (e);
+    }
 
     bool assembleAdd(STPath const& base, STPathElement const& tail)
     { // assemble base+tail and add it to the set if it's not a duplicate
@@ -1397,6 +1412,15 @@ public:
     }
 
     void printDebug ();
+
+    STPath& operator[](size_t n)
+    {
+        return value[n];
+    }
+    STPath const& operator[](size_t n) const
+    {
+        return value[n];
+    }
 
     std::vector<STPath>::iterator begin ()
     {

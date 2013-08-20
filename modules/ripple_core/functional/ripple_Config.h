@@ -44,8 +44,10 @@ const int SYSTEM_WEBSOCKET_PUBLIC_PORT  = 6563; // XXX Going away.
 // Might connect with fewer for testing.
 #define DEFAULT_PEER_CONNECT_LOW_WATER  10
 
-// Grows exponentially worse.
-#define DEFAULT_PATH_SEARCH_SIZE        4
+#define DEFAULT_PATH_SEARCH_OLD         7
+#define DEFAULT_PATH_SEARCH             7
+#define DEFAULT_PATH_SEARCH_FAST        2
+#define DEFAULT_PATH_SEARCH_MAX         10
 
 enum SizedItemName
 {
@@ -291,7 +293,10 @@ public:
     //----------------------------------------------------------------------------
 
     // Path searching
-    int                         PATH_SEARCH_SIZE;
+    int                         PATH_SEARCH_OLD;
+    int                         PATH_SEARCH;
+    int                         PATH_SEARCH_FAST;
+    int                         PATH_SEARCH_MAX;
 
     // Validation
     RippleAddress               VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;

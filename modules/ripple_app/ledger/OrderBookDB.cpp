@@ -34,10 +34,12 @@ void OrderBookDB::setup (Ledger::ref ledger)
 
     mDestMap.clear ();
     mSourceMap.clear ();
+    mXRPBooks.clear ();
 
     WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB>";
 
     // walk through the entire ledger looking for orderbook entries
+    int books = 0;
     uint256 currentIndex = ledger->getFirstLedgerIndex ();
 
     while (currentIndex.isNonZero ())
@@ -62,13 +64,16 @@ void OrderBookDB::setup (Ledger::ref ledger)
 
                 mSourceMap[currencyIssuer_ct (ci, ii)].push_back (book);
                 mDestMap[currencyIssuer_ct (co, io)].push_back (book);
+                if (co.isZero())
+                    mXRPBooks.insert(currencyIssuer_ct (ci, ii));
+                ++books;
             }
         }
 
         currentIndex = ledger->getNextLedgerIndex (currentIndex);
     }
 
-    WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB<";
+    WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB< " << books << " books found";
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
@@ -83,6 +88,13 @@ void OrderBookDB::getBooksByTakerPays (const uint160& issuerID, const uint160& c
         bookRet = it->second;
     else
         bookRet.clear ();
+}
+
+bool OrderBookDB::isBookToXRP(const uint160& issuerID, const uint160& currencyID)
+{
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+    return mXRPBooks.count(currencyIssuer_ct(currencyID, issuerID)) > 0;
 }
 
 // return list of all orderbooks that give this issuerID and currencyID

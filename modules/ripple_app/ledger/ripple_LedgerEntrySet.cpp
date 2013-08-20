@@ -1142,7 +1142,7 @@ uint32 LedgerEntrySet::rippleTransferRate (const uint160& uIssuerID)
                                   ? sleAccount->getFieldU32 (sfTransferRate)
                                   : QUALITY_ONE;
 
-    WriteLog (lsDEBUG, LedgerEntrySet) << boost::str (boost::format ("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
+    WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("rippleTransferRate: uIssuerID=%s account_exists=%d transfer_rate=%f")
                                        % RippleAddress::createHumanAccountID (uIssuerID)
                                        % !!sleAccount
                                        % (uQuality / 1000000000.0));

@@ -72,7 +72,11 @@ Config::Config ()
 
     LEDGER_HISTORY          = 256;
 
-    PATH_SEARCH_SIZE        = DEFAULT_PATH_SEARCH_SIZE;
+    PATH_SEARCH_OLD         = DEFAULT_PATH_SEARCH_OLD;
+    PATH_SEARCH             = DEFAULT_PATH_SEARCH;
+    PATH_SEARCH_FAST        = DEFAULT_PATH_SEARCH_FAST;
+    PATH_SEARCH_MAX         = DEFAULT_PATH_SEARCH_MAX;
+
     ACCOUNT_PROBE_MAX       = 10;
 
     VALIDATORS_SITE         = DEFAULT_VALIDATORS_SITE;
@@ -502,8 +506,14 @@ void Config::load ()
                     LEDGER_HISTORY = lexicalCastThrow <uint32> (strTemp);
             }
 
-            if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_SIZE, strTemp))
-                PATH_SEARCH_SIZE    = lexicalCastThrow <int> (strTemp);
+            if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_OLD, strTemp))
+                PATH_SEARCH_OLD     = lexicalCastThrow <int> (strTemp);
+            if (SectionSingleB (secConfig, SECTION_PATH_SEARCH, strTemp))
+                PATH_SEARCH         = lexicalCastThrow <int> (strTemp);
+            if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_FAST, strTemp))
+                PATH_SEARCH_FAST    = lexicalCastThrow <int> (strTemp);
+            if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_MAX, strTemp))
+                PATH_SEARCH_MAX     = lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
                 ACCOUNT_PROBE_MAX   = lexicalCastThrow <int> (strTemp);

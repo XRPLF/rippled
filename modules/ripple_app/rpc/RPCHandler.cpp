@@ -159,7 +159,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
                 Pathfinder pf (cache, raSrcAddressID, dstAccountID,
                                saSendMax.getCurrency (), saSendMax.getIssuer (), saSend, bValid);
 
-                if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_SIZE, 3, spsPaths))
+                if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_OLD, 5, spsPaths))
                 {
                     WriteLog (lsDEBUG, RPCHandler) << "transactionSign: build_path: No paths found.";
 
@@ -1513,7 +1513,10 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, LoadType* loadType
             bool        bValid;
             Pathfinder  pf (cache, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
 
-            if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_SIZE, 3, spsComputed))
+            int level = getConfig().PATH_SEARCH_OLD;
+            if ((getConfig().PATH_SEARCH_MAX > level) && getApp().getFeeTrack().isLoadedLocal())
+                ++level;
+            if (!bValid || !pf.findPaths (level, 4, spsComputed))
             {
                 WriteLog (lsWARNING, RPCHandler) << "ripple_path_find: No paths found.";
             }

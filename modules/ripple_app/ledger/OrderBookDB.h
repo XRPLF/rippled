@@ -50,6 +50,8 @@ public:
     void getBooksByTakerGets (const uint160& issuerID, const uint160& currencyID,
                               std::vector<OrderBook::pointer>& bookRet);
 
+    bool isBookToXRP (const uint160& issuerID, const uint160& currencyID);
+
     BookListeners::pointer getBookListeners (const uint160& currencyPays, const uint160& currencyGets,
             const uint160& issuerPays, const uint160& issuerGets);
 
@@ -61,11 +63,12 @@ public:
 
 private:
     boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > mSourceMap;   // by ci/ii
+    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > mDestMap;     // by co/io
+    boost::unordered_set< currencyIssuer_t > mXRPBooks; // does an order book to XRP exist
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
     LockType mLock;
 
-    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > mDestMap;     // by co/io
 
     // issuerPays, issuerGets, currencyPays, currencyGets
     std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > > mListeners;
