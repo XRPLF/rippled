@@ -680,7 +680,6 @@ void LedgerMaster::advanceThread()
 
             getApp().getOPs().clearNeedNetworkLedger();
 
-            mPathFindNewLedger = true;
             if (!mPathFindThread)
             {
                 mPathFindThread = true;
@@ -832,26 +831,28 @@ void LedgerMaster::updatePaths ()
 
     do
     {
-        bool newOnly = false;
+        bool newOnly = true;
 
         {
             boost::recursive_mutex::scoped_lock ml (mLock);
 
-            if (mPathFindNewLedger || (lastLedger && (lastLedger.get () != mPubLedger.get ())))
-                lastLedger = mPubLedger;
+            if (!mPathLedger || (mPathLedger->getLedgerSeq() < mValidLedger->getLedgerSeq()))
+            { // We have a new valid ledger since the last full pathfinding
+                newOnly = false;
+                mPathLedger = mValidLedger;
+                lastLedger = mPathLedger;
+            }
             else if (mPathFindNewRequest)
-            {
+            { // We have a new request but no new ledger
                 newOnly = true;
                 lastLedger = boost::make_shared<Ledger> (boost::ref (*mCurrentLedger), false);
             }
             else
-            {
+            { // Nothing to do
                 mPathFindThread = false;
                 return;
             }
 
-            lastLedger = mPubLedger;
-            mPathFindNewLedger = false;
             mPathFindNewRequest = false;
         }
 

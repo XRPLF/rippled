@@ -27,7 +27,6 @@ public:
         , mAdvanceThread (false)
         , mFillInProgress (false)
         , mPathFindThread (false)
-        , mPathFindNewLedger (false)
         , mPathFindNewRequest (false)
     {
     }
@@ -203,9 +202,10 @@ private:
 
     Ledger::pointer mCurrentLedger;     // The ledger we are currently processiong
     Ledger::pointer mCurrentSnapshot;   // Snapshot of the current ledger
-    Ledger::pointer mClosedLedger;   // The ledger that most recently closed
+    Ledger::pointer mClosedLedger;      // The ledger that most recently closed
     Ledger::pointer mValidLedger;       // The highest-sequence ledger we have fully accepted
     Ledger::pointer mPubLedger;         // The last ledger we have published
+    Ledger::pointer mPathLedger;        // The last ledger we did pathfinding against
 
     LedgerHistory mLedgerHistory;
 
