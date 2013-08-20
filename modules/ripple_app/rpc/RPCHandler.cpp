@@ -1962,6 +1962,13 @@ Json::Value RPCHandler::doLedger (Json::Value params, LoadType* loadType, Applic
                               | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
                               | (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
+    if ((bFull || bAccounts) && getApp().getFeeTrack().isLoadedLocal() && (mRole != ADMIN))
+    {
+       WriteLog (lsDEBUG, Peer) << "Too busy to give full ledger";
+       return rpcError(rpcTOO_BUSY);
+    }
+
+
     Json::Value ret (Json::objectValue);
     lpLedger->addJson (ret, iOptions);
 
