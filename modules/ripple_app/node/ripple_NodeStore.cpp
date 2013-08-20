@@ -857,8 +857,6 @@ public:
     {
         int const seedValue = 50;
 
-        testBackend ("keyvadb", seedValue);
-
         testBackend ("leveldb", seedValue);
 
         testBackend ("sqlite", seedValue);
@@ -966,8 +964,6 @@ public:
     void runTest ()
     {
         int const seedValue = 50;
-
-        testBackend ("keyvadb", seedValue);
 
         testBackend ("leveldb", seedValue);
 
@@ -1133,8 +1129,6 @@ public:
 
     void runBackendTests (bool useEphemeralDatabase, int64 const seedValue)
     {
-        testNodeStore ("keyvadb", useEphemeralDatabase, true, seedValue);
-
         testNodeStore ("leveldb", useEphemeralDatabase, true, seedValue);
 
         testNodeStore ("sqlite", useEphemeralDatabase, true, seedValue);
@@ -1152,8 +1146,6 @@ public:
 
     void runImportTests (int64 const seedValue)
     {
-        //testImport ("keyvadb", "keyvadb", seedValue);
-
         testImport ("leveldb", "leveldb", seedValue);
 
     #if RIPPLE_HYPERLEVELDB_AVAILABLE
