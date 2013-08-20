@@ -40,6 +40,11 @@
     ProtectedCall (&funcThatMightThrow, 3);
 
     @endcode
+
+    Every Beast Thread object's @ref Thread::run method is wrapped in a
+    @ProtectedCall
+
+    @see Thread, Throw
 */
 class ProtectedCall
 {
@@ -60,10 +65,7 @@ public:
     };
 
     /** The default handler writes to std::cerr makes the process exit. */
-    class DefaultHandler : public Handler
-    {
-        void onException (Exception const& e) const;
-    };
+    class DefaultHandler;
 
     static void setHandler (Handler const& handler);
 
