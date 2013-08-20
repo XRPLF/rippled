@@ -277,9 +277,25 @@ bool CatchAny (Function <void (void)> f, bool returnFromException)
 
 //------------------------------------------------------------------------------
 
-void ProtectedCall::DefaultHandler::onException (ProtectedCall::Exception const&) const
+class ProtectedCall::DefaultHandler : public Handler
 {
-}
+public:
+    void onException (Exception const&) const
+    {
+        ScopedLockType lock (s_mutex);
+        fatal_error ("An unhandled exception was thrown");
+    }
+
+private:
+    typedef CriticalSection LockType;
+    typedef CriticalSection::ScopedLockType ScopedLockType;
+
+    static LockType s_mutex;
+};
+
+ProtectedCall::DefaultHandler::LockType ProtectedCall::DefaultHandler::s_mutex;
+
+//------------------------------------------------------------------------------
 
 Static::Storage <Atomic <ProtectedCall::Handler const*>, ProtectedCall>
     ProtectedCall::s_handler;
@@ -319,15 +335,19 @@ public:
     {
     }
 
+    void testThrow ()
+    {
+        throw std::runtime_error ("uncaught exception");
+    }
+
     void runTest ()
     {
-        beginTestCase ("backtrace");
+        beginTestCase ("throw");
 
-        String const s = SystemStats::getStackBacktrace ();
+        ProtectedCall (&ProtectedCallTests::testThrow, this);
 
-        logMessage (s);
-
-        pass ();
+        // If we get here then we failed
+        fail ();
     }
 };
 
