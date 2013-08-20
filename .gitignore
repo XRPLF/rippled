@@ -24,7 +24,7 @@ Debug/*.*
 Release/*.*
 
 # Ignore locally installed node_modules
-node_modules
+/node_modules
 
 # Ignore tmp directory.
 tmp
@@ -67,3 +67,6 @@ My Amplifier XE Results - RippleD
 # KeyvaDB files
 *.key
 *.val
+
+# Compiler intermediate output
+/out.txt
