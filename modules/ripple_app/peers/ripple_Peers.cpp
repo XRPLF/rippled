@@ -147,18 +147,36 @@ void Peers::start ()
 
 bool Peers::getTopNAddrs (int n, std::vector<std::string>& addrs)
 {
-    // XXX Filter out other local addresses (like ipv6)
-    Database*   db = getApp().getWalletDB ()->getDB ();
-    ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
 
-    SQL_FOREACH (db, str (boost::format ("SELECT IpPort FROM PeerIps LIMIT %d") % n) )
+    // Try current connections first
+    std::vector<Peer::pointer> peers = getPeerVector();
+    BOOST_FOREACH(Peer::ref peer, peers)
     {
-        std::string str;
-
-        db->getStr (0, str);
-
-        addrs.push_back (str);
+        if (peer->isConnected())
+        {
+            std::string connectString;
+            if (peer->getConnectString(connectString))
+                addrs.push_back(connectString);
+        }
     }
+
+    if (addrs.size() < n)
+    {
+        // XXX Filter out other local addresses (like ipv6)
+        Database*   db = getApp().getWalletDB ()->getDB ();
+        ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+
+        SQL_FOREACH (db, str (boost::format ("SELECT IpPort FROM PeerIps LIMIT %d") % n))
+        {
+            std::string str;
+
+            db->getStr (0, str);
+
+            addrs.push_back (str);
+        }
+    }
+
+    // FIXME: Should uniqify addrs
 
     return true;
 }

@@ -106,6 +106,14 @@ public:
     {
         return mIpPort.second;
     }
+    bool getConnectString(std::string& connect) const
+    {
+        if (!mHello.has_ipv4port() || mIpPortConnect.first.empty())
+            return false;
+        connect = boost::str(boost::format("%s:%d") % mIpPortConnect.first % mHello.ipv4port());
+        return true;
+    }
+
 
     void setIpPort (const std::string & strIP, int iPort);
 
@@ -1533,7 +1541,7 @@ void PeerImp::recvPeers (protocol::TMPeers& packet)
 
         if (strIP != "0.0.0.0" && strIP != "127.0.0.1")
         {
-            //WriteLog (lsINFO, Peer) << "Peer: Learning: " << addressToString(this) << ": " << i << ": " << strIP << " " << iPort;
+            WriteLog (lsDEBUG, Peer) << "Peer: Learning: " << addressToString(this) << ": " << i << ": " << strIP << " " << iPort;
 
             getApp().getPeers ().savePeer (strIP, iPort, UniqueNodeList::vsTold);
         }

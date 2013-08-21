@@ -73,6 +73,8 @@ public:
 
     virtual bool isOutbound () const = 0;
 
+    virtual bool getConnectString(std::string&) const = 0;
+
     virtual uint256 const& getClosedLedgerHash () const = 0;
 
     virtual bool hasLedger (uint256 const& hash, uint32 seq) const = 0;
