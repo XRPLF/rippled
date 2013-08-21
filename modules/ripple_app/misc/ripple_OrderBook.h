@@ -35,15 +35,30 @@ public:
                uint160 const& issuerIn,
                uint160 const& issuerOut);
 
-    uint256 const& getBookBase () const;
+    uint256 const& getBookBase () const
+    {
+        return mBookBase;
+    }
 
-    uint160 const& getCurrencyIn () const;
+    uint160 const& getCurrencyIn () const
+    {
+        return mCurrencyIn;
+    }
 
-    uint160 const& getCurrencyOut () const;
+    uint160 const& getCurrencyOut () const
+    {
+        return mCurrencyOut;
+    }
 
-    uint160 const& getIssuerIn () const;
+    uint160 const& getIssuerIn () const
+    {
+        return mIssuerIn;
+    }
 
-    uint160 const& getIssuerOut () const;
+    uint160 const& getIssuerOut () const
+    {
+        return mIssuerOut;
+    }
 
 
 private:
