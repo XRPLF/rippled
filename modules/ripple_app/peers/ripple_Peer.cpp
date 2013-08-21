@@ -110,7 +110,7 @@ public:
     {
         if (!mHello.has_ipv4port() || mIpPortConnect.first.empty())
             return false;
-        connect = boost::str(boost::format("%s:%d") % mIpPortConnect.first % mHello.ipv4port());
+        connect = boost::str(boost::format("%s %d") % mIpPortConnect.first % mHello.ipv4port());
         return true;
     }
 
@@ -1495,7 +1495,6 @@ void PeerImp::recvGetContacts (protocol::TMGetContacts& packet)
 
 // Return a list of your favorite people
 // TODO: filter out all the LAN peers
-// TODO: filter out the peer you are talking to
 void PeerImp::recvGetPeers (protocol::TMGetPeers& packet, Application::ScopedLockType& masterLockHolder)
 {
     masterLockHolder.unlock ();
@@ -1512,12 +1511,20 @@ void PeerImp::recvGetPeers (protocol::TMGetPeers& packet, Application::ScopedLoc
             std::string strIP;
             int         iPort;
 
-            splitIpPort (addrs[n], strIP, iPort);
+            try
+            {
+                splitIpPort (addrs[n], strIP, iPort);
+                // XXX This should also ipv6
+                protocol::TMIPv4EndPoint* addr = peers.add_nodes ();
+                addr->set_ipv4 (inet_addr (strIP.c_str ()));
+                addr->set_ipv4port (iPort);
+            }
+            catch (...)
+            {
+                WriteLog (lsWARNING, Peer) << "Bad peer in list: " << addrs[n];
+            }
+            
 
-            // XXX This should also ipv6
-            protocol::TMIPv4EndPoint* addr = peers.add_nodes ();
-            addr->set_ipv4 (inet_addr (strIP.c_str ()));
-            addr->set_ipv4port (iPort);
 
             //WriteLog (lsINFO, Peer) << "Peer: Teaching: " << addressToString(this) << ": " << n << ": " << strIP << " " << iPort;
         }
