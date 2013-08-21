@@ -1803,6 +1803,10 @@ Json::Value RPCHandler::doTxHistory (Json::Value params, LoadType* loadType, App
         return rpcError (rpcINVALID_PARAMS);
 
     unsigned int startIndex = params["start"].asUInt ();
+
+    if ((startIndex > 10000) &&  (mRole != ADMIN))
+        return rpcError (rpcNO_PERMISSION);
+
     Json::Value obj;
     Json::Value txs;
 
