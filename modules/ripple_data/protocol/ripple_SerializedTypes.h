@@ -1221,6 +1221,10 @@ public:
     {
         return mPath.size ();
     }
+    void reserve (size_t n)
+    {
+        mPath.reserve(n);
+    }
     bool isEmpty () const
     {
         return mPath.empty ();
@@ -1339,6 +1343,10 @@ public:
     int size () const
     {
         return value.size ();
+    }
+    void reserve (size_t n)
+    {
+        value.reserve(n);
     }
     const STPath& getPath (int off) const
     {
