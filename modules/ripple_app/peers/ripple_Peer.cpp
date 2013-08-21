@@ -1358,14 +1358,15 @@ void PeerImp::recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
         applyLoadCharge (LT_UnwantedData);
 }
 
-static void checkValidation (Job&, SerializedValidation::pointer val, uint256 signingHash,
-                             bool isTrusted, bool isCluster, boost::shared_ptr<protocol::TMValidation> packet, boost::weak_ptr<Peer> peer)
+static void checkValidation (Job&, SerializedValidation::pointer val, bool isTrusted, bool isCluster,
+                             boost::shared_ptr<protocol::TMValidation> packet, boost::weak_ptr<Peer> peer)
 {
 #ifndef TRUST_NETWORK
 
     try
 #endif
     {
+        uint256 signingHash = val->getSigningHash();
         if (!isCluster && !val->isValid (signingHash))
         {
             WriteLog (lsWARNING, Peer) << "Validation is invalid";
@@ -1421,9 +1422,7 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
         SerializerIterator sit (s);
         SerializedValidation::pointer val = boost::make_shared<SerializedValidation> (boost::ref (sit), false);
 
-        uint256 signingHash = val->getSigningHash ();
-
-        if (! getApp().getHashRouter ().addSuppressionPeer (signingHash, mPeerId))
+        if (! getApp().getHashRouter ().addSuppressionPeer (s.getSHA512Half(), mPeerId))
         {
             WriteLog (lsTRACE, Peer) << "Validation is duplicate";
             return;
@@ -1432,7 +1431,7 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
         bool isTrusted = getApp().getUNL ().nodeInUNL (val->getSignerPublic ());
         if (isTrusted || !getApp().getFeeTrack ().isLoadedLocal ())
             getApp().getJobQueue ().addJob (isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
-                                       BIND_TYPE (&checkValidation, P_1, val, signingHash, isTrusted, mCluster, packet,
+                                       BIND_TYPE (&checkValidation, P_1, val, isTrusted, mCluster, packet,
                                                boost::weak_ptr<Peer> (shared_from_this ())));
         else
             WriteLog(lsDEBUG, Peer) << "Dropping untrusted validation due to load";
