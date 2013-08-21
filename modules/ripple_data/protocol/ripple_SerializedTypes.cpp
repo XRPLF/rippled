@@ -466,7 +466,7 @@ bool STPathSet::isEquivalent (const SerializedType& t) const
     return v && (value == v->value);
 }
 
-bool STPath::hasSeen (const uint160& uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID)
+bool STPath::hasSeen (const uint160& uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID) const
 {
     for (int i = 0; i < mPath.size (); ++i)
     {

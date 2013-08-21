@@ -1241,7 +1241,7 @@ public:
     {
         mPath.clear ();
     }
-    bool hasSeen (const uint160& uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID);
+    bool hasSeen (const uint160& uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID) const;
     //  std::string getText() const;
     Json::Value getJson (int) const;
 
