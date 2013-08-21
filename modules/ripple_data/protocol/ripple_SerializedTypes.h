@@ -1369,6 +1369,27 @@ public:
         value.push_back (e);
     }
 
+    bool assembleAdd(STPath const& base, STPathElement const& tail)
+    { // assemble base+tail and add it to the set if it's not a duplicate
+        value.push_back (base);
+
+        std::vector<STPath>::reverse_iterator it = value.rbegin ();
+
+        STPath& newPath = *it;
+        newPath.mPath.push_back (tail);
+
+        while (++it != value.rend ())
+        {
+            if (it->mPath == newPath.mPath)
+            {
+                value.pop_back ();
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     virtual bool isEquivalent (const SerializedType& t) const;
     virtual bool isDefault () const
     {
