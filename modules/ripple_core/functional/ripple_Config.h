@@ -42,7 +42,7 @@ const int SYSTEM_WEBSOCKET_PUBLIC_PORT  = 6563; // XXX Going away.
 #define DEFAULT_PEER_START_MAX          5
 
 // Might connect with fewer for testing.
-#define DEFAULT_PEER_CONNECT_LOW_WATER  4
+#define DEFAULT_PEER_CONNECT_LOW_WATER  10
 
 // Grows exponentially worse.
 #define DEFAULT_PATH_SEARCH_SIZE        4
