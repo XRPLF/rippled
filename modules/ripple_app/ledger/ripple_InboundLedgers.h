@@ -64,8 +64,10 @@ public:
     void sweep ();
 
 private:
+    typedef boost::unordered_map <uint256, InboundLedger::pointer> MapType;
+
     boost::mutex mLock;
-    boost::unordered_map <uint256, InboundLedger::pointer> mLedgers;
+    MapType mLedgers;
     KeyCache <uint256, UptimeTimerAdapter> mRecentFailures;
 };
 

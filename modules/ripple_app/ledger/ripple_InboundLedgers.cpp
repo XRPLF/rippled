@@ -221,23 +221,41 @@ void InboundLedgers::sweep ()
 {
     mRecentFailures.sweep ();
 
-    int now = UptimeTimer::getInstance ().getElapsedSeconds ();
-    boost::mutex::scoped_lock sl (mLock);
+    int const now = UptimeTimer::getInstance ().getElapsedSeconds ();
 
-    boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.begin ();
-
-    while (it != mLedgers.end ())
+    // Make a list of things to sweep, while holding the lock
+    std::vector <MapType::mapped_type> stuffToSweep;
+    std::size_t total;
     {
-        if (it->second->getLastAction () > now)
+        boost::mutex::scoped_lock sl (mLock);
+        MapType::iterator it (mLedgers.begin ());
+        total = mLedgers.size ();
+        stuffToSweep.reserve (total);
+
+        while (it != mLedgers.end ())
         {
-            it->second->touch ();
-            ++it;
+            if (it->second->getLastAction () > now)
+            {
+                it->second->touch ();
+                ++it;
+            }
+            else if ((it->second->getLastAction () + 60) < now)
+            {
+                stuffToSweep.push_back (it->second);
+                // shouldn't cause the actual final delete
+                // since we are holding a reference in the vector.
+                it = mLedgers.erase (it);
+            }
+            else
+            {
+                ++it;
+            }
         }
-        else if ((it->second->getLastAction () + 60) < now)
-            it = mLedgers.erase (it);
-        else
-            ++it;
     }
+
+    WriteLog (lsDEBUG, InboundLedger) <<
+        "Sweeped " << stuffToSweep.size () <<
+        " out of " << total << " inbound ledgers.";
 }
 
 int InboundLedgers::getFetchCount (int& timeoutCount)
