@@ -155,11 +155,11 @@
     <Filter Include="beast_asio\basics">
       <UniqueIdentifier>{ccdc0c8e-f77a-486e-ba2f-29c10ec97f18}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\streams">
-      <UniqueIdentifier>{dfa79046-33ef-4653-a6f9-83954b76a10f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast_asio\handshake">
       <UniqueIdentifier>{4856837a-fa72-4252-8e8f-a112c1dbb3d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_asio\async">
+      <UniqueIdentifier>{beb81776-4aad-401d-8826-81478dbbf30b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -824,9 +824,6 @@
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ByteSwap.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\streams\beast_PrefilledReadStream.h">
-      <Filter>beast_asio\streams</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogic.h">
       <Filter>beast_asio\handshake</Filter>
     </ClInclude>
@@ -839,23 +836,38 @@
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicSSL3.h">
       <Filter>beast_asio\handshake</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectStream.h">
-      <Filter>beast_asio\handshake</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicPROXY.h">
       <Filter>beast_asio\handshake</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\basics\beast_HandlerCall.h">
-      <Filter>beast_asio\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ContainerDeletePolicy.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_InputParser.h">
-      <Filter>beast_asio\sockets</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\system\beast_OpenSSLIncludes.h">
       <Filter>beast_asio\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetector.h">
+      <Filter>beast_asio\handshake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_PrefilledReadStream.h">
+      <Filter>beast_asio\handshake</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\async\beast_ComposedAsyncOperation.h">
+      <Filter>beast_asio\async</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\async\beast_SharedHandler.h">
+      <Filter>beast_asio\async</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\async\beast_SharedHandlerAllocator.h">
+      <Filter>beast_asio\async</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\async\beast_SharedHandlerPtr.h">
+      <Filter>beast_asio\async</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\async\beast_SharedHandlerType.h">
+      <Filter>beast_asio\async</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_InputParser.h">
+      <Filter>beast_asio\handshake</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1318,8 +1330,11 @@
     <ClCompile Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicPROXY.cpp">
       <Filter>beast_asio\handshake</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\basics\beast_HandlerCall.cpp">
-      <Filter>beast_asio\basics</Filter>
+    <ClCompile Include="..\..\modules\beast_asio\system\beast_BoostUnitTests.cpp">
+      <Filter>beast_asio\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\async\beast_SharedHandler.cpp">
+      <Filter>beast_asio\async</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

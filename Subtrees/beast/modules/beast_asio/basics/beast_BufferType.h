@@ -34,21 +34,48 @@ public:
     typedef Buffer value_type;
     typedef typename std::vector <Buffer>::const_iterator const_iterator;
 
+    /** Construct a null buffer.
+        This is the equivalent of @ref asio::null_buffers.
+    */
     BufferType ()
         : m_size (0)
     {
     }
 
-    template <class OtherBuffers>
-    explicit BufferType (OtherBuffers const& buffers)
-        : m_size (0)
+    /** Construct a BufferType from an existing BufferSequence.
+        @see assign
+    */
+    template <class BufferSequence>
+    BufferType (BufferSequence const& buffers)
     {
+        assign (buffers);
+    }
+
+    /** Assign a BufferType from an existing BufferSequence.
+        @see assign
+    */
+    template <class BufferSequence>
+    BufferType <Buffer>& operator= (BufferSequence const& buffers)
+    {
+        return assign (buffers);
+    }
+
+    /** Assign a BufferType from an existing BufferSequence
+        A copy is not made. The data is still owned by the original
+        BufferSequence object. This merely points to that data.
+    */
+    template <class BufferSequence>
+    BufferType <Buffer>& assign (BufferSequence const& buffers)
+    {
+        m_size = 0;
+        m_buffers.clear ();
         m_buffers.reserve (std::distance (buffers.begin (), buffers.end ()));
-        BOOST_FOREACH (typename OtherBuffers::value_type buffer, buffers)
+        BOOST_FOREACH (typename BufferSequence::value_type buffer, buffers)
         {
             m_size += boost::asio::buffer_size (buffer);
             m_buffers.push_back (buffer);
         }
+        return *this;
     }
 
     /** Determine the total size of all buffers.
@@ -91,7 +118,10 @@ private:
     std::vector <Buffer> m_buffers;
 };
 
+/** A single linear read-only buffer. */
 typedef boost::asio::const_buffer ConstBuffer;
+
+/** A single linear writable buffer. */
 typedef boost::asio::mutable_buffer MutableBuffer;
 
 /** Meets the requirements of ConstBufferSequence */

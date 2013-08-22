@@ -142,4 +142,16 @@
 #define BEAST_DISABLE_CONTRACT_CHECKS 0
 #endif
 
+//------------------------------------------------------------------------------
+
+/** Config: BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
+
+    Setting this option makes Socket-derived classes generate compile errors if
+    they forget any of the virtual overrides As some Socket-derived classes
+    intentionally omit member functions that are not applicable, this macro
+    should only be enabled temporarily when writing your own Socket-derived class,
+    to make sure that the function signatures match as expected.
+*/
+#define BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES 0
+
 #endif

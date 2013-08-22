@@ -95,6 +95,12 @@ public:
 
     /** Returns true if the error condition indicates an aborted I/O. */
     static bool aborted (boost::system::error_code const& ec) noexcept;
+
+    /** Provides a place to set a breakpoint to catch a failed condition. */
+    static void breakpoint (boost::system::error_code const& ec);
+
+    /** Forces the variable to exist in the debugger. */
+    static void breakpoint (char const* const message);
 };
 
 #endif

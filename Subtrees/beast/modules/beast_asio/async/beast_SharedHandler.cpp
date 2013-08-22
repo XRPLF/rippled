@@ -17,26 +17,31 @@
 */
 //==============================================================================
 
-boost::system::error_code SocketBase::pure_virtual_error ()
+void SharedHandler::operator() ()
 {
-    return boost::system::errc::make_error_code (
-        boost::system::errc::function_not_supported);
+    pure_virtual_called (__FILE__, __LINE__);
 }
 
-boost::system::error_code SocketBase::pure_virtual_error (error_code& ec,
-    char const* fileName, int lineNumber)
+void SharedHandler::operator() (error_code const&)
 {
-    pure_virtual_called (fileName, lineNumber);
-    return ec = pure_virtual_error ();
+    pure_virtual_called (__FILE__, __LINE__);
 }
 
-void SocketBase::pure_virtual_called (char const* fileName, int lineNumber)
+void SharedHandler::operator() (error_code const&, std::size_t)
 {
+    pure_virtual_called (__FILE__, __LINE__);
+}
+
+void SharedHandler::pure_virtual_called (char const* fileName, int lineNumber)
+{
+    // These shouldn't be getting called. But since the object returned
+    // by most implementations of bind have operator() up to high arity
+    // levels, it is not generally possible to write a traits test that
+    // works in all scenarios for detecting a particular signature of a
+    // handler.
+    //
+    // We use Throw here so beast has a chance to dump the stack BEFORE
+    // the stack is unwound.
+    //
     Throw (std::runtime_error ("pure virtual called"), fileName, lineNumber);
-}
-
-void SocketBase::throw_error (error_code const& ec, char const* fileName, int lineNumber)
-{
-    if (ec)
-        Throw (boost::system::system_error (ec), fileName, lineNumber);
 }
