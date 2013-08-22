@@ -40,6 +40,10 @@ bool InboundLedger::checkLocal ()
     return false;
 }
 
+InboundLedger::~InboundLedger ()
+{
+}
+
 bool InboundLedger::tryLocal ()
 {
     // return value: true = no more work to do

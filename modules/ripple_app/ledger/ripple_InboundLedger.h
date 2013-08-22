@@ -22,10 +22,7 @@ public:
 public:
     InboundLedger (uint256 const& hash, uint32 seq);
 
-    virtual ~InboundLedger ()
-    {
-        ;
-    }
+    virtual ~InboundLedger ();
 
     bool isBase () const
     {
@@ -56,7 +53,7 @@ public:
         return mSeq;
     }
 
-    // VFALCO TODO Make thise the Listener / Observer pattern
+    // VFALCO TODO Make this the Listener / Observer pattern
     bool addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)>);
 
     bool takeBase (const std::string& data);
