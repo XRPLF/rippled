@@ -174,38 +174,18 @@ Ledger::Ledger (const std::string& rawLedger, bool hasPrefix) :
 
 Ledger::~Ledger ()
 {
-    double txDeleteSeconds = 0;
-
+    if (mTransactionMap)
     {
-        int64 const startTime (Time::getHighResolutionTicks ());
-
-        mTransactionMap.reset ();
-
-        txDeleteSeconds = Time::highResolutionTicksToSeconds (
-            Time::getHighResolutionTicks () - startTime);
+        logTimedDestroy <Ledger> (mTransactionMap,
+            String ("mTransactionMap with ") +
+                String::fromNumber (mTransactionMap->size ()) + " items");
     }
 
-    double acctDeleteSeconds = 0;
-
+    if (mAccountStateMap)
     {
-        int64 const startTime (Time::getHighResolutionTicks ());
-
-        mAccountStateMap.reset ();
-
-        acctDeleteSeconds = Time::highResolutionTicksToSeconds (
-            Time::getHighResolutionTicks () - startTime);
-    }
-
-    if (txDeleteSeconds >= 1)
-    {
-        WriteLog (lsWARNING, Ledger) << "mTransactionMap took " <<
-            String (txDeleteSeconds, 1) << " seconds to destroy.";
-    }
-
-    if (acctDeleteSeconds >= 1)
-    {
-        WriteLog (lsWARNING, Ledger) << "mAccountStateMap took " <<
-            String (acctDeleteSeconds, 1) << " seconds to destroy.";
+        logTimedDestroy <Ledger> (mAccountStateMap,
+            String ("mAccountStateMap with ") +
+                String::fromNumber (mAccountStateMap->size ()) + " items");
     }
 }
 

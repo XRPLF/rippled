@@ -1688,6 +1688,9 @@
     <ClInclude Include="..\..\modules\ripple_app\boost\ripple_SslContext.h">
       <Filter>[1] Ripple\ripple_app\boost</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_TimedDestroy.h">
+      <Filter>[1] Ripple\ripple_basics\utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\modules\ripple_data\protocol\ripple.proto">

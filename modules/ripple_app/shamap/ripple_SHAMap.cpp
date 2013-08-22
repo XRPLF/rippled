@@ -10,6 +10,28 @@
 
 SETUP_LOG (SHAMap)
 
+SHAMap::~SHAMap ()
+{
+    mState = smsInvalid;
+
+    logTimedDestroy <SHAMap> (mTNByID,
+        String ("mTNByID with ") +
+            String::fromNumber (mTNByID.size ()) + " items");
+
+    if (mDirtyNodes)
+    {
+        logTimedDestroy <SHAMap> (mDirtyNodes,
+            String ("mDirtyNodes with ") +
+                String::fromNumber (mDirtyNodes->size ()) + " items");
+    }
+
+    if (root)
+    {
+        logTimedDestroy <SHAMap> (root,
+            String ("root node"));
+    }
+}
+
 void SHAMapNode::setMHash () const
 {
     using namespace std;

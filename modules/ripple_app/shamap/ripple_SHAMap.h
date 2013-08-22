@@ -34,9 +34,11 @@ public:
     explicit SHAMap (SHAMapType t, uint32 seq = 1);
     SHAMap (SHAMapType t, uint256 const & hash);
 
-    ~SHAMap ()
+    ~SHAMap ();
+
+    std::size_t size () const noexcept
     {
-        mState = smsInvalid;
+        return mTNByID.size ();
     }
 
     // Returns a new map that's a snapshot of this one. Force CoW

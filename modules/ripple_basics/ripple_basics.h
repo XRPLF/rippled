@@ -90,6 +90,7 @@ using namespace beast;
 #include "utility/ripple_Sustain.h"
 #include "utility/ripple_ThreadName.h"
 #include "utility/ripple_Time.h"
+#include "utility/ripple_TimedDestroy.h"
 #include "utility/ripple_UptimeTimer.h"
 
 #include "types/ripple_UInt256.h"
