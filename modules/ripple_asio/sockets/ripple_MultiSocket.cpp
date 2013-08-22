@@ -261,7 +261,7 @@ public:
         timeoutSeconds = 10
     };
 
-    MultiSocketTests () : UnitTest ("MultiSocket", "ripple", runManual)
+    MultiSocketTests () : UnitTest ("MultiSocket", "ripple")
     {
     }
 };
