@@ -108,12 +108,19 @@ public:
 
     void close()
     {
-        m_next_layer.close();
+        error_code ec;
+        if (close(ec))
+            throw_error (ec, __FILE__, __LINE__);
+        return ec;
     }
 
-    error_code close(error_code& ec)
+    error_code close (error_code& ec)
     {
-        return m_next_layer.close(ec);
+        // VFALCO NOTE This is questionable. We can't
+        // call m_next_layer.close() because Stream might not
+        // support that function. For example, ssl::stream has no close()
+        //
+        return lowest_layer ().close(ec);
     }
 
     template <typename MutableBufferSequence>
