@@ -40,15 +40,36 @@
 // Must come before boost includes to fix the bost placeholders.
 #include "../beast_core/beast_core.h"
 
-/* This module requires boost and possibly OpenSSL */
+// This module requires boost and possibly OpenSSL
 #include "system/beast_BoostIncludes.h"
+
+// Checking overrides replaces unimplemented stubs with pure virtuals
+#ifndef BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
+# define BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES 0
+#endif
+#if BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
+# define BEAST_SOCKET_VIRTUAL = 0
+#else
+# define BEAST_SOCKET_VIRTUAL
+#endif
+
+// A potentially dangerous but powerful feature which
+// might need to be turned off to see if it fixes anything.
+//
+#ifndef BEAST_USE_HANDLER_ALLOCATIONS
+# define BEAST_USE_HANDLER_ALLOCATIONS 1
+#endif
 
 namespace beast
 {
 
 // Order matters
+  #include "async/beast_SharedHandler.h"
+ #include "async/beast_SharedHandlerType.h"
+ #include "async/beast_SharedHandlerPtr.h"
+ #include "async/beast_ComposedAsyncOperation.h"
+#include "async/beast_SharedHandlerAllocator.h"
 
-#include "basics/beast_HandlerCall.h"
 #include "basics/beast_BufferType.h"
 #include "basics/beast_FixedInputBuffer.h"
 #include "basics/beast_PeerRole.h"
@@ -63,9 +84,8 @@ namespace beast
 #include "handshake/beast_HandshakeDetectLogicPROXY.h"
 #include "handshake/beast_HandshakeDetectLogicSSL2.h"
 #include "handshake/beast_HandshakeDetectLogicSSL3.h"
-#include "handshake/beast_HandshakeDetectStream.h"
-
-#include "streams/beast_PrefilledReadStream.h"
+#include "handshake/beast_HandshakeDetector.h"
+#include "handshake/beast_PrefilledReadStream.h"
 
 #include "tests/beast_TestPeerBasics.h"
 #include "tests/beast_TestPeer.h"

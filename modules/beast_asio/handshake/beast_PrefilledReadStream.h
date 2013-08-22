@@ -72,10 +72,10 @@ public:
     template <typename ConstBufferSequence>
     void fill (ConstBufferSequence const& buffers)
     {
-        using namespace boost;
         // We don't assume the caller's buffers will
         // remain valid for the lifetime of this object.
         //
+        using namespace boost;
         m_buffer.commit (asio::buffer_copy (
             m_buffer.prepare (asio::buffer_size (buffers)),
                 buffers));
@@ -116,76 +116,6 @@ public:
         return m_next_layer.close(ec);
     }
 
-    template <typename ConstBufferSequence>
-    std::size_t write_some (ConstBufferSequence const& buffers)
-    {
-        return m_next_layer.write_some (buffers);
-    }
-
-    template <typename ConstBufferSequence>
-    std::size_t write_some (ConstBufferSequence const& buffers, error_code& ec)
-    {
-        return m_next_layer.write_some (buffers, ec);
-    }
-
-    template <typename MutableBufferSequence>
-    std::size_t read_some (MutableBufferSequence const& buffers, error_code& ec)
-    {
-        ec = error_code ();
-        if (m_buffer.size () > 0)
-        {
-            std::size_t const bytes_transferred = boost::asio::buffer_copy (
-                buffers, m_buffer.data ());
-            m_buffer.consume (bytes_transferred);
-            return bytes_transferred;
-        }
-        return m_next_layer.read_some (buffers, ec);
-    }
-
-    template <typename MutableBufferSequence, typename ReadHandler>
-    BEAST_ASIO_INITFN_RESULT_TYPE(ReadHandler, void (error_code, std::size_t))
-    async_read_some (MutableBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
-    {
-        using namespace boost;
-        if (m_buffer.size () > 0)
-        {
-            std::size_t const bytes_transferred = asio::buffer_copy (
-                buffers, m_buffer.data ());
-            m_buffer.consume (bytes_transferred);
-
-#if BEAST_ASIO_HAS_FUTURE_RETURNS
-            asio::detail::async_result_init <
-                ReadHandler, void (error_code, std::size_t)> init (
-                    BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
-
-            get_io_service ().post (HandlerCall (HandlerCall::Post (),
-                ReadHandler(init.handler), // handler is copied
-                    error_code (), bytes_transferred));
-
-            return init.result.get();
-
-#else
-            return get_io_service ().post (HandlerCall (HandlerCall::Post (),
-                BOOST_ASIO_MOVE_CAST(ReadHandler)(handler),
-                    error_code (), bytes_transferred));
-
-#endif
-        }
-
-        return m_next_layer.async_read_some (buffers,
-            BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
-    }
-
-    template <typename ConstBufferSequence, typename WriteHandler>
-    BEAST_ASIO_INITFN_RESULT_TYPE(WriteHandler, void (error_code, std::size_t))
-    async_write_some (ConstBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
-    {
-        return m_next_layer.async_write_some (buffers,
-            BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
-    }
-
     template <typename MutableBufferSequence>
     std::size_t read_some (MutableBufferSequence const& buffers)
     {
@@ -194,6 +124,62 @@ public:
         if (ec)
             throw_error (ec, __FILE__, __LINE__);
         return amount;
+    }
+
+    template <typename MutableBufferSequence>
+    std::size_t read_some (MutableBufferSequence const& buffers, error_code& ec)
+    {
+        if (m_buffer.size () > 0)
+        {
+            ec = error_code ();
+            std::size_t const bytes_transferred = boost::asio::buffer_copy (
+                buffers, m_buffer.data ());
+            m_buffer.consume (bytes_transferred);
+            return bytes_transferred;
+        }
+        return m_next_layer.read_some (buffers, ec);
+    }
+
+    template <typename ConstBufferSequence>
+    std::size_t write_some (ConstBufferSequence const& buffers)
+    {
+        error_code ec;
+        std::size_t const amount = write_some (buffers, ec);
+        if (ec)
+            throw_error (ec, __FILE__, __LINE__);
+        return amount;
+    }
+
+    template <typename ConstBufferSequence>
+    std::size_t write_some (ConstBufferSequence const& buffers, error_code& ec)
+    {
+        return m_next_layer.write_some (buffers, ec);
+    }
+
+    template <typename MutableBufferSequence, typename ReadHandler>
+    void async_read_some (MutableBufferSequence const& buffers,
+        BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
+    {
+        if (m_buffer.size () > 0)
+        {
+            std::size_t const bytes_transferred = boost::asio::buffer_copy (
+                buffers, m_buffer.data ());
+            m_buffer.consume (bytes_transferred);
+            get_io_service ().wrap (
+                BOOST_ASIO_MOVE_CAST(ReadHandler)(handler)) (
+                    error_code (), bytes_transferred);
+            return;
+        }
+        m_next_layer.async_read_some (buffers,
+            BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
+    }
+
+    template <typename ConstBufferSequence, typename WriteHandler>
+    void async_write_some (ConstBufferSequence const& buffers,
+        BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
+    {
+        m_next_layer.async_write_some (buffers,
+            BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
     }
 
 private:

@@ -26,7 +26,8 @@
 namespace beast
 {
 
-#include "basics/beast_HandlerCall.cpp"
+#include "async/beast_SharedHandler.cpp"
+
 #include "basics/beast_PeerRole.cpp"
 
 #include "sockets/beast_SocketBase.cpp"
@@ -35,6 +36,7 @@ namespace beast
 
 #include "handshake/beast_HandshakeDetectLogicPROXY.cpp"
 
+#include "tests/beast_PeerTest.cpp"
 #include "tests/beast_TestPeerBasics.cpp"
 #include "tests/beast_TestPeerLogic.cpp"
 #include "tests/beast_TestPeerLogicProxyClient.cpp"
@@ -42,8 +44,8 @@ namespace beast
 #include "tests/beast_TestPeerLogicSyncClient.cpp"
 #include "tests/beast_TestPeerLogicAsyncServer.cpp"
 #include "tests/beast_TestPeerLogicAsyncClient.cpp"
-
-#include "tests/beast_PeerTest.cpp"
 #include "tests/beast_TestPeerUnitTests.cpp"
+
+#include "system/beast_BoostUnitTests.cpp"
 
 }

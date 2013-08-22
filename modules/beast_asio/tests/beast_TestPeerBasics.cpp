@@ -104,7 +104,10 @@ bool TestPeerBasics::success (boost::system::error_code const& ec, bool eofIsOka
 {
     if (eofIsOkay && ec == boost::asio::error::eof)
         return true;
-    return ! ec;
+    if (! ec)
+        return true;
+    breakpoint (ec);
+    return false;
 }
 
 bool TestPeerBasics::failure (boost::system::error_code const& ec, bool eofIsOkay) noexcept
@@ -115,9 +118,14 @@ bool TestPeerBasics::failure (boost::system::error_code const& ec, bool eofIsOka
 bool TestPeerBasics::expected (bool condition, boost::system::error_code& ec) noexcept
 {
     if (condition)
+    {
         ec = boost::system::error_code ();
+    }
     else
+    {
         make_error (errc::unexpected, ec);
+        breakpoint (ec);
+    }
     return condition;
 }
 
@@ -133,3 +141,15 @@ bool TestPeerBasics::aborted (boost::system::error_code const& ec) noexcept
 
 //------------------------------------------------------------------------------
 
+void TestPeerBasics::breakpoint (boost::system::error_code const& ec)
+{
+    // Set a breakpoint here to catch a failure
+    std::string const& message = ec.message ();
+    char const* const c_str = message.c_str ();
+
+    breakpoint (c_str);
+}
+
+void TestPeerBasics::breakpoint (char const* const)
+{
+}

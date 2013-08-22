@@ -20,21 +20,30 @@
 #ifndef BEAST_SOCKETBASE_H_INCLUDED
 #define BEAST_SOCKETBASE_H_INCLUDED
 
-/** Implementation details for Socket.
+/** Common implementation details for Socket and related classes.
     Normally you wont need to use this.
 */
 struct SocketBase
 {
-    static boost::system::error_code pure_virtual_error ();
-    static boost::system::error_code pure_virtual (boost::system::error_code& ec);
-    static void pure_virtual ();
+protected:
+    typedef boost::system::error_code error_code;
 
-    /** Called when the underlying object does not support the interface. */
-    void throw_error (boost::system::error_code const& ec)
-    {
-        if (ec)
-            Throw (boost::system::system_error (ec), __FILE__, __LINE__);
-    }
+    /** The error returned when a pure virtual is called.
+        This is mostly academic since a pure virtual call generates
+        a fatal error but in case that gets disabled, this will at
+        least return a suitable error code.
+    */
+    static error_code pure_virtual_error ();
+
+    /** Convenience for taking a reference and returning the error_code. */
+    static error_code pure_virtual_error (error_code& ec,
+        char const* fileName, int lineNumber);
+
+    /** Called when a function doesn't support the interface. */
+    static void pure_virtual_called (char const* fileName, int lineNumber);
+
+    /** Called when synchronous functions without error parameters get an error. */
+    static void throw_error (error_code const& ec, char const* fileName, int lineNumber);
 };
 
 #endif

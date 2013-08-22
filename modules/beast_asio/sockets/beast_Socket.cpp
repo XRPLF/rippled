@@ -21,6 +21,8 @@ Socket::~Socket ()
 {
 }
 
+#if ! BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
+
 //-----------------------------------------------------------------------------
 //
 // basic_io_object
@@ -28,7 +30,7 @@ Socket::~Socket ()
 
 boost::asio::io_service& Socket::get_io_service ()
 {
-    pure_virtual ();
+    pure_virtual_called (__FILE__, __LINE__);
     return *static_cast <boost::asio::io_service*>(nullptr);
 }
 
@@ -39,29 +41,29 @@ boost::asio::io_service& Socket::get_io_service ()
 
 void* Socket::lowest_layer (char const*) const
 {
-    pure_virtual ();
+    pure_virtual_called (__FILE__, __LINE__);
     return nullptr;
 }
 
 void* Socket::native_handle (char const*) const
 {
-    pure_virtual ();
+    pure_virtual_called (__FILE__, __LINE__);
     return nullptr;
 }
 
 boost::system::error_code Socket::cancel (boost::system::error_code& ec)
 {
-    return pure_virtual (ec);
+    return pure_virtual_error (ec, __FILE__, __LINE__);
 }
 
 boost::system::error_code Socket::shutdown (shutdown_type, boost::system::error_code& ec)
 {
-    return pure_virtual (ec);
+    return pure_virtual_error (ec, __FILE__, __LINE__);
 }
 
 boost::system::error_code Socket::close (boost::system::error_code& ec)
 {
-    return pure_virtual (ec);
+    return pure_virtual_error (ec, __FILE__, __LINE__);
 }
 
 //------------------------------------------------------------------------------
@@ -71,22 +73,14 @@ boost::system::error_code Socket::close (boost::system::error_code& ec)
 
 boost::system::error_code Socket::accept (Socket&, boost::system::error_code& ec)
 {
-    return pure_virtual (ec);
+    return pure_virtual_error (ec, __FILE__, __LINE__);
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (boost::system::error_code))
-Socket::async_accept (Socket&, HandlerCall const& handler)
+void Socket::async_accept (Socket&, SharedHandlerPtr handler)
 {
-#if BEAST_ASIO_HAS_FUTURE_RETURNS
-    boost::asio::detail::async_result_init<
-        HandlerCall, void (boost::system::error_code)> init( handler);
-    get_io_service ().post (HandlerCall (HandlerCall::Post (),
-        handler, pure_virtual_error ()));
-    return init.result.get();
-#else
-    get_io_service ().post (HandlerCall (HandlerCall::Post(),
-        handler, pure_virtual_error ()));
-#endif
+    get_io_service ().wrap (
+        BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
+            (pure_virtual_error ());
 }
 
 //------------------------------------------------------------------------------
@@ -96,44 +90,30 @@ Socket::async_accept (Socket&, HandlerCall const& handler)
 
 std::size_t Socket::read_some (MutableBuffers const&, boost::system::error_code& ec)
 {
-    pure_virtual (ec);
+    pure_virtual_called (__FILE__, __LINE__);
+    ec = pure_virtual_error ();
     return 0;
 }
 
 std::size_t Socket::write_some (ConstBuffers const&, boost::system::error_code& ec)
 {
-    pure_virtual (ec);
+    pure_virtual_called (__FILE__, __LINE__);
+    ec = pure_virtual_error ();
     return 0;
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (boost::system::error_code, std::size_t))
-Socket::async_read_some (MutableBuffers const&, HandlerCall const& handler)
+void Socket::async_read_some (MutableBuffers const&, SharedHandlerPtr handler)
 {
-#if BEAST_ASIO_HAS_FUTURE_RETURNS
-    boost::asio::detail::async_result_init<
-        HandlerCall, void (boost::system::error_code, std::size_t)> init(handler);
-    get_io_service ().post (HandlerCall (HandlerCall::Post (),
-        handler, pure_virtual_error (), 0));
-    return init.result.get();
-#else
-    get_io_service ().post (HandlerCall (HandlerCall::Post (),
-        handler , pure_virtual_error (), 0));
-#endif
+    get_io_service ().wrap (
+        BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
+            (pure_virtual_error (), 0);
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (boost::system::error_code, std::size_t))
-Socket::async_write_some (ConstBuffers const&, HandlerCall const& handler)
+void Socket::async_write_some (ConstBuffers const&, SharedHandlerPtr handler)
 {
-#if BEAST_ASIO_HAS_FUTURE_RETURNS
-    boost::asio::detail::async_result_init<
-        HandlerCall, void (boost::system::error_code, std::size_t)> init(handler);
-    get_io_service ().post (HandlerCall (HandlerCall::Post (),
-        handler, pure_virtual_error (), 0));
-    return init.result.get();
-#else
-    get_io_service ().post (HandlerCall (HandlerCall::Post (),
-        handler, pure_virtual_error (), 0));
-#endif
+    get_io_service ().wrap (
+        BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
+            (pure_virtual_error (), 0);
 }
 
 //--------------------------------------------------------------------------
@@ -148,22 +128,14 @@ bool Socket::needs_handshake ()
 
 boost::system::error_code Socket::handshake (handshake_type, boost::system::error_code& ec)
 {
-    return pure_virtual (ec);
+    return pure_virtual_error (ec, __FILE__, __LINE__);
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (boost::system::error_code))
-Socket::async_handshake (handshake_type, HandlerCall const& handler)
+void Socket::async_handshake (handshake_type, SharedHandlerPtr handler)
 {
-#if BEAST_ASIO_HAS_FUTURE_RETURNS
-    boost::asio::detail::async_result_init<
-        HandlerCall, void (boost::system::error_code)> init( handler);
-    get_io_service ().post (HandlerCall (HandlerCall::Post (),
-        handler, pure_virtual_error ()));
-    return init.result.get();
-#else
-    get_io_service ().post (HandlerCall (HandlerCall::Post(),
-        handler, pure_virtual_error ()));
-#endif
+    get_io_service ().wrap (
+        BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
+            (pure_virtual_error ());
 }
 
 #if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
@@ -171,44 +143,30 @@ Socket::async_handshake (handshake_type, HandlerCall const& handler)
 boost::system::error_code Socket::handshake (handshake_type,
     ConstBuffers const&, boost::system::error_code& ec)
 {
-    return pure_virtual (ec);
+    return pure_virtual_error (ec, __FILE__, __LINE__);
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (boost::system::error_code, std::size_t))
-Socket::async_handshake (handshake_type, ConstBuffers const&, HandlerCall const& handler)
+void Socket::async_handshake (handshake_type, ConstBuffers const&, SharedHandlerPtr handler)
 {
-#if BEAST_ASIO_HAS_FUTURE_RETURNS
-    boost::asio::detail::async_result_init<
-        HandlerCall, void (boost::system::error_code, std::size_t)> init(handler);
-    get_io_service ().post (HandlerCall (HandlerCall::Post (),
-        handler, pure_virtual_error (), 0));
-    return init.result.get();
-#else
-    get_io_service ().post (HandlerCall (HandlerCall::Post (),
-        handler , pure_virtual_error (), 0));
-#endif
+    get_io_service ().wrap (
+        BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
+            (pure_virtual_error (), 0);
 }
 
 #endif
 
 boost::system::error_code Socket::shutdown (boost::system::error_code& ec)
 {
-    return pure_virtual (ec);
+    return pure_virtual_error (ec, __FILE__, __LINE__);
 }
 
-BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(HandlerCall, void (boost::system::error_code))
-Socket::async_shutdown (HandlerCall const& handler)
+void Socket::async_shutdown (SharedHandlerPtr handler)
 {
-#if BEAST_ASIO_HAS_FUTURE_RETURNS
-    boost::asio::detail::async_result_init<
-        HandlerCall, void (boost::system::error_code, std::size_t)> init (handler);
-    get_io_service ().post (HandlerCall (HandlerCall::Post (),
-        handler, pure_virtual_error ()));
-    return init.result.get();
-#else
-    get_io_service ().post (HandlerCall (HandlerCall::Post (),
-        handler , pure_virtual_error ()));
-#endif
+    get_io_service ().wrap (
+        BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
+            (pure_virtual_error ());
 }
 
 //------------------------------------------------------------------------------
+
+#endif
