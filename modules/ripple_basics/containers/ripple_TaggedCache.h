@@ -43,7 +43,6 @@ public:
         , mTargetSize (size)
         , mTargetAge (age)
         , mCacheCount (0)
-        , mLastSweep (Timer::getElapsedSeconds ())
         , mHits (0)
         , mMisses (0)
     {
@@ -186,7 +185,6 @@ private:
     int         mCacheCount;    // Number of items cached
 
     cache_type  mCache;         // Hold strong reference to recent objects
-    int         mLastSweep;
 
     uint64      mHits, mMisses;
 };
@@ -265,59 +263,76 @@ void TaggedCache<c_Key, c_Data, Timer>::clear ()
 template<typename c_Key, typename c_Data, class Timer>
 void TaggedCache<c_Key, c_Data, Timer>::sweep ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    int cacheRemovals = 0;
+    int mapRemovals = 0;
+    int cc = 0;
 
-    int mLastSweep = Timer::getElapsedSeconds ();
-    int target = mLastSweep - mTargetAge;
-    int cacheRemovals = 0, mapRemovals = 0, cc = 0;
-
-    if ((mTargetSize != 0) && (static_cast<int> (mCache.size ()) > mTargetSize))
+    // Keep references to all the stuff we sweep
+    // so that we can destroy them outside the lock.
+    //
+    std::vector <data_ptr> stuffToSweep;
+    
     {
-        target = mLastSweep - (mTargetAge * mTargetSize / mCache.size ());
+        boost::recursive_mutex::scoped_lock sl (mLock);
 
-        if (target > (mLastSweep - 2))
-            target = mLastSweep - 2;
+        int const now = Timer::getElapsedSeconds ();
+        int target = now - mTargetAge;
 
-        WriteLog (lsINFO, TaggedCacheLog) << mName << " is growing fast " <<
-                                          mCache.size () << " of " << mTargetSize <<
-                                          " aging at " << (mLastSweep - target) << " of " << mTargetAge;
-    }
-
-    cache_iterator cit = mCache.begin ();
-
-    while (cit != mCache.end ())
-    {
-        if (cit->second.isWeak ())
+        if ((mTargetSize != 0) && (static_cast<int> (mCache.size ()) > mTargetSize))
         {
-            // weak
-            if (cit->second.isExpired ())
+            target = now - (mTargetAge * mTargetSize / mCache.size ());
+
+            if (target > (now - 2))
+                target = now - 2;
+
+            WriteLog (lsINFO, TaggedCacheLog) << mName << " is growing fast " <<
+                                              mCache.size () << " of " << mTargetSize <<
+                                              " aging at " << (now - target) << " of " << mTargetAge;
+        }
+
+        stuffToSweep.reserve (mCache.size ());
+
+        cache_iterator cit = mCache.begin ();
+
+        while (cit != mCache.end ())
+        {
+            if (cit->second.isWeak ())
             {
-                ++mapRemovals;
-                cit = mCache.erase (cit);
+                // weak
+                if (cit->second.isExpired ())
+                {
+                    ++mapRemovals;
+                    cit = mCache.erase (cit);
+                }
+                else
+                {
+                    ++cit;
+                }
+            }
+            else if (cit->second.last_use < target)
+            {
+                // strong, expired
+                --mCacheCount;
+                ++cacheRemovals;
+                if (cit->second.ptr.unique ())
+                {
+                    stuffToSweep.push_back (cit->second.ptr);
+                    ++mapRemovals;
+                    cit = mCache.erase (cit);
+                }
+                else
+                {
+                    // remains weakly cached
+                    cit->second.ptr.reset ();
+                    ++cit;
+                }
             }
             else
-                ++cit;
-        }
-        else if (cit->second.last_use < target)
-        {
-            // strong, expired
-            --mCacheCount;
-            ++cacheRemovals;
-            cit->second.ptr.reset ();
-
-            if (cit->second.isExpired ())
             {
-                ++mapRemovals;
-                cit = mCache.erase (cit);
-            }
-            else // remains weakly cached
+                // strong, not expired
+                ++cc;
                 ++cit;
-        }
-        else
-        {
-            // strong, not expired
-            ++cc;
-            ++cit;
+            }
         }
     }
 
@@ -328,6 +343,9 @@ void TaggedCache<c_Key, c_Data, Timer>::sweep ()
         WriteLog (lsTRACE, TaggedCacheLog) << mName << ": cache = " << mCache.size () << "-" << cacheRemovals <<
                                            ", map-=" << mapRemovals;
     }
+
+    // At this point stuffToSweep will go out of scope outside the lock
+    // and decrement the reference count on each strong pointer.
 }
 
 template<typename c_Key, typename c_Data, class Timer>
