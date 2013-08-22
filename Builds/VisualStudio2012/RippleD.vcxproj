@@ -1665,7 +1665,6 @@
     <None Include="..\QtCreator\rippled.pro" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\Notes\VFALCO_LOG.txt" />
     <Text Include="..\..\Notes\VFALCO_TODO.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

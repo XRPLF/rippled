@@ -4,8 +4,6 @@
 */
 //==============================================================================
 
-#define MULTISOCKET_TEST_PROXY 1
-
 MultiSocket* MultiSocket::New (boost::asio::io_service& io_service, int flags)
 {
     return new MultiSocketType <boost::asio::ip::tcp::socket> (io_service, flags);
@@ -183,6 +181,7 @@ public:
             TestPeerLogicSyncClient, TestPeerLogicAsyncServer>
                 (clientArg, serverArg, timeoutSeconds).report (*this);
 
+
         PeerTest::run <MultiSocketDetailsType <Protocol>,
             TestPeerLogicAsyncClient, TestPeerLogicAsyncServer>
                 (clientArg, serverArg, timeoutSeconds).report (*this);
@@ -213,21 +212,41 @@ public:
     template <typename Protocol>
     void testProtocol ()
     {
-        // These should pass.
-        run <Protocol> (0, 0);
-        run <Protocol> (MultiSocket::Flag::client_role, 0);
+        // Simple tests
+        run <Protocol> (0,
+                        0);
+
+        run <Protocol> (MultiSocket::Flag::client_role,
+                        0);
+
         run <Protocol> (0, MultiSocket::Flag::server_role);
-        run <Protocol> (MultiSocket::Flag::client_role, MultiSocket::Flag::server_role);
 
-        // These should pass
-        testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl_required);
-        testFlags <Protocol> (0, MultiSocket::Flag::ssl);
-        testFlags <Protocol> (MultiSocket::Flag::ssl, MultiSocket::Flag::ssl);
+        run <Protocol> (MultiSocket::Flag::client_role,
+                        MultiSocket::Flag::server_role);
 
-        testProxyFlags <Protocol> (MultiSocket::Flag::proxy, MultiSocket::Flag::proxy);
-        testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl_required);
-        testProxyFlags <Protocol> (MultiSocket::Flag::proxy, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
-        testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl, MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
+        testFlags <Protocol> (MultiSocket::Flag::ssl,
+                              MultiSocket::Flag::ssl_required);
+
+        // SSL-Detect tests
+        testFlags <Protocol> (0,
+                              MultiSocket::Flag::ssl);
+
+        testFlags <Protocol> (MultiSocket::Flag::ssl,
+                              MultiSocket::Flag::ssl);
+
+        // PROXY Handshake tests
+        testProxyFlags <Protocol> (MultiSocket::Flag::proxy,
+                                   MultiSocket::Flag::proxy);
+
+        testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl,
+                                   MultiSocket::Flag::proxy | MultiSocket::Flag::ssl_required);
+
+        // PROXY + SSL-Detect tests
+        testProxyFlags <Protocol> (MultiSocket::Flag::proxy,
+                                   MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
+
+        testProxyFlags <Protocol> (MultiSocket::Flag::proxy | MultiSocket::Flag::ssl,
+                                   MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
     }
 
     void runTest ()

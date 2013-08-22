@@ -1724,9 +1724,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\Notes\VFALCO_LOG.txt">
-      <Filter>%28Notes%29</Filter>
-    </Text>
     <Text Include="..\..\Notes\VFALCO_TODO.txt">
       <Filter>%28Notes%29</Filter>
     </Text>
