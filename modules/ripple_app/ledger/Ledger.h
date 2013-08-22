@@ -80,6 +80,8 @@ public:
 
     Ledger (Ledger & target, bool isMutable); // snapshot
 
+    ~Ledger ();
+
     static Ledger::pointer getSQL (const std::string & sqlStatement);
     static Ledger::pointer getSQL1 (SqliteStatement*);
     static void getSQL2 (Ledger::ref);

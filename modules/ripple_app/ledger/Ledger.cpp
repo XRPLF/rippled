@@ -172,6 +172,43 @@ Ledger::Ledger (const std::string& rawLedger, bool hasPrefix) :
     initializeFees ();
 }
 
+Ledger::~Ledger ()
+{
+    double txDeleteSeconds = 0;
+
+    {
+        int64 const startTime (Time::getHighResolutionTicks ());
+
+        mTransactionMap.reset ();
+
+        txDeleteSeconds = Time::highResolutionTicksToSeconds (
+            Time::getHighResolutionTicks () - startTime);
+    }
+
+    double acctDeleteSeconds = 0;
+
+    {
+        int64 const startTime (Time::getHighResolutionTicks ());
+
+        mAccountStateMap.reset ();
+
+        acctDeleteSeconds = Time::highResolutionTicksToSeconds (
+            Time::getHighResolutionTicks () - startTime);
+    }
+
+    if (txDeleteSeconds >= 1)
+    {
+        WriteLog (lsWARNING, Ledger) << "mTransactionMap took " <<
+            String (txDeleteSeconds, 1) << " seconds to destroy.";
+    }
+
+    if (acctDeleteSeconds >= 1)
+    {
+        WriteLog (lsWARNING, Ledger) << "mAccountStateMap took " <<
+            String (acctDeleteSeconds, 1) << " seconds to destroy.";
+    }
+}
+
 void Ledger::setImmutable ()
 {
     updateHash ();
