@@ -160,6 +160,14 @@ public:
     /** Destructor. */
     ~String() noexcept;
 
+    /** Create a string from a specific number type (integer or floating point)
+        If numberOfDecimalPlaces is specified and number is a floating point type,
+        the resulting string will have that many decimal places. A value below 0
+        means use exponent notation if necessary.
+    */
+    template <typename Number>
+    static String fromNumber (Number number, int numberOfDecimalPlaces = -1);
+
     //==============================================================================
     /** This is an empty string that can be used whenever one is needed.
 
@@ -1207,6 +1215,9 @@ public:
 
 private:
     //==============================================================================
+    struct FromNumber { };
+    String (CharPointerType text_, FromNumber) : text (text_) { }
+
     CharPointerType text;
 
     //==============================================================================

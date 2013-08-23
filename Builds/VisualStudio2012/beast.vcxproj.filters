@@ -869,6 +869,9 @@
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_InputParser.h">
       <Filter>beast_asio\handshake</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\text\beast_NumberToString.h">
+      <Filter>beast_core\text</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -1335,6 +1338,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\async\beast_SharedHandler.cpp">
       <Filter>beast_asio\async</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\text\beast_NumberToString.cpp">
+      <Filter>beast_core\text</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
