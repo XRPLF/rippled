@@ -204,8 +204,11 @@ namespace beast
 #include "text/beast_StringPool.cpp"
 #include "text/beast_TextDiff.cpp"
 
+#include "thread/impl/TrackedMutex.cpp"
+
 #include "threads/beast_ChildProcess.cpp"
 #include "threads/beast_ReadWriteLock.cpp"
+#include "threads/beast_ReadWriteMutex.cpp"
 #include "threads/beast_SpinDelay.cpp"
 #include "threads/beast_Thread.cpp"
 #include "threads/beast_ThreadPool.cpp"

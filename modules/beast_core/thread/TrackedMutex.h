@@ -17,25 +17,14 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THROW_H_INCLUDED
-#define BEAST_THROW_H_INCLUDED
+#ifndef BEAST_CORE_THREAD_TRACKEDMUTEX_H_INCLUDED
+#define BEAST_CORE_THREAD_TRACKEDMUTEX_H_INCLUDED
 
-/** Throw an exception, with a debugger hook.
+#include "detail/TrackedMutex.h"
+#include "detail/ScopedLock.h"
 
-    This provides an opportunity to utilize the debugger before
-    the stack is unwound.
-*/
-namespace Debug
-{
-extern void breakPoint ();
-};
-
-template <class Exception>
-inline void Throw (Exception const& e, char const* = "", int = 0)
-{
-    Debug::breakPoint ();
-
-    throw e;
-}
+#include "impl/TrackedMutex.h"
+#include "impl/TrackedMutexType.h"
+#include "impl/UntrackedMutexType.h"
 
 #endif

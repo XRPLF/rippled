@@ -96,6 +96,20 @@ public:
     /** Provides the type of scoped try-locker to use with a CriticalSection. */
     typedef GenericScopedTryLock <CriticalSection>    ScopedTryLockType;
 
+    //--------------------------------------------------------------------------
+    //
+    // Boost concept compatibility
+    // http://www.boost.org/doc/libs/1_54_0/doc/html/thread/synchronization.html#thread.synchronization.mutex_concepts
+    //
+
+    // BasicLockable
+    inline void lock () const noexcept { enter (); }
+    inline void unlock () const noexcept { exit (); }
+
+    // Lockable
+    inline bool try_lock () const noexcept { return tryEnter (); }
+
+    //--------------------------------------------------------------------------
 
 private:
     //==============================================================================

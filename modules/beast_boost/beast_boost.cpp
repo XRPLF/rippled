@@ -17,48 +17,13 @@
 */
 //==============================================================================
 
-/** Add this to get the @ref beast_basics module.
-
-    @file beast_basics.cpp
-    @ingroup beast_basics
-*/
-
 #include "BeastConfig.h"
 
-#include "beast_basics.h"
-
-#if BEAST_MSVC && _DEBUG
-#include <crtdbg.h>
-#endif
-
-#if BEAST_MSVC
-#pragma warning (push)
-#pragma warning (disable: 4100) // unreferenced formal parmaeter
-#pragma warning (disable: 4355) // 'this' used in base member
-#endif
+#include "beast_boost.h"
 
 namespace beast
 {
 
-#include "events/beast_DeadlineTimer.cpp"
-#include "events/beast_OncePerSecond.cpp"
 
-#include "threads/beast_InterruptibleThread.cpp"
-#include "threads/beast_Semaphore.cpp"
-#include "memory/beast_FifoFreeStoreWithTLS.cpp"
-#include "memory/beast_FifoFreeStoreWithoutTLS.cpp"
-#include "memory/beast_GlobalPagedFreeStore.cpp"
-#include "memory/beast_PagedFreeStore.cpp"
-#include "threads/beast_CallQueue.cpp"
-#include "threads/beast_Listeners.cpp"
-#include "threads/beast_ManualCallQueue.cpp"
-#include "threads/beast_ParallelFor.cpp"
-#include "threads/beast_ThreadGroup.cpp"
-#include "threads/beast_ThreadWithCallQueue.cpp"
-#include "threads/beast_Workers.cpp"
 
 }
-
-#if BEAST_MSVC
-#pragma warning (pop)
-#endif
