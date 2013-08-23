@@ -31,6 +31,20 @@ enum LedgerStateParms
 
 class SqliteStatement;
 
+class LedgerBase
+{
+protected:
+    LedgerBase ();
+
+    // VFALCO TODO eliminate the need for friends
+    friend class TransactionEngine;
+    friend class Transactor;
+
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+};
+
 // VFALCO TODO figure out exactly how this thing works.
 //         It seems like some ledger database is stored as a global, static in the
 //         class. But then what is the meaning of a Ledger object? Is this
@@ -38,6 +52,7 @@ class SqliteStatement;
 //
 class Ledger
     : public boost::enable_shared_from_this <Ledger>
+    , public LedgerBase
     , public CountedObject <Ledger>
     , public Uncopyable
 {
@@ -446,14 +461,10 @@ protected:
     void updateFees ();
 
 private:
-    // The basic Ledger structure, can be opened, closed, or synching
-    // VFALCO TODO eliminate the need for friends
-    friend class TransactionEngine;
-    friend class Transactor;
-
     void initializeFees ();
 
 private:
+    // The basic Ledger structure, can be opened, closed, or synching
     uint256     mHash;
     uint256     mParentHash;
     uint256     mTransHash;
@@ -473,10 +484,11 @@ private:
     SHAMap::pointer mTransactionMap;
     SHAMap::pointer mAccountStateMap;
 
-    mutable boost::recursive_mutex mLock;
-
+    typedef RippleMutex StaticLockType;
+    typedef StaticLockType::ScopedLockType StaticScopedLockType;
     // ledgers not fully saved, validated ledger present but DB may not be correct yet
-    static boost::mutex      sPendingSaveLock;
+    static StaticLockType sPendingSaveLock;
+
     static std::set<uint32>  sPendingSaves;
 };
 
@@ -491,4 +503,3 @@ inline LedgerStateParms operator& (const LedgerStateParms& l1, const LedgerState
 }
 
 #endif
-// vim:ts=4

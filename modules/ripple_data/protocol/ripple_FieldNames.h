@@ -67,7 +67,7 @@ public:
         , fieldMeta (sMD_Default)
         , signingField (true)
     {
-        boost::mutex::scoped_lock sl (mapMutex);
+        StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
 
         codeToField[fieldCode] = this;
 
@@ -82,7 +82,7 @@ public:
         , fieldMeta (sMD_Default)
         , signingField (true)
     {
-        boost::mutex::scoped_lock sl (mapMutex);
+        StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
 
         codeToField[fieldCode] = this;
 
@@ -96,7 +96,7 @@ public:
         , fieldMeta (sMD_Never)
         , signingField (true)
     {
-        boost::mutex::scoped_lock sl (mapMutex);
+        StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
         fieldNum = ++num;
     }
 
@@ -196,7 +196,13 @@ public:
     // VFALCO TODO make these private
 protected:
     static std::map<int, ptr>   codeToField;
-    static boost::mutex         mapMutex;
+
+    typedef RippleMutex StaticLockType;
+    typedef StaticLockType::ScopedLockType StaticScopedLockType;
+
+    static StaticLockType& getMutex ();
+
+    // VFALCO NOTE can this be replaced with an atomic int???!
     static int                  num;
 
     SField (SerializedTypeID id, int val);

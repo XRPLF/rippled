@@ -59,6 +59,10 @@ public:
     int getKBUsedAll ();
 
 private:
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType m_walMutex;
+
     ThreadWithCallQueue m_thread;
 
     sqlite3* mConnection;
@@ -67,7 +71,6 @@ private:
     sqlite3_stmt* mCurrentStmt;
     bool mMoreRows;
 
-    boost::mutex            walMutex;
     JobQueue*               mWalQ;
     bool                    walRunning;
 };

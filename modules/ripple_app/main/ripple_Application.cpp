@@ -152,6 +152,7 @@ public:
         //
         : SharedSingleton <Application> (SingletonLifetime::neverDestroyed)
     #endif
+        , mMasterLock (this, "MasterLock", __FILE__, __LINE__)
         , m_mainService ("io",
                          (getConfig ().NODE_SIZE >= 2) ? 2 : 1,
                          (getConfig ().NODE_SIZE >= 2) ? 1 : 0)
@@ -265,7 +266,7 @@ public:
         return mJobQueue;
     }
 
-    MasterLockType& getMasterLock ()
+    Application::LockType& getMasterLock ()
     {
         return mMasterLock;
     }
@@ -642,14 +643,14 @@ private:
     bool loadOldLedger (const std::string&, bool);
 
 private:
+    Application::LockType mMasterLock;
+
     IoServiceThread m_mainService;
     IoServiceThread m_auxService;
 
     //boost::asio::io_service mIOService;
     //boost::asio::io_service mAuxService;
     //boost::asio::io_service::work mIOWork;
-
-    MasterLockType mMasterLock;
 
     LocalCredentials   m_localCredentials;
     LedgerMaster       mLedgerMaster;

@@ -53,7 +53,12 @@ std::size_t hash_value (const SHAMapNode& mn)
 }
 
 
-SHAMap::SHAMap (SHAMapType t, uint32 seq) : mSeq (seq), mLedgerSeq (0), mState (smsModifying), mType (t)
+SHAMap::SHAMap (SHAMapType t, uint32 seq)
+    : mLock (this, "SHAMap", __FILE__, __LINE__)
+    , mSeq (seq)
+    , mLedgerSeq (0)
+    , mState (smsModifying)
+    , mType (t)
 {
     if (t == smtSTATE)
         mTNByID.rehash (STATE_MAP_BUCKETS);
@@ -63,7 +68,12 @@ SHAMap::SHAMap (SHAMapType t, uint32 seq) : mSeq (seq), mLedgerSeq (0), mState (
     mTNByID[*root] = root;
 }
 
-SHAMap::SHAMap (SHAMapType t, uint256 const& hash) : mSeq (1), mLedgerSeq (0), mState (smsSynching), mType (t)
+SHAMap::SHAMap (SHAMapType t, uint256 const& hash)
+    : mLock (this, "SHAMap", __FILE__, __LINE__)
+    , mSeq (1)
+    , mLedgerSeq (0)
+    , mState (smsSynching)
+    , mType (t)
 {
     // FIXME: Need to acquire root node
     if (t == smtSTATE)
@@ -78,7 +88,7 @@ SHAMap::pointer SHAMap::snapShot (bool isMutable)
 {
     // Return a new SHAMap that is an immutable snapshot of this one
     // Initially nodes are shared, but CoW is forced on both ledgers
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     SHAMap::pointer ret = boost::make_shared<SHAMap> (mType);
     SHAMap& newMap = *ret;
     newMap.mSeq = ++mSeq;
@@ -447,7 +457,7 @@ static const SHAMapItem::pointer no_item;
 
 SHAMapItem::pointer SHAMap::peekFirstItem ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     SHAMapTreeNode* node = firstBelow (root.get ());
 
     if (!node)
@@ -458,7 +468,7 @@ SHAMapItem::pointer SHAMap::peekFirstItem ()
 
 SHAMapItem::pointer SHAMap::peekFirstItem (SHAMapTreeNode::TNType& type)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     SHAMapTreeNode* node = firstBelow (root.get ());
 
     if (!node)
@@ -470,7 +480,7 @@ SHAMapItem::pointer SHAMap::peekFirstItem (SHAMapTreeNode::TNType& type)
 
 SHAMapItem::pointer SHAMap::peekLastItem ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     SHAMapTreeNode* node = lastBelow (root.get ());
 
     if (!node)
@@ -489,7 +499,7 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id)
 SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNType& type)
 {
     // Get a pointer to the next item in the tree after a given item - item need not be in tree
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true);
 
@@ -529,7 +539,7 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNT
 // Get a pointer to the previous item in the tree after a given item - item need not be in tree
 SHAMapItem::pointer SHAMap::peekPrevItem (uint256 const& id)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true);
 
@@ -567,7 +577,7 @@ SHAMapItem::pointer SHAMap::peekPrevItem (uint256 const& id)
 
 SHAMapItem::pointer SHAMap::peekItem (uint256 const& id)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     SHAMapTreeNode* leaf = walkToPointer (id);
 
     if (!leaf)
@@ -578,7 +588,7 @@ SHAMapItem::pointer SHAMap::peekItem (uint256 const& id)
 
 SHAMapItem::pointer SHAMap::peekItem (uint256 const& id, SHAMapTreeNode::TNType& type)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     SHAMapTreeNode* leaf = walkToPointer (id);
 
     if (!leaf)
@@ -590,7 +600,7 @@ SHAMapItem::pointer SHAMap::peekItem (uint256 const& id, SHAMapTreeNode::TNType&
 
 SHAMapItem::pointer SHAMap::peekItem (uint256 const& id, uint256& hash)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     SHAMapTreeNode* leaf = walkToPointer (id);
 
     if (!leaf)
@@ -604,7 +614,7 @@ SHAMapItem::pointer SHAMap::peekItem (uint256 const& id, uint256& hash)
 bool SHAMap::hasItem (uint256 const& id)
 {
     // does the tree have an item with this ID
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     SHAMapTreeNode* leaf = walkToPointer (id);
     return (leaf != NULL);
@@ -613,7 +623,7 @@ bool SHAMap::hasItem (uint256 const& id)
 bool SHAMap::delItem (uint256 const& id)
 {
     // delete the item with this ID
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     assert (mState != smsImmutable);
 
     std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true);
@@ -694,7 +704,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
     SHAMapTreeNode::TNType type = !isTransaction ? SHAMapTreeNode::tnACCOUNT_STATE :
                                   (hasMeta ? SHAMapTreeNode::tnTRANSACTION_MD : SHAMapTreeNode::tnTRANSACTION_NM);
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     assert (mState != smsImmutable);
 
     std::stack<SHAMapTreeNode::pointer> stack = getStack (tag, true);
@@ -792,7 +802,7 @@ bool SHAMap::updateGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasM
     // can't change the tag but can change the hash
     uint256 tag = item->getTag ();
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     assert (mState != smsImmutable);
 
     std::stack<SHAMapTreeNode::pointer> stack = getStack (tag, true);
@@ -975,7 +985,7 @@ int SHAMap::flushDirty (DirtyMap& map, int maxNodes, NodeObjectType t, uint32 se
 boost::shared_ptr<SHAMap::DirtyMap> SHAMap::disarmDirty ()
 {
     // stop saving dirty nodes
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     boost::shared_ptr<DirtyMap> ret;
     ret.swap (mDirtyNodes);
@@ -1040,7 +1050,7 @@ bool SHAMap::getPath (uint256 const& index, std::vector< Blob >& nodes, SHANodeF
     // Return the path of nodes to the specified index in the specified format
     // Return value: true = node present, false = node not present
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     SHAMapTreeNode* inNode = root.get ();
 
     while (!inNode->isLeaf ())
@@ -1070,7 +1080,7 @@ bool SHAMap::getPath (uint256 const& index, std::vector< Blob >& nodes, SHANodeF
 
 void SHAMap::dropCache ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     assert (mState == smsImmutable);
 
     mTNByID.clear ();
@@ -1090,7 +1100,7 @@ void SHAMap::dropBelow (SHAMapTreeNode* d)
 void SHAMap::dump (bool hash)
 {
     WriteLog (lsINFO, SHAMap) << " MAP Contains";
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     for (boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.begin ();
             it != mTNByID.end (); ++it)

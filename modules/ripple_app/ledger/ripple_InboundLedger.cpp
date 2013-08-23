@@ -30,7 +30,7 @@ InboundLedger::InboundLedger (uint256 const& hash, uint32 seq)
 
 bool InboundLedger::checkLocal ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!isDone () && tryLocal())
     {
@@ -141,7 +141,7 @@ bool InboundLedger::tryLocal ()
     return mComplete;
 }
 
-void InboundLedger::onTimer (bool wasProgress, boost::recursive_mutex::scoped_lock&)
+void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 {
     mRecentTXNodes.clear ();
     mRecentASNodes.clear ();
@@ -257,7 +257,7 @@ void InboundLedger::done ()
 
     std::vector< FUNCTION_TYPE<void (InboundLedger::pointer)> > triggers;
     {
-        boost::recursive_mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         triggers.swap (mOnComplete);
     }
 
@@ -277,7 +277,7 @@ void InboundLedger::done ()
 
 bool InboundLedger::addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)> trigger)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (isDone ())
         return false;
@@ -288,7 +288,7 @@ bool InboundLedger::addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)> 
 
 void InboundLedger::trigger (Peer::ref peer)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (isDone ())
     {
@@ -362,7 +362,7 @@ void InboundLedger::trigger (Peer::ref peer)
                 }
                 PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmBH, protocol::mtGET_OBJECTS);
                 {
-                    boost::recursive_mutex::scoped_lock sl (mLock);
+                    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
                     for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin (), end = mPeers.end ();
                             it != end; ++it)
@@ -594,7 +594,7 @@ bool InboundLedger::takeBase (const std::string& data) // data must not have has
 #ifdef LA_DEBUG
     WriteLog (lsTRACE, InboundLedger) << "got base acquiring ledger " << mHash;
 #endif
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (mComplete || mFailed || mHaveBase)
         return true;
@@ -634,7 +634,7 @@ bool InboundLedger::takeBase (const std::string& data) // data must not have has
 bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
                                 const std::list< Blob >& data, SHAMapAddNode& san)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!mHaveBase)
         return false;
@@ -685,7 +685,7 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
     WriteLog (lsTRACE, InboundLedger) << "got ASdata (" << nodeIDs.size () << ") acquiring ledger " << mHash;
     CondLog (nodeIDs.size () == 1, lsTRACE, InboundLedger) << "got AS node: " << nodeIDs.front ();
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!mHaveBase)
     {
@@ -738,7 +738,7 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
 
 bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (mFailed || mHaveState)
         return true;
@@ -753,7 +753,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
 
 bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (mFailed || mHaveState)
         return true;
@@ -803,7 +803,7 @@ Json::Value InboundLedger::getJson (int)
 {
     Json::Value ret (Json::objectValue);
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     ret["hash"] = mHash.GetHex ();
 

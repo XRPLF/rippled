@@ -20,6 +20,14 @@
 
 struct TaggedCacheLog;
 
+// Common base
+class TaggedCache
+{
+public:
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+};
+
 /** Combination cache/map container.
 
     NOTE:
@@ -29,7 +37,7 @@ struct TaggedCacheLog;
     static int Timer::getElapsedSeconds ();
 */
 template <typename c_Key, typename c_Data, class Timer>
-class TaggedCache
+class TaggedCacheType : public TaggedCache
 {
 public:
     typedef c_Key                           key_type;
@@ -38,8 +46,12 @@ public:
     typedef boost::shared_ptr<data_type>    data_ptr;
 
 public:
-    TaggedCache (const char* name, int size, int age)
-        : mName (name)
+    typedef TaggedCache::LockType LockType;
+    typedef TaggedCache::ScopedLockType ScopedLockType;
+
+    TaggedCacheType (const char* name, int size, int age)
+        : mLock (static_cast <TaggedCache const*>(this), "TaggedCache", __FILE__, __LINE__)
+        , mName (name)
         , mTargetSize (size)
         , mTargetAge (age)
         , mCacheCount (0)
@@ -71,7 +83,7 @@ public:
         bool found = false;
 
         // If present, make current in cache
-        boost::recursive_mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         cache_iterator cit = mCache.find (key);
 
@@ -134,7 +146,7 @@ public:
     boost::shared_ptr<c_Data> fetch (const key_type& key);
     bool retrieve (const key_type& key, c_Data& data);
 
-    boost::recursive_mutex& peekMutex ()
+    LockType& peekMutex ()
     {
         return mLock;
     }
@@ -177,7 +189,7 @@ private:
     typedef boost::unordered_map<key_type, cache_entry>     cache_type;
     typedef typename cache_type::iterator                   cache_iterator;
 
-    mutable boost::recursive_mutex mLock;
+    mutable LockType mLock;
 
     std::string mName;          // Used for logging
     int         mTargetSize;    // Desired number of cache entries (0 = ignore)
@@ -190,16 +202,16 @@ private:
 };
 
 template<typename c_Key, typename c_Data, class Timer>
-int TaggedCache<c_Key, c_Data, Timer>::getTargetSize () const
+int TaggedCacheType<c_Key, c_Data, Timer>::getTargetSize () const
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return mTargetSize;
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-void TaggedCache<c_Key, c_Data, Timer>::setTargetSize (int s)
+void TaggedCacheType<c_Key, c_Data, Timer>::setTargetSize (int s)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mTargetSize = s;
 
     if (s > 0)
@@ -209,59 +221,59 @@ void TaggedCache<c_Key, c_Data, Timer>::setTargetSize (int s)
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-int TaggedCache<c_Key, c_Data, Timer>::getTargetAge () const
+int TaggedCacheType<c_Key, c_Data, Timer>::getTargetAge () const
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return mTargetAge;
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-void TaggedCache<c_Key, c_Data, Timer>::setTargetAge (int s)
+void TaggedCacheType<c_Key, c_Data, Timer>::setTargetAge (int s)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mTargetAge = s;
     WriteLog (lsDEBUG, TaggedCacheLog) << mName << " target age set to " << s;
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-int TaggedCache<c_Key, c_Data, Timer>::getCacheSize ()
+int TaggedCacheType<c_Key, c_Data, Timer>::getCacheSize ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return mCacheCount;
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-int TaggedCache<c_Key, c_Data, Timer>::getTrackSize ()
+int TaggedCacheType<c_Key, c_Data, Timer>::getTrackSize ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return mCache.size ();
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-float TaggedCache<c_Key, c_Data, Timer>::getHitRate ()
+float TaggedCacheType<c_Key, c_Data, Timer>::getHitRate ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return (static_cast<float> (mHits) * 100) / (1.0f + mHits + mMisses);
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-void TaggedCache<c_Key, c_Data, Timer>::clearStats ()
+void TaggedCacheType<c_Key, c_Data, Timer>::clearStats ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mHits = 0;
     mMisses = 0;
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-void TaggedCache<c_Key, c_Data, Timer>::clear ()
+void TaggedCacheType<c_Key, c_Data, Timer>::clear ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mCache.clear ();
     mCacheCount = 0;
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-void TaggedCache<c_Key, c_Data, Timer>::sweep ()
+void TaggedCacheType<c_Key, c_Data, Timer>::sweep ()
 {
     int cacheRemovals = 0;
     int mapRemovals = 0;
@@ -273,7 +285,7 @@ void TaggedCache<c_Key, c_Data, Timer>::sweep ()
     std::vector <data_ptr> stuffToSweep;
     
     {
-        boost::recursive_mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         int const now = Timer::getElapsedSeconds ();
         int target = now - mTargetAge;
@@ -349,10 +361,10 @@ void TaggedCache<c_Key, c_Data, Timer>::sweep ()
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-bool TaggedCache<c_Key, c_Data, Timer>::del (const key_type& key, bool valid)
+bool TaggedCacheType<c_Key, c_Data, Timer>::del (const key_type& key, bool valid)
 {
     // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     cache_iterator cit = mCache.find (key);
 
@@ -378,11 +390,11 @@ bool TaggedCache<c_Key, c_Data, Timer>::del (const key_type& key, bool valid)
 
 // VFALCO NOTE What does it mean to canonicalize the data?
 template<typename c_Key, typename c_Data, class Timer>
-bool TaggedCache<c_Key, c_Data, Timer>::canonicalize (const key_type& key, boost::shared_ptr<c_Data>& data, bool replace)
+bool TaggedCacheType<c_Key, c_Data, Timer>::canonicalize (const key_type& key, boost::shared_ptr<c_Data>& data, bool replace)
 {
     // Return canonical value, store if needed, refresh in cache
     // Return values: true=we had the data already
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     cache_iterator cit = mCache.find (key);
 
@@ -436,10 +448,10 @@ bool TaggedCache<c_Key, c_Data, Timer>::canonicalize (const key_type& key, boost
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data, Timer>::fetch (const key_type& key)
+boost::shared_ptr<c_Data> TaggedCacheType<c_Key, c_Data, Timer>::fetch (const key_type& key)
 {
     // fetch us a shared pointer to the stored data object
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     cache_iterator cit = mCache.find (key);
 
@@ -473,14 +485,14 @@ boost::shared_ptr<c_Data> TaggedCache<c_Key, c_Data, Timer>::fetch (const key_ty
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-bool TaggedCache<c_Key, c_Data, Timer>::store (const key_type& key, const c_Data& data)
+bool TaggedCacheType<c_Key, c_Data, Timer>::store (const key_type& key, const c_Data& data)
 {
     data_ptr d = boost::make_shared<c_Data> (boost::cref (data));
     return canonicalize (key, d);
 }
 
 template<typename c_Key, typename c_Data, class Timer>
-bool TaggedCache<c_Key, c_Data, Timer>::retrieve (const key_type& key, c_Data& data)
+bool TaggedCacheType<c_Key, c_Data, Timer>::retrieve (const key_type& key, c_Data& data)
 {
     // retrieve the value of the stored data
     data_ptr entry = fetch (key);

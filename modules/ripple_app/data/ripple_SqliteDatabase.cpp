@@ -37,6 +37,7 @@ SqliteStatement::~SqliteStatement ()
 
 SqliteDatabase::SqliteDatabase (const char* host)
     : Database (host)
+    , m_walMutex (this, "SqliteDB", __FILE__, __LINE__)
     , m_thread ("sqlitedb")
     , mWalQ (NULL)
     , walRunning (false)
@@ -62,7 +63,7 @@ void SqliteDatabase::connect ()
 
 sqlite3* SqliteDatabase::getAuxConnection ()
 {
-    boost::mutex::scoped_lock sl (walMutex);
+    ScopedLockType sl (m_walMutex, __FILE__, __LINE__);
 
     if (mAuxConnection == NULL)
     {
@@ -286,7 +287,7 @@ void SqliteDatabase::doHook (const char* db, int pages)
         return;
 
     {
-        boost::mutex::scoped_lock sl (walMutex);
+        ScopedLockType sl (m_walMutex, __FILE__, __LINE__);
 
         if (walRunning)
             return;
@@ -319,7 +320,7 @@ void SqliteDatabase::runWal ()
                                            "): frames=" << log << ", written=" << ckpt;
 
     {
-        boost::mutex::scoped_lock sl (walMutex);
+        ScopedLockType sl (m_walMutex, __FILE__, __LINE__);
         walRunning = false;
     }
 }

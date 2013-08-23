@@ -68,8 +68,10 @@ public:
     Json::Value getJson (int c = 0);
 
 private:
-    typedef boost::mutex JobLockType;
-    typedef JobLockType::scoped_lock ScopedLockType;
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     typedef std::set <Job> JobSet;
 
     void queueJob (Job const& job, ScopedLockType&);
@@ -82,7 +84,6 @@ private:
 
 private:
     Workers m_workers;
-    JobLockType mJobLock;
     uint64 mLastJob;
     JobSet mJobSet;
     LoadMonitor mJobLoads [NUM_JOB_TYPES];

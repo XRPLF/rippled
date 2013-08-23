@@ -1280,7 +1280,7 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
             WriteLog (lsINFO, LedgerConsensus) << "CNF newLCL " << newLCLHash;
 
         Ledger::pointer newOL = boost::make_shared<Ledger> (true, boost::ref (*newLCL));
-        ScopedLock sl ( getApp().getLedgerMaster ().getLock ());
+        LedgerMaster::ScopedLockType sl (getApp().getLedgerMaster ().peekMutex (), __FILE__, __LINE__);
 
         // Apply disputed transactions that didn't get in
         TransactionEngine engine (newOL);

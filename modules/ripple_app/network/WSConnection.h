@@ -11,6 +11,12 @@
 // This is for logging
 struct WSConnectionLog;
 
+// Helps with naming the lock
+struct WSConnectionBase
+{
+
+};
+
 template <typename endpoint_type>
 class WSServerHandler;
 //
@@ -19,7 +25,8 @@ class WSServerHandler;
 //
 template <typename endpoint_type>
 class WSConnection
-    : public InfoSub
+    : public WSConnectionBase
+    , public InfoSub
     , public boost::enable_shared_from_this< WSConnection<endpoint_type> >
     , public CountedObject <WSConnection <endpoint_type> >
 {
@@ -37,7 +44,8 @@ public:
     //          mConnection(connection_ptr()) { ; }
 
     WSConnection (WSServerHandler<endpoint_type>* wshpHandler, const connection_ptr& cpConnection)
-        : mHandler (wshpHandler), mConnection (cpConnection), mNetwork (getApp().getOPs ()),
+        : mRcvQueueLock (static_cast<WSConnectionBase const*>(this), "WSConn", __FILE__, __LINE__)
+        , mHandler (wshpHandler), mConnection (cpConnection), mNetwork (getApp().getOPs ()),
           mRemoteIP (cpConnection->get_socket ().lowest_layer ().remote_endpoint ().address ().to_string ()),
           mLoadSource (mRemoteIP), mPingTimer (cpConnection->get_io_service ()), mPinged (false),
           mRcvQueueRunning (false), mDead (false)
@@ -52,7 +60,7 @@ public:
         mPingTimer.cancel ();
         mConnection.reset ();
 
-        boost::recursive_mutex::scoped_lock sl (mRcvQueueLock);
+        ScopedLockType sl (mRcvQueueLock, __FILE__, __LINE__);
         mDead = true;
     }
 
@@ -217,7 +225,7 @@ public:
 
     void rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueue)
     {
-        boost::recursive_mutex::scoped_lock sl (mRcvQueueLock);
+        ScopedLockType sl (mRcvQueueLock, __FILE__, __LINE__);
 
         if (mDead)
         {
@@ -248,7 +256,7 @@ public:
 
     message_ptr getMessage ()
     {
-        boost::recursive_mutex::scoped_lock sl (mRcvQueueLock);
+        ScopedLockType sl (mRcvQueueLock, __FILE__, __LINE__);
 
         if (mDead || mRcvQueue.empty ())
         {
@@ -264,6 +272,8 @@ public:
 private:
     typedef void (WSConnection::*doFuncPtr) (Json::Value& jvResult, Json::Value& jvRequest);
 
+    LockType                            mRcvQueueLock;
+
     WSServerHandler<endpoint_type>*     mHandler;
     weak_connection_ptr                 mConnection;
     NetworkOPs&                         mNetwork;
@@ -273,7 +283,6 @@ private:
     boost::asio::deadline_timer         mPingTimer;
     bool                                mPinged;
 
-    boost::recursive_mutex              mRcvQueueLock;
     std::queue<message_ptr>             mRcvQueue;
     bool                                mRcvQueueRunning;
     bool                                mDead;

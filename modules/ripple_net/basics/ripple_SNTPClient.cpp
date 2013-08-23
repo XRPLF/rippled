@@ -41,8 +41,14 @@ static uint8_t SNTPQueryData[48] =
 #define NTP_OFF_XMITTS_FRAC     11
 
 
-SNTPClient::SNTPClient (boost::asio::io_service& service) : mSocket (service), mTimer (service), mResolver (service),
-    mOffset (0), mLastOffsetUpdate ((time_t) - 1), mReceiveBuffer (256)
+SNTPClient::SNTPClient (boost::asio::io_service& service)
+    : mLock (this, "SNTPClient", __FILE__, __LINE__)
+    , mSocket (service)
+    , mTimer (service)
+    , mResolver (service)
+    , mOffset (0)
+    , mLastOffsetUpdate ((time_t) - 1)
+    , mReceiveBuffer (256)
 {
     mSocket.open (boost::asio::ip::udp::v4 ());
     mSocket.async_receive_from (boost::asio::buffer (mReceiveBuffer, 256), mReceiveEndpoint,
@@ -66,7 +72,7 @@ void SNTPClient::resolveComplete (const boost::system::error_code& error, boost:
 
         if (sel != boost::asio::ip::udp::resolver::iterator ())
         {
-            boost::mutex::scoped_lock sl (mLock);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
             SNTPQuery& query = mQueries[*sel];
             time_t now = time (NULL);
 
@@ -93,7 +99,7 @@ void SNTPClient::receivePacket (const boost::system::error_code& error, std::siz
 {
     if (!error)
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 #ifdef SNTP_DEBUG
         WriteLog (lsTRACE, SNTPClient) << "SNTP: Packet from " << mReceiveEndpoint;
 #endif
@@ -194,7 +200,7 @@ void SNTPClient::timerEntry (const boost::system::error_code& error)
 
 void SNTPClient::addServer (const std::string& server)
 {
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mServers.push_back (std::make_pair (server, (time_t) - 1));
 }
 
@@ -221,7 +227,7 @@ void SNTPClient::queryAll ()
 
 bool SNTPClient::getOffset (int& offset)
 {
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if ((mLastOffsetUpdate == (time_t) - 1) || ((mLastOffsetUpdate + NTP_TIMESTAMP_VALID) < time (NULL)))
         return false;
@@ -232,7 +238,7 @@ bool SNTPClient::getOffset (int& offset)
 
 bool SNTPClient::doQuery ()
 {
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     std::vector< std::pair<std::string, time_t> >::iterator best = mServers.end ();
 
     for (std::vector< std::pair<std::string, time_t> >::iterator it = mServers.begin (), end = best;

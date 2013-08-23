@@ -48,14 +48,11 @@ public:
     boost::shared_ptr <PathRequest> const& getPathRequest ();
 
 protected:
-    // VFALCO TODO make accessor for this member
-    boost::mutex                                mLockInfo;
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
 
 private:
-    // VFALCO TODO Move these globals to class instance
-    static uint64                               sSeq;
-    static boost::mutex                         sSeqLock;
-
     boost::unordered_set <RippleAddress>        mSubAccountInfo;
     boost::unordered_set <RippleAddress>        mSubAccountTransaction;
     boost::shared_ptr <PathRequest>             mPathRequest;

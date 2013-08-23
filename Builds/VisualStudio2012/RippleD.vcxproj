@@ -1507,7 +1507,6 @@
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_LogFile.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_PlatformMacros.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_RandomNumbers.h" />
-    <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_ScopedLock.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_StringUtilities.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_Sustain.h" />
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_ThreadName.h" />

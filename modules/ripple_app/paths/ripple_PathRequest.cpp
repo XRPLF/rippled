@@ -7,11 +7,12 @@
 SETUP_LOG (PathRequest)
 
 // VFALCO TODO Move these globals into a PathRequests collection inteface
-boost::recursive_mutex       PathRequest::sLock;
+PathRequest::StaticLockType PathRequest::sLock ("PathRequest", __FILE__, __LINE__);
 std::set <PathRequest::wptr> PathRequest::sRequests;
 
 PathRequest::PathRequest (const boost::shared_ptr<InfoSub>& subscriber)
-    : wpSubscriber (subscriber)
+    : mLock (this, "PathRequest", __FILE__, __LINE__)
+    , wpSubscriber (subscriber)
     , jvStatus (Json::objectValue)
     , bValid (false)
     , bNew (true)
@@ -20,19 +21,19 @@ PathRequest::PathRequest (const boost::shared_ptr<InfoSub>& subscriber)
 
 bool PathRequest::isValid ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return bValid;
 }
 
 bool PathRequest::isNew ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return bNew;
 }
 
 bool PathRequest::isValid (Ledger::ref lrLedger)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     bValid = raSrcAccount.isSet () && raDstAccount.isSet () && saDstAmount.isPositive ();
 
     if (bValid)
@@ -93,7 +94,7 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, const Json::Value& valu
     bool mValid;
 
     {
-        boost::recursive_mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         if (parseJson (value, true) != PFR_PJ_INVALID)
         {
@@ -115,7 +116,7 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, const Json::Value& valu
                                        " -> " << raDstAccount.humanAccountID ();
         WriteLog (lsINFO, PathRequest) << "Deliver: " << saDstAmount.getFullText ();
 
-        boost::recursive_mutex::scoped_lock sl (sLock);
+        StaticScopedLockType sl (sLock, __FILE__, __LINE__);
         sRequests.insert (shared_from_this ());
     }
 
@@ -216,19 +217,19 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
 }
 Json::Value PathRequest::doClose (const Json::Value&)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return jvStatus;
 }
 
 Json::Value PathRequest::doStatus (const Json::Value&)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return jvStatus;
 }
 
 bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     jvStatus = Json::objectValue;
 
     if (!isValid (cache->getLedger ()))
@@ -318,7 +319,7 @@ void PathRequest::updateAll (Ledger::ref ledger, bool newOnly)
     std::set<wptr> requests;
 
     {
-        boost::recursive_mutex::scoped_lock sl (sLock);
+        StaticScopedLockType sl (sLock, __FILE__, __LINE__);
         requests = sRequests;
     }
 
@@ -344,7 +345,7 @@ void PathRequest::updateAll (Ledger::ref ledger, bool newOnly)
                 {
                     Json::Value update;
                     {
-                        boost::recursive_mutex::scoped_lock sl (pRequest->mLock);
+                        ScopedLockType sl (pRequest->mLock, __FILE__, __LINE__);
                         pRequest->doUpdate (cache, false);
                         update = pRequest->jvStatus;
                     }
@@ -357,7 +358,7 @@ void PathRequest::updateAll (Ledger::ref ledger, bool newOnly)
 
         if (remove)
         {
-            boost::recursive_mutex::scoped_lock sl (sLock);
+            StaticScopedLockType sl (sLock, __FILE__, __LINE__);
             sRequests.erase (wRequest);
         }
     }

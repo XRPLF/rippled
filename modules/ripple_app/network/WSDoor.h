@@ -20,8 +20,11 @@ private:
     void run ();
 
 private:
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType m_endpointLock;
+
     ScopedPointer <websocketpp::server_autotls> m_endpoint;
-    CriticalSection m_endpointLock;
     bool                            mPublic;
     std::string                     mIp;
     int                             mPort;

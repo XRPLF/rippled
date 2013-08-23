@@ -24,7 +24,7 @@ public:
     void sweep (void);
 
 private:
-    TaggedCache <uint256, Transaction, UptimeTimerAdapter> mCache;
+    TaggedCacheType <uint256, Transaction, UptimeTimerAdapter> mCache;
 };
 
 #endif

@@ -70,7 +70,7 @@ private:
     void insert (AcceptedLedgerTx::ref);
 
 private:
-    static TaggedCache <uint256, AcceptedLedger, UptimeTimerAdapter> s_cache;
+    static TaggedCacheType <uint256, AcceptedLedger, UptimeTimerAdapter> s_cache;
 
     Ledger::pointer     mLedger;
     map_t               mMap;

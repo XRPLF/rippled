@@ -144,6 +144,8 @@ public:
     static void print (std::string const& text,
                        bool toStdErr = true);
 
+    static void print (StringArray const& strings, bool toStdErr = true);
+
     /** Output stream for logging
 
         This is a convenient replacement for writing to `std::cerr`.
@@ -196,8 +198,11 @@ private:
 
     // Singleton variables
     //
+    typedef RippleRecursiveMutex StaticLockType;
+    typedef StaticLockType::ScopedLockType StaticScopedLockType;
+    static StaticLockType s_lock;
+
     static LogFile s_logFile;
-    static boost::recursive_mutex s_lock;
     static LogSeverity sMinSeverity;
 
     mutable std::ostringstream  oss;

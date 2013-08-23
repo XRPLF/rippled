@@ -7,7 +7,8 @@
 class InboundLedger;
 
 PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)
-    : mHash (hash)
+    : mLock (this, "PeerSet", __FILE__, __LINE__)
+    , mHash (hash)
     , mTimerInterval (interval)
     , mTimeouts (0)
     , mComplete (false)
@@ -22,7 +23,7 @@ PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)
 
 bool PeerSet::peerHas (Peer::ref ptr)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!mPeers.insert (std::make_pair (ptr->getPeerId (), 0)).second)
         return false;
@@ -33,7 +34,7 @@ bool PeerSet::peerHas (Peer::ref ptr)
 
 void PeerSet::badPeer (Peer::ref ptr)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mPeers.erase (ptr->getPeerId ());
 }
 
@@ -45,7 +46,7 @@ void PeerSet::setTimer ()
 
 void PeerSet::invokeOnTimer ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (isDone ())
         return;
@@ -100,7 +101,7 @@ void PeerSet::TimerJobEntry (Job&, boost::shared_ptr<PeerSet> ptr)
 
 bool PeerSet::isActive ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return !isDone ();
 }
 
@@ -114,7 +115,7 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ref peer)
 
 void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (mPeers.empty ())
         return;

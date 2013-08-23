@@ -1818,7 +1818,7 @@ Json::Value RPCHandler::doTxHistory (Json::Value params, LoadType* loadType, App
 
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        ScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
 
         SQL_FOREACH (db, sql)
         {

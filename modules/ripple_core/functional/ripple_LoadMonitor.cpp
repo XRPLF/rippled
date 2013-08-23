@@ -7,7 +7,8 @@
 SETUP_LOG (LoadMonitor)
 
 LoadMonitor::LoadMonitor ()
-    : mCounts (0)
+    : mLock (this, "LoadMonitor", __FILE__, __LINE__)
+    , mCounts (0)
     , mLatencyEvents (0)
     , mLatencyMSAvg (0)
     , mLatencyMSPeak (0)
@@ -66,7 +67,7 @@ void LoadMonitor::update ()
 
 void LoadMonitor::addCount ()
 {
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     update ();
     ++mCounts;
@@ -78,7 +79,7 @@ void LoadMonitor::addLatency (int latency)
     if (latency == 1)
         latency = 0;
 
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     update ();
 
@@ -105,7 +106,7 @@ void LoadMonitor::addCountAndLatency (const std::string& name, int latency)
     if (latency == 1)
         latency = 0;
 
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     update ();
     ++mCounts;
@@ -134,7 +135,7 @@ bool LoadMonitor::isOverTarget (uint64 avg, uint64 peak)
 
 bool LoadMonitor::isOver ()
 {
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     update ();
 
@@ -146,7 +147,7 @@ bool LoadMonitor::isOver ()
 
 void LoadMonitor::getCountAndLatency (uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver)
 {
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     update ();
 

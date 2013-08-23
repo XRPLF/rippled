@@ -170,10 +170,19 @@
 //#define RIPPLE_VERIFY_NODEOBJECT_KEYS 1
 #endif
 
+//------------------------------------------------------------------------------
+
+/** Config: RIPPLE_TRACK_MUTEXES
+   
+    Turns on a feature that enables tracking and diagnostics for mutex
+    and recursive mutex objects. This affects the type of lock used
+    by RippleMutex and RippleRecursiveMutex
+*/
+#define RIPPLE_TRACK_MUTEXES 0
+
+//------------------------------------------------------------------------------
+
+// This is temporary and will disappear
 #define RIPPLE_USES_BEAST_SOCKETS 0
-
-
-//#define BEAST_ASIO_HAS_BUFFEREDHANDSHAKE 0
-//#define BEAST_ASIO_HAS_FUTURE_RETURNS 0
 
 #endif

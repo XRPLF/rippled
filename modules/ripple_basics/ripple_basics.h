@@ -31,6 +31,10 @@
 
 #include "beast/modules/beast_crypto/beast_crypto.h"
 
+#ifndef RIPPLE_TRACK_MUTEXES
+# define RIPPLE_TRACK_MUTEXES 0
+#endif
+
 //------------------------------------------------------------------------------
 
 // From
@@ -75,17 +79,17 @@ namespace ripple
 
 using namespace beast;
 
+#include "types/ripple_BasicTypes.h"
+
 #include "utility/ripple_LogFile.h"
 #include "utility/ripple_Log.h" // Needed by others
 
-#include "types/ripple_BasicTypes.h"
 #include "utility/ripple_ByteOrder.h"
 #include "utility/ripple_CountedObject.h"
 #include "utility/ripple_DiffieHellmanUtil.h"
 #include "utility/ripple_IniFile.h"
 #include "utility/ripple_PlatformMacros.h"
 #include "utility/ripple_RandomNumbers.h"
-#include "utility/ripple_ScopedLock.h"
 #include "utility/ripple_StringUtilities.h"
 #include "utility/ripple_Sustain.h"
 #include "utility/ripple_ThreadName.h"

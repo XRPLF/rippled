@@ -394,6 +394,11 @@ private:
 
     typedef boost::unordered_map<std::string, InfoSub::pointer>     subRpcMapType;
 
+    // XXX Split into more locks.
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     OperatingMode                       mMode;
     bool                                mNeedNetworkLedger;
     bool                                mProposing, mValidating;
@@ -420,8 +425,6 @@ private:
     // Recent positions taken
     std::map<uint256, std::pair<int, SHAMap::pointer> > mRecentPositions;
 
-    // XXX Split into more locks.
-    boost::recursive_mutex                              mMonitorLock;
     SubInfoMapType                                      mSubAccount;
     SubInfoMapType                                      mSubRTAccount;
 
@@ -432,7 +435,7 @@ private:
     SubMapType                                          mSubTransactions;       // all accepted transactions
     SubMapType                                          mSubRTTransactions;     // all proposed and accepted transactions
 
-    TaggedCache< uint256, Blob , UptimeTimerAdapter >   mFetchPack;
+    TaggedCacheType< uint256, Blob , UptimeTimerAdapter >   mFetchPack;
     uint32                                              mFetchSeq;
 
     uint32                                              mLastLoadBase;

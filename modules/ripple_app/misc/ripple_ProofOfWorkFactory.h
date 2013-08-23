@@ -40,6 +40,10 @@ public:
     static int getPowEntry (uint256 const& target, int iterations);
 
 private:
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     uint256      mSecret;
     int          mIterations;
     uint256      mTarget;
@@ -48,7 +52,6 @@ private:
     int          mPowEntry;
 
     powMap_t     mSolvedChallenges;
-    boost::mutex mLock;
 };
 
 #endif

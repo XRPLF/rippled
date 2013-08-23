@@ -208,7 +208,7 @@ TER Transactor::apply ()
 
     if (terResult != tesSUCCESS) return (terResult);
 
-    boost::recursive_mutex::scoped_lock sl (mEngine->getLedger ()->mLock);
+    Ledger::ScopedLockType sl (mEngine->getLedger ()->mLock, __FILE__, __LINE__);
 
     mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (mTxnAccountID));
     calculateFee ();

@@ -67,11 +67,14 @@ private:
 
     // VFALCO TODO try to make some of these private
 protected:
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+
     PeerSet (uint256 const& hash, int interval, bool txnData);
     virtual ~PeerSet () { }
 
     virtual void newPeer (Peer::ref) = 0;
-    virtual void onTimer (bool progress, boost::recursive_mutex::scoped_lock&) = 0;
+    virtual void onTimer (bool progress, ScopedLockType&) = 0;
     virtual boost::weak_ptr<PeerSet> pmDowncast () = 0;
 
     void setComplete ()
@@ -88,6 +91,8 @@ protected:
     void sendRequest (const protocol::TMGetLedger& message, Peer::ref peer);
 
 protected:
+    LockType mLock;
+
     uint256 mHash;
     int mTimerInterval;
     int mTimeouts;
@@ -99,7 +104,6 @@ protected:
     int mLastProgress;
 
 
-    boost::recursive_mutex                  mLock;
     // VFALCO TODO move the responsibility for the timer to a higher level
     boost::asio::deadline_timer             mTimer;
 

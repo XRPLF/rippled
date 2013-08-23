@@ -16,12 +16,18 @@ class WSConnection;
 
 struct WSServerHandlerLog;
 
+// This tag helps with mutex tracking
+struct WSServerHandlerBase
+{
+};
+
 // A single instance of this object is made.
 // This instance dispatches all events.  There is no per connection persistence.
 
 template <typename endpoint_type>
 class WSServerHandler
-    : public endpoint_type::handler
+    : public WSServerHandlerBase
+    , public endpoint_type::handler
     , LeakChecked <WSServerHandler <endpoint_type> >
 {
 public:
@@ -35,17 +41,25 @@ public:
         crTooSlow   = 4000,     // Client is too slow.
     };
 
+protected:
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
 private:
     boost::shared_ptr<boost::asio::ssl::context>                            mCtx;
 
 protected:
-    boost::mutex                                                            mMapLock;
+
     // For each connection maintain an associated object to track subscriptions.
     boost::unordered_map<connection_ptr, boost::shared_ptr< WSConnection<endpoint_type> > > mMap;
     bool                                                                    mPublic;
 
 public:
-    WSServerHandler (boost::shared_ptr<boost::asio::ssl::context> spCtx, bool bPublic) : mCtx (spCtx), mPublic (bPublic)
+    WSServerHandler (boost::shared_ptr<boost::asio::ssl::context> spCtx, bool bPublic)
+        : mLock (static_cast <WSServerHandlerBase*> (this), "WSServerHandler", __FILE__, __LINE__)
+        , mCtx (spCtx)
+        , mPublic (bPublic)
     {
         if (getConfig ().WEBSOCKET_SECURE != 0)
         {
@@ -118,7 +132,7 @@ public:
     {
         wsc_ptr ptr;
         {
-            boost::mutex::scoped_lock   sl (mMapLock);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
@@ -141,7 +155,7 @@ public:
     {
         wsc_ptr ptr;
         {
-            boost::mutex::scoped_lock   sl (mMapLock);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
@@ -155,7 +169,7 @@ public:
 
     void on_open (connection_ptr cpClient)
     {
-        boost::mutex::scoped_lock   sl (mMapLock);
+        ScopedLockType   sl (mLock, __FILE__, __LINE__);
 
         try
         {
@@ -170,7 +184,7 @@ public:
     {
         wsc_ptr ptr;
         {
-            boost::mutex::scoped_lock   sl (mMapLock);
+            ScopedLockType   sl (mLock, __FILE__, __LINE__);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
@@ -186,7 +200,7 @@ public:
         // we cannot destroy the connection while holding the map lock or we deadlock with pubLedger
         wsc_ptr ptr;
         {
-            boost::mutex::scoped_lock   sl (mMapLock);
+            ScopedLockType   sl (mLock, __FILE__, __LINE__);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
@@ -206,7 +220,7 @@ public:
     {
         wsc_ptr ptr;
         {
-            boost::mutex::scoped_lock   sl (mMapLock);
+            ScopedLockType   sl (mLock, __FILE__, __LINE__);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
@@ -240,7 +254,7 @@ public:
     {
         wsc_ptr ptr;
         {
-            boost::mutex::scoped_lock   sl (mMapLock);
+            ScopedLockType   sl (mLock, __FILE__, __LINE__);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())

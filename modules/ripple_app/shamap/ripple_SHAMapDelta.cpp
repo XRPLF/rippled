@@ -125,7 +125,7 @@ bool SHAMap::compare (SHAMap::ref otherMap, Delta& differences, int maxCount)
 
     std::stack<SHAMapDeltaNode> nodeStack; // track nodes we've pushed
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (getHash () == otherMap->getHash ())
         return true;
@@ -223,7 +223,7 @@ void SHAMap::walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissi
 {
     std::stack<SHAMapTreeNode::pointer> nodeStack;
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!root->isInner ())  // root is only node, and we have it
         return;

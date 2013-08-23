@@ -14,8 +14,12 @@ typedef boost::shared_ptr<ValidationSet> VSpointer;
 class Validations : public IValidations
 {
 private:
-    boost::mutex                                                    mValidationLock;
-    TaggedCache<uint256, ValidationSet, UptimeTimerAdapter>     mValidations;
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    typedef LockType::ScopedUnlockType ScopedUnlockType;
+    LockType mLock;
+
+    TaggedCacheType<uint256, ValidationSet, UptimeTimerAdapter>     mValidations;
     boost::unordered_map<uint160, SerializedValidation::pointer>    mCurrentValidations;
     std::vector<SerializedValidation::pointer>                      mStaleValidations;
 
@@ -41,7 +45,9 @@ private:
     }
 
 public:
-    Validations () : mValidations ("Validations", 128, 600), mWriting (false)
+    Validations ()
+        : mLock (this, "Validations", __FILE__, __LINE__)
+        , mValidations ("Validations", 128, 600), mWriting (false)
     {
         mStaleValidations.reserve (512);
     }
@@ -75,7 +81,7 @@ private:
         uint160 node = signer.getNodeID ();
 
         {
-            boost::mutex::scoped_lock sl (mValidationLock);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
 
             if (!findCreateSet (hash)->insert (std::make_pair (node, val)).second)
                 return false;
@@ -119,7 +125,7 @@ private:
     ValidationSet getValidations (uint256 const& ledger)
     {
         {
-            boost::mutex::scoped_lock sl (mValidationLock);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
             VSpointer set = findSet (ledger);
 
             if (set)
@@ -131,7 +137,7 @@ private:
     void getValidationCount (uint256 const& ledger, bool currentOnly, int& trusted, int& untrusted)
     {
         trusted = untrusted = 0;
-        boost::mutex::scoped_lock sl (mValidationLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         VSpointer set = findSet (ledger);
 
         if (set)
@@ -166,7 +172,7 @@ private:
     void getValidationTypes (uint256 const& ledger, int& full, int& partial)
     {
         full = partial = 0;
-        boost::mutex::scoped_lock sl (mValidationLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         VSpointer set = findSet (ledger);
 
         if (set)
@@ -190,7 +196,7 @@ private:
     int getTrustedValidationCount (uint256 const& ledger)
     {
         int trusted = 0;
-        boost::mutex::scoped_lock sl (mValidationLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         VSpointer set = findSet (ledger);
 
         if (set)
@@ -210,7 +216,7 @@ private:
         int trusted = 0;
         fee = 0;
 
-        boost::mutex::scoped_lock sl (mValidationLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         VSpointer set = findSet (ledger);
 
         if (set)
@@ -239,7 +245,7 @@ private:
     {
         // Number of trusted nodes that have moved past this ledger
         int count = 0;
-        boost::mutex::scoped_lock sl (mValidationLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
         {
             if (it.second->isTrusted () && it.second->isPreviousHash (ledger))
@@ -254,7 +260,7 @@ private:
         int goodNodes = overLoaded ? 1 : 0;
         int badNodes = overLoaded ? 0 : 1;
         {
-            boost::mutex::scoped_lock sl (mValidationLock);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
             BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
             {
                 if (it.second->isTrusted ())
@@ -275,7 +281,7 @@ private:
 
         std::list<SerializedValidation::pointer> ret;
 
-        boost::mutex::scoped_lock sl (mValidationLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
 
         while (it != mCurrentValidations.end ())
@@ -312,7 +318,7 @@ private:
 
         boost::unordered_map<uint256, currentValidationCount> ret;
 
-        boost::mutex::scoped_lock sl (mValidationLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
 
         while (it != mCurrentValidations.end ())
@@ -359,7 +365,7 @@ private:
         bool anyNew = false;
 
         WriteLog (lsINFO, Validations) << "Flushing validations";
-        boost::mutex::scoped_lock sl (mValidationLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
         {
             if (it.second)
@@ -374,9 +380,8 @@ private:
 
         while (mWriting)
         {
-            sl.unlock ();
+            ScopedUnlockType sul (mLock, __FILE__, __LINE__);
             boost::this_thread::sleep (boost::posix_time::milliseconds (100));
-            sl.lock ();
         }
 
         WriteLog (lsDEBUG, Validations) << "Validations flushed";
@@ -398,7 +403,7 @@ private:
         boost::format insVal ("INSERT INTO Validations "
                               "(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
 
-        boost::mutex::scoped_lock sl (mValidationLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         assert (mWriting);
 
         while (!mStaleValidations.empty ())
@@ -406,24 +411,26 @@ private:
             std::vector<SerializedValidation::pointer> vector;
             vector.reserve (512);
             mStaleValidations.swap (vector);
-            sl.unlock ();
-            {
-                Database* db = getApp().getLedgerDB ()->getDB ();
-                ScopedLock dbl (getApp().getLedgerDB ()->getDBLock ());
 
-                Serializer s (1024);
-                db->executeSQL ("BEGIN TRANSACTION;");
-                BOOST_FOREACH (SerializedValidation::ref it, vector)
+            {
+                ScopedUnlockType sul (mLock, __FILE__, __LINE__);
                 {
-                    s.erase ();
-                    it->add (s);
-                    db->executeSQL (boost::str (insVal % it->getLedgerHash ().GetHex ()
-                                                % it->getSignerPublic ().humanNodePublic () % it->getSignTime ()
-                                                % sqlEscape (s.peekData ())));
+                    Database* db = getApp().getLedgerDB ()->getDB ();
+                    DeprecatedScopedLock dbl (getApp().getLedgerDB ()->getDBLock ());
+
+                    Serializer s (1024);
+                    db->executeSQL ("BEGIN TRANSACTION;");
+                    BOOST_FOREACH (SerializedValidation::ref it, vector)
+                    {
+                        s.erase ();
+                        it->add (s);
+                        db->executeSQL (boost::str (insVal % it->getLedgerHash ().GetHex ()
+                                                    % it->getSignerPublic ().humanNodePublic () % it->getSignTime ()
+                                                    % sqlEscape (s.peekData ())));
+                    }
+                    db->executeSQL ("END TRANSACTION;");
                 }
-                db->executeSQL ("END TRANSACTION;");
             }
-            sl.lock ();
         }
 
         mWriting = false;
@@ -431,7 +438,7 @@ private:
 
     void sweep ()
     {
-        boost::mutex::scoped_lock sl (mValidationLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mValidations.sweep ();
     }
 };

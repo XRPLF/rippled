@@ -25,7 +25,8 @@ JobQueue::Count::Count (JobType type_) noexcept
 SETUP_LOG (JobQueue)
 
 JobQueue::JobQueue ()
-    : m_workers (*this, "JobQueue", 0)
+    : mLock (this, "JobQueue", __FILE__, __LINE__)
+    , m_workers (*this, "JobQueue", 0)
     , mLastJob (0)
 {
     // Initialize the job counts.
@@ -62,7 +63,7 @@ void JobQueue::addJob (JobType type, const std::string& name, const FUNCTION_TYP
 {
     assert (type != jtINVALID);
 
-    ScopedLockType lock (mJobLock);
+    ScopedLockType lock (mLock, __FILE__, __LINE__);
 
     // FIXME: Workaround incorrect client shutdown ordering
     // do not add jobs to a queue with no threads
@@ -78,7 +79,7 @@ void JobQueue::addJob (JobType type, const std::string& name, const FUNCTION_TYP
 
 int JobQueue::getJobCount (JobType t)
 {
-    ScopedLockType lock (mJobLock);
+    ScopedLockType lock (mLock, __FILE__, __LINE__);
 
     JobCounts::const_iterator c = mJobCounts.find (t);
 
@@ -87,7 +88,7 @@ int JobQueue::getJobCount (JobType t)
 
 int JobQueue::getJobCountTotal (JobType t)
 {
-    ScopedLockType lock (mJobLock);
+    ScopedLockType lock (mLock, __FILE__, __LINE__);
 
     JobCounts::const_iterator c = mJobCounts.find (t);
 
@@ -99,7 +100,7 @@ int JobQueue::getJobCountGE (JobType t)
     // return the number of jobs at this priority level or greater
     int ret = 0;
 
-    ScopedLockType lock (mJobLock);
+    ScopedLockType lock (mLock, __FILE__, __LINE__);
 
     typedef JobCounts::value_type jt_int_pair;
 
@@ -117,7 +118,7 @@ std::vector< std::pair<JobType, std::pair<int, int> > > JobQueue::getJobCounts (
     // return all jobs at all priority levels
     std::vector< std::pair<JobType, std::pair<int, int> > > ret;
 
-    ScopedLockType lock (mJobLock);
+    ScopedLockType lock (mLock, __FILE__, __LINE__);
 
     ret.reserve (mJobCounts.size ());
 
@@ -136,7 +137,7 @@ Json::Value JobQueue::getJson (int)
 {
     Json::Value ret (Json::objectValue);
 
-    ScopedLockType lock (mJobLock);
+    ScopedLockType lock (mLock, __FILE__, __LINE__);
 
     ret["threads"] = m_workers.getNumberOfThreads ();
 
@@ -201,7 +202,7 @@ bool JobQueue::isOverloaded ()
 {
     int count = 0;
 
-    ScopedLockType lock (mJobLock);
+    ScopedLockType lock (mLock, __FILE__, __LINE__);
 
     for (int i = 0; i < NUM_JOB_TYPES; ++i)
         if (mJobLoads[i].isOver ())
@@ -360,7 +361,7 @@ void JobQueue::finishJob (Job const& job)
     JobType const type = job.getType ();
 
     {
-        ScopedLockType lock (mJobLock);
+        ScopedLockType lock (mLock, __FILE__, __LINE__);
 
         check_precondition (mJobSet.find (job) == mJobSet.end ());
         check_precondition (type != jtINVALID);
@@ -398,7 +399,7 @@ void JobQueue::processTask ()
     Job job;
 
     {
-        ScopedLockType lock (mJobLock);
+        ScopedLockType lock (mLock, __FILE__, __LINE__);
 
         getNextJob (job, lock);
     }

@@ -14,7 +14,8 @@ class LoadFeeTrack : public ILoadFeeTrack
 {
 public:
     LoadFeeTrack ()
-        : mLocalTxnLoadFee (lftNormalFee)
+        : mLock (this, "LoadFeeTrack", __FILE__, __LINE__)
+        , mLocalTxnLoadFee (lftNormalFee)
         , mRemoteTxnLoadFee (lftNormalFee)
         , mClusterTxnLoadFee (lftNormalFee)
         , raiseCount (0)
@@ -41,7 +42,7 @@ public:
             feeFactor = uRemFee;
 
         {
-            boost::mutex::scoped_lock sl (mLock);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
             fee = mulDiv (fee, feeFactor, lftNormalFee);
         }
 
@@ -61,13 +62,13 @@ public:
 
     uint32 getRemoteFee ()
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mRemoteTxnLoadFee;
     }
 
     uint32 getLocalFee ()
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mLocalTxnLoadFee;
     }
 
@@ -78,19 +79,19 @@ public:
 
     uint32 getLoadFactor ()
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return std::max(mClusterTxnLoadFee, std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee));
     }
 
     void setClusterFee (uint32 fee)
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mClusterTxnLoadFee = fee;
     }
 
     uint32 getClusterFee ()
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mClusterTxnLoadFee;
     }
 
@@ -102,7 +103,7 @@ public:
         //        NOTE This applies to all the locking in this class.
         //
         //
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee);
     }
 
@@ -114,19 +115,19 @@ public:
         //        NOTE This applies to all the locking in this class.
         //
         //
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee) || (mClusterTxnLoadFee != lftNormalFee);
     }
 
     void setRemoteFee (uint32 f)
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mRemoteTxnLoadFee = f;
     }
 
     bool raiseLocalFee ()
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         if (++raiseCount < 2)
             return false;
@@ -150,7 +151,7 @@ public:
 
     bool lowerLocalFee ()
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         uint32 origFee = mLocalTxnLoadFee;
         raiseCount = 0;
 
@@ -171,7 +172,7 @@ public:
         Json::Value j (Json::objectValue);
 
         {
-            boost::mutex::scoped_lock sl (mLock);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
 
             // base_fee = The cost to send a "reference" transaction under no load, in millionths of a Ripple
             j["base_fee"] = Json::Value::UInt (baseFee);
@@ -205,12 +206,14 @@ private:
     static const int lftFeeDecFraction = 4;     // decrease fee by 1/4
     static const int lftFeeMax = lftNormalFee * 1000000;
 
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     uint32 mLocalTxnLoadFee;        // Scale factor, lftNormalFee = normal fee
     uint32 mRemoteTxnLoadFee;       // Scale factor, lftNormalFee = normal fee
     uint32 mClusterTxnLoadFee;      // Scale factor, lftNormalFee = normal fee
     int raiseCount;
-
-    boost::mutex mLock;
 };
 
 #endif

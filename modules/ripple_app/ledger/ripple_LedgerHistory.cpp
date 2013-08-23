@@ -26,7 +26,7 @@ void LedgerHistory::addLedger (Ledger::pointer ledger)
     assert (ledger && ledger->isImmutable ());
     assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
 
-    boost::recursive_mutex::scoped_lock sl (mLedgersByHash.peekMutex ());
+    TaggedCache::ScopedLockType sl (mLedgersByHash.peekMutex (), __FILE__, __LINE__);
 
     mLedgersByHash.canonicalize (ledger->getHash(), ledger, true);
     if (ledger->isValidated())
@@ -35,7 +35,7 @@ void LedgerHistory::addLedger (Ledger::pointer ledger)
 
 uint256 LedgerHistory::getLedgerHash (uint32 index)
 {
-    boost::recursive_mutex::scoped_lock sl (mLedgersByHash.peekMutex ());
+    TaggedCache::ScopedLockType sl (mLedgersByHash.peekMutex (), __FILE__, __LINE__);
     std::map<uint32, uint256>::iterator it (mLedgersByIndex.find (index));
 
     if (it != mLedgersByIndex.end ())
@@ -47,7 +47,7 @@ uint256 LedgerHistory::getLedgerHash (uint32 index)
 
 Ledger::pointer LedgerHistory::getLedgerBySeq (uint32 index)
 {
-    boost::recursive_mutex::scoped_lock sl (mLedgersByHash.peekMutex ());
+    TaggedCache::ScopedLockType sl (mLedgersByHash.peekMutex (), __FILE__, __LINE__);
     std::map<uint32, uint256>::iterator it (mLedgersByIndex.find (index));
 
     if (it != mLedgersByIndex.end ())
@@ -66,7 +66,7 @@ Ledger::pointer LedgerHistory::getLedgerBySeq (uint32 index)
 
     assert (ret->getLedgerSeq () == index);
 
-    sl.lock ();
+    sl.lock (__FILE__, __LINE__);
     assert (ret->isImmutable ());
     mLedgersByHash.canonicalize (ret->getHash (), ret);
     mLedgersByIndex[ret->getLedgerSeq ()] = ret->getHash ();
@@ -114,7 +114,7 @@ Ledger::pointer LedgerHistory::canonicalizeLedger (Ledger::pointer ledger, bool 
     }
 
     // save input ledger in map if not in map, otherwise return corresponding map ledger
-    boost::recursive_mutex::scoped_lock sl (mLedgersByHash.peekMutex ());
+    TaggedCache::ScopedLockType sl (mLedgersByHash.peekMutex (), __FILE__, __LINE__);
     mLedgersByHash.canonicalize (h, ledger);
 
     if (ledger->isValidated ())

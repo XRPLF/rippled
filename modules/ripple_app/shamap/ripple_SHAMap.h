@@ -29,6 +29,9 @@ public:
     typedef std::map<uint256, DeltaItem> Delta;
     typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> DirtyMap;
 
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+
 public:
     // build new map
     explicit SHAMap (SHAMapType t, uint32 seq = 1);
@@ -53,9 +56,9 @@ public:
     }
 
     // hold the map stable across operations
-    ScopedLock Lock () const
+    LockType const& peekMutex () const
     {
-        return ScopedLock (mLock);
+        return mLock;
     }
 
     bool hasNode (const SHAMapNode & id);
@@ -222,9 +225,14 @@ private:
                      Delta & differences, int & maxCount);
 
 private:
+#if 1
+    LockType mLock;
+#else
+    mutable LockType mLock;
+#endif
+
     uint32 mSeq;
     uint32 mLedgerSeq; // sequence number of ledger this is part of
-    mutable boost::recursive_mutex mLock;
     boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> mTNByID;
 
     boost::shared_ptr<DirtyMap> mDirtyNodes;

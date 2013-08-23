@@ -46,8 +46,11 @@ private:
     void processReply ();
 
 private:
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     std::map <boost::asio::ip::udp::endpoint, SNTPQuery> mQueries;
-    boost::mutex                        mLock;
 
     boost::asio::ip::udp::socket        mSocket;
     boost::asio::deadline_timer         mTimer;

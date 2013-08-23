@@ -19,10 +19,7 @@ public:
     // How long before we try again to acquire the same ledger
     static const int kReacquireIntervalSeconds = 300;
 
-    InboundLedgers ()
-        : mRecentFailures ("LedgerAcquireRecentFailures", 0, kReacquireIntervalSeconds)
-    {
-    }
+    InboundLedgers ();
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
@@ -66,7 +63,10 @@ public:
 private:
     typedef boost::unordered_map <uint256, InboundLedger::pointer> MapType;
 
-    boost::mutex mLock;
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     MapType mLedgers;
     KeyCache <uint256, UptimeTimerAdapter> mRecentFailures;
 };

@@ -6,14 +6,16 @@
 
 SETUP_LOG (OrderBookDB)
 
-OrderBookDB::OrderBookDB () : mSeq (0)
+OrderBookDB::OrderBookDB ()
+    : mLock (this, "OrderBookDB", __FILE__, __LINE__)
+    , mSeq (0)
 {
 
 }
 
 void OrderBookDB::invalidate ()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mSeq = 0;
 }
 
@@ -21,7 +23,7 @@ void OrderBookDB::setup (Ledger::ref ledger)
 {
     boost::unordered_set<uint256> mSeen;
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (ledger->getLedgerSeq () == mSeq)
         return;
@@ -73,7 +75,7 @@ void OrderBookDB::setup (Ledger::ref ledger)
 void OrderBookDB::getBooksByTakerPays (const uint160& issuerID, const uint160& currencyID,
                                        std::vector<OrderBook::pointer>& bookRet)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> >::const_iterator
     it = mSourceMap.find (currencyIssuer_ct (currencyID, issuerID));
 
@@ -87,7 +89,7 @@ void OrderBookDB::getBooksByTakerPays (const uint160& issuerID, const uint160& c
 void OrderBookDB::getBooksByTakerGets (const uint160& issuerID, const uint160& currencyID,
                                        std::vector<OrderBook::pointer>& bookRet)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> >::const_iterator
     it = mDestMap.find (currencyIssuer_ct (currencyID, issuerID));
 
@@ -100,7 +102,7 @@ void OrderBookDB::getBooksByTakerGets (const uint160& issuerID, const uint160& c
 BookListeners::pointer OrderBookDB::makeBookListeners (const uint160& currencyPays, const uint160& currencyGets,
         const uint160& issuerPays, const uint160& issuerGets)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     BookListeners::pointer ret = getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets);
 
     if (!ret)
@@ -116,7 +118,7 @@ BookListeners::pointer OrderBookDB::getBookListeners (const uint160& currencyPay
         const uint160& issuerPays, const uint160& issuerGets)
 {
     BookListeners::pointer ret;
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > >::iterator
     it0 = mListeners.find (issuerPays);
@@ -147,7 +149,7 @@ BookListeners::pointer OrderBookDB::getBookListeners (const uint160& currencyPay
 // We need to determine which streams a given meta effects
 void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value& jvObj)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (alTx.getResult () == tesSUCCESS)
     {
@@ -205,16 +207,23 @@ void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, 
         }
     }
 }
+    
+//------------------------------------------------------------------------------
+
+BookListeners::BookListeners ()
+    : mLock (this, "BookListeners", __FILE__, __LINE__)
+{
+}
 
 void BookListeners::addSubscriber (InfoSub::ref sub)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mListeners[sub->getSeq ()] = sub;
 }
 
 void BookListeners::removeSubscriber (uint64 seq)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mListeners.erase (seq);
 }
 
@@ -223,7 +232,7 @@ void BookListeners::publish (Json::Value& jvObj)
     Json::FastWriter jfwWriter;
     std::string sObj = jfwWriter.write (jvObj);
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     NetworkOPs::SubMapType::const_iterator it = mListeners.begin ();
 
     while (it != mListeners.end ())

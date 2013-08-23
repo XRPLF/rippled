@@ -4,7 +4,7 @@
 */
 //==============================================================================
 
-TaggedCache <uint256, AcceptedLedger, UptimeTimerAdapter> AcceptedLedger::s_cache ("AcceptedLedger", 4, 60);
+TaggedCacheType <uint256, AcceptedLedger, UptimeTimerAdapter> AcceptedLedger::s_cache ("AcceptedLedger", 4, 60);
 
 AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
 {

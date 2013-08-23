@@ -6,6 +6,11 @@
 
 SETUP_LOG (Ledger)
 
+LedgerBase::LedgerBase ()
+    : mLock (this, "Ledger", __FILE__, __LINE__)
+{
+}
+
 Ledger::Ledger (const RippleAddress& masterID, uint64 startAmount)
     : mTotCoins (startAmount)
     , mLedgerSeq (1) // First Ledger
@@ -561,13 +566,13 @@ void Ledger::saveValidatedLedger (bool current)
     AcceptedLedger::pointer aLedger = AcceptedLedger::makeAcceptedLedger (shared_from_this ());
 
     {
-        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (deleteLedger % mLedgerSeq));
     }
 
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        ScopedLock dbLock (getApp().getTxnDB ()->getDBLock ());
+        DeprecatedScopedLock dbLock (getApp().getTxnDB ()->getDBLock ());
         db->executeSQL ("BEGIN TRANSACTION;");
 
         db->executeSQL (boost::str (deleteTrans1 % mLedgerSeq));
@@ -621,7 +626,7 @@ void Ledger::saveValidatedLedger (bool current)
     }
 
     {
-        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
                 getHash ().GetHex () % mLedgerSeq % mParentHash.GetHex () %
@@ -630,7 +635,7 @@ void Ledger::saveValidatedLedger (bool current)
     }
 
     { // Clients can now trust the database for information about this ledger sequence
-        boost::mutex::scoped_lock sl (sPendingSaveLock);
+        StaticScopedLockType sl (sPendingSaveLock, __FILE__, __LINE__);
         sPendingSaves.erase(getLedgerSeq());
     }
 }
@@ -642,7 +647,7 @@ Ledger::pointer Ledger::loadByIndex (uint32 ledgerIndex)
     Ledger::pointer ledger;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         SqliteStatement pSt (db->getSqliteDB (), "SELECT "
                              "LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
@@ -667,7 +672,7 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
     Ledger::pointer ledger;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         SqliteStatement pSt (db->getSqliteDB (), "SELECT "
                              "LedgerHash,PrevHash,AccountSetHash,TransSetHash,TotalCoins,"
@@ -722,7 +727,7 @@ Ledger::pointer Ledger::getSQL (const std::string& sql)
 
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return Ledger::pointer ();
@@ -841,7 +846,7 @@ uint256 Ledger::getHashByIndex (uint32 ledgerIndex)
     std::string hash;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return ret;
@@ -859,7 +864,7 @@ bool Ledger::getHashesByIndex (uint32 ledgerIndex, uint256& ledgerHash, uint256&
 #ifndef NO_SQLITE3_PREPARE
 
     DatabaseCon* con = getApp().getLedgerDB ();
-    ScopedLock sl (con->getDBLock ());
+    DeprecatedScopedLock sl (con->getDBLock ());
 
     SqliteStatement pSt (con->getDB ()->getSqliteDB (),
                          "SELECT LedgerHash,PrevHash FROM Ledgers INDEXED BY SeqLedger Where LedgerSeq = ?;");
@@ -895,7 +900,7 @@ bool Ledger::getHashesByIndex (uint32 ledgerIndex, uint256& ledgerHash, uint256&
     std::string hash, prevHash;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        ScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return false;
@@ -926,7 +931,7 @@ std::map< uint32, std::pair<uint256, uint256> > Ledger::getHashesByIndex (uint32
     sql.append (";");
 
     DatabaseCon* con = getApp().getLedgerDB ();
-    ScopedLock sl (con->getDBLock ());
+    DeprecatedScopedLock sl (con->getDBLock ());
 
     SqliteStatement pSt (con->getDB ()->getSqliteDB (), sql);
 
@@ -964,7 +969,7 @@ Json::Value Ledger::getJson (int options)
 
     bool bFull = isSetBit (options, LEDGER_JSON_FULL);
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     ledger["seqNum"]                = lexicalCastThrow <std::string> (mLedgerSeq); // DEPRECATED
 
@@ -1004,7 +1009,7 @@ Json::Value Ledger::getJson (int options)
     {
         Json::Value txns (Json::arrayValue);
         SHAMapTreeNode::TNType type;
-        ScopedLock l (mTransactionMap->Lock ());
+        SHAMap::ScopedLockType l (mTransactionMap->peekMutex (), __FILE__, __LINE__);
 
         for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem (type); !!item;
                 item = mTransactionMap->peekNextItem (item->getTag (), type))
@@ -1046,7 +1051,7 @@ Json::Value Ledger::getJson (int options)
     if (mAccountStateMap && (bFull || isSetBit (options, LEDGER_JSON_DUMP_STATE)))
     {
         Json::Value state (Json::arrayValue);
-        ScopedLock l (mAccountStateMap->Lock ());
+        SHAMap::ScopedLockType l (mAccountStateMap->peekMutex (), __FILE__, __LINE__);
 
         for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem (); !!item;
                 item = mAccountStateMap->peekNextItem (item->getTag ()))
@@ -1104,7 +1109,7 @@ void Ledger::setCloseTime (boost::posix_time::ptime ptm)
 // XXX Use shared locks where possible?
 LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
 {
-    ScopedLock l (mAccountStateMap->Lock ());
+    SHAMap::ScopedLockType l (mAccountStateMap->peekMutex (), __FILE__, __LINE__);
     bool create = false;
 
     if (!mAccountStateMap->hasItem (entry->getIndex ()))
@@ -1157,7 +1162,7 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId)
 {
     uint256 hash;
 
-    ScopedLock sl (mAccountStateMap->Lock ());
+    SHAMap::ScopedLockType sl (mAccountStateMap->peekMutex (), __FILE__, __LINE__);
 
     SHAMapItem::pointer node = mAccountStateMap->peekItem (uId, hash);
 
@@ -1837,7 +1842,7 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
     assert (isImmutable ());
 
     {
-        boost::mutex::scoped_lock sl (sPendingSaveLock);
+        StaticScopedLockType sl (sPendingSaveLock, __FILE__, __LINE__);
         if (!sPendingSaves.insert(getLedgerSeq()).second)
         {
             WriteLog (lsDEBUG, Ledger) << "Pend save with seq in pending saves " << getLedgerSeq();
@@ -1865,7 +1870,7 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
 
 std::set<uint32> Ledger::getPendingSaves()
 {
-   boost::mutex::scoped_lock sl (sPendingSaveLock);
+   StaticScopedLockType sl (sPendingSaveLock, __FILE__, __LINE__);
    return sPendingSaves;
 }
 
@@ -1988,5 +1993,5 @@ public:
 
 static LedgerTests ledgerTests;
 
-boost::mutex Ledger::sPendingSaveLock;
+Ledger::StaticLockType Ledger::sPendingSaveLock ("LedgerStatic", __FILE__, __LINE__);
 std::set<uint32> Ledger::sPendingSaves;

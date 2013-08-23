@@ -25,7 +25,7 @@ Ledger::ref LedgerMaster::getCurrentSnapshot ()
 
 int LedgerMaster::getPublishedLedgerAge ()
 {
-    boost::recursive_mutex::scoped_lock ml (mLock);
+    ScopedLockType ml (mLock, __FILE__, __LINE__);
     if (!mPubLedger)
     {
         WriteLog (lsDEBUG, LedgerMaster) << "No published ledger";
@@ -42,7 +42,7 @@ int LedgerMaster::getPublishedLedgerAge ()
 
 int LedgerMaster::getValidatedLedgerAge ()
 {
-    boost::recursive_mutex::scoped_lock ml (mLock);
+    ScopedLockType ml (mLock, __FILE__, __LINE__);
     if (!mValidLedger)
     {
         WriteLog (lsDEBUG, LedgerMaster) << "No validated ledger";
@@ -64,7 +64,7 @@ bool LedgerMaster::isCaughtUp(std::string& reason)
         reason = "No recently-published ledger";
         return false;
     }
-    boost::recursive_mutex::scoped_lock ml (mLock);
+    ScopedLockType ml (mLock, __FILE__, __LINE__);
     if (!mValidLedger || !mPubLedger)
     {
         reason = "No published ledger";
@@ -81,7 +81,7 @@ bool LedgerMaster::isCaughtUp(std::string& reason)
 void LedgerMaster::addHeldTransaction (Transaction::ref transaction)
 {
     // returns true if transaction was added
-    boost::recursive_mutex::scoped_lock ml (mLock);
+    ScopedLockType ml (mLock, __FILE__, __LINE__);
     mHeldTransactions.push_back (transaction->getSTransaction ());
 }
 
@@ -92,7 +92,7 @@ void LedgerMaster::pushLedger (Ledger::pointer newLedger)
     WriteLog (lsINFO, LedgerMaster) << "PushLedger: " << newLedger->getHash ();
 
     {
-        boost::recursive_mutex::scoped_lock ml (mLock);
+        ScopedLockType ml (mLock, __FILE__, __LINE__);
 
         if (mClosedLedger)
         {
@@ -121,7 +121,7 @@ void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
 
 
     {
-        boost::recursive_mutex::scoped_lock ml (mLock);
+        ScopedLockType ml (mLock, __FILE__, __LINE__);
         mClosedLedger = newLCL;
         mCurrentLedger = newOL;
         mEngine.setLedger (newOL);
@@ -141,7 +141,7 @@ void LedgerMaster::switchLedgers (Ledger::pointer lastClosed, Ledger::pointer cu
     assert (lastClosed && current);
 
     {
-        boost::recursive_mutex::scoped_lock ml (mLock);
+        ScopedLockType ml (mLock, __FILE__, __LINE__);
         mClosedLedger = lastClosed;
         mClosedLedger->setClosed ();
         mClosedLedger->setAccepted ();
@@ -166,7 +166,7 @@ void LedgerMaster::forceValid (Ledger::pointer ledger)
 
 Ledger::pointer LedgerMaster::closeLedger (bool recover)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     Ledger::pointer closingLedger = mCurrentLedger;
 
     if (recover)
@@ -213,7 +213,7 @@ TER LedgerMaster::doTransaction (SerializedTransaction::ref txn, TransactionEngi
     TER result;
 
     {
-        boost::recursive_mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         result = mEngine.applyTransaction (*txn, params, didApply);
         ledger = mEngine.getLedger ();
     }
@@ -224,20 +224,20 @@ TER LedgerMaster::doTransaction (SerializedTransaction::ref txn, TransactionEngi
 
 bool LedgerMaster::haveLedgerRange (uint32 from, uint32 to)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     uint32 prevMissing = mCompleteLedgers.prevMissing (to + 1);
     return (prevMissing == RangeSet::absent) || (prevMissing < from);
 }
 
 bool LedgerMaster::haveLedger (uint32 seq)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return mCompleteLedgers.hasValue (seq);
 }
 
 bool LedgerMaster::getFullValidatedRange (uint32& minVal, uint32& maxVal)
 { // Ledgers we have all the nodes for
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!mPubLedger)
         return false;
@@ -259,7 +259,7 @@ bool LedgerMaster::getFullValidatedRange (uint32& minVal, uint32& maxVal)
 
 bool LedgerMaster::getValidatedRange (uint32& minVal, uint32& maxVal)
 { // Ledgers we have all the nodes for and are indexed
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!mPubLedger)
         return false;
@@ -323,7 +323,7 @@ void LedgerMaster::tryFill (Ledger::pointer ledger)
     while (seq > 0)
     {
         {
-            boost::recursive_mutex::scoped_lock ml (mLock);
+            ScopedLockType ml (mLock, __FILE__, __LINE__);
             minHas = seq;
             --seq;
 
@@ -339,7 +339,7 @@ void LedgerMaster::tryFill (Ledger::pointer ledger)
                 return;
 
             {
-                boost::recursive_mutex::scoped_lock ml (mLock);
+                ScopedLockType ml (mLock, __FILE__, __LINE__);
                 mCompleteLedgers.setRange (minHas, maxHas);
             }
             maxHas = minHas;
@@ -357,7 +357,7 @@ void LedgerMaster::tryFill (Ledger::pointer ledger)
     }
 
     {
-        boost::recursive_mutex::scoped_lock ml (mLock);
+        ScopedLockType ml (mLock, __FILE__, __LINE__);
         mCompleteLedgers.setRange (minHas, maxHas);
         mFillInProgress = false;
         tryAdvance();
@@ -449,7 +449,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
     ledger->setValidated();
     mLedgerHistory.addLedger(ledger);
 
-    boost::recursive_mutex::scoped_lock ml (mLock);
+    ScopedLockType ml (mLock, __FILE__, __LINE__);
 
     mCompleteLedgers.setValue (ledger->getLedgerSeq ());
 
@@ -496,7 +496,7 @@ void LedgerMaster::checkAccept (uint256 const& hash)
 void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 {
     // Can we advance the last fully-validated ledger? If so, can we publish?
-    boost::recursive_mutex::scoped_lock ml (mLock);
+    ScopedLockType ml (mLock, __FILE__, __LINE__);
 
     if (mValidLedger && (seq <= mValidLedger->getLedgerSeq ()))
         return;
@@ -570,7 +570,7 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 // Try to publish ledgers, acquire missing ledgers
 void LedgerMaster::advanceThread()
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     assert (mValidLedger && mAdvanceThread);
 
     bool progress;
@@ -627,7 +627,7 @@ void LedgerMaster::advanceThread()
                             setFullLedger(ledger, false, false);
                             if (Ledger::getHashByIndex(ledger->getLedgerSeq() - 1) == ledger->getParentHash())
                             { // Previous ledger is in DB
-                                sl.lock();
+                                sl.lock(__FILE__, __LINE__);
                                 mFillInProgress = true;
                                 getApp().getJobQueue().addJob(jtADVANCE, "tryFill", BIND_TYPE (&LedgerMaster::tryFill, this, ledger));
                                 sl.unlock();
@@ -651,7 +651,7 @@ void LedgerMaster::advanceThread()
                         WriteLog (lsFATAL, LedgerMaster) << "Pub:" << mPubLedger->getLedgerSeq() << " Val:" << mValidLedger->getLedgerSeq();
                         assert(false);
                     }
-                    sl.lock();
+                    sl.lock(__FILE__, __LINE__);
                     if (mValidLedger->getLedgerSeq() != mPubLedger->getLedgerSeq())
                     {
                         WriteLog (lsDEBUG, LedgerMaster) << "tryAdvance found last valid changed";
@@ -673,7 +673,7 @@ void LedgerMaster::advanceThread()
                 setFullLedger(ledger, true, true);
                 getApp().getOPs().pubLedger(ledger);
 
-                sl.lock();
+                sl.lock(__FILE__, __LINE__);
                 mPubLedger = ledger;
                 progress = true;
             }
@@ -693,7 +693,7 @@ void LedgerMaster::advanceThread()
     WriteLog (lsTRACE, LedgerMaster) << "advanceThread>";
 }
 
-std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish(boost::recursive_mutex::scoped_lock& sl)
+std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish(ScopedLockType& sl)
 {
     std::list<Ledger::pointer> ret;
 
@@ -775,7 +775,7 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish(boost::recursiv
             }
 
         }
-        sl.lock();
+        sl.lock(__FILE__, __LINE__);
     }
 
     WriteLog (lsTRACE, LedgerMaster) << "findNewLedgersToPublish> " << ret.size();
@@ -784,7 +784,7 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish(boost::recursiv
 
 void LedgerMaster::tryAdvance()
 {
-    boost::recursive_mutex::scoped_lock ml (mLock);
+    ScopedLockType ml (mLock, __FILE__, __LINE__);
 
     // Can't advance without at least one fully-valid ledger
     if (!mAdvanceThread && mValidLedger)
@@ -834,7 +834,7 @@ void LedgerMaster::updatePaths ()
         bool newOnly = true;
 
         {
-            boost::recursive_mutex::scoped_lock ml (mLock);
+            ScopedLockType ml (mLock, __FILE__, __LINE__);
 
             if (!mPathLedger || (mPathLedger->getLedgerSeq() < mValidLedger->getLedgerSeq()))
             { // We have a new valid ledger since the last full pathfinding
@@ -865,7 +865,7 @@ void LedgerMaster::updatePaths ()
 
 void LedgerMaster::newPathRequest ()
 {
-    boost::recursive_mutex::scoped_lock ml (mLock);
+    ScopedLockType ml (mLock, __FILE__, __LINE__);
     mPathFindNewRequest = true;
 
     if (!mPathFindThread)

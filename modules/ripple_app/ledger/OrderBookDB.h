@@ -25,13 +25,16 @@ class BookListeners
 public:
     typedef boost::shared_ptr<BookListeners> pointer;
 
+    BookListeners ();
     void addSubscriber (InfoSub::ref sub);
     void removeSubscriber (uint64 sub);
     void publish (Json::Value& jvObj);
 
 private:
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
     boost::unordered_map<uint64, InfoSub::wptr> mListeners;
-    boost::recursive_mutex mLock;
 };
 
 class OrderBookDB : LeakChecked <OrderBookDB>
@@ -58,13 +61,16 @@ public:
 
 private:
     boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > mSourceMap;   // by ci/ii
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > mDestMap;     // by co/io
 
     // issuerPays, issuerGets, currencyPays, currencyGets
     std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > > mListeners;
 
     uint32 mSeq;
-    boost::recursive_mutex mLock;
 
 };
 

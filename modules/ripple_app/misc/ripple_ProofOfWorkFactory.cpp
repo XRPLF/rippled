@@ -4,7 +4,9 @@
 */
 //==============================================================================
 
-ProofOfWorkFactory::ProofOfWorkFactory () :  mValidTime (180)
+ProofOfWorkFactory::ProofOfWorkFactory ()
+    : mLock (this, "PoWFactory", __FILE__, __LINE__)
+    , mValidTime (180)
 {
     setDifficulty (1);
     RandomNumbers::getInstance ().fillBytes (mSecret.begin (), mSecret.size ());
@@ -20,7 +22,7 @@ ProofOfWork ProofOfWorkFactory::getProof ()
     uint256 challenge;
     RandomNumbers::getInstance ().fillBytes (challenge.begin (), challenge.size ());
 
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     std::string s = boost::str (boost::format (f) % challenge.GetHex () % mTarget.GetHex () % mIterations % now);
     std::string c = mSecret.GetHex () + s;
@@ -70,7 +72,7 @@ POWResult ProofOfWorkFactory::checkProof (const std::string& token, uint256 cons
     int iterations = lexicalCast <int> (fields[2]);
 
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         if ((t * 4) > (now + mValidTime))
         {
@@ -95,7 +97,7 @@ POWResult ProofOfWorkFactory::checkProof (const std::string& token, uint256 cons
     }
 
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         if (!mSolvedChallenges.insert (powMap_vt (now, challenge)).second)
         {
@@ -111,7 +113,7 @@ void ProofOfWorkFactory::sweep ()
 {
     time_t expire = time (NULL) - mValidTime;
 
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     do
     {
@@ -132,7 +134,7 @@ void ProofOfWorkFactory::loadHigh ()
 {
     time_t now = time (NULL);
 
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (mLastDifficultyChange == now)
         return;
@@ -148,7 +150,7 @@ void ProofOfWorkFactory::loadLow ()
 {
     time_t now = time (NULL);
 
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (mLastDifficultyChange == now)
         return;
@@ -229,7 +231,7 @@ void ProofOfWorkFactory::setDifficulty (int i)
     assert ((i >= 0) && (i <= ProofOfWork::sMaxDifficulty));
     time_t now = time (NULL);
 
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mPowEntry = i;
     mIterations = PowEntries[i].iterations;
     mTarget.SetHex (PowEntries[i].target);

@@ -4,6 +4,12 @@
 */
 //==============================================================================
 
+TXQueue::TXQueue ()
+    : mLock (this, "TXQueue", __FILE__, __LINE__)
+    , mRunning (false)
+{
+}
+
 void TXQEntry::addCallbacks (const TXQEntry& otherEntry)
 {
     BOOST_FOREACH (const stCallback & callback, otherEntry.mCallbacks)
@@ -19,7 +25,7 @@ void TXQEntry::doCallbacks (TER result)
 bool TXQueue::addEntryForSigCheck (TXQEntry::ref entry)
 {
     // we always dispatch a thread to check the signature
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!mTxMap.insert (valueType (entry->getID (), entry)).second)
     {
@@ -34,7 +40,7 @@ bool TXQueue::addEntryForSigCheck (TXQEntry::ref entry)
 
 bool TXQueue::addEntryForExecution (TXQEntry::ref entry)
 {
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     entry->mSigChecked = true;
 
@@ -60,7 +66,7 @@ TXQEntry::pointer TXQueue::removeEntry (uint256 const& id)
 {
     TXQEntry::pointer ret;
 
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     mapType::left_map::iterator it = mTxMap.left.find (id);
 
@@ -75,7 +81,7 @@ TXQEntry::pointer TXQueue::removeEntry (uint256 const& id)
 
 void TXQueue::getJob (TXQEntry::pointer& job)
 {
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     assert (mRunning);
 
     if (job)
@@ -95,7 +101,7 @@ void TXQueue::getJob (TXQEntry::pointer& job)
 bool TXQueue::stopProcessing (TXQEntry::ref finishedJob)
 {
     // returns true if a new thread must be dispatched
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     assert (mRunning);
 
     mTxMap.left.erase (finishedJob->getID ());

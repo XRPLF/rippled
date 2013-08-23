@@ -508,7 +508,7 @@ private:
     ScopedPointer <Backend> m_fastBackend;
 
     // VFALCO NOTE What are these things for? We need comments.
-    TaggedCache <uint256, NodeObject, UptimeTimerAdapter> m_cache;
+    TaggedCacheType <uint256, NodeObject, UptimeTimerAdapter> m_cache;
     KeyCache <uint256, UptimeTimerAdapter> m_negativeCache;
 };
 

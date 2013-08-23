@@ -19,7 +19,10 @@ protected:
     typedef std::pair<const uint256, FeatureState> featureIt_t;
     typedef boost::unordered_set<uint256> featureList_t;
 
-    boost::mutex    mMutex;
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     featureMap_t    mFeatureMap;
     int             mMajorityTime;      // Seconds a feature must hold a majority
     int             mMajorityFraction;  // 256 = 100%
@@ -33,9 +36,9 @@ protected:
 public:
 
     Features (uint32 majorityTime, int majorityFraction)
-        : mMajorityTime (majorityTime), mMajorityFraction (majorityFraction), mFirstReport (0), mLastReport (0)
+        : mLock (this, "Features", __FILE__, __LINE__)
+        , mMajorityTime (majorityTime), mMajorityFraction (majorityFraction), mFirstReport (0), mLastReport (0)
     {
-        ;
     }
 
     void addInitialFeatures ();
@@ -94,7 +97,7 @@ FeatureState* Features::getCreateFeature (uint256 const& featureHash, bool creat
             query.append (featureHash.GetHex ());
             query.append ("';");
 
-            ScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
             Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL (query) && db->startIterRows ())
@@ -149,7 +152,7 @@ FeatureState* Features::addKnownFeature (const char* featureID, const char* frie
 
 bool Features::vetoFeature (uint256 const& feature)
 {
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     FeatureState* s = getCreateFeature (feature, true);
 
     if (s->mVetoed)
@@ -161,7 +164,7 @@ bool Features::vetoFeature (uint256 const& feature)
 
 bool Features::unVetoFeature (uint256 const& feature)
 {
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     FeatureState* s = getCreateFeature (feature, false);
 
     if (!s || !s->mVetoed)
@@ -173,7 +176,7 @@ bool Features::unVetoFeature (uint256 const& feature)
 
 bool Features::enableFeature (uint256 const& feature)
 {
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     FeatureState* s = getCreateFeature (feature, true);
 
     if (s->mEnabled)
@@ -185,7 +188,7 @@ bool Features::enableFeature (uint256 const& feature)
 
 bool Features::disableFeature (uint256 const& feature)
 {
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     FeatureState* s = getCreateFeature (feature, false);
 
     if (!s || !s->mEnabled)
@@ -197,14 +200,14 @@ bool Features::disableFeature (uint256 const& feature)
 
 bool Features::isFeatureEnabled (uint256 const& feature)
 {
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     FeatureState* s = getCreateFeature (feature, false);
     return s && s->mEnabled;
 }
 
 bool Features::isFeatureSupported (uint256 const& feature)
 {
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     FeatureState* s = getCreateFeature (feature, false);
     return s && s->mSupported;
 }
@@ -212,7 +215,7 @@ bool Features::isFeatureSupported (uint256 const& feature)
 Features::featureList_t Features::getVetoedFeatures ()
 {
     featureList_t ret;
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     BOOST_FOREACH (const featureIt_t & it, mFeatureMap)
     {
         if (it.second.mVetoed)
@@ -224,7 +227,7 @@ Features::featureList_t Features::getVetoedFeatures ()
 Features::featureList_t Features::getEnabledFeatures ()
 {
     featureList_t ret;
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     BOOST_FOREACH (const featureIt_t & it, mFeatureMap)
     {
         if (it.second.mEnabled)
@@ -252,7 +255,7 @@ bool Features::shouldEnable (uint32 closeTime, const FeatureState& fs)
 Features::featureList_t Features::getFeaturesToEnable (uint32 closeTime)
 {
     featureList_t ret;
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (mLastReport != 0)
     {
@@ -269,7 +272,7 @@ Features::featureList_t Features::getFeaturesToEnable (uint32 closeTime)
 Features::featureList_t Features::getDesiredFeatures ()
 {
     featureList_t ret;
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     BOOST_FOREACH (const featureIt_t & it, mFeatureMap)
     {
         if (it.second.mSupported && !it.second.mEnabled && !it.second.mVetoed)
@@ -287,7 +290,7 @@ void Features::reportValidations (const FeatureSet& set)
 
     typedef std::map<uint256, int>::value_type u256_int_pair;
 
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (mFirstReport == 0)
         mFirstReport = set.mCloseTime;
@@ -327,7 +330,7 @@ void Features::reportValidations (const FeatureSet& set)
 
     if (!changedFeatures.empty ())
     {
-        ScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
         Database* db = getApp().getWalletDB ()->getDB ();
 
         db->executeSQL ("BEGIN TRANSACTION;");
@@ -348,7 +351,7 @@ void Features::reportValidations (const FeatureSet& set)
 
 void Features::setEnabledFeatures (const std::vector<uint256>& features)
 {
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     BOOST_FOREACH (featureIt_t & it, mFeatureMap)
     {
         it.second.mEnabled = false;
@@ -361,7 +364,7 @@ void Features::setEnabledFeatures (const std::vector<uint256>& features)
 
 void Features::setSupportedFeatures (const std::vector<uint256>& features)
 {
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     BOOST_FOREACH (featureIt_t & it, mFeatureMap)
     {
         it.second.mSupported = false;
@@ -420,7 +423,7 @@ Json::Value Features::getJson (int)
 {
     Json::Value ret (Json::objectValue);
     {
-        boost::mutex::scoped_lock sl (mMutex);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         BOOST_FOREACH (const featureIt_t & it, mFeatureMap)
         {
             setJson (ret[it.first.GetHex ()] = Json::objectValue, it.second);
@@ -477,7 +480,7 @@ void Features::setJson (Json::Value& v, const FeatureState& fs)
 Json::Value Features::getJson (uint256 const& feature)
 {
     Json::Value ret = Json::objectValue;
-    boost::mutex::scoped_lock sl (mMutex);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     setJson (ret[feature.GetHex ()] = Json::objectValue, *getCreateFeature (feature, true));
     return ret;
 }

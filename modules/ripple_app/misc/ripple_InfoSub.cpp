@@ -16,13 +16,12 @@
 // there's a functional network.
 
 // VFALCO TODO Figure out how to clean up these globals
-uint64 InfoSub::sSeq = 0;
-boost::mutex InfoSub::sSeqLock;
 
 InfoSub::InfoSub ()
+    : mLock (this, "InfoSub", __FILE__, __LINE__)
 {
-    boost::mutex::scoped_lock sl (sSeqLock);
-    mSeq = ++sSeq;
+    static Atomic <int> s_seq_id;
+    mSeq = ++s_seq_id;
 }
 
 InfoSub::~InfoSub ()
@@ -52,7 +51,7 @@ void InfoSub::onSendEmpty ()
 
 void InfoSub::insertSubAccountInfo (RippleAddress addr, uint32 uLedgerIndex)
 {
-    boost::mutex::scoped_lock sl (mLockInfo);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     mSubAccountInfo.insert (addr);
 }

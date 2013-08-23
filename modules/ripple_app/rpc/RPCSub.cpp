@@ -46,7 +46,7 @@ void RPCSub::sendThread ()
     {
         {
             // Obtain the lock to manipulate the queue and change sending.
-            boost::mutex::scoped_lock sl (mLockInfo);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
 
             if (mDeque.empty ())
             {
@@ -93,7 +93,7 @@ void RPCSub::sendThread ()
 
 void RPCSub::send (const Json::Value& jvObj, bool broadcast)
 {
-    boost::mutex::scoped_lock sl (mLockInfo);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (RPC_EVENT_QUEUE_MAX == mDeque.size ())
     {

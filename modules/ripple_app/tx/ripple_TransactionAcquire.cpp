@@ -48,7 +48,7 @@ void TransactionAcquire::done ()
     getApp().getIOService ().post (BIND_TYPE (&TACompletionHandler, mHash, map));
 }
 
-void TransactionAcquire::onTimer (bool progress, boost::recursive_mutex::scoped_lock& psl)
+void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
 {
     bool aggressive = false;
 
@@ -66,7 +66,7 @@ void TransactionAcquire::onTimer (bool progress, boost::recursive_mutex::scoped_
                 aggressive = true;
 	    }
         }
-        psl.lock();
+        psl.lock(__FILE__, __LINE__);
 
         if (!aggressive)
         {

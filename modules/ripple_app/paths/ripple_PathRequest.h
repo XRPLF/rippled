@@ -44,7 +44,13 @@ public:
     static void updateAll (const boost::shared_ptr<Ledger>& ledger, bool newOnly);
 
 private:
-    boost::recursive_mutex          mLock;
+    void setValid ();
+    int parseJson (const Json::Value&, bool complete);
+
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     boost::weak_ptr<InfoSub>        wpSubscriber;               // Who this request came from
     Json::Value                     jvId;
     Json::Value                     jvStatus;                   // Last result
@@ -61,10 +67,10 @@ private:
 
     // Track all requests
     static std::set<wptr>           sRequests;
-    static boost::recursive_mutex   sLock;
 
-    void setValid ();
-    int parseJson (const Json::Value&, bool complete);
+    typedef RippleRecursiveMutex StaticLockType;
+    typedef LockType::ScopedLockType StaticScopedLockType;
+    static StaticLockType sLock;
 };
 
 #endif

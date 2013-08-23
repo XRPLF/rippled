@@ -34,7 +34,10 @@ public:
 private:
     void update ();
 
-    boost::mutex        mLock;
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     uint64              mCounts;
     int mLatencyEvents;
     uint64              mLatencyMSAvg;

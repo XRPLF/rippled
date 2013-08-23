@@ -13,4 +13,18 @@
 */
 typedef std::vector <unsigned char> Blob;
 
+/** Synchronization primitives.
+    This lets us switch between tracked and untracked mutexes.
+*/
+#if RIPPLE_TRACK_MUTEXES
+typedef TrackedMutexType <boost::mutex> RippleMutex;
+typedef TrackedMutexType <boost::recursive_mutex> RippleRecursiveMutex;
+#else
+typedef UntrackedMutexType <boost::mutex> RippleMutex;
+typedef UntrackedMutexType <boost::recursive_mutex> RippleRecursiveMutex;
+#endif
+
+typedef boost::recursive_mutex DeprecatedRecursiveMutex;
+typedef DeprecatedRecursiveMutex::scoped_lock DeprecatedScopedLock;
+
 #endif

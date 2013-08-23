@@ -13,7 +13,7 @@ KeyCache <uint256, UptimeTimerAdapter> SHAMap::fullBelowCache ("fullBelowCache",
 void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
                               SHAMapSyncFilter* filter)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     assert (root->isValid ());
 
@@ -89,7 +89,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
 std::vector<uint256> SHAMap::getNeededHashes (int max, SHAMapSyncFilter* filter)
 {
     std::vector<uint256> ret;
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     assert (root->isValid ());
 
@@ -159,7 +159,7 @@ bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& node
                          std::list<Blob >& rawNodes, bool fatRoot, bool fatLeaves)
 {
     // Gets a node and some of its children
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     SHAMapTreeNode* node = getNodePointer(wanted);
 
@@ -214,7 +214,7 @@ bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& node
 
 bool SHAMap::getRootNode (Serializer& s, SHANodeFormat format)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     root->addRaw (s, format);
     return true;
 }
@@ -222,7 +222,7 @@ bool SHAMap::getRootNode (Serializer& s, SHANodeFormat format)
 SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
                                    SHAMapSyncFilter* filter)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     // we already have a root node
     if (root->getNodeHash ().isNonZero ())
@@ -263,7 +263,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
 SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SHANodeFormat format,
                                    SHAMapSyncFilter* filter)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     // we already have a root node
     if (root->getNodeHash ().isNonZero ())
@@ -309,7 +309,7 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
         return SHAMapAddNode::okay ();
     }
 
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (checkCacheNode (node)) // Do we already have this node?
         return SHAMapAddNode::okay ();
@@ -373,7 +373,7 @@ bool SHAMap::deepCompare (SHAMap& other)
 {
     // Intended for debug/test only
     std::stack<SHAMapTreeNode::pointer> stack;
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     stack.push (root);
 
@@ -500,16 +500,15 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack (SHAMap* have, bool inc
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                            FUNCTION_TYPE<void (const uint256&, const Blob&)> func)
 {
-    boost::recursive_mutex::scoped_lock ul1 (mLock);
+    ScopedLockType ul1 (mLock, __FILE__, __LINE__);
 
-    boost::shared_ptr< boost::unique_lock<boost::recursive_mutex> > ul2;
+    ScopedPointer <LockType::ScopedTryLockType> ul2;
 
     if (have)
     {
-        ul2 = boost::make_shared< boost::unique_lock<boost::recursive_mutex> >
-              (boost::ref (have->mLock), boost::try_to_lock);
+        ul2 = new LockType::ScopedTryLockType (have->mLock, __FILE__, __LINE__);
 
-        if (! (*ul2))
+        if (! ul2->owns_lock ())
         {
             WriteLog (lsINFO, SHAMap) << "Unable to create pack due to lock";
             return;
@@ -582,7 +581,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
 
 std::list<Blob > SHAMap::getTrustedPath (uint256 const& index)
 {
-    boost::recursive_mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     std::stack<SHAMapTreeNode::pointer> stack = SHAMap::getStack (index, false);
 
     if (stack.empty () || !stack.top ()->isLeaf ())

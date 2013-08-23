@@ -288,7 +288,10 @@ uint160 RippleAddress::getAccountID () const
     }
 }
 
-static boost::mutex rncLock;
+typedef RippleMutex StaticLockType;
+typedef StaticLockType::ScopedLockType StaticScopedLockType;
+static StaticLockType s_lock ("RippleAddress", __FILE__, __LINE__);
+
 static boost::unordered_map< Blob , std::string > rncMap;
 
 std::string RippleAddress::humanAccountID () const
@@ -300,7 +303,7 @@ std::string RippleAddress::humanAccountID () const
 
     case VER_ACCOUNT_ID:
     {
-        boost::mutex::scoped_lock sl (rncLock);
+        StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
         boost::unordered_map< Blob , std::string >::iterator it = rncMap.find (vchData);
 
         if (it != rncMap.end ())

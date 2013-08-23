@@ -6,13 +6,19 @@
 
 typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
 
+InboundLedgers::InboundLedgers ()
+    : mLock (this, "InboundLedger", __FILE__, __LINE__)
+    , mRecentFailures ("LedgerAcquireRecentFailures", 0, kReacquireIntervalSeconds)
+{
+}
+
 InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 seq, bool couldBeNew)
 {
     assert (hash.isNonZero ());
     InboundLedger::pointer ret;
 
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
         if (it != mLedgers.end ())
@@ -54,7 +60,7 @@ InboundLedger::pointer InboundLedgers::find (uint256 const& hash)
     InboundLedger::pointer ret;
 
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
         if (it != mLedgers.end ())
@@ -70,7 +76,7 @@ bool InboundLedgers::hasLedger (uint256 const& hash)
 {
     assert (hash.isNonZero ());
 
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return mLedgers.find (hash) != mLedgers.end ();
 }
 
@@ -78,7 +84,7 @@ void InboundLedgers::dropLedger (uint256 const& hash)
 {
     assert (hash.isNonZero ());
 
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     mLedgers.erase (hash);
 
 }
@@ -227,7 +233,7 @@ void InboundLedgers::sweep ()
     std::vector <MapType::mapped_type> stuffToSweep;
     std::size_t total;
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         MapType::iterator it (mLedgers.begin ());
         total = mLedgers.size ();
         stuffToSweep.reserve (total);
@@ -266,7 +272,7 @@ int InboundLedgers::getFetchCount (int& timeoutCount)
     std::vector<u256_acq_pair> inboundLedgers;
 
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         inboundLedgers.reserve(mLedgers.size());
         BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
@@ -290,7 +296,7 @@ void InboundLedgers::gotFetchPack (Job&)
 {
     std::vector<InboundLedger::pointer> acquires;
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         acquires.reserve (mLedgers.size ());
         BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
@@ -308,7 +314,7 @@ void InboundLedgers::gotFetchPack (Job&)
 
 void InboundLedgers::clearFailures ()
 {
-    boost::mutex::scoped_lock sl (mLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     mRecentFailures.clear();
     mLedgers.clear();
@@ -320,7 +326,7 @@ Json::Value InboundLedgers::getInfo()
 
     std::vector<u256_acq_pair> acquires;
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         acquires.reserve (mLedgers.size ());
         BOOST_FOREACH (const u256_acq_pair & it, mLedgers)

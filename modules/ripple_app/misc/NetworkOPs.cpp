@@ -18,7 +18,8 @@ SETUP_LOG (NetworkOPs)
 // there's a functional network.
 
 NetworkOPs::NetworkOPs (LedgerMaster* pLedgerMaster)
-    : mMode (omDISCONNECTED)
+    : mLock (this, "NetOPs", __FILE__, __LINE__)
+    , mMode (omDISCONNECTED)
     , mNeedNetworkLedger (false)
     , mProposing (false)
     , mValidating (false)
@@ -1124,7 +1125,7 @@ void NetworkOPs::pubServer ()
     //             list into a local array while holding the lock then release the
     //             lock and call send on everyone.
     //
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!mSubServer.empty ())
     {
@@ -1263,7 +1264,7 @@ NetworkOPs::getAccountTxs (const RippleAddress& account, int32 minLedger, int32 
 
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        ScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -1309,7 +1310,7 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB (
 
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        ScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -1356,7 +1357,7 @@ NetworkOPs::countAccountTxs (const RippleAddress& account, int32 minLedger, int3
                       minLedger, maxLedger, false, 0, -1, true, true, true);
 
     Database* db = getApp().getTxnDB ()->getDB ();
-    ScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+    DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
     SQL_FOREACH (db, sql)
     {
         ret = db->getInt ("TransactionCount");
@@ -1376,7 +1377,7 @@ NetworkOPs::getLedgerAffectedAccounts (uint32 ledgerSeq)
     RippleAddress acct;
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        ScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
         SQL_FOREACH (db, sql)
         {
             if (acct.setAccountID (db->getStrBinary ("Account")))
@@ -1592,7 +1593,7 @@ void NetworkOPs::pubProposedTransaction (Ledger::ref lpCurrent, SerializedTransa
     Json::Value jvObj   = transJson (*stTxn, terResult, false, lpCurrent);
 
     {
-        boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         NetworkOPs::SubMapType::const_iterator it = mSubRTTransactions.begin ();
 
         while (it != mSubRTTransactions.end ())
@@ -1622,7 +1623,7 @@ void NetworkOPs::pubLedger (Ledger::ref accepted)
     Ledger::ref lpAccepted = alpAccepted->getLedger ();
 
     {
-        boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         if (!mSubLedger.empty ())
         {
@@ -1726,7 +1727,7 @@ void NetworkOPs::pubValidatedTransaction (Ledger::ref alAccepted, const Accepted
     std::string sObj = w.write (jvObj);
 
     {
-        boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         NetworkOPs::SubMapType::const_iterator it = mSubTransactions.begin ();
 
@@ -1769,7 +1770,7 @@ void NetworkOPs::pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLed
     int                             iAccepted   = 0;
 
     {
-        boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         if (!bAccepted && mSubRTAccount.empty ()) return;
 
@@ -1859,7 +1860,7 @@ void NetworkOPs::subAccount (InfoSub::ref isrListener, const boost::unordered_se
         isrListener->insertSubAccountInfo (naAccountID, uLedgerIndex);
     }
 
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
     {
@@ -1891,7 +1892,7 @@ void NetworkOPs::unsubAccount (uint64 uSeq, const boost::unordered_set<RippleAdd
     //  isrListener->deleteSubAccountInfo(naAccountID);
     // }
 
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
     {
@@ -1997,14 +1998,14 @@ bool NetworkOPs::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
     if ((mMode >= omSYNCING) && !isNeedNetworkLedger ())
         jvResult["validated_ledgers"]   = getApp().getLedgerMaster ().getCompleteLedgers ();
 
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return mSubLedger.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubLedger (uint64 uSeq)
 {
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return !!mSubLedger.erase (uSeq);
 }
 
@@ -2025,48 +2026,48 @@ bool NetworkOPs::subServer (InfoSub::ref isrListener, Json::Value& jvResult)
     jvResult["load_base"]       = getApp().getFeeTrack ().getLoadBase ();
     jvResult["load_factor"]     = getApp().getFeeTrack ().getLoadFactor ();
 
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return mSubServer.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubServer (uint64 uSeq)
 {
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return !!mSubServer.erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subTransactions (InfoSub::ref isrListener)
 {
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return mSubTransactions.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubTransactions (uint64 uSeq)
 {
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return !!mSubTransactions.erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPs::subRTTransactions (InfoSub::ref isrListener)
 {
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return mSubTransactions.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPs::unsubRTTransactions (uint64 uSeq)
 {
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
     return !!mSubTransactions.erase (uSeq);
 }
 
 InfoSub::pointer NetworkOPs::findRpcSub (const std::string& strUrl)
 {
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     subRpcMapType::iterator it = mRpcSubMap.find (strUrl);
 
@@ -2078,7 +2079,7 @@ InfoSub::pointer NetworkOPs::findRpcSub (const std::string& strUrl)
 
 InfoSub::pointer NetworkOPs::addRpcSub (const std::string& strUrl, InfoSub::ref rspEntry)
 {
-    boost::recursive_mutex::scoped_lock sl (mMonitorLock);
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     mRpcSubMap.emplace (strUrl, rspEntry);
 

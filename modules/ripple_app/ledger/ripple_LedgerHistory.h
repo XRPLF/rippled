@@ -37,7 +37,7 @@ public:
     }
 
 private:
-    TaggedCache <LedgerHash, Ledger, UptimeTimerAdapter> mLedgersByHash;
+    TaggedCacheType <LedgerHash, Ledger, UptimeTimerAdapter> mLedgersByHash;
 
     // Maps ledger indexes to the corresponding hash.
     std::map <LedgerIndex, LedgerHash> mLedgersByIndex; // validated ledgers

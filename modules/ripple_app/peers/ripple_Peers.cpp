@@ -17,7 +17,8 @@ public:
     };
 
     explicit Peers (boost::asio::io_service& io_service)
-        : mLastPeer (0)
+        : mPeerLock (this, "Peers", __FILE__, __LINE__)
+        , mLastPeer (0)
         , mPhase (0)
         , mScanTimer (io_service)
         , mPolicyTimer (io_service)
@@ -81,7 +82,10 @@ public:
     void makeConfigured ();
 
 private:
-    boost::recursive_mutex  mPeerLock;
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mPeerLock;
+
     uint64                  mLastPeer;
     int                     mPhase;
 
@@ -164,7 +168,7 @@ bool Peers::getTopNAddrs (int n, std::vector<std::string>& addrs)
     {
         // XXX Filter out other local addresses (like ipv6)
         Database*   db = getApp().getWalletDB ()->getDB ();
-        ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
 
         SQL_FOREACH (db, str (boost::format ("SELECT IpPort FROM PeerIps LIMIT %d") % n))
         {
@@ -189,7 +193,7 @@ bool Peers::savePeer (const std::string& strIp, int iPort, char code)
 
     std::string ipAndPort  = sqlEscape (str (boost::format ("%s %d") % strIp % iPort));
 
-    ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+    DeprecatedScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
     std::string sql = str (boost::format ("SELECT COUNT(*) FROM PeerIps WHERE IpPort=%s;") % ipAndPort);
 
     if (db->executeSQL (sql) && db->startIterRows ())
@@ -223,7 +227,7 @@ bool Peers::savePeer (const std::string& strIp, int iPort, char code)
 
 Peer::pointer Peers::getPeerById (const uint64& id)
 {
-    boost::recursive_mutex::scoped_lock sl (mPeerLock);
+    ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
     const boost::unordered_map<uint64, Peer::pointer>::iterator& it = mPeerIdMap.find (id);
 
     if (it == mPeerIdMap.end ())
@@ -234,7 +238,7 @@ Peer::pointer Peers::getPeerById (const uint64& id)
 
 bool Peers::hasPeer (const uint64& id)
 {
-    boost::recursive_mutex::scoped_lock sl (mPeerLock);
+    ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
     return mPeerIdMap.find (id) != mPeerIdMap.end ();
 }
 
@@ -249,7 +253,7 @@ bool Peers::peerAvailable (std::string& strIp, int& iPort)
 
     // Convert mIpMap (list of open connections) to a vector of "<ip> <port>".
     {
-        boost::recursive_mutex::scoped_lock sl (mPeerLock);
+        ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
 
         vstrIpPort.reserve (mIpMap.size ());
 
@@ -266,7 +270,7 @@ bool Peers::peerAvailable (std::string& strIp, int& iPort)
     std::string strIpPort;
 
     {
-        ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
 
         if (db->executeSQL (str (boost::format ("SELECT IpPort FROM PeerIps WHERE ScanNext IS NULL AND IpPort NOT IN (%s) LIMIT 1;")
                                  % strJoin (vstrIpPort.begin (), vstrIpPort.end (), ",")))
@@ -432,7 +436,7 @@ void Peers::connectTo (const std::string& strIp, int iPort)
 {
     {
         Database*   db  = getApp().getWalletDB ()->getDB ();
-        ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
 
         db->executeSQL (str (boost::format ("REPLACE INTO PeerIps (IpPort,Score,Source,ScanNext) values (%s,%d,'%c',0);")
                              % sqlEscape (str (boost::format ("%s %d") % strIp % iPort))
@@ -453,7 +457,7 @@ Peer::pointer Peers::peerConnect (const std::string& strIp, int iPort)
 
 
     {
-        boost::recursive_mutex::scoped_lock sl (mPeerLock);
+        ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
 
         if (mIpMap.find (pipPeer) == mIpMap.end ())
         {
@@ -496,7 +500,7 @@ Json::Value Peers::getPeersJson ()
 
 int Peers::getPeerCount ()
 {
-    boost::recursive_mutex::scoped_lock sl (mPeerLock);
+    ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
 
     return mConnectedMap.size ();
 }
@@ -505,7 +509,7 @@ std::vector<Peer::pointer> Peers::getPeerVector ()
 {
     std::vector<Peer::pointer> ret;
 
-    boost::recursive_mutex::scoped_lock sl (mPeerLock);
+    ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
 
     ret.reserve (mConnectedMap.size ());
 
@@ -520,7 +524,7 @@ std::vector<Peer::pointer> Peers::getPeerVector ()
 
 uint64 Peers::assignPeerId ()
 {
-    boost::recursive_mutex::scoped_lock sl (mPeerLock);
+    ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
     return ++mLastPeer;
 }
 
@@ -539,7 +543,7 @@ bool Peers::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
     }
     else
     {
-        boost::recursive_mutex::scoped_lock sl (mPeerLock);
+        ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
         const boost::unordered_map<RippleAddress, Peer::pointer>::iterator& itCm    = mConnectedMap.find (naPeer);
 
         if (itCm == mConnectedMap.end ())
@@ -590,7 +594,7 @@ bool Peers::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
 // We maintain a map of public key to peer for connected and verified peers.  Maintain it.
 void Peers::peerDisconnected (Peer::ref peer, const RippleAddress& naPeer)
 {
-    boost::recursive_mutex::scoped_lock sl (mPeerLock);
+    ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
 
     if (naPeer.isValid ())
     {
@@ -633,7 +637,7 @@ bool Peers::peerScanSet (const std::string& strIp, int iPort)
     std::string strIpPort   = str (boost::format ("%s %d") % strIp % iPort);
     bool        bScanDirty  = false;
 
-    ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+    DeprecatedScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
     Database*   db = getApp().getWalletDB ()->getDB ();
 
     if (db->executeSQL (str (boost::format ("SELECT ScanNext FROM PeerIps WHERE IpPort=%s;")
@@ -695,7 +699,7 @@ void Peers::peerClosed (Peer::ref peer, const std::string& strIp, int iPort)
     // Determine if closed peer was redundant.
     bool    bRedundant  = true;
     {
-        boost::recursive_mutex::scoped_lock sl (mPeerLock);
+        ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
         const boost::unordered_map<IPAndPortNumber, Peer::pointer>::iterator&    itIp = mIpMap.find (ipPeer);
 
         if (itIp == mIpMap.end ())
@@ -752,7 +756,7 @@ void Peers::peerVerified (Peer::ref peer)
         else
         {
             // Talking with a different peer.
-            ScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
             Database* db = getApp().getWalletDB ()->getDB ();
 
             db->executeSQL (boost::str (boost::format ("UPDATE PeerIps SET ScanNext=NULL,ScanInterval=0 WHERE IpPort=%s;")
@@ -820,7 +824,7 @@ void Peers::scanRefresh ()
         int                         iInterval;
 
         {
-            ScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
             Database*   db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL ("SELECT * FROM PeerIps INDEXED BY PeerScanIndex WHERE ScanNext NOT NULL ORDER BY ScanNext LIMIT 1;")
@@ -866,7 +870,7 @@ void Peers::scanRefresh ()
             iInterval   *= 2;
 
             {
-                ScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+                DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
                 Database* db = getApp().getWalletDB ()->getDB ();
 
                 db->executeSQL (boost::str (boost::format ("UPDATE PeerIps SET ScanNext=%d,ScanInterval=%d WHERE IpPort=%s;")

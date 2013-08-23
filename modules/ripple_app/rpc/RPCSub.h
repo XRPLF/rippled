@@ -30,14 +30,14 @@ public:
 
     void setUsername (const std::string& strUsername)
     {
-        boost::mutex::scoped_lock sl (mLockInfo);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         mUsername = strUsername;
     }
 
     void setPassword (const std::string& strPassword)
     {
-        boost::mutex::scoped_lock sl (mLockInfo);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         mPassword = strPassword;
     }

@@ -56,10 +56,7 @@ private:
 class TXQueue : LeakChecked <TXQueue>
 {
 public:
-    TXQueue () : mRunning (false)
-    {
-        ;
-    }
+    TXQueue ();
 
     // Return: true = must dispatch signature checker thread
     bool addEntryForSigCheck (TXQEntry::ref);
@@ -80,9 +77,12 @@ private:
     typedef boost::bimap<leftType, rightType>           mapType;
     typedef mapType::value_type                         valueType;
 
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     mapType         mTxMap;
     bool            mRunning;
-    boost::mutex    mLock;
 };
 
 #endif

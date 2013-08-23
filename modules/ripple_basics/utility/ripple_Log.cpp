@@ -5,7 +5,7 @@
 //==============================================================================
 
 LogFile Log::s_logFile;
-boost::recursive_mutex Log::s_lock;
+Log::StaticLockType Log::s_lock ("Log", __FILE__, __LINE__);
 LogSeverity Log::sMinSeverity = lsINFO;
 
 //------------------------------------------------------------------------------
@@ -121,14 +121,14 @@ Log::~Log ()
 
 void Log::print (std::string const& text, bool toStdErr)
 {
-    boost::recursive_mutex::scoped_lock sl (s_lock);
+    StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
 
     // Does nothing if not open.
     s_logFile.writeln (text);
 
     if (toStdErr)
     {
-#if BEAST_MSVC
+#if 0 //BEAST_MSVC
         if (beast_isRunningUnderDebugger ())
         {
             // Send it to the attached debugger's Output window
@@ -143,9 +143,18 @@ void Log::print (std::string const& text, bool toStdErr)
     }
 }
 
+void Log::print (StringArray const& strings, bool toStdErr)
+{
+    StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
+
+    for (int i = 0; i < strings.size (); ++i)
+        print (strings [i].toStdString (), toStdErr);
+
+}
+
 std::string Log::rotateLog ()
 {
-    boost::recursive_mutex::scoped_lock sl (s_lock);
+    StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
 
     bool const wasOpened = s_logFile.closeAndReopen ();
 
@@ -161,7 +170,7 @@ std::string Log::rotateLog ()
 
 void Log::setMinSeverity (LogSeverity s, bool all)
 {
-    boost::recursive_mutex::scoped_lock sl (s_lock);
+    StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
 
     sMinSeverity = s;
 
@@ -171,7 +180,7 @@ void Log::setMinSeverity (LogSeverity s, bool all)
 
 LogSeverity Log::getMinSeverity ()
 {
-    boost::recursive_mutex::scoped_lock sl (s_lock);
+    StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
 
     return sMinSeverity;
 }

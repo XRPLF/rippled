@@ -90,7 +90,9 @@ private:
 
 public:
     UniqueNodeListImp ()
-        : m_scoreTimer (this)
+        : mFetchLock (this, "Fetch", __FILE__, __LINE__)
+        , mUNLLock (this, "UNL", __FILE__, __LINE__)
+        , m_scoreTimer (this)
         , mFetchActive (0)
         , m_fetchTimer (this)
     {
@@ -233,7 +235,7 @@ public:
     {
         {
             Database* db = getApp().getWalletDB ()->getDB ();
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM SeedNodes WHERE PublicKey=%s") % sqlEscape (naNodePublic.humanNodePublic ())));
             db->executeSQL (str (boost::format ("DELETE FROM TrustedNodes WHERE PublicKey=%s") % sqlEscape (naNodePublic.humanNodePublic ())));
@@ -242,7 +244,7 @@ public:
         // YYY Only dirty on successful delete.
         fetchDirty ();
 
-        boost::recursive_mutex::scoped_lock sl (mUNLLock);
+        ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
         mUNL.erase (naNodePublic.humanNodePublic ());
     }
 
@@ -255,7 +257,7 @@ public:
 
         {
             Database* db = getApp().getWalletDB ()->getDB ();
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM SeedDomains WHERE Domain=%s") % sqlEscape (strDomain)));
         }
@@ -271,7 +273,7 @@ public:
         {
             Database* db = getApp().getWalletDB ()->getDB ();
 
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
             // XXX Check results.
             db->executeSQL ("DELETE FROM SeedDomains");
@@ -293,7 +295,7 @@ public:
 
     bool nodeInUNL (const RippleAddress& naNodePublic)
     {
-        boost::recursive_mutex::scoped_lock sl (mUNLLock);
+        ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
 
         return mUNL.end () != mUNL.find (naNodePublic.humanNodePublic ());
     }
@@ -302,7 +304,7 @@ public:
 
     bool nodeInCluster (const RippleAddress& naNodePublic)
     {
-        boost::recursive_mutex::scoped_lock sl (mUNLLock);
+        ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
         return m_clusterNodes.end () != m_clusterNodes.find (naNodePublic);
     }
 
@@ -310,7 +312,7 @@ public:
 
     bool nodeInCluster (const RippleAddress& naNodePublic, std::string& name)
     {
-        boost::recursive_mutex::scoped_lock sl (mUNLLock);
+        ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
         std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.find (naNodePublic);
 
         if (it == m_clusterNodes.end ())
@@ -324,7 +326,7 @@ public:
 
     bool nodeUpdate (const RippleAddress& naNodePublic, ClusterNodeStatus const& cnsStatus)
     {
-        boost::recursive_mutex::scoped_lock sl (mUNLLock);
+        ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
         return m_clusterNodes[naNodePublic].update(cnsStatus);
     }
 
@@ -334,7 +336,7 @@ public:
     {
         std::map<RippleAddress, ClusterNodeStatus> ret;
         {
-            boost::recursive_mutex::scoped_lock sl (mUNLLock);
+            ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
             ret = m_clusterNodes;
         }
         return ret;
@@ -347,7 +349,7 @@ public:
         int thresh = getApp().getOPs().getNetworkTimeNC() - 120;
         uint32 a = 0, b = 0;
 
-        boost::recursive_mutex::scoped_lock sl (mUNLLock);
+        ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
         {
             for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
                 end = m_clusterNodes.end(); it != end; ++it)
@@ -376,7 +378,7 @@ public:
 
     void addClusterStatus (Json::Value& obj)
     {
-        boost::recursive_mutex::scoped_lock sl (mUNLLock);
+        ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
         if (m_clusterNodes.size() > 1) // nodes other than us
         {
             int          now   = getApp().getOPs().getNetworkTimeNC();
@@ -412,7 +414,7 @@ public:
         Database*   db          = getApp().getWalletDB ()->getDB ();
 
         {
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
             if (db->executeSQL (str (boost::format ("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows ())
                 iDomains    = db->getInt ("Count");
@@ -485,7 +487,7 @@ public:
 
             if (!vstrValues.empty ())
             {
-                boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+                DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
                 db->executeSQL (str (boost::format ("REPLACE INTO PeerIps (IpPort,Source) VALUES %s;")
                                      % strJoin (vstrValues.begin (), vstrValues.end (), ",")));
@@ -574,7 +576,7 @@ public:
 
         Json::Value ret (Json::arrayValue);
 
-        boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
         SQL_FOREACH (db, "SELECT * FROM TrustedNodes;")
         {
             Json::Value node (Json::objectValue);
@@ -637,7 +639,7 @@ private:
     // Load information about when we last updated.
     bool miscLoad ()
     {
-        boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
         Database* db = getApp().getWalletDB ()->getDB ();
 
         if (!db->executeSQL ("SELECT * FROM Misc WHERE Magic=1;")) return false;
@@ -660,7 +662,7 @@ private:
     bool miscSave ()
     {
         Database*   db = getApp().getWalletDB ()->getDB ();
-        boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
         db->executeSQL (str (boost::format ("REPLACE INTO Misc (Magic,FetchUpdated,ScoreUpdated) VALUES (1,%d,%d);")
                              % iToSeconds (mtpFetchUpdated)
@@ -690,8 +692,8 @@ private:
         }
 
         Database*   db = getApp().getWalletDB ()->getDB ();
-        boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
-        boost::recursive_mutex::scoped_lock slUNL (mUNLLock);
+        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        ScopedUNLLockType slUNL (mUNLLock, __FILE__, __LINE__);
 
         mUNL.clear ();
 
@@ -791,7 +793,7 @@ private:
         // For each entry in SeedDomains with a PublicKey:
         // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
         {
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
             SQL_FOREACH (db, "SELECT Domain,PublicKey,Source FROM SeedDomains;")
             {
@@ -844,7 +846,7 @@ private:
         // For each entry in SeedNodes:
         // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
         {
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
             SQL_FOREACH (db, "SELECT PublicKey,Source FROM SeedNodes;")
             {
@@ -908,7 +910,7 @@ private:
             std::string&        strValidator    = sn.strValidator;
             std::vector<int>&   viReferrals     = sn.viReferrals;
 
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
             SQL_FOREACH (db, boost::str (boost::format ("SELECT Referral FROM ValidatorReferrals WHERE Validator=%s ORDER BY Entry;")
                                          % sqlEscape (strValidator)))
@@ -989,7 +991,7 @@ private:
         }
 
         // Persist validator scores.
-        boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
         db->executeSQL ("BEGIN;");
         db->executeSQL ("UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;");
@@ -1040,7 +1042,7 @@ private:
         }
 
         {
-            boost::recursive_mutex::scoped_lock sl (mUNLLock);
+            ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
 
             // XXX Should limit to scores above a certain minimum and limit to a certain number.
             mUNL.swap (usUNL);
@@ -1306,7 +1308,7 @@ private:
         bool    bFull;
 
         {
-            boost::mutex::scoped_lock sl (mFetchLock);
+            ScopedFetchLockType sl (mFetchLock, __FILE__, __LINE__);
 
             bFull   = mFetchActive == NODE_FETCH_JOBS;
         }
@@ -1318,7 +1320,7 @@ private:
             boost::posix_time::ptime    tpNext;
             boost::posix_time::ptime    tpNow;
 
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
             Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL ("SELECT Domain,Next FROM SeedDomains INDEXED BY SeedDomainNext ORDER BY Next LIMIT 1;")
@@ -1337,7 +1339,7 @@ private:
 
             if (!strDomain.empty ())
             {
-                boost::mutex::scoped_lock sl (mFetchLock);
+                ScopedFetchLockType sl (mFetchLock, __FILE__, __LINE__);
 
                 bFull   = mFetchActive == NODE_FETCH_JOBS;
 
@@ -1410,7 +1412,7 @@ private:
     void fetchFinish ()
     {
         {
-            boost::mutex::scoped_lock sl (mFetchLock);
+            ScopedFetchLockType sl (mFetchLock, __FILE__, __LINE__);
             mFetchActive--;
         }
 
@@ -1582,7 +1584,7 @@ private:
 
         // Remove all current Validator's entries in IpReferrals
         {
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
             db->executeSQL (str (boost::format ("DELETE FROM IpReferrals WHERE Validator=%s;") % strEscNodePublic));
             // XXX Check result.
         }
@@ -1625,7 +1627,7 @@ private:
             {
                 vstrValues.resize (iValues);
 
-                boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+                DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
                 db->executeSQL (str (boost::format ("INSERT INTO IpReferrals (Validator,Entry,IP,Port) VALUES %s;")
                                      % strJoin (vstrValues.begin (), vstrValues.end (), ",")));
                 // XXX Check result.
@@ -1656,7 +1658,7 @@ private:
 
         // Remove all current Validator's entries in ValidatorReferrals
         {
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM ValidatorReferrals WHERE Validator='%s';") % strNodePublic));
             // XXX Check result.
@@ -1728,7 +1730,7 @@ private:
                 std::string strSql  = str (boost::format ("INSERT INTO ValidatorReferrals (Validator,Entry,Referral) VALUES %s;")
                                            % strJoin (vstrValues.begin (), vstrValues.end (), ","));
 
-                boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+                DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
                 db->executeSQL (strSql);
                 // XXX Check result.
@@ -1780,7 +1782,7 @@ private:
         std::string strSql  = boost::str (boost::format ("SELECT * FROM SeedDomains WHERE Domain=%s;")
                                           % sqlEscape (strDomain));
 
-        boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
         bResult = db->executeSQL (strSql) && db->startIterRows ();
 
@@ -1854,7 +1856,7 @@ private:
                                           % sqlEscape (sdSource.strComment)
                                          );
 
-        boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
         if (!db->executeSQL (strSql))
         {
@@ -1881,7 +1883,7 @@ private:
         std::string strSql  = str (boost::format ("SELECT * FROM SeedNodes WHERE PublicKey='%s';")
                                    % naNodePublic.humanNodePublic ());
 
-        boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
         bResult = db->executeSQL (strSql) && db->startIterRows ();
 
@@ -1957,7 +1959,7 @@ private:
                                   );
 
         {
-            boost::recursive_mutex::scoped_lock sl (getApp().getWalletDB ()->getDBLock ());
+            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
 
             if (!db->executeSQL (strSql))
             {
@@ -2034,12 +2036,19 @@ private:
     //--------------------------------------------------------------------------
 
 private:
+    typedef RippleMutex FetchLockType;
+    typedef FetchLockType::ScopedLockType ScopedFetchLockType;
+    FetchLockType mFetchLock;
+
+    typedef RippleRecursiveMutex UNLLockType;
+    typedef UNLLockType::ScopedLockType ScopedUNLLockType;
+    UNLLockType mUNLLock;
+
     // VFALCO TODO Replace ptime with beast::Time
     // Misc persistent information
     boost::posix_time::ptime        mtpScoreUpdated;
     boost::posix_time::ptime        mtpFetchUpdated;
 
-    boost::recursive_mutex          mUNLLock;
     // XXX Make this faster, make this the contents vector unsigned char or raw public key.
     // XXX Contents needs to based on score.
     boost::unordered_set<std::string>   mUNL;
@@ -2048,7 +2057,6 @@ private:
     boost::posix_time::ptime        mtpScoreStart;      // Time currently started scoring.
     DeadlineTimer m_scoreTimer;                         // Timer to start scoring.
 
-    boost::mutex                    mFetchLock;
     int                             mFetchActive;       // Count of active fetches.
 
     boost::posix_time::ptime        mtpFetchNext;       // Time of to start next fetch.

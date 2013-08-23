@@ -24,6 +24,7 @@ SETUP_LOG (WSDoor)
 
 WSDoor::WSDoor (std::string const& strIp, int iPort, bool bPublic)
     : Thread ("websocket")
+    , m_endpointLock (this, "WSDoor", __FILE__, __LINE__)
     , mPublic (bPublic)
     , mIp (strIp)
     , mPort (iPort)
@@ -34,7 +35,7 @@ WSDoor::WSDoor (std::string const& strIp, int iPort, bool bPublic)
 WSDoor::~WSDoor ()
 {
     {
-        CriticalSection::ScopedLockType lock (m_endpointLock);
+        ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
 
         if (m_endpoint != nullptr)
             m_endpoint->stop ();
@@ -65,7 +66,7 @@ void WSDoor::run ()
     websocketpp::server_autotls::handler::ptr   handler (new WSServerHandler<websocketpp::server_autotls> (mCtx, mPublic));
 
     {
-        CriticalSection::ScopedLockType lock (m_endpointLock);
+        ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
 
         m_endpoint = new websocketpp::server_autotls (handler);
     }
@@ -105,7 +106,7 @@ void WSDoor::run ()
 void WSDoor::stop ()
 {
     {
-        CriticalSection::ScopedLockType lock (m_endpointLock);
+        ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
 
         if (m_endpoint != nullptr)
             m_endpoint->stop ();

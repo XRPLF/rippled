@@ -82,7 +82,7 @@ public:
 private:
     void done ();
 
-    void onTimer (bool progress, boost::recursive_mutex::scoped_lock& peerSetLock);
+    void onTimer (bool progress, ScopedLockType& peerSetLock);
 
     void newPeer (Peer::ref peer)
     {

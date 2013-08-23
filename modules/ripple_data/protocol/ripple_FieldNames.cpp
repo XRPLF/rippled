@@ -6,8 +6,15 @@
 
 // These must stay at the top of this file
 std::map<int, SField::ptr> SField::codeToField;
-boost::mutex SField::mapMutex;
 int SField::num = 0;
+
+
+// Solve construction issues for objects with static storage duration.
+SField::StaticLockType& SField::getMutex ()
+{
+    static StaticLockType mutex ("SField", __FILE__, __LINE__);
+    return mutex;
+}
 
 SField sfInvalid (-1), sfGeneric (0);
 SField sfLedgerEntry (STI_LEDGERENTRY, 1, "LedgerEntry");
@@ -56,7 +63,7 @@ SField::ref SField::getField (int code)
     if ((type <= 0) || (field <= 0))
         return sfInvalid;
 
-    boost::mutex::scoped_lock sl (mapMutex);
+    StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
 
     std::map<int, SField::ptr>::iterator it = codeToField.find (code);
 
@@ -115,7 +122,7 @@ std::string SField::getName () const
 SField::ref SField::getField (const std::string& fieldName)
 {
     // OPTIMIZEME me with a map. CHECKME this is case sensitive
-    boost::mutex::scoped_lock sl (mapMutex);
+    StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
     typedef std::map<int, SField::ptr>::value_type int_sfref_pair;
     BOOST_FOREACH (const int_sfref_pair & fieldPair, codeToField)
     {
@@ -127,7 +134,7 @@ SField::ref SField::getField (const std::string& fieldName)
 
 SField::~SField ()
 {
-    boost::mutex::scoped_lock sl (mapMutex);
+    StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
     std::map<int, ptr>::iterator it = codeToField.find (fieldCode);
 
     if ((it != codeToField.end ()) && (it->second == this))

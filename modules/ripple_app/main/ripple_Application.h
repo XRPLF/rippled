@@ -32,8 +32,8 @@ class LocalCredentials;
 
 class DatabaseCon;
 
-typedef TaggedCache <uint256, Blob , UptimeTimerAdapter> NodeCache;
-typedef TaggedCache <uint256, SerializedLedgerEntry, UptimeTimerAdapter> SLECache;
+typedef TaggedCacheType <uint256, Blob , UptimeTimerAdapter> NodeCache;
+typedef TaggedCacheType <uint256, SerializedLedgerEntry, UptimeTimerAdapter> SLECache;
 
 class Application
 {
@@ -49,92 +49,10 @@ public:
 
         other things
     */
-#if 1
-    class ScopedLockType;
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
 
-    class MasterLockType
-    {
-    public:
-        MasterLockType ()
-            : m_fileName ("")
-            , m_lineNumber (0)
-        {
-        }
-
-        // Note that these are not exactly thread safe.
-
-        char const* getFileName () const noexcept
-        {
-            return m_fileName.get ();
-        }
-
-        int getLineNumber () const noexcept
-        {
-            return m_lineNumber.get ();
-        }
-
-    private:
-        friend class ScopedLockType;
-
-        void setOwner (char const* fileName, int lineNumber)
-        {
-            m_fileName.set (fileName);
-            m_lineNumber.set (lineNumber);
-        }
-
-        void resetOwner ()
-        {
-            m_fileName.set ("");
-            m_lineNumber.set (0);
-        }
-
-        boost::recursive_mutex m_mutex;
-        Atomic <char const*> m_fileName;
-        Atomic <int> m_lineNumber;
-    };
-
-    class ScopedLockType
-    {
-    public:
-        explicit ScopedLockType (MasterLockType& mutex,
-                                 char const* fileName,
-                                 int lineNumber)
-            : m_mutex (mutex)
-            , m_lock (mutex.m_mutex)
-        {
-            mutex.setOwner (fileName, lineNumber);
-        }
-
-        ~ScopedLockType ()
-        {
-            if (m_lock.owns_lock ())
-                m_mutex.resetOwner ();
-        }
-
-        void unlock ()
-        {
-            if (m_lock.owns_lock ())
-                m_mutex.resetOwner ();
-
-            m_lock.unlock ();
-        }
-
-    private:
-        MasterLockType& m_mutex;
-        boost::recursive_mutex::scoped_lock m_lock;
-    };
-
-#else
-    typedef boost::recursive_mutex MasterLockType;
-
-    typedef boost::recursive_mutex::scoped_lock ScopedLockType;
-
-#endif
-
-    virtual MasterLockType& getMasterLock () = 0;
-
-
-
+    virtual LockType& getMasterLock () = 0;
 
 public:
     struct State

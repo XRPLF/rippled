@@ -60,7 +60,8 @@ private:
 
 public:
     LoadManager ()
-        : m_thread ("loadmgr")
+        : mLock (this, "LoadManager", __FILE__, __LINE__)
+        , m_thread ("loadmgr")
         , m_logThread ("loadmgr_log")
         , mCreditRate (100)
         , mCreditLimit (500)
@@ -148,7 +149,7 @@ private:
     bool shouldWarn (LoadSource& source) const
     {
         {
-            boost::mutex::scoped_lock sl (mLock);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
 
             int now = UptimeTimer::getInstance ().getElapsedSeconds ();
             canonicalize (source, now);
@@ -165,7 +166,7 @@ private:
     bool shouldCutoff (LoadSource& source) const
     {
         {
-            boost::mutex::scoped_lock sl (mLock);
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
             int now = UptimeTimer::getInstance ().getElapsedSeconds ();
             canonicalize (source, now);
 
@@ -196,7 +197,7 @@ private:
         // We do it this way in case we want to add exponential decay later
         int now = UptimeTimer::getInstance ().getElapsedSeconds ();
 
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         canonicalize (source, now);
         source.mBalance += credits;
 
@@ -238,7 +239,7 @@ private:
 
     void resetDeadlockDetector ()
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mDeadLock = UptimeTimer::getInstance ().getElapsedSeconds ();
     }
 
@@ -251,10 +252,16 @@ private:
     {
         WriteLog (lsWARNING, LoadManager) << "Server stalled for " << dlTime << " seconds.";
 
-        char const* fileName = getApp ().getMasterLock ().getFileName ();
-        int lineNumber = getApp ().getMasterLock ().getLineNumber ();
-
-        WriteLog (lsWARNING, LoadManager) << "Master lock owned by " << File (fileName).getFileName ().toStdString () << ", line " << lineNumber;
+#if RIPPLE_TRACK_MUTEXES
+        StringArray report;
+        TrackedMutex::generateGlobalBlockedReport (report);
+        if (report.size () > 0)
+        {
+            report.insert (0, String::empty);
+            report.insert (-1, String::empty);
+            Log::print (report);
+        }
+#endif
     }
 
 private:
@@ -262,49 +269,49 @@ private:
     /*
     int getCreditRate () const
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mCreditRate;
     }
 
     int getCreditLimit () const
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mCreditLimit;
     }
 
     int getDebitWarn () const
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mDebitWarn;
     }
 
     int getDebitLimit () const
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mDebitLimit;
     }
 
     void setCreditRate (int r)
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mCreditRate = r;
     }
 
     void setCreditLimit (int r)
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mCreditLimit = r;
     }
 
     void setDebitWarn (int r)
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mDebitWarn = r;
     }
 
     void setDebitLimit (int r)
     {
-        boost::mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mDebitLimit = r;
     }
     */
@@ -328,7 +335,7 @@ private:
         {
             {
                 // VFALCO NOTE What is this lock protecting?
-                boost::mutex::scoped_lock sl (mLock);
+                ScopedLockType sl (mLock, __FILE__, __LINE__);
 
                 // VFALCO NOTE I think this is to reduce calls to the operating system
                 //             for retrieving the current time.
@@ -346,10 +353,11 @@ private:
 
                 // VFALCO NOTE I think that "armed" refers to the deadlock detector
                 //
-                if (mArmed && (timeSpentDeadlocked >= 10))
+                int const reportingIntervalSeconds = 10;
+                if (mArmed && (timeSpentDeadlocked >= reportingIntervalSeconds))
                 {
                     // Report the deadlocked condition every 10 seconds
-                    if ((timeSpentDeadlocked % 10) == 0)
+                    if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0)
                     {
                         // VFALCO TODO Replace this with a dedicated thread with call queue.
                         //
@@ -401,6 +409,10 @@ private:
     }
 
 private:
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     beast::InterruptibleThread m_thread;
     beast::ThreadWithCallQueue m_logThread;
 
@@ -412,8 +424,6 @@ private:
     bool mArmed;
 
     int mDeadLock;              // Detect server deadlocks
-
-    mutable boost::mutex mLock; // VFALCO TODO Replace with juce::Mutex and remove the mutable attribute
 
     std::vector <Cost> mCosts;
 };

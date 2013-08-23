@@ -18,7 +18,7 @@ public:
     {
         return mDatabase;
     }
-    boost::recursive_mutex& getDBLock ()
+    DeprecatedRecursiveMutex& getDBLock ()
     {
         return mLock;
     }
@@ -30,8 +30,7 @@ public:
     // VFALCO TODO change "protected" to "private" throughout the code
 private:
     Database*               mDatabase;
-    // VFALCO TODO replace these with a single atomic counter.
-    boost::recursive_mutex  mLock;
+    DeprecatedRecursiveMutex  mLock;
     static int              sCount;
 };
 

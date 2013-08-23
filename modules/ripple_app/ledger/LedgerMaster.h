@@ -20,8 +20,12 @@ public:
     typedef FUNCTION_TYPE <void (Ledger::ref)> callback;
 
 public:
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+
     LedgerMaster ()
-        : mHeldTransactions (uint256 ())
+        : mLock (this, "LedgerMaster", __FILE__, __LINE__)
+        , mHeldTransactions (uint256 ())
         , mMinValidations (0)
         , mLastValidateSeq (0)
         , mAdvanceThread (false)
@@ -37,9 +41,9 @@ public:
 
     uint32 getCurrentLedgerIndex ();
 
-    ScopedLock getLock ()
+    LockType& peekMutex ()
     {
-        return ScopedLock (mLock);
+        return mLock;
     }
 
     // The current ledger is the ledger we believe new transactions should go in
@@ -95,7 +99,7 @@ public:
 
     std::string getCompleteLedgers ()
     {
-        boost::recursive_mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mCompleteLedgers.toString ();
     }
 
@@ -124,7 +128,7 @@ public:
         if (ret)
             return ret;
 
-        boost::recursive_mutex::scoped_lock ml (mLock);
+        ScopedLockType ml (mLock, __FILE__, __LINE__);
         mCompleteLedgers.clearValue (index);
         return ret;
     }
@@ -145,7 +149,7 @@ public:
 
     void setLedgerRangePresent (uint32 minV, uint32 maxV)
     {
-        boost::recursive_mutex::scoped_lock sl (mLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mCompleteLedgers.setRange (minV, maxV);
     }
 
@@ -179,13 +183,14 @@ public:
 
     void checkAccept (uint256 const& hash);
     void checkAccept (uint256 const& hash, uint32 seq);
-    std::list<Ledger::pointer> findNewLedgersToPublish(boost::recursive_mutex::scoped_lock& sl);
     void tryAdvance ();
     void newPathRequest ();
 
     static bool shouldAcquire (uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
 
 private:
+    std::list<Ledger::pointer> findNewLedgersToPublish(ScopedLockType& sl);
+
     void applyFutureTransactions (uint32 ledgerIndex);
     bool isValidTransaction (Transaction::ref trans);
     bool isTransactionOnFutureList (Transaction::ref trans);
@@ -196,7 +201,7 @@ private:
     void updatePaths ();
 
 private:
-    boost::recursive_mutex mLock;
+    LockType mLock;
 
     TransactionEngine mEngine;
 

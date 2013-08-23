@@ -193,7 +193,7 @@ Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
     rawTxn.resize (txSize);
 
     {
-        ScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
         Database* db = getApp().getTxnDB ()->getDB ();
 
         if (!db->executeSQL (sql, true) || !db->startIterRows ())

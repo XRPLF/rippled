@@ -7,6 +7,11 @@
 #ifndef RIPPLE_KEYCACHE_H_INCLUDED
 #define RIPPLE_KEYCACHE_H_INCLUDED
 
+// This tag is for helping track the locks
+struct KeyCacheBase
+{
+};
+
 /** Maintains a cache of keys with no associated data.
 
     The cache has a target size and an expiration time. When cached items become
@@ -22,7 +27,7 @@
     @ingroup ripple_basics
 */
 template <class Key, class Timer>
-class KeyCache
+class KeyCache : public KeyCacheBase
 {
 public:
     /** Provides a type for the key.
@@ -37,7 +42,9 @@ public:
     KeyCache (const std::string& name,
               int size = 0,
               int age = 120)
-        : mName (name)
+        : mLock (static_cast <KeyCacheBase*> (this), String ("KeyCache") +
+            "('" + name + "')", __FILE__, __LINE__)
+        , mName (name)
         , mTargetSize (size)
         , mTargetAge (age)
     {
@@ -48,7 +55,7 @@ public:
     */
     unsigned int getSize ()
     {
-        boost::mutex::scoped_lock sl (mNCLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mCache.size ();
     }
 
@@ -56,7 +63,7 @@ public:
     */
     unsigned int getTargetSize ()
     {
-        boost::mutex::scoped_lock sl (mNCLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mTargetSize;
     }
 
@@ -64,7 +71,7 @@ public:
     */
     unsigned int getTargetAge ()
     {
-        boost::mutex::scoped_lock sl (mNCLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mTargetAge;
     }
 
@@ -75,7 +82,7 @@ public:
     */
     void setTargets (int size, int age)
     {
-        boost::mutex::scoped_lock sl (mNCLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mTargetSize = size;
         mTargetAge = age;
         assert ((mTargetSize >= 0) && (mTargetAge > 2));
@@ -96,7 +103,7 @@ public:
     */
     bool isPresent (const key_type& key, bool refresh = true)
     {
-        boost::mutex::scoped_lock sl (mNCLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         map_iterator it = mCache.find (key);
 
@@ -116,7 +123,7 @@ public:
     */
     bool del (const key_type& key)
     {
-        boost::mutex::scoped_lock sl (mNCLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         map_iterator it = mCache.find (key);
 
@@ -134,7 +141,7 @@ public:
     */
     bool add (const key_type& key)
     {
-        boost::mutex::scoped_lock sl (mNCLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         map_iterator it = mCache.find (key);
 
@@ -152,7 +159,7 @@ public:
     */
     void clear ()
     {
-        boost::mutex::scoped_lock sl (mNCLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
         mCache.clear ();
     }
 
@@ -161,7 +168,7 @@ public:
     void sweep ()
     {
         int now = Timer::getElapsedSeconds ();
-        boost::mutex::scoped_lock sl (mNCLock);
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         int target;
 
@@ -196,16 +203,17 @@ public:
     }
 
 protected:
-    /** Provides a type for the underlying map.
-    */
+    /** Provides a type for the underlying map. */
     typedef boost::unordered_map<key_type, int> map_type;
-
-    /** The type of the iterator used for traversals.
-    */
+    /** The type of the iterator used for traversals. */
     typedef typename map_type::iterator         map_iterator;
 
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
     std::string const   mName;
-    boost::mutex        mNCLock;
+
     map_type            mCache;
     unsigned int        mTargetSize, mTargetAge;
 };

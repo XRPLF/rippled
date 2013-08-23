@@ -14,10 +14,7 @@ public:
     typedef boost::shared_ptr <RippleLineCache> pointer;
     typedef pointer const& ref;
 
-    explicit RippleLineCache (Ledger::ref l)
-        : mLedger (l)
-    {
-    }
+    explicit RippleLineCache (Ledger::ref l);
 
     Ledger::ref getLedger () // VFALCO TODO const?
     {
@@ -27,8 +24,10 @@ public:
     AccountItems& getRippleLines (const uint160& accountID);
 
 private:
-    boost::mutex mLock;
-    
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+   
     Ledger::pointer mLedger;
     
     boost::unordered_map <uint160, AccountItems::pointer> mRLMap;
