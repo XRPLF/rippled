@@ -31,7 +31,9 @@ enum JobType
     jtWRITE         = 16,   // Write out hashed objects
     jtPROPOSAL_t    = 17,   // A proposal from a trusted source
     jtSWEEP         = 18,   // Sweep for stale structures
-    jtADMIN         = 19,   // An administrative operation
+    jtNETOP_CLUSTER = 19,   // NetworkOPs cluster peer report
+    jtNETOP_TIMER   = 20,   // NetworkOPs net timer processing
+    jtADMIN         = 21,   // An administrative operation
 
     // special types not dispatched by the job pool
     jtPEER          = 24,
@@ -43,7 +45,7 @@ enum JobType
     jtHO_READ       = 30,
     jtHO_WRITE      = 31,
     jtGENERIC       = 32,   // Used just to measure time
-}; // CAUTION: If you add new types, add them to JobType.cpp too
+}; // CAUTION: If you add new types, add them to ripple_Job.cpp too
 
 // VFALCO TODO move this into the enum so it calculates itself?
 #define NUM_JOB_TYPES 48 // why 48 and not 32?
