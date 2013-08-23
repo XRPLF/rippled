@@ -31,11 +31,16 @@ namespace Debug
 */
 extern void breakPoint ();
 
-// VFALCO NOTE IS THIS REALLY THE RIGHT PLACE FOR THESE??
-//
-// Return only the filename portion of sourceFileName
-// This hides the programmer's directory structure from end-users.
-const String getFileNameFromPath (const char* sourceFileName);
+/** Given a file and line number this formats a suitable string.
+    Usually you will pass __FILE__ and __LINE__ here.
+*/
+String getSourceLocation (char const* fileName, int lineNumber,
+                          int numberOfParents = 0);
+
+/** Retrieve the file name from a full path.
+    The nubmer of parents can be chosen
+*/
+String getFileNameFromPath (const char* sourceFileName, int numberOfParents = 0);
 
 // Convert a String that may contain double quotes and newlines
 // into a String with double quotes escaped as \" and each

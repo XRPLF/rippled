@@ -161,6 +161,21 @@
     <Filter Include="beast_asio\async">
       <UniqueIdentifier>{beb81776-4aad-401d-8826-81478dbbf30b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_boost">
+      <UniqueIdentifier>{0eac8b8d-7049-4eda-b6b4-53194d336a97}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_boost\traits">
+      <UniqueIdentifier>{1e6959ed-fcb9-4a3b-ac5a-eb26973e21f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_core\thread">
+      <UniqueIdentifier>{493db217-b3e4-4b08-97b2-a2d753cc8c35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_core\thread\detail">
+      <UniqueIdentifier>{1b2e8962-c087-4453-8107-7077c2de5846}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_core\thread\impl">
+      <UniqueIdentifier>{91538dcf-b219-4c80-9861-bb4949089775}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -545,9 +560,6 @@
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_ParallelFor.h">
       <Filter>beast_basics\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_basics\threads\beast_ReadWriteMutex.h">
-      <Filter>beast_basics\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\threads\beast_Semaphore.h">
       <Filter>beast_basics\threads</Filter>
     </ClInclude>
@@ -631,9 +643,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\time\beast_PerformedAtExit.h">
       <Filter>beast_core\time</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_basics\threads\beast_SharedData.h">
-      <Filter>beast_basics\threads</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_basics\events\beast_DeadlineTimer.h">
       <Filter>beast_basics\events</Filter>
@@ -869,8 +878,41 @@
     <ClInclude Include="..\..\modules\beast_asio\handshake\beast_InputParser.h">
       <Filter>beast_asio\handshake</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\text\beast_NumberToString.h">
-      <Filter>beast_core\text</Filter>
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\MeasureFunctionCallTime.h">
+      <Filter>beast_core\diagnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_boost\beast_boost.h">
+      <Filter>beast_boost</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\threads\beast_ReadWriteMutex.h">
+      <Filter>beast_core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\threads\beast_SharedData.h">
+      <Filter>beast_core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_boost\traits\beast_BoostLockableTraits.h">
+      <Filter>beast_boost\traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\thread\MutexTraits.h">
+      <Filter>beast_core\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\thread\TrackedMutex.h">
+      <Filter>beast_core\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\thread\detail\TrackedMutex.h">
+      <Filter>beast_core\thread\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\thread\detail\ScopedLock.h">
+      <Filter>beast_core\thread\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\thread\impl\TrackedMutex.h">
+      <Filter>beast_core\thread\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\thread\impl\TrackedMutexType.h">
+      <Filter>beast_core\thread\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\thread\impl\UntrackedMutexType.h">
+      <Filter>beast_core\thread\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1150,9 +1192,6 @@
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_ParallelFor.cpp">
       <Filter>beast_basics\threads</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_basics\threads\beast_ReadWriteMutex.cpp">
-      <Filter>beast_basics\threads</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_basics\threads\beast_Semaphore.cpp">
       <Filter>beast_basics\threads</Filter>
     </ClCompile>
@@ -1339,8 +1378,14 @@
     <ClCompile Include="..\..\modules\beast_asio\async\beast_SharedHandler.cpp">
       <Filter>beast_asio\async</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\beast_NumberToString.cpp">
-      <Filter>beast_core\text</Filter>
+    <ClCompile Include="..\..\modules\beast_boost\beast_boost.cpp">
+      <Filter>beast_boost</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\threads\beast_ReadWriteMutex.cpp">
+      <Filter>beast_core\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\thread\impl\TrackedMutex.cpp">
+      <Filter>beast_core\thread\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

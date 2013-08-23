@@ -17,25 +17,27 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THROW_H_INCLUDED
-#define BEAST_THROW_H_INCLUDED
+#ifndef BEAST_BOOST_H_INCLUDED
+#define BEAST_BOOST_H_INCLUDED
 
-/** Throw an exception, with a debugger hook.
+// Adds boost-specific features to beast.
 
-    This provides an opportunity to utilize the debugger before
-    the stack is unwound.
-*/
-namespace Debug
-{
-extern void breakPoint ();
-};
+#include <boost/version.hpp>
 
-template <class Exception>
-inline void Throw (Exception const& e, char const* = "", int = 0)
-{
-    Debug::breakPoint ();
+// lockable_traits was added in 1.53.0
+#ifndef BEAST_BOOST_HAS_LOCKABLES
+# if BOOST_VERSION >= 105300
+#  define BEAST_BOOST_HAS_LOCKABLES 1
+# else
+#  define BEAST_BOOST_HAS_LOCKABLES 0
+# endif
+#endif
+#if BEAST_BOOST_HAS_LOCKABLES
+# include <boost/thread/lockable_traits.hpp>
+#endif
 
-    throw e;
-}
+#if BEAST_BOOST_HAS_LOCKABLES
+# include "traits/beast_BoostLockableTraits.h"
+#endif
 
 #endif

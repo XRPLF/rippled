@@ -118,9 +118,36 @@ void checkHeap ()
 
 //------------------------------------------------------------------------------
 
-const String getFileNameFromPath (const char* sourceFileName)
+String getSourceLocation (char const* fileName, int lineNumber,
+                          int numberOfParents)
 {
-    return File::createFileWithoutCheckingPath (sourceFileName).getFileName ();
+    return getFileNameFromPath (fileName, numberOfParents) +
+        "(" + String::fromNumber (lineNumber) + ")";
+}
+
+String getFileNameFromPath (const char* sourceFileName, int numberOfParents)
+{
+    String fullPath (sourceFileName);
+
+#if BEAST_WINDOWS
+    // Convert everything to forward slash
+    fullPath = fullPath.replaceCharacter ('\\', '/');
+#endif
+
+    String path;
+
+    int chopPoint = fullPath.lastIndexOfChar ('/');
+    path = fullPath.substring (chopPoint + 1);
+
+    while (chopPoint >= 0 && numberOfParents > 0)
+    {
+        --numberOfParents;
+        fullPath = fullPath.substring (0, chopPoint);
+        chopPoint = fullPath.lastIndexOfChar ('/');
+        path = fullPath.substring (chopPoint + 1) + '/' + path;
+    }
+
+    return path;
 }
 
 // Returns a String with double quotes escaped

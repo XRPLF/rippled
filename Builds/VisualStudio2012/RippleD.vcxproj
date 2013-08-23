@@ -1021,6 +1021,7 @@
     <ClCompile Include="..\..\src\cpp\protobuf_core.cpp" />
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_asio\beast_asio.cpp" />
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_basics\beast_basics.cpp" />
+    <ClCompile Include="..\..\Subtrees\beast\modules\beast_boost\beast_boost.cpp" />
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_core\beast_core.cpp" />
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_crypto\beast_crypto.cpp" />
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_db\beast_db.cpp" />
