@@ -279,8 +279,8 @@ public:
             }
         }
 
-        state->newKeyIndex = 1 + (state->keyFile.getFile ().getSize () - masterHeaderBytes)
-                               / calcKeyRecordBytes (m_keyBytes);
+        state->newKeyIndex = 1 + static_cast <KeyIndex> ((state->keyFile.getFile ().getSize () - masterHeaderBytes)
+                               / calcKeyRecordBytes (m_keyBytes));
 
         openFile (&state->valFile, valPath);
 
@@ -360,7 +360,7 @@ public:
 
             if (result.wasOk ())
             {
-                if (bytesRead == calcKeyRecordBytes (m_keyBytes))
+                if (bytesRead == static_cast <size_t> (calcKeyRecordBytes (m_keyBytes)))
                 {
                     MemoryInputStream stream (data, false);
 
@@ -425,7 +425,7 @@ public:
 
             if (result.wasOk ())
             {
-                if (bytesWritten != bytes)
+                if (bytesWritten != static_cast <size_t> (bytes))
                 {
                     result = Result::fail ("KeyvaDB: bytesWritten != bytes");
                 }
