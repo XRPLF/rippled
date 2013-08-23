@@ -133,7 +133,6 @@ else:
 COMPILED_FILES.extend([
     'Subtrees/beast/modules/beast_asio/beast_asio.cpp',
     'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
-    'Subtrees/beast/modules/beast_boost/beast_boost.cpp',
     'Subtrees/beast/modules/beast_crypto/beast_crypto.cpp',
     'Subtrees/beast/modules/beast_db/beast_db.cpp',
     'Subtrees/beast/modules/beast_sqdb/beast_sqdb.cpp',
