@@ -401,7 +401,7 @@ namespace NumberToStringConverters
         }
         return printDigits (t, n);
     }
-#ifndef _MSC_VER
+#ifdef _MSC_VER
 #pragma warning (pop)
 #endif
 
