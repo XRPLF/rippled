@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TIMEDDESTROY_H_INCLUDED
-#define RIPPLE_TIMEDDESTROY_H_INCLUDED
+#ifndef RIPPLE_LOGGEDTIMINGS_H_INCLUDED
+#define RIPPLE_LOGGEDTIMINGS_H_INCLUDED
 
 namespace detail
 {
@@ -44,6 +44,14 @@ struct Destroyer <boost::unordered_map <Key, Value> >
     }
 };
 
+/** Cleans up an elaspsed time so it prints nicely */
+inline double cleanElapsed (double seconds) noexcept
+{
+    if (seconds >= 10)
+        return std::floor (seconds + 0.5);
+
+    return static_cast <int> ((seconds * 10 + 0.5) / 10);
+}
 
 }
 
@@ -63,27 +71,43 @@ double timedDestroy (Object& object)
             Time::getHighResolutionTicks () - startTime);
 }
 
-/** Log the destruction of an object if the time exceeds a threshold.
+/** Log the timed destruction of an object if the time exceeds a threshold.
 */
 template <typename PartitionKey, typename Object>
 void logTimedDestroy (
     Object& object, String objectDescription, double thresholdSeconds = 1)
 {
-    double seconds = timedDestroy (object);
+    double const seconds = timedDestroy (object);
 
     if (seconds > thresholdSeconds)
     {
         LogSeverity const severity = lsWARNING;
 
-        if (seconds >= 10)
-            seconds = std::floor (seconds + 0.5);
-        else
-            seconds = static_cast <int> ((seconds * 10 + 0.5) / 10);
-
         Log (severity, LogPartition::get <PartitionKey> ()) <<
             objectDescription << " took "<<
-            String (seconds) <<
+            String (detail::cleanElapsed (seconds)) <<
             " seconds to destroy";
+    }
+}
+
+//------------------------------------------------------------------------------
+
+/** Log a timed function call if the time exceeds a threshold. */
+template <typename PartitionKey, typename Function>
+void logTimedCall (String description, char const* fileName, int lineNumber,
+    Function f, double thresholdSeconds = 1)
+{
+    double const seconds = measureFunctionCallTime (f);
+
+    if (seconds > thresholdSeconds)
+    {
+        LogSeverity const severity = lsWARNING;
+
+        Log (severity, LogPartition::get <PartitionKey> ()) <<
+            description << " took "<<
+            String (detail::cleanElapsed (seconds)) <<
+            " seconds to execute at " <<
+                Debug::getSourceLocation (fileName, lineNumber);
     }
 }
 

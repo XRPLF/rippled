@@ -776,16 +776,46 @@ void ApplicationImp::doSweep(Job& j)
     //         have listeners register for "onSweep ()" notification.
     //
 
-    mMasterTransaction.sweep ();
-    m_nodeStore->sweep ();
-    mLedgerMaster.sweep ();
-    mTempNodeCache.sweep ();
-    mValidations->sweep ();
-    getInboundLedgers ().sweep ();
-    mSLECache.sweep ();
-    AcceptedLedger::sweep (); // VFALCO NOTE AcceptedLedger is/has a singleton?
-    SHAMap::sweep (); // VFALCO NOTE SHAMap is/has a singleton?
-    mNetOps->sweepFetchPack ();
+    logTimedCall <Application> ("TransactionMaster::sweep", __FILE__, __LINE__, boost::bind (
+        &TransactionMaster::sweep, &mMasterTransaction));
+    //mMasterTransaction.sweep ();
+
+    logTimedCall <Application> ("NodeStore::sweep", __FILE__, __LINE__, boost::bind (
+        &NodeStore::sweep, m_nodeStore.get ()));
+    //m_nodeStore->sweep ();
+
+    logTimedCall <Application> ("LedgerMaster::sweep", __FILE__, __LINE__, boost::bind (
+        &LedgerMaster::sweep, &mLedgerMaster));
+    //mLedgerMaster.sweep ();
+
+    logTimedCall <Application> ("TempNodeCache::sweep", __FILE__, __LINE__, boost::bind (
+        &NodeCache::sweep, &mTempNodeCache));
+    //mTempNodeCache.sweep ();
+
+    logTimedCall <Application> ("Validations::sweep", __FILE__, __LINE__, boost::bind (
+        &IValidations::sweep, mValidations.get ()));
+    //mValidations->sweep ();
+
+    logTimedCall <Application> ("InboundLedgers::sweep", __FILE__, __LINE__, boost::bind (
+        &InboundLedgers::sweep, &getInboundLedgers ()));
+    //getInboundLedgers ().sweep ();
+
+    logTimedCall <Application> ("SLECache::sweep", __FILE__, __LINE__, boost::bind (
+        &SLECache::sweep, &mSLECache));
+    //mSLECache.sweep ();
+
+    logTimedCall <Application> ("AcceptedLedger::sweep", __FILE__, __LINE__,
+        &AcceptedLedger::sweep);
+    //AcceptedLedger::sweep (); // VFALCO NOTE AcceptedLedger is/has a singleton?
+
+    logTimedCall <Application> ("SHAMap::sweep", __FILE__, __LINE__,
+        &SHAMap::sweep);
+    //SHAMap::sweep (); // VFALCO NOTE SHAMap is/has a singleton?
+
+    logTimedCall <Application> ("NetworkOPs::sweepFetchPack", __FILE__, __LINE__, boost::bind (
+        &NetworkOPs::sweepFetchPack, mNetOps.get ()));
+    //mNetOps->sweepFetchPack ();
+
     // VFALCO NOTE does the call to sweep() happen on another thread?
     mSweepTimer.expires_from_now (boost::posix_time::seconds (getConfig ().getSize (siSweepInterval)));
     mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));

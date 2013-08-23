@@ -12,7 +12,8 @@
 #define CACHED_TRANSACTION_AGE 1800
 #endif
 
-TransactionMaster::TransactionMaster () : mCache ("TransactionCache", CACHED_TRANSACTION_NUM, CACHED_TRANSACTION_AGE)
+TransactionMaster::TransactionMaster ()
+    : mCache ("TransactionCache", CACHED_TRANSACTION_NUM, CACHED_TRANSACTION_AGE)
 {
     ;
 }
@@ -92,4 +93,8 @@ bool TransactionMaster::canonicalize (Transaction::pointer& txn)
 
     return false;
 }
-// vim:ts=4
+
+void TransactionMaster::sweep (void)
+{
+    mCache.sweep ();
+}
