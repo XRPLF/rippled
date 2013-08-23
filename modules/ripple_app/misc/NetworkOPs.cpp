@@ -92,11 +92,15 @@ void NetworkOPs::onDeadlineTimer (DeadlineTimer& timer)
 {
     if (timer == m_netTimer)
     {
-        processNetTimer ();
+        getApp().getJobQueue ().addJob (jtNETOP_TIMER, "NetworkOPs::processNetTimer",
+            BIND_TYPE (&NetworkOPs::processNetTimer, this));
+        //processNetTimer ();
     }
     else if (timer == m_clusterTimer)
     {
-        doClusterReport();
+        getApp().getJobQueue ().addJob (jtNETOP_CLUSTER, "NetworkOPs::doClusterReport",
+            BIND_TYPE (&NetworkOPs::processNetTimer, this));
+        //doClusterReport();
     }
 }
 
