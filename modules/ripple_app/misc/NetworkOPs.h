@@ -253,7 +253,12 @@ public:
     {
         setMode (omFULL);
     }
+
+    /** Called to initially start our timers.
+        Not called for stand-alone mode.
+    */
     void setStateTimer ();
+    
     void newLCL (int proposers, int convergeTime, uint256 const& ledgerHash);
     void needNetworkLedger ()
     {
@@ -320,8 +325,6 @@ public:
     uint256 getConsensusLCL ();
     void reportFeeChange ();
 
-    void doClusterReport ();
-
     //Helper function to generate SQL query to get transactions
     std::string transactionsSQL (std::string selection, const RippleAddress& account,
                                  int32 minLedger, int32 maxLedger, bool descending, uint32 offset, int limit,
@@ -373,8 +376,11 @@ public:
     InfoSub::pointer    addRpcSub (const std::string& strUrl, InfoSub::ref rspEntry);
 
 private:
-    void processNetTimer ();
+    void setHeartbeatTimer ();
+    void setClusterTimer ();
     void onDeadlineTimer (DeadlineTimer& timer);
+    void processHeartbeatTimer ();
+    void processClusterTimer ();
 
     void setMode (OperatingMode);
 
@@ -404,7 +410,7 @@ private:
     bool                                mProposing, mValidating;
     bool                                mFeatureBlocked;
     boost::posix_time::ptime            mConnectTime;
-    DeadlineTimer                       m_netTimer;
+    DeadlineTimer                       m_heartbeatTimer;
     DeadlineTimer                       m_clusterTimer;
     boost::shared_ptr<LedgerConsensus>  mConsensus;
     boost::unordered_map < uint160,
