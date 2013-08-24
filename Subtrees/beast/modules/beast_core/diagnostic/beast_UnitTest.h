@@ -309,6 +309,8 @@ public:
     */
     void logMessage (const String& message);
 
+    void logReport (StringArray const& report);
+
 private:
     void finishCase ();
 
@@ -489,6 +491,11 @@ protected:
         this to do something else with the data.
     */
     virtual void logMessage (String const& message);
+
+    /** Logs a report about the current test progress.
+        This calls logMessage for each String.
+    */
+    virtual void logReport (StringArray const& report);
 
 private:
     void runTest (UnitTest& test);

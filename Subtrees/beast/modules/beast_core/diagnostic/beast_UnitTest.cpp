@@ -102,6 +102,11 @@ void UnitTest::logMessage (String const& message)
     m_runner->logMessage (message);
 }
 
+void UnitTest::logReport (StringArray const& report)
+{
+    m_runner->logReport (report);
+}
+
 void UnitTest::beginTestCase (String const& name)
 {
     finishCase ();
@@ -362,6 +367,12 @@ bool UnitTests::shouldAbortTests()
 void UnitTests::logMessage (const String& message)
 {
     Logger::writeToLog (message);
+}
+
+void UnitTests::logReport (StringArray const& report)
+{
+    for (int i = 0; i < report.size (); ++i)
+        logMessage (report [i]);
 }
 
 void UnitTests::runTest (UnitTest& test)
