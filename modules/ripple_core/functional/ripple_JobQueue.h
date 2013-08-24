@@ -68,26 +68,30 @@ public:
     Json::Value getJson (int c = 0);
 
 private:
-    typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-    LockType mLock;
-
     typedef std::set <Job> JobSet;
 
-    void queueJob (Job const& job, ScopedLockType&);
-    void getNextJob (Job& job, ScopedLockType&);
-    void finishJob (Job const& job);
+    struct State
+    {
+        State ();
 
+        uint64 lastJob;
+        JobSet jobSet;
+        JobCounts jobCounts;
+    };
+
+    typedef SharedData <State> SharedState;
+
+    void queueJob (Job const& job, SharedState::WriteAccess& state);
+    void getNextJob (Job& job, SharedState::WriteAccess& state);
+    void finishJob (Job const& job);
     void processTask ();
 
     static int getJobLimit (JobType type);
 
 private:
+    SharedState m_state;
     Workers m_workers;
-    uint64 mLastJob;
-    JobSet mJobSet;
     LoadMonitor mJobLoads [NUM_JOB_TYPES];
-    JobCounts mJobCounts;
 };
 
 #endif
