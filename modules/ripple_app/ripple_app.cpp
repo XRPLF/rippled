@@ -15,7 +15,7 @@
 #include "BeastConfig.h"
 
 // This must come first to work around the boost placeholders issues
-#include "beast/modules/beast_basics/beast_basics.h"
+#include "beast/modules/beast_core/beast_core.h"
 
 #if BEAST_LINUX || BEAST_MAC || BEAST_BSD
 #include <sys/resource.h>
@@ -50,7 +50,6 @@
 #include <boost/regex.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
-//#include <boost/thread.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>

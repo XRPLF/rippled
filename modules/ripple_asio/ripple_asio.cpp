@@ -29,7 +29,6 @@
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
 
-#include "beast/modules/beast_basics/beast_basics.h"
 #include "beast/modules/beast_asio/beast_asio.h"
 
 #include "ripple_asio.h"

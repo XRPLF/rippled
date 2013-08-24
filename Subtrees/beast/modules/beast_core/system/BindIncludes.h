@@ -3,6 +3,10 @@
     This file is part of Beast: https://github.com/vinniefalco/Beast
     Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
+    Portions of this file are from JUCE.
+    Copyright (c) 2013 - Raw Material Software Ltd.
+    Please visit http://www.juce.com
+
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
@@ -17,35 +21,37 @@
 */
 //==============================================================================
 
-#ifndef BEAST_BEAST_DB_H_INCLUDED
-#define BEAST_BEAST_DB_H_INCLUDED
+#ifndef BEAST_CORE_SYSTEM_BINDINCLUDES_H_INCLUDED
+#define BEAST_CORE_SYSTEM_BINDINCLUDES_H_INCLUDED
 
-//------------------------------------------------------------------------------
+// Choose a source of bind, placeholders, and function
 
-/*  If you fail to make sure that all your compile units are building Beast with
-    the same set of option flags, then there's a risk that different compile
-    units will treat the classes as having different memory layouts, leading to
-    very nasty memory corruption errors when they all get linked together.
-    That's why it's best to always include the BeastConfig.h file before any
-    beast headers.
-*/
-#ifndef BEAST_BEASTCONFIG_H_INCLUDED
-# ifdef _MSC_VER
-#  pragma message ("Have you included your BeastConfig.h file before including the Beast headers?")
+#if !BEAST_BIND_USES_STD && !BEAST_BIND_USES_TR1 && !BEAST_BIND_USES_BOOST
+# if BEAST_MSVC
+#  define BEAST_BIND_USES_STD 1
+# elif BEAST_IOS || BEAST_MAC
+#  include <ciso646>                        // detect version of std::lib
+#  if BEAST_IOS && BEAST_BOOST_IS_AVAILABLE // Work-around for iOS bugs with bind.
+#   define BEAST_BIND_USES_BOOST 1
+#  elif _LIBCPP_VERSION // libc++
+#   define BEAST_BIND_USES_STD 1
+#  else // libstdc++ (GNU)
+#   define BEAST_BIND_USES_TR1 1
+#  endif
+# elif BEAST_LINUX || BEAST_BSD
+#  define BEAST_BIND_USES_TR1 1
 # else
-#  warning "Have you included your BeastConfig.h file before including the Beast headers?"
+#  define BEAST_BIND_USES_STD 1
 # endif
 #endif
 
-#include "../beast_core/beast_core.h"
-
-//------------------------------------------------------------------------------
-
-namespace beast
-{
-
-#include "keyvalue/beast_KeyvaDB.h"
-
-}
+#if BEAST_BIND_USES_STD
+# include <functional>
+#elif BEAST_BIND_USES_TR1
+# include <tr1/functional>
+#elif BEAST_BIND_USES_BOOST
+# include <boost/bind.hpp>
+# include <boost/function.hpp>
+#endif
 
 #endif

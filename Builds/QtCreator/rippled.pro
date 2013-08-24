@@ -60,7 +60,6 @@ UI_HEADERS_DIR += ../../modules/ripple_basics
 
 SOURCES += \
     ../../Subtrees/beast/modules/beast_asio/beast_asio.cpp \
-    ../../Subtrees/beast/modules/beast_basics/beast_basics.cpp \
     ../../Subtrees/beast/modules/beast_boost/beast_boost.cpp \
     ../../Subtrees/beast/modules/beast_core/beast_core.cpp \
     ../../Subtrees/beast/modules/beast_crypto/beast_crypto.cpp \

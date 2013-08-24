@@ -23,7 +23,7 @@
 #include "system/ripple_StandardIncludes.h"
 
 // This must come before Boost, to fix the boost placeholders problem
-#include "beast/modules/beast_basics/beast_basics.h"
+#include "beast/modules/beast_core/beast_core.h"
 
 #include "system/ripple_BoostIncludes.h"
 

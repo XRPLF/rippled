@@ -171,9 +171,6 @@
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_core\beast_core.cpp">
       <Filter>[0] Subtrees\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Subtrees\beast\modules\beast_basics\beast_basics.cpp">
-      <Filter>[0] Subtrees\beast</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cpp\protobuf_core.cpp">
       <Filter>[0] Subtrees\protobuf</Filter>
     </ClCompile>

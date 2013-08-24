@@ -103,7 +103,6 @@ FILE_PATTERNS          =
 RECURSIVE              = YES
 EXCLUDE                = modules/beast_core/beast_core.h \
                          modules/beast_core/beast_core.cpp \
-                         modules/beast_basics/beast_basics.h \
                          modules/beast_basics/beast_basics.cpp \
                          modules/beast_basics/native \
                          modules/beast_basics/zip/zlib

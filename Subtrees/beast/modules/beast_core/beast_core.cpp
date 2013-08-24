@@ -173,6 +173,10 @@ namespace beast
 #include "maths/beast_Random.cpp"
 
 #include "memory/beast_MemoryBlock.cpp"
+#include "memory/beast_FifoFreeStoreWithTLS.cpp"
+#include "memory/beast_FifoFreeStoreWithoutTLS.cpp"
+#include "memory/beast_GlobalPagedFreeStore.cpp"
+#include "memory/beast_PagedFreeStore.cpp"
 
 #include "misc/beast_Main.cpp"
 #include "misc/beast_Result.cpp"
@@ -205,6 +209,17 @@ namespace beast
 #include "text/beast_TextDiff.cpp"
 
 #include "thread/impl/TrackedMutex.cpp"
+#include "thread/beast_DeadlineTimer.cpp"
+#include "thread/beast_OncePerSecond.cpp"
+#include "thread/beast_InterruptibleThread.cpp"
+#include "thread/beast_Semaphore.cpp"
+#include "thread/beast_CallQueue.cpp"
+#include "thread/beast_Listeners.cpp"
+#include "thread/beast_ManualCallQueue.cpp"
+#include "thread/beast_ParallelFor.cpp"
+#include "thread/beast_ThreadGroup.cpp"
+#include "thread/beast_ThreadWithCallQueue.cpp"
+#include "thread/beast_Workers.cpp"
 
 #include "threads/beast_ChildProcess.cpp"
 #include "threads/beast_ReadWriteLock.cpp"
