@@ -99,7 +99,7 @@ void NetworkOPs::onDeadlineTimer (DeadlineTimer& timer)
     else if (timer == m_clusterTimer)
     {
         getApp().getJobQueue ().addJob (jtNETOP_CLUSTER, "NetworkOPs::doClusterReport",
-            BIND_TYPE (&NetworkOPs::processNetTimer, this));
+            BIND_TYPE (&NetworkOPs::doClusterReport, this));
         //doClusterReport();
     }
 }
@@ -2397,7 +2397,7 @@ void NetworkOPs::doClusterReport ()
     ClusterNodeStatus us("", synced ? getApp().getFeeTrack().getLocalFee() : 0, getNetworkTimeNC());
     if (!getApp().getUNL().nodeUpdate(getApp().getLocalCredentials().getNodePublic(), us))
     {
-        WriteLog (lsDEBUG, NetworkOPs) << "To soon to send cluster update";
+        WriteLog (lsDEBUG, NetworkOPs) << "Too soon to send cluster update";
         return;
     }
 
@@ -2418,5 +2418,3 @@ void NetworkOPs::doClusterReport ()
     PackedMessage::pointer message = boost::make_shared<PackedMessage>(cluster, protocol::mtCLUSTER);
     getApp().getPeers().relayMessageCluster (NULL, message);
 }
-
-// vim:ts=4
