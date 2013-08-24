@@ -23,7 +23,7 @@ NetworkOPs::NetworkOPs (LedgerMaster* pLedgerMaster)
     , mProposing (false)
     , mValidating (false)
     , mFeatureBlocked (false)
-    , m_netTimer (this)
+    , m_heartbeatTimer (this)
     , m_clusterTimer (this)
     , mLedgerMaster (pLedgerMaster)
     , mCloseTimeOffset (0)
@@ -38,7 +38,39 @@ NetworkOPs::NetworkOPs (LedgerMaster* pLedgerMaster)
 {
 }
 
-void NetworkOPs::processNetTimer ()
+//------------------------------------------------------------------------------
+
+void NetworkOPs::setStateTimer ()
+{
+    setHeartbeatTimer ();
+    setClusterTimer ();
+}
+
+void NetworkOPs::setHeartbeatTimer ()
+{
+    m_heartbeatTimer.setExpiration (LEDGER_GRANULARITY / 1000.0);
+}
+
+void NetworkOPs::setClusterTimer ()
+{
+    m_clusterTimer.setExpiration (10.0);
+}
+
+void NetworkOPs::onDeadlineTimer (DeadlineTimer& timer)
+{
+    if (timer == m_heartbeatTimer)
+    {
+        getApp().getJobQueue ().addJob (jtNETOP_TIMER, "NetOPs.heartbeat",
+            BIND_TYPE (&NetworkOPs::processHeartbeatTimer, this));
+    }
+    else if (timer == m_clusterTimer)
+    {
+        getApp().getJobQueue ().addJob (jtNETOP_CLUSTER, "NetOPs.cluster",
+            BIND_TYPE (&NetworkOPs::processClusterTimer, this));
+    }
+}
+
+void NetworkOPs::processHeartbeatTimer ()
 {
     {
         Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
@@ -86,19 +118,42 @@ void NetworkOPs::processNetTimer ()
         if (mConsensus)
             mConsensus->timerEntry ();
     }
+
+    setHeartbeatTimer ();
 }
 
-void NetworkOPs::onDeadlineTimer (DeadlineTimer& timer)
+void NetworkOPs::processClusterTimer ()
 {
-    if (timer == m_netTimer)
+    bool synced = (getApp().getLedgerMaster().getValidatedLedgerAge() <= 240);
+    ClusterNodeStatus us("", synced ? getApp().getFeeTrack().getLocalFee() : 0, getNetworkTimeNC());
+    if (!getApp().getUNL().nodeUpdate(getApp().getLocalCredentials().getNodePublic(), us))
     {
-        processNetTimer ();
+        WriteLog (lsDEBUG, NetworkOPs) << "To soon to send cluster update";
+        return;
     }
-    else if (timer == m_clusterTimer)
+
+    std::map<RippleAddress, ClusterNodeStatus> nodes = getApp().getUNL().getClusterStatus();
+
+    protocol::TMCluster cluster;
+    for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = nodes.begin(),
+            end = nodes.end(); it != end; ++it)
     {
-        doClusterReport();
+        protocol::TMClusterNode& node = *cluster.add_clusternodes();
+        node.set_publickey(it->first.humanNodePublic());
+        node.set_reporttime(it->second.getReportTime());
+        node.set_nodeload(it->second.getLoadFee());
+        if (!it->second.getName().empty())
+            node.set_nodename(it->second.getName());
     }
+
+    PackedMessage::pointer message = boost::make_shared<PackedMessage>(cluster, protocol::mtCLUSTER);
+    getApp().getPeers().relayMessageCluster (NULL, message);
+
+    setClusterTimer ();
 }
+
+//------------------------------------------------------------------------------
+
 
 std::string NetworkOPs::strOperatingMode ()
 {
@@ -642,13 +697,6 @@ void NetworkOPs::setFeatureBlocked ()
 {
     mFeatureBlocked = true;
     setMode (omTRACKING);
-}
-
-void NetworkOPs::setStateTimer ()
-{
-    m_netTimer.setRecurringExpiration (LEDGER_GRANULARITY / 1000.0);
-
-    m_clusterTimer.setRecurringExpiration (10.0);
 }
 
 class ValidationCount
@@ -2386,33 +2434,3 @@ void NetworkOPs::missingNodeInLedger (uint32 seq)
     if (hash.isNonZero ())
         getApp().getInboundLedgers ().findCreate (hash, seq);
 }
-
-void NetworkOPs::doClusterReport ()
-{
-    bool synced = (getApp().getLedgerMaster().getValidatedLedgerAge() <= 240);
-    ClusterNodeStatus us("", synced ? getApp().getFeeTrack().getLocalFee() : 0, getNetworkTimeNC());
-    if (!getApp().getUNL().nodeUpdate(getApp().getLocalCredentials().getNodePublic(), us))
-    {
-        WriteLog (lsDEBUG, NetworkOPs) << "To soon to send cluster update";
-        return;
-    }
-
-    std::map<RippleAddress, ClusterNodeStatus> nodes = getApp().getUNL().getClusterStatus();
-
-    protocol::TMCluster cluster;
-    for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = nodes.begin(),
-            end = nodes.end(); it != end; ++it)
-    {
-        protocol::TMClusterNode& node = *cluster.add_clusternodes();
-        node.set_publickey(it->first.humanNodePublic());
-        node.set_reporttime(it->second.getReportTime());
-        node.set_nodeload(it->second.getLoadFee());
-        if (!it->second.getName().empty())
-            node.set_nodename(it->second.getName());
-    }
-
-    PackedMessage::pointer message = boost::make_shared<PackedMessage>(cluster, protocol::mtCLUSTER);
-    getApp().getPeers().relayMessageCluster (NULL, message);
-}
-
-// vim:ts=4

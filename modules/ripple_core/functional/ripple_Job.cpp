@@ -55,93 +55,40 @@ const char* Job::toString (JobType t)
 {
     switch (t)
     {
-    case jtINVALID:
-        return "invalid";
+    case jtINVALID:         return "invalid";
+    case jtPACK:            return "makeFetchPack";
+    case jtPUBOLDLEDGER:    return "publishAcqLedger";
+    case jtVALIDATION_ut:   return "untrustedValidation";
+    case jtPROOFWORK:       return "proofOfWork";
+    case jtTRANSACTION_l:   return "localTransaction";
+    case jtPROPOSAL_ut:     return "untrustedProposal";
+    case jtLEDGER_DATA:     return "ledgerData";
+    case jtUPDATE_PF:       return "updatePaths";
+    case jtCLIENT:          return "clientCommand";
+    case jtTRANSACTION:     return "transaction";
+    case jtADVANCE:         return "advanceLedger";
+    case jtPUBLEDGER:       return "publishNewLedger";
+    case jtTXN_DATA:        return "fetchTxnData";
+    case jtWAL:             return "writeAhead";
+    case jtVALIDATION_t:    return "trustedValidation";
+    case jtWRITE:           return "writeObjects";
+    case jtPROPOSAL_t:      return "trustedProposal";
+    case jtSWEEP:           return "sweep";
+    case jtNETOP_CLUSTER:   return "clusterReport";
+    case jtNETOP_TIMER:     return "heartbeat";
 
-    case jtPACK:
-        return "makeFetchPack";
+    case jtADMIN:           return "administration";
 
-    case jtPUBOLDLEDGER:
-        return "publishAcqLedger";
-
-    case jtVALIDATION_ut:
-        return "untrustedValidation";
-
-    case jtPROOFWORK:
-        return "proofOfWork";
-
-    case jtPROPOSAL_ut:
-        return "untrustedProposal";
-
-    case jtLEDGER_DATA:
-        return "ledgerData";
-
-    case jtUPDATE_PF:
-        return "updatePaths";
-
-    case jtCLIENT:
-        return "clientCommand";
-
-    case jtTRANSACTION:
-        return "transaction";
-
-    case jtPUBLEDGER:
-        return "publishNewLedger";
-
-    case jtADVANCE:
-        return "advanceLedger";
-
-    case jtVALIDATION_t:
-        return "trustedValidation";
-
-    case jtWAL:
-        return "writeAhead";
-
-    case jtWRITE:
-        return "writeObjects";
-
-    case jtTRANSACTION_l:
-        return "localTransaction";
-
-    case jtPROPOSAL_t:
-        return "trustedProposal";
-
-    case jtADMIN:
-        return "administration";
-
-    case jtPEER:
-        return "peerCommand";
-
-    case jtDISK:
-        return "diskAccess";
-
-    case jtACCEPTLEDGER:
-        return "acceptLedger";
-
-    case jtTXN_PROC:
-        return "processTransaction";
-
-    case jtTXN_DATA:
-        return "fetchTxnData";
-
-    case jtOB_SETUP:
-        return "orderBookSetup";
-
-    case jtPATH_FIND:
-        return "pathFind";
-
-    case jtHO_READ:
-        return "nodeRead";
-
-    case jtHO_WRITE:
-        return "nodeWrite";
-
-    case jtSWEEP:
-        return "sweep";
-
-    case jtGENERIC:
-        return "generic";
-
+    // special types not dispatched by the job pool
+    case jtPEER:            return "peerCommand";
+    case jtDISK:            return "diskAccess";
+    case jtACCEPTLEDGER:    return "acceptLedger";
+    case jtTXN_PROC:        return "processTransaction";
+    case jtOB_SETUP:        return "orderBookSetup";
+    case jtPATH_FIND:       return "pathFind";
+    case jtHO_READ:         return "nodeRead";
+    case jtHO_WRITE:        return "nodeWrite";
+    case jtGENERIC:         return "generic";
     default:
         assert (false);
         return "unknown";
