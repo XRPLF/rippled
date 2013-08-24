@@ -352,9 +352,7 @@ void ListenersBase::Group::do_call1 (Call* const c, const timestamp_t timestamp,
 class ListenersBase::Proxy::Work : public CallQueue::Work
 {
 public:
-    inline Work (Proxy* proxy,
-                 Entry* const entry,
-                 const timestamp_t timestamp)
+    inline Work (Entry* const entry, const timestamp_t timestamp)
         : m_entry (entry)
         , m_timestamp (timestamp)
     {
@@ -363,12 +361,9 @@ public:
     void operator () ()
     {
         ListenersBase::Call* c = m_entry->call.exchange (0);
-
         Group* group = m_entry->group;
-
         if (!group->empty ())
             group->do_call (c, m_timestamp);
-
         c->decReferenceCount ();
     }
 
@@ -466,7 +461,7 @@ void ListenersBase::Proxy::update (Call* const c, const timestamp_t timestamp)
         if (!old)
         {
             CallQueue& callQueue = entry->group->getCallQueue ();
-            callQueue.callp (new (callQueue.getAllocator ()) Work (this, entry, timestamp));
+            callQueue.callp (new (callQueue.getAllocator ()) Work (entry, timestamp));
         }
         else
         {

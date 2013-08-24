@@ -25,6 +25,188 @@
 #define BEAST_CORE_H_INCLUDED
 
 //------------------------------------------------------------------------------
+/**
+
+@mainpage Beast: A C++ library for peer to peer and client server development.
+
+### Version 1.0
+
+Copyright 2008, 2013 by Vinnie Falco \<vinnie.falco@gmail.com\> ([e-mail][0])
+
+Beast is a source code collection of individual modules containing
+functionality for a variety of applications, with an emphasis on building
+concurrent systems. Beast incorporates parts of [JUCE][3] (Jules' Utility
+Class Extensions), available from [Raw Material Software][4]. Beast has no
+external dependencies 
+
+Beast is hosted on Github at [https://github.com/vinniefalco/Beast][1]
+
+The online documentation is at [http://vinniefalco.github.com/Beast][2]
+
+## Platforms
+
+All platforms supported by JUCE are also supported by Beast. Currently these
+platforms include:
+
+- **Windows**: Applications and VST/RTAS/NPAPI/ActiveX plugins can be built
+using MS Visual Studio. The results are all fully compatible with Windows
+XP, Vista or Windows 7.
+
+- **Mac OS X**: Applications and VST/AudioUnit/RTAS/NPAPI plugins with Xcode.
+
+- **GNU/Linux**: Applications and plugins can be built for any kernel 2.6 or
+later.
+
+- **FreeBSD**: Kernel version 8.4 or higher required.
+
+- **iOS**: Native iPhone and iPad apps.
+
+- **Android**: Supported.
+
+## Prerequisites
+
+This documentation assumes that the reader has a working knowledge of JUCE.
+Some modules built on external libraries assume that the reader understands
+the operation of those external libraries. Certain modules assume that the
+reader understands additional domain-specific information. Modules with
+additional prerequisites are marked in the documentation.
+
+## External Modules
+
+Some modules bring in functionality provided by external libraries. For
+example, the @ref beast_bzip2 module provides the compression and decompression
+algorithms in [bZip2][7]. Usage of these external library modules is optional.
+They come with complete source code, as well as options for using either
+system or user provided variants of the external libraries: it is not
+necessary to download additional source code packages to use these modules.
+
+External code incorporated into Beast is covered by separate licenses. See
+the licensing information and notes in the corresponding source files for
+copyright information and terms of use.
+
+## Integration
+
+Beast requires recent versions of JUCE. It won't work with versions 1.53 or
+earlier. To use the library it is necessary to first download JUCE to a
+location where your development environment can find it. Or, you can use your
+existing installation of JUCE.
+
+This library uses the same modularized organizational structure as JUCE. To
+use a module, first add a path to the list of includes searched by your
+development environment or project, which points to the Beast directory. Then,
+add the single corresponding .c or .cpp file to your existing project which
+already uses JUCE. For example, to use the @ref beast_core module, add the file
+beast_core.cpp to your project. Some modules depend on other modules.
+
+To use a module, include the appropriate header from within your source code.
+For example, to access classes in the @ref beast_concurrent module, use this:
+
+@code
+
+#include "modules/beast_concurrent/beast_concurrent.h"
+
+@endcode
+
+Then add the corresponding file beast_concurrent.cpp to your build.
+
+## AppConfig
+
+Some Beast features can be controlled at compilation time through
+preprocessor directives. The available choices of compilation options are
+described in AppConfig.h, located in the AppConfigTemplate directory. Copy
+the provided settings into your existing AppConfig.h (a file used by JUCE
+convention).
+
+## License
+
+This library contains portions of other open source products covered by
+separate licenses. Please see the corresponding source files for specific
+terms.
+
+Beast is provided under the terms of The ISC License:
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose  with  or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+Some files contain portions of these external projects, licensed separately:
+
+- [bZip2][7] is Copyright (C) 1996-2010 Julian R Seward. All rights
+    reserved. See the corresponding file LICENSE for licensing terms.
+
+- [Soci][13] is Copyright (C) 2004-2008 Maciej Sobczak, Stephen Hutton, and
+    various others noted in the corresponding source files. Soci is distributed
+    under the [Boost Software License, Version 1.0][14].
+
+- [SQLite][15], placed in the public domain.
+
+[0]: mailto:vinnie.falco@gmail.com "Vinnie Falco (Email)"
+[1]: https://github.com/vinniefalco/Beast "Beast Project"
+[2]: http://vinniefalco.github.com/Beast/ "Beast Documentation"
+[3]: http://rawmaterialsoftware.com/juce.php "JUCE"
+[4]: http://rawmaterialsoftware.com/ "Raw Material Software"
+[5]: http://www.gnu.org/licenses/gpl-2.0.html "GNU General Public License, version 2"
+[6]: http://rawmaterialsoftware.com/jucelicense.php "JUCE Licenses"
+[7]: http://www.bzip.org/ "bZip2: Home"
+[8]: http://freetype.org/ "The FreeType Project"
+[9]: http://www.freetype.org/FTL.TXT "The FreeType Project License"
+[10]: http://www.lua.org/ "The Programming Language Lua"
+[11]: http://opensource.org/licenses/ISC "The ISC License"
+[12]: https://github.com/vinniefalco/LuaBridge
+[13]: http://soci.sourceforge.net/ "SOCI"
+[14]: http://www.boost.org/LICENSE_1_0.txt "Boost Software License, Version 1.0"
+[15]: http://sqlite.org/ "SQLite Home Page"
+[16]: http://developer.kde.org/~wheeler/taglib.html "TagLib"
+[17]: http://www.gnu.org/licenses/lgpl-2.1.html "Gnu Lesser General Public License, version 2.1"
+[18]: http://www.mozilla.org/MPL/1.1/ "Mozilla Public License"
+
+@copyright Copyright 2008-2013 by Vinnie Falco \<vinnie.falco@gmail.com\> ([e-mail][0])
+@copyright Provided under the [ISC LIcense][11]
+*/
+
+//------------------------------------------------------------------------------
+
+/** Implementation classes.
+
+    Thase classes are used internally.
+
+    @defgroup internal internal
+    @internal
+*/
+
+//------------------------------------------------------------------------------
+
+/** External modules.
+
+    These modules bring in functionality from third party or system libraries.
+
+    @defgroup external external
+*/
+
+//------------------------------------------------------------------------------
+
+/** Core classes.
+
+    This module provides core required functionality, and classes useful for
+    general development. All other modules require this module.
+
+    @todo Discuss the treatment of exceptions versus Error objects in the
+          library.
+
+    @todo Discuss the additions to BeastConfig.h
+
+    @defgroup beast_core beast_core
+*/
+
+//------------------------------------------------------------------------------
 
 /*  If you fail to make sure that all your compile units are building Beast with
     the same set of option flags, then there's a risk that different compile
@@ -77,74 +259,8 @@
 //#define BEAST_CATCH_UNHANDLED_EXCEPTIONS 1
 #endif
 
-#ifndef BEAST_BOOST_IS_AVAILABLE
-#define BEAST_BOOST_IS_AVAILABLE 0
-#endif
-
-//------------------------------------------------------------------------------
-//
-// This is a hack to fix boost's goofy placeholders
-//
-
-#if BEAST_BOOST_IS_AVAILABLE
-#ifdef BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
-#error <boost/bind.hpp> must not be included before this file
-#endif
-// Prevent <boost/bind/placeholders.hpp> from being included
-#define BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
-#include <boost/bind/arg.hpp>
-#include <boost/config.hpp>
-// This based on <boost/bind/placeholders.cpp>
-namespace boost {
-namespace placeholders {
-extern boost::arg<1> _1;
-extern boost::arg<2> _2;
-extern boost::arg<3> _3;
-extern boost::arg<4> _4;
-extern boost::arg<5> _5;
-extern boost::arg<6> _6;
-extern boost::arg<7> _7;
-extern boost::arg<8> _8;
-extern boost::arg<9> _9;
-}
-using namespace placeholders;
-}
-#endif
-
-//------------------------------------------------------------------------------
-//
-// Choose a source of bind, placeholders, and function
-//
-
-#if !BEAST_BIND_USES_STD && !BEAST_BIND_USES_TR1 && !BEAST_BIND_USES_BOOST
-# if BEAST_MSVC
-#  define BEAST_BIND_USES_STD 1
-# elif BEAST_IOS || BEAST_MAC
-#  include <ciso646>                        // detect version of std::lib
-#  if BEAST_IOS && BEAST_BOOST_IS_AVAILABLE // Work-around for iOS bugs with bind.
-#   define BEAST_BIND_USES_BOOST 1
-#  elif _LIBCPP_VERSION // libc++
-#   define BEAST_BIND_USES_STD 1
-#  else // libstdc++ (GNU)
-#   define BEAST_BIND_USES_TR1 1
-#  endif
-# elif BEAST_LINUX || BEAST_BSD
-#  define BEAST_BIND_USES_TR1 1
-# else
-#  define BEAST_BIND_USES_STD 1
-# endif
-#endif
-
-#if BEAST_BIND_USES_STD
-# include <functional>
-#elif BEAST_BIND_USES_TR1
-# include <tr1/functional>
-#elif BEAST_BIND_USES_BOOST
-# include <boost/bind.hpp>
-# include <boost/function.hpp>
-#endif
-
-//------------------------------------------------------------------------------
+#include "system/BoostIncludes.h"
+#include "system/BindIncludes.h"
 
 #include "system/beast_StandardHeader.h"
 
@@ -247,6 +363,7 @@ namespace beast
 #include "memory/beast_ContainerDeletePolicy.h"
 #include "memory/beast_ByteOrder.h"
 #include "memory/beast_ByteSwap.h"
+#include "maths/beast_Math.h"
 #include "maths/beast_uint24.h"
 #include "logging/beast_Logger.h"
 #include "diagnostic/beast_FPUFlags.h"
@@ -345,6 +462,31 @@ namespace beast
 #include "zip/beast_ZipFile.h"
 
 #include "diagnostic/MeasureFunctionCallTime.h"
+
+#include "functional/beast_Function.h"
+
+#include "thread/beast_DeadlineTimer.h"
+#include "thread/beast_OncePerSecond.h"
+
+#include "memory/beast_AllocatedBy.h"
+#include "memory/beast_PagedFreeStore.h"
+#include "memory/beast_GlobalPagedFreeStore.h"
+#include "memory/beast_FifoFreeStoreWithTLS.h"
+#include "memory/beast_FifoFreeStoreWithoutTLS.h"
+#include "memory/beast_FifoFreeStore.h"
+#include "memory/beast_GlobalFifoFreeStore.h"
+
+#include "thread/beast_Semaphore.h"
+#include "thread/beast_SerialFor.h"
+#include "thread/beast_InterruptibleThread.h"
+#include "thread/beast_ThreadGroup.h"
+#include "thread/beast_CallQueue.h"
+#include "thread/beast_GlobalThreadGroup.h"
+#include "thread/beast_Listeners.h"
+#include "thread/beast_ManualCallQueue.h"
+#include "thread/beast_ParallelFor.h"
+#include "thread/beast_ThreadWithCallQueue.h"
+#include "thread/beast_Workers.h"
 
 }
 

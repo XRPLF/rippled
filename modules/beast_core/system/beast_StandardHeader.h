@@ -30,9 +30,10 @@
 
     See also SystemStats::getBeastVersion() for a string version.
 */
-#define BEAST_MAJOR_VERSION      0
+// VFALCO TODO Replace this with SemanticVerson
+#define BEAST_MAJOR_VERSION      1
 #define BEAST_MINOR_VERSION      0
-#define BEAST_BUILDNUMBER        1
+#define BEAST_BUILDNUMBER        0
 
 /** Current Beast version number.
 
