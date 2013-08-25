@@ -64,7 +64,7 @@ public:
     private:
         int m_flags;
     };
-    
+ 
     enum Flags
     {
         none = 0,
@@ -74,7 +74,19 @@ public:
         server_proxy = 8
     };
 
+    virtual SSL* native_handle () = 0;
+
+    /*
+    // This would be the underlying StreamSocket template parameter
+    typedef boost::asio::ip::tcp::socket NativeSocketType;
+    typedef boost::asio::ssl::stream <NativeSocketType&> SslStreamType;
+    virtual boost::asio::ip::tcp::socket& getNativeSocket () = 0;
+    virtual SslStreamType& getSslStream () = 0;
+    */
+
     static MultiSocket* New (boost::asio::io_service& io_service, int flags = 0);
+    static MultiSocket* New (boost::asio::ip::tcp::socket& socket, int flags = 0);
+    static MultiSocket* New (boost::asio::ssl::stream <boost::asio::ip::tcp::socket&>& stream, int flags = 0);
 
     // Ripple uses a SSL/TLS context with specific parameters and this returns
     // a reference to the corresponding boost::asio::ssl::context object.
