@@ -31,38 +31,23 @@
     Examples of the type of Object:
 
     asio::ip::tcp::socket
-        arg must be an io_context
-        SocketWrapper will create and take ownership of the tcp::socket
-        this_layer_type will be tcp::socket
-        next_layer () returns a asio::ip::tcp::socket&
-        lowest_layer () returns a asio::ip::tcp::socket&
-
     asio::ip::tcp::socket&
-        arg must be an existing socket&
-        The caller owns the underlying socket object
-        this_layer_type will be tcp::socket
-        next_layer () returns a asio::ip::tcp::socket&
-        lowest_layer () returns a asio::ip::tcp::socket&
-
     asio::ssl::stream <asio::ip::tcp::socket>
-        arg must be an io_context
-        SocketWrapper creates and takes ownership of the ssl::stream
-        WrappedObjecType will be asio::ssl::stream <asio::ip::tcp::socket>
-        next_layer () returns a asio::ip::tcp::socket&
-        lowest_layer () returns a asio::ip::tcp::socket&
-
     asio::ssl::stream <asio::ip::tcp::socket&>
-        arg must be an existing socket&
-        The caller owns the socket, but SocketWrapper owns the ssl::stream
-        this_layer_type will be asio::ssl::stream <asio::ip::tcp::socket&>
-        next_layer () returns a asio::ip::tcp::socket&
-        lowest_layer () returns a asio::ip::tcp::socket&
+        explain arg must be an io_context
+        explain SocketWrapper will create and take ownership of the tcp::socket
+        explain this_layer_type will be tcp::socket
+        explain next_layer () returns a asio::ip::tcp::socket&
+        explain lowest_layer () returns a asio::ip::tcp::socket&
 
     asio::ssl::stream <asio::buffered_stream <asio::ip::tcp::socket> > >
         This makes my head explode
 */
 
 //------------------------------------------------------------------------------
+
+namespace detail
+{
 
 namespace SocketWrapperMemberChecks
 {
@@ -87,6 +72,7 @@ namespace SocketWrapperMemberChecks
     BEAST_DEFINE_IS_CALL_POSSIBLE(has_async_read_some, async_read_some);
     BEAST_DEFINE_IS_CALL_POSSIBLE(has_async_write_some, async_write_some);
 
+    BEAST_DEFINE_IS_CALL_POSSIBLE(has_set_verify_mode, set_verify_mode);
     BEAST_DEFINE_IS_CALL_POSSIBLE(has_handshake, handshake);
     BEAST_DEFINE_IS_CALL_POSSIBLE(has_async_handshake, async_handshake);
     BEAST_DEFINE_IS_CALL_POSSIBLE(has_async_shutdown, async_shutdown);
@@ -106,7 +92,10 @@ namespace SocketWrapperMemberChecks
             SocketBase::pure_virtual_called (__FILE__, __LINE__);
             return m_socket;
         }
-        inline socket_type& operator-> () { return get (); }
+        inline socket_type& operator-> ()
+        {
+            return get ();
+        }
     private:
         socket_type m_socket;
     };
@@ -118,13 +107,23 @@ namespace SocketWrapperMemberChecks
     {
         typedef typename T::protocol_type::socket socket_type;
         inline native_socket (Socket& peer)
-            : m_socket_ptr (&peer.native_handle <socket_type> ()) { }
-        inline socket_type& get () noexcept { return *m_socket_ptr; }
-        inline socket_type& operator-> () noexcept { return get (); }
+            : m_socket_ptr (&peer.this_layer <socket_type> ())
+        {
+        }
+        inline socket_type& get () noexcept
+        {
+            return *m_socket_ptr;
+        }
+        inline socket_type& operator-> () noexcept
+        {
+            return get ();
+        }
     private:
         socket_type* m_socket_ptr;
     };
-};
+}
+
+}
 
 //------------------------------------------------------------------------------
 
@@ -148,19 +147,7 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // accessors
-    //
-
-    // If you have access to the SocketWrapper itself instead of the Socket,
-    // then these types and functions become available to you. If you want
-    // to access things like next_layer() and lowest_layer() directly on the
-    // underlying object, you might write:
-    //
-    //      wrapper->this_layer().next_layer()
-    //
-    // We can't expose native versions of next_layer_type or next_layer()
-    // because they may not exist in the underlying object and would cause
-    // a compile error if we tried.
+    // SocketWrapper
     //
 
     /** The type of the object being wrapped. */
@@ -180,20 +167,108 @@ public:
 
     //--------------------------------------------------------------------------
     //
+    // Socket
+    //
+
+    void* this_layer_ptr (char const* type_name) const
+    {
+        char const* const name (typeid (this_layer_type).name ());
+        if (strcmp (name, type_name) == 0)
+            return const_cast <void*> (static_cast <void const*> (&m_object));
+        return nullptr;
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // native_handle
+    //
+
+#if 0
+    // This is a potential work-around for the problem with
+    // the has_type_native_handle_type template, but requires
+    // Boost 1.54 or later.
+    //
+    // This include will be needed:
+    //
+    // #include <boost/tti/has_type.hpp>
+    //
+    //
+    BOOST_TTI_HAS_TYPE(native_handle_type)
+
+#else
+    template <class T>
+    struct has_type_native_handle_type
+    {
+        typedef char yes; 
+        typedef struct {char dummy[2];} no;
+        template <class C> static yes f(typename C::native_handle_type*);
+        template <class C> static no f(...);
+#ifdef _MSC_VER
+        static bool const value = sizeof(f<T>(0)) == 1;
+#else
+        // This line fails to compile under Visual Studio 2012
+        static bool const value = sizeof(has_type_native_handle_type<T>::f<T>(0)) == 1;
+#endif
+    }; 
+
+#endif
+
+    template <typename T, bool Exists = has_type_native_handle_type <T>::value >
+    struct extract_native_handle_type
+    {
+        typedef typename T::native_handle_type type;
+    };
+
+    template <typename T>
+    struct extract_native_handle_type <T, false>
+    {
+        typedef void type;
+    };
+
+    // This will be void if native_handle_type doesn't exist in Object
+    typedef typename extract_native_handle_type <this_layer_type>::type native_handle_type;
+
+    bool native_handle (char const* type_name, void* dest)
+    {
+        using namespace detail::SocketWrapperMemberChecks;
+        return native_handle (type_name, dest,
+            EnableIf <has_type_native_handle_type <this_layer_type>::value> ());
+    }
+
+    bool native_handle (char const* type_name, void* dest,
+        boost::true_type)
+    {
+        char const* const name (typeid (typename this_layer_type::native_handle_type).name ());
+        if (strcmp (name, type_name) == 0)
+        {
+            native_handle_type* const p (reinterpret_cast <native_handle_type*> (dest));
+            *p = m_object.native_handle ();
+            return true;
+        }
+        return false;
+    }
+
+    bool native_handle (char const*, void*,
+        boost::false_type)
+    {
+        pure_virtual_called (__FILE__, __LINE__);
+        return false;
+    }
+
+    //--------------------------------------------------------------------------
+    //
     // basic_io_object
     //
 
     boost::asio::io_service& get_io_service ()
     {
-        using namespace SocketWrapperMemberChecks;
 #if 0
-        Type <HandshakeHandler> ( (
+        // Apparently has_get_io_service always results in false
+        using namespace detail::SocketWrapperMemberChecks;
+        return get_io_service (
             EnableIf <has_get_io_service <this_layer_type,
-                io_service ()>::value> ());
+                boost::asio::io_service&()>::value> ());
 #else
-        // BEAST_DEFINE_IS_CALL_POSSIBLE doesn't seem to
-        // match (void) argument lists so this is a workaround.
-        //
         return get_io_service (boost::true_type ());
 #endif
     }
@@ -216,18 +291,14 @@ public:
     // basic_socket
     //
 
-#if 0
-    // This is a potential work-around for the problem with
-    // the has_type_lowest_layer_type template, but requires
-    // Boost 1.54 or later.
-    //
-    // This include will be needed:
-    //
-    // #include <boost/tti/has_type.hpp>
-    //
-    //
-    BOOST_TTI_HAS_TYPE(lowest_layer_type)
-#endif
+    /*
+    To forward the lowest_layer_type type, we need to make sure it
+    exists in Object. This is a little more tricky than just figuring
+    out if Object has a particular member function.
+
+    The problem is boost::asio::basic_socket_acceptor, which doesn't
+    have lowest_layer () or lowest_layer_type ().
+    */
 
     template <class T>
     struct has_type_lowest_layer_type
@@ -244,14 +315,29 @@ public:
 #endif
     }; 
 
-    void* lowest_layer (char const* type_name) const
+    template <typename T, bool Exists = has_type_lowest_layer_type <T>::value >
+    struct extract_lowest_layer_type
     {
-        using namespace SocketWrapperMemberChecks;
-        return lowest_layer (type_name,
+        typedef typename T::lowest_layer_type type;
+    };
+
+    template <typename T>
+    struct extract_lowest_layer_type <T, false>
+    {
+        typedef void type;
+    };
+
+    // This will be void if lowest_layer_type doesn't exist in Object
+    typedef typename extract_lowest_layer_type <this_layer_type>::type lowest_layer_type;
+
+    void* lowest_layer_ptr (char const* type_name) const
+    {
+        using namespace detail::SocketWrapperMemberChecks;
+        return lowest_layer_ptr (type_name,
             EnableIf <has_type_lowest_layer_type <this_layer_type>::value> ());
     }
 
-    void* lowest_layer (char const* type_name,
+    void* lowest_layer_ptr (char const* type_name,
         boost::true_type) const
     {
         char const* const name (typeid (typename this_layer_type::lowest_layer_type).name ());
@@ -260,7 +346,7 @@ public:
         return nullptr;
     }
 
-    void* lowest_layer (char const*,
+    void* lowest_layer_ptr (char const*,
         boost::false_type) const
     {
         pure_virtual_called (__FILE__, __LINE__);
@@ -269,19 +355,9 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void* native_handle (char const* type_name) const
-    {
-        char const* const name (typeid (this_layer_type).name ());
-        if (strcmp (name, type_name) == 0)
-            return const_cast <void*> (static_cast <void const*> (&m_object));
-        return nullptr;
-    }
-
-    //--------------------------------------------------------------------------
-
     error_code cancel (error_code& ec)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         return cancel (ec,
             EnableIf <has_cancel <this_layer_type,
                 error_code (error_code&)>::value> ());
@@ -303,7 +379,7 @@ public:
 
     error_code shutdown (shutdown_type what, error_code& ec)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         return shutdown (what, ec,
             EnableIf <has_shutdown <this_layer_type,
                 error_code (shutdown_type, error_code&)>::value> ());
@@ -326,7 +402,7 @@ public:
 
     error_code close (error_code& ec)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         return close (ec,
             EnableIf <has_close <this_layer_type,
                 error_code (error_code&)>::value> ());
@@ -351,7 +427,7 @@ public:
 
     error_code accept (Socket& peer, error_code& ec)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         typedef typename native_socket <this_layer_type>::socket_type socket_type;
         return accept (peer, ec,
             EnableIf <has_accept <this_layer_type,
@@ -361,7 +437,7 @@ public:
     error_code accept (Socket& peer, error_code& ec,
         boost::true_type)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         return m_object.accept (
             native_socket <this_layer_type> (peer).get (), ec);
     }
@@ -376,7 +452,7 @@ public:
 
     void async_accept (Socket& peer, SharedHandlerPtr handler)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         typedef typename native_socket <this_layer_type>::socket_type socket_type;
         async_accept (peer, BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
             EnableIf <has_async_accept <this_layer_type,
@@ -386,7 +462,7 @@ public:
     void async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
         boost::true_type)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         m_object.async_accept (
             native_socket <this_layer_type> (peer).get (),
                 BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler));
@@ -407,7 +483,7 @@ public:
 
     std::size_t read_some (MutableBuffers const& buffers, error_code& ec)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         return read_some (buffers, ec,
             EnableIf <has_read_some <this_layer_type,
                 std::size_t (MutableBuffers const&, error_code&)>::value> ());
@@ -433,7 +509,7 @@ public:
 
     std::size_t write_some (ConstBuffers const& buffers, error_code& ec)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         return write_some (buffers, ec,
             EnableIf <has_write_some <this_layer_type,
                 std::size_t (ConstBuffers const&, error_code&)>::value> ());
@@ -459,7 +535,7 @@ public:
 
     void async_read_some (MutableBuffers const& buffers, SharedHandlerPtr handler)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         async_read_some (buffers, BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
             EnableIf <has_async_read_some <this_layer_type,
                 void (MutableBuffers const&, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))>::value> ());
@@ -486,7 +562,7 @@ public:
 
     void async_write_some (ConstBuffers const& buffers, SharedHandlerPtr handler)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         async_write_some (buffers, BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
             EnableIf <has_async_write_some <this_layer_type,
                 void (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))>::value> ());
@@ -514,9 +590,64 @@ public:
     // ssl::stream
     //
 
+    template <class T>
+    struct has_type_next_layer_type
+    {
+        typedef char yes; 
+        typedef struct {char dummy[2];} no;
+        template <class C> static yes f(typename C::next_layer_type*);
+        template <class C> static no f(...);
+#ifdef _MSC_VER
+        static bool const value = sizeof(f<T>(0)) == 1;
+#else
+        // This line fails to compile under Visual Studio 2012
+        static bool const value = sizeof(has_type_next_layer_type<T>::f<T>(0)) == 1;
+#endif
+    }; 
+
+    template <typename T, bool Exists = has_type_next_layer_type <T>::value >
+    struct extract_next_layer_type
+    {
+        typedef typename T::next_layer_type type;
+    };
+
+    template <typename T>
+    struct extract_next_layer_type <T, false>
+    {
+        typedef void type;
+    };
+
+    // This will be void if next_layer_type doesn't exist in Object
+    typedef typename extract_next_layer_type <this_layer_type>::type next_layer_type;
+
+    void* next_layer_ptr (char const* type_name) const
+    {
+        using namespace detail::SocketWrapperMemberChecks;
+        return next_layer_ptr (type_name,
+            EnableIf <has_type_next_layer_type <this_layer_type>::value> ());
+    }
+
+    void* next_layer_ptr (char const* type_name,
+        boost::true_type) const
+    {
+        char const* const name (typeid (typename this_layer_type::next_layer_type).name ());
+        if (strcmp (name, type_name) == 0)
+            return const_cast <void*> (static_cast <void const*> (&m_object.next_layer ()));
+        return nullptr;
+    }
+
+    void* next_layer_ptr (char const*,
+        boost::false_type) const
+    {
+        pure_virtual_called (__FILE__, __LINE__);
+        return nullptr;
+    }
+
+    //--------------------------------------------------------------------------
+
     bool needs_handshake ()
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         return
             has_handshake <this_layer_type,
                 error_code (handshake_type, error_code&)>::value ||
@@ -526,9 +657,32 @@ public:
 
     //--------------------------------------------------------------------------
 
+    void set_verify_mode (int verify_mode)
+    {
+        using namespace detail::SocketWrapperMemberChecks;
+        set_verify_mode (verify_mode,
+            EnableIf <has_set_verify_mode <this_layer_type,
+                void (int)>::value> ());
+ 
+    }
+
+    void set_verify_mode (int verify_mode,
+        boost::true_type)
+    {
+        m_object.set_verify_mode (verify_mode);
+    }
+
+    void set_verify_mode (int,
+        boost::false_type)
+    {
+        pure_virtual_called (__FILE__, __LINE__);
+    }
+
+    //--------------------------------------------------------------------------
+
     error_code handshake (handshake_type type, error_code& ec)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         return handshake (type, ec,
             EnableIf <has_handshake <this_layer_type,
                 error_code (handshake_type, error_code&)>::value> ());
@@ -550,7 +704,7 @@ public:
 
     void async_handshake (handshake_type type, SharedHandlerPtr handler)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         async_handshake (type, BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
             EnableIf <has_async_handshake <this_layer_type,
                 void (handshake_type, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))>::value> ());
@@ -579,7 +733,7 @@ public:
     error_code handshake (handshake_type type,
         ConstBuffers const& buffers, error_code& ec)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         return handshake (type, buffers, ec,
             EnableIf <has_handshake <this_layer_type,
                 error_code (handshake_type, ConstBuffers const&, error_code&)>::value> ());
@@ -603,7 +757,7 @@ public:
     void async_handshake (handshake_type type,
         ConstBuffers const& buffers, SharedHandlerPtr handler)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         async_handshake (type, buffers,
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
                 EnableIf <has_async_handshake <this_layer_type,
@@ -634,7 +788,7 @@ public:
 
     error_code shutdown (error_code& ec)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         return shutdown (ec,
             EnableIf <has_shutdown <this_layer_type,
                 error_code (error_code&)>::value> ());
@@ -656,7 +810,7 @@ public:
 
     void async_shutdown (SharedHandlerPtr handler)
     {
-        using namespace SocketWrapperMemberChecks;
+        using namespace detail::SocketWrapperMemberChecks;
         async_shutdown (BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
             EnableIf <has_async_shutdown <this_layer_type,
                 void (BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))>::value> ());

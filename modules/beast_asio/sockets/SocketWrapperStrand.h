@@ -17,26 +17,26 @@
 */
 //==============================================================================
 
-#ifndef BEAST_STRANDSOCKETWRAPPER_H_INCLUDED
-#define BEAST_STRANDSOCKETWRAPPER_H_INCLUDED
+#ifndef BEAST_ASIO_SOCKETS_SOCKETWRAPPERSTRAND_H_INCLUDED
+#define BEAST_ASIO_SOCKETS_SOCKETWRAPPERSTRAND_H_INCLUDED
 
 /** Wraps the async I/O of a SocketWrapper with an io_service::strand
-    To use this in a chain of wrappers, customize the Wrapper type.
+    To use this in a chain of wrappers, customize the Base type.
 */
 template <typename Object, typename Base = SocketWrapper <Object> >
-class StrandSocketWrapper
+class SocketWrapperStrand
     : public Base
 {
 public:
     template <typename Arg>
-    StrandSocketWrapper (Arg& arg)
+    SocketWrapperStrand (Arg& arg)
         : Base (arg)
         , m_strand (this->get_io_service ())
     {
     }
 
     template <typename Arg1, typename Arg2>
-    StrandSocketWrapper (Arg1& arg1, Arg2& arg2)
+    SocketWrapperStrand (Arg1& arg1, Arg2& arg2)
         : Base (arg1, arg2)
         , m_strand (this->get_io_service ())
     {
@@ -49,15 +49,13 @@ public:
 
     void async_read_some (MutableBuffers const& buffers, SharedHandlerPtr handler)
     {
-        this->SocketWrapper <Object>::async_read_some (buffers,
+        this->Base::async_read_some (buffers,
             newReadHandler (m_strand.wrap (handler)));
     }
 
-    template <typename WriteHandler>
-    void async_write_some (ConstBuffers const& buffers,
-        BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
+    void async_write_some (MutableBuffers const& buffers, SharedHandlerPtr handler)
     {
-        this->SocketWrapper <Object>::async_write_some (buffers,
+        this->Base::async_write_some (buffers,
             newWriteHandler (m_strand.wrap (handler)));
     }
 
