@@ -870,9 +870,6 @@
     <ClCompile Include="..\..\modules\ripple_app\boost\ripple_SslContext.cpp">
       <Filter>[1] Ripple\ripple_app\boost</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Subtrees\beast\modules\beast_boost\beast_boost.cpp">
-      <Filter>[0] Subtrees\beast</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_asio\sockets\RippleSSLContext.cpp">
       <Filter>[1] Ripple\ripple_asio\sockets</Filter>
     </ClCompile>

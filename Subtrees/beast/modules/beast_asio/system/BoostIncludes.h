@@ -38,8 +38,11 @@
 # endif
 #endif
 
-#include <boost/version.hpp>
+// Unfortunately, we use some boost detail elements
+//
+// https://svn.boost.org/trac/boost/ticket/9024
 
+#include <boost/version.hpp>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
@@ -47,28 +50,8 @@
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/type_traits.hpp>
-
-// Unfortunately, we need to use some boost detail
-//
-// https://svn.boost.org/trac/boost/ticket/9024
-//
 #include <boost/asio/detail/handler_alloc_helpers.hpp>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
-
-// Not sure when handler_type was added but it's not in 1.48
-#ifndef BEAST_ASIO_HAS_HANDLER_TYPE
-# if BOOST_VERSION >= 105400
-#  define BEAST_ASIO_HAS_HANDLER_TYPE 1
-# else
-#  define BEAST_ASIO_HAS_HANDLER_TYPE 0
-# endif
-#endif
-#if BEAST_ASIO_HAS_HANDLER_TYPE
-# include <boost/asio/handler_type.hpp>
-# define BEAST_ASIO_HANDLER_TYPE(h, sig) BOOST_ASIO_HANDLER_TYPE(h, sig)
-#else
-# define BEAST_ASIO_HANDLER_TYPE(h, sig) h
-#endif
 
 // Continuation hooks added in 1.54.0
 #ifndef BEAST_ASIO_HAS_CONTINUATION_HOOKS
@@ -89,32 +72,9 @@
 # ifndef BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
 #  define BEAST_ASIO_HAS_BUFFEREDHANDSHAKE 1
 # endif
-# ifndef BEAST_ASIO_HAS_FUTURE_RETURNS
-#  define BEAST_ASIO_HAS_FUTURE_RETURNS 1
-# endif
 #else
 # ifndef BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
 #  define BEAST_ASIO_HAS_BUFFEREDHANDSHAKE 0
-# endif
-# ifndef BEAST_ASIO_HAS_FUTURE_RETURNS
-#  define BEAST_ASIO_HAS_FUTURE_RETURNS 0
-# endif
-#endif
-
-#if ! BEAST_ASIO_HAS_FUTURE_RETURNS
-# define BEAST_ASIO_INITFN_RESULT_TYPE(expr,val) void
-# define BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(expr,val) void
-#else
-# define BEAST_ASIO_INITFN_RESULT_TYPE(expr,val) BOOST_ASIO_INITFN_RESULT_TYPE(expr,val)
-# if defined(GENERATING_DOCUMENTATION)
-#  define BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
-   void_or_deduced
-# elif defined(_MSC_VER) && (_MSC_VER < 1500)
-#  define BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
-   boost::asio::detail::async_result_type_helper<h, sig>::type
-# else
-#  define BEAST_ASIO_INITFN_RESULT_TYPE_MEMBER(h, sig) \
-   boost::asio::async_result <boost::asio::handler_type<h, sig>::type>::type
 # endif
 #endif
 

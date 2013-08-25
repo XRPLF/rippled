@@ -90,7 +90,7 @@
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketBase.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapper.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapperStrand.h" />
-    <ClInclude Include="..\..\modules\beast_asio\system\beast_BoostIncludes.h" />
+    <ClInclude Include="..\..\modules\beast_asio\system\BoostIncludes.h" />
     <ClInclude Include="..\..\modules\beast_asio\system\beast_OpenSSLIncludes.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeer.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerBasics.h" />
@@ -104,8 +104,6 @@
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicSyncServer.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_PeerTest.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerType.h" />
-    <ClInclude Include="..\..\modules\beast_boost\beast_boost.h" />
-    <ClInclude Include="..\..\modules\beast_boost\traits\beast_BoostLockableTraits.h" />
     <ClInclude Include="..\..\modules\beast_core\beast_core.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\beast_AbstractFifo.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\beast_Array.h" />
@@ -295,6 +293,8 @@
     <ClInclude Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.h" />
     <ClInclude Include="..\..\modules\beast_db\beast_db.h" />
     <ClInclude Include="..\..\modules\beast_db\keyvalue\beast_KeyvaDB.h" />
+    <ClInclude Include="..\..\modules\beast_extras\beast_extras.h" />
+    <ClInclude Include="..\..\modules\beast_extras\traits\beast_BoostLockableTraits.h" />
     <ClInclude Include="..\..\modules\beast_sqdb\api\backend.h" />
     <ClInclude Include="..\..\modules\beast_sqdb\api\blob.h" />
     <ClInclude Include="..\..\modules\beast_sqdb\api\into.h" />
@@ -416,7 +416,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_boost\beast_boost.cpp" />
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp" />
     <ClCompile Include="..\..\modules\beast_core\containers\beast_AbstractFifo.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1150,6 +1149,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\beast_extras\beast_extras.cpp" />
     <ClCompile Include="..\..\modules\beast_sqdb\beast_sqdb.cpp" />
     <ClCompile Include="..\..\modules\beast_sqdb\source\blob.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1306,7 +1306,7 @@
       </PrecompiledHeader>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -1321,7 +1321,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -1338,7 +1338,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

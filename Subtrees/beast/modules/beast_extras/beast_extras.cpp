@@ -17,27 +17,13 @@
 */
 //==============================================================================
 
-#ifndef BEAST_BOOST_H_INCLUDED
-#define BEAST_BOOST_H_INCLUDED
+#include "BeastConfig.h"
 
-// Adds boost-specific features to beast.
+#include "beast_extras.h"
 
-#include <boost/version.hpp>
+namespace beast
+{
 
-// lockable_traits was added in 1.53.0
-#ifndef BEAST_BOOST_HAS_LOCKABLES
-# if BOOST_VERSION >= 105300
-#  define BEAST_BOOST_HAS_LOCKABLES 1
-# else
-#  define BEAST_BOOST_HAS_LOCKABLES 0
-# endif
-#endif
-#if BEAST_BOOST_HAS_LOCKABLES
-# include <boost/thread/lockable_traits.hpp>
-#endif
 
-#if BEAST_BOOST_HAS_LOCKABLES
-# include "traits/beast_BoostLockableTraits.h"
-#endif
 
-#endif
+}

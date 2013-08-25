@@ -89,7 +89,11 @@ void LeakCheckedBase::CounterBase::checkForLeaks ()
 
 //------------------------------------------------------------------------------
 
+#if BEAST_DEBUG
 void LeakCheckedBase::reportDanglingPointer (char const* objectName)
+#else
+void LeakCheckedBase::reportDanglingPointer (char const*)
+#endif
 {
     /*  If you hit this, then you've managed to delete more instances
         of this class than you've created. That indicates that you're

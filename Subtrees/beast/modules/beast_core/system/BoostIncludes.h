@@ -31,27 +31,39 @@
 #endif
 
 //------------------------------------------------------------------------------
+
 #if BEAST_BOOST_IS_AVAILABLE
 
+// Prevent <boost/bind/placeholders.hpp> from being included
+#ifdef BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
+# error "boost/bind.hpp must not be included before this file"
+#else
+# define BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
+#endif
+
+#include <boost/bind.hpp>
+#include <boost/bind/arg.hpp>
+#include <boost/config.hpp>
+#include <boost/function.hpp>
+#include <boost/thread/tss.hpp>         // for FifoFreeStoreWithTLS
 #include <boost/version.hpp>
+
 #if BOOST_VERSION > 105499
 # error "This hasnt been tested with boost versions above 1.54"
 #endif
 
-// Used for FifoFreeStoreWithTLS
-#include <boost/thread/tss.hpp>
-
-// This is a hack to fix boost's goofy placeholders
-#ifdef BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
-#error <boost/bind.hpp> must not be included before this file
-#endif
-
-// Prevent <boost/bind/placeholders.hpp> from being included
-#define BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
-#include <boost/bind/arg.hpp>
-#include <boost/config.hpp>
-
-// This based on <boost/bind/placeholders.cpp>
+// This is a hack to fix boost's goofy placeholders going into the global
+// namespace. First we prevent the user from including boost/bind.hpp
+// before us. Then we define the include guard macro and include
+// boost/bind.hpp ourselves to get the declarations. Finally we repeat
+// the missing placeholder declarations but put them in a proper namespace.
+//
+// We put the placeholders in boost::placeholders so they can be accessed
+// explicitly to handle the common case of a "using namespace oost" directive
+// being in effect.
+//
+// Declarations based on boost/bind/placeholders.cpp
+//
 namespace boost {
 namespace placeholders {
 extern boost::arg<1> _1;
@@ -68,6 +80,7 @@ using namespace placeholders;
 }
 
 #endif
+
 //------------------------------------------------------------------------------
 
 #endif

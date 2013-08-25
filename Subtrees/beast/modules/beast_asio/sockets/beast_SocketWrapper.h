@@ -190,7 +190,7 @@ public:
     //
     // This include will be needed:
     //
-    // #include <boost/tti/has_type.hpp>
+    // boost/tti/has_type.hpp
     //
     //
     BOOST_TTI_HAS_TYPE(native_handle_type)

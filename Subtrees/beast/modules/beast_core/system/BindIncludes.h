@@ -50,8 +50,7 @@
 #elif BEAST_BIND_USES_TR1
 # include <tr1/functional>
 #elif BEAST_BIND_USES_BOOST
-# include <boost/bind.hpp>
-# include <boost/function.hpp>
+// included in BoostIncludes.h
 #endif
 
 #endif

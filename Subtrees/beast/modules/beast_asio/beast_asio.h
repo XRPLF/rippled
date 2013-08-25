@@ -41,7 +41,7 @@
 #include "../beast_core/beast_core.h"
 
 // This module requires boost and possibly OpenSSL
-#include "system/beast_BoostIncludes.h"
+#include "system/BoostIncludes.h"
 
 // Checking overrides replaces unimplemented stubs with pure virtuals
 #ifndef BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
