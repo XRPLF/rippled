@@ -175,7 +175,6 @@ public:
         , mValidations (IValidations::New ())
         , mUNL (UniqueNodeList::New ())
         , mProofOfWorkFactory (IProofOfWorkFactory::New ())
-        , mPeers (IPeers::New (m_mainService))
         , m_loadManager (ILoadManager::New ())
         // VFALCO End new stuff
         // VFALCO TODO replace all NULL with nullptr
@@ -183,10 +182,7 @@ public:
         , mTxnDB (NULL)
         , mLedgerDB (NULL)
         , mWalletDB (NULL) // VFALCO NOTE are all these 'NULL' ctor params necessary?
-        , mPeerDoor (NULL)
         , mRPCDoor (NULL)
-        , mWSPublicDoor (NULL)
-        , mWSPrivateDoor (NULL)
         , mSweepTimer (m_auxService)
         , mShutdown (false)
     {
@@ -283,7 +279,7 @@ public:
 
     PeerDoor& getPeerDoor ()
     {
-        return *mPeerDoor;
+        return *m_peerDoor;
     }
 
     OrderBookDB& getOrderBookDB ()
@@ -336,9 +332,9 @@ public:
         return *mProofOfWorkFactory;
     }
 
-    IPeers& getPeers ()
+    Peers& getPeers ()
     {
-        return *mPeers;
+        return *m_peers;
     }
 
     // VFALCO TODO Move these to the .cpp
@@ -519,31 +515,113 @@ public:
 
         mLedgerMaster.setMinValidations (getConfig ().VALIDATION_QUORUM);
 
+        //----------------------------------------------------------------------
         //
-        // Allow peer connections.
+        //
+
+        // SSL context used for Peer connections.
+        {
+            m_peerSSLContext = RippleSSLContext::createAnonymous (
+                getConfig ().PEER_SSL_CIPHER_LIST);
+
+            // VFALCO NOTE, It seems the WebSocket context never has
+            // set_verify_mode called, for either setting of WEBSOCKET_SECURE
+            m_peerSSLContext->get().set_verify_mode (boost::asio::ssl::verify_none);
+        }
+
+        // VFALCO NOTE Unfortunately, in stand-alone mode some code still
+        //             foolishly calls getPeers(). When this is fixed we can move
+        //             the creation of the peer SSL context and Peers object into
+        //             the conditional.
+        //
+        m_peers = Peers::New (m_mainService, m_peerSSLContext->get ());
+
+        // If we're not in standalone mode,
+        // prepare ourselves for  networking
         //
         if (!getConfig ().RUN_STANDALONE)
         {
-            try
-            {
-                mPeerDoor = PeerDoor::New (
-                    getConfig ().PEER_IP,
-                    getConfig ().PEER_PORT,
-                    getConfig ().PEER_SSL_CIPHER_LIST,
-                    m_mainService);
-            }
-            catch (const std::exception& e)
-            {
-                // Must run as directed or exit.
-                WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open peer service: %s") % e.what ());
+            // Create the listening sockets for peers
+            //
+            m_peerDoor = PeerDoor::New (
+                PeerDoor::sslRequired,
+                getConfig ().PEER_IP,
+                getConfig ().peerListeningPort,
+                m_mainService,
+                m_peerSSLContext->get ());
 
-                exit (3);
+            if (getConfig ().peerPROXYListeningPort != 0)
+            {
+#if RIPPLE_PEER_USES_BEAST_MULTISOCKET
+                // Also listen on a PROXY-only port.
+                m_peerProxyDoor = PeerDoor::New (
+                    PeerDoor::sslAndPROXYRequired,
+                    getConfig ().PEER_IP,
+                    getConfig ().peerPROXYListeningPort,
+                    m_mainService,
+                    m_peerSSLContext->get ());
+#else
+                WriteLog (lsWARNING, Application) << "Peer PROXY interface: configured but disabled by build configuration.";
+#endif
             }
         }
         else
         {
             WriteLog (lsINFO, Application) << "Peer interface: disabled";
         }
+
+        // SSL context used for WebSocket connections.
+        if (getConfig ().WEBSOCKET_SECURE)
+        {
+            m_wsSSLContext = RippleSSLContext::createAuthenticated (
+                getConfig ().WEBSOCKET_SSL_KEY,
+                getConfig ().WEBSOCKET_SSL_CERT,
+                getConfig ().WEBSOCKET_SSL_CHAIN);
+        }
+        else
+        {
+            m_wsSSLContext = RippleSSLContext::createBare ();
+        }
+
+        // Create private listening WebSocket socket
+        //
+        if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
+        {
+            m_wsPrivateDoor = WSDoor::New (getConfig ().WEBSOCKET_IP,
+                getConfig ().WEBSOCKET_PORT, false, m_wsSSLContext->get ());
+
+            if (m_wsPrivateDoor == nullptr)
+            {
+                FatalError ("Could not open the WebSocket private interface.",
+                    __FILE__, __LINE__);
+            }
+        }
+        else
+        {
+            WriteLog (lsINFO, Application) << "WebSocket private interface: disabled";
+        }
+
+        // Create public listening WebSocket socket
+        //
+        if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
+        {
+            m_wsPublicDoor = WSDoor::New (getConfig ().WEBSOCKET_PUBLIC_IP,
+                getConfig ().WEBSOCKET_PUBLIC_PORT, true, m_wsSSLContext->get ());
+
+            if (m_wsPublicDoor == nullptr)
+            {
+                FatalError ("Could not open the WebSocket public interface.",
+                    __FILE__, __LINE__);
+            }
+        }
+        else
+        {
+            WriteLog (lsINFO, Application) << "WebSocket public interface: disabled";
+        }
+
+        //
+        //
+        //----------------------------------------------------------------------
 
         //
         // Allow RPC connections.
@@ -568,54 +646,10 @@ public:
         }
 
         //
-        // Allow private WS connections.
-        //
-        if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
-        {
-            try
-            {
-                mWSPrivateDoor  = new WSDoor (getConfig ().WEBSOCKET_IP, getConfig ().WEBSOCKET_PORT, false);
-            }
-            catch (const std::exception& e)
-            {
-                // Must run as directed or exit.
-                WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open private websocket service: %s") % e.what ());
-
-                exit (3);
-            }
-        }
-        else
-        {
-            WriteLog (lsINFO, Application) << "WS private interface: disabled";
-        }
-
-        //
-        // Allow public WS connections.
-        //
-        if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
-        {
-            try
-            {
-                mWSPublicDoor   = new WSDoor (getConfig ().WEBSOCKET_PUBLIC_IP, getConfig ().WEBSOCKET_PUBLIC_PORT, true);
-            }
-            catch (const std::exception& e)
-            {
-                // Must run as directed or exit.
-                WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open public websocket service: %s") % e.what ());
-
-                exit (3);
-            }
-        }
-        else
-        {
-            WriteLog (lsINFO, Application) << "WS public interface: disabled";
-        }
-
-        //
         // Begin connecting to network.
         //
         if (!getConfig ().RUN_STANDALONE)
-            mPeers->start ();
+            m_peers->start ();
 
         if (getConfig ().RUN_STANDALONE)
         {
@@ -630,7 +664,6 @@ public:
             mNetOps->setStateTimer ();
         }
     }
-
 
     void run ();
     void stop ();
@@ -648,10 +681,6 @@ private:
     IoServiceThread m_mainService;
     IoServiceThread m_auxService;
 
-    //boost::asio::io_service mIOService;
-    //boost::asio::io_service mAuxService;
-    //boost::asio::io_service::work mIOWork;
-
     LocalCredentials   m_localCredentials;
     LedgerMaster       mLedgerMaster;
     InboundLedgers     m_inboundLedgers;
@@ -666,6 +695,8 @@ private:
     OrderBookDB        mOrderBookDB;
 
     // VFALCO Clean stuff
+    ScopedPointer <SSLContext> m_peerSSLContext;
+    ScopedPointer <SSLContext> m_wsSSLContext;
     ScopedPointer <NodeStore> m_nodeStore;
     ScopedPointer <Validators> m_validators;
     ScopedPointer <IFeatures> mFeatures;
@@ -675,8 +706,12 @@ private:
     ScopedPointer <IValidations> mValidations;
     ScopedPointer <UniqueNodeList> mUNL;
     ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
-    ScopedPointer <IPeers> mPeers;
+    ScopedPointer <Peers> m_peers;
     ScopedPointer <ILoadManager> m_loadManager;
+    ScopedPointer <PeerDoor> m_peerDoor;
+    ScopedPointer <PeerDoor> m_peerProxyDoor;
+    ScopedPointer <WSDoor>   m_wsPublicDoor;
+    ScopedPointer <WSDoor>   m_wsPrivateDoor;
     // VFALCO End Clean stuff
 
     DatabaseCon* mRpcDB;
@@ -684,10 +719,7 @@ private:
     DatabaseCon* mLedgerDB;
     DatabaseCon* mWalletDB;
 
-    ScopedPointer <PeerDoor> mPeerDoor;
     ScopedPointer <RPCDoor>  mRPCDoor;
-    ScopedPointer <WSDoor>   mWSPublicDoor;
-    ScopedPointer <WSDoor>   mWSPrivateDoor;
 
     boost::asio::deadline_timer mSweepTimer;
 
@@ -700,6 +732,7 @@ private:
 void ApplicationImp::stop ()
 {
     WriteLog (lsINFO, Application) << "Received shutdown request";
+
     StopSustain ();
     mShutdown = true;
     m_mainService.stop ();
@@ -715,43 +748,56 @@ void ApplicationImp::stop ()
 
 void ApplicationImp::run ()
 {
-    // VFALCO TODO The unit tests crash if we try to
-    //             run these threads in the IoService constructor
-    //             so this hack makes them start later.
-    //
-    m_mainService.runExtraThreads ();
-    m_auxService.runExtraThreads ();
-
-    if (!getConfig ().RUN_STANDALONE)
     {
-        // VFALCO NOTE This seems unnecessary. If we properly refactor the load
-        //             manager then the deadlock detector can just always be "armed"
+        // VFALCO TODO The unit tests crash if we try to
+        //             run these threads in the IoService constructor
+        //             so this hack makes them start later.
         //
-        getApp().getLoadManager ().activateDeadlockDetector ();
+        m_mainService.runExtraThreads ();
+        m_auxService.runExtraThreads ();
+
+        if (!getConfig ().RUN_STANDALONE)
+        {
+            // VFALCO NOTE This seems unnecessary. If we properly refactor the load
+            //             manager then the deadlock detector can just always be "armed"
+            //
+            getApp().getLoadManager ().activateDeadlockDetector ();
+        }
     }
 
-    m_mainService.run (); // This blocks until the io_service is stopped.
-
-    if (mWSPublicDoor)
-        mWSPublicDoor->stop ();
-
-    if (mWSPrivateDoor)
-        mWSPrivateDoor->stop ();
-
-    // VFALCO TODO Try to not have to do this early, by using observers to
-    //             eliminate LoadManager's dependency inversions.
+    //--------------------------------------------------------------------------
     //
-    // This deletes the object and therefore, stops the thread.
-    m_loadManager = nullptr;
+    //
 
-    mSweepTimer.cancel();
+    // We use the main thread to call io_service::run.
+    // What else would we have it do? It blocks until the server
+    // eventually gets a stop command.
+    //
+    m_mainService.run ();
 
-    WriteLog (lsINFO, Application) << "Done.";
+    //
+    //
+    //--------------------------------------------------------------------------
 
-    // VFALCO NOTE This is a sign that something is wrong somewhere, it
-    //             shouldn't be necessary to sleep until some flag is set.
-    while (mShutdown)
-        boost::this_thread::sleep (boost::posix_time::milliseconds (100));
+    {
+        m_wsPublicDoor = nullptr;
+        m_wsPrivateDoor = nullptr;
+
+        // VFALCO TODO Try to not have to do this early, by using observers to
+        //             eliminate LoadManager's dependency inversions.
+        //
+        // This deletes the object and therefore, stops the thread.
+        m_loadManager = nullptr;
+
+        mSweepTimer.cancel();
+
+        WriteLog (lsINFO, Application) << "Done.";
+
+        // VFALCO NOTE This is a sign that something is wrong somewhere, it
+        //             shouldn't be necessary to sleep until some flag is set.
+        while (mShutdown)
+            boost::this_thread::sleep (boost::posix_time::milliseconds (100));
+    }
 }
 
 void ApplicationImp::sweep ()

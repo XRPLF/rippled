@@ -36,11 +36,8 @@
 namespace ripple
 {
 
-#  include "sockets/ripple_RippleTlsContext.h"
-# include "sockets/ripple_MultiSocket.h"
 #include "sockets/ripple_MultiSocketType.h"
-
-#include "sockets/ripple_RippleTlsContext.cpp"
+#include "sockets/RippleSSLContext.cpp"
 #include "sockets/ripple_MultiSocket.cpp"
 
 }

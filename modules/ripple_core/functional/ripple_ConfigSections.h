@@ -41,6 +41,7 @@ struct ConfigSection
 #define SECTION_PEER_CONNECT_LOW_WATER  "peer_connect_low_water"
 #define SECTION_PEER_IP                 "peer_ip"
 #define SECTION_PEER_PORT               "peer_port"
+#define SECTION_PEER_PROXY_PORT         "peer_port_proxy"
 #define SECTION_PEER_PRIVATE            "peer_private"
 #define SECTION_PEER_SCAN_INTERVAL_MIN  "peer_scan_interval_min"
 #define SECTION_PEER_SSL_CIPHER_LIST    "peer_ssl_cipher_list"

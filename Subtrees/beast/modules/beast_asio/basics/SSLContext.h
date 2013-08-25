@@ -16,3 +16,46 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
+#ifndef BEAST_ASIO_BASICS_SSLCONTEXT_H_INCLUDED
+#define BEAST_ASIO_BASICS_SSLCONTEXT_H_INCLUDED
+
+/** Simple base class for passing a context around.
+    This lets derived classes hide their implementation from the headers.
+*/
+class SSLContext : public Uncopyable
+{
+public:
+    virtual ~SSLContext ();
+
+    // Saves typing
+    typedef boost::asio::ssl::context ContextType;
+
+    inline ContextType& get () noexcept
+    {
+        return m_context;
+    }
+
+    inline ContextType const& get () const noexcept
+    {
+        return m_context;
+    }
+
+    // implicit conversion
+    inline operator ContextType& () noexcept
+    {
+        return get ();
+    }
+
+    inline operator ContextType const& () const noexcept
+    {
+        return get ();
+    }
+
+protected:
+    explicit SSLContext (ContextType& context);
+
+    ContextType& m_context;
+};
+
+#endif

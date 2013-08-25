@@ -17,25 +17,12 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SSLCONTEXT_H_INCLUDED
-#define BEAST_SSLCONTEXT_H_INCLUDED
-
-/** An SSL context that wraps a boost::asio::ssl::context. */
-class SslContextBase
+SSLContext::SSLContext (ContextType& context)
+    : m_context (context)
 {
-public:
-    typedef boost::asio::ssl::context BoostContextType;
-    virtual ~SslContextBase () { }
+}
 
-    /** Conversion to boost::asio::ssl::context
-        This lets you pass this object where the real thing is expected.
-    */
-    operator BoostContextType& ()
-    {
-        return getBoostContext ();
-    }
+SSLContext::~SSLContext ()
+{
+}
 
-    virtual BoostContextType& getBoostContext () noexcept = 0;
-};
-
-#endif

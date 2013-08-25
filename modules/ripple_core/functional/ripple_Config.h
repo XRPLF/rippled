@@ -85,6 +85,8 @@ public:
     boost::filesystem::path     DEBUG_LOGFILE;
     boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
 
+    //--------------------------------------------------------------------------
+
     /** Parameters for the main NodeStore database.
 
         This is 1 or more strings of the form <key>=<value>
@@ -118,6 +120,22 @@ public:
         @see parseDelimitedKeyValueString
     */
     StringPairArray importNodeDatabase;
+
+    // Listening port number for peer connections.
+    //
+    int peerListeningPort;
+
+    /** PROXY listening port number
+        If this is not zero, it indicates an additional port number on
+        which we should accept incoming Peer connections that will also
+        require a PROXY handshake.
+
+        The PROXY Protocol:
+        http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt
+    */
+    int peerPROXYListeningPort;
+
+    //--------------------------------------------------------------------------
 
     bool                        ELB_SUPPORT;            // Support Amazon ELB
 
@@ -170,7 +188,6 @@ public:
 
     // Peer networking parameters
     std::string                 PEER_IP;
-    int                         PEER_PORT;
     int                         NUMBER_CONNECTIONS;
     std::string                 PEER_SSL_CIPHER_LIST;
     int                         PEER_SCAN_INTERVAL_MIN;

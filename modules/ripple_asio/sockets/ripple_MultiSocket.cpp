@@ -4,50 +4,13 @@
 */
 //==============================================================================
 
-MultiSocket* MultiSocket::New (boost::asio::io_service& io_service, int flags)
-{
-    return new MultiSocketType <boost::asio::ip::tcp::socket> (io_service, flags);
-}
-
-MultiSocket* MultiSocket::New (boost::asio::ip::tcp::socket& socket, int flags)
-{
-    return new MultiSocketType <boost::asio::ip::tcp::socket&> (socket, flags);
-}
-
 MultiSocket* MultiSocket::New (
-    boost::asio::ssl::stream <
-        boost::asio::ip::tcp::socket&>& stream, int flags)
+    boost::asio::io_service& io_service,
+        boost::asio::ssl::context& ssl_context,
+            int flags)
 {
-    return new MultiSocketType <
-        boost::asio::ssl::stream <
-            boost::asio::ip::tcp::socket&>& > (stream, flags);
-}
-
-struct RippleTlsContextHolder
-{
-    RippleTlsContextHolder ()
-        : m_context (RippleTlsContext::New ())
-    {
-    }
-
-    RippleTlsContext& get ()
-    {
-        return *m_context;
-    }
-
-private:
-    ScopedPointer <RippleTlsContext> m_context;
-};
-
-static RippleTlsContextHolder s_context_holder;
-
-SslContextBase::BoostContextType &MultiSocket::getRippleTlsBoostContext ()
-{
-    // This doesn't work because VS2012 doesn't wrap
-    // it with a thread-safety preamble!!
-    //static ScopedPointer <RippleTlsContext> context (RippleTlsContext::New ());
-
-    return s_context_holder.get ().getBoostContext ();
+    return new MultiSocketType <boost::asio::ip::tcp::socket> (
+        io_service, ssl_context, flags);
 }
 
 //------------------------------------------------------------------------------
@@ -92,6 +55,27 @@ public:
             return s;
         }
 
+        static boost::asio::ssl::context& getSSLContext ()
+        {
+            struct ContextHolder
+            {
+                ContextHolder ()
+                    : context (RippleSSLContext::createAnonymous (
+                        "ALL:!LOW:!EXP:!MD5:@STRENGTH"))
+                {
+                    // VFALCO NOTE Not sure if this is needed?
+                    context->get().set_verify_mode (
+                        boost::asio::ssl::verify_none);
+                }
+
+                ScopedPointer <RippleSSLContext> context;
+            };
+
+            static ContextHolder holder;
+
+            return holder.context->get ();
+        }
+
         String name ()
         {
             return getArgName (m_flags);
@@ -122,11 +106,11 @@ public:
         typedef socket_type             native_socket_type;
         typedef acceptor_type           native_acceptor_type;
 
-        explicit MultiSocketDetailsType (arg_type flags)
+        MultiSocketDetailsType (arg_type flags)
             : MultiSocketDetails (flags)
             , m_socket (get_io_service ())
             , m_acceptor (get_io_service ())
-            , m_multiSocket (m_socket, flags)
+            , m_multiSocket (m_socket, MultiSocketDetails::getSSLContext (), flags)
             , m_acceptor_wrapper (m_acceptor)
         {
         }

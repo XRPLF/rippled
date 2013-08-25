@@ -29,10 +29,10 @@ namespace beast
 #include "async/beast_SharedHandler.cpp"
 
 #include "basics/beast_PeerRole.cpp"
+#include "basics/SSLContext.cpp"
 
 #include "sockets/beast_SocketBase.cpp"
 #include "sockets/beast_Socket.cpp"
-#include "sockets/beast_SslContext.cpp"
 
 #include "handshake/beast_HandshakeDetectLogicPROXY.cpp"
 

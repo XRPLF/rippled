@@ -64,15 +64,13 @@ public:
             return boost::asio::ssl::stream_base::client;
         }
     }
-    
-    // TLS policy adds the on_tls_init method to the handler to allow the user
-    // to set up their asio TLS context.
+
     class handler_interface {
     public:
     	virtual ~handler_interface() {}
-    	
+
         virtual void on_tcp_init() {};
-        virtual boost::shared_ptr<boost::asio::ssl::context> on_tls_init() = 0;
+        virtual boost::asio::ssl::context& get_ssl_context () = 0;
     };
     
     // Connection specific details
@@ -97,15 +95,12 @@ public:
          , m_connection(static_cast< connection_type& >(*this)) {}
         
         void init() {
-            m_context_ptr = m_connection.get_handler()->on_tls_init();
+            boost::asio::ssl::context& ssl_context (
+                m_connection.get_handler()->get_ssl_context());
             
-            if (!m_context_ptr) {
-                throw "handler was unable to init autotls, connection error";
-            }
-            
-            m_socket_ptr =
-                autotls_socket_ptr(new autotls_socket(m_endpoint.get_io_service(), *m_context_ptr,
-                    m_endpoint.m_secure_only, m_endpoint.m_plain_only));
+            m_socket_ptr = autotls_socket_ptr (new autotls_socket (
+                m_endpoint.get_io_service(), ssl_context, m_endpoint.m_secure_only,
+                    m_endpoint.m_plain_only));
         }
         
         void async_init(boost::function<void(const boost::system::error_code&)> callback)

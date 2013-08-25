@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_MULTISOCKETTYPE_H_INCLUDED
-#define RIPPLE_MULTISOCKETTYPE_H_INCLUDED
+#ifndef RIPPLE_ASIO_MULTISOCKETTYPE_H_INCLUDED
+#define RIPPLE_ASIO_MULTISOCKETTYPE_H_INCLUDED
 
 /** Template for producing instances of MultiSocket
 */
@@ -21,15 +21,17 @@ public:
     typedef typename boost::add_reference <next_layer_type>::type next_layer_type_ref;
     typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
 
-    template <class Arg>
-    explicit MultiSocketType (Arg& arg, int flags = 0)
+    template <typename Arg>
+    MultiSocketType (Arg& arg, boost::asio::ssl::context& ssl_context, int flags)
         : m_flags (flags)
         , m_state (stateNone)
+        , m_ssl_context (ssl_context)
         , m_verify_mode (0)
         , m_stream (nullptr)
         , m_needsShutdown (false)
         , m_next_layer (arg)
         , m_native_ssl_handle (nullptr)
+        , m_origFlags (cleaned_flags (flags))
     {
         // See if our flags allow us to go directly
         // into the ready state with an active stream.
@@ -54,6 +56,16 @@ protected:
     // MultiSocket
     //
 
+    Flag getFlags ()
+    {
+        return m_origFlags;
+    }
+
+    ProxyInfo getProxyInfo ()
+    {
+        return m_proxyInfo;
+    }
+
     SSL* native_handle ()
     {
         bassert (m_native_ssl_handle != nullptr);
@@ -74,28 +86,6 @@ protected:
         bassert (m_stream != nullptr);
         return *m_stream;
     }
-
-#if 0
-    next_layer_type& next_layer () noexcept
-    {
-        return m_next_layer;
-    }
-
-    next_layer_type const& next_layer () const noexcept
-    {
-        return m_next_layer;
-    }
-
-    lowest_layer_type& lowest_layer () noexcept
-    {
-        return m_next_layer.lowest_layer ();
-    }
-
-    lowest_layer_type const& lowest_layer () const noexcept
-    {
-        return m_next_layer.lowest_layer ();
-    }
-#endif
 
     //--------------------------------------------------------------------------
     //
@@ -609,8 +599,7 @@ protected:
     {
         typedef typename boost::asio::ssl::stream <next_layer_type&> SslStream;
         typedef SocketWrapperStrand <SslStream> Wrapper;
-        Wrapper* const socket = new Wrapper (
-            m_next_layer, MultiSocket::getRippleTlsBoostContext ());
+        Wrapper* const socket = new Wrapper (m_next_layer, m_ssl_context);
         set_ssl_stream (socket->this_layer ());
         return socket;
     }
@@ -626,20 +615,12 @@ protected:
             typedef boost::asio::ssl::stream <
                 PrefilledReadStream <next_layer_type&> > SslStream;
             typedef SocketWrapperStrand <SslStream> Wrapper;
-            Wrapper* const socket = new Wrapper (
-                m_next_layer, MultiSocket::getRippleTlsBoostContext ());
+            Wrapper* const socket = new Wrapper (m_next_layer, m_ssl_context);
             socket->this_layer ().next_layer().fill (buffers);
             set_ssl_stream (socket->this_layer ());
             return socket;
         }
         return new_ssl_stream ();
-    }
-
-    //--------------------------------------------------------------------------
-
-    void setProxyInfo (HandshakeDetectLogicPROXY::ProxyInfo const proxyInfo)
-    {
-        // Do something with it
     }
 
     //--------------------------------------------------------------------------
@@ -693,7 +674,7 @@ protected:
 
                         if (op.getLogic ().success ())
                         {
-                            setProxyInfo (op.getLogic ().getInfo ());
+                            m_proxyInfo = op.getLogic ().getInfo ();
 
                             // Strip off the PROXY flag.
                             m_flags = m_flags.without (Flag::proxy);
@@ -869,7 +850,7 @@ protected:
                         {
                             if (m_proxy.getLogic ().success ())
                             {
-                                m_owner.setProxyInfo (m_proxy.getLogic ().getInfo ());
+                                m_owner.m_proxyInfo = m_proxy.getLogic ().getInfo ();
 
                                 // Strip off the PROXY flag.
                                 m_owner.m_flags = m_owner.m_flags.without (Flag::proxy);
@@ -953,14 +934,15 @@ protected:
 private:
     Flag m_flags;
     State m_state;
+    boost::asio::ssl::context& m_ssl_context;
     int m_verify_mode;
     ScopedPointer <Socket> m_stream;
     ScopedPointer <Socket> m_ssl_stream; // the ssl portion of our stream if it exists
-
     bool m_needsShutdown;
     StreamSocket m_next_layer;
-
+    ProxyInfo m_proxyInfo;
     SSL* m_native_ssl_handle;
+    Flag m_origFlags;
 };
 
 #endif

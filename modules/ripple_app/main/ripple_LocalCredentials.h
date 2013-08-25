@@ -28,16 +28,6 @@ public:
         return mNodePrivateKey;
     }
 
-    DH* getDh512 () const
-    {
-        return DHparams_dup (mDh512);
-    }
-
-    DH* getDh1024 () const
-    {
-        return DHparams_dup (mDh1024);
-    }
-
     // Local persistence of RPC clients
     bool dataDelete (std::string const& strKey);
 
@@ -57,8 +47,6 @@ private:
 
     RippleAddress   mNodePublicKey;
     RippleAddress   mNodePrivateKey;
-    DH*             mDh512;
-    DH*             mDh1024;
 
     LedgerIndex mLedger; // ledger we last synched to
 };

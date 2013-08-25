@@ -313,24 +313,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\network\ripple_WSHandler.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\network\WSConnection.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\network\WSDoor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -683,8 +665,26 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\websocket\WSConnection.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\websocket\WSDoor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\websocket\WSServerHandler.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_asio\ripple_asio.cpp" />
-    <ClCompile Include="..\..\modules\ripple_asio\sockets\ripple_RippleTlsContext.cpp">
+    <ClCompile Include="..\..\modules\ripple_asio\sockets\RippleSSLContext.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1421,9 +1421,6 @@
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_ProofOfWorkFactory.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_SerializedLedger.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_SerializedTransaction.h" />
-    <ClInclude Include="..\..\modules\ripple_app\network\ripple_WSHandler.h" />
-    <ClInclude Include="..\..\modules\ripple_app\network\WSConnection.h" />
-    <ClInclude Include="..\..\modules\ripple_app\network\WSDoor.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_KeyvaDBBackendFactory.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_MdbBackendFactory.h" />
@@ -1441,7 +1438,7 @@
     <ClInclude Include="..\..\modules\ripple_app\paths\ripple_RippleState.h" />
     <ClInclude Include="..\..\modules\ripple_app\peers\PeerDoor.h" />
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_ClusterNodeStatus.h" />
-    <ClInclude Include="..\..\modules\ripple_app\peers\ripple_IPeers.h" />
+    <ClInclude Include="..\..\modules\ripple_app\peers\ripple_Peers.h" />
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_Peer.h" />
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_PeerSet.h" />
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_UniqueNodeList.h" />
@@ -1475,11 +1472,14 @@
     <ClInclude Include="..\..\modules\ripple_app\tx\Transactor.h" />
     <ClInclude Include="..\..\modules\ripple_app\tx\TrustSetTransactor.h" />
     <ClInclude Include="..\..\modules\ripple_app\tx\WalletAddTransactor.h" />
+    <ClInclude Include="..\..\modules\ripple_app\websocket\WSConnection.h" />
+    <ClInclude Include="..\..\modules\ripple_app\websocket\WSDoor.h" />
+    <ClInclude Include="..\..\modules\ripple_app\websocket\WSServerHandler.h" />
     <ClInclude Include="..\..\modules\ripple_asio\ripple_asio.h" />
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocket.cpp" />
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocket.h" />
     <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_MultiSocketType.h" />
-    <ClInclude Include="..\..\modules\ripple_asio\sockets\ripple_RippleTlsContext.h" />
+    <ClInclude Include="..\..\modules\ripple_asio\sockets\RippleSSLContext.h" />
     <ClInclude Include="..\..\modules\ripple_basics\containers\ripple_KeyCache.h" />
     <ClInclude Include="..\..\modules\ripple_basics\containers\ripple_RangeSet.h" />
     <ClInclude Include="..\..\modules\ripple_basics\containers\ripple_SecureAllocator.h" />

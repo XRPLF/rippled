@@ -33,22 +33,22 @@ public:
     //
 
 #if RIPPLE_PEER_USES_BEAST_MULTISOCKET
-    ScopedPointer <MultiSocket> m_multiSocket;
+    ScopedPointer <MultiSocket> m_socket;
     boost::asio::io_service& m_strand;
 
     NativeSocketType& getNativeSocket ()
     {
-        return m_multiSocket->next_layer <NativeSocketType> ();
+        return m_socket->next_layer <NativeSocketType> ();
     }
 
     MultiSocket& getHandshakeStream ()
     {
-        return *m_multiSocket;
+        return *m_socket;
     }
 
     MultiSocket& getStream ()
     {
-        return *m_multiSocket;
+        return *m_socket;
     }
 
     //---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ public:
         return m_ssl_stream;
     }
 
-#endif^
+#endif
 
     //
     //
@@ -82,21 +82,18 @@ public:
 
 public:
     PeerImp (boost::asio::io_service& io_service,
-                      boost::asio::ssl::context& ctx,
+                      boost::asio::ssl::context& ssl_context,
                       uint64 peerID,
-                      bool inbound)
+                      bool inbound,
+                      MultiSocket::Flag flags)
         : m_isInbound (inbound)
 #if RIPPLE_PEER_USES_BEAST_MULTISOCKET
-        // We could optionally set Flag::client_role or Flag::server_role
-        // based on the inbound flag but MultiSocket can figure out out
-        // from the call to handshake.
-        //
-        , m_multiSocket (MultiSocket::New (
-            io_service, MultiSocket::Flag::ssl | MultiSocket::Flag::ssl_required))
+        , m_socket (MultiSocket::New (
+            io_service, ssl_context, flags.asBits ()))
         , m_strand (io_service)
 #else
         , m_socket (io_service)
-        , m_ssl_stream (m_socket, ctx)
+        , m_ssl_stream (m_socket, ssl_context)
         , m_strand (io_service)
 #endif
         , mHelloed (false)
@@ -306,8 +303,59 @@ private:
         startReadHeader ();
     }
 
+    // We have an encrypted connection to the peer.
+    // Have it say who it is so we know to avoid redundant connections.
+    // Establish that it really who we are talking to by having it sign a connection detail.
+    // Also need to establish no man in the middle attack is in progress.
+    void handleStart (const boost::system::error_code& error)
+    {
+        if (error)
+        {
+            WriteLog (lsINFO, Peer) << "Peer: Handshake: Error: " << error.category ().name () << ": " << error.message () << ": " << error;
+            detach ("hs", true);
+        }
+        else
+        {
+        #if RIPPLE_PEER_USES_BEAST_MULTISOCKET
+            if (m_socket->getFlags ().set (MultiSocket::Flag::proxy) && m_isInbound)
+            {
+                MultiSocket::ProxyInfo const proxyInfo (m_socket->getProxyInfo ());
 
-    void handleStart (const boost::system::error_code & ecResult);
+                if (proxyInfo.protocol == "TCP4")
+                {
+                    // Set remote IP and port number from PROXY handshake
+                    mIpPort.first = proxyInfo.sourceAddress.toString ().toStdString ();
+                    mIpPort.second = proxyInfo.sourcePort;
+
+                    // Must compute mCookieHash before receiving a hello.
+                    sendHello ();
+                    startReadHeader ();
+                }
+                else
+                {
+                    if (proxyInfo.protocol != String::empty)
+                    {
+                        WriteLog (lsINFO, Peer) << "Peer: Unknown PROXY protocol " <<
+                            proxyInfo.protocol.toStdString ();
+                    }
+                    else
+                    {
+                        WriteLog (lsINFO, Peer) << "Peer: Missing PROXY handshake";
+                    }
+
+                    detach ("pi", true);
+                }
+            }
+            else
+        #endif
+            {
+                // Must compute mCookieHash before receiving a hello.
+                sendHello ();
+                startReadHeader ();
+            }
+        }
+    }
+
     void handleVerifyTimer (const boost::system::error_code & ecResult);
     void handlePingTimer (const boost::system::error_code & ecResult);
 
@@ -556,24 +604,6 @@ void PeerImp::connect (const std::string& strIp, int iPort)
                                 boost::static_pointer_cast <PeerImp> (shared_from_this ()),
                                 boost::asio::placeholders::error,
                                 boost::asio::placeholders::iterator)));
-    }
-}
-
-// We have an encrypted connection to the peer.
-// Have it say who it is so we know to avoid redundant connections.
-// Establish that it really who we are talking to by having it sign a connection detail.
-// Also need to establish no man in the middle attack is in progress.
-void PeerImp::handleStart (const boost::system::error_code& error)
-{
-    if (error)
-    {
-        WriteLog (lsINFO, Peer) << "Peer: Handshake: Error: " << error.category ().name () << ": " << error.message () << ": " << error;
-        detach ("hs", true);
-    }
-    else
-    {
-        sendHello ();           // Must compute mCookieHash before receiving a hello.
-        startReadHeader ();
     }
 }
 
@@ -2330,7 +2360,7 @@ void PeerImp::sendHello ()
     h.set_nettime (getApp().getOPs ().getNetworkTimeNC ());
     h.set_nodepublic (getApp().getLocalCredentials ().getNodePublic ().humanNodePublic ());
     h.set_nodeproof (&vchSig[0], vchSig.size ());
-    h.set_ipv4port (getConfig ().PEER_PORT);
+    h.set_ipv4port (getConfig ().peerListeningPort);
     h.set_nodeprivate (getConfig ().PEER_PRIVATE);
     h.set_testnet (getConfig ().TESTNET);
 
@@ -2545,12 +2575,37 @@ Json::Value PeerImp::getJson ()
 //------------------------------------------------------------------------------
 
 Peer::pointer Peer::New (boost::asio::io_service& io_service,
-                         boost::asio::ssl::context& ctx,
-                         uint64 id,
-                         bool inbound)
+    boost::asio::ssl::context& ssl_context, uint64 id,
+        bool inbound, bool requirePROXYHandshake)
 {
-    return Peer::pointer (new PeerImp (io_service, ctx, id, inbound));
+    MultiSocket::Flag flags;
+
+    if (inbound)
+    {
+        flags = MultiSocket::Flag::server_role | MultiSocket::Flag::ssl_required;
+
+        if (requirePROXYHandshake)
+        {
+#if RIPPLE_PEER_USES_BEAST_MULTISOCKET
+            flags = flags.with (MultiSocket::Flag::proxy);
+#else
+            FatalError ("PROXY Handshake support disabled in this build",
+                __FILE__, __LINE__);
+#endif
+        }
+    }
+    else
+    {
+        flags = MultiSocket::Flag::client_role | MultiSocket::Flag::ssl;
+
+        bassert (! requirePROXYHandshake);
+    }
+
+    return Peer::pointer (new PeerImp (
+        io_service, ssl_context, id, inbound, flags));
 }
+
+//------------------------------------------------------------------------------
 
 void Peer::applyLoadCharge (boost::weak_ptr <Peer>& peerToPunish,
                             LoadType loadThatWasImposed)

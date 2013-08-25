@@ -12,7 +12,7 @@ class IFeatures;
 class IFeeVote;
 class IHashRouter;
 class ILoadFeeTrack;
-class IPeers;
+class Peers;
 class IProofOfWorkFactory;
 class UniqueNodeList;
 class IValidations;
@@ -83,12 +83,12 @@ public:
     virtual IHashRouter&            getHashRouter () = 0;
     virtual ILoadFeeTrack&          getFeeTrack () = 0;
     virtual ILoadManager&           getLoadManager () = 0;
-    virtual IPeers&                 getPeers () = 0;
+    virtual Peers&                 getPeers () = 0;
     virtual IProofOfWorkFactory&    getProofOfWorkFactory () = 0;
-    virtual UniqueNodeList&        getUNL () = 0;
+    virtual UniqueNodeList&         getUNL () = 0;
     virtual IValidations&           getValidations () = 0;
 
-    virtual NodeStore&      getNodeStore () = 0;
+    virtual NodeStore&              getNodeStore () = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual InboundLedgers&         getInboundLedgers () = 0;
     virtual LedgerMaster&           getLedgerMaster () = 0;
