@@ -77,7 +77,7 @@ namespace beast
    #include "sockets/beast_SocketBase.h"
   #include "sockets/beast_Socket.h"
  #include "sockets/beast_SocketWrapper.h"
-#include "sockets/beast_StrandSocketWrapper.h"
+#include "sockets/SocketWrapperStrand.h"
 #include "sockets/beast_SslContext.h"
 
   #include "handshake/beast_InputParser.h"
