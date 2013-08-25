@@ -25,6 +25,28 @@ Socket::~Socket ()
 
 //-----------------------------------------------------------------------------
 //
+// Socket
+//
+
+void* Socket::this_layer_ptr (char const*) const
+{
+    pure_virtual_called (__FILE__, __LINE__);
+    return nullptr;
+}
+
+//-----------------------------------------------------------------------------
+//
+// native_handle
+//
+
+bool Socket::native_handle (char const*, void*)
+{
+    pure_virtual_called (__FILE__, __LINE__);
+    return false;
+}
+
+//-----------------------------------------------------------------------------
+//
 // basic_io_object
 //
 
@@ -39,13 +61,7 @@ boost::asio::io_service& Socket::get_io_service ()
 // basic_socket
 //
 
-void* Socket::lowest_layer (char const*) const
-{
-    pure_virtual_called (__FILE__, __LINE__);
-    return nullptr;
-}
-
-void* Socket::native_handle (char const*) const
+void* Socket::lowest_layer_ptr (char const*) const
 {
     pure_virtual_called (__FILE__, __LINE__);
     return nullptr;
@@ -121,9 +137,20 @@ void Socket::async_write_some (ConstBuffers const&, SharedHandlerPtr handler)
 // ssl::stream
 //
 
+void* Socket::next_layer_ptr (char const*) const
+{
+    pure_virtual_called (__FILE__, __LINE__);
+    return nullptr;
+}
+
 bool Socket::needs_handshake ()
 {
     return false;
+}
+
+void Socket::set_verify_mode (int)
+{
+    pure_virtual_called (__FILE__, __LINE__);
 }
 
 boost::system::error_code Socket::handshake (handshake_type, boost::system::error_code& ec)

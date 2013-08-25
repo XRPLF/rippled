@@ -74,13 +74,14 @@ namespace beast
 #include "basics/beast_FixedInputBuffer.h"
 #include "basics/beast_PeerRole.h"
 
-#include "sockets/beast_SocketBase.h"
-#include "sockets/beast_Socket.h"
-#include "sockets/beast_SocketWrapper.h"
+   #include "sockets/beast_SocketBase.h"
+  #include "sockets/beast_Socket.h"
+ #include "sockets/beast_SocketWrapper.h"
+#include "sockets/SocketWrapperStrand.h"
 #include "sockets/beast_SslContext.h"
 
   #include "handshake/beast_InputParser.h"
-  #include "handshake/beast_HandshakeDetectLogic.h"
+ #include "handshake/beast_HandshakeDetectLogic.h"
 #include "handshake/beast_HandshakeDetectLogicPROXY.h"
 #include "handshake/beast_HandshakeDetectLogicSSL2.h"
 #include "handshake/beast_HandshakeDetectLogicSSL3.h"

@@ -9,6 +9,20 @@ MultiSocket* MultiSocket::New (boost::asio::io_service& io_service, int flags)
     return new MultiSocketType <boost::asio::ip::tcp::socket> (io_service, flags);
 }
 
+MultiSocket* MultiSocket::New (boost::asio::ip::tcp::socket& socket, int flags)
+{
+    return new MultiSocketType <boost::asio::ip::tcp::socket&> (socket, flags);
+}
+
+MultiSocket* MultiSocket::New (
+    boost::asio::ssl::stream <
+        boost::asio::ip::tcp::socket&>& stream, int flags)
+{
+    return new MultiSocketType <
+        boost::asio::ssl::stream <
+            boost::asio::ip::tcp::socket&>& > (stream, flags);
+}
+
 struct RippleTlsContextHolder
 {
     RippleTlsContextHolder ()
@@ -181,7 +195,6 @@ public:
             TestPeerLogicSyncClient, TestPeerLogicAsyncServer>
                 (clientArg, serverArg, timeoutSeconds).report (*this);
 
-
         PeerTest::run <MultiSocketDetailsType <Protocol>,
             TestPeerLogicAsyncClient, TestPeerLogicAsyncServer>
                 (clientArg, serverArg, timeoutSeconds).report (*this);
@@ -226,7 +239,6 @@ public:
 
         testFlags <Protocol> (MultiSocket::Flag::ssl,
                               MultiSocket::Flag::ssl_required);
-
         // SSL-Detect tests
         testFlags <Protocol> (0,
                               MultiSocket::Flag::ssl);
@@ -261,7 +273,7 @@ public:
         timeoutSeconds = 10
     };
 
-    MultiSocketTests () : UnitTest ("MultiSocket", "ripple", runManual)
+    MultiSocketTests () : UnitTest ("MultiSocket", "ripple")
     {
     }
 };

@@ -39,6 +39,76 @@ public:
 
     //--------------------------------------------------------------------------
     //
+    // Socket
+    //
+
+    /** Retrieve the underlying object.
+
+        @note If the type doesn't match, nullptr is returned or an
+              exception is thrown if trying to acquire a reference.
+    */
+    /** @{ */
+    template <typename Object>
+    Object& this_layer ()
+    {
+        Object* object (this->this_layer_ptr <Object> ());
+        if (object == nullptr)
+            Throw (std::bad_cast (), __FILE__, __LINE__);
+        return *object;
+    }
+
+    template <typename Object>
+    Object const& this_layer () const
+    {
+        Object const* object (this->this_layer_ptr <Object> ());
+        if (object == nullptr)
+            Throw (std::bad_cast (), __FILE__, __LINE__);
+        return *object;
+    }
+
+    template <typename Object>
+    Object* this_layer_ptr ()
+    {
+        return static_cast <Object*> (
+            this->this_layer_ptr (typeid (Object).name ()));
+    }
+
+    template <typename Object>
+    Object const* this_layer_ptr () const
+    {
+        return static_cast <Object const*> (
+            this->this_layer_ptr (typeid (Object).name ()));
+    }
+    /** @} */
+
+    virtual void* this_layer_ptr (char const* type_name) const
+        BEAST_SOCKET_VIRTUAL;
+
+    //--------------------------------------------------------------------------
+    //
+    // native_handle
+    //
+
+    /** Retrieve the native representation of the object.
+
+        Since we dont know the return type, and because almost every
+        asio implementation passes the result by value, you need to provide
+        a pointer to a default-constructed object of the matching type.
+
+        @note If the type doesn't match, an exception is thrown.
+    */
+    template <typename Handle>
+    void native_handle (Handle* dest)
+    {
+        if (! native_handle (typeid (Handle).name (), dest))
+            Throw (std::bad_cast (), __FILE__, __LINE__);
+    }
+
+    virtual bool native_handle (char const* type_name, void* dest)
+        BEAST_SOCKET_VIRTUAL;
+
+    //--------------------------------------------------------------------------
+    //
     // basic_io_object
     //
 
@@ -51,8 +121,9 @@ public:
     //
 
     /** Retrieve the lowest layer object.
-        Note that you must know the type name for this to work, or
-        else a fatal error will occur.
+
+        @note If the type doesn't match, nullptr is returned or an
+              exception is thrown if trying to acquire a reference.
     */
     /** @{ */
     template <typename Object>
@@ -77,60 +148,21 @@ public:
     Object* lowest_layer_ptr ()
     {
         return static_cast <Object*> (
-            this->lowest_layer (typeid (Object).name ()));
+            this->lowest_layer_ptr (typeid (Object).name ()));
     }
 
     template <typename Object>
     Object const* lowest_layer_ptr () const
     {
         return static_cast <Object const*> (
-            this->lowest_layer (typeid (Object).name ()));
+            this->lowest_layer_ptr (typeid (Object).name ()));
     }
     /** @} */
 
-    virtual void* lowest_layer (char const* type_name) const
+    virtual void* lowest_layer_ptr (char const* type_name) const
         BEAST_SOCKET_VIRTUAL;
 
-    /** Retrieve the underlying object.
-        Note that you must know the type name for this to work, or
-        else a fatal error will occur.
-    */
-    /** @{ */
-    template <typename Object>
-    Object& native_handle ()
-    {
-        Object* object (this->native_handle_ptr <Object> ());
-        if (object == nullptr)
-            Throw (std::bad_cast (), __FILE__, __LINE__);
-        return *object;
-    }
-
-    template <typename Object>
-    Object const& native_handle () const
-    {
-        Object const* object (this->native_handle_ptr <Object> ());
-        if (object == nullptr)
-            Throw (std::bad_cast (), __FILE__, __LINE__);
-        return *object;
-    }
-
-    template <typename Object>
-    Object* native_handle_ptr ()
-    {
-        return static_cast <Object*> (
-            this->native_handle (typeid (Object).name ()));
-    }
-
-    template <typename Object>
-    Object const* native_handle_ptr () const
-    {
-        return static_cast <Object const*> (
-            this->native_handle (typeid (Object).name ()));
-    }
-    /** @} */
-
-    virtual void* native_handle (char const* type_name) const
-        BEAST_SOCKET_VIRTUAL;
+    //--------------------------------------------------------------------------
 
     void cancel ()
     {
@@ -241,6 +273,48 @@ public:
     // ssl::stream
     //
 
+    /** Retrieve the next layer object.
+
+        @note If the type doesn't match, nullptr is returned or an
+              exception is thrown if trying to acquire a reference.
+    */
+    /** @{ */
+    template <typename Object>
+    Object& next_layer ()
+    {
+        Object* object (this->next_layer_ptr <Object> ());
+        if (object == nullptr)
+            Throw (std::bad_cast (), __FILE__, __LINE__);
+        return *object;
+    }
+
+    template <typename Object>
+    Object const& next_layer () const
+    {
+        Object const* object (this->next_layer_ptr <Object> ());
+        if (object == nullptr)
+            Throw (std::bad_cast (), __FILE__, __LINE__);
+        return *object;
+    }
+
+    template <typename Object>
+    Object* next_layer_ptr ()
+    {
+        return static_cast <Object*> (
+            this->next_layer_ptr (typeid (Object).name ()));
+    }
+
+    template <typename Object>
+    Object const* next_layer_ptr () const
+    {
+        return static_cast <Object const*> (
+            this->next_layer_ptr (typeid (Object).name ()));
+    }
+    /** @} */
+
+    virtual void* next_layer_ptr (char const* type_name) const
+        BEAST_SOCKET_VIRTUAL;
+
     /** Determines if the underlying stream requires a handshake.
 
         If needs_handshake is true, it will be necessary to call handshake or
@@ -255,6 +329,10 @@ public:
     */
     virtual bool needs_handshake ()
         BEAST_SOCKET_VIRTUAL;
+
+    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__verify_mode.html
+    //
+    virtual void set_verify_mode (int verify_mode) = 0;
 
     // ssl::stream::handshake (1 of 4)
     // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload1.html

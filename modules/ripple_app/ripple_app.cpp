@@ -61,6 +61,7 @@
 
 #include "../ripple_core/ripple_core.h"
 
+#include "beast/modules/beast_asio/beast_asio.h"
 #include "beast/modules/beast_db/beast_db.h"
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
 #include "beast/modules/beast_sqlite/beast_sqlite.h"
@@ -355,6 +356,13 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 //------------------------------------------------------------------------------
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 5
+
+// VFALCO This hack lets me compile just ripple_app_pt5.cpp when
+//        ripple_asio.h and relatives change.
+}
+#include "../ripple_asio/ripple_asio.h"
+namespace ripple
+{
 
 #include "peers/ripple_Peer.cpp"
 #include "main/ripple_Application.cpp"

@@ -17,35 +17,50 @@
 */
 //==============================================================================
 
-/** UnitTest for the TestPeer family of objects.
+#ifndef BEAST_ASIO_SOCKETS_SOCKETWRAPPERSTRAND_H_INCLUDED
+#define BEAST_ASIO_SOCKETS_SOCKETWRAPPERSTRAND_H_INCLUDED
+
+/** Wraps the async I/O of a SocketWrapper with an io_service::strand
+    To use this in a chain of wrappers, customize the Base type.
 */
-class TestPeerUnitTests : public UnitTest
+template <typename Object, typename Base = SocketWrapper <Object> >
+class SocketWrapperStrand
+    : public Base
 {
 public:
-
-    template <typename Details, typename Arg >
-    void testDetails (Arg const& arg = Arg ())
+    template <typename Arg>
+    SocketWrapperStrand (Arg& arg)
+        : Base (arg)
+        , m_strand (this->get_io_service ())
     {
-        PeerTest::report <Details> (*this, arg, timeoutSeconds);
     }
 
-    void runTest ()
+    template <typename Arg1, typename Arg2>
+    SocketWrapperStrand (Arg1& arg1, Arg2& arg2)
+        : Base (arg1, arg2)
+        , m_strand (this->get_io_service ())
     {
-        typedef boost::asio::ip::tcp protocol;
-        testDetails <TcpDetails, TcpDetails::arg_type> (protocol::v4 ());
-        testDetails <TcpDetails, TcpDetails::arg_type> (protocol::v6 ());
     }
 
     //--------------------------------------------------------------------------
+    //
+    // basic_stream_socket
+    //
 
-    enum
+    void async_read_some (MutableBuffers const& buffers, SharedHandlerPtr handler)
     {
-        timeoutSeconds = 10
-    };
-
-    TestPeerUnitTests () : UnitTest ("TestPeer", "beast")
-    {
+        this->Base::async_read_some (buffers,
+            newReadHandler (m_strand.wrap (handler)));
     }
+
+    void async_write_some (MutableBuffers const& buffers, SharedHandlerPtr handler)
+    {
+        this->Base::async_write_some (buffers,
+            newWriteHandler (m_strand.wrap (handler)));
+    }
+
+protected:
+    boost::asio::io_service::strand m_strand;
 };
 
-static TestPeerUnitTests testPeerUnitTests;
+#endif

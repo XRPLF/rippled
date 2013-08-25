@@ -21,9 +21,6 @@ public:
     typedef pointer const& ref;
 
 public:
-    typedef boost::asio::ip::tcp::socket SocketType;
-    typedef boost::asio::ssl::stream <SocketType&> StreamType;
-
     static pointer New (boost::asio::io_service& io_service,
                         boost::asio::ssl::context& ctx,
                         uint64 id,
@@ -40,8 +37,6 @@ public:
     virtual int getPort () = 0;
 
     virtual void setIpPort (const std::string& strIP, int iPort) = 0;
-
-    virtual SocketType& getSocket () = 0;
 
     virtual void connect (const std::string& strIp, int iPort) = 0;
 
@@ -90,6 +85,12 @@ public:
     virtual bool hasProto (int version) = 0;
 
     virtual bool hasRange (uint32 uMin, uint32 uMax) = 0;
+
+    //--------------------------------------------------------------------------
+
+    typedef boost::asio::ip::tcp::socket NativeSocketType;
+    
+    virtual NativeSocketType& getNativeSocket () = 0;
 };
 
 #endif
