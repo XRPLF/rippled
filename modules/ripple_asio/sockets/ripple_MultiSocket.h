@@ -31,9 +31,15 @@ public:
                                 // server: will require ssl (ignores ssl flag)
         };
 
-        Flag (int flags) noexcept
+        Flag (int flags = 0) noexcept
             : m_flags (flags)
         {
+        }
+
+        Flag& operator= (int mask) noexcept
+        {
+            m_flags = mask;
+            return *this;
         }
 
         bool operator== (Flag const& other) const noexcept
@@ -61,6 +67,11 @@ public:
             return Flag (m_flags & ~mask);
         }
 
+        int asBits () const noexcept
+        {
+            return m_flags;
+        }
+
     private:
         int m_flags;
     };
@@ -76,22 +87,10 @@ public:
 
     virtual SSL* native_handle () = 0;
 
-    /*
-    // This would be the underlying StreamSocket template parameter
-    typedef boost::asio::ip::tcp::socket NativeSocketType;
-    typedef boost::asio::ssl::stream <NativeSocketType&> SslStreamType;
-    virtual boost::asio::ip::tcp::socket& getNativeSocket () = 0;
-    virtual SslStreamType& getSslStream () = 0;
-    */
-
-    static MultiSocket* New (boost::asio::io_service& io_service, int flags = 0);
-    static MultiSocket* New (boost::asio::ip::tcp::socket& socket, int flags = 0);
-    static MultiSocket* New (boost::asio::ssl::stream <boost::asio::ip::tcp::socket&>& stream, int flags = 0);
-
-    // Ripple uses a SSL/TLS context with specific parameters and this returns
-    // a reference to the corresponding boost::asio::ssl::context object.
-    //
-    static SslContextBase::BoostContextType& getRippleTlsBoostContext ();
+    static MultiSocket* New (
+        boost::asio::io_service& io_service,
+            boost::asio::ssl::context& ssl_context,
+                int flags = 0);
 };
 
 #endif

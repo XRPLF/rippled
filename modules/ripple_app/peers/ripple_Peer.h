@@ -24,7 +24,8 @@ public:
     static pointer New (boost::asio::io_service& io_service,
                         boost::asio::ssl::context& ctx,
                         uint64 id,
-                        bool inbound);
+                        bool inbound,
+                        bool requirePROXYHandshake);
 
     // VFALCO TODO see if this and below can be private
     virtual void handleConnect (const boost::system::error_code& error,

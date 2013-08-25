@@ -134,8 +134,8 @@ namespace ripple
 #include "misc/ripple_IFeatures.h"
 #include "misc/ripple_IFeeVote.h"
 #include "misc/ripple_IHashRouter.h"
-#include "peers/ripple_Peer.h" // VFALCO TODO Rename to IPeer
-#include "peers/ripple_IPeers.h"
+#include "peers/ripple_Peer.h"
+#include "peers/ripple_Peers.h"
 #include "misc/ripple_IProofOfWorkFactory.h"
 #include "peers/ripple_ClusterNodeStatus.h"
 #include "peers/ripple_UniqueNodeList.h"
@@ -156,7 +156,7 @@ namespace ripple
 #include "misc/NetworkOPs.h"
 #include "tx/TransactionMaster.h"
 #include "main/ripple_LocalCredentials.h"
-#include "network/WSDoor.h"
+#include "websocket/WSDoor.h"
  #include "boost/ripple_IoService.h"
  #include "boost/ripple_SslContext.h"
 #include "main/ripple_Application.h"
@@ -188,8 +188,8 @@ namespace ripple
 #include "paths/ripple_RippleState.h"
 #include "tx/AccountSetTransactor.h"
 #include "tx/TrustSetTransactor.h"
-#include "network/WSConnection.h"
-#include "network/ripple_WSHandler.h"
+#include "websocket/WSConnection.h"
+#include "websocket/WSServerHandler.h"
 #include "tx/WalletAddTransactor.h"
 
 #include "contracts/ripple_ScriptData.h"
@@ -306,14 +306,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 3
 
-// This is for PeerDoor and WSDoor
-// Generate DH for SSL connection.
-static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
-{
-    // VFALCO TODO eliminate this horrendous dependency on theApp and LocalCredentials
-    return 512 == iKeyLength ? getApp().getLocalCredentials ().getDh512 () : getApp().getLocalCredentials ().getDh1024 ();
-}
-
 #include "paths/ripple_RippleCalc.cpp"
 #include "paths/ripple_PathState.cpp"
 #include "rpc/CallRPC.cpp"
@@ -329,8 +321,8 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "tx/TransactionEngine.cpp"
 #include "tx/TransactionMeta.cpp"
 #include "tx/Transactor.cpp"
-#include "network/WSConnection.cpp"
-#include "network/WSDoor.cpp"
+#include "websocket/WSConnection.cpp"
+#include "websocket/WSDoor.cpp"
 
 #endif
 
@@ -349,7 +341,7 @@ static DH* handleTmpDh (SSL* ssl, int is_export, int iKeyLength)
 #include "tx/TransactionMaster.cpp"
 #include "tx/TransactionQueue.cpp"
 #include "tx/TrustSetTransactor.cpp"
-#include "network/ripple_WSHandler.cpp"
+#include "websocket/WSServerHandler.cpp"
 
 #endif
 
@@ -369,6 +361,7 @@ namespace ripple
 #include "tx/OfferCreateTransactor.cpp"
 #include "misc/ripple_Validations.cpp"
 
+#include "main/ripple_LocalCredentials.cpp"
 #include "tx/WalletAddTransactor.cpp"
 #include "ledger/ripple_AcceptedLedgerTx.cpp"
 #include "misc/ripple_FeeVote.cpp"
@@ -384,7 +377,6 @@ namespace ripple
 #include "paths/ripple_Pathfinder.cpp"
 #include "misc/ripple_Features.cpp"
 
-#include "main/ripple_LocalCredentials.cpp"
 #include "ledger/ripple_AcceptedLedger.cpp"
 #include "consensus/ripple_DisputedTx.cpp"
 #include "misc/ripple_HashRouter.cpp"

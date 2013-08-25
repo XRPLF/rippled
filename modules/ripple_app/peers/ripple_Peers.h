@@ -4,17 +4,18 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_IPEERS_H_INCLUDED
-#define RIPPLE_IPEERS_H_INCLUDED
+#ifndef RIPPLE_PEERS_H_INCLUDED
+#define RIPPLE_PEERS_H_INCLUDED
 
 /** Manages the set of connected peers.
 */
-class IPeers
+class Peers
 {
 public:
-    static IPeers* New (boost::asio::io_service& io_service);
+    static Peers* New (boost::asio::io_service& io_service,
+        boost::asio::ssl::context& context);
 
-    virtual ~IPeers () { }
+    virtual ~Peers () { }
 
     // Begin enforcing connection policy.
     virtual void start () = 0;

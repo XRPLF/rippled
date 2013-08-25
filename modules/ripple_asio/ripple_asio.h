@@ -14,6 +14,7 @@ namespace ripple
 
 using namespace beast;
 
+#include "sockets/RippleSSLContext.h"
 #include "sockets/ripple_MultiSocket.h"
 
 }

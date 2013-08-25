@@ -14,13 +14,16 @@ class PeerDoor : LeakChecked <PeerDoor>
 public:
     virtual ~PeerDoor () { }
 
-    static PeerDoor* New (
-        std::string const& ip,
-        int port,
-        std::string const& sslCiphers,
-        boost::asio::io_service& io_service);
+    enum Kind
+    {
+        sslRequired,
+        sslAndPROXYRequired
+    };
 
-    virtual boost::asio::ssl::context& getSSLContext () = 0;
+    static PeerDoor* New (Kind kind, std::string const& ip, int port,
+        boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context);
+
+    //virtual boost::asio::ssl::context& getSSLContext () = 0;
 };
 
 #endif

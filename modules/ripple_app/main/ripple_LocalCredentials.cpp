@@ -4,9 +4,9 @@
 */
 //==============================================================================
 
-LocalCredentials::LocalCredentials () : mDh512 (NULL), mDh1024 (NULL), mLedger (0)
+LocalCredentials::LocalCredentials ()
+    : mLedger (0)
 {
-    ;
 }
 
 void LocalCredentials::start ()
@@ -32,7 +32,6 @@ void LocalCredentials::start ()
 // Retrieve network identity.
 bool LocalCredentials::nodeIdentityLoad ()
 {
-
     Database*   db = getApp().getWalletDB ()->getDB ();
     DeprecatedScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
     bool        bSuccess    = false;
@@ -46,9 +45,6 @@ bool LocalCredentials::nodeIdentityLoad ()
 
         mNodePublicKey.setNodePublic (strPublicKey);
         mNodePrivateKey.setNodePrivate (strPrivateKey);
-
-        mDh512  = DH_der_load (db->getStrBinary ("Dh512"));
-        mDh1024 = DH_der_load (db->getStrBinary ("Dh1024"));
 
         db->endIterRows ();
         bSuccess    = true;
@@ -77,22 +73,12 @@ bool LocalCredentials::nodeIdentityCreate ()
     RippleAddress   naNodePrivate   = RippleAddress::createNodePrivate (naSeed);
 
     // Make new key.
-
 #ifdef CREATE_NEW_DH_PARAMS
-    std::string     strDh512        = DH_der_gen (512);
-#else
-    static const unsigned char dh512Param[] =
-    {
-        0x30, 0x46, 0x02, 0x41, 0x00, 0x98, 0x15, 0xd2, 0xd0, 0x08, 0x32, 0xda,
-        0xaa, 0xac, 0xc4, 0x71, 0xa3, 0x1b, 0x11, 0xf0, 0x6c, 0x62, 0xb2, 0x35,
-        0x8a, 0x10, 0x92, 0xc6, 0x0a, 0xa3, 0x84, 0x7e, 0xaf, 0x17, 0x29, 0x0b,
-        0x70, 0xef, 0x07, 0x4f, 0xfc, 0x9d, 0x6d, 0x87, 0x99, 0x19, 0x09, 0x5b,
-        0x6e, 0xdb, 0x57, 0x72, 0x4a, 0x7e, 0xcd, 0xaf, 0xbd, 0x3a, 0x97, 0x55,
-        0x51, 0x77, 0x5a, 0x34, 0x7c, 0xe8, 0xc5, 0x71, 0x63, 0x02, 0x01, 0x02
-    };
-    std::string     strDh512 (reinterpret_cast<const char*> (dh512Param), sizeof (dh512Param));
-#endif
+    std::string strDh512 = DH_der_gen (512);
 
+#else
+    std::string strDh512 (RippleSSLContext::getRawDHParams (512));
+#endif
 
 #if 1
     std::string     strDh1024       = strDh512;             // For testing and most cases 512 is fine.

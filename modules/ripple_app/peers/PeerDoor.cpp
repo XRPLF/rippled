@@ -9,27 +9,14 @@ SETUP_LOG (PeerDoor)
 class PeerDoorImp : public PeerDoor, LeakChecked <PeerDoorImp>
 {
 public:
-    PeerDoorImp (std::string const& ip,
-                int port,
-                std::string const& sslCiphers,
-                boost::asio::io_service& io_service)
-        : mAcceptor (
-            io_service,
-            boost::asio::ip::tcp::endpoint (boost::asio::ip::address ().from_string (ip.empty () ? "0.0.0.0" : ip),
-            port))
-        , mCtx (boost::asio::ssl::context::sslv23)
+    PeerDoorImp (Kind kind, std::string const& ip, int port,
+        boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
+        : m_kind (kind)
+        , m_ssl_context (ssl_context)
+        , mAcceptor (io_service, boost::asio::ip::tcp::endpoint (
+            boost::asio::ip::address ().from_string (ip.empty () ? "0.0.0.0" : ip), port))
         , mDelayTimer (io_service)
     {
-        mCtx.set_options (
-            boost::asio::ssl::context::default_workarounds |
-            boost::asio::ssl::context::no_sslv2 |
-            boost::asio::ssl::context::single_dh_use);
-
-        SSL_CTX_set_tmp_dh_callback (mCtx.native_handle (), handleTmpDh);
-
-        if (SSL_CTX_set_cipher_list (mCtx.native_handle (), sslCiphers.c_str ()) != 1)
-            std::runtime_error ("Error setting cipher list (no valid ciphers).");
-
         if (! ip.empty () && port != 0)
         {
             Log (lsINFO) << "Peer port: " << ip << " " << port;
@@ -39,30 +26,25 @@ public:
 
     //--------------------------------------------------------------------------
 
-    boost::asio::ssl::context& getSSLContext ()
-    {
-        return mCtx;
-    }
-
-    //--------------------------------------------------------------------------
-
     void startListening ()
     {
-        Peer::pointer new_connection = Peer::New (
-                                           mAcceptor.get_io_service (),
-                                           mCtx,
-                                           getApp().getPeers ().assignPeerId (),
-                                           true);
+        bool const isInbound (true);
+        bool const requirePROXYHandshake (m_kind == sslAndPROXYRequired);
+
+        Peer::pointer new_connection (Peer::New (
+            mAcceptor.get_io_service (), m_ssl_context,
+                getApp().getPeers ().assignPeerId (),
+                    isInbound, requirePROXYHandshake));
 
         mAcceptor.async_accept (new_connection->getNativeSocket (),
-                                boost::bind (&PeerDoorImp::handleConnect, this, new_connection,
-                                             boost::asio::placeholders::error));
+            boost::bind (&PeerDoorImp::handleConnect, this, new_connection,
+                boost::asio::placeholders::error));
     }
 
     //--------------------------------------------------------------------------
 
     void handleConnect (Peer::pointer new_connection,
-                                  const boost::system::error_code& error)
+        boost::system::error_code const& error)
     {
         bool delay = false;
 
@@ -90,18 +72,16 @@ public:
     }
 
 private:
+    Kind m_kind;
+    boost::asio::ssl::context& m_ssl_context;
     boost::asio::ip::tcp::acceptor  mAcceptor;
-    boost::asio::ssl::context       mCtx;
     boost::asio::deadline_timer     mDelayTimer;
 };
 
 //------------------------------------------------------------------------------
 
-PeerDoor* PeerDoor::New (
-    std::string const& ip,
-    int port,
-    std::string const& sslCiphers,
-    boost::asio::io_service& io_service)
+PeerDoor* PeerDoor::New (Kind kind, std::string const& ip, int port,
+    boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
 {
-    return new PeerDoorImp (ip, port, sslCiphers, io_service);
+    return new PeerDoorImp (kind, ip, port, io_service, ssl_context);
 }

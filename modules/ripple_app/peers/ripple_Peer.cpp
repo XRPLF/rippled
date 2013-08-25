@@ -33,22 +33,22 @@ public:
     //
 
 #if RIPPLE_PEER_USES_BEAST_MULTISOCKET
-    ScopedPointer <MultiSocket> m_multiSocket;
+    ScopedPointer <MultiSocket> m_socket;
     boost::asio::io_service& m_strand;
 
     NativeSocketType& getNativeSocket ()
     {
-        return m_multiSocket->next_layer <NativeSocketType> ();
+        return m_socket->next_layer <NativeSocketType> ();
     }
 
     MultiSocket& getHandshakeStream ()
     {
-        return *m_multiSocket;
+        return *m_socket;
     }
 
     MultiSocket& getStream ()
     {
-        return *m_multiSocket;
+        return *m_socket;
     }
 
     //---------------------------------------------------------------------------
@@ -82,21 +82,18 @@ public:
 
 public:
     PeerImp (boost::asio::io_service& io_service,
-                      boost::asio::ssl::context& ctx,
+                      boost::asio::ssl::context& ssl_context,
                       uint64 peerID,
-                      bool inbound)
+                      bool inbound,
+                      MultiSocket::Flag flags)
         : m_isInbound (inbound)
 #if RIPPLE_PEER_USES_BEAST_MULTISOCKET
-        // We could optionally set Flag::client_role or Flag::server_role
-        // based on the inbound flag but MultiSocket can figure out out
-        // from the call to handshake.
-        //
-        , m_multiSocket (MultiSocket::New (
-            io_service, MultiSocket::Flag::ssl | MultiSocket::Flag::ssl_required))
+        , m_socket (MultiSocket::New (
+            io_service, ssl_context, flags.asBits ()))
         , m_strand (io_service)
 #else
         , m_socket (io_service)
-        , m_ssl_stream (m_socket, ctx)
+        , m_ssl_stream (m_socket, ssl_context)
         , m_strand (io_service)
 #endif
         , mHelloed (false)
@@ -2330,7 +2327,7 @@ void PeerImp::sendHello ()
     h.set_nettime (getApp().getOPs ().getNetworkTimeNC ());
     h.set_nodepublic (getApp().getLocalCredentials ().getNodePublic ().humanNodePublic ());
     h.set_nodeproof (&vchSig[0], vchSig.size ());
-    h.set_ipv4port (getConfig ().PEER_PORT);
+    h.set_ipv4port (getConfig ().peerListeningPort);
     h.set_nodeprivate (getConfig ().PEER_PRIVATE);
     h.set_testnet (getConfig ().TESTNET);
 
@@ -2545,12 +2542,37 @@ Json::Value PeerImp::getJson ()
 //------------------------------------------------------------------------------
 
 Peer::pointer Peer::New (boost::asio::io_service& io_service,
-                         boost::asio::ssl::context& ctx,
-                         uint64 id,
-                         bool inbound)
+    boost::asio::ssl::context& ssl_context, uint64 id,
+        bool inbound, bool requirePROXYHandshake)
 {
-    return Peer::pointer (new PeerImp (io_service, ctx, id, inbound));
+    MultiSocket::Flag flags;
+
+    if (inbound)
+    {
+        flags = MultiSocket::Flag::server_role | MultiSocket::Flag::ssl_required;
+
+        if (requirePROXYHandshake)
+        {
+#if RIPPLE_PEER_USES_BEAST_MULTISOCKET
+            flags = flags.with (MultiSocket::Flag::proxy);
+#else
+            FatalError ("PROXY Handshake support disabled in this build",
+                __FILE__, __LINE__);
+#endif
+        }
+    }
+    else
+    {
+        flags = MultiSocket::Flag::client_role | MultiSocket::Flag::ssl;
+
+        bassert (! requirePROXYHandshake);
+    }
+
+    return Peer::pointer (new PeerImp (
+        io_service, ssl_context, id, inbound, flags));
 }
+
+//------------------------------------------------------------------------------
 
 void Peer::applyLoadCharge (boost::weak_ptr <Peer>& peerToPunish,
                             LoadType loadThatWasImposed)

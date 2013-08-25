@@ -35,7 +35,6 @@ Config::Config ()
     TESTNET                 = false;
     NETWORK_START_TIME      = 1319844908;
 
-    PEER_PORT               = SYSTEM_PEER_PORT;
     RPC_SECURE              = 0;
     WEBSOCKET_PORT          = SYSTEM_WEBSOCKET_PORT;
     WEBSOCKET_PUBLIC_PORT   = SYSTEM_WEBSOCKET_PUBLIC_PORT;
@@ -90,7 +89,9 @@ Config::Config ()
     // VFALCO NOTE Clean area
     //
 
-    proxyListeningPort = 0;
+    peerListeningPort = SYSTEM_PEER_PORT;
+
+    peerPROXYListeningPort = 0;
 
     //
     //
@@ -309,9 +310,6 @@ void Config::load ()
 
             (void) SectionSingleB (secConfig, SECTION_PEER_IP, PEER_IP);
 
-            if (SectionSingleB (secConfig, SECTION_PEER_PORT, strTemp))
-                PEER_PORT           = lexicalCastThrow <int> (strTemp);
-
             if (SectionSingleB (secConfig, SECTION_PEER_PRIVATE, strTemp))
                 PEER_PRIVATE        = lexicalCastThrow <bool> (strTemp);
 
@@ -341,10 +339,21 @@ void Config::load ()
             importNodeDatabase = parseKeyValueSection (
                 secConfig, ConfigSection::importNodeDatabase ());
 
-            if (SectionSingleB (secConfig, SECTION_PEER_PROXY_PORT, strTemp)
-                proxyListeningPort = lexicalCastThrow <int> (strTemp);
+            if (SectionSingleB (secConfig, SECTION_PEER_PORT, strTemp))
+                peerListeningPort = lexicalCastThrow <int> (strTemp);
+
+            if (SectionSingleB (secConfig, SECTION_PEER_PROXY_PORT, strTemp))
+            {
+                peerPROXYListeningPort = lexicalCastThrow <int> (strTemp);
+
+                if (peerPROXYListeningPort != 0 && peerPROXYListeningPort == peerListeningPort)
+                    FatalError ("Peer and proxy listening ports can't be the same.",
+                        __FILE__, __LINE__);
+            }
             else
-                proxyListeningPort = 0;
+            {
+                peerPROXYListeningPort = 0;
+            }
 
             //
             // VFALCO END CLEAN

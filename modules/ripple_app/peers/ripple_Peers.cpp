@@ -4,9 +4,11 @@
 */
 //==============================================================================
 
-class Peers
-    : public IPeers
-    , LeakChecked <Peers>
+SETUP_LOG (Peers)
+
+class PeersImp
+    : public Peers
+    , LeakChecked <PeersImp>
 {
 public:
     enum
@@ -16,8 +18,10 @@ public:
         policyIntervalSeconds = 5
     };
 
-    explicit Peers (boost::asio::io_service& io_service)
-        : mPeerLock (this, "Peers", __FILE__, __LINE__)
+    PeersImp (boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
+        : m_io_service (io_service)
+        , m_ssl_context (ssl_context)
+        , mPeerLock (this, "PeersImp", __FILE__, __LINE__)
         , mLastPeer (0)
         , mPhase (0)
         , mScanTimer (io_service)
@@ -84,16 +88,19 @@ public:
 private:
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::pair<RippleAddress, Peer::pointer>     naPeer;
+    typedef std::pair<IPAndPortNumber, Peer::pointer>            pipPeer;
+    typedef std::map<IPAndPortNumber, Peer::pointer>::value_type vtPeer;
+
+    boost::asio::io_service& m_io_service;
+    boost::asio::ssl::context& m_ssl_context;
+
     LockType mPeerLock;
 
     uint64                  mLastPeer;
     int                     mPhase;
 
-    typedef std::pair<RippleAddress, Peer::pointer>     naPeer;
-    typedef std::pair<IPAndPortNumber, Peer::pointer>            pipPeer;
-    typedef std::map<IPAndPortNumber, Peer::pointer>::value_type vtPeer;
-
-    // Peers we are connecting with and non-thin peers we are connected to.
+    // PeersImp we are connecting with and non-thin peers we are connected to.
     // Only peers we know the connection ip for are listed.
     // We know the ip and port for:
     // - All outbound connections
@@ -101,7 +108,7 @@ private:
     boost::unordered_map<IPAndPortNumber, Peer::pointer>         mIpMap;
 
     // Non-thin peers which we are connected to.
-    // Peers we have the public key for.
+    // PeersImp we have the public key for.
     typedef boost::unordered_map<RippleAddress, Peer::pointer>::value_type vtConMap;
     boost::unordered_map<RippleAddress, Peer::pointer>  mConnectedMap;
 
@@ -119,7 +126,7 @@ private:
 
     void            policyHandler (const boost::system::error_code& ecResult);
 
-    // Peers we are establishing a connection with as a client.
+    // PeersImp we are establishing a connection with as a client.
     // int                                              miConnectStarting;
 
     bool            peerAvailable (std::string& strIp, int& iPort);
@@ -137,7 +144,7 @@ void splitIpPort (const std::string& strIpPort, std::string& strIp, int& iPort)
     iPort   = lexicalCastThrow <int> (vIpPort[1]);
 }
 
-void Peers::start ()
+void PeersImp::start ()
 {
     if (getConfig ().RUN_STANDALONE)
         return;
@@ -149,7 +156,7 @@ void Peers::start ()
     scanRefresh ();
 }
 
-bool Peers::getTopNAddrs (int n, std::vector<std::string>& addrs)
+bool PeersImp::getTopNAddrs (int n, std::vector<std::string>& addrs)
 {
 
     // Try current connections first
@@ -185,7 +192,7 @@ bool Peers::getTopNAddrs (int n, std::vector<std::string>& addrs)
     return true;
 }
 
-bool Peers::savePeer (const std::string& strIp, int iPort, char code)
+bool PeersImp::savePeer (const std::string& strIp, int iPort, char code)
 {
     bool    bNew    = false;
 
@@ -225,7 +232,7 @@ bool Peers::savePeer (const std::string& strIp, int iPort, char code)
     return bNew;
 }
 
-Peer::pointer Peers::getPeerById (const uint64& id)
+Peer::pointer PeersImp::getPeerById (const uint64& id)
 {
     ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
     const boost::unordered_map<uint64, Peer::pointer>::iterator& it = mPeerIdMap.find (id);
@@ -236,7 +243,7 @@ Peer::pointer Peers::getPeerById (const uint64& id)
     return it->second;
 }
 
-bool Peers::hasPeer (const uint64& id)
+bool PeersImp::hasPeer (const uint64& id)
 {
     ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
     return mPeerIdMap.find (id) != mPeerIdMap.end ();
@@ -246,7 +253,7 @@ bool Peers::hasPeer (const uint64& id)
 // too.
 //
 // <-- true, if a peer is available to connect to
-bool Peers::peerAvailable (std::string& strIp, int& iPort)
+bool PeersImp::peerAvailable (std::string& strIp, int& iPort)
 {
     Database*                   db = getApp().getWalletDB ()->getDB ();
     std::vector<std::string>    vstrIpPort;
@@ -290,7 +297,7 @@ bool Peers::peerAvailable (std::string& strIp, int& iPort)
 }
 
 // Make sure we have at least low water connections.
-void Peers::policyLowWater ()
+void PeersImp::policyLowWater ()
 {
     std::string strIp;
     int         iPort;
@@ -335,7 +342,7 @@ void Peers::policyLowWater ()
     }
 }
 
-void Peers::policyEnforce ()
+void PeersImp::policyEnforce ()
 {
     // Cancel any in progress timer.
     (void) mPolicyTimer.cancel ();
@@ -351,10 +358,10 @@ void Peers::policyEnforce ()
 
     // Schedule next enforcement.
     mPolicyTimer.expires_at (boost::posix_time::second_clock::universal_time () + boost::posix_time::seconds (policyIntervalSeconds));
-    mPolicyTimer.async_wait (BIND_TYPE (&Peers::policyHandler, this, P_1));
+    mPolicyTimer.async_wait (BIND_TYPE (&PeersImp::policyHandler, this, P_1));
 }
 
-void Peers::policyHandler (const boost::system::error_code& ecResult)
+void PeersImp::policyHandler (const boost::system::error_code& ecResult)
 {
     if (ecResult == boost::asio::error::operation_aborted)
     {
@@ -372,7 +379,7 @@ void Peers::policyHandler (const boost::system::error_code& ecResult)
 
 // YYY: Should probably do this in the background.
 // YYY: Might end up sending to disconnected peer?
-int Peers::relayMessage (Peer* fromPeer, const PackedMessage::pointer& msg)
+int PeersImp::relayMessage (Peer* fromPeer, const PackedMessage::pointer& msg)
 {
     int sentTo = 0;
     std::vector<Peer::pointer> peerVector = getPeerVector ();
@@ -388,7 +395,7 @@ int Peers::relayMessage (Peer* fromPeer, const PackedMessage::pointer& msg)
     return sentTo;
 }
 
-int Peers::relayMessageCluster (Peer* fromPeer, const PackedMessage::pointer& msg)
+int PeersImp::relayMessageCluster (Peer* fromPeer, const PackedMessage::pointer& msg)
 {
     int sentTo = 0;
     std::vector<Peer::pointer> peerVector = getPeerVector ();
@@ -404,7 +411,7 @@ int Peers::relayMessageCluster (Peer* fromPeer, const PackedMessage::pointer& ms
     return sentTo;
 }
 
-void Peers::relayMessageBut (const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
+void PeersImp::relayMessageBut (const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
 {
     // Relay message to all but the specified peers
     std::vector<Peer::pointer> peerVector = getPeerVector ();
@@ -416,7 +423,7 @@ void Peers::relayMessageBut (const std::set<uint64>& fromPeers, const PackedMess
 
 }
 
-void Peers::relayMessageTo (const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
+void PeersImp::relayMessageTo (const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg)
 {
     // Relay message to the specified peers
     std::vector<Peer::pointer> peerVector = getPeerVector ();
@@ -432,7 +439,7 @@ void Peers::relayMessageTo (const std::set<uint64>& fromPeers, const PackedMessa
 //
 // Add or modify into PeerIps as a manual entry for immediate scanning.
 // Requires sane IP and port.
-void Peers::connectTo (const std::string& strIp, int iPort)
+void PeersImp::connectTo (const std::string& strIp, int iPort)
 {
     {
         Database*   db  = getApp().getWalletDB ()->getDB ();
@@ -450,24 +457,23 @@ void Peers::connectTo (const std::string& strIp, int iPort)
 // Start a connection, if not already known connected or connecting.
 //
 // <-- true, if already connected.
-Peer::pointer Peers::peerConnect (const std::string& strIp, int iPort)
+Peer::pointer PeersImp::peerConnect (const std::string& strIp, int iPort)
 {
     IPAndPortNumber          pipPeer     = make_pair (strIp, iPort);
     Peer::pointer   ppResult;
-
 
     {
         ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
 
         if (mIpMap.find (pipPeer) == mIpMap.end ())
         {
-            ppResult = Peer::New (getApp().getIOService (),
-                                  getApp().getPeerDoor ().getSSLContext (),
-                                  ++mLastPeer,
-                                  false);
+            bool const isInbound (false);
+            bool const requirePROXYHandshake (false);
 
-            mIpMap[pipPeer] = ppResult;
-            // ++miConnectStarting;
+            ppResult = Peer::New (m_io_service, m_ssl_context,
+                ++mLastPeer, isInbound, requirePROXYHandshake);
+
+            mIpMap [pipPeer] = ppResult;
         }
     }
 
@@ -485,7 +491,7 @@ Peer::pointer Peers::peerConnect (const std::string& strIp, int iPort)
 }
 
 // Returns information on verified peers.
-Json::Value Peers::getPeersJson ()
+Json::Value PeersImp::getPeersJson ()
 {
     Json::Value                 ret (Json::arrayValue);
     std::vector<Peer::pointer>  vppPeers    = getPeerVector ();
@@ -498,14 +504,14 @@ Json::Value Peers::getPeersJson ()
     return ret;
 }
 
-int Peers::getPeerCount ()
+int PeersImp::getPeerCount ()
 {
     ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
 
     return mConnectedMap.size ();
 }
 
-std::vector<Peer::pointer> Peers::getPeerVector ()
+std::vector<Peer::pointer> PeersImp::getPeerVector ()
 {
     std::vector<Peer::pointer> ret;
 
@@ -522,7 +528,7 @@ std::vector<Peer::pointer> Peers::getPeerVector ()
     return ret;
 }
 
-uint64 Peers::assignPeerId ()
+uint64 PeersImp::assignPeerId ()
 {
     ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
     return ++mLastPeer;
@@ -530,7 +536,7 @@ uint64 Peers::assignPeerId ()
 
 // Now know peer's node public key.  Determine if we want to stay connected.
 // <-- bNew: false = redundant
-bool Peers::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
+bool PeersImp::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
                            const std::string& strIP, int iPort)
 {
     bool    bNew    = false;
@@ -592,7 +598,7 @@ bool Peers::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
 }
 
 // We maintain a map of public key to peer for connected and verified peers.  Maintain it.
-void Peers::peerDisconnected (Peer::ref peer, const RippleAddress& naPeer)
+void PeersImp::peerDisconnected (Peer::ref peer, const RippleAddress& naPeer)
 {
     ScopedLockType sl (mPeerLock, __FILE__, __LINE__);
 
@@ -632,7 +638,7 @@ void Peers::peerDisconnected (Peer::ref peer, const RippleAddress& naPeer)
 // Schedule for immediate scanning, if not already scheduled.
 //
 // <-- true, scanRefresh needed.
-bool Peers::peerScanSet (const std::string& strIp, int iPort)
+bool PeersImp::peerScanSet (const std::string& strIp, int iPort)
 {
     std::string strIpPort   = str (boost::format ("%s %d") % strIp % iPort);
     bool        bScanDirty  = false;
@@ -682,7 +688,7 @@ bool Peers::peerScanSet (const std::string& strIp, int iPort)
 }
 
 // --> strIp: not empty
-void Peers::peerClosed (Peer::ref peer, const std::string& strIp, int iPort)
+void PeersImp::peerClosed (Peer::ref peer, const std::string& strIp, int iPort)
 {
     IPAndPortNumber      ipPeer          = make_pair (strIp, iPort);
     bool        bScanRefresh    = false;
@@ -735,7 +741,7 @@ void Peers::peerClosed (Peer::ref peer, const std::string& strIp, int iPort)
         scanRefresh ();
 }
 
-void Peers::peerVerified (Peer::ref peer)
+void PeersImp::peerVerified (Peer::ref peer)
 {
     if (mScanning && mScanning == peer)
     {
@@ -770,7 +776,7 @@ void Peers::peerVerified (Peer::ref peer)
     }
 }
 
-void Peers::scanHandler (const boost::system::error_code& ecResult)
+void PeersImp::scanHandler (const boost::system::error_code& ecResult)
 {
     if (ecResult == boost::asio::error::operation_aborted)
     {
@@ -786,7 +792,7 @@ void Peers::scanHandler (const boost::system::error_code& ecResult)
     }
 }
 
-void Peers::makeConfigured ()
+void PeersImp::makeConfigured ()
 {
     if (getConfig ().RUN_STANDALONE)
         return;
@@ -802,7 +808,7 @@ void Peers::makeConfigured ()
 }
 
 // Scan ips as per db entries.
-void Peers::scanRefresh ()
+void PeersImp::scanRefresh ()
 {
     if (getConfig ().RUN_STANDALONE)
     {
@@ -894,27 +900,15 @@ void Peers::scanRefresh ()
             //  % strIpPort % tpNext % (tpNext-tpNow).total_seconds());
 
             mScanTimer.expires_at (tpNext);
-            mScanTimer.async_wait (BIND_TYPE (&Peers::scanHandler, this, P_1));
+            mScanTimer.async_wait (BIND_TYPE (&PeersImp::scanHandler, this, P_1));
         }
     }
 }
 
-IPeers* IPeers::New (boost::asio::io_service& io_service)
+//------------------------------------------------------------------------------
+
+Peers* Peers::New (boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
 {
-    return new Peers (io_service);
+    return new PeersImp (io_service, ssl_context);
 }
-
-#if 0
-bool Peers::isMessageKnown (PackedMessage::pointer msg)
-{
-    for (unsigned int n = 0; n < mBroadcastMessages.size (); n++)
-    {
-        if (msg == mBroadcastMessages[n].first) return (false);
-    }
-
-    return (false);
-}
-#endif
-
-SETUP_LOG (Peers)
 

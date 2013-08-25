@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_MULTISOCKETTYPE_H_INCLUDED
-#define RIPPLE_MULTISOCKETTYPE_H_INCLUDED
+#ifndef RIPPLE_ASIO_MULTISOCKETTYPE_H_INCLUDED
+#define RIPPLE_ASIO_MULTISOCKETTYPE_H_INCLUDED
 
 /** Template for producing instances of MultiSocket
 */
@@ -21,10 +21,11 @@ public:
     typedef typename boost::add_reference <next_layer_type>::type next_layer_type_ref;
     typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
 
-    template <class Arg>
-    explicit MultiSocketType (Arg& arg, int flags = 0)
+    template <typename Arg>
+    MultiSocketType (Arg& arg, boost::asio::ssl::context& ssl_context, int flags)
         : m_flags (flags)
         , m_state (stateNone)
+        , m_ssl_context (ssl_context)
         , m_verify_mode (0)
         , m_stream (nullptr)
         , m_needsShutdown (false)
@@ -74,28 +75,6 @@ protected:
         bassert (m_stream != nullptr);
         return *m_stream;
     }
-
-#if 0
-    next_layer_type& next_layer () noexcept
-    {
-        return m_next_layer;
-    }
-
-    next_layer_type const& next_layer () const noexcept
-    {
-        return m_next_layer;
-    }
-
-    lowest_layer_type& lowest_layer () noexcept
-    {
-        return m_next_layer.lowest_layer ();
-    }
-
-    lowest_layer_type const& lowest_layer () const noexcept
-    {
-        return m_next_layer.lowest_layer ();
-    }
-#endif
 
     //--------------------------------------------------------------------------
     //
@@ -609,8 +588,7 @@ protected:
     {
         typedef typename boost::asio::ssl::stream <next_layer_type&> SslStream;
         typedef SocketWrapperStrand <SslStream> Wrapper;
-        Wrapper* const socket = new Wrapper (
-            m_next_layer, MultiSocket::getRippleTlsBoostContext ());
+        Wrapper* const socket = new Wrapper (m_next_layer, m_ssl_context);
         set_ssl_stream (socket->this_layer ());
         return socket;
     }
@@ -626,8 +604,7 @@ protected:
             typedef boost::asio::ssl::stream <
                 PrefilledReadStream <next_layer_type&> > SslStream;
             typedef SocketWrapperStrand <SslStream> Wrapper;
-            Wrapper* const socket = new Wrapper (
-                m_next_layer, MultiSocket::getRippleTlsBoostContext ());
+            Wrapper* const socket = new Wrapper (m_next_layer, m_ssl_context);
             socket->this_layer ().next_layer().fill (buffers);
             set_ssl_stream (socket->this_layer ());
             return socket;
@@ -953,13 +930,12 @@ protected:
 private:
     Flag m_flags;
     State m_state;
+    boost::asio::ssl::context& m_ssl_context;
     int m_verify_mode;
     ScopedPointer <Socket> m_stream;
     ScopedPointer <Socket> m_ssl_stream; // the ssl portion of our stream if it exists
-
     bool m_needsShutdown;
     StreamSocket m_next_layer;
-
     SSL* m_native_ssl_handle;
 };
 

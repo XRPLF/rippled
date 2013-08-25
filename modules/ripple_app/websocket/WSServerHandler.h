@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_WSHANDLER_H_INCLUDED
-#define RIPPLE_WSHANDLER_H_INCLUDED
+#ifndef RIPPLE_WSSERVERHANDLER_H_INCLUDED
+#define RIPPLE_WSSERVERHANDLER_H_INCLUDED
 
 extern bool serverOkay (std::string& reason);
 
@@ -47,39 +47,34 @@ protected:
     LockType mLock;
 
 private:
-    boost::shared_ptr<boost::asio::ssl::context>                            mCtx;
+    boost::asio::ssl::context& m_ssl_context;
 
 protected:
 
     // For each connection maintain an associated object to track subscriptions.
-    boost::unordered_map<connection_ptr, boost::shared_ptr< WSConnection<endpoint_type> > > mMap;
-    bool                                                                    mPublic;
+    boost::unordered_map <connection_ptr,
+        boost::shared_ptr <WSConnection <endpoint_type> > > mMap;
+    bool mPublic;
 
 public:
-    WSServerHandler (boost::shared_ptr<boost::asio::ssl::context> spCtx, bool bPublic)
-        : mLock (static_cast <WSServerHandlerBase*> (this), "WSServerHandler", __FILE__, __LINE__)
-        , mCtx (spCtx)
+    WSServerHandler (boost::asio::ssl::context& ssl_context, bool bPublic)
+        : m_ssl_context (ssl_context)
+        , mLock (static_cast <WSServerHandlerBase*> (this), "WSServerHandler", __FILE__, __LINE__)
         , mPublic (bPublic)
     {
-        if (getConfig ().WEBSOCKET_SECURE != 0)
-        {
-            basio::SslContext::initializeFromFile (
-                *mCtx,
-                getConfig ().WEBSOCKET_SSL_KEY,
-                getConfig ().WEBSOCKET_SSL_CERT,
-                getConfig ().WEBSOCKET_SSL_CHAIN);
-        }
     }
 
-    bool        getPublic ()
+    bool getPublic ()
     {
         return mPublic;
     };
 
+    /*
     boost::asio::ssl::context& getASIOContext ()
     {
-        return *mCtx;
+        return *m_ssl_context;
     }
+    */
 
     static void ssend (connection_ptr cpClient, message_ptr mpMessage)
     {
@@ -320,9 +315,9 @@ public:
         }
     }
 
-    boost::shared_ptr<boost::asio::ssl::context> on_tls_init ()
+    boost::asio::ssl::context& get_ssl_context ()
     {
-        return mCtx;
+        return m_ssl_context;
     }
 
     // Respond to http requests.
