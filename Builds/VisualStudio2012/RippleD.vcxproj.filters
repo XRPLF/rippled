@@ -19,9 +19,6 @@
     <Filter Include="[0] Subtrees\protobuf">
       <UniqueIdentifier>{1f093002-9955-4915-a17b-398d55c9fc76}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[0] Subtrees\sqlite">
-      <UniqueIdentifier>{086839ba-d691-4ca8-b2ef-40aee8842957}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\ripple_basics">
       <UniqueIdentifier>{ca8e7c6c-0e6d-4915-b7b4-0a0b21f91d16}</UniqueIdentifier>
     </Filter>
@@ -165,9 +162,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Subtrees\sqlite\sqlite3.c">
-      <Filter>[0] Subtrees\sqlite</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_core\beast_core.cpp">
       <Filter>[0] Subtrees\beast</Filter>
     </ClCompile>
@@ -893,12 +887,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h">
-      <Filter>[0] Subtrees\sqlite</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Subtrees\sqlite\sqlite3ext.h">
-      <Filter>[0] Subtrees\sqlite</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\ripple_app.h">
       <Filter>[1] Ripple\ripple_app</Filter>
     </ClInclude>

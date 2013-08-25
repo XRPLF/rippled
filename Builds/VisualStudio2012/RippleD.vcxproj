@@ -1290,12 +1290,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\Subtrees\sqlite\sqlite3.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\Subtrees\websocket\src\base64\base64.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1608,8 +1602,6 @@
     <ClInclude Include="..\..\Subtrees\leveldb\util\mutexlock.h" />
     <ClInclude Include="..\..\Subtrees\leveldb\util\posix_logger.h" />
     <ClInclude Include="..\..\Subtrees\leveldb\util\random.h" />
-    <ClInclude Include="..\..\Subtrees\sqlite\sqlite3.h" />
-    <ClInclude Include="..\..\Subtrees\sqlite\sqlite3ext.h" />
     <ClInclude Include="..\..\Subtrees\websocket\src\base64\base64.h" />
     <ClInclude Include="..\..\Subtrees\websocket\src\common.hpp" />
     <ClInclude Include="..\..\Subtrees\websocket\src\connection.hpp" />
