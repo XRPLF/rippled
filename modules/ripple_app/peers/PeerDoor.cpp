@@ -54,7 +54,7 @@ public:
                                            getApp().getPeers ().assignPeerId (),
                                            true);
 
-        mAcceptor.async_accept (new_connection->getSocket (),
+        mAcceptor.async_accept (new_connection->getNativeSocket (),
                                 boost::bind (&PeerDoorImp::handleConnect, this, new_connection,
                                              boost::asio::placeholders::error));
     }

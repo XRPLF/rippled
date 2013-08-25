@@ -7,13 +7,14 @@
 #ifndef RIPPLE_ASIO_H_INCLUDED
 #define RIPPLE_ASIO_H_INCLUDED
 
+#include "beast/modules/beast_asio/beast_asio.h"
+
 namespace ripple
 {
 
 using namespace beast;
 
-//#include "sockets/ripple_TlsContext.h"
-//#include "sockets/ripple_MultiSocket.h"
+#include "sockets/ripple_MultiSocket.h"
 
 }
 
