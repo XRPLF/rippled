@@ -119,6 +119,16 @@ public:
     */
     StringPairArray importNodeDatabase;
 
+    /** PROXY listening port number
+        If this is not zero, it indicates an additional port number on
+        which we should accept incoming Peer connections that will also
+        require a PROXY handshake.
+
+        The PROXY Protocol:
+        http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt
+    */
+    int proxyListeningPort;
+
     bool                        ELB_SUPPORT;            // Support Amazon ELB
 
     std::string                 VALIDATORS_SITE;        // Where to find validators.txt on the Internet.

@@ -83,6 +83,19 @@ Config::Config ()
     ELB_SUPPORT             = false;
     RUN_STANDALONE          = false;
     START_UP                = NORMAL;
+
+
+    //--------------------------------------------------------------------------
+    //
+    // VFALCO NOTE Clean area
+    //
+
+    proxyListeningPort = 0;
+
+    //
+    //
+    //
+    //--------------------------------------------------------------------------
 }
 
 void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
@@ -319,14 +332,20 @@ void Config::load ()
             //
             // VFALCO BEGIN CLEAN
             //
-            getConfig ().nodeDatabase = parseKeyValueSection (
+            nodeDatabase = parseKeyValueSection (
                 secConfig, ConfigSection::nodeDatabase ());
 
-            getConfig ().ephemeralNodeDatabase = parseKeyValueSection (
+            ephemeralNodeDatabase = parseKeyValueSection (
                 secConfig, ConfigSection::tempNodeDatabase ());
 
-            getConfig ().importNodeDatabase = parseKeyValueSection (
+            importNodeDatabase = parseKeyValueSection (
                 secConfig, ConfigSection::importNodeDatabase ());
+
+            if (SectionSingleB (secConfig, SECTION_PEER_PROXY_PORT, strTemp)
+                proxyListeningPort = lexicalCastThrow <int> (strTemp);
+            else
+                proxyListeningPort = 0;
+
             //
             // VFALCO END CLEAN
             //
