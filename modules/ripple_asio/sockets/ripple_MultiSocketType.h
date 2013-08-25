@@ -7,8 +7,6 @@
 #ifndef RIPPLE_MULTISOCKETTYPE_H_INCLUDED
 #define RIPPLE_MULTISOCKETTYPE_H_INCLUDED
 
-#define MULTISOCKET_USE_STRAND 1
-
 /** Template for producing instances of MultiSocket
 */
 template <class StreamSocket>
@@ -610,11 +608,7 @@ protected:
     Socket* new_ssl_stream ()
     {
         typedef typename boost::asio::ssl::stream <next_layer_type&> SslStream;
-#if MULTISOCKET_USE_STRAND
         typedef SocketWrapperStrand <SslStream> Wrapper;
-#else
-        typedef SocketWrapper <SslStream> Wrapper;
-#endif
         Wrapper* const socket = new Wrapper (
             m_next_layer, MultiSocket::getRippleTlsBoostContext ());
         set_ssl_stream (socket->this_layer ());
@@ -631,11 +625,7 @@ protected:
         {
             typedef boost::asio::ssl::stream <
                 PrefilledReadStream <next_layer_type&> > SslStream;
-#if MULTISOCKET_USE_STRAND
             typedef SocketWrapperStrand <SslStream> Wrapper;
-#else
-            typedef SocketWrapper <SslStream> Wrapper;
-#endif
             Wrapper* const socket = new Wrapper (
                 m_next_layer, MultiSocket::getRippleTlsBoostContext ());
             socket->this_layer ().next_layer().fill (buffers);

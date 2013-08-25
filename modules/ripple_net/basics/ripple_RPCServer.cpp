@@ -16,9 +16,6 @@ public:
         : m_handler (handler)
         , mStrand (io_service)
         , mSocket (io_service, context)
-#if RIPPLE_USES_BEAST_SOCKETS
-        , m_socketWrapper (mSocket)
-#endif
     {
     }
 
@@ -224,17 +221,10 @@ private:
 
     //--------------------------------------------------------------------------
 
-#if RIPPLE_USES_BEAST_SOCKETS
-    Socket& getSocket ()
-    {
-        return m_socketWrapper;
-    }
-#else
     AutoSocket& getSocket ()
     {
         return mSocket;
     }
-#endif
 
     //--------------------------------------------------------------------------
 
@@ -259,9 +249,6 @@ private:
 
     boost::asio::io_service::strand mStrand;
     AutoSocket mSocket;
-#if RIPPLE_USES_BEAST_SOCKETS
-    SocketWrapper <AutoSocket> m_socketWrapper;
-#endif
 
     boost::asio::streambuf mLineBuffer;
     Blob mQueryVec;

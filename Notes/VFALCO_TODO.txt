@@ -7,17 +7,20 @@ REMINDER: KEEP CHANGE LOG UP TO DATE
 Vinnie's List: Changes day to day, descending priority
   (Items marked '*' can be handled by others.)
 
+- PeerFinder collaboration with Nikolaos
 - beast::Socket integration in Ripple
 - Configuration list for Jenkins
-- Deeply create directories specified in config settings
-- Finish unit tests and code for Validators
-* Document the command line options for the beast unit test framework
+
 
 David Features:
 - override config items from command line
 - change config via RPC, this is for debugging
 
 --------------------------------------------------------------------------------
+
+- Deeply create directories specified in config settings
+
+- Finish unit tests and code for Validators
 
 - Refactor Section code into ConfigFile
 

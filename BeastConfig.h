@@ -178,11 +178,13 @@
     and recursive mutex objects. This affects the type of lock used
     by RippleMutex and RippleRecursiveMutex
 */
-#define RIPPLE_TRACK_MUTEXES 0
+#define RIPPLE_TRACK_MUTEXES 1
 
 //------------------------------------------------------------------------------
 
-// This is temporary and will disappear
-#define RIPPLE_USES_BEAST_SOCKETS 0
+// This is only here temporarily. Use it to turn off MultiSocket
+// in Peer code if you suspect you're having problems because of it.
+//
+#define RIPPLE_PEER_USES_BEAST_MULTISOCKET 1
 
 #endif
