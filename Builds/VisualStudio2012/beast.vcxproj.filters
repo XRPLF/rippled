@@ -686,9 +686,6 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_SemanticVersion.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\beast_asio.h">
-      <Filter>beast_asio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketBase.h">
       <Filter>beast_asio\sockets</Filter>
     </ClInclude>
@@ -700,9 +697,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\system\beast_BoostIncludes.h">
       <Filter>beast_asio\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SslContext.h">
-      <Filter>beast_asio\sockets</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeer.h">
       <Filter>beast_asio\tests</Filter>
@@ -910,6 +904,12 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapperStrand.h">
       <Filter>beast_asio\sockets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\SSLContext.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\beast_asio.h">
+      <Filter>beast_asio</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1282,9 +1282,6 @@
     <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp">
       <Filter>beast_asio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\sockets\beast_SslContext.cpp">
-      <Filter>beast_asio\sockets</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerBasics.cpp">
       <Filter>beast_asio\tests</Filter>
     </ClCompile>
@@ -1386,6 +1383,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\memory\beast_PagedFreeStore.cpp">
       <Filter>beast_core\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\basics\SSLContext.cpp">
+      <Filter>beast_asio\basics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
