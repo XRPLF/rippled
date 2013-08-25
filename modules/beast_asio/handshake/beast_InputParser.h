@@ -339,6 +339,14 @@ struct Get <UInt8Str>
 struct IPv4Address
 {
     uint8 value [4];
+
+    String toString () const
+    {
+        return String::fromNumber <int> (value [0]) + "." +
+               String::fromNumber <int> (value [1]) + "." +
+               String::fromNumber <int> (value [2]) + "." +
+               String::fromNumber <int> (value [3]);
+    }
 };
 
 template <>
