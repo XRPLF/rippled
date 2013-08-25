@@ -143,12 +143,6 @@
     <Filter Include="beast_asio\async">
       <UniqueIdentifier>{beb81776-4aad-401d-8826-81478dbbf30b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_boost">
-      <UniqueIdentifier>{0eac8b8d-7049-4eda-b6b4-53194d336a97}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast_boost\traits">
-      <UniqueIdentifier>{1e6959ed-fcb9-4a3b-ac5a-eb26973e21f6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast_core\thread">
       <UniqueIdentifier>{493db217-b3e4-4b08-97b2-a2d753cc8c35}</UniqueIdentifier>
     </Filter>
@@ -160,6 +154,12 @@
     </Filter>
     <Filter Include="beast_core\functional">
       <UniqueIdentifier>{5df65855-1ccd-4997-97c1-f9788924ee2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_extras">
+      <UniqueIdentifier>{2f5b95a8-1adf-4319-8464-ddc2b2e03f0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_extras\traits">
+      <UniqueIdentifier>{bf498396-2e1f-4903-be68-3053ba439af5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -695,9 +695,6 @@
     <ClInclude Include="..\..\modules\beast_asio\sockets\beast_Socket.h">
       <Filter>beast_asio\sockets</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\system\beast_BoostIncludes.h">
-      <Filter>beast_asio\system</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeer.h">
       <Filter>beast_asio\tests</Filter>
     </ClInclude>
@@ -794,17 +791,11 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\MeasureFunctionCallTime.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_boost\beast_boost.h">
-      <Filter>beast_boost</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\beast_ReadWriteMutex.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\beast_SharedData.h">
       <Filter>beast_core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_boost\traits\beast_BoostLockableTraits.h">
-      <Filter>beast_boost\traits</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\MutexTraits.h">
       <Filter>beast_core\thread</Filter>
@@ -910,6 +901,15 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h">
       <Filter>beast_asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\system\BoostIncludes.h">
+      <Filter>beast_asio\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_extras\traits\beast_BoostLockableTraits.h">
+      <Filter>beast_extras\traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_extras\beast_extras.h">
+      <Filter>beast_extras</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1327,9 +1327,6 @@
     <ClCompile Include="..\..\modules\beast_asio\async\beast_SharedHandler.cpp">
       <Filter>beast_asio\async</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_boost\beast_boost.cpp">
-      <Filter>beast_boost</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\threads\beast_ReadWriteMutex.cpp">
       <Filter>beast_core\threads</Filter>
     </ClCompile>
@@ -1386,6 +1383,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\basics\SSLContext.cpp">
       <Filter>beast_asio\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_extras\beast_extras.cpp">
+      <Filter>beast_extras</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
