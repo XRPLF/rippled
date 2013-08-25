@@ -85,6 +85,13 @@ public:
         server_proxy = 8
     };
 
+    typedef HandshakeDetectLogicPROXY::ProxyInfo ProxyInfo;
+
+    // Note that this returns the original flags
+    virtual Flag getFlags () = 0;
+
+    virtual ProxyInfo getProxyInfo () = 0;
+
     virtual SSL* native_handle () = 0;
 
     static MultiSocket* New (

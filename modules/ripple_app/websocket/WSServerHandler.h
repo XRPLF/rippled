@@ -58,8 +58,8 @@ protected:
 
 public:
     WSServerHandler (boost::asio::ssl::context& ssl_context, bool bPublic)
-        : m_ssl_context (ssl_context)
-        , mLock (static_cast <WSServerHandlerBase*> (this), "WSServerHandler", __FILE__, __LINE__)
+        : mLock (static_cast <WSServerHandlerBase*> (this), "WSServerHandler", __FILE__, __LINE__)
+        , m_ssl_context (ssl_context)
         , mPublic (bPublic)
     {
     }

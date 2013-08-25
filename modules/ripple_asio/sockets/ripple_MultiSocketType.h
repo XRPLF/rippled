@@ -31,6 +31,7 @@ public:
         , m_needsShutdown (false)
         , m_next_layer (arg)
         , m_native_ssl_handle (nullptr)
+        , m_origFlags (cleaned_flags (flags))
     {
         // See if our flags allow us to go directly
         // into the ready state with an active stream.
@@ -54,6 +55,16 @@ protected:
     //
     // MultiSocket
     //
+
+    Flag getFlags ()
+    {
+        return m_origFlags;
+    }
+
+    ProxyInfo getProxyInfo ()
+    {
+        return m_proxyInfo;
+    }
 
     SSL* native_handle ()
     {
@@ -613,13 +624,6 @@ protected:
     }
 
     //--------------------------------------------------------------------------
-
-    void setProxyInfo (HandshakeDetectLogicPROXY::ProxyInfo const proxyInfo)
-    {
-        // Do something with it
-    }
-
-    //--------------------------------------------------------------------------
     //
     // Synchronous handshake operation
     //
@@ -670,7 +674,7 @@ protected:
 
                         if (op.getLogic ().success ())
                         {
-                            setProxyInfo (op.getLogic ().getInfo ());
+                            m_proxyInfo = op.getLogic ().getInfo ();
 
                             // Strip off the PROXY flag.
                             m_flags = m_flags.without (Flag::proxy);
@@ -846,7 +850,7 @@ protected:
                         {
                             if (m_proxy.getLogic ().success ())
                             {
-                                m_owner.setProxyInfo (m_proxy.getLogic ().getInfo ());
+                                m_owner.m_proxyInfo = m_proxy.getLogic ().getInfo ();
 
                                 // Strip off the PROXY flag.
                                 m_owner.m_flags = m_owner.m_flags.without (Flag::proxy);
@@ -936,7 +940,9 @@ private:
     ScopedPointer <Socket> m_ssl_stream; // the ssl portion of our stream if it exists
     bool m_needsShutdown;
     StreamSocket m_next_layer;
+    ProxyInfo m_proxyInfo;
     SSL* m_native_ssl_handle;
+    Flag m_origFlags;
 };
 
 #endif

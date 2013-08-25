@@ -73,7 +73,7 @@ public:
         return m_ssl_stream;
     }
 
-#endif^
+#endif
 
     //
     //
@@ -303,8 +303,59 @@ private:
         startReadHeader ();
     }
 
+    // We have an encrypted connection to the peer.
+    // Have it say who it is so we know to avoid redundant connections.
+    // Establish that it really who we are talking to by having it sign a connection detail.
+    // Also need to establish no man in the middle attack is in progress.
+    void handleStart (const boost::system::error_code& error)
+    {
+        if (error)
+        {
+            WriteLog (lsINFO, Peer) << "Peer: Handshake: Error: " << error.category ().name () << ": " << error.message () << ": " << error;
+            detach ("hs", true);
+        }
+        else
+        {
+        #if RIPPLE_PEER_USES_BEAST_MULTISOCKET
+            if (m_socket->getFlags ().set (MultiSocket::Flag::proxy) && m_isInbound)
+            {
+                MultiSocket::ProxyInfo const proxyInfo (m_socket->getProxyInfo ());
 
-    void handleStart (const boost::system::error_code & ecResult);
+                if (proxyInfo.protocol == "TCP4")
+                {
+                    // Set remote IP and port number from PROXY handshake
+                    mIpPort.first = proxyInfo.sourceAddress.toString ().toStdString ();
+                    mIpPort.second = proxyInfo.sourcePort;
+
+                    // Must compute mCookieHash before receiving a hello.
+                    sendHello ();
+                    startReadHeader ();
+                }
+                else
+                {
+                    if (proxyInfo.protocol != String::empty)
+                    {
+                        WriteLog (lsINFO, Peer) << "Peer: Unknown PROXY protocol " <<
+                            proxyInfo.protocol.toStdString ();
+                    }
+                    else
+                    {
+                        WriteLog (lsINFO, Peer) << "Peer: Missing PROXY handshake";
+                    }
+
+                    detach ("pi", true);
+                }
+            }
+            else
+        #endif
+            {
+                // Must compute mCookieHash before receiving a hello.
+                sendHello ();
+                startReadHeader ();
+            }
+        }
+    }
+
     void handleVerifyTimer (const boost::system::error_code & ecResult);
     void handlePingTimer (const boost::system::error_code & ecResult);
 
@@ -553,24 +604,6 @@ void PeerImp::connect (const std::string& strIp, int iPort)
                                 boost::static_pointer_cast <PeerImp> (shared_from_this ()),
                                 boost::asio::placeholders::error,
                                 boost::asio::placeholders::iterator)));
-    }
-}
-
-// We have an encrypted connection to the peer.
-// Have it say who it is so we know to avoid redundant connections.
-// Establish that it really who we are talking to by having it sign a connection detail.
-// Also need to establish no man in the middle attack is in progress.
-void PeerImp::handleStart (const boost::system::error_code& error)
-{
-    if (error)
-    {
-        WriteLog (lsINFO, Peer) << "Peer: Handshake: Error: " << error.category ().name () << ": " << error.message () << ": " << error;
-        detach ("hs", true);
-    }
-    else
-    {
-        sendHello ();           // Must compute mCookieHash before receiving a hello.
-        startReadHeader ();
     }
 }
 
