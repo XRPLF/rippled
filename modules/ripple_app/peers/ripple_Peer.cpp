@@ -330,6 +330,8 @@ private:
                     // Must compute mCookieHash before receiving a hello.
                     sendHello ();
                     startReadHeader ();
+
+                    WriteLog (lsINFO, Peer) << "Peer: PROXY handshake from " << mIpPort.first;
                 }
                 else
                 {
