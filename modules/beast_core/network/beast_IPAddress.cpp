@@ -96,12 +96,12 @@ static void findIPAddresses (int sock, Array<IPAddress>& result)
 {
     ifconf cfg;
     HeapBlock<char> buffer;
-    size_t bufferSize = 1024;
+    int bufferSize = 1024;
 
     do
     {
         bufferSize *= 2;
-        buffer.calloc (bufferSize);
+        buffer.calloc ((size_t)bufferSize);
 
         cfg.ifc_len = bufferSize;
         cfg.ifc_buf = buffer;
@@ -109,7 +109,7 @@ static void findIPAddresses (int sock, Array<IPAddress>& result)
         if (ioctl (sock, SIOCGIFCONF, &cfg) < 0 && errno != EINVAL)
             return;
 
-    } while (bufferSize < cfg.ifc_len + 2 * (IFNAMSIZ + sizeof (struct sockaddr_in6)));
+    } while (bufferSize < cfg.ifc_len + 2 * (int) (IFNAMSIZ + sizeof (struct sockaddr_in6)));
 
    #if BEAST_MAC || BEAST_IOS
     while (cfg.ifc_len >= (int) (IFNAMSIZ + sizeof (struct sockaddr_in)))
