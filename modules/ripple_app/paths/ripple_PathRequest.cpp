@@ -278,7 +278,7 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                        currIssuer.first, currIssuer.second, saDstAmount, valid);
         CondLog (!valid, lsINFO, PathRequest) << "PF request not valid";
 
-        if (valid && pf.findPaths (getConfig ().PATH_SEARCH_SIZE - (fast ? 0 : 1), 3, spsPaths))
+        if (valid && pf.findPaths (getConfig ().PATH_SEARCH_SIZE - (fast ? 1 : 0), 3, spsPaths))
         {
             LedgerEntrySet                      lesSandbox (cache->getLedger (), tapNONE);
             std::vector<PathState::pointer>     vpsExpanded;
