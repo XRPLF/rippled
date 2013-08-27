@@ -9,7 +9,7 @@ SETUP_LOG (Peer)
 class PeerImp;
 
 // Don't try to run past receiving nonsense from a peer
-#define TRUST_NETWORK
+// #define TRUST_NETWORK
 
 // Node has this long to verify its identity from connection accepted or connection attempt.
 #define NODE_VERIFY_SECONDS     15

@@ -4,7 +4,7 @@
 */
 //==============================================================================
 
-#define TRUST_NETWORK
+// #define TRUST_NETWORK
 
 #define LC_DEBUG
 

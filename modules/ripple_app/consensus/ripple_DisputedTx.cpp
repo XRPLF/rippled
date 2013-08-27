@@ -4,7 +4,7 @@
 */
 //==============================================================================
 
-#define TRUST_NETWORK
+// #define TRUST_NETWORK
 
 // Track a peer's yes/no vote on a particular disputed transaction
 void DisputedTx::setVote (const uint160& peer, bool votesYes)
