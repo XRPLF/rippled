@@ -19,7 +19,7 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNode& id, uint25
     if ((type == SHAMapTreeNode::tnTRANSACTION_NM) && (nodeData.size () > 16))
     {
         // this is a transaction, and we didn't have it
-        WriteLog (lsDEBUG, TransactionAcquire) << "Node on our acquiring TX set is TXN we don't have";
+        WriteLog (lsDEBUG, TransactionAcquire) << "Node on our acquiring TX set is TXN we may not have";
 
         try
         {
@@ -43,7 +43,7 @@ bool ConsensusTransSetSF::haveNode (const SHAMapNode& id, uint256 const& nodeHas
     if (getApp().getTempNodeCache ().retrieve (nodeHash, nodeData))
         return true;
 
-    Transaction::pointer txn = Transaction::load (nodeHash);
+    Transaction::pointer txn = getApp().getMasterTransaction().fetch(nodeHash, false);
 
     if (txn)
     {
