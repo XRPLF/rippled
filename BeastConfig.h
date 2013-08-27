@@ -178,7 +178,7 @@
     and recursive mutex objects. This affects the type of lock used
     by RippleMutex and RippleRecursiveMutex
 */
-#define RIPPLE_TRACK_MUTEXES 1
+#define RIPPLE_TRACK_MUTEXES 0
 
 //------------------------------------------------------------------------------
 
