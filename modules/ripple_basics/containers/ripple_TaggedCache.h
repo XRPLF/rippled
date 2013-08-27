@@ -348,8 +348,6 @@ void TaggedCacheType<c_Key, c_Data, Timer>::sweep ()
         }
     }
 
-    assert (cc == mCacheCount);
-
     if (ShouldLog (lsTRACE, TaggedCacheLog) && (mapRemovals || cacheRemovals))
     {
         WriteLog (lsTRACE, TaggedCacheLog) << mName << ": cache = " << mCache.size () << "-" << cacheRemovals <<
