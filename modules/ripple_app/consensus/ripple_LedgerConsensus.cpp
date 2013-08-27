@@ -78,7 +78,7 @@ void LedgerConsensus::checkOurValidation ()
     addLoad(v);
     v->setTrusted ();
     v->sign (signingHash, mValPrivate);
-    getApp().getHashRouter ().addSuppression (signingHash);
+    getApp().getHashRouter ().addSuppression (signingHash); // FIXME: wrong supression
     getApp().getValidations ().addValidation (v, "localMissing");
     Blob validation = v->getSigned ();
     protocol::TMValidation val;
@@ -1266,7 +1266,7 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
 
             v->sign (signingHash, mValPrivate);
             v->setTrusted ();
-            getApp().getHashRouter ().addSuppression (signingHash); // suppress it if we receive it
+            getApp().getHashRouter ().addSuppression (signingHash); // suppress it if we receive it - FIXME: wrong suppression
             getApp().getValidations ().addValidation (v, "local");
             getApp().getOPs ().setLastValidation (v);
             Blob validation = v->getSigned ();
