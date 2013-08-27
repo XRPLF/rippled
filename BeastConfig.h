@@ -185,6 +185,6 @@
 // This is only here temporarily. Use it to turn off MultiSocket
 // in Peer code if you suspect you're having problems because of it.
 //
-#define RIPPLE_PEER_USES_BEAST_MULTISOCKET 1
+#define RIPPLE_PEER_USES_BEAST_MULTISOCKET 0
 
 #endif
