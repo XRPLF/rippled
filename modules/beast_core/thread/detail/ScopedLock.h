@@ -181,6 +181,7 @@ public:
     inline explicit UntrackedScopedTryLock (Mutex const& mutex,
         char const*, int) noexcept
         : m_mutex (mutex)
+        , m_lock_count (0)
     {
         try_lock ();
     }
