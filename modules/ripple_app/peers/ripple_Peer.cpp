@@ -1213,8 +1213,8 @@ static void checkTransaction (Job&, int flags, SerializedTransaction::pointer st
     }
     catch (...)
     {
-        getApp().getHashRouter ().setFlags (stx->getTransactionID (), SF_BAD);
-        applyLoadCharge (peer, LT_InvalidRequest);
+        getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
+        Peer::applyLoadCharge (peer, LT_InvalidRequest);
     }
 
 #endif
