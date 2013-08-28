@@ -1324,7 +1324,8 @@ NetworkOPs::getAccountTxs (const RippleAddress& account, int32 minLedger, int32 
                 rawMeta.resize (metaSize);
                 db->getBinary ("TxnMeta", &*rawMeta.begin (), rawMeta.getLength ());
             }
-            else rawMeta.resize (metaSize);
+            else
+                rawMeta.resize (metaSize);
 
             if (rawMeta.getLength() == 0)
             { // Work around a bug that could leave the metadata missing
@@ -1336,7 +1337,13 @@ NetworkOPs::getAccountTxs (const RippleAddress& account, int32 minLedger, int32 
             }
 
             TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
+
+#ifdef C11X
+            ret.push_back (std::pair<Transaction::ref, TransactionMetaSet::ref> (txn, meta));
+#else
             ret.push_back (std::pair<Transaction::pointer, TransactionMetaSet::pointer> (txn, meta));
+#endif
+
         }
     }
 
@@ -1407,6 +1414,20 @@ NetworkOPs::countAccountTxs (const RippleAddress& account, int32 minLedger, int3
         ret = db->getInt ("TransactionCount");
     }
 
+    return ret;
+}
+
+std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
+NetworkOPs::getTxsAccount (const RippleAddress& account, int32 minLedger, int32 maxLedger, bool forward, Json::Value& token, int limit, bool bAdmin)
+{ // WRITEME
+    std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
+    return ret;
+}
+
+std::vector<NetworkOPs::txnMetaLedgerType>
+NetworkOPs::getTxsAccountB (const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool forward, Json::Value& token, int limit, bool bAmind)
+{ // WRITEME
+    std::vector<txnMetaLedgerType> ret;
     return ret;
 }
 

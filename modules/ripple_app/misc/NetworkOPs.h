@@ -335,9 +335,16 @@ public:
     std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
     getAccountTxs (const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool descending, uint32 offset, int limit, bool bAdmin);
 
+    std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
+    getTxsAccount (const RippleAddress& account, int32 minLedger, int32 maxLedger, bool forward, Json::Value& token, int limit, bool bAdmin);
+
     typedef boost::tuple<std::string, std::string, uint32> txnMetaLedgerType;
+
     std::vector<txnMetaLedgerType>
     getAccountTxsB (const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool descending, uint32 offset, int limit, bool bAdmin);
+
+    std::vector<txnMetaLedgerType>
+    getTxsAccountB (const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool forward, Json::Value& token, int limit, bool bAdmin);
 
     std::vector<RippleAddress> getLedgerAffectedAccounts (uint32 ledgerSeq);
     std::vector<SerializedTransaction> getLedgerTransactions (uint32 ledgerSeq);

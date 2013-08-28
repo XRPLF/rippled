@@ -197,6 +197,72 @@ Json::Value RPCParser::parseAccountTransactions (const Json::Value& jvParams)
     return jvRequest;
 }
 
+// tx_account accountID [ledger_min [ledger_max [limit]]]] [binary] [count] [forward]
+Json::Value RPCParser::parseTxAccount (const Json::Value& jvParams)
+{
+    Json::Value     jvRequest (Json::objectValue);
+    RippleAddress   raAccount;
+    unsigned int    iParams = jvParams.size ();
+
+    if (!raAccount.setAccountID (jvParams[0u].asString ()))
+        return rpcError (rpcACT_MALFORMED);
+
+    jvRequest["account"]    = raAccount.humanAccountID ();
+
+    bool            bDone   = false;
+
+    while (!bDone && iParams >= 2)
+    {
+        if (jvParams[iParams - 1].asString () == "binary")
+        {
+            jvRequest["binary"]     = true;
+            --iParams;
+        }
+        else if (jvParams[iParams - 1].asString () == "count")
+        {
+            jvRequest["count"]      = true;
+            --iParams;
+        }
+        else if (jvParams[iParams - 1].asString () == "forward")
+        {
+            jvRequest["forward"] = true;
+            --iParams;
+        }
+        else
+        {
+            bDone   = true;
+        }
+    }
+
+    if (1 == iParams)
+    {
+        nothing ();
+    }
+    else if (2 == iParams)
+    {
+        if (!jvParseLedger (jvRequest, jvParams[1u].asString ()))
+            return jvRequest;
+    }
+    else
+    {
+        int64   uLedgerMin  = jvParams[1u].asInt ();
+        int64   uLedgerMax  = jvParams[2u].asInt ();
+
+        if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
+        {
+            return rpcError (rpcLGR_IDXS_INVALID);
+        }
+
+        jvRequest["ledger_index_min"]   = jvParams[1u].asInt ();
+        jvRequest["ledger_index_max"]   = jvParams[2u].asInt ();
+
+        if (iParams >= 4)
+            jvRequest["limit"]  = jvParams[3u].asInt ();
+    }
+
+    return jvRequest;
+}
+
 // book_offers <taker_pays> <taker_gets> [<taker> [<ledger> [<limit> [<proof> [<marker>]]]]]
 // limit: 0 = no limit
 // proof: 0 or 1
@@ -784,6 +850,7 @@ Json::Value RPCParser::parseCommand (std::string strMethod, Json::Value jvParams
         {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },
         //      {   "transaction_entry",    &RPCParser::parseTransactionEntry,     -1,  -1  },
         {   "tx",                   &RPCParser::parseTx,                    1,  2   },
+        {   "tx_account",           &RPCParser::parseTxAccount,             1,  7   },
         {   "tx_history",           &RPCParser::parseTxHistory,             1,  1   },
 
         {   "unl_add",              &RPCParser::parseUnlAdd,                1,  2   },

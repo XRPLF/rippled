@@ -130,6 +130,7 @@ private:
     Json::Value doSubscribe             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doTransactionEntry      (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doTx                    (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doTxAccount             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doTxHistory             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doUnlAdd                (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doUnlDelete             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);

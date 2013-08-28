@@ -2126,6 +2126,152 @@ Json::Value RPCHandler::doAccountTransactions (Json::Value params, LoadType* loa
 }
 
 // {
+//   account: account,
+//   ledger_index_min: ledger_index  // optional, defaults to earliest
+//   ledger_index_max: ledger_index, // optional, defaults to latest
+//   binary: boolean,                // optional, defaults to false
+//   forward: boolean,               // optional, defaults to false
+//   limit: integer,                 // optional
+//   fwd_marker: opaque,             // optional, resume forward
+//   rev_marker: opaque              // optional, resume reverse
+// }
+Json::Value RPCHandler::doTxAccount (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
+{
+    RippleAddress   raAccount;
+    int             limit       = params.isMember ("limit") ? params["limit"].asUInt () : -1;
+    bool            bBinary     = params.isMember ("binary") && params["binary"].asBool ();
+    bool            bForward    = params.isMember ("forward") && params["forward"].asBool ();
+    uint32          uLedgerMin;
+    uint32          uLedgerMax;
+    uint32          uValidatedMin;
+    uint32          uValidatedMax;
+    bool            bValidated  = mNetOps->getValidatedRange (uValidatedMin, uValidatedMax);
+
+    if (!bValidated)
+    {
+        // Don't have a validated ledger range.
+        return rpcError (rpcLGR_IDXS_INVALID);
+    }
+
+    if (!params.isMember ("account"))
+        return rpcError (rpcINVALID_PARAMS);
+
+    if (!raAccount.setAccountID (params["account"].asString ()))
+        return rpcError (rpcACT_MALFORMED);
+
+    if (params.isMember ("ledger_index_min") || params.isMember ("ledger_index_max"))
+    {
+        int64       iLedgerMin  = params.isMember ("ledger_index_min") ? params["ledger_index_min"].asInt () : -1;
+        int64       iLedgerMax  = params.isMember ("ledger_index_max") ? params["ledger_index_max"].asInt () : -1;
+
+
+        uLedgerMin  = iLedgerMin == -1 ? uValidatedMin : iLedgerMin;
+        uLedgerMax  = iLedgerMax == -1 ? uValidatedMax : iLedgerMax;
+
+        if (uLedgerMax < uLedgerMin)
+        {
+            return rpcError (rpcLGR_IDXS_INVALID);
+        }
+    }
+    else
+    {
+        Ledger::pointer l;
+        Json::Value ret = lookupLedger (params, l);
+
+        if (!l)
+            return ret;
+
+        uLedgerMin = uLedgerMax = l->getLedgerSeq ();
+    }
+
+    Json::Value resumeToken;
+
+    if (params.isMember("fwd_marker"))
+    {
+         if ((!bForward) || params.isMember("rev_marker"))
+             return rpcError (rpcINVALID_PARAMS);
+         resumeToken = params["fwd_marker"];
+    }
+    if (params.isMember("rev_marker"))
+    {
+         if (bForward || params.isMember("fwd_marker"))
+             return rpcError (rpcINVALID_PARAMS);
+         resumeToken = params["rev_marker"];
+    }
+
+#ifndef BEAST_DEBUG
+
+    try
+    {
+#endif
+        masterLockHolder.unlock ();
+
+        Json::Value ret (Json::objectValue);
+
+        ret["account"] = raAccount.humanAccountID ();
+        Json::Value& jvTxns = (ret["transactions"] = Json::arrayValue);
+
+        if (bBinary)
+        {
+            std::vector<NetworkOPs::txnMetaLedgerType> txns =
+                mNetOps->getTxsAccountB (raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit, mRole == ADMIN);
+
+            for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin (), end = txns.end ();
+                    it != end; ++it)
+            {
+                Json::Value& jvObj = jvTxns.append (Json::objectValue);
+
+                uint32  uLedgerIndex    = it->get<2> ();
+                jvObj["tx_blob"]        = it->get<0> ();
+                jvObj["meta"]           = it->get<1> ();
+                jvObj["ledger_index"]   = uLedgerIndex;
+                jvObj["validated"]      = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
+
+            }
+        }
+        else
+        {
+            std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns =
+                 mNetOps->getTxsAccount (raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit, mRole == ADMIN);
+
+            for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin (), end = txns.end (); it != end; ++it)
+            {
+                Json::Value&    jvObj = jvTxns.append (Json::objectValue);
+
+                if (it->first)
+                    jvObj["tx"]             = it->first->getJson (1);
+
+                if (it->second)
+                {
+                    uint32 uLedgerIndex = it->second->getLgrSeq ();
+
+                    jvObj["meta"]           = it->second->getJson (0);
+                    jvObj["validated"]      = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
+                }
+
+            }
+        }
+
+        //Add information about the original query
+        ret["ledger_index_min"] = uLedgerMin;
+        ret["ledger_index_max"] = uLedgerMax;
+        if (params.isMember ("limit"))
+            ret["limit"]        = limit;
+        if (!resumeToken.isNull())
+            ret[bForward ? "fwd_token" : "rev_token"] = resumeToken;
+
+        return ret;
+#ifndef BEAST_DEBUG
+    }
+    catch (...)
+    {
+        return rpcError (rpcINTERNAL);
+    }
+
+#endif
+}
+
+// {
 //   secret: <string>   // optional
 // }
 //
@@ -3676,6 +3822,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {   "stop",                 &RPCHandler::doStop,                true,   optNone     },
         {   "transaction_entry",    &RPCHandler::doTransactionEntry,    false,  optCurrent  },
         {   "tx",                   &RPCHandler::doTx,                  false,  optNetwork  },
+        {   "tx_account",           &RPCHandler::doTxAccount,           false,  optNetwork  },
         {   "tx_history",           &RPCHandler::doTxHistory,           false,  optNone     },
 
         {   "unl_add",              &RPCHandler::doUnlAdd,              true,   optNone     },

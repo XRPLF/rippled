@@ -50,6 +50,7 @@ private:
     Json::Value parseSignSubmit (const Json::Value& jvParams);
     Json::Value parseTx (const Json::Value& jvParams);
     Json::Value parseTxHistory (const Json::Value& jvParams);
+    Json::Value parseTxAccount (const Json::Value& jvParams);
     Json::Value parseUnlAdd (const Json::Value& jvParams);
     Json::Value parseUnlDelete (const Json::Value& jvParams);
     Json::Value parseValidationCreate (const Json::Value& jvParams);
