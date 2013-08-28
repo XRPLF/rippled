@@ -237,7 +237,7 @@ static void LADispatch (
     std::vector< FUNCTION_TYPE<void (InboundLedger::pointer)> > trig)
 {
     if (la->isComplete() && !la->isFailed())
-        getApp().getLedgerMaster().checkAccept(la->getLedger()->getHash(), la->getLedger()->getLedgerSeq());
+        getApp().getLedgerMaster().checkAccept(la->getLedger());
     getApp().getLedgerMaster().tryAdvance();
     for (unsigned int i = 0; i < trig.size (); ++i)
         trig[i] (la);

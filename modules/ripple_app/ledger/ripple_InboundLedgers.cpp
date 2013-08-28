@@ -45,7 +45,7 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
                 ledger->setImmutable ();
                 getApp().getLedgerMaster ().storeLedger (ledger);
                 if (couldBeNew)
-                    getApp().getLedgerMaster().checkAccept(ledger->getHash(), ledger->getLedgerSeq());
+                    getApp().getLedgerMaster().checkAccept(ledger);
             }
         }
     }

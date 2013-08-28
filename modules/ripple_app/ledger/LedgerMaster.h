@@ -181,8 +181,9 @@ public:
         mOnValidate.push_back (c);
     }
 
+    void checkAccept (Ledger::ref ledger);
     void checkAccept (uint256 const& hash);
-    void checkAccept (uint256 const& hash, uint32 seq);
+
     void tryAdvance ();
     void newPathRequest ();
 

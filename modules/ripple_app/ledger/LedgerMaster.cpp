@@ -111,7 +111,7 @@ void LedgerMaster::pushLedger (Ledger::pointer newLedger)
         tryAdvance();
     }
     else
-        checkAccept(newLedger->getHash(), newLedger->getLedgerSeq());
+        checkAccept(newLedger);
 }
 
 void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
@@ -133,7 +133,7 @@ void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
         tryAdvance();
     }
     else
-        checkAccept (newLCL->getHash (), newLCL->getLedgerSeq ());
+        checkAccept (newLCL);
 }
 
 void LedgerMaster::switchLedgers (Ledger::pointer lastClosed, Ledger::pointer current)
@@ -150,7 +150,7 @@ void LedgerMaster::switchLedgers (Ledger::pointer lastClosed, Ledger::pointer cu
         assert (!mCurrentLedger->isClosed ());
         mEngine.setLedger (mCurrentLedger);
     }
-    checkAccept (lastClosed->getHash (), lastClosed->getLedgerSeq ());
+    checkAccept (lastClosed);
 }
 
 void LedgerMaster::storeLedger (Ledger::pointer ledger)
@@ -490,15 +490,15 @@ void LedgerMaster::checkAccept (uint256 const& hash)
     }
 
     if (ledger)
-        checkAccept (hash, ledger->getLedgerSeq ());
+        checkAccept (ledger);
 }
 
-void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
+void LedgerMaster::checkAccept (Ledger::ref ledger)
 {
     // Can we advance the last fully-validated ledger? If so, can we publish?
     ScopedLockType ml (mLock, __FILE__, __LINE__);
 
-    if (mValidLedger && (seq <= mValidLedger->getLedgerSeq ()))
+    if (mValidLedger && (ledger->getLedgerSeq() <= mValidLedger->getLedgerSeq ()))
         return;
 
     int minVal = mMinValidations;
@@ -515,36 +515,18 @@ void LedgerMaster::checkAccept (uint256 const& hash, uint32 seq)
 
     if (getConfig ().RUN_STANDALONE)
         minVal = 0;
-    else if (getApp().getOPs ().isNeedNetworkLedger ())
-        minVal = 1;
 
-    int tvc = getApp().getValidations().getTrustedValidationCount(hash);
+    int tvc = getApp().getValidations().getTrustedValidationCount(ledger->getHash());
     if (tvc < minVal) // nothing we can do
     {
-        WriteLog (lsTRACE, LedgerMaster) << "Only " << tvc << " validations for " << hash;
+        WriteLog (lsTRACE, LedgerMaster) << "Only " << tvc << " validations for " << ledger->getHash();
         return;
     }
 
-    WriteLog (lsINFO, LedgerMaster) << "Advancing accepted ledger to " << seq << " with >= " << minVal << " validations";
+    WriteLog (lsINFO, LedgerMaster) << "Advancing accepted ledger to " << ledger->getLedgerSeq() << " with >= " << minVal << " validations";
 
-    mLastValidateHash = hash;
-    mLastValidateSeq = seq;
-
-    Ledger::pointer ledger = getLedgerByHash (hash);
-
-    if (!ledger)
-    {
-        InboundLedger::pointer i = getApp().getInboundLedgers ().findCreate (hash, seq, false);
-        if (!i->isDone() || !i->isComplete() || i->isFailed())
-            return;
-        ledger = i->getLedger();
-    }
-
-    if (ledger->getLedgerSeq() != seq)
-    {
-        WriteLog (lsWARNING, LedgerMaster) << "Acquired ledger " << hash.GetHex() << " didn't have expected seq " << seq;
-        return;
-    }
+    mLastValidateHash = ledger->getHash();
+    mLastValidateSeq = ledger->getLedgerSeq();
 
     ledger->setValidated();
     mValidLedger = ledger;
@@ -590,7 +572,7 @@ void LedgerMaster::advanceThread()
             { // We are in sync, so can acquire
                 uint32 missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
                 WriteLog (lsTRACE, LedgerMaster) << "tryAdvance discovered missing " << missing;
-                if ((missing != RangeSet::absent) &&
+                if ((missing != RangeSet::absent) && (missing > 0) &&
                     shouldAcquire(mValidLedger->getLedgerSeq(), getConfig().LEDGER_HISTORY, missing))
                 {
                     WriteLog (lsTRACE, LedgerMaster) << "advanceThread should acquire";
