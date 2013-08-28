@@ -34,7 +34,8 @@ public:
 
 #if RIPPLE_PEER_USES_BEAST_MULTISOCKET
     ScopedPointer <MultiSocket> m_socket;
-    boost::asio::io_service& m_strand;
+    //boost::asio::io_service& m_strand;
+    boost::asio::io_service::strand m_strand;
 
     NativeSocketType& getNativeSocket ()
     {

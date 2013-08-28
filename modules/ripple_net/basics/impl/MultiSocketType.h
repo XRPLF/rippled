@@ -598,7 +598,7 @@ protected:
     Socket* new_ssl_stream ()
     {
         typedef typename boost::asio::ssl::stream <next_layer_type&> SslStream;
-        typedef SocketWrapperStrand <SslStream> Wrapper;
+        typedef SocketWrapper <SslStream> Wrapper;
         Wrapper* const socket = new Wrapper (m_next_layer, m_ssl_context);
         set_ssl_stream (socket->this_layer ());
         return socket;
@@ -614,7 +614,7 @@ protected:
         {
             typedef boost::asio::ssl::stream <
                 PrefilledReadStream <next_layer_type&> > SslStream;
-            typedef SocketWrapperStrand <SslStream> Wrapper;
+            typedef SocketWrapper <SslStream> Wrapper;
             Wrapper* const socket = new Wrapper (m_next_layer, m_ssl_context);
             socket->this_layer ().next_layer().fill (buffers);
             set_ssl_stream (socket->this_layer ());
