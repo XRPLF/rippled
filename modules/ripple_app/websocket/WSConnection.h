@@ -242,7 +242,7 @@ public:
         else
         {
             msgRejected = false;
-            mRcvQueue.push (msg);
+            mRcvQueue.push_back (msg);
 
             if (mRcvQueueRunning)
                 runQueue = false;
@@ -265,8 +265,16 @@ public:
         }
 
         message_ptr m = mRcvQueue.front ();
-        mRcvQueue.pop ();
+        mRcvQueue.pop_front ();
         return m;
+    }
+
+    void returnMessage (message_ptr ptr)
+    {
+        ScopedLockType sl (mRcvQueueLock, __FILE__, __LINE__);
+
+        if (!mDead)
+            mRcvQueue.push_front(ptr);
     }
 
 private:
@@ -283,7 +291,7 @@ private:
     boost::asio::deadline_timer         mPingTimer;
     bool                                mPinged;
 
-    std::queue<message_ptr>             mRcvQueue;
+    std::deque<message_ptr>             mRcvQueue;
     bool                                mRcvQueueRunning;
     bool                                mDead;
 };
