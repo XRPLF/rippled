@@ -1527,9 +1527,105 @@ NetworkOPs::getTxsAccount (const RippleAddress& account, int32 minLedger, int32 
 }
 
 std::vector<NetworkOPs::txnMetaLedgerType>
-NetworkOPs::getTxsAccountB (const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool forward, Json::Value& token, int limit, bool bAmind)
-{ // WRITEME
+NetworkOPs::getTxsAccountB (const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool forward, Json::Value& token, int limit, bool bAdmin)
+{
     std::vector<txnMetaLedgerType> ret;
+
+    uint32 BINARY_PAGE_LENGTH = 500;
+    uint32 EXTRA_LENGTH = 20;
+
+    uint32 numberOfResults = limit;
+    uint32 queryLimit = limit;
+
+    bool foundResume = token.isNull();
+
+    if (limit <= 0)
+        queryLimit = BINARY_PAGE_LENGTH;
+    else if (bAdmin && (limit > BINARY_PAGE_LENGTH))
+        queryLimit = BINARY_PAGE_LENGTH;
+    else
+        queryLimit = limit;
+    numberOfResults = queryLimit + (foundResume? 0 : EXTRA_LENGTH);
+
+    uint32 findLedger = 0, findSeq = 0;
+    if (!foundResume)
+    {
+        try
+        {
+            if (!token.isMember("ledger") || !token.isMember("seq"))
+                return ret;
+            findLedger = token["ledger"].asInt();
+            findSeq = token["ledger"].asInt();
+        }
+        catch (...)
+        {
+            return ret;
+        }
+    }
+
+    std::string sql = boost::str (boost::format
+        ("SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,Status,RawTxn,TxnMeta "
+         "FROM AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
+         "WHERE AccountTransactions.Account = '%s' AND AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' "
+         "ORDER BY AccountTransactions.LedgerSeq %s, AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
+         "LIMIT %u;")
+             % account.humanAccountID()
+             % minLedger
+             % maxLedger
+             % (forward ? "ASC" : "DESC")
+             % (forward ? "ASC" : "DESC")
+             % (forward ? "ASC" : "DESC")
+             % queryLimit);
+    {
+        Database* db = getApp().getTxnDB ()->getDB ();
+        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+
+        SQL_FOREACH (db, sql)
+        {
+            if (!foundResume)
+            {
+                if ((findLedger == db->getInt("AccountTransactions.LedgerSeq")) && (findSeq == db->getInt("AccountTransactions.TxnSeq")))
+                    foundResume = true;
+            }
+            else if (numberOfResults == 0)
+            {
+                token = Json::objectValue;
+                token["ledger"] = db->getInt("AccountTransactions.LedgerSeq");
+                token["seq"] = db->getInt("AccountTransactions.TxnSeq");
+                break;
+            }
+
+            if (foundResume)
+            {
+                int txnSize = 2048;
+                Blob rawTxn (txnSize);
+                txnSize = db->getBinary ("RawTxn", &rawTxn[0], rawTxn.size ());
+
+                if (txnSize > rawTxn.size ())
+                {
+                    rawTxn.resize (txnSize);
+                    db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.size ());
+                }
+                else
+                    rawTxn.resize (txnSize);
+
+                int metaSize = 2048;
+                Blob rawMeta (metaSize);
+                metaSize = db->getBinary ("TxnMeta", &rawMeta[0], rawMeta.size ());
+
+                if (metaSize > rawMeta.size ())
+                {
+                    rawMeta.resize (metaSize);
+                    db->getBinary ("TxnMeta", &*rawMeta.begin (), rawMeta.size ());
+                }
+                else
+                    rawMeta.resize (metaSize);
+
+                ret.push_back (boost::make_tuple (strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq")));
+            }
+        }
+    }
+
     return ret;
 }
 
