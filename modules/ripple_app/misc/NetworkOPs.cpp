@@ -1419,8 +1419,110 @@ NetworkOPs::countAccountTxs (const RippleAddress& account, int32 minLedger, int3
 
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 NetworkOPs::getTxsAccount (const RippleAddress& account, int32 minLedger, int32 maxLedger, bool forward, Json::Value& token, int limit, bool bAdmin)
-{ // WRITEME
+{
     std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
+
+    uint32 NONBINARY_PAGE_LENGTH = 200;
+    uint32 EXTRA_LENGTH = 20;
+
+    uint32 numberOfResults = limit;
+    uint32 queryLimit = limit;
+
+    bool foundResume = token.isNull();
+
+    if (limit <= 0)
+        queryLimit = NONBINARY_PAGE_LENGTH;
+    else if (bAdmin && (limit > NONBINARY_PAGE_LENGTH))
+        queryLimit = NONBINARY_PAGE_LENGTH;
+    else
+        queryLimit = limit;
+    numberOfResults = queryLimit + (foundResume? 0 : EXTRA_LENGTH);
+
+    uint32 findLedger = 0, findSeq = 0;
+    if (!foundResume)
+    {
+        try
+        {
+            if (!token.isMember("ledger") || !token.isMember("seq"))
+                return ret;
+            findLedger = token["ledger"].asInt();
+            findSeq = token["ledger"].asInt();
+        }
+        catch (...)
+        {
+            return ret;
+        }
+    }
+
+    std::string sql = boost::str (boost::format
+        ("SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,Status,RawTxn,TxnMeta "
+         "FROM AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
+         "WHERE AccountTransactions.Account = '%s' AND AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u' "
+         "ORDER BY AccountTransactions.LedgerSeq %s, AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
+         "LIMIT %u;")
+             % account.humanAccountID()
+             % minLedger
+             % maxLedger
+             % (forward ? "ASC" : "DESC")
+             % (forward ? "ASC" : "DESC")
+             % (forward ? "ASC" : "DESC")
+             % queryLimit);
+    {
+        Database* db = getApp().getTxnDB ()->getDB ();
+        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+
+        SQL_FOREACH (db, sql)
+        {
+            if (!foundResume)
+            {
+                if ((findLedger == db->getInt("AccountTransactions.LedgerSeq")) && (findSeq == db->getInt("AccountTransactions.TxnSeq")))
+                    foundResume = true;
+            }
+            else if (numberOfResults == 0)
+            {
+                token = Json::objectValue;
+                token["ledger"] = db->getInt("AccountTransactions.LedgerSeq");
+                token["seq"] = db->getInt("AccountTransactions.TxnSeq");
+                break;
+            }
+
+            if (foundResume)
+            {
+                Transaction::pointer txn = Transaction::transactionFromSQL (db, false);
+
+                Serializer rawMeta;
+                int metaSize = 2048;
+                rawMeta.resize (metaSize);
+                metaSize = db->getBinary ("TxnMeta", &*rawMeta.begin (), rawMeta.getLength ());
+
+                if (metaSize > rawMeta.getLength ())
+                {
+                    rawMeta.resize (metaSize);
+                    db->getBinary ("TxnMeta", &*rawMeta.begin (), rawMeta.getLength ());
+                }
+                else
+                    rawMeta.resize (metaSize);
+
+                if (rawMeta.getLength() == 0)
+                { // Work around a bug that could leave the metadata missing
+                    uint32 seq = static_cast<uint32>(db->getBigInt("AccountTransactions.LedgerSeq"));
+                    WriteLog(lsWARNING, NetworkOPs) << "Recovering ledger " << seq << ", txn " << txn->getID();
+                    Ledger::pointer ledger = getLedgerBySeq(seq);
+                    if (ledger)
+                        ledger->pendSaveValidated(false, false);
+                }
+
+                TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
+
+#ifdef C11X
+                ret.push_back (std::pair<Transaction::ref, TransactionMetaSet::ref> (txn, meta));
+#else
+                ret.push_back (std::pair<Transaction::pointer, TransactionMetaSet::pointer> (txn, meta));
+#endif
+            }
+        }
+    }
+
     return ret;
 }
 
