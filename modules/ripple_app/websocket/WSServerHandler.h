@@ -265,14 +265,18 @@ public:
             if (!msg)
                 return;
 
-            do_message (job, cpClient, ptr, msg);
+            if (!do_message (job, cpClient, ptr, msg))
+            {
+                ptr->returnMessage(msg);
+                return;
+            }
         }
 
         getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::more",
                                        BIND_TYPE (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
     }
 
-    void do_message (Job& job, const connection_ptr& cpClient, const wsc_ptr& conn, const message_ptr& mpMessage)
+    bool do_message (Job& job, const connection_ptr& cpClient, const wsc_ptr& conn, const message_ptr& mpMessage)
     {
         Json::Value     jvRequest;
         Json::Reader    jrReader;
@@ -309,10 +313,15 @@ public:
         else
         {
             if (jvRequest.isMember ("command"))
-                job.rename (std::string ("WSClient::") + jvRequest["command"].asString ());
+            {
+                std::string cmd = jvRequest["command"].asString ();
+                job.rename (std::string ("WSClient::") + cmd);
+	    }
 
             send (cpClient, conn->invokeCommand (jvRequest), false);
         }
+
+        return true;
     }
 
     boost::asio::ssl::context& get_ssl_context ()
