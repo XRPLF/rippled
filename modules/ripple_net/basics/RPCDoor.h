@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPCDOOR_H
-#define RIPPLE_RPCDOOR_H
+#ifndef RIPPLE_NET_BASICS_RPCDOOR_H_INCLUDED
+#define RIPPLE_NET_BASICS_RPCDOOR_H_INCLUDED
 
 /** Listening socket for RPC requests.
 */

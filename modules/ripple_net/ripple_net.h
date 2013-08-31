@@ -21,6 +21,7 @@ namespace ripple
 #include "basics/HTTPRequest.h"
 #include "basics/HTTPClient.h"
 #include "basics/RPCServer.h"
+#include "basics/RPCDoor.h"
 #include "basics/SNTPClient.h"
 
 }

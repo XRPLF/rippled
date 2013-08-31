@@ -195,8 +195,6 @@ namespace ripple
 
 #include "basics/ripple_RPCServerHandler.h"
 
-#include "rpc/RPCDoor.h" // needs RPCServer
-
 }
 
 //------------------------------------------------------------------------------
@@ -354,7 +352,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "misc/ripple_FeeVote.cpp"
 #include "misc/ripple_Validations.cpp"
 #include "peers/ripple_Peer.cpp"
-#include "rpc/RPCDoor.cpp"
 #include "tx/OfferCreateTransactor.cpp"
 #include "tx/WalletAddTransactor.cpp"
 

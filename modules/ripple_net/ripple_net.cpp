@@ -43,6 +43,7 @@ namespace ripple
 #include "basics/MultiSocket.cpp"
 #include "basics/HTTPRequest.cpp"
 #include "basics/HTTPClient.cpp"
+#include "basics/RPCDoor.cpp"
 #include "basics/RPCServer.cpp"
 #include "basics/SNTPClient.cpp"
 
