@@ -479,7 +479,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\rpc\rpc.cpp">
+    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCUtil.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -990,6 +990,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\RPCErr.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\basics\RPCServer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1441,7 +1447,7 @@
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_UniqueNodeList.h" />
     <ClInclude Include="..\..\modules\ripple_app\ripple_app.h" />
     <ClInclude Include="..\..\modules\ripple_app\rpc\CallRPC.h" />
-    <ClInclude Include="..\..\modules\ripple_app\rpc\RPC.h" />
+    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCUtil.h" />
     <ClInclude Include="..\..\modules\ripple_app\rpc\RPCDoor.h" />
     <ClInclude Include="..\..\modules\ripple_app\rpc\RPCErr.h" />
     <ClInclude Include="..\..\modules\ripple_app\rpc\RPCHandler.h" />
@@ -1556,6 +1562,7 @@
     <ClInclude Include="..\..\modules\ripple_net\basics\HTTPRequest.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\HTTPClient.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\MultiSocket.h" />
+    <ClInclude Include="..\..\modules\ripple_net\basics\RPCErr.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\RPCServer.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\SNTPClient.h" />
     <ClInclude Include="..\..\modules\ripple_net\ripple_net.h" />

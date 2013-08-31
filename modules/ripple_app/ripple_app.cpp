@@ -61,7 +61,6 @@
 
 #include "../ripple_core/ripple_core.h"
 
-#include "beast/modules/beast_asio/beast_asio.h"
 #include "beast/modules/beast_db/beast_db.h"
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
 #include "beast/modules/beast_sqlite/beast_sqlite.h"
@@ -180,8 +179,6 @@ namespace ripple
 #include  "paths/ripple_Pathfinder.h"
 #include "tx/PaymentTransactor.h"
 #include "peers/PeerDoor.h"
-#include "rpc/RPC.h"
-#include "rpc/RPCErr.h"
 #include "rpc/RPCSub.h"
 #include "tx/RegularKeySetTransactor.h"
 #include "paths/ripple_RippleState.h"
@@ -243,7 +240,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
 
-#include "basics/ripple_RPCServerHandler.cpp"
 #include "node/ripple_NodeObject.cpp"
 #include "node/ripple_NodeStore.cpp"
 #include "node/ripple_HyperLevelDBBackendFactory.cpp"
@@ -274,7 +270,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 2
 
-#include "rpc/RPCHandler.cpp"
 #include "shamap/ripple_SHAMap.cpp" // Uses theApp
 #include "shamap/ripple_SHAMapItem.cpp"
 #include "shamap/ripple_SHAMapSync.cpp"
@@ -302,16 +297,24 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 3
 
+#include "rpc/RPCErr.h" // private
+#include "rpc/RPCUtil.h" // private
+
+#include "rpc/RPCErr.cpp"
+#include "rpc/RPCUtil.cpp"
+
+#include "rpc/CallRPC.cpp"
+#include "rpc/RPCHandler.cpp"
+#include "rpc/RPCSub.cpp"
+
+#include "basics/ripple_RPCServerHandler.cpp" // needs RPCUtil
+#include "paths/ripple_PathRequest.cpp" // needs RPCErr.h
 #include "paths/ripple_RippleCalc.cpp"
 #include "paths/ripple_PathState.cpp"
-#include "rpc/CallRPC.cpp"
 
 #include "main/ParameterTable.cpp"
 #include "peers/PeerDoor.cpp"
 #include "paths/ripple_RippleLineCache.cpp"
-#include "rpc/rpc.cpp"
-#include "rpc/RPCErr.cpp"
-#include "rpc/RPCSub.cpp"
 #include "ledger/SerializedValidation.cpp"
 #include "tx/Transaction.cpp"
 #include "tx/TransactionEngine.cpp"
@@ -381,7 +384,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #include "ledger/ripple_InboundLedgers.cpp"
 #include "ledger/ripple_LedgerHistory.cpp"
-#include "paths/ripple_PathRequest.cpp"
 #include "misc/ripple_SerializedLedger.cpp"
 #include "tx/ripple_TransactionAcquire.cpp"
 

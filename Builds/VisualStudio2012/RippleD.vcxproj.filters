@@ -720,13 +720,7 @@
     <ClCompile Include="..\..\modules\ripple_app\rpc\CallRPC.cpp">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\rpc\rpc.cpp">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\rpc\RPCDoor.cpp">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCErr.cpp">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\rpc\RPCHandler.cpp">
@@ -881,6 +875,15 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\basics\SNTPClient.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\RPCErr.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCErr.cpp">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCUtil.cpp">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1490,13 +1493,7 @@
     <ClInclude Include="..\..\modules\ripple_app\rpc\CallRPC.h">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\rpc\RPC.h">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\rpc\RPCDoor.h">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCErr.h">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\rpc\RPCHandler.h">
@@ -1681,6 +1678,15 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_net\basics\impl\MultiSocketType.h">
       <Filter>[1] Ripple\ripple_net\basics\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\RPCErr.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCErr.h">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCUtil.h">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
