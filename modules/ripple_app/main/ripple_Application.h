@@ -16,6 +16,7 @@ class Peers;
 class IProofOfWorkFactory;
 class UniqueNodeList;
 class IValidations;
+class Validators;
 
 class NodeStore;
 class JobQueue;

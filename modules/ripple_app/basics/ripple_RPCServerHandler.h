@@ -7,6 +7,8 @@
 #ifndef RIPPLE_RPCSERVERHANDLER_H_INCLUDED
 #define RIPPLE_RPCSERVERHANDLER_H_INCLUDED
 
+class NetworkOPs;
+
 /** Handles RPC requests.
 */
 class RPCServerHandler : public RPCServer::Handler
