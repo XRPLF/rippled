@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SCOPEDPOINTER_BEASTHEADER
-#define BEAST_SCOPEDPOINTER_BEASTHEADER
+#ifndef BEAST_SCOPEDPOINTER_H_INCLUDED
+#define BEAST_SCOPEDPOINTER_H_INCLUDED
 
 //==============================================================================
 /**
@@ -248,4 +248,4 @@ template <typename Type>
 void deleteAndZero (ScopedPointer<Type>&)  { static_bassert (sizeof (Type) == 12345); }
 #endif
 
-#endif   // BEAST_SCOPEDPOINTER_BEASTHEADER
+#endif   // BEAST_SCOPEDPOINTER_H_INCLUDED

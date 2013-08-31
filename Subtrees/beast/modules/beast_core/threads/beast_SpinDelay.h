@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SPINDELAY_BEASTHEADER
-#define BEAST_SPINDELAY_BEASTHEADER
+#ifndef BEAST_SPINDELAY_H_INCLUDED
+#define BEAST_SPINDELAY_H_INCLUDED
 
 /** A simple delay used to synchronize threads.
 */

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_STRINGARRAY_BEASTHEADER
-#define BEAST_STRINGARRAY_BEASTHEADER
+#ifndef BEAST_STRINGARRAY_H_INCLUDED
+#define BEAST_STRINGARRAY_H_INCLUDED
 
 #include "beast_String.h"
 #include "../containers/beast_Array.h"
@@ -409,4 +409,4 @@ private:
 };
 
 
-#endif   // BEAST_STRINGARRAY_BEASTHEADER
+#endif   // BEAST_STRINGARRAY_H_INCLUDED

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_READWRITELOCK_BEASTHEADER
-#define BEAST_READWRITELOCK_BEASTHEADER
+#ifndef BEAST_READWRITELOCK_H_INCLUDED
+#define BEAST_READWRITELOCK_H_INCLUDED
 
 #include "beast_CriticalSection.h"
 #include "beast_SpinLock.h"
@@ -149,4 +149,4 @@ private:
 };
 
 
-#endif   // BEAST_READWRITELOCK_BEASTHEADER
+#endif   // BEAST_READWRITELOCK_H_INCLUDED

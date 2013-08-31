@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LOCALISEDSTRINGS_BEASTHEADER
-#define BEAST_LOCALISEDSTRINGS_BEASTHEADER
+#ifndef BEAST_LOCALISEDSTRINGS_H_INCLUDED
+#define BEAST_LOCALISEDSTRINGS_H_INCLUDED
 
 #include "beast_StringPairArray.h"
 #include "../files/beast_File.h"
@@ -219,4 +219,4 @@ String translate (CharPointer_UTF8 stringLiteral);
 String translate (const String& stringLiteral, const String& resultIfNotFound);
 
 
-#endif   // BEAST_LOCALISEDSTRINGS_BEASTHEADER
+#endif   // BEAST_LOCALISEDSTRINGS_H_INCLUDED

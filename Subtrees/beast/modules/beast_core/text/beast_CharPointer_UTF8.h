@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CHARPOINTER_UTF8_BEASTHEADER
-#define BEAST_CHARPOINTER_UTF8_BEASTHEADER
+#ifndef BEAST_CHARPOINTER_UTF8_H_INCLUDED
+#define BEAST_CHARPOINTER_UTF8_H_INCLUDED
 
 //==============================================================================
 /**
@@ -557,4 +557,4 @@ private:
     CharType* data;
 };
 
-#endif   // BEAST_CHARPOINTER_UTF8_BEASTHEADER
+#endif   // BEAST_CHARPOINTER_UTF8_H_INCLUDED

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MATHSFUNCTIONS_BEASTHEADER
-#define BEAST_MATHSFUNCTIONS_BEASTHEADER
+#ifndef BEAST_MATHSFUNCTIONS_H_INCLUDED
+#define BEAST_MATHSFUNCTIONS_H_INCLUDED
 
 //==============================================================================
 /*
@@ -512,4 +512,4 @@ namespace TypeHelpers
 
 //==============================================================================
 
-#endif   // BEAST_MATHSFUNCTIONS_BEASTHEADER
+#endif   // BEAST_MATHSFUNCTIONS_H_INCLUDED

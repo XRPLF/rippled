@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INTERPROCESSLOCK_BEASTHEADER
-#define BEAST_INTERPROCESSLOCK_BEASTHEADER
+#ifndef BEAST_INTERPROCESSLOCK_H_INCLUDED
+#define BEAST_INTERPROCESSLOCK_H_INCLUDED
 
 #include "../text/beast_String.h"
 #include "../memory/beast_ScopedPointer.h"
@@ -119,4 +119,4 @@ private:
 };
 
 
-#endif   // BEAST_INTERPROCESSLOCK_BEASTHEADER
+#endif   // BEAST_INTERPROCESSLOCK_H_INCLUDED

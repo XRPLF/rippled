@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HEAPBLOCK_BEASTHEADER
-#define BEAST_HEAPBLOCK_BEASTHEADER
+#ifndef BEAST_HEAPBLOCK_H_INCLUDED
+#define BEAST_HEAPBLOCK_H_INCLUDED
 
 #ifndef DOXYGEN
 namespace HeapBlockHelper
@@ -299,4 +299,4 @@ private:
 };
 
 
-#endif   // BEAST_HEAPBLOCK_BEASTHEADER
+#endif   // BEAST_HEAPBLOCK_H_INCLUDED

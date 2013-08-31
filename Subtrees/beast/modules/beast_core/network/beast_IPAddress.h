@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_IPADDRESS_BEASTHEADER
-#define BEAST_IPADDRESS_BEASTHEADER
+#ifndef BEAST_IPADDRESS_H_INCLUDED
+#define BEAST_IPADDRESS_H_INCLUDED
 
 
 //==============================================================================
@@ -74,4 +74,4 @@ public:
 };
 
 
-#endif   // BEAST_IPADDRESS_BEASTHEADER
+#endif   // BEAST_IPADDRESS_H_INCLUDED

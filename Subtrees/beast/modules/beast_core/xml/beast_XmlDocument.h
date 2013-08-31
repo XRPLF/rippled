@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_XMLDOCUMENT_BEASTHEADER
-#define BEAST_XMLDOCUMENT_BEASTHEADER
+#ifndef BEAST_XMLDOCUMENT_H_INCLUDED
+#define BEAST_XMLDOCUMENT_H_INCLUDED
 
 #include "beast_XmlElement.h"
 #include "../text/beast_StringArray.h"
@@ -176,4 +176,4 @@ private:
 };
 
 
-#endif   // BEAST_XMLDOCUMENT_BEASTHEADER
+#endif   // BEAST_XMLDOCUMENT_H_INCLUDED

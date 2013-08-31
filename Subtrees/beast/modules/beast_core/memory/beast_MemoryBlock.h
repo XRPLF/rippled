@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MEMORYBLOCK_BEASTHEADER
-#define BEAST_MEMORYBLOCK_BEASTHEADER
+#ifndef BEAST_MEMORYBLOCK_H_INCLUDED
+#define BEAST_MEMORYBLOCK_H_INCLUDED
 
 #include "../text/beast_String.h"
 #include "../memory/beast_HeapBlock.h"
@@ -270,4 +270,4 @@ private:
 };
 
 
-#endif   // BEAST_MEMORYBLOCK_BEASTHEADER
+#endif   // BEAST_MEMORYBLOCK_H_INCLUDED

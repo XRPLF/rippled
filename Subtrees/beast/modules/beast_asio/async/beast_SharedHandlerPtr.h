@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SHAREDHANDLERPTR_H_INCLUDED
-#define BEAST_SHAREDHANDLERPTR_H_INCLUDED
+#ifndef BEAST_ASIO_ASYNC_SHAREDHANDLERPTR_H_INCLUDED
+#define BEAST_ASIO_ASYNC_SHAREDHANDLERPTR_H_INCLUDED
 
 /** RAII container for a SharedHandler.
 

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CRITICALSECTION_BEASTHEADER
-#define BEAST_CRITICALSECTION_BEASTHEADER
+#ifndef BEAST_CRITICALSECTION_H_INCLUDED
+#define BEAST_CRITICALSECTION_H_INCLUDED
 
 #include "beast_ScopedLock.h"
 
@@ -258,4 +258,4 @@ typedef CriticalSection::ScopedUnlockType  ScopedUnlock;
 typedef CriticalSection::ScopedTryLockType  ScopedTryLock;
 
 
-#endif   // BEAST_CRITICALSECTION_BEASTHEADER
+#endif   // BEAST_CRITICALSECTION_H_INCLUDED

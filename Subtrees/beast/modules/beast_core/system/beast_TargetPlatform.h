@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TARGETPLATFORM_BEASTHEADER
-#define BEAST_TARGETPLATFORM_BEASTHEADER
+#ifndef BEAST_TARGETPLATFORM_H_INCLUDED
+#define BEAST_TARGETPLATFORM_H_INCLUDED
 
 //==============================================================================
 /*  This file figures out which platform is being built, and defines some macros
@@ -213,4 +213,4 @@
 #define BEAST_PP_STR1_(x) BEAST_PP_STR2_(x)
 #define BEAST_FILEANDLINE_ __FILE__ "(" BEAST_PP_STR1_(__LINE__) "): warning:"
 
-#endif   // BEAST_TARGETPLATFORM_BEASTHEADER
+#endif   // BEAST_TARGETPLATFORM_H_INCLUDED

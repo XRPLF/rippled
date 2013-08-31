@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FIFOFREESTORE_BEASTHEADER
-#define BEAST_FIFOFREESTORE_BEASTHEADER
+#ifndef BEAST_FIFOFREESTORE_H_INCLUDED
+#define BEAST_FIFOFREESTORE_H_INCLUDED
 
 /** Selected free store based on compilation settings.
 

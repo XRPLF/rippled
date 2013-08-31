@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERBASICS_H_INCLUDED
-#define BEAST_TESTPEERBASICS_H_INCLUDED
+#ifndef BEAST_ASIO_TESTS_TESTPEERBASICS_H_INCLUDED
+#define BEAST_ASIO_TESTS_TESTPEERBASICS_H_INCLUDED
 
 /** Common declarations for TestPeer.
 

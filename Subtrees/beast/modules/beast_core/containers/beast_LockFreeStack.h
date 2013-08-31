@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LOCKFREESTACK_BEASTHEADER
-#define BEAST_LOCKFREESTACK_BEASTHEADER
+#ifndef BEAST_LOCKFREESTACK_H_INCLUDED
+#define BEAST_LOCKFREESTACK_H_INCLUDED
 
 struct LockFreeStackDefaultTag;
 

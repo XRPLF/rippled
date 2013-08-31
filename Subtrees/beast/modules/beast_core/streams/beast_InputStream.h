@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INPUTSTREAM_BEASTHEADER
-#define BEAST_INPUTSTREAM_BEASTHEADER
+#ifndef BEAST_INPUTSTREAM_H_INCLUDED
+#define BEAST_INPUTSTREAM_H_INCLUDED
 
 #include "../text/beast_String.h"
 class MemoryBlock;

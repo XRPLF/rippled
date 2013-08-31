@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FILEINPUTSOURCE_BEASTHEADER
-#define BEAST_FILEINPUTSOURCE_BEASTHEADER
+#ifndef BEAST_FILEINPUTSOURCE_H_INCLUDED
+#define BEAST_FILEINPUTSOURCE_H_INCLUDED
 
 #include "beast_InputSource.h"
 #include "../files/beast_File.h"
@@ -62,4 +62,4 @@ private:
 };
 
 
-#endif   // BEAST_FILEINPUTSOURCE_BEASTHEADER
+#endif   // BEAST_FILEINPUTSOURCE_H_INCLUDED

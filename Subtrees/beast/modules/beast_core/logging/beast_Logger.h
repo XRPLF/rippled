@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LOGGER_BEASTHEADER
-#define BEAST_LOGGER_BEASTHEADER
+#ifndef BEAST_LOGGER_H_INCLUDED
+#define BEAST_LOGGER_H_INCLUDED
 
 #include "../text/beast_String.h"
 
@@ -91,4 +91,4 @@ private:
 };
 
 
-#endif   // BEAST_LOGGER_BEASTHEADER
+#endif   // BEAST_LOGGER_H_INCLUDED

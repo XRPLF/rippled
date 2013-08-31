@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_READWRITEMUTEX_BEASTHEADER
-#define BEAST_READWRITEMUTEX_BEASTHEADER
+#ifndef BEAST_READWRITEMUTEX_H_INCLUDED
+#define BEAST_READWRITEMUTEX_H_INCLUDED
 
 /*============================================================================*/
 /**

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SORTEDLOOKUPTABLE_BEASTHEADER
-#define BEAST_SORTEDLOOKUPTABLE_BEASTHEADER
+#ifndef BEAST_SORTEDLOOKUPTABLE_H_INCLUDED
+#define BEAST_SORTEDLOOKUPTABLE_H_INCLUDED
 
 /** Sorted map for fast lookups.
 

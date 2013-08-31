@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SCOPEDWRITELOCK_BEASTHEADER
-#define BEAST_SCOPEDWRITELOCK_BEASTHEADER
+#ifndef BEAST_SCOPEDWRITELOCK_H_INCLUDED
+#define BEAST_SCOPEDWRITELOCK_H_INCLUDED
 
 #include "beast_ReadWriteLock.h"
 
@@ -82,4 +82,4 @@ private:
 };
 
 
-#endif   // BEAST_SCOPEDWRITELOCK_BEASTHEADER
+#endif   // BEAST_SCOPEDWRITELOCK_H_INCLUDED

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PROCESS_BEASTHEADER
-#define BEAST_PROCESS_BEASTHEADER
+#ifndef BEAST_PROCESS_H_INCLUDED
+#define BEAST_PROCESS_H_INCLUDED
 
 #include "../text/beast_String.h"
 
@@ -141,4 +141,4 @@ private:
 };
 
 
-#endif   // BEAST_PROCESS_BEASTHEADER
+#endif   // BEAST_PROCESS_H_INCLUDED

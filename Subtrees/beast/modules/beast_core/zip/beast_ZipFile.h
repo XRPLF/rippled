@@ -26,8 +26,8 @@
   ==============================================================================
 */
 
-#ifndef BEAST_ZIPFILE_BEASTHEADER
-#define BEAST_ZIPFILE_BEASTHEADER
+#ifndef BEAST_ZIPFILE_H_INCLUDED
+#define BEAST_ZIPFILE_H_INCLUDED
 
 #include "../files/beast_File.h"
 #include "../streams/beast_InputSource.h"
@@ -242,4 +242,4 @@ private:
     void init();
 };
 
-#endif   // BEAST_ZIPFILE_BEASTHEADER
+#endif   // BEAST_ZIPFILE_H_INCLUDED

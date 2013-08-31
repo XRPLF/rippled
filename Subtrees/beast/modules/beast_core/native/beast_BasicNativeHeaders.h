@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_BASICNATIVEHEADERS_BEASTHEADER
-#define BEAST_BASICNATIVEHEADERS_BEASTHEADER
+#ifndef BEAST_BASICNATIVEHEADERS_H_INCLUDED
+#define BEAST_BASICNATIVEHEADERS_H_INCLUDED
 
 #include "../system/beast_TargetPlatform.h"
 #undef T
@@ -235,4 +235,4 @@
 #undef direct
 #undef check
 
-#endif   // BEAST_BASICNATIVEHEADERS_BEASTHEADER
+#endif   // BEAST_BASICNATIVEHEADERS_H_INCLUDED

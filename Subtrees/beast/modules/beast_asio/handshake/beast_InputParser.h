@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INPUTPARSER_H_INCLUDED
-#define BEAST_INPUTPARSER_H_INCLUDED
+#ifndef BEAST_ASIO_HANDSHAKE_INPUTPARSER_H_INCLUDED
+#define BEAST_ASIO_HANDSHAKE_INPUTPARSER_H_INCLUDED
 
 namespace InputParser
 {

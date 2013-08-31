@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SHAREDHANDLERTYPE_H_INCLUDED
-#define BEAST_SHAREDHANDLERTYPE_H_INCLUDED
+#ifndef BEAST_ASIO_ASYNC_SHAREDHANDLERTYPE_H_INCLUDED
+#define BEAST_ASIO_ASYNC_SHAREDHANDLERTYPE_H_INCLUDED
 
 /** An instance of SharedHandler that wraps an existing Handler.
 

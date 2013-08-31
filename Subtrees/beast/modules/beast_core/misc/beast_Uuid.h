@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UUID_BEASTHEADER
-#define BEAST_UUID_BEASTHEADER
+#ifndef BEAST_UUID_H_INCLUDED
+#define BEAST_UUID_H_INCLUDED
 
 #include "../text/beast_String.h"
 
@@ -104,4 +104,4 @@ private:
 };
 
 
-#endif   // BEAST_UUID_BEASTHEADER
+#endif   // BEAST_UUID_H_INCLUDED

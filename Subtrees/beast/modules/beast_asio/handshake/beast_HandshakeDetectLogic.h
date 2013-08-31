@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HANDSHAKEDETECTLOGIC_H_INCLUDED
-#define BEAST_HANDSHAKEDETECTLOGIC_H_INCLUDED
+#ifndef BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGIC_H_INCLUDED
+#define BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGIC_H_INCLUDED
 
 class HandshakeDetectLogic
 {

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_URL_BEASTHEADER
-#define BEAST_URL_BEASTHEADER
+#ifndef BEAST_URL_H_INCLUDED
+#define BEAST_URL_H_INCLUDED
 
 #include "../text/beast_StringPairArray.h"
 #include "../files/beast_File.h"
@@ -341,4 +341,4 @@ private:
 };
 
 
-#endif   // BEAST_URL_BEASTHEADER
+#endif   // BEAST_URL_H_INCLUDED

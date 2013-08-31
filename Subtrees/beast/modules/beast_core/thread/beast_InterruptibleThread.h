@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INTERRUPTIBLETHREAD_BEASTHEADER
-#define BEAST_INTERRUPTIBLETHREAD_BEASTHEADER
+#ifndef BEAST_INTERRUPTIBLETHREAD_H_INCLUDED
+#define BEAST_INTERRUPTIBLETHREAD_H_INCLUDED
 
 //==============================================================================
 /**

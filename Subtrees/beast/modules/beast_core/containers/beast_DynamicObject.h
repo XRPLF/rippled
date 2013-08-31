@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_DYNAMICOBJECT_BEASTHEADER
-#define BEAST_DYNAMICOBJECT_BEASTHEADER
+#ifndef BEAST_DYNAMICOBJECT_H_INCLUDED
+#define BEAST_DYNAMICOBJECT_H_INCLUDED
 
 #include "beast_NamedValueSet.h"
 #include "../memory/beast_SharedObject.h"
@@ -118,4 +118,4 @@ private:
 
 
 
-#endif   // BEAST_DYNAMICOBJECT_BEASTHEADER
+#endif   // BEAST_DYNAMICOBJECT_H_INCLUDED

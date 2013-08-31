@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_OWNEDARRAY_BEASTHEADER
-#define BEAST_OWNEDARRAY_BEASTHEADER
+#ifndef BEAST_OWNEDARRAY_H_INCLUDED
+#define BEAST_OWNEDARRAY_H_INCLUDED
 
 //==============================================================================
 /** An array designed for holding objects.

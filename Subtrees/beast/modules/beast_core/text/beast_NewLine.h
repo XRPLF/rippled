@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NEWLINE_BEASTHEADER
-#define BEAST_NEWLINE_BEASTHEADER
+#ifndef BEAST_NEWLINE_H_INCLUDED
+#define BEAST_NEWLINE_H_INCLUDED
 
 
 //==============================================================================
@@ -70,4 +70,4 @@ extern NewLine newLine;
 BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, const NewLine&);
 
 
-#endif   // BEAST_NEWLINE_BEASTHEADER
+#endif   // BEAST_NEWLINE_H_INCLUDED

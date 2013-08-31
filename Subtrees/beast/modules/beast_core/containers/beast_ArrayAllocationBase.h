@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ARRAYALLOCATIONBASE_BEASTHEADER
-#define BEAST_ARRAYALLOCATIONBASE_BEASTHEADER
+#ifndef BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
+#define BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
 
 #include "../memory/beast_HeapBlock.h"
 
@@ -129,4 +129,4 @@ public:
     int numAllocated;
 };
 
-#endif   // BEAST_ARRAYALLOCATIONBASE_BEASTHEADER
+#endif   // BEAST_ARRAYALLOCATIONBASE_H_INCLUDED

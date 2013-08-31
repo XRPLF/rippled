@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
-#define BEAST_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
+#ifndef BEAST_ASIO_TESTS_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
+#define BEAST_ASIO_TESTS_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
 
 class TestPeerLogicAsyncClient : public TestPeerLogic
 {

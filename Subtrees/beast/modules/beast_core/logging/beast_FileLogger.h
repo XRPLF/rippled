@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FILELOGGER_BEASTHEADER
-#define BEAST_FILELOGGER_BEASTHEADER
+#ifndef BEAST_FILELOGGER_H_INCLUDED
+#define BEAST_FILELOGGER_H_INCLUDED
 
 #include "beast_Logger.h"
 #include "../files/beast_File.h"
@@ -132,4 +132,4 @@ private:
 };
 
 
-#endif   // BEAST_FILELOGGER_BEASTHEADER
+#endif   // BEAST_FILELOGGER_H_INCLUDED

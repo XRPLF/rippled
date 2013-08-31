@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PARALLELFOR_BEASTHEADER
-#define BEAST_PARALLELFOR_BEASTHEADER
+#ifndef BEAST_PARALLELFOR_H_INCLUDED
+#define BEAST_PARALLELFOR_H_INCLUDED
 
 /*============================================================================*/
 /**

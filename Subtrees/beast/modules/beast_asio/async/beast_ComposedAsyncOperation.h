@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_COMPOSEDASYNCOPERATION_H_INCLUDED
-#define BEAST_COMPOSEDASYNCOPERATION_H_INCLUDED
+#ifndef BEAST_ASIO_ASYNC_COMPOSEDASYNCOPERATION_H_INCLUDED
+#define BEAST_ASIO_ASYNC_COMPOSEDASYNCOPERATION_H_INCLUDED
 
 /** Base class for creating composed asynchronous operations.
     The composed operation will have its operator() overloads called with

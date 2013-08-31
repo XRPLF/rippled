@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PROPERTYSET_BEASTHEADER
-#define BEAST_PROPERTYSET_BEASTHEADER
+#ifndef BEAST_PROPERTYSET_H_INCLUDED
+#define BEAST_PROPERTYSET_H_INCLUDED
 
 #include "../text/beast_StringPairArray.h"
 #include "../xml/beast_XmlElement.h"
@@ -209,4 +209,4 @@ private:
 };
 
 
-#endif   // BEAST_PROPERTYSET_BEASTHEADER
+#endif   // BEAST_PROPERTYSET_H_INCLUDED

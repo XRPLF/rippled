@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SAFEBOOL_BEASTHEADER
-#define BEAST_SAFEBOOL_BEASTHEADER
+#ifndef BEAST_SAFEBOOL_H_INCLUDED
+#define BEAST_SAFEBOOL_H_INCLUDED
 
 /** Safe evaluation of class as `bool`.
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ATOMICSTATE_BEASTHEADER
-#define BEAST_ATOMICSTATE_BEASTHEADER
+#ifndef BEAST_ATOMICSTATE_H_INCLUDED
+#define BEAST_ATOMICSTATE_H_INCLUDED
 
 /*============================================================================*/
 /**

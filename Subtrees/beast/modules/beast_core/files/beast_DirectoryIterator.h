@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_DIRECTORYITERATOR_BEASTHEADER
-#define BEAST_DIRECTORYITERATOR_BEASTHEADER
+#ifndef BEAST_DIRECTORYITERATOR_H_INCLUDED
+#define BEAST_DIRECTORYITERATOR_H_INCLUDED
 
 #include "beast_File.h"
 #include "../memory/beast_ScopedPointer.h"
@@ -147,4 +147,4 @@ private:
     File currentFile;
 };
 
-#endif   // BEAST_DIRECTORYITERATOR_BEASTHEADER
+#endif   // BEAST_DIRECTORYITERATOR_H_INCLUDED

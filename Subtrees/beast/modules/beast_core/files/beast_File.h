@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FILE_BEASTHEADER
-#define BEAST_FILE_BEASTHEADER
+#ifndef BEAST_FILE_H_INCLUDED
+#define BEAST_FILE_H_INCLUDED
 
 #include "../containers/beast_Array.h"
 #include "../time/beast_Time.h"
@@ -951,4 +951,4 @@ private:
     bool setFileReadOnlyInternal (bool) const;
 };
 
-#endif   // BEAST_FILE_BEASTHEADER
+#endif   // BEAST_FILE_H_INCLUDED

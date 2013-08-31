@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MEMORYMAPPEDFILE_BEASTHEADER
-#define BEAST_MEMORYMAPPEDFILE_BEASTHEADER
+#ifndef BEAST_MEMORYMAPPEDFILE_H_INCLUDED
+#define BEAST_MEMORYMAPPEDFILE_H_INCLUDED
 
 #include "beast_File.h"
 
@@ -106,4 +106,4 @@ private:
 };
 
 
-#endif   // BEAST_MEMORYMAPPEDFILE_BEASTHEADER
+#endif   // BEAST_MEMORYMAPPEDFILE_H_INCLUDED

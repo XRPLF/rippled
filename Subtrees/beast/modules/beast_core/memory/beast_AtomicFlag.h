@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ATOMICFLAG_BEASTHEADER
-#define BEAST_ATOMICFLAG_BEASTHEADER
+#ifndef BEAST_ATOMICFLAG_H_INCLUDED
+#define BEAST_ATOMICFLAG_H_INCLUDED
 
 /*============================================================================*/
 /**

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_OUTPUTSTREAM_BEASTHEADER
-#define BEAST_OUTPUTSTREAM_BEASTHEADER
+#ifndef BEAST_OUTPUTSTREAM_H_INCLUDED
+#define BEAST_OUTPUTSTREAM_H_INCLUDED
 
 #include "../text/beast_String.h"
 #include "../text/beast_NewLine.h"

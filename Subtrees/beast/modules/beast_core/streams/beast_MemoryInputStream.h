@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MEMORYINPUTSTREAM_BEASTHEADER
-#define BEAST_MEMORYINPUTSTREAM_BEASTHEADER
+#ifndef BEAST_MEMORYINPUTSTREAM_H_INCLUDED
+#define BEAST_MEMORYINPUTSTREAM_H_INCLUDED
 
 #include "beast_InputStream.h"
 #include "../memory/beast_HeapBlock.h"
@@ -92,4 +92,4 @@ private:
     void createInternalCopy();
 };
 
-#endif   // BEAST_MEMORYINPUTSTREAM_BEASTHEADER
+#endif   // BEAST_MEMORYINPUTSTREAM_H_INCLUDED

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERDETAILS_H_INCLUDED
-#define BEAST_TESTPEERDETAILS_H_INCLUDED
+#ifndef BEAST_ASIO_TESTS_TESTPEERDETAILS_H_INCLUDED
+#define BEAST_ASIO_TESTS_TESTPEERDETAILS_H_INCLUDED
 
 /** Base class of all detail objects.
 */

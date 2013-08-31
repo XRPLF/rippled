@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PAGEDFREESTORE_BEASTHEADER
-#define BEAST_PAGEDFREESTORE_BEASTHEADER
+#ifndef BEAST_PAGEDFREESTORE_H_INCLUDED
+#define BEAST_PAGEDFREESTORE_H_INCLUDED
 
 /*============================================================================*/
 /**

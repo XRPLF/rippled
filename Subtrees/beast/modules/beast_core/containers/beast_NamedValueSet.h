@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NAMEDVALUESET_BEASTHEADER
-#define BEAST_NAMEDVALUESET_BEASTHEADER
+#ifndef BEAST_NAMEDVALUESET_H_INCLUDED
+#define BEAST_NAMEDVALUESET_H_INCLUDED
 
 #include "beast_Variant.h"
 #include "../containers/beast_LinkedListPointer.h"
@@ -160,4 +160,4 @@ private:
 };
 
 
-#endif   // BEAST_NAMEDVALUESET_BEASTHEADER
+#endif   // BEAST_NAMEDVALUESET_H_INCLUDED

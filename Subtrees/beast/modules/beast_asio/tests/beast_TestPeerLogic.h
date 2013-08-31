@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERLOGIC_H_INCLUDED
-#define BEAST_TESTPEERLOGIC_H_INCLUDED
+#ifndef BEAST_ASIO_TESTS_TESTPEERLOGIC_H_INCLUDED
+#define BEAST_ASIO_TESTS_TESTPEERLOGIC_H_INCLUDED
 
 /** Interface for implementing the logic part of a peer test.
 */

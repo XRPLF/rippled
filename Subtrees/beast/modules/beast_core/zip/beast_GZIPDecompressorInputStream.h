@@ -26,8 +26,8 @@
   ==============================================================================
 */
 
-#ifndef BEAST_GZIPDECOMPRESSORINPUTSTREAM_BEASTHEADER
-#define BEAST_GZIPDECOMPRESSORINPUTSTREAM_BEASTHEADER
+#ifndef BEAST_GZIPDECOMPRESSORINPUTSTREAM_H_INCLUDED
+#define BEAST_GZIPDECOMPRESSORINPUTSTREAM_H_INCLUDED
 
 #include "../streams/beast_InputStream.h"
 #include "../memory/beast_OptionalScopedPointer.h"
@@ -99,4 +99,4 @@ private:
     ScopedPointer <GZIPDecompressHelper> helper;
 };
 
-#endif   // BEAST_GZIPDECOMPRESSORINPUTSTREAM_BEASTHEADER
+#endif   // BEAST_GZIPDECOMPRESSORINPUTSTREAM_H_INCLUDED

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PEERROLE_H_INCLUDED
-#define BEAST_PEERROLE_H_INCLUDED
+#ifndef BEAST_ASIO_BASICS_PEERROLE_H_INCLUDED
+#define BEAST_ASIO_BASICS_PEERROLE_H_INCLUDED
 
 /** Identifies if the peer is a client or a server. */
 struct PeerRole

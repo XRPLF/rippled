@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_RANGE_BEASTHEADER
-#define BEAST_RANGE_BEASTHEADER
+#ifndef BEAST_RANGE_H_INCLUDED
+#define BEAST_RANGE_H_INCLUDED
 
 
 //==============================================================================
@@ -256,4 +256,4 @@ private:
 };
 
 
-#endif   // BEAST_RANGE_BEASTHEADER
+#endif   // BEAST_RANGE_H_INCLUDED

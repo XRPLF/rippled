@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_WEAKREFERENCE_BEASTHEADER
-#define BEAST_WEAKREFERENCE_BEASTHEADER
+#ifndef BEAST_WEAKREFERENCE_H_INCLUDED
+#define BEAST_WEAKREFERENCE_H_INCLUDED
 
 #include "beast_SharedObject.h"
 
@@ -204,4 +204,4 @@ private:
 };
 
 
-#endif   // BEAST_WEAKREFERENCE_BEASTHEADER
+#endif   // BEAST_WEAKREFERENCE_H_INCLUDED

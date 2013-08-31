@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_BUFFEREDINPUTSTREAM_BEASTHEADER
-#define BEAST_BUFFEREDINPUTSTREAM_BEASTHEADER
+#ifndef BEAST_BUFFEREDINPUTSTREAM_H_INCLUDED
+#define BEAST_BUFFEREDINPUTSTREAM_H_INCLUDED
 
 #include "beast_InputStream.h"
 #include "../memory/beast_OptionalScopedPointer.h"
@@ -88,4 +88,4 @@ private:
     void ensureBuffered();
 };
 
-#endif   // BEAST_BUFFEREDINPUTSTREAM_BEASTHEADER
+#endif   // BEAST_BUFFEREDINPUTSTREAM_H_INCLUDED

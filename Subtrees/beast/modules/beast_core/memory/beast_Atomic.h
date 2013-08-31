@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ATOMIC_BEASTHEADER
-#define BEAST_ATOMIC_BEASTHEADER
+#ifndef BEAST_ATOMIC_H_INCLUDED
+#define BEAST_ATOMIC_H_INCLUDED
 
 
 //==============================================================================
@@ -389,4 +389,4 @@ inline void Atomic<Type>::memoryBarrier() noexcept
   #pragma warning (pop)
 #endif
 
-#endif   // BEAST_ATOMIC_BEASTHEADER
+#endif   // BEAST_ATOMIC_H_INCLUDED

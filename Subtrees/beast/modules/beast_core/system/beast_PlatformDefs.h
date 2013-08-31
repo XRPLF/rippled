@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PLATFORMDEFS_BEASTHEADER
-#define BEAST_PLATFORMDEFS_BEASTHEADER
+#ifndef BEAST_PLATFORMDEFS_H_INCLUDED
+#define BEAST_PLATFORMDEFS_H_INCLUDED
 
 // This file defines miscellaneous macros for debugging, assertions, etc.
 

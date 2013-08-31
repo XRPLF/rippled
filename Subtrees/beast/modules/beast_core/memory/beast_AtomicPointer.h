@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ATOMICPOINTER_BEASTHEADER
-#define BEAST_ATOMICPOINTER_BEASTHEADER
+#ifndef BEAST_ATOMICPOINTER_H_INCLUDED
+#define BEAST_ATOMICPOINTER_H_INCLUDED
 
 /*============================================================================*/
 /**

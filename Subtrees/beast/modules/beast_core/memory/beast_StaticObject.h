@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_STATICOBJECT_BEASTHEADER
-#define BEAST_STATICOBJECT_BEASTHEADER
+#ifndef BEAST_STATICOBJECT_H_INCLUDED
+#define BEAST_STATICOBJECT_H_INCLUDED
 
 //
 // A full suite of thread-safe objects designed for static storage duration.

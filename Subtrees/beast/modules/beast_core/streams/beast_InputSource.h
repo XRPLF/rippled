@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INPUTSOURCE_BEASTHEADER
-#define BEAST_INPUTSOURCE_BEASTHEADER
+#ifndef BEAST_INPUTSOURCE_H_INCLUDED
+#define BEAST_INPUTSOURCE_H_INCLUDED
 
 #include "beast_InputStream.h"
 
@@ -66,4 +66,4 @@ public:
 };
 
 
-#endif   // BEAST_INPUTSOURCE_BEASTHEADER
+#endif   // BEAST_INPUTSOURCE_H_INCLUDED

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MACADDRESS_BEASTHEADER
-#define BEAST_MACADDRESS_BEASTHEADER
+#ifndef BEAST_MACADDRESS_H_INCLUDED
+#define BEAST_MACADDRESS_H_INCLUDED
 
 #include "../containers/beast_Array.h"
 
@@ -81,4 +81,4 @@ private:
 };
 
 
-#endif   // BEAST_MACADDRESS_BEASTHEADER
+#endif   // BEAST_MACADDRESS_H_INCLUDED

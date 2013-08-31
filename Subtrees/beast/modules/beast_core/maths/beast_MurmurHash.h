@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MURMURHASH_BEASTHEADER
-#define BEAST_MURMURHASH_BEASTHEADER
+#ifndef BEAST_MURMURHASH_H_INCLUDED
+#define BEAST_MURMURHASH_H_INCLUDED
 
 // Original source code links in .cpp file
 

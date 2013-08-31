@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_RANDOM_BEASTHEADER
-#define BEAST_RANDOM_BEASTHEADER
+#ifndef BEAST_RANDOM_H_INCLUDED
+#define BEAST_RANDOM_H_INCLUDED
 
 #include "beast_BigInteger.h"
 
@@ -133,4 +133,4 @@ private:
 };
 
 
-#endif   // BEAST_RANDOM_BEASTHEADER
+#endif   // BEAST_RANDOM_H_INCLUDED

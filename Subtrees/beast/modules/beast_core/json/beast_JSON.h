@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_JSON_BEASTHEADER
-#define BEAST_JSON_BEASTHEADER
+#ifndef BEAST_JSON_H_INCLUDED
+#define BEAST_JSON_H_INCLUDED
 
 #include "../misc/beast_Result.h"
 #include "../containers/beast_Variant.h"
@@ -110,4 +110,4 @@ private:
 };
 
 
-#endif   // BEAST_JSON_BEASTHEADER
+#endif   // BEAST_JSON_H_INCLUDED

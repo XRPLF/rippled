@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SOCKET_H_INCLUDED
-#define BEAST_SOCKET_H_INCLUDED
+#ifndef BEAST_ASIO_SOCKETS_SOCKET_H_INCLUDED
+#define BEAST_ASIO_SOCKETS_SOCKET_H_INCLUDED
 
 /** A high level socket abstraction.
 

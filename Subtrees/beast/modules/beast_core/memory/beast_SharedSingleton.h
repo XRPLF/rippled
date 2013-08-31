@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_REFERENCECOUNTEDSINGLETON_BEASTHEADER
-#define BEAST_REFERENCECOUNTEDSINGLETON_BEASTHEADER
+#ifndef BEAST_REFERENCECOUNTEDSINGLETON_H_INCLUDED
+#define BEAST_REFERENCECOUNTEDSINGLETON_H_INCLUDED
 
 /** Thread-safe singleton which comes into existence on first use. Use this
     instead of creating objects with static storage duration. These singletons

@@ -259,6 +259,10 @@ Some files contain portions of these external projects, licensed separately:
 //#define BEAST_CATCH_UNHANDLED_EXCEPTIONS 1
 #endif
 
+#ifndef BEAST_STRING_UTF_TYPE
+# define BEAST_STRING_UTF_TYPE 8
+#endif
+
 #include "system/BoostIncludes.h"
 #include "system/BindIncludes.h"
 
@@ -307,19 +311,45 @@ Some files contain portions of these external projects, licensed separately:
 namespace beast
 {
 
+class MemoryBlock;
+class File;
+class InputStream;
+class OutputStream;
+class DynamicObject;
+class FileInputStream;
+class FileOutputStream;
+class XmlElement;
+class JSONFormatter;
+
+extern BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger();
+extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) noexcept;
+
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
 
 #include "memory/beast_Uncopyable.h"
+#include "memory/beast_Memory.h"
+#include "maths/beast_MathsFunctions.h"
+#include "memory/beast_ByteOrder.h"
+#include "memory/beast_Atomic.h"
+#include "text/beast_CharacterFunctions.h"
+
+#if BEAST_MSVC
+# pragma warning (push)
+# pragma warning (disable: 4514 4996)
+#endif
+#include "text/beast_CharPointer_UTF8.h"
+#include "text/beast_CharPointer_UTF16.h"
+#include "text/beast_CharPointer_UTF32.h"
+#include "text/beast_CharPointer_ASCII.h"
+#if BEAST_MSVC
+# pragma warning (pop)
+#endif
 
 #include "system/beast_PlatformDefs.h"
 #include "system/beast_TargetPlatform.h"
-
 #include "diagnostic/beast_Throw.h"
 #include "system/beast_Functional.h"
-
-#include "maths/beast_MathsFunctions.h"
-#include "memory/beast_Atomic.h"
 #include "memory/beast_AtomicCounter.h"
 #include "memory/beast_AtomicFlag.h"
 #include "memory/beast_AtomicPointer.h"
@@ -328,10 +358,7 @@ namespace beast
 #include "containers/beast_LockFreeStack.h"
 #include "threads/beast_SpinDelay.h"
 #include "memory/beast_StaticObject.h"
-#include "memory/beast_Memory.h"
-
 #include "text/beast_String.h"
-
 #include "memory/beast_MemoryAlignment.h"
 #include "memory/beast_CacheLine.h"
 #include "threads/beast_CriticalSection.h"
@@ -344,7 +371,6 @@ namespace beast
 #include "threads/beast_Thread.h"
 #include "threads/beast_SpinLock.h"
 #include "threads/beast_ThreadLocalValue.h"
-
 #include "thread/MutexTraits.h"
 #include "containers/beast_Array.h"
 #include "text/beast_StringArray.h"
@@ -352,16 +378,8 @@ namespace beast
 #include "diagnostic/beast_FatalError.h"
 #include "diagnostic/beast_Error.h"
 #include "diagnostic/beast_Debug.h"
-
-#include "text/beast_CharacterFunctions.h"
-#include "text/beast_CharPointer_ASCII.h"
-#include "text/beast_CharPointer_UTF16.h"
-#include "text/beast_CharPointer_UTF32.h"
-#include "text/beast_CharPointer_UTF8.h"
 #include "text/beast_LexicalCast.h"
-
 #include "memory/beast_ContainerDeletePolicy.h"
-#include "memory/beast_ByteOrder.h"
 #include "memory/beast_ByteSwap.h"
 #include "maths/beast_Math.h"
 #include "maths/beast_uint24.h"
@@ -384,6 +402,7 @@ namespace beast
 #include "containers/beast_SharedTable.h"
 #include "containers/beast_SortedLookupTable.h"
 #include "containers/beast_SortedSet.h"
+#include "maths/beast_Range.h"
 #include "containers/beast_SparseSet.h"
 #include "containers/beast_Variant.h"
 #include "files/beast_DirectoryIterator.h"
@@ -402,7 +421,6 @@ namespace beast
 #include "maths/beast_Interval.h"
 #include "maths/beast_MathsFunctions.h"
 #include "maths/beast_MurmurHash.h"
-#include "maths/beast_Range.h"
 #include "memory/beast_ByteOrder.h"
 #include "memory/beast_HeapBlock.h"
 #include "memory/beast_Memory.h"

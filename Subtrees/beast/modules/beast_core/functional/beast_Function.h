@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FUNCTION_BEASTHEADER
-#define BEAST_FUNCTION_BEASTHEADER
+#ifndef BEAST_FUNCTION_H_INCLUDED
+#define BEAST_FUNCTION_H_INCLUDED
 
 //
 // Strong replacement for boost::function:

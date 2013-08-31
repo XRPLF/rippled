@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERLOGICPROXYCLIENT_H_INCLUDED
-#define BEAST_TESTPEERLOGICPROXYCLIENT_H_INCLUDED
+#ifndef BEAST_ASIO_TESTS_TESTPEERLOGICPROXYCLIENT_H_INCLUDED
+#define BEAST_ASIO_TESTS_TESTPEERLOGICPROXYCLIENT_H_INCLUDED
 
 /** A synchronous client logic that sends a PROXY protocol pre-handshake. */
 class TestPeerLogicProxyClient : public TestPeerLogicSyncClient

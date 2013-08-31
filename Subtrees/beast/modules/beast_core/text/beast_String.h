@@ -21,31 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_STRING_BEASTHEADER
-#define BEAST_STRING_BEASTHEADER
-
-#include "beast_CharacterFunctions.h"
-
-#ifndef BEAST_STRING_UTF_TYPE
- #define BEAST_STRING_UTF_TYPE 8
-#endif
-
-#if BEAST_MSVC
- #pragma warning (push)
- #pragma warning (disable: 4514 4996)
-#endif
-
-#include "../memory/beast_Atomic.h"
-#include "beast_CharPointer_UTF8.h"
-#include "beast_CharPointer_UTF16.h"
-#include "beast_CharPointer_UTF32.h"
-#include "beast_CharPointer_ASCII.h"
-
-#if BEAST_MSVC
- #pragma warning (pop)
-#endif
-
-class OutputStream;
+#ifndef BEAST_STRING_H_INCLUDED
+#define BEAST_STRING_H_INCLUDED
 
 //==============================================================================
 /**
@@ -1354,4 +1331,4 @@ std::basic_ostream <wchar_t, traits>& BEAST_CALLTYPE operator<< (std::basic_ostr
 BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const String& stringToWrite);
 
 
-#endif   // BEAST_STRING_BEASTHEADER
+#endif   // BEAST_STRING_H_INCLUDED

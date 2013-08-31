@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREADWITHCALLQUEUE_BEASTHEADER
-#define BEAST_THREADWITHCALLQUEUE_BEASTHEADER
+#ifndef BEAST_THREADWITHCALLQUEUE_H_INCLUDED
+#define BEAST_THREADWITHCALLQUEUE_H_INCLUDED
 
 /** An InterruptibleThread with a CallQueue.
 
