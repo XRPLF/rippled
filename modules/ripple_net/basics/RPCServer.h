@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPCSERVER_H_INCLUDED
-#define RIPPLE_RPCSERVER_H_INCLUDED
+#ifndef RIPPLE_NET_BASICS_RPCSERVER_H_INCLUDED
+#define RIPPLE_NET_BASICS_RPCSERVER_H_INCLUDED
 
 /** Provides RPC services to a client.
 

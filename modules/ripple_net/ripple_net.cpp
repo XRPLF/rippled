@@ -37,13 +37,13 @@
 namespace ripple
 {
 
-#include "basics/ripple_MultiSocketType.h" // private
-#include "basics/RippleSSLContext.cpp"
-#include "basics/ripple_MultiSocket.cpp"
+#include "basics/impl/MultiSocketType.h"
 
-#include "basics/ripple_HTTPRequest.cpp"
-#include "basics/ripple_HttpsClient.cpp"
-#include "basics/ripple_RPCServer.cpp"
-#include "basics/ripple_SNTPClient.cpp"
+#include "basics/RippleSSLContext.cpp"
+#include "basics/MultiSocket.cpp"
+#include "basics/HTTPRequest.cpp"
+#include "basics/HTTPClient.cpp"
+#include "basics/RPCServer.cpp"
+#include "basics/SNTPClient.cpp"
 
 }

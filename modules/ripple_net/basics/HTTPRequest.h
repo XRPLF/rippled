@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTPREQUEST_H_INCLUDED
-#define RIPPLE_HTTPREQUEST_H_INCLUDED
+#ifndef RIPPLE_NET_BASICS_HTTPREQUEST_H_INCLUDED
+#define RIPPLE_NET_BASICS_HTTPREQUEST_H_INCLUDED
 
 /** An HTTP request we are handling from a client.
 */

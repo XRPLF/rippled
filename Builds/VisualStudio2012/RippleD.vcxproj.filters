@@ -151,6 +151,9 @@
     <Filter Include="[1] Ripple\ripple_basics\json">
       <UniqueIdentifier>{083291b1-1498-490e-9794-4319d21d5668}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\ripple_net\basics\impl">
+      <UniqueIdentifier>{331a5979-0bb5-4224-919d-b8df0bc4e94f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_core\beast_core.cpp">
@@ -504,20 +507,8 @@
     <ClCompile Include="..\..\modules\ripple_net\ripple_net.cpp">
       <Filter>[1] Ripple\ripple_net</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.cpp">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_HttpsClient.cpp">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.cpp">
       <Filter>[1] Ripple\ripple_app\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_RPCServer.cpp">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_SNTPClient.cpp">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\node\ripple_NodeObject.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
@@ -876,7 +867,19 @@
     <ClCompile Include="..\..\modules\ripple_net\basics\RippleSSLContext.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_net\basics\ripple_MultiSocket.cpp">
+    <ClCompile Include="..\..\modules\ripple_net\basics\HTTPRequest.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\HTTPClient.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\MultiSocket.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\RPCServer.cpp">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\basics\SNTPClient.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1274,20 +1277,8 @@
     <ClInclude Include="..\..\modules\ripple_net\ripple_net.h">
       <Filter>[1] Ripple\ripple_net</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.h">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HttpsClient.h">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.h">
       <Filter>[1] Ripple\ripple_app\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_RPCServer.h">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_SNTPClient.h">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_NodeObject.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
@@ -1673,11 +1664,23 @@
     <ClInclude Include="..\..\modules\ripple_net\basics\RippleSSLContext.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_MultiSocket.h">
+    <ClInclude Include="..\..\modules\ripple_net\basics\HTTPRequest.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_net\basics\ripple_MultiSocketType.h">
+    <ClInclude Include="..\..\modules\ripple_net\basics\HTTPClient.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\MultiSocket.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\RPCServer.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\SNTPClient.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\impl\MultiSocketType.h">
+      <Filter>[1] Ripple\ripple_net\basics\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

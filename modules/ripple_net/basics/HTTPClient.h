@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTPSCLIENT_H_INCLUDED
-#define RIPPLE_HTTPSCLIENT_H_INCLUDED
+#ifndef RIPPLE_NET_BASICS_HTTPCLIENT_H_INCLUDED
+#define RIPPLE_NET_BASICS_HTTPCLIENT_H_INCLUDED
 
 // VFALCO TODO Make this an abstract interface.
 //

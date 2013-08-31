@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ASIO_RIPPLESSLCONTEXT_H_INCLUDED
-#define RIPPLE_ASIO_RIPPLESSLCONTEXT_H_INCLUDED
+#ifndef RIPPLE_NET_BASICS_RIPPLESSLCONTEXT_H_INCLUDED
+#define RIPPLE_NET_BASICS_RIPPLESSLCONTEXT_H_INCLUDED
 
 /** The SSL contexts used by Ripple.
 

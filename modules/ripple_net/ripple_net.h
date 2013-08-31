@@ -17,11 +17,11 @@ namespace ripple
 {
 
 #include "basics/RippleSSLContext.h"
-#include "basics/ripple_MultiSocket.h"
-#include "basics/ripple_HTTPRequest.h"
-#include "basics/ripple_HttpsClient.h"
-#include "basics/ripple_RPCServer.h"
-#include "basics/ripple_SNTPClient.h"
+#include "basics/MultiSocket.h"
+#include "basics/HTTPRequest.h"
+#include "basics/HTTPClient.h"
+#include "basics/RPCServer.h"
+#include "basics/SNTPClient.h"
 
 }
 

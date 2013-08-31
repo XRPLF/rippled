@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ASIO_MULTISOCKETTYPE_H_INCLUDED
-#define RIPPLE_ASIO_MULTISOCKETTYPE_H_INCLUDED
+#ifndef RIPPLE_NET_BASICS_IMPOL_MULTISOCKETTYPE_H_INCLUDED
+#define RIPPLE_NET_BASICS_IMPOL_MULTISOCKETTYPE_H_INCLUDED
 
 /** Template for producing instances of MultiSocket
 */

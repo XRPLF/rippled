@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_MULTISOCKET_H_INCLUDED
-#define RIPPLE_MULTISOCKET_H_INCLUDED
+#ifndef RIPPLE_NET_BASICS_MULTISOCKET_H_INCLUDED
+#define RIPPLE_NET_BASICS_MULTISOCKET_H_INCLUDED
 
 /** A Socket that can handshake with multiple protocols.
 */

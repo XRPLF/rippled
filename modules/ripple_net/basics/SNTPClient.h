@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SNTPCLIENT_H_INCLUDED
-#define RIPPLE_SNTPCLIENT_H_INCLUDED
+#ifndef RIPPLE_NET_BASICS_SNTPCLIENT_H_INCLUDED
+#define RIPPLE_NET_BASICS_SNTPCLIENT_H_INCLUDED
 
 class SNTPQuery
 {
