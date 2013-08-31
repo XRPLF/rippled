@@ -162,9 +162,6 @@
     <ClCompile Include="..\..\src\cpp\protobuf_core.cpp">
       <Filter>[0] Subtrees\protobuf</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\ripple_app.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt1.cpp">
       <Filter>[1] Ripple\ripple_app</Filter>
     </ClCompile>
