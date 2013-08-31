@@ -116,7 +116,7 @@ public:
 
     void storeBatch (NodeStore::Batch const& batch)
     {
-        for (int i = 0; i < batch.size (); ++i)
+        for (std::size_t i = 0; i < batch.size (); ++i)
             store (batch [i]);
     }
 
