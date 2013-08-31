@@ -7,6 +7,7 @@
 #include "BeastConfig.h"
 
 #include "ripple_app.h"
+#include "../ripple_net/ripple_net.h"
 
 namespace ripple
 {

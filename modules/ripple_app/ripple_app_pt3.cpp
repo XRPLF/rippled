@@ -22,7 +22,6 @@ namespace ripple
 # pragma warning (pop)
 #endif
 
-#include "basics/ripple_BuildInfo.cpp"
 #include "node/ripple_NodeObject.cpp"
 
 #include "shamap/ripple_SHAMapDelta.cpp"

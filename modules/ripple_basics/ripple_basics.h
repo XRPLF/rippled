@@ -39,8 +39,7 @@
 
 //------------------------------------------------------------------------------
 
-// Must come before <boost/bind.hpp>
-#include "beast/modules/beast_core/beast_core.h"
+#include "beast/modules/beast_core/beast_core.h" // Must come before <boost/bind.hpp>
 
 #include "system/ripple_BoostIncludes.h"
 

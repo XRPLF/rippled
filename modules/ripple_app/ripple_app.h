@@ -7,8 +7,7 @@
 #ifndef RIPPLE_APP_H_INCLUDED
 #define RIPPLE_APP_H_INCLUDED
 
-// Must come before <boost/bind.hpp>
-#include "beast/modules/beast_core/beast_core.h"
+#include "beast/modules/beast_core/beast_core.h" // Must come before <boost/bind.hpp>
 
 #if BEAST_LINUX || BEAST_MAC || BEAST_BSD
 #include <sys/resource.h>
@@ -61,7 +60,7 @@
 
 #include "../ripple_core/ripple_core.h"
 
-#include "../ripple_net/ripple_net.h" // for RPCServerHandler ONLY
+#include "../ripple_client/ripple_client.h"
 
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
 #include "beast/modules/beast_sqlite/beast_sqlite.h"
@@ -97,7 +96,6 @@ namespace ripple
 #include "ledger/SerializedValidation.h"
 #include "main/ripple_LoadManager.h"
 #include "misc/ripple_ProofOfWork.h"
-#include "misc/ripple_InfoSub.h"
 #include "misc/ripple_OrderBook.h"
 #include "shamap/ripple_SHAMapSyncFilters.h"
 #include "misc/ripple_IFeatures.h"
@@ -161,8 +159,9 @@ namespace ripple
 #include "contracts/ripple_Interpreter.h"
 #include "contracts/ripple_Operation.h"
 
-// Move this to the .cpp and remove the include for ripple_net.h
-#include "basics/ripple_RPCServerHandler.h"
+//#include "misc/ripple_InfoSub.h"
+//#include "rpc/CallRPC.h"
+//#include "rpc/RPCSub.h"
 
 }
 

@@ -8,6 +8,14 @@
 
 #include "ripple_app.h"
 
+#include "../ripple_client/ripple_client.h"
+#include "../ripple_net/ripple_net.h"
+
+#ifdef _MSC_VER
+#pragma warning (push)
+#pragma warning (disable: 4309) // truncation of constant value
+#endif
+
 namespace ripple
 {
 
@@ -15,23 +23,16 @@ namespace ripple
  #include "rpc/RPCUtil.h"
 #include "websocket/WSConnection.h" // needs RPCErr
 
-#include "rpc/RPCErr.cpp"
-#include "rpc/RPCUtil.cpp"
-
 #ifdef _MSC_VER
 #pragma warning (push)
 #pragma warning (disable: 4018) // signed/unsigned mismatch
 #pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
-#include "rpc/CallRPC.cpp"
 #include "rpc/RPCHandler.cpp"
 #ifdef _MSC_VER
 #pragma warning (pop)
 #endif
 
-#include "rpc/RPCSub.cpp"
-
-#include "basics/ripple_RPCServerHandler.cpp" // needs RPCUtil
 #include "paths/ripple_PathRequest.cpp" // needs RPCErr.h
 #include "paths/ripple_RippleCalc.cpp"
 #include "paths/ripple_PathState.cpp"
@@ -41,16 +42,12 @@ namespace ripple
 #include "paths/ripple_RippleLineCache.cpp"
 #include "ledger/SerializedValidation.cpp"
 
-#ifdef _MSC_VER
-#pragma warning (push)
-#pragma warning (disable: 4309) // truncation of constant value
-#endif
 #include "websocket/WSConnection.cpp"
 #include "websocket/WSDoor.cpp"
 #include "websocket/WSServerHandler.cpp"
-#ifdef _MSC_VER
-#pragma warning (pop)
-#endif
 
 }
 
+#ifdef _MSC_VER
+#pragma warning (pop)
+#endif

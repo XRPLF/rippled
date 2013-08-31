@@ -8,10 +8,16 @@
 
 #include "ripple_app.h"
 
-// This file should only hold the Application object .cpp. It depends on
-// everything else. Nothing else should depend on the Application
-// implementation (although they will depend on its abstract interface)
-//
+#include "../ripple_client/ripple_client.h"
+#include "../ripple_net/ripple_net.h" // for RPCServerHandler
+
+#include "beast/modules/beast_db/beast_db.h"
+#include "../ripple_mdb/ripple_mdb.h"
+#include "../ripple_leveldb/ripple_leveldb.h"
+#include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
+
+// This .cpp will end up including all of the public header
+// material in Ripple since it holds the Application object.
 
 namespace ripple
 {
@@ -19,6 +25,11 @@ namespace ripple
  #include "boost/ripple_IoService.h" // deprecated
 #include "boost/ripple_IoService.cpp" // deprecated
 
+ #include "main/ripple_FatalErrorReporter.h"
+#include "main/ripple_FatalErrorReporter.cpp"
+
+# include "basics/ripple_RPCServerHandler.h"
+#include "basics/ripple_RPCServerHandler.cpp"
 #ifdef _MSC_VER
 # pragma warning (push)
 # pragma warning (disable: 4244) // conversion, possible loss of data
@@ -29,4 +40,31 @@ namespace ripple
 # pragma warning (pop)
 #endif
 
+#  include "node/ripple_HyperLevelDBBackendFactory.h"
+# include "node/ripple_HyperLevelDBBackendFactory.cpp"
+#  include "node/ripple_KeyvaDBBackendFactory.h"
+# include "node/ripple_KeyvaDBBackendFactory.cpp"
+#  include "node/ripple_LevelDBBackendFactory.h"
+# include "node/ripple_LevelDBBackendFactory.cpp"
+#  include "node/ripple_MemoryBackendFactory.h"
+# include "node/ripple_MemoryBackendFactory.cpp"
+#  include "node/ripple_NullBackendFactory.h"
+# include "node/ripple_NullBackendFactory.cpp"
+#  include "node/ripple_MdbBackendFactory.h"
+# include "node/ripple_MdbBackendFactory.cpp"
+#  include "node/ripple_SqliteBackendFactory.h"
+# include "node/ripple_SqliteBackendFactory.cpp"
+# include "main/ripple_RippleMain.h"
+#include "main/ripple_RippleMain.cpp"
+
+}
+
+//------------------------------------------------------------------------------
+
+// Must be outside the namespace for obvious reasons
+//
+int main (int argc, char** argv)
+{
+    ripple::RippleMain rippled;
+    return rippled.runFromMain (argc, argv);
 }
