@@ -74,7 +74,6 @@ SOURCES += \
     ../../modules/ripple_app/ripple_app_pt6.cpp \
     ../../modules/ripple_app/ripple_app_pt7.cpp \
     ../../modules/ripple_app/ripple_app_pt8.cpp \
-    ../../modules/ripple_asio/ripple_asio.cpp \
     ../../modules/ripple_basics/ripple_basics.cpp \
     ../../modules/ripple_core/ripple_core.cpp \
     ../../modules/ripple_client/ripple_client.cpp \

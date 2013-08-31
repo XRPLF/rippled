@@ -344,13 +344,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 5
 
-// VFALCO This hack lets me compile just ripple_app_pt5.cpp when
-//        ripple_asio.h and relatives change.
-}
-#include "../ripple_asio/ripple_asio.h"
-namespace ripple
-{
-
 #include "ledger/LedgerTiming.cpp"
 #include "ledger/ripple_AcceptedLedgerTx.cpp"
 #include "main/ripple_Application.cpp"

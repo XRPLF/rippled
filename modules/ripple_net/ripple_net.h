@@ -7,18 +7,7 @@
 #ifndef RIPPLE_NET_H_INCLUDED
 #define RIPPLE_NET_H_INCLUDED
 
-/** Include this to get the @ref ripple_net module.
-
-    @file ripple_net.h
-    @ingroup ripple_net
-*/
-
-/** Network classes.
-
-    This module provides classes that handle all network activities.
-
-    @defgroup ripple_net
-*/
+#include "beast/modules/beast_asio/beast_asio.h"
 
 #include "../ripple_basics/ripple_basics.h"
 
@@ -27,6 +16,8 @@
 namespace ripple
 {
 
+#include "basics/RippleSSLContext.h"
+#include "basics/ripple_MultiSocket.h"
 #include "basics/ripple_HTTPRequest.h"
 #include "basics/ripple_HttpsClient.h"
 #include "basics/ripple_RPCServer.h"
