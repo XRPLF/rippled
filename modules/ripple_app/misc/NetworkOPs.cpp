@@ -1397,8 +1397,6 @@ std::vector<NetworkOPs::txnMetaLedgerType> NetworkOPs::getAccountTxsB (
 }
 
 
-
-
 uint32
 NetworkOPs::countAccountTxs (const RippleAddress& account, int32 minLedger, int32 maxLedger)
 {
@@ -1461,8 +1459,8 @@ NetworkOPs::getTxsAccount (const RippleAddress& account, int32 minLedger, int32 
          "ORDER BY AccountTransactions.LedgerSeq %s, AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
          "LIMIT %u;")
              % account.humanAccountID()
-             % minLedger
-             % maxLedger
+             % ((forward && (findLedger != 0)) ? findLedger : minLedger)
+             % ((!forward && (findLedger != 0)) ? findLedger: maxLedger)
              % (forward ? "ASC" : "DESC")
              % (forward ? "ASC" : "DESC")
              % (forward ? "ASC" : "DESC")
@@ -1570,8 +1568,8 @@ NetworkOPs::getTxsAccountB (const RippleAddress& account, int32 minLedger, int32
          "ORDER BY AccountTransactions.LedgerSeq %s, AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
          "LIMIT %u;")
              % account.humanAccountID()
-             % minLedger
-             % maxLedger
+             % ((forward && (findLedger != 0)) ? findLedger : minLedger)
+             % ((!forward && (findLedger != 0)) ? findLedger: maxLedger)
              % (forward ? "ASC" : "DESC")
              % (forward ? "ASC" : "DESC")
              % (forward ? "ASC" : "DESC")
