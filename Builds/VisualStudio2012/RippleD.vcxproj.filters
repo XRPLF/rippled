@@ -876,6 +876,9 @@
     <ClCompile Include="..\..\modules\ripple_net\basics\RPCDoor.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\ripple_app\ripple_app.h">

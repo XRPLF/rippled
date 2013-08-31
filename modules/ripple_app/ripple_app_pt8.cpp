@@ -8,63 +8,49 @@
 
 #include "ripple_app.h"
 
-#include "beast/modules/beast_db/beast_db.h"
-#include "../ripple_mdb/ripple_mdb.h"
-#include "../ripple_leveldb/ripple_leveldb.h"
-#include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
-
 namespace ripple
 {
 
-#include "peers/ripple_PeerSet.cpp"
-#include "misc/ripple_InfoSub.cpp"
-#include "misc/ripple_OrderBook.cpp"
-#include "misc/ripple_ProofOfWork.cpp"
-#include "misc/ripple_ProofOfWorkFactory.h"
-#include "misc/ripple_ProofOfWorkFactory.cpp" // requires ProofOfWork.cpp for ProofOfWork::sMaxDifficulty
-#include "misc/ripple_SerializedTransaction.cpp"
+ #include "rpc/RPCErr.h"
+ #include "rpc/RPCUtil.h"
+#include "websocket/WSConnection.h" // needs RPCErr
 
-#include "shamap/ripple_SHAMapSyncFilters.cpp" // requires Application
-
- #include "main/ripple_FatalErrorReporter.h"
-#include "main/ripple_FatalErrorReporter.cpp"
- #include "main/ripple_RippleMain.h"
- #include "node/ripple_HyperLevelDBBackendFactory.h"
- #include "node/ripple_KeyvaDBBackendFactory.h"
- #include "node/ripple_LevelDBBackendFactory.h"
- #include "node/ripple_MdbBackendFactory.h"
- #include "node/ripple_MemoryBackendFactory.h"
- #include "node/ripple_NullBackendFactory.h"
- #include "node/ripple_SqliteBackendFactory.h"
-#include "main/ripple_RippleMain.cpp"
-
-#include "node/ripple_HyperLevelDBBackendFactory.cpp"
-#include "node/ripple_KeyvaDBBackendFactory.cpp"
-#include "node/ripple_LevelDBBackendFactory.cpp"
-#include "node/ripple_MemoryBackendFactory.cpp"
-#include "node/ripple_NullBackendFactory.cpp"
-#include "node/ripple_MdbBackendFactory.cpp"
-#include "node/ripple_SqliteBackendFactory.cpp"
+#include "rpc/RPCErr.cpp"
+#include "rpc/RPCUtil.cpp"
 
 #ifdef _MSC_VER
-# pragma warning (push)
-# pragma warning (disable: 4244) // conversion, possible loss of data
-# pragma warning (disable: 4018) // signed/unsigned mismatch
+#pragma warning (push)
+#pragma warning (disable: 4018) // signed/unsigned mismatch
+#pragma warning (disable: 4244) // conversion, possible loss of data
 #endif
-#include "consensus/ripple_LedgerConsensus.cpp"
-#include "ledger/LedgerMaster.cpp"
+#include "rpc/CallRPC.cpp"
+#include "rpc/RPCHandler.cpp"
 #ifdef _MSC_VER
-# pragma warning (pop)
+#pragma warning (pop)
+#endif
+
+#include "rpc/RPCSub.cpp"
+
+#include "basics/ripple_RPCServerHandler.cpp" // needs RPCUtil
+#include "paths/ripple_PathRequest.cpp" // needs RPCErr.h
+#include "paths/ripple_RippleCalc.cpp"
+#include "paths/ripple_PathState.cpp"
+
+#include "main/ParameterTable.cpp"
+#include "peers/PeerDoor.cpp"
+#include "paths/ripple_RippleLineCache.cpp"
+#include "ledger/SerializedValidation.cpp"
+
+#ifdef _MSC_VER
+#pragma warning (push)
+#pragma warning (disable: 4309) // truncation of constant value
+#endif
+#include "websocket/WSConnection.cpp"
+#include "websocket/WSDoor.cpp"
+#include "websocket/WSServerHandler.cpp"
+#ifdef _MSC_VER
+#pragma warning (pop)
 #endif
 
 }
 
-//------------------------------------------------------------------------------
-
-// Must be outside the namespace for obvious reasons
-//
-int main (int argc, char** argv)
-{
-    ripple::RippleMain rippled;
-    return rippled.runFromMain (argc, argv);
-}

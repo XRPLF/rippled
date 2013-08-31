@@ -4,12 +4,6 @@
 */
 //==============================================================================
 
-/** Include this to get the @ref ripple_client module.
-
-    @file ripple_client.h
-    @ingroup ripple_client
-*/
-
 /** Client classes.
 
     This module provides classes that perform client interaction with the server.
