@@ -82,7 +82,6 @@
 #include "../ripple_leveldb/ripple_leveldb.h"
 #include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
 #include "../ripple_net/ripple_net.h"
-
 #include "../modules/ripple_websocket/ripple_websocket.h"
 
 //------------------------------------------------------------------------------
@@ -184,7 +183,6 @@ namespace ripple
 #include "paths/ripple_RippleState.h"
 #include "tx/AccountSetTransactor.h"
 #include "tx/TrustSetTransactor.h"
-#include "websocket/WSConnection.h"
 #include "websocket/WSServerHandler.h"
 #include "tx/WalletAddTransactor.h"
 
@@ -238,6 +236,10 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
 
+// The "real" contents of ripple_app.cpp
+#include "main/ripple_Application.cpp"
+
+// Here down is just to split things up for using less build memory
 #include "node/ripple_NodeObject.cpp"
 #include "node/ripple_NodeStore.cpp"
 #include "node/ripple_HyperLevelDBBackendFactory.cpp"
@@ -297,6 +299,7 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #include "rpc/RPCErr.h" // private
 #include "rpc/RPCUtil.h" // private
+#include "websocket/WSConnection.h" // private
 
 #include "rpc/RPCErr.cpp"
 #include "rpc/RPCUtil.cpp"
@@ -314,12 +317,9 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "peers/PeerDoor.cpp"
 #include "paths/ripple_RippleLineCache.cpp"
 #include "ledger/SerializedValidation.cpp"
-#include "tx/Transaction.cpp"
-#include "tx/TransactionEngine.cpp"
-#include "tx/TransactionMeta.cpp"
-#include "tx/Transactor.cpp"
 #include "websocket/WSConnection.cpp"
 #include "websocket/WSDoor.cpp"
+#include "websocket/WSServerHandler.cpp"
 
 #endif
 
@@ -327,17 +327,20 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 4
 
+#include "paths/ripple_RippleState.cpp"
 #include "peers/ripple_UniqueNodeList.cpp"
 #include "ledger/ripple_InboundLedger.cpp"
 
 #include "tx/PaymentTransactor.cpp"
 #include "tx/RegularKeySetTransactor.cpp"
-#include "paths/ripple_RippleState.cpp"
 #include "tx/TransactionCheck.cpp"
 #include "tx/TransactionMaster.cpp"
 #include "tx/TransactionQueue.cpp"
 #include "tx/TrustSetTransactor.cpp"
-#include "websocket/WSServerHandler.cpp"
+#include "tx/Transaction.cpp"
+#include "tx/TransactionEngine.cpp"
+#include "tx/TransactionMeta.cpp"
+#include "tx/Transactor.cpp"
 
 #endif
 
@@ -347,7 +350,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #include "ledger/LedgerTiming.cpp"
 #include "ledger/ripple_AcceptedLedgerTx.cpp"
-#include "main/ripple_Application.cpp"
 #include "main/ripple_LocalCredentials.cpp"
 #include "misc/ripple_FeeVote.cpp"
 #include "misc/ripple_Validations.cpp"
