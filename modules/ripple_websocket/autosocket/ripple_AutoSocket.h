@@ -127,7 +127,8 @@ public:
         {
             // must be plain
             mSecure = false;
-            mSocket->get_io_service ().post (boost::bind (cbFunc, error_code ()));
+            //mSocket->get_io_service ().post (boost::bind (cbFunc, error_code ()));
+            mSocket->get_io_service ().wrap (cbFunc) (error_code());
         }
         else
         {
@@ -154,7 +155,8 @@ public:
 			{
 				ec = e.code();
 			}
-            mSocket->get_io_service ().post (boost::bind (handler, ec));
+            //mSocket->get_io_service ().post (boost::bind (handler, ec));
+            mSocket->get_io_service ().wrap (handler) (ec);
         }
     }
 
