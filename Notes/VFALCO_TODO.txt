@@ -2,15 +2,12 @@
 RIPPLE TODO
 --------------------------------------------------------------------------------
 
-REMINDER: KEEP CHANGE LOG UP TO DATE
-
 Vinnie's List: Changes day to day, descending priority
-  (Items marked '*' can be handled by others.)
-
+- Full review of config docs / settings for RPC/WS
+- Fix RPCDoor to respect config setting for [rpc_secure]
 - PeerFinder collaboration with Nikolaos
 - beast::Socket integration in Ripple
 - Configuration list for Jenkins
-
 
 David Features:
 - override config items from command line
