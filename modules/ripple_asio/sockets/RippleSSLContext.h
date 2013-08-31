@@ -25,10 +25,15 @@ public:
     */
     static std::string getRawDHParams (int keySize);
 
-    /** Creates a bare context.
-        This is for WebSocket connections that don't use certificates.
+    /** Creates a bare SSL context with just sslv23 set.
+        This is used for RPC connections.
     */
     static RippleSSLContext* createBare ();
+
+    /** Creates a suitable for WebSocket without authentication.
+        This is for WebSocket connections that don't use certificates.
+    */
+    static RippleSSLContext* createWebSocket ();
 
     /** Create a context that allows anonymous connections.
         No certificates are required. Peers use this context.

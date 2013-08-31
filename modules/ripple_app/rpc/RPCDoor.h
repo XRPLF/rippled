@@ -7,29 +7,14 @@
 #ifndef RIPPLE_RPCDOOR_H
 #define RIPPLE_RPCDOOR_H
 
-/*
-Handles incoming connections from people making RPC Requests
+/** Listening socket for RPC requests.
 */
-
-class RPCDoor : LeakChecked <RPCDoor>
+class RPCDoor
 {
 public:
-    explicit RPCDoor (
-        boost::asio::io_service& io_service,
-        RPCServer::Handler& handler);
-    ~RPCDoor ();
+    static RPCDoor* New (boost::asio::io_service& io_service, RPCServer::Handler& handler);
 
-private:
-    RPCServer::Handler& m_rpcServerHandler;
-    boost::asio::ip::tcp::acceptor      mAcceptor;
-    boost::asio::deadline_timer         mDelayTimer;
-    boost::asio::ssl::context           mSSLContext;
-
-    void startListening ();
-    void handleConnect (RPCServer::pointer new_connection,
-                        const boost::system::error_code& error);
-
-    bool isClientAllowed (const std::string& ip);
+    virtual ~RPCDoor () { }
 };
 
 #endif

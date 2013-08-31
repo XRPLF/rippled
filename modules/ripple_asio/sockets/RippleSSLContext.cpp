@@ -14,14 +14,6 @@ public:
         : RippleSSLContext (m_context)
         , m_context (boost::asio::ssl::context::sslv23)
     {
-        m_context.set_options (
-            boost::asio::ssl::context::default_workarounds |
-            boost::asio::ssl::context::no_sslv2 |
-            boost::asio::ssl::context::single_dh_use);
-
-        SSL_CTX_set_tmp_dh_callback (
-            m_context.native_handle (),
-            tmp_dh_handler);
     }
 
     ~RippleSSLContextImp ()
@@ -70,8 +62,25 @@ public:
 
     //--------------------------------------------------------------------------
 
+    // Does common initialization for all but the bare context type.
+    void initCommon ()
+    {
+        m_context.set_options (
+            boost::asio::ssl::context::default_workarounds |
+            boost::asio::ssl::context::no_sslv2 |
+            boost::asio::ssl::context::single_dh_use);
+
+        SSL_CTX_set_tmp_dh_callback (
+            m_context.native_handle (),
+            tmp_dh_handler);
+    }
+
+    //--------------------------------------------------------------------------
+
     void initAnonymous (String const& cipherList)
     {
+        initCommon ();
+
         int const result = SSL_CTX_set_cipher_list (
             m_context.native_handle (),
             cipherList.toStdString ().c_str ());
@@ -85,6 +94,8 @@ public:
     void initAuthenticated (
         std::string key_file, std::string cert_file, std::string chain_file)
     {
+        initCommon ();
+
         SSL_CTX* const ssl = m_context.native_handle ();
 
         bool cert_set = false;
@@ -241,9 +252,19 @@ RippleSSLContext::RippleSSLContext (ContextType& context)
     : SSLContext (context)
 {
 }
+
 RippleSSLContext* RippleSSLContext::createBare ()
 {
     ScopedPointer <RippleSSLContextImp> context (new RippleSSLContextImp ());
+
+    return context.release ();
+}
+
+RippleSSLContext* RippleSSLContext::createWebSocket ()
+{
+    ScopedPointer <RippleSSLContextImp> context (new RippleSSLContextImp ());
+
+    context->initCommon ();
 
     return context.release ();
 }

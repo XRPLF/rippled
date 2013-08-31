@@ -577,7 +577,7 @@ public:
         }
         else
         {
-            m_wsSSLContext = RippleSSLContext::createBare ();
+            m_wsSSLContext = RippleSSLContext::createWebSocket ();
         }
 
         // Create private listening WebSocket socket
@@ -627,7 +627,7 @@ public:
         {
             try
             {
-                mRPCDoor = new RPCDoor (m_mainService, m_rpcServerHandler);
+                mRPCDoor = RPCDoor::New (m_mainService, m_rpcServerHandler);
             }
             catch (const std::exception& e)
             {

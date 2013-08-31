@@ -158,7 +158,6 @@ namespace ripple
 #include "main/ripple_LocalCredentials.h"
 #include "websocket/WSDoor.h"
  #include "boost/ripple_IoService.h"
- #include "boost/ripple_SslContext.h"
 #include "main/ripple_Application.h"
 #include "rpc/RPCHandler.h"
 #include "tx/TransactionQueue.h"
@@ -296,7 +295,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "data/ripple_DBInit.cpp"
 
 #include "boost/ripple_IoService.cpp"
-#include "boost/ripple_SslContext.cpp"
 
 #endif
 
@@ -334,7 +332,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 #include "tx/PaymentTransactor.cpp"
 #include "tx/RegularKeySetTransactor.cpp"
 #include "paths/ripple_RippleState.cpp"
-#include "rpc/RPCDoor.cpp"
 #include "tx/TransactionCheck.cpp"
 #include "tx/TransactionMaster.cpp"
 #include "tx/TransactionQueue.cpp"
@@ -354,16 +351,16 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 namespace ripple
 {
 
-#include "peers/ripple_Peer.cpp"
-#include "main/ripple_Application.cpp"
-#include "tx/OfferCreateTransactor.cpp"
-#include "misc/ripple_Validations.cpp"
-
-#include "main/ripple_LocalCredentials.cpp"
-#include "tx/WalletAddTransactor.cpp"
-#include "ledger/ripple_AcceptedLedgerTx.cpp"
-#include "misc/ripple_FeeVote.cpp"
 #include "ledger/LedgerTiming.cpp"
+#include "ledger/ripple_AcceptedLedgerTx.cpp"
+#include "main/ripple_Application.cpp"
+#include "main/ripple_LocalCredentials.cpp"
+#include "misc/ripple_FeeVote.cpp"
+#include "misc/ripple_Validations.cpp"
+#include "peers/ripple_Peer.cpp"
+#include "rpc/RPCDoor.cpp"
+#include "tx/OfferCreateTransactor.cpp"
+#include "tx/WalletAddTransactor.cpp"
 
 #endif
 

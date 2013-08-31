@@ -31,12 +31,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\boost\ripple_SslContext.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\consensus\ripple_DisputedTx.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1371,7 +1365,6 @@
     <ClInclude Include="..\..\BeastConfig.h" />
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.h" />
     <ClInclude Include="..\..\modules\ripple_app\boost\ripple_IoService.h" />
-    <ClInclude Include="..\..\modules\ripple_app\boost\ripple_SslContext.h" />
     <ClInclude Include="..\..\modules\ripple_app\consensus\ripple_DisputedTx.h" />
     <ClInclude Include="..\..\modules\ripple_app\consensus\ripple_LedgerConsensus.h" />
     <ClInclude Include="..\..\modules\ripple_app\contracts\ripple_Contract.h" />

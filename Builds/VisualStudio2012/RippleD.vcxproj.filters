@@ -849,9 +849,6 @@
     <ClCompile Include="..\..\modules\ripple_app\boost\ripple_IoService.cpp">
       <Filter>[1] Ripple\ripple_app\boost</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\boost\ripple_SslContext.cpp">
-      <Filter>[1] Ripple\ripple_app\boost</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_asio\sockets\RippleSSLContext.cpp">
       <Filter>[1] Ripple\ripple_asio\sockets</Filter>
     </ClCompile>
@@ -1617,9 +1614,6 @@
       <Filter>[1] Ripple\ripple_asio\sockets</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\boost\ripple_IoService.h">
-      <Filter>[1] Ripple\ripple_app\boost</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\boost\ripple_SslContext.h">
       <Filter>[1] Ripple\ripple_app\boost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_LoggedTimings.h">
