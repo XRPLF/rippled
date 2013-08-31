@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FIFOFREESTOREWITHOUTTLS_BEASTHEADER
-#define BEAST_FIFOFREESTOREWITHOUTTLS_BEASTHEADER
+#ifndef BEAST_FIFOFREESTOREWITHOUTTLS_H_INCLUDED
+#define BEAST_FIFOFREESTOREWITHOUTTLS_H_INCLUDED
 
 /*============================================================================*/
 /**

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PERFORMANCECOUNTER_BEASTHEADER
-#define BEAST_PERFORMANCECOUNTER_BEASTHEADER
+#ifndef BEAST_PERFORMANCECOUNTER_H_INCLUDED
+#define BEAST_PERFORMANCECOUNTER_H_INCLUDED
 
 #include "../files/beast_File.h"
 
@@ -101,4 +101,4 @@ private:
     File outputFile;
 };
 
-#endif   // BEAST_PERFORMANCECOUNTER_BEASTHEADER
+#endif   // BEAST_PERFORMANCECOUNTER_H_INCLUDED

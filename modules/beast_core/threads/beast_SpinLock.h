@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SPINLOCK_BEASTHEADER
-#define BEAST_SPINLOCK_BEASTHEADER
+#ifndef BEAST_SPINLOCK_H_INCLUDED
+#define BEAST_SPINLOCK_H_INCLUDED
 
 #include "beast_ScopedLock.h"
 
@@ -83,4 +83,4 @@ private:
 };
 
 
-#endif   // BEAST_SPINLOCK_BEASTHEADER
+#endif   // BEAST_SPINLOCK_H_INCLUDED

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FIXEDINPUTBUFFER_H_INCLUDED
-#define BEAST_FIXEDINPUTBUFFER_H_INCLUDED
+#ifndef BEAST_ASIO_BASICS_FIXEDINPUTBUFFER_H_INCLUDED
+#define BEAST_ASIO_BASICS_FIXEDINPUTBUFFER_H_INCLUDED
 
 /** Represents a small, fixed size buffer.
     This provides a convenient interface for doing a bytewise

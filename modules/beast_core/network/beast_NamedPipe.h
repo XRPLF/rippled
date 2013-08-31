@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NAMEDPIPE_BEASTHEADER
-#define BEAST_NAMEDPIPE_BEASTHEADER
+#ifndef BEAST_NAMEDPIPE_H_INCLUDED
+#define BEAST_NAMEDPIPE_H_INCLUDED
 
 #include "../threads/beast_ReadWriteLock.h"
 
@@ -95,4 +95,4 @@ private:
 };
 
 
-#endif   // BEAST_NAMEDPIPE_BEASTHEADER
+#endif   // BEAST_NAMEDPIPE_H_INCLUDED

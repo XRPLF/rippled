@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CHARACTERFUNCTIONS_BEASTHEADER
-#define BEAST_CHARACTERFUNCTIONS_BEASTHEADER
+#ifndef BEAST_CHARACTERFUNCTIONS_H_INCLUDED
+#define BEAST_CHARACTERFUNCTIONS_H_INCLUDED
 
 
 //==============================================================================
@@ -582,4 +582,4 @@ private:
 };
 
 
-#endif   // BEAST_CHARACTERFUNCTIONS_BEASTHEADER
+#endif   // BEAST_CHARACTERFUNCTIONS_H_INCLUDED

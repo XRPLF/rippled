@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SOCKETWRAPPER_H_INCLUDED
-#define BEAST_SOCKETWRAPPER_H_INCLUDED
+#ifndef BEAST_ASIO_SOCKETS_SOCKETWRAPPER_H_INCLUDED
+#define BEAST_ASIO_SOCKETS_SOCKETWRAPPER_H_INCLUDED
 
 /** Wraps a reference to any object and exports all availble interfaces.
 

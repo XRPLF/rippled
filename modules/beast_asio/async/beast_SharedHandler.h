@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SHAREDHANDLER_H_INCLUDED
-#define BEAST_SHAREDHANDLER_H_INCLUDED
+#ifndef BEAST_ASIO_ASYNC_SHAREDHANDLER_H_INCLUDED
+#define BEAST_ASIO_ASYNC_SHAREDHANDLER_H_INCLUDED
 
 template <typename T>
 struct SharedHandlerAllocator;

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LINKEDLISTPOINTER_BEASTHEADER
-#define BEAST_LINKEDLISTPOINTER_BEASTHEADER
+#ifndef BEAST_LINKEDLISTPOINTER_H_INCLUDED
+#define BEAST_LINKEDLISTPOINTER_H_INCLUDED
 
 
 //==============================================================================
@@ -359,4 +359,4 @@ private:
 };
 
 
-#endif   // BEAST_LINKEDLISTPOINTER_BEASTHEADER
+#endif   // BEAST_LINKEDLISTPOINTER_H_INCLUDED

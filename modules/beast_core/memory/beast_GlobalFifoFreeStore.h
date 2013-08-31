@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_GLOBALFIFOFREESTORE_BEASTHEADER
-#define BEAST_GLOBALFIFOFREESTORE_BEASTHEADER
+#ifndef BEAST_GLOBALFIFOFREESTORE_H_INCLUDED
+#define BEAST_GLOBALFIFOFREESTORE_H_INCLUDED
 
 /*============================================================================*/
 /**

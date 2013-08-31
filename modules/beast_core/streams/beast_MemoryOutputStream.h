@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MEMORYOUTPUTSTREAM_BEASTHEADER
-#define BEAST_MEMORYOUTPUTSTREAM_BEASTHEADER
+#ifndef BEAST_MEMORYOUTPUTSTREAM_H_INCLUDED
+#define BEAST_MEMORYOUTPUTSTREAM_H_INCLUDED
 
 #include "beast_OutputStream.h"
 #include "../memory/beast_MemoryBlock.h"

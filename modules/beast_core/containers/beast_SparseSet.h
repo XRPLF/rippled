@@ -21,12 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SPARSESET_BEASTHEADER
-#define BEAST_SPARSESET_BEASTHEADER
-
-#include "../maths/beast_Range.h"
-#include "../threads/beast_CriticalSection.h"
-
+#ifndef BEAST_SPARSESET_H_INCLUDED
+#define BEAST_SPARSESET_H_INCLUDED
 
 //==============================================================================
 /**
@@ -293,4 +289,4 @@ private:
 
 
 
-#endif   // BEAST_SPARSESET_BEASTHEADER
+#endif   // BEAST_SPARSESET_H_INCLUDED

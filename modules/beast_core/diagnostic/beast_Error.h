@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ERROR_BEASTHEADER
-#define BEAST_ERROR_BEASTHEADER
+#ifndef BEAST_ERROR_H_INCLUDED
+#define BEAST_ERROR_H_INCLUDED
 
 /** A concise error report.
 

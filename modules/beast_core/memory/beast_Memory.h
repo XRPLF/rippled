@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MEMORY_BEASTHEADER
-#define BEAST_MEMORY_BEASTHEADER
+#ifndef BEAST_MEMORY_H_INCLUDED
+#define BEAST_MEMORY_H_INCLUDED
 
 //==============================================================================
 /** Fills a block of memory with zeros. */

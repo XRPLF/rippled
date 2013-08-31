@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREADLOCALVALUE_BEASTHEADER
-#define BEAST_THREADLOCALVALUE_BEASTHEADER
+#ifndef BEAST_THREADLOCALVALUE_H_INCLUDED
+#define BEAST_THREADLOCALVALUE_H_INCLUDED
 
 // (NB: on win32, native thread-locals aren't possible in a dynamically loaded DLL in XP).
 #if ! ((BEAST_MSVC && (BEAST_64BIT || ! defined (BeastPlugin_PluginCode))) \
@@ -187,4 +187,4 @@ private:
 };
 
 
-#endif   // BEAST_THREADLOCALVALUE_BEASTHEADER
+#endif   // BEAST_THREADLOCALVALUE_H_INCLUDED

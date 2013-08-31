@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SHAREDTABLE_BEASTHEADER
-#define BEAST_SHAREDTABLE_BEASTHEADER
+#ifndef BEAST_SHAREDTABLE_H_INCLUDED
+#define BEAST_SHAREDTABLE_H_INCLUDED
 
 /** Handle to a reference counted fixed size table.
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HANDSHAKEDETECTLOGICPROXY_H_INCLUDED
-#define BEAST_HANDSHAKEDETECTLOGICPROXY_H_INCLUDED
+#ifndef BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICPROXY_H_INCLUDED
+#define BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICPROXY_H_INCLUDED
 
 /** Handshake detector for the PROXY protcol
 

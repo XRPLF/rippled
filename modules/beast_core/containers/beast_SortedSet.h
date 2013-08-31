@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SORTEDSET_BEASTHEADER
-#define BEAST_SORTEDSET_BEASTHEADER
+#ifndef BEAST_SORTEDSET_H_INCLUDED
+#define BEAST_SORTEDSET_H_INCLUDED
 
 #include "beast_ArrayAllocationBase.h"
 #include "../threads/beast_CriticalSection.h"
@@ -492,4 +492,4 @@ private:
   #pragma warning (pop)
 #endif
 
-#endif   // BEAST_SORTEDSET_BEASTHEADER
+#endif   // BEAST_SORTEDSET_H_INCLUDED

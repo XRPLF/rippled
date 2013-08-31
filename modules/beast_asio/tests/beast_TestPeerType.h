@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERTYPE_H_INCLUDED
-#define BEAST_TESTPEERTYPE_H_INCLUDED
+#ifndef BEAST_ASIO_TESTS_TESTPEERTYPE_H_INCLUDED
+#define BEAST_ASIO_TESTS_TESTPEERTYPE_H_INCLUDED
 
 template <typename Logic, typename Details>
 class TestPeerType

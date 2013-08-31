@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_RELATIVETIME_BEASTHEADER
-#define BEAST_RELATIVETIME_BEASTHEADER
+#ifndef BEAST_RELATIVETIME_H_INCLUDED
+#define BEAST_RELATIVETIME_H_INCLUDED
 
 #include "../text/beast_String.h"
 
@@ -176,4 +176,4 @@ RelativeTime  operator+  (RelativeTime t1, RelativeTime t2) noexcept;
 /** Subtracts two RelativeTimes. */
 RelativeTime  operator-  (RelativeTime t1, RelativeTime t2) noexcept;
 
-#endif   // BEAST_RELATIVETIME_BEASTHEADER
+#endif   // BEAST_RELATIVETIME_H_INCLUDED

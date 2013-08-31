@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FILESEARCHPATH_BEASTHEADER
-#define BEAST_FILESEARCHPATH_BEASTHEADER
+#ifndef BEAST_FILESEARCHPATH_H_INCLUDED
+#define BEAST_FILESEARCHPATH_H_INCLUDED
 
 #include "beast_File.h"
 #include "../text/beast_StringArray.h"
@@ -159,4 +159,4 @@ private:
     void init (const String& path);
 };
 
-#endif   // BEAST_FILESEARCHPATH_BEASTHEADER
+#endif   // BEAST_FILESEARCHPATH_H_INCLUDED

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CALLQUEUE_BEASTHEADER
-#define BEAST_CALLQUEUE_BEASTHEADER
+#ifndef BEAST_CALLQUEUE_H_INCLUDED
+#define BEAST_CALLQUEUE_H_INCLUDED
 
 /*============================================================================*/
 /**

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TIME_BEASTHEADER
-#define BEAST_TIME_BEASTHEADER
+#ifndef BEAST_TIME_H_INCLUDED
+#define BEAST_TIME_H_INCLUDED
 
 #include "beast_RelativeTime.h"
 
@@ -398,4 +398,4 @@ BEAST_API bool operator>  (Time time1, Time time2);
 BEAST_API bool operator>= (Time time1, Time time2);
 
 
-#endif   // BEAST_TIME_BEASTHEADER
+#endif   // BEAST_TIME_H_INCLUDED

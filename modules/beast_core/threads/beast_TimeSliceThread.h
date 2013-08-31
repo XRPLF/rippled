@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TIMESLICETHREAD_BEASTHEADER
-#define BEAST_TIMESLICETHREAD_BEASTHEADER
+#ifndef BEAST_TIMESLICETHREAD_H_INCLUDED
+#define BEAST_TIMESLICETHREAD_H_INCLUDED
 
 #include "beast_Thread.h"
 #include "../containers/beast_Array.h"
@@ -144,4 +144,4 @@ private:
 };
 
 
-#endif   // BEAST_TIMESLICETHREAD_BEASTHEADER
+#endif   // BEAST_TIMESLICETHREAD_H_INCLUDED

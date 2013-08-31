@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_OSX_OBJCHELPERS_BEASTHEADER
-#define BEAST_OSX_OBJCHELPERS_BEASTHEADER
+#ifndef BEAST_OSX_OBJCHELPERS_H_INCLUDED
+#define BEAST_OSX_OBJCHELPERS_H_INCLUDED
 
 
 /* This file contains a few helper functions that are used internally but which
@@ -148,4 +148,4 @@ private:
 };
 
 
-#endif   // BEAST_OSX_OBJCHELPERS_BEASTHEADER
+#endif   // BEAST_OSX_OBJCHELPERS_H_INCLUDED

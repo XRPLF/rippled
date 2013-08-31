@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_WINDOWSREGISTRY_BEASTHEADER
-#define BEAST_WINDOWSREGISTRY_BEASTHEADER
+#ifndef BEAST_WINDOWSREGISTRY_H_INCLUDED
+#define BEAST_WINDOWSREGISTRY_H_INCLUDED
 
 #if BEAST_WINDOWS || DOXYGEN
 
@@ -115,4 +115,4 @@ private:
 };
 
 #endif
-#endif   // BEAST_WINDOWSREGISTRY_BEASTHEADER
+#endif   // BEAST_WINDOWSREGISTRY_H_INCLUDED

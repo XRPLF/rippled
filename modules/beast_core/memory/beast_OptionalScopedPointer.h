@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_OPTIONALSCOPEDPOINTER_BEASTHEADER
-#define BEAST_OPTIONALSCOPEDPOINTER_BEASTHEADER
+#ifndef BEAST_OPTIONALSCOPEDPOINTER_H_INCLUDED
+#define BEAST_OPTIONALSCOPEDPOINTER_H_INCLUDED
 
 #include "beast_ScopedPointer.h"
 
@@ -180,4 +180,4 @@ private:
 };
 
 
-#endif   // BEAST_OPTIONALSCOPEDPOINTER_BEASTHEADER
+#endif   // BEAST_OPTIONALSCOPEDPOINTER_H_INCLUDED

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CONCURRENTOBJECT_BEASTHEADER
-#define BEAST_CONCURRENTOBJECT_BEASTHEADER
+#ifndef BEAST_CONCURRENTOBJECT_H_INCLUDED
+#define BEAST_CONCURRENTOBJECT_H_INCLUDED
 
 /*============================================================================*/
 /**

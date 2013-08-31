@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CHARPOINTER_ASCII_BEASTHEADER
-#define BEAST_CHARPOINTER_ASCII_BEASTHEADER
+#ifndef BEAST_CHARPOINTER_ASCII_H_INCLUDED
+#define BEAST_CHARPOINTER_ASCII_H_INCLUDED
 
 
 //==============================================================================
@@ -379,4 +379,4 @@ private:
 };
 
 
-#endif   // BEAST_CHARPOINTER_ASCII_BEASTHEADER
+#endif   // BEAST_CHARPOINTER_ASCII_H_INCLUDED

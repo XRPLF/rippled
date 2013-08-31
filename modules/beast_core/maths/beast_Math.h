@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MATH_BEASTHEADER
-#define BEAST_MATH_BEASTHEADER
+#ifndef BEAST_MATH_H_INCLUDED
+#define BEAST_MATH_H_INCLUDED
 
 //
 // Miscellaneous mathematical calculations

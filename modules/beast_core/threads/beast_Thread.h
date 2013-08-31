@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_BEASTHEADER
-#define BEAST_THREAD_BEASTHEADER
+#ifndef BEAST_THREAD_H_INCLUDED
+#define BEAST_THREAD_H_INCLUDED
 
 #include "beast_WaitableEvent.h"
 #include "beast_CriticalSection.h"
@@ -281,4 +281,4 @@ private:
     static bool setThreadPriority (void*, int);
 };
 
-#endif   // BEAST_THREAD_BEASTHEADER
+#endif   // BEAST_THREAD_H_INCLUDED

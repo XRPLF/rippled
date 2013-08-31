@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FILEINPUTSTREAM_BEASTHEADER
-#define BEAST_FILEINPUTSTREAM_BEASTHEADER
+#ifndef BEAST_FILEINPUTSTREAM_H_INCLUDED
+#define BEAST_FILEINPUTSTREAM_H_INCLUDED
 
 #include "beast_File.h"
 #include "../streams/beast_InputStream.h"
@@ -91,4 +91,4 @@ private:
     size_t readInternal (void* buffer, size_t numBytes);
 };
 
-#endif   // BEAST_FILEINPUTSTREAM_BEASTHEADER
+#endif   // BEAST_FILEINPUTSTREAM_H_INCLUDED

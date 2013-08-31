@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_XMLELEMENT_BEASTHEADER
-#define BEAST_XMLELEMENT_BEASTHEADER
+#ifndef BEAST_XMLELEMENT_H_INCLUDED
+#define BEAST_XMLELEMENT_H_INCLUDED
 
 #include "../text/beast_String.h"
 #include "../streams/beast_OutputStream.h"
@@ -729,4 +729,4 @@ private:
 };
 
 
-#endif   // BEAST_XMLELEMENT_BEASTHEADER
+#endif   // BEAST_XMLELEMENT_H_INCLUDED

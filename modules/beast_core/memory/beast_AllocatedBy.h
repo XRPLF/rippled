@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ALLOCATEDBY_BEASTHEADER
-#define BEAST_ALLOCATEDBY_BEASTHEADER
+#ifndef BEAST_ALLOCATEDBY_H_INCLUDED
+#define BEAST_ALLOCATEDBY_H_INCLUDED
 
 /*============================================================================*/
 /**

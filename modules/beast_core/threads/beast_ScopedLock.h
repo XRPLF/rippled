@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SCOPEDLOCK_BEASTHEADER
-#define BEAST_SCOPEDLOCK_BEASTHEADER
+#ifndef BEAST_SCOPEDLOCK_H_INCLUDED
+#define BEAST_SCOPEDLOCK_H_INCLUDED
 
 //==============================================================================
 /**

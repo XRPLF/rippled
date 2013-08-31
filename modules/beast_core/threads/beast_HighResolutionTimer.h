@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HIGHRESOLUTIONTIMER_BEASTHEADER
-#define BEAST_HIGHRESOLUTIONTIMER_BEASTHEADER
+#ifndef BEAST_HIGHRESOLUTIONTIMER_H_INCLUDED
+#define BEAST_HIGHRESOLUTIONTIMER_H_INCLUDED
 
 /**
     A high-resolution periodic timer.
@@ -99,4 +99,4 @@ private:
 };
 
 
-#endif   // BEAST_HIGHRESOLUTIONTIMER_BEASTHEADER
+#endif   // BEAST_HIGHRESOLUTIONTIMER_H_INCLUDED

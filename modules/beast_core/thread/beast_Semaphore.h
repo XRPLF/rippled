@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SEMAPHORE_BEASTHEADER
-#define BEAST_SEMAPHORE_BEASTHEADER
+#ifndef BEAST_SEMAPHORE_H_INCLUDED
+#define BEAST_SEMAPHORE_H_INCLUDED
 
 /*============================================================================*/
 /**

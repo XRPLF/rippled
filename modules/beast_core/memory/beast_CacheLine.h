@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CACHELINE_BEASTHEADER
-#define BEAST_CACHELINE_BEASTHEADER
+#ifndef BEAST_CACHELINE_H_INCLUDED
+#define BEAST_CACHELINE_H_INCLUDED
 
 // Allows turning off of all padding,
 // e.g. for memory-constrained systems or testing.

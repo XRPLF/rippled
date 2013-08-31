@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MEMORYALIGNMENT_BEASTHEADER
-#define BEAST_MEMORYALIGNMENT_BEASTHEADER
+#ifndef BEAST_MEMORYALIGNMENT_H_INCLUDED
+#define BEAST_MEMORYALIGNMENT_H_INCLUDED
 
 namespace Memory
 {

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREADPOOL_BEASTHEADER
-#define BEAST_THREADPOOL_BEASTHEADER
+#ifndef BEAST_THREADPOOL_H_INCLUDED
+#define BEAST_THREADPOOL_H_INCLUDED
 
 #include "beast_Thread.h"
 #include "../text/beast_StringArray.h"
@@ -306,4 +306,4 @@ private:
 };
 
 
-#endif   // BEAST_THREADPOOL_BEASTHEADER
+#endif   // BEAST_THREADPOOL_H_INCLUDED

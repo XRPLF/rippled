@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREADGROUP_BEASTHEADER
-#define BEAST_THREADGROUP_BEASTHEADER
+#ifndef BEAST_THREADGROUP_H_INCLUDED
+#define BEAST_THREADGROUP_H_INCLUDED
 
 /*============================================================================*/
 /**

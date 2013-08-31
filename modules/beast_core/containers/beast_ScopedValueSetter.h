@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SCOPEDVALUESETTER_BEASTHEADER
-#define BEAST_SCOPEDVALUESETTER_BEASTHEADER
+#ifndef BEAST_SCOPEDVALUESETTER_H_INCLUDED
+#define BEAST_SCOPEDVALUESETTER_H_INCLUDED
 
 
 //==============================================================================
@@ -90,4 +90,4 @@ private:
 };
 
 
-#endif   // BEAST_SCOPEDVALUESETTER_BEASTHEADER
+#endif   // BEAST_SCOPEDVALUESETTER_H_INCLUDED

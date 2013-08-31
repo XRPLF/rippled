@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_STRINGPOOL_BEASTHEADER
-#define BEAST_STRINGPOOL_BEASTHEADER
+#ifndef BEAST_STRINGPOOL_H_INCLUDED
+#define BEAST_STRINGPOOL_H_INCLUDED
 
 #include "beast_String.h"
 #include "../containers/beast_Array.h"
@@ -87,4 +87,4 @@ private:
 };
 
 
-#endif   // BEAST_STRINGPOOL_BEASTHEADER
+#endif   // BEAST_STRINGPOOL_H_INCLUDED

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TEMPORARYFILE_BEASTHEADER
-#define BEAST_TEMPORARYFILE_BEASTHEADER
+#ifndef BEAST_TEMPORARYFILE_H_INCLUDED
+#define BEAST_TEMPORARYFILE_H_INCLUDED
 
 #include "beast_File.h"
 
@@ -161,4 +161,4 @@ private:
     const File temporaryFile, targetFile;
 };
 
-#endif   // BEAST_TEMPORARYFILE_BEASTHEADER
+#endif   // BEAST_TEMPORARYFILE_H_INCLUDED

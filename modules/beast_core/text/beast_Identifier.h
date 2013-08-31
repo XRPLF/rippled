@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_IDENTIFIER_BEASTHEADER
-#define BEAST_IDENTIFIER_BEASTHEADER
+#ifndef BEAST_IDENTIFIER_H_INCLUDED
+#define BEAST_IDENTIFIER_H_INCLUDED
 
 class StringPool;
 
@@ -103,4 +103,4 @@ private:
 };
 
 
-#endif   // BEAST_IDENTIFIER_BEASTHEADER
+#endif   // BEAST_IDENTIFIER_H_INCLUDED

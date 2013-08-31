@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SOCKETBASE_H_INCLUDED
-#define BEAST_SOCKETBASE_H_INCLUDED
+#ifndef BEAST_ASIO_SOCKETS_SOCKETBASE_H_INCLUDED
+#define BEAST_ASIO_SOCKETS_SOCKETBASE_H_INCLUDED
 
 /** Common implementation details for Socket and related classes.
     Normally you wont need to use this.

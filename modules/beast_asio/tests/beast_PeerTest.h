@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERTEST_H_INCLUDED
-#define RIPPLE_PEERTEST_H_INCLUDED
+#ifndef BEAST_ASIO_TESTS_PEERTEST_H_INCLUDED
+#define BEAST_ASIO_TESTS_PEERTEST_H_INCLUDED
 
 /** Performs a test of two peers defined by template parameters.
 */

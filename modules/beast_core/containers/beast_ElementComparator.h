@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ELEMENTCOMPARATOR_BEASTHEADER
-#define BEAST_ELEMENTCOMPARATOR_BEASTHEADER
+#ifndef BEAST_ELEMENTCOMPARATOR_H_INCLUDED
+#define BEAST_ELEMENTCOMPARATOR_H_INCLUDED
 
 
 //==============================================================================
@@ -271,4 +271,4 @@ public:
 };
 
 
-#endif   // BEAST_ELEMENTCOMPARATOR_BEASTHEADER
+#endif   // BEAST_ELEMENTCOMPARATOR_H_INCLUDED

@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SYSTEMSTATS_BEASTHEADER
-#define BEAST_SYSTEMSTATS_BEASTHEADER
+#ifndef BEAST_SYSTEMSTATS_H_INCLUDED
+#define BEAST_SYSTEMSTATS_H_INCLUDED
 
 //==============================================================================
 /**
@@ -178,4 +178,4 @@ private:
 };
 
 
-#endif   // BEAST_SYSTEMSTATS_BEASTHEADER
+#endif   // BEAST_SYSTEMSTATS_H_INCLUDED

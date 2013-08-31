@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_STANDARDHEADER_BEASTHEADER
-#define BEAST_STANDARDHEADER_BEASTHEADER
+#ifndef BEAST_STANDARDHEADER_H_INCLUDED
+#define BEAST_STANDARDHEADER_H_INCLUDED
 
 //------------------------------------------------------------------------------
 
@@ -47,7 +47,6 @@
 
 //------------------------------------------------------------------------------
 
-#include "beast_TargetPlatform.h"  // (sets up the various BEAST_WINDOWS, BEAST_MAC, etc flags)
 #include "beast_PlatformDefs.h"
 
 // Now we'll include some common OS headers..
@@ -170,17 +169,5 @@
 
 /** This macro is added to all beast public function declarations. */
 #define BEAST_PUBLIC_FUNCTION        BEAST_API BEAST_CALLTYPE
-
-//------------------------------------------------------------------------------
-
-namespace beast
-{
-
-extern BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger();
-extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) noexcept;
-
-// These are so common that we include them early
-// ?
-}
 
 #endif

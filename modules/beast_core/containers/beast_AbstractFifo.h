@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ABSTRACTFIFO_BEASTHEADER
-#define BEAST_ABSTRACTFIFO_BEASTHEADER
+#ifndef BEAST_ABSTRACTFIFO_H_INCLUDED
+#define BEAST_ABSTRACTFIFO_H_INCLUDED
 
 //==============================================================================
 /**

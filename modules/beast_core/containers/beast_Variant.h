@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_VARIANT_BEASTHEADER
-#define BEAST_VARIANT_BEASTHEADER
+#ifndef BEAST_VARIANT_H_INCLUDED
+#define BEAST_VARIANT_H_INCLUDED
 
 #include "../text/beast_Identifier.h"
 #include "../streams/beast_OutputStream.h"
@@ -299,4 +299,4 @@ bool operator== (const var& v1, const char* v2);
 bool operator!= (const var& v1, const char* v2);
 
 
-#endif   // BEAST_VARIANT_BEASTHEADER
+#endif   // BEAST_VARIANT_H_INCLUDED

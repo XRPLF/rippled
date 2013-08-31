@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_WIN32_COMSMARTPTR_BEASTHEADER
-#define BEAST_WIN32_COMSMARTPTR_BEASTHEADER
+#ifndef BEAST_WIN32_COMSMARTPTR_H_INCLUDED
+#define BEAST_WIN32_COMSMARTPTR_H_INCLUDED
 
 #ifndef _MSC_VER
 template<typename Type> struct UUIDGetter { static CLSID get() { bassertfalse; return CLSID(); } };
@@ -162,4 +162,4 @@ public:
     }
 };
 
-#endif   // BEAST_WIN32_COMSMARTPTR_BEASTHEADER
+#endif   // BEAST_WIN32_COMSMARTPTR_H_INCLUDED

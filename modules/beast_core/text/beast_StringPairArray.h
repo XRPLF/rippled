@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_STRINGPAIRARRAY_BEASTHEADER
-#define BEAST_STRINGPAIRARRAY_BEASTHEADER
+#ifndef BEAST_STRINGPAIRARRAY_H_INCLUDED
+#define BEAST_STRINGPAIRARRAY_H_INCLUDED
 
 #include "beast_StringArray.h"
 
@@ -153,4 +153,4 @@ private:
 };
 
 
-#endif   // BEAST_STRINGPAIRARRAY_BEASTHEADER
+#endif   // BEAST_STRINGPAIRARRAY_H_INCLUDED

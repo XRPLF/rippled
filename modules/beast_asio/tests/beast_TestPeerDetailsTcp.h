@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEERDETAILSTCP_H_INCLUDED
-#define BEAST_TESTPEERDETAILSTCP_H_INCLUDED
+#ifndef BEAST_ASIO_TESTS_TESTPEERDETAILSTCP_H_INCLUDED
+#define BEAST_ASIO_TESTS_TESTPEERDETAILSTCP_H_INCLUDED
 
 /** Some predefined Detail classes for TestPeer
 */

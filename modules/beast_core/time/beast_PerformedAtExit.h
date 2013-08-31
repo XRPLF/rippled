@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PERFORMEDATEXIT_BEASTHEADER
-#define BEAST_PERFORMEDATEXIT_BEASTHEADER
+#ifndef BEAST_PERFORMEDATEXIT_H_INCLUDED
+#define BEAST_PERFORMEDATEXIT_H_INCLUDED
 
 /*============================================================================*/
 /**

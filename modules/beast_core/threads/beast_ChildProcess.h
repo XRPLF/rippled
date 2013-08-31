@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CHILDPROCESS_BEASTHEADER
-#define BEAST_CHILDPROCESS_BEASTHEADER
+#ifndef BEAST_CHILDPROCESS_H_INCLUDED
+#define BEAST_CHILDPROCESS_H_INCLUDED
 
 
 //==============================================================================
@@ -95,4 +95,4 @@ private:
 };
 
 
-#endif   // BEAST_CHILDPROCESS_BEASTHEADER
+#endif   // BEAST_CHILDPROCESS_H_INCLUDED

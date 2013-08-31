@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_EXPRESSION_BEASTHEADER
-#define BEAST_EXPRESSION_BEASTHEADER
+#ifndef BEAST_EXPRESSION_H_INCLUDED
+#define BEAST_EXPRESSION_H_INCLUDED
 
 #include "../memory/beast_SharedObject.h"
 #include "../containers/beast_Array.h"
@@ -266,4 +266,4 @@ private:
     explicit Expression (Term*);
 };
 
-#endif   // BEAST_EXPRESSION_BEASTHEADER
+#endif   // BEAST_EXPRESSION_H_INCLUDED

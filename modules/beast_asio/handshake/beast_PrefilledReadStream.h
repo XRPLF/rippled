@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PREFILLEDREADSTREAM_H_INCLUDED
-#define BEAST_PREFILLEDREADSTREAM_H_INCLUDED
+#ifndef BEAST_ASIO_HANDSHAKE_PREFILLEDREADSTREAM_H_INCLUDED
+#define BEAST_ASIO_HANDSHAKE_PREFILLEDREADSTREAM_H_INCLUDED
 
 /** Front-ends a stream with a provided block of data.
 

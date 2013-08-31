@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_BUFFERTYPE_H_INCLUDED
-#define BEAST_BUFFERTYPE_H_INCLUDED
+#ifndef BEAST_ASIO_BASICS_BUFFERTYPE_H_INCLUDED
+#define BEAST_ASIO_BASICS_BUFFERTYPE_H_INCLUDED
 
 /** Storage for a BufferSequence.
 

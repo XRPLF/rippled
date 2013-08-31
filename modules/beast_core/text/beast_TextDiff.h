@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TEXTDIFF_BEASTHEADER
-#define BEAST_TEXTDIFF_BEASTHEADER
+#ifndef BEAST_TEXTDIFF_H_INCLUDED
+#define BEAST_TEXTDIFF_H_INCLUDED
 
 
 /**
@@ -72,4 +72,4 @@ public:
 };
 
 
-#endif   // BEAST_TEXTDIFF_BEASTHEADER
+#endif   // BEAST_TEXTDIFF_H_INCLUDED

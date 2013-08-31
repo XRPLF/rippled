@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ARRAY_BEASTHEADER
-#define BEAST_ARRAY_BEASTHEADER
+#ifndef BEAST_ARRAY_H_INCLUDED
+#define BEAST_ARRAY_H_INCLUDED
 
 #include "beast_ArrayAllocationBase.h"
 #include "beast_ElementComparator.h"
@@ -1057,4 +1057,4 @@ private:
     }
 };
 
-#endif   // BEAST_ARRAY_BEASTHEADER
+#endif   // BEAST_ARRAY_H_INCLUDED

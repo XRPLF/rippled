@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_RESULT_BEASTHEADER
-#define BEAST_RESULT_BEASTHEADER
+#ifndef BEAST_RESULT_H_INCLUDED
+#define BEAST_RESULT_H_INCLUDED
 
 #include "../text/beast_String.h"
 

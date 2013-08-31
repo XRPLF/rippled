@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_DYNAMICLIBRARY_BEASTHEADER
-#define BEAST_DYNAMICLIBRARY_BEASTHEADER
+#ifndef BEAST_DYNAMICLIBRARY_H_INCLUDED
+#define BEAST_DYNAMICLIBRARY_H_INCLUDED
 
 /**
     Handles the opening and closing of DLLs.
@@ -75,4 +75,4 @@ private:
 };
 
 
-#endif   // BEAST_DYNAMICLIBRARY_BEASTHEADER
+#endif   // BEAST_DYNAMICLIBRARY_H_INCLUDED

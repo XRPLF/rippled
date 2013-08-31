@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_TESTPEER_H_INCLUDED
-#define BEAST_TESTPEER_H_INCLUDED
+#ifndef BEAST_ASIO_TESTS_TESTPEER_H_INCLUDED
+#define BEAST_ASIO_TESTS_TESTPEER_H_INCLUDED
 
 /** An abstract peer for unit tests.
 */

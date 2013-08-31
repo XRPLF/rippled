@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SERIALFOR_BEASTHEADER
-#define BEAST_SERIALFOR_BEASTHEADER
+#ifndef BEAST_SERIALFOR_H_INCLUDED
+#define BEAST_SERIALFOR_H_INCLUDED
 
 /*============================================================================*/
 

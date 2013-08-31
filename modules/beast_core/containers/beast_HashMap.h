@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HASHMAP_BEASTHEADER
-#define BEAST_HASHMAP_BEASTHEADER
+#ifndef BEAST_HASHMAP_H_INCLUDED
+#define BEAST_HASHMAP_H_INCLUDED
 
 #include "beast_OwnedArray.h"
 #include "beast_LinkedListPointer.h"
@@ -484,4 +484,4 @@ private:
 };
 
 
-#endif   // BEAST_HASHMAP_BEASTHEADER
+#endif   // BEAST_HASHMAP_H_INCLUDED

@@ -24,8 +24,6 @@
 #ifndef BEAST_SHAREDOBJECT_H_INCLUDED
 #define BEAST_SHAREDOBJECT_H_INCLUDED
 
-#include "beast_Atomic.h"
-
 //==============================================================================
 /**
     Adds reference-counting to an object.
@@ -410,4 +408,4 @@ bool operator!= (Object* object1, SharedObjectPtr<Object>& object2) noexcept
 }
 
 
-#endif   // BEAST_REFERENCECOUNTEDOBJECT_BEASTHEADER
+#endif   // BEAST_REFERENCECOUNTEDOBJECT_H_INCLUDED

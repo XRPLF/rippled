@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SHAREDHANDLERALLOCATOR_H_INCLUDED
-#define BEAST_SHAREDHANDLERALLOCATOR_H_INCLUDED
+#ifndef BEAST_ASIO_ASYNC_SHAREDHANDLERALLOCATOR_H_INCLUDED
+#define BEAST_ASIO_ASYNC_SHAREDHANDLERALLOCATOR_H_INCLUDED
 
 /** Custom Allocator using the allocation hooks from the Handler.
 

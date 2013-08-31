@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SOCKET_BEASTHEADER
-#define BEAST_SOCKET_BEASTHEADER
+#ifndef BEAST_SOCKET_H_INCLUDED
+#define BEAST_SOCKET_H_INCLUDED
 
 #include "../text/beast_String.h"
 
@@ -295,4 +295,4 @@ private:
 };
 
 
-#endif   // BEAST_SOCKET_BEASTHEADER
+#endif   // BEAST_SOCKET_H_INCLUDED

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LOCKFREEQUEUE_BEASTHEADER
-#define BEAST_LOCKFREEQUEUE_BEASTHEADER
+#ifndef BEAST_LOCKFREEQUEUE_H_INCLUDED
+#define BEAST_LOCKFREEQUEUE_H_INCLUDED
 
 /** Default tag for LockFreeQueue
 

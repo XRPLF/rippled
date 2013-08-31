@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_WAITABLEEVENT_BEASTHEADER
-#define BEAST_WAITABLEEVENT_BEASTHEADER
+#ifndef BEAST_WAITABLEEVENT_H_INCLUDED
+#define BEAST_WAITABLEEVENT_H_INCLUDED
 
 #include "../text/beast_String.h"
 
@@ -112,4 +112,4 @@ private:
 };
 
 
-#endif   // BEAST_WAITABLEEVENT_BEASTHEADER
+#endif   // BEAST_WAITABLEEVENT_H_INCLUDED

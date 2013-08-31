@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INTERVAL_BEASTHEADER
-#define BEAST_INTERVAL_BEASTHEADER
+#ifndef BEAST_INTERVAL_H_INCLUDED
+#define BEAST_INTERVAL_H_INCLUDED
 
 /** A half-open interval.
 
