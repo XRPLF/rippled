@@ -7,66 +7,24 @@
 #ifndef RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
 #define RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
 
-// Subscription object for JSON-RPC
-// VFALCO TODO Move the implementation into the .cpp
-//
-class RPCSub
-    : public InfoSub
-    , public LeakChecked <RPCSub>
+/** Subscription object for JSON RPC.
+*/
+class RPCSub : public InfoSub
 {
 public:
-    typedef boost::shared_ptr<RPCSub>   pointer;
-    typedef const pointer&              ref;
+    typedef boost::shared_ptr <RPCSub> pointer;
+    typedef pointer const& ref;
 
-    RPCSub (InfoSub::Source& source, boost::asio::io_service& io_service,
-        JobQueue& jobQueue, const std::string& strUrl,
-            const std::string& strUsername, const std::string& strPassword);
+    static pointer New (InfoSub::Source& source,
+        boost::asio::io_service& io_service, JobQueue& jobQueue,
+            const std::string& strUrl, const std::string& strUsername,
+            const std::string& strPassword);
 
-    virtual ~RPCSub () { }
-
-    // Implement overridden functions from base class:
-    void send (const Json::Value& jvObj, bool broadcast);
-
-    void setUsername (const std::string& strUsername)
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-
-        mUsername = strUsername;
-    }
-
-    void setPassword (const std::string& strPassword)
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-
-        mPassword = strPassword;
-    }
+    virtual void setUsername (const std::string& strUsername) = 0;
+    virtual void setPassword (const std::string& strPassword) = 0;
 
 protected:
-    void    sendThread ();
-
-private:
-// VFALCO TODO replace this macro with a language constant
-    enum
-    {
-        eventQueueMax = 32
-    };
-
-    boost::asio::io_service& m_io_service;
-    JobQueue& m_jobQueue;
-
-    std::string             mUrl;
-    std::string             mIp;
-    int                     mPort;
-    bool                    mSSL;
-    std::string             mUsername;
-    std::string             mPassword;
-    std::string             mPath;
-
-    int                     mSeq;                       // Next id to allocate.
-
-    bool                    mSending;                   // Sending threead is active.
-
-    std::deque<std::pair<int, Json::Value> >    mDeque;
+    explicit RPCSub (InfoSub::Source& source);
 };
 
 #endif
