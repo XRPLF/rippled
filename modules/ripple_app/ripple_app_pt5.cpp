@@ -18,16 +18,7 @@ namespace ripple
 #include "misc/ripple_Validations.cpp"
 #include "tx/OfferCreateTransactor.cpp"
 #include "tx/WalletAddTransactor.cpp"
-
-#ifdef _MSC_VER
-# pragma warning (push)
-# pragma warning (disable: 4244) // conversion, possible loss of data
-# pragma warning (disable: 4018) // signed/unsigned mismatch
-#endif
 #include "misc/ripple_FeeVote.cpp"
 #include "peers/ripple_Peer.cpp"
-#ifdef _MSC_VER
-# pragma warning (pop)
-#endif
 
 }

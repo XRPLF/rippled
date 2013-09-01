@@ -20,15 +20,8 @@ namespace ripple
 
 #include "shamap/ripple_SHAMapSyncFilters.cpp" // requires Application
 
-#ifdef _MSC_VER
-# pragma warning (push)
-# pragma warning (disable: 4244) // conversion, possible loss of data
-# pragma warning (disable: 4018) // signed/unsigned mismatch
-#endif
 #include "consensus/ripple_LedgerConsensus.cpp"
+
 #include "ledger/LedgerMaster.cpp"
-#ifdef _MSC_VER
-# pragma warning (pop)
-#endif
 
 }

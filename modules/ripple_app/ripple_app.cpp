@@ -41,16 +41,7 @@ namespace ripple
 #include "websocket/WSDoor.cpp"
 # include "peers/PeerDoor.h"
 #include "peers/PeerDoor.cpp"
-
-#ifdef _MSC_VER
-# pragma warning (push)
-# pragma warning (disable: 4244) // conversion, possible loss of data
-# pragma warning (disable: 4018) // signed/unsigned mismatch
-#endif
 #include "main/ripple_Application.cpp"
-#ifdef _MSC_VER
-# pragma warning (pop)
-#endif
 
 //
 // RippleMain

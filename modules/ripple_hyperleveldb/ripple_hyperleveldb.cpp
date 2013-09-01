@@ -31,12 +31,6 @@
 
 #endif
 
-#if BEAST_MSVC
-#pragma warning (push)
-#pragma warning (disable: 4018) // signed/unsigned mismatch
-#pragma warning (disable: 4244) // conversion, possible loss of data
-#endif
-
 #if BEAST_GCC
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreorder"
@@ -95,10 +89,6 @@
 #elif defined (LEVELDB_PLATFORM_ANDROID)
 # error Missing Android port!
 
-#endif
-
-#ifdef BEAST_MSVC
-#pragma warning (pop)
 #endif
 
 #if BEAST_GCC

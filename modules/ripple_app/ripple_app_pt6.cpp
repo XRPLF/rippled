@@ -16,16 +16,7 @@ namespace ripple
 #include "consensus/ripple_DisputedTx.cpp"
 #include "misc/ripple_HashRouter.cpp"
 #include "misc/ripple_Offer.cpp"
-
-#ifdef _MSC_VER
-# pragma warning (push)
-# pragma warning (disable: 4244) // conversion, possible loss of data
-# pragma warning (disable: 4018) // signed/unsigned mismatch
-#endif
 #include "paths/ripple_Pathfinder.cpp"
 #include "misc/ripple_Features.cpp"
-#ifdef _MSC_VER
-# pragma warning (pop)
-#endif
 
 }
