@@ -21,11 +21,8 @@
 #define BEAST_UNSIGNEDINTEGER_H_INCLUDED
 
 /** Represents a set of bits of fixed size.
-
-    Integer representations are stored as big endian.
-
+    Integer representations are stored in network / big endian byte order.
     @note The number of bits represented can only be a multiple of 8.
-
     @tparam Bytes The number of bytes of storage.
 */
 template <size_t Bytes>
@@ -44,78 +41,62 @@ public:
     typedef unsigned char const* const_iterator;
 
     /** Hardened hash function for use with HashMap.
-
         The seed is used to make the hash unpredictable. This prevents
         attackers from exploiting crafted inputs to produce degenerate
         containers.
-
         @see HashMap
     */
     class HashFunction
     {
     public:
-        /** Construct a hash function.
-
+        /** Construct a hash function
             If a seed is specified it will be used, else a random seed
-            will be generated from the system.
-
+            will be generated from the system
             @param seedToUse An optional seed to use.
         */
-        explicit HashFunction (int seedToUse = Random::getSystemRandom ().nextInt ())
+        explicit HashFunction (HashValue seedToUse = Random::getSystemRandom ().nextInt ())
             : m_seed (seedToUse)
         {
         }
-        
+
         /** Generates a simple hash from an UnsignedInteger. */
-        int generateHash (UnsignedInteger <Bytes> const& key, const int upperLimit) const noexcept
+        HashValue generateHash (UnsignedInteger <Bytes> const& key) const noexcept
         {
-            uint32 hashCode;
-            Murmur::Hash (key.cbegin (), key.sizeInBytes, m_seed, &hashCode);
-            // Shouldn't produce negative numbers since upperLimit is an int?
-            return static_cast <int> (hashCode % upperLimit);
+            HashValue hash;
+            Murmur::Hash (key.cbegin (), key.sizeInBytes, m_seed, &hash);
+            return hash;
         }
 
     private:
-        int m_seed;
+        HashValue m_seed;
     };
 
     /** Construct the object.
-
         The values are uninitialized.
     */
     UnsignedInteger () noexcept
     {
     }
 
-    /** Copy construction.
-    */
+    /** Construct a copy. */
     UnsignedInteger (UnsignedInteger <Bytes> const& other) noexcept
     {
         this->operator= (other);
     }
 
-    /** Assignment.
+    /** Construct from raw memory.
+        The area pointed to by buffer must be at least Bytes in size,
+        or else undefined behavior will result.
     */
+    explicit UnsignedInteger (void const* buffer)
+    {
+        memcpy (m_byte, buffer, Bytes);
+    }
+
+    /** Assign from another value. */
     UnsignedInteger <Bytes>& operator= (UnsignedInteger const& other) noexcept
     {
         memcpy (m_byte, other.m_byte, Bytes);
-        return *this;
-    }
-
-    /** Assignment from an integer type.
-
-        @invariant IntegerType must be an unsigned integer type.
-    */
-    // If you get ambiguous calls to overloaded function errors it
-    // means you're trying to pass a signed integer, which doesn't work here!
-    //
-    template <class IntegerType>
-    UnsignedInteger <Bytes>& operator= (IntegerType value)
-    {
-        static_bassert (Bytes >= sizeof (IntegerType));
-        clear ();
-        value = ByteOrder::swapIfLittleEndian (value);
-        memcpy (end () - sizeof (value), &value, bmin (Bytes, sizeof (value)));
         return *this;
     }
 
@@ -126,8 +107,11 @@ public:
     template <class IntegerType>
     static UnsignedInteger <Bytes> createFromInteger (IntegerType value)
     {
+        static_bassert (Bytes >= sizeof (IntegerType));
         UnsignedInteger <Bytes> result;
-        result.operator= (value);
+        value = toNetworkByteOrder <IntegerType> (value);
+        result.clear ();
+        memcpy (result.end () - sizeof (value), &value, bmin (Bytes, sizeof (value)));
         return result;
     }
 

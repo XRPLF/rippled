@@ -203,7 +203,7 @@ public:
                 {
                     validator = new Validator (key);
 
-                    m_map.set (key, validator);
+                    //m_map.set (key, validator);
                 }
 
                 items.add (validator);

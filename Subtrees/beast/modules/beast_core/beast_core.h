@@ -256,6 +256,9 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 # pragma warning (pop)
 #endif
 
+# include "containers/detail/removecv.h"
+#include "containers/detail/copyconst.h"
+
 #include "system/PlatformDefs.h"
 #include "system/TargetPlatform.h"
 #include "diagnostic/beast_Throw.h"
@@ -264,7 +267,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "memory/beast_AtomicFlag.h"
 #include "memory/beast_AtomicPointer.h"
 #include "memory/beast_AtomicState.h"
-#include "containers/beast_List.h"
+#include "containers/List.h"
 #include "containers/beast_LockFreeStack.h"
 #include "threads/beast_SpinDelay.h"
 #include "memory/beast_StaticObject.h"
@@ -301,7 +304,6 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "containers/beast_DynamicObject.h"
 #include "containers/beast_ElementComparator.h"
 #include "maths/beast_Random.h"
-#include "containers/beast_HashMap.h"
 #include "containers/beast_LinkedListPointer.h"
 #include "containers/beast_LockFreeQueue.h"
 #include "containers/beast_NamedValueSet.h"
@@ -315,6 +317,9 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "maths/beast_Range.h"
 #include "containers/beast_SparseSet.h"
 #include "containers/beast_Variant.h"
+# include "containers/DynamicList.h"
+# include "containers/DynamicArray.h"
+#include "containers/HashMap.h"
 #include "files/beast_DirectoryIterator.h"
 #include "files/beast_File.h"
 #include "files/beast_FileInputStream.h"

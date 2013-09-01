@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LIST_H_INCLUDED
-#define BEAST_LIST_H_INCLUDED
+#ifndef BEAST_CORE_CONTAINERS_LIST_H_INCLUDED
+#define BEAST_CORE_CONTAINERS_LIST_H_INCLUDED
 
 /** Intrusive Containers
 
@@ -189,14 +189,138 @@
     @defgroup intrusive intrusive
     @ingroup beast_core
 */
+ 
+//------------------------------------------------------------------------------
+
+template <typename, typename>
+class List;
+
+namespace detail
+{
+
+// This is the intrusive portion of the doubly linked list.
+// One derivation per list that the object may appear on
+// concurrently is required.
+//
+template <typename T, typename Tag>
+class ListNode : public Uncopyable
+{
+private:
+    typedef T value_type;
+
+    template <typename, typename>
+    friend class List;
+
+    template <typename>
+    friend class ListIterator;
+
+    ListNode* m_next;
+    ListNode* m_prev;
+};
 
 //------------------------------------------------------------------------------
 
-/** Default tag for List.
+template <typename N>
+class ListIterator : public std::iterator <
+    std::bidirectional_iterator_tag, std::size_t>
+{
+public:
+    typedef typename copyconst <N, typename N::value_type>::type
+    
+                                   value_type;
+    typedef value_type*            pointer;
+    typedef value_type&            reference;
+    typedef std::size_t            size_type;
 
-    @ingroup beast_core intrusive
-*/
-struct ListDefaultTag;
+    ListIterator (N* node = nullptr) noexcept
+        : m_node (node)
+    {
+    }
+#if 0
+    template <typename M>
+    ListIterator (ListIterator <M> const& other) noexcept
+        : m_node (other.m_node)
+    {
+    }
+
+    template <typename M>
+    ListIterator& operator= (ListIterator <M> const& other) noexcept
+    {
+        m_node = other.m_node;
+        return *this;
+    }
+#endif
+    template <typename M>
+    bool operator== (ListIterator <M> const& other) const noexcept
+    {
+        return m_node == other.m_node;
+    }
+
+    template <typename M>
+    bool operator!= (ListIterator <M> const& other) const noexcept
+    {
+        return ! ((*this) == other);
+    }
+
+    reference operator* () const noexcept
+    {
+        return dereference ();
+    }
+
+    pointer operator-> () const noexcept
+    {
+        return &dereference ();
+    }
+
+    ListIterator& operator++ () noexcept
+    {
+        increment ();
+        return *this;
+    }
+
+    ListIterator operator++ (int) noexcept
+    {
+        ListIterator result (*this);
+        increment ();
+        return result;
+    }
+
+    ListIterator& operator-- () noexcept
+    {
+        decrement ();
+        return *this;
+    }
+
+    ListIterator operator-- (int) noexcept
+    {
+        ListIterator result (*this);
+        decrement ();
+        return result;
+    }
+
+private:
+    reference dereference () const noexcept
+    {
+        return static_cast <reference> (*m_node);
+    }
+
+    void increment () noexcept
+    {
+        bassert (m_node->m_next);
+        m_node = m_node->m_next;
+    }
+
+    void decrement () noexcept
+    {
+        bassert (m_node->m_prev &&
+                 m_node->m_prev->m_prev != nullptr);
+        m_node = m_node->m_prev;
+    }
+
+    N* m_node;
+};
+
+}
 
 /**
     Intrusive doubly linked list.
@@ -295,7 +419,7 @@ struct ListDefaultTag;
   
     @endcode
   
-    @tparam Element The base type of element which the list will store
+    @tparam T The base type of element which the list will store
                     pointers to.
   
     @tparam Tag An optional unique type name used to distinguish lists and nodes,
@@ -303,300 +427,133 @@ struct ListDefaultTag;
   
     @ingroup beast_core intrusive
 */
-template <class Element, class Tag = ListDefaultTag>
+template <typename T, typename Tag = void>
 class List : public Uncopyable
 {
 public:
-    typedef int size_type;
+    typedef typename detail::ListNode <T, Tag> Node;
 
-    typedef Element        value_type;
-    typedef Element&       reference;
-    typedef Element const& const_reference;
-    typedef Element*       pointer;
-    typedef Element const* const_pointer;
+    typedef T                    value_type;
+    typedef value_type*          pointer;
+    typedef value_type&          reference;
+    typedef value_type const*    const_pointer;
+    typedef value_type const&    const_reference;
+    typedef std::size_t          size_type;
+    typedef std::ptrdiff_t       difference_type;
 
-    /** Thrown when some members are called with an empty list. */
-    struct empty_list_error : std::logic_error
-    {
-        empty_list_error () : std::logic_error ("empty list")
-        {
-        }
-    };
+    typedef detail::ListIterator <Node>       iterator;
+    typedef detail::ListIterator <Node const> const_iterator;
 
-    class Node : public Uncopyable
-    {
-    public:
-        Node () { }
-
-    private:
-        friend class List;
-        Node* m_next;
-        Node* m_prev;
-    };
-
-private:
-    template <class ElemType, class NodeType>
-    class iterator_base : public std::iterator <
-        std::bidirectional_iterator_tag, int >
-    {
-    public:
-        typedef ElemType value_type;
-        typedef ElemType* pointer;
-        typedef ElemType& reference;
-
-        iterator_base (NodeType* node = nullptr) : m_node (node)
-        {
-        }
-
-        template <class OtherElemType, class OtherNodeType>
-        iterator_base (iterator_base <OtherElemType, OtherNodeType> const& other)
-            : m_node (other.m_node)
-        {
-        }
-
-        template <class OtherElemType, class OtherNodeType>
-        iterator_base& operator= (iterator_base <OtherElemType, OtherNodeType> const& other)
-        {
-            m_node = other.m_node;
-            return *this;
-        }
-
-        template <class OtherElemType, class OtherNodeType>
-        bool operator == (iterator_base <OtherElemType, OtherNodeType> const& other) const
-        {
-            return m_node == other.m_node;
-        }
-
-        template <class OtherElemType, class OtherNodeType>
-        bool operator != (iterator_base <OtherElemType, OtherNodeType> const& other) const
-        {
-            return ! this->operator== (other);
-        }
-
-        reference operator* () const
-        {
-            return dereference ();
-        }
-
-        pointer operator-> () const
-        {
-            return &dereference ();
-        }
-
-        iterator_base& operator++ ()
-        {
-            increment ();
-            return *this;
-        }
-
-        iterator_base operator++ (int)
-        {
-            iterator_base result (*this);
-            increment ();
-            return result;
-        }
-
-        iterator_base& operator-- ()
-        {
-            decrement ();
-            return *this;
-        }
-
-        iterator_base operator-- (int)
-        {
-            iterator_base result (*this);
-            decrement ();
-            return result;
-        }
-
-    private:
-        friend class List;
-
-        NodeType* get_node ()
-        {
-            return m_node;
-        }
-
-        NodeType const* get_node () const
-        {
-            return m_node;
-        }
-
-        reference dereference () const
-        {
-            return *static_cast <ElemType*> (m_node);
-        }
-
-        bool equal (NodeType* const* node) const
-        {
-            return m_node == node;
-        }
-
-        void increment ()
-        {
-            bassert (m_node->m_next);
-            m_node = m_node->m_next;
-        }
-
-        void decrement ()
-        {
-            bassert (m_node->m_prev && m_node->m_prev->m_prev != 0);
-            m_node = m_node->m_prev;
-        }
-
-    private:
-        NodeType* m_node;
-    };
-
-public:
-    /** A read/write List iterator. */
-    typedef iterator_base <Element, Node> iterator;
-
-    /** A read-only List iterator. */
-    typedef iterator_base <Element const, Node const> const_iterator;
-
-public:
     /** Create an empty list. */
-    List () : m_size (0)
+    List ()
     {
         m_head.m_prev = nullptr; // identifies the head
         m_tail.m_next = nullptr; // identifies the tail
         clear ();
     }
 
-    /** Returns the number of elements in the list
-
-        @return The number of elements in the list.
+    /** Determine if the list is empty.
+        @return `true` if the list is empty.
     */
-    size_type size () const
+    bool empty () const noexcept
+    {
+        return size () == 0;
+    }
+
+    /** Returns the number of elements in the list. */
+    size_type size () const noexcept
     {
         return m_size;
     }
 
     /** Obtain a reference to the first element.
-
         @invariant The list may not be empty.
-
         @return A reference to the first element.
     */
-    reference front ()
+    reference front () noexcept
     {
-        if (empty ())
-            Throw (empty_list_error (), __FILE__, __LINE__);
-
         return element_from (m_head.m_next);
     }
 
     /** Obtain a const reference to the first element.
-
         @invariant The list may not be empty.
-
         @return A const reference to the first element.
     */
-    const_reference front () const
+    const_reference front () const noexcept
     {
-        if (empty ())
-            Throw (empty_list_error (), __FILE__, __LINE__);
-
         return element_from (m_head.m_next);
     }
 
     /** Obtain a reference to the last element.
-
         @invariant The list may not be empty.
-
         @return A reference to the last element.
     */
-    reference back ()
+    reference back () noexcept
     {
-        if (empty ())
-            Throw (empty_list_error (), __FILE__, __LINE__);
-
         return element_from (m_tail.m_prev);
     }
 
     /** Obtain a const reference to the last element.
-
         @invariant The list may not be empty.
-
         @return A const reference to the last element.
     */
-    const_reference back () const
+    const_reference back () const noexcept
     {
-        if (empty ())
-            Throw (empty_list_error (), __FILE__, __LINE__);
-
         return element_from (m_tail.m_prev);
     }
 
     /** Obtain an iterator to the beginning of the list.
-
         @return An iterator pointing to the beginning of the list.
     */
-    iterator begin ()
+    iterator begin () noexcept
     {
         return iterator (m_head.m_next);
     }
 
     /** Obtain a const iterator to the beginning of the list.
-
         @return A const iterator pointing to the beginning of the list.
     */
-    const_iterator begin () const
+    const_iterator begin () const noexcept
     {
         return const_iterator (m_head.m_next);
     }
 
     /** Obtain a const iterator to the beginning of the list.
-
         @return A const iterator pointing to the beginning of the list.
     */
-    const_iterator cbegin () const
+    const_iterator cbegin () const noexcept
     {
         return const_iterator (m_head.m_next);
     }
 
     /** Obtain a iterator to the end of the list.
-
         @return An iterator pointing to the end of the list.
     */
-    iterator end ()
+    iterator end () noexcept
     {
         return iterator (&m_tail);
     }
 
     /** Obtain a const iterator to the end of the list.
-
         @return A constiterator pointing to the end of the list.
     */
-    const_iterator end () const
+    const_iterator end () const noexcept
     {
         return const_iterator (&m_tail);
     }
 
-    /** Obtain a const iterator to the end of the list.
-
+    /** Obtain a const iterator to the end of the list
         @return A constiterator pointing to the end of the list.
     */
-    const_iterator cend () const
+    const_iterator cend () const noexcept
     {
         return const_iterator (&m_tail);
-    }
-
-    /** Determine if the list is empty.
-
-        @return `true` if the list is empty.
-    */
-    bool empty () const
-    {
-        return m_head.m_next == &m_tail;
     }
 
     /** Clear the list.
-
         @note This does not free the elements.
     */
-    void clear ()
+    void clear () noexcept
     {
         m_head.m_next = &m_tail;
         m_tail.m_prev = &m_head;
@@ -604,19 +561,15 @@ public:
     }
 
     /** Insert an element.
-
         @invariant The element must not already be in the list.
-
         @param pos The location to insert after.
-
-        @param elem The element to insert.
-
+        @param element The element to insert.
         @return An iterator pointing to the newly inserted element.
     */
-    iterator insert (iterator pos, Element& elem)
+    iterator insert (iterator pos, T& element) noexcept
     {
-        Node* node = node_from (elem);
-        node->m_next = pos.get_node ();
+        Node* node = static_cast <Node*> (&element);
+        node->m_next = &*pos;
         node->m_prev = node->m_next->m_prev;
         node->m_next->m_prev = node;
         node->m_prev->m_next = node;
@@ -625,19 +578,16 @@ public:
     }
 
     /** Insert another list into this one.
-
         The other list is cleared.
-
         @param pos The location to insert after.
-
         @param other The list to insert.
     */
 
-    void insert (iterator pos, List& other)
+    void insert (iterator pos, List& other) noexcept
     {
         if (!other.empty ())
         {
-            Node* before = pos.get_node ();
+            Node* before = &*pos;
             other.m_head.m_next->m_prev = before->m_prev;
             before->m_prev->m_next = other.m_head.m_next;
             other.m_tail.m_prev->m_next = before;
@@ -648,16 +598,13 @@ public:
     }
 
     /** Remove an element.
-
         @invariant The element must exist in the list.
-
         @param pos An iterator pointing to the element to remove.
-
         @return An iterator pointing to the next element after the one removed.
     */
-    iterator erase (iterator pos)
+    iterator erase (iterator pos) noexcept
     {
-        Node* node = pos.get_node ();
+        Node* node = &*pos;
         ++pos;
         node->m_next->m_prev = node->m_prev;
         node->m_prev->m_next = node->m_next;
@@ -666,54 +613,47 @@ public:
     }
 
     /** Insert an element at the beginning of the list.
-
         @invariant The element must not exist in the list.
-
-        @param elem The element to insert.
+        @param element The element to insert.
     */
-    void push_front (Element& elem)
+    iterator push_front (T& element) noexcept
     {
-        insert (begin (), elem);
+        return insert (begin (), element);
     }
 
     /** Remove the element at the beginning of the list.
-
         @invariant The list must not be empty.
         @return A reference to the popped element.
     */
-    Element& pop_front ()
+    T& pop_front () noexcept
     {
-        Element& elem (front ());
+        T& element (front ());
         erase (begin ());
-        return elem;
+        return element;
     }
 
     /** Append an element at the end of the list.
-
         @invariant The element must not exist in the list.
-
-        @param elem The element to append.
+        @param element The element to append.
     */
-    void push_back (Element& elem)
+    iterator push_back (T& element) noexcept
     {
-        insert (end (), elem);
+        return insert (end (), element);
     }
 
     /** Remove the element at the end of the list.
-
         @invariant The list must not be empty.
         @return A reference to the popped element.
     */
-    Element& pop_back ()
+    T& pop_back () noexcept
     {
-        Element& elem (back ());
+        T& element (back ());
         erase (--end ());
-        return elem;
+        return element;
     }
 
-    /** Swap contents with another list.
-    */
-    void swap (List& other)
+    /** Swap contents with another list. */
+    void swap (List& other) noexcept
     {
         List temp;
         temp.append (other);
@@ -722,72 +662,52 @@ public:
     }
 
     /** Insert another list at the beginning of this list.
-
         The other list is cleared.
-
         @param list The other list to insert.
     */
-    void prepend (List& list)
+    iterator prepend (List& list) noexcept
     {
-        insert (begin (), list);
+        return insert (begin (), list);
     }
 
     /** Append another list at the end of this list.
-
         The other list is cleared.
-
         @param list the other list to append.
     */
-    void append (List& list)
+    iterator append (List& list) noexcept
     {
-        insert (end (), list);
+        return insert (end (), list);
     }
 
     /** Obtain an iterator from an element.
-
         @invariant The element must exist in the list.
-
-        @param elem The element to obtain an iterator for.
-
+        @param element The element to obtain an iterator for.
         @return An iterator to the element.
     */
-    iterator iterator_to (Element& elem) const
+    iterator iterator_to (T& element) const noexcept
     {
-        return iterator (static_cast <Node*> (&elem));
+        return iterator (static_cast <Node*> (&element));
     }
 
     /** Obtain a const iterator from an element.
-
         @invariant The element must exist in the list.
-
-        @param elem The element to obtain an iterator for.
-
+        @param element The element to obtain an iterator for.
         @return A const iterator to the element.
     */
-    const_iterator const_iterator_to (Element const& elem) const
+    const_iterator const_iterator_to (T const& element) const noexcept
     {
-        return const_iterator (static_cast <Node const*> (&elem));
+        return const_iterator (static_cast <Node const*> (&element));
     }
 
 private:
-    inline reference element_from (Node* node)
+    reference element_from (Node* node) noexcept
     {
-        return * (static_cast <pointer> (node));
+        return *(static_cast <pointer> (node));
     }
 
-    inline const_reference element_from (Node const* node) const
+    const_reference element_from (Node const* node) const noexcept
     {
-        return * (static_cast <const_pointer> (node));
-    }
-
-    inline Node* node_from (Element& elem)
-    {
-        return static_cast <Node*> (&elem);
-    }
-
-    inline Node const* node_from (Element const& elem) const
-    {
-        return static_cast <Node const*> (&elem);
+        return *(static_cast <const_pointer> (node));
     }
 
 private:
