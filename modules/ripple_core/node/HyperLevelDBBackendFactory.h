@@ -4,25 +4,25 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NULLBACKENDFACTORY_H_INCLUDED
-#define RIPPLE_NULLBACKENDFACTORY_H_INCLUDED
+#ifndef RIPPLE_CORE_NODE_HYPERLEVELDBBACKENDFACTORY_H_INCLUDED
+#define RIPPLE_CORE_NODE_HYPERLEVELDBBACKENDFACTORY_H_INCLUDED
 
-/** Factory to produce a null backend.
+#if RIPPLE_HYPERLEVELDB_AVAILABLE
 
-    This is for standalone / testing mode.
+/** Factory to produce HyperLevelDB backends for the NodeStore.
 
     @see NodeStore
 */
-class NullBackendFactory : public NodeStore::BackendFactory
+class HyperLevelDBBackendFactory : public NodeStore::BackendFactory
 {
 private:
     class Backend;
 
-    NullBackendFactory ();
-    ~NullBackendFactory ();
+    HyperLevelDBBackendFactory ();
+    ~HyperLevelDBBackendFactory ();
 
 public:
-    static NullBackendFactory& getInstance ();
+    static HyperLevelDBBackendFactory& getInstance ();
 
     String getName () const;
 
@@ -30,5 +30,7 @@ public:
                                         StringPairArray const& keyValues,
                                         NodeStore::Scheduler& scheduler);
 };
+
+#endif
 
 #endif

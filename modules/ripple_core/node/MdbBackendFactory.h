@@ -4,23 +4,27 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_KEYVABACKENDFACTORY_H_INCLUDED
-#define RIPPLE_KEYVABACKENDFACTORY_H_INCLUDED
+#ifndef RIPPLE_CORE_NODE_MDBBACKENDFACTORY_H_INCLUDED
+#define RIPPLE_CORE_NODE_MDBBACKENDFACTORY_H_INCLUDED
 
-/** Factory to produce KeyvaDB backends for the NodeStore.
+#if RIPPLE_MDB_AVAILABLE
+
+/** Factory to produce a backend using MDB.
+
+    @note MDB is not currently available for Win32
 
     @see NodeStore
 */
-class KeyvaDBBackendFactory : public NodeStore::BackendFactory
+class MdbBackendFactory : public NodeStore::BackendFactory
 {
 private:
     class Backend;
 
-    KeyvaDBBackendFactory ();
-    ~KeyvaDBBackendFactory ();
+    MdbBackendFactory ();
+    ~MdbBackendFactory ();
 
 public:
-    static KeyvaDBBackendFactory& getInstance ();
+    static MdbBackendFactory& getInstance ();
 
     String getName () const;
 
@@ -28,5 +32,7 @@ public:
                                         StringPairArray const& keyValues,
                                         NodeStore::Scheduler& scheduler);
 };
+
+#endif
 
 #endif

@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODEOBJECT_H_INCLUDED
-#define RIPPLE_NODEOBJECT_H_INCLUDED
+#ifndef RIPPLE_CORE_NODE_NODEOBJECT_H_INCLUDED
+#define RIPPLE_CORE_NODE_NODEOBJECT_H_INCLUDED
 
 /** The types of node objects.
 */

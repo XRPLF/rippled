@@ -34,8 +34,9 @@
 
 //------------------------------------------------------------------------------
 
+#include "../ripple_basics/ripple_basics.h"
 #include "../ripple_core/ripple_core.h"
-
+#include "../ripple_data/ripple_data.h"
 #include "../ripple_net/ripple_net.h"
 
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
@@ -51,9 +52,6 @@ namespace ripple
 #include "data/ripple_DatabaseCon.h"
 #include "data/ripple_SqliteDatabase.h"
 #include "data/ripple_DBInit.h"
-
-#include "node/ripple_NodeObject.h"
-#include "node/ripple_NodeStore.h"
 
 #include "shamap/ripple_SHAMapItem.h"
 #include "shamap/ripple_SHAMapNode.h"

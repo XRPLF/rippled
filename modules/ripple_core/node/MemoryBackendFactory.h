@@ -4,25 +4,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HYPERLEVELDBBACKENDFACTORY_H_INCLUDED
-#define RIPPLE_HYPERLEVELDBBACKENDFACTORY_H_INCLUDED
+#ifndef RIPPLE_CORE_NODE_MEMORYBACKENDFACTORY_H_INCLUDED
+#define RIPPLE_CORE_NODE_MEMORYBACKENDFACTORY_H_INCLUDED
 
-#if RIPPLE_HYPERLEVELDB_AVAILABLE
-
-/** Factory to produce HyperLevelDB backends for the NodeStore.
+/** Factory to produce a RAM based backend for the NodeStore.
 
     @see NodeStore
 */
-class HyperLevelDBBackendFactory : public NodeStore::BackendFactory
+class MemoryBackendFactory : public NodeStore::BackendFactory
 {
 private:
     class Backend;
 
-    HyperLevelDBBackendFactory ();
-    ~HyperLevelDBBackendFactory ();
+    MemoryBackendFactory ();
+    ~MemoryBackendFactory ();
 
 public:
-    static HyperLevelDBBackendFactory& getInstance ();
+    static MemoryBackendFactory& getInstance ();
 
     String getName () const;
 
@@ -30,7 +28,5 @@ public:
                                         StringPairArray const& keyValues,
                                         NodeStore::Scheduler& scheduler);
 };
-
-#endif
 
 #endif

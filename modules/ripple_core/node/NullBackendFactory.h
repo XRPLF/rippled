@@ -4,27 +4,25 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_MDBBACKENDFACTORY_H_INCLUDED
-#define RIPPLE_MDBBACKENDFACTORY_H_INCLUDED
+#ifndef RIPPLE_CORE_NODE_NULLBACKENDFACTORY_H_INCLUDED
+#define RIPPLE_CORE_NODE_NULLBACKENDFACTORY_H_INCLUDED
 
-#if RIPPLE_MDB_AVAILABLE
+/** Factory to produce a null backend.
 
-/** Factory to produce a backend using MDB.
-
-    @note MDB is not currently available for Win32
+    This is for standalone / testing mode.
 
     @see NodeStore
 */
-class MdbBackendFactory : public NodeStore::BackendFactory
+class NullBackendFactory : public NodeStore::BackendFactory
 {
 private:
     class Backend;
 
-    MdbBackendFactory ();
-    ~MdbBackendFactory ();
+    NullBackendFactory ();
+    ~NullBackendFactory ();
 
 public:
-    static MdbBackendFactory& getInstance ();
+    static NullBackendFactory& getInstance ();
 
     String getName () const;
 
@@ -32,7 +30,5 @@ public:
                                         StringPairArray const& keyValues,
                                         NodeStore::Scheduler& scheduler);
 };
-
-#endif
 
 #endif

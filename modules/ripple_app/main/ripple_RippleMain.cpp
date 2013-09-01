@@ -298,36 +298,15 @@ int RippleMain::run (int argc, char const* const* argv)
     po::positional_options_description p;
     p.add ("parameters", -1);
 
-    //--------------------------------------------------------------------------
+    // NOTE: These must be added before the
+    //       Application object is created.
     //
-    // NodeStore backend choices
+    NodeStore::addAvailableBackends ();
+
+    // VFALCO NOTE SqliteBackendFactory is here because it has
+    //             dependencies like SqliteDatabase and DatabaseCon
     //
-    // Note: These must be added before the Application object is created
-    //
- 
-    NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
-    NodeStore::addBackendFactory (MemoryBackendFactory::getInstance ());
-    NodeStore::addBackendFactory (NullBackendFactory::getInstance ());
     NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
-
-#if RIPPLE_HYPERLEVELDB_AVAILABLE
-    NodeStore::addBackendFactory (HyperLevelDBBackendFactory::getInstance ());
-#endif
-
-#if RIPPLE_MDB_AVAILABLE
-    NodeStore::addBackendFactory (MdbBackendFactory::getInstance ());
-#endif
-
-    // VFALCO: Disabling KeyvaDB because it is unfinished experimental
-    //         code and there's no sense anyone running it until it meets
-    //         the requirements of a full backend. Now if a programmer wants
-    //         to un-comment it and work on bringing it up to spec on their
-    //         own machine, I certainly won't complain. Let me know, I have
-    //         some new code in a branch.
-    //
-    //NodeStore::addBackendFactory (KeyvaDBBackendFactory::getInstance ());
-
-    //--------------------------------------------------------------------------
 
     if (! RandomNumbers::getInstance ().initialize ())
     {

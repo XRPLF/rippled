@@ -4,26 +4,13 @@
 */
 //==============================================================================
 
-/** Add this to get the @ref ripple_data module.
-
-    @file ripple_data.cpp
-    @ingroup ripple_data
-*/
-
 #include "BeastConfig.h"
 
 #include "ripple_data.h"
 
-#include <algorithm>
-#include <cassert>
-#include <cmath>
-#include <iomanip>
-#include <iostream>
-#include <limits.h>
-#include <map>
-#include <string>
-#include <vector>
+//#include <cmath>
 
+#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>

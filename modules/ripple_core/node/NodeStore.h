@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_H_INCLUDED
-#define RIPPLE_NODESTORE_H_INCLUDED
+#ifndef RIPPLE_CORE_NODE_NODESTORE_H_INCLUDED
+#define RIPPLE_CORE_NODE_NODESTORE_H_INCLUDED
 
 /** Persistency layer for NodeObject
 
@@ -410,9 +410,7 @@ public:
     /** Import objects from another database. */
     virtual void import (NodeStore& sourceDatabase) = 0;
 
-
     /** Retrieve the estimated number of pending write operations.
-
         This is used for diagnostics.
     */
     virtual int getWriteLoad () = 0;
@@ -427,6 +425,9 @@ public:
     // VFALCO TODO Document this.
     virtual void sweep () = 0;
 
+    /** Add the known Backend factories to the singleton.
+    */
+    static void addAvailableBackends ();
 };
 
 #endif

@@ -12,8 +12,6 @@ namespace ripple
 {
 
 #include "ledger/Ledger.cpp"
-#include "node/ripple_NodeStore.cpp"
-#include "node/ripple_NodeObject.cpp"
 #include "shamap/ripple_SHAMapDelta.cpp"
 #include "shamap/ripple_SHAMapNode.cpp"
 #include "shamap/ripple_SHAMapTreeNode.cpp"

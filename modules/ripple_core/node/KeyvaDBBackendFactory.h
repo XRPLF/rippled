@@ -4,23 +4,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEVELDBBACKENDFACTORY_H_INCLUDED
-#define RIPPLE_LEVELDBBACKENDFACTORY_H_INCLUDED
+#ifndef RIPPLE_CORE_NODE_KEYVABACKENDFACTORY_H_INCLUDED
+#define RIPPLE_CORE_NODE_KEYVABACKENDFACTORY_H_INCLUDED
 
-/** Factory to produce LevelDB backends for the NodeStore.
+/** Factory to produce KeyvaDB backends for the NodeStore.
 
     @see NodeStore
 */
-class LevelDBBackendFactory : public NodeStore::BackendFactory
+class KeyvaDBBackendFactory : public NodeStore::BackendFactory
 {
 private:
     class Backend;
 
-    LevelDBBackendFactory ();
-    ~LevelDBBackendFactory ();
+    KeyvaDBBackendFactory ();
+    ~KeyvaDBBackendFactory ();
 
 public:
-    static LevelDBBackendFactory& getInstance ();
+    static KeyvaDBBackendFactory& getInstance ();
 
     String getName () const;
 

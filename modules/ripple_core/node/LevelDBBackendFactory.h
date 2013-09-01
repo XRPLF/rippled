@@ -4,23 +4,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_MEMORYBACKENDFACTORY_H_INCLUDED
-#define RIPPLE_MEMORYBACKENDFACTORY_H_INCLUDED
+#ifndef RIPPLE_CORE_NODE_LEVELDBBACKENDFACTORY_H_INCLUDED
+#define RIPPLE_CORE_NODE_LEVELDBBACKENDFACTORY_H_INCLUDED
 
-/** Factory to produce a RAM based backend for the NodeStore.
+/** Factory to produce LevelDB backends for the NodeStore.
 
     @see NodeStore
 */
-class MemoryBackendFactory : public NodeStore::BackendFactory
+class LevelDBBackendFactory : public NodeStore::BackendFactory
 {
 private:
     class Backend;
 
-    MemoryBackendFactory ();
-    ~MemoryBackendFactory ();
+    LevelDBBackendFactory ();
+    ~LevelDBBackendFactory ();
 
 public:
-    static MemoryBackendFactory& getInstance ();
+    static LevelDBBackendFactory& getInstance ();
 
     String getName () const;
 

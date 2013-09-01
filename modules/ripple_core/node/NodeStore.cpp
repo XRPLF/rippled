@@ -537,6 +537,26 @@ NodeStore::Scheduler& NodeStore::getSynchronousScheduler ()
     return scheduler;
 }
 
+void NodeStore::addAvailableBackends ()
+{
+    // This is part of the ripple_app module since it has dependencies
+    //NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
+
+    NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (MemoryBackendFactory::getInstance ());
+    NodeStore::addBackendFactory (NullBackendFactory::getInstance ());
+
+#if RIPPLE_HYPERLEVELDB_AVAILABLE
+    NodeStore::addBackendFactory (HyperLevelDBBackendFactory::getInstance ());
+#endif
+
+#if RIPPLE_MDB_AVAILABLE
+    NodeStore::addBackendFactory (MdbBackendFactory::getInstance ());
+#endif
+
+    NodeStore::addBackendFactory (KeyvaDBBackendFactory::getInstance ());
+}
+
 NodeStore* NodeStore::New (Parameters const& backendParameters,
                            Parameters fastBackendParameters,
                            Scheduler& scheduler)
