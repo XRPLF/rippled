@@ -136,9 +136,6 @@
     <Filter Include="[2] Build">
       <UniqueIdentifier>{c69b07a2-44e5-4b06-99a9-81f5d137ea15}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\ripple_app\boost">
-      <UniqueIdentifier>{8476f6e8-7411-460f-bdef-68e3166078eb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\ripple_app\websocket">
       <UniqueIdentifier>{7c14e9df-6d8d-4ba3-b208-f89c1d0b6b30}</UniqueIdentifier>
     </Filter>
@@ -797,9 +794,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_asio\beast_asio.cpp">
       <Filter>[0] Subtrees\beast</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\boost\ripple_IoService.cpp">
-      <Filter>[1] Ripple\ripple_app\boost</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\websocket\WSConnection.cpp">
       <Filter>[1] Ripple\ripple_app\websocket</Filter>
@@ -1565,9 +1559,6 @@
     <ClInclude Include="..\..\modules\ripple_app\main\ripple_RippleMain.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\boost\ripple_IoService.h">
-      <Filter>[1] Ripple\ripple_app\boost</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_LoggedTimings.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
@@ -1675,9 +1666,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_net\basics\impl\MultiSocketType.h">
       <Filter>[1] Ripple\ripple_net\basics\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCUtil.h">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_net\basics\RPCDoor.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>

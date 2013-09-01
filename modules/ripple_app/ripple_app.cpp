@@ -26,9 +26,6 @@ namespace ripple
 // Application
 //
 
-# include "boost/ripple_IoService.h" // deprecated
-#include "boost/ripple_IoService.cpp" // deprecated
-
 # include "main/ripple_FatalErrorReporter.h"
 #include "main/ripple_FatalErrorReporter.cpp"
 
