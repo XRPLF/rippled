@@ -8,13 +8,14 @@
 
 #include "ripple_app.h"
 
-#include "../ripple_client/ripple_client.h"
-#include "../ripple_net/ripple_net.h" // for RPCServerHandler
-
 #include "beast/modules/beast_db/beast_db.h"
-#include "../ripple_mdb/ripple_mdb.h"
-#include "../ripple_leveldb/ripple_leveldb.h"
+
+#include "../ripple_client/ripple_client.h"
 #include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
+#include "../ripple_net/ripple_net.h"
+#include "../ripple_websocket/ripple_websocket.h"
+#include "../ripple_leveldb/ripple_leveldb.h"
+#include "../ripple_mdb/ripple_mdb.h"
 
 // This .cpp will end up including all of the public header
 // material in Ripple since it holds the Application object.
@@ -22,14 +23,29 @@
 namespace ripple
 {
 
- #include "boost/ripple_IoService.h" // deprecated
+//
+// Application
+//
+
+# include "boost/ripple_IoService.h" // deprecated
 #include "boost/ripple_IoService.cpp" // deprecated
 
- #include "main/ripple_FatalErrorReporter.h"
+# include "main/ripple_FatalErrorReporter.h"
 #include "main/ripple_FatalErrorReporter.cpp"
 
+# include "rpc/RPCErr.h"
+# include "rpc/RPCUtil.h"
+# include "rpc/RPCHandler.h"
+#include "rpc/RPCHandler.cpp"
 # include "rpc/RPCServerHandler.h"
 #include "rpc/RPCServerHandler.cpp"
+#include "websocket/WSConnection.h"
+# include "websocket/WSServerHandler.h"
+#include "websocket/WSServerHandler.cpp"
+#include "websocket/WSConnection.cpp"
+# include "websocket/WSDoor.h"
+#include "websocket/WSDoor.cpp"
+
 #ifdef _MSC_VER
 # pragma warning (push)
 # pragma warning (disable: 4244) // conversion, possible loss of data
@@ -39,6 +55,10 @@ namespace ripple
 #ifdef _MSC_VER
 # pragma warning (pop)
 #endif
+
+//
+// RippleMain
+//
 
 #  include "node/ripple_HyperLevelDBBackendFactory.h"
 # include "node/ripple_HyperLevelDBBackendFactory.cpp"

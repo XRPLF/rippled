@@ -10,6 +10,7 @@
 
 #include "../ripple_client/ripple_client.h"
 #include "../ripple_net/ripple_net.h"
+#include "../ripple_websocket/ripple_websocket.h"
 
 #ifdef _MSC_VER
 #pragma warning (push)
@@ -19,20 +20,7 @@
 namespace ripple
 {
 
- #include "rpc/RPCErr.h"
- #include "rpc/RPCUtil.h"
-#include "websocket/WSConnection.h" // needs RPCErr
-
-#ifdef _MSC_VER
-#pragma warning (push)
-#pragma warning (disable: 4018) // signed/unsigned mismatch
-#pragma warning (disable: 4244) // conversion, possible loss of data
-#endif
-#include "rpc/RPCHandler.cpp"
-#ifdef _MSC_VER
-#pragma warning (pop)
-#endif
-
+# include "rpc/RPCErr.h"
 #include "paths/ripple_PathRequest.cpp" // needs RPCErr.h
 #include "paths/ripple_RippleCalc.cpp"
 #include "paths/ripple_PathState.cpp"
@@ -41,10 +29,6 @@ namespace ripple
 #include "peers/PeerDoor.cpp"
 #include "paths/ripple_RippleLineCache.cpp"
 #include "ledger/SerializedValidation.cpp"
-
-#include "websocket/WSConnection.cpp"
-#include "websocket/WSDoor.cpp"
-#include "websocket/WSServerHandler.cpp"
 
 }
 

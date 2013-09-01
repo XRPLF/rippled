@@ -9,9 +9,6 @@
 
 #include "beast/modules/beast_core/beast_core.h" // Must come before <boost/bind.hpp>
 
-// This is unfortunate...remove ASAP
-#include "../ripple_websocket/ripple_websocket.h"
-
 #if BEAST_LINUX || BEAST_MAC || BEAST_BSD
 #include <sys/resource.h>
 #endif
@@ -126,9 +123,7 @@ namespace ripple
 #include "misc/NetworkOPs.h"
 #include "tx/TransactionMaster.h"
 #include "main/ripple_LocalCredentials.h"
-#include "websocket/WSDoor.h"
 #include "main/ripple_Application.h"
-#include "rpc/RPCHandler.h"
 #include "tx/TransactionQueue.h"
 #include "ledger/OrderBookDB.h"
 #include "rpc/CallRPC.h"
@@ -154,17 +149,12 @@ namespace ripple
 #include "paths/ripple_RippleState.h"
 #include "tx/AccountSetTransactor.h"
 #include "tx/TrustSetTransactor.h"
-#include "websocket/WSServerHandler.h" // remove ripple_websocket.h with this
 #include "tx/WalletAddTransactor.h"
 
 #include "contracts/ripple_ScriptData.h"
 #include "contracts/ripple_Contract.h"
 #include "contracts/ripple_Interpreter.h"
 #include "contracts/ripple_Operation.h"
-
-//#include "misc/ripple_InfoSub.h"
-//#include "rpc/CallRPC.h"
-//#include "rpc/RPCSub.h"
 
 }
 
