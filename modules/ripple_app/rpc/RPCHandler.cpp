@@ -2729,7 +2729,7 @@ Json::Value RPCHandler::doSMS (Json::Value params, LoadType* loadType, Applicati
     if (!params.isMember ("text"))
         return rpcError (rpcINVALID_PARAMS);
 
-    HttpsClient::sendSMS (getApp().getIOService (), params["text"].asString ());
+    HTTPClient::sendSMS (getApp().getIOService (), params["text"].asString ());
 
     return "sms dispatched";
 }

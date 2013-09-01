@@ -1130,7 +1130,7 @@ void RPCCall::fromNetwork (
     const int RPC_REPLY_MAX_BYTES (128*1024*1024);
     const int RPC_NOTIFY_SECONDS (30);
 
-    HttpsClient::httpsRequest (
+    HTTPClient::request (
         bSSL,
         io_service,
         strIp,

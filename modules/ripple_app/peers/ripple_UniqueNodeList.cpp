@@ -556,7 +556,7 @@ public:
     {
         if (!getConfig ().VALIDATORS_SITE.empty ())
         {
-            HttpsClient::httpsGet (
+            HTTPClient::get (
                 true,
                 getApp().getIOService (),
                 getConfig ().VALIDATORS_SITE,
@@ -1434,7 +1434,7 @@ private:
         deqSites.push_back (str (boost::format ("www.%s") % strDomain));
         deqSites.push_back (strDomain);
 
-        HttpsClient::httpsGet (
+        HTTPClient::get (
             true,
             getApp().getIOService (),
             deqSites,
@@ -1473,7 +1473,7 @@ private:
                 && -1 == iPort
                 && strScheme == "https")
         {
-            HttpsClient::httpsGet (
+            HTTPClient::get (
                 true,
                 getApp().getIOService (),
                 strDomain,
@@ -1507,7 +1507,7 @@ private:
                 && -1 == iPort
                 && strScheme == "https")
         {
-            HttpsClient::httpsGet (
+            HTTPClient::get (
                 true,
                 getApp().getIOService (),
                 strDomain,

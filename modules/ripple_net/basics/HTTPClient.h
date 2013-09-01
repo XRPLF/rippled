@@ -7,43 +7,17 @@
 #ifndef RIPPLE_NET_BASICS_HTTPCLIENT_H_INCLUDED
 #define RIPPLE_NET_BASICS_HTTPCLIENT_H_INCLUDED
 
-// VFALCO TODO Make this an abstract interface.
-//
-/** Provides an asynchronous HTTPS client implementation.
+/** Provides an asynchronous HTTP client implementation with optional SSL.
 */
-class HttpsClient
-    : public boost::enable_shared_from_this <HttpsClient>
-    , LeakChecked <HttpsClient>
+class HTTPClient
 {
 public:
-    HttpsClient (
-        boost::asio::io_service& io_service,
-        const unsigned short port,
-        std::size_t responseMax
-    );
+    enum
+    {
+        maxClientHeaderBytes = 32 * 1024
+    };
 
-    // VFALCO NOTE Putting "https" is redundant, the class is
-    //             already called HttpsClient.
-    //
-    // VFALCO TODO Rename these to request, get, and next.
-    //
-    void httpsRequest (
-        bool bSSL,
-        std::deque<std::string> deqSites,
-        FUNCTION_TYPE <void (boost::asio::streambuf& sb, const std::string& strHost)> build,
-        boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
-
-    void httpsGet (
-        bool bSSL,
-        std::deque<std::string> deqSites,
-        const std::string& strPath,
-        boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
-
-    // VFALCO TODO These statics all belong in some HttpsClientOperations class
-    //
-    static void httpsGet (
+    static void get (
         bool bSSL,
         boost::asio::io_service& io_service,
         std::deque <std::string> deqSites,
@@ -53,7 +27,7 @@ public:
         boost::posix_time::time_duration timeout,
         FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
-    static void httpsGet (
+    static void get (
         bool bSSL,
         boost::asio::io_service& io_service,
         std::string strSite,
@@ -63,7 +37,7 @@ public:
         boost::posix_time::time_duration timeout,
         FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
-    static void httpsRequest (
+    static void request (
         bool bSSL,
         boost::asio::io_service& io_service,
         std::string strSite,
@@ -73,57 +47,12 @@ public:
         boost::posix_time::time_duration timeout,
         FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
+    enum
+    {
+        smsTimeoutSeconds = 30
+    };
+
     static void sendSMS (boost::asio::io_service& io_service, const std::string& strText);
-
-private:
-    static const int maxClientHeaderBytes = 32 * 1024;
-
-    typedef boost::shared_ptr<HttpsClient> pointer;
-
-    bool                                                        mSSL;
-    AutoSocket                                                  mSocket;
-    boost::asio::ip::tcp::resolver                              mResolver;
-    boost::shared_ptr<boost::asio::ip::tcp::resolver::query>    mQuery;
-    boost::asio::streambuf                                      mRequest;
-    boost::asio::streambuf                                      mHeader;
-    boost::asio::streambuf                                      mResponse;
-    std::string                                                 mBody;
-    const unsigned short                                        mPort;
-    int                                                         mResponseMax;
-    int                                                         mStatus;
-    FUNCTION_TYPE<void (boost::asio::streambuf& sb, const std::string& strHost)>         mBuild;
-    FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> mComplete;
-
-    boost::asio::deadline_timer                                 mDeadline;
-
-    // If not success, we are shutting down.
-    boost::system::error_code                                   mShutdown;
-
-    std::deque<std::string>                                     mDeqSites;
-    boost::posix_time::time_duration                            mTimeout;
-
-    void handleDeadline (const boost::system::error_code& ecResult);
-
-    void handleResolve (const boost::system::error_code& ecResult, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
-
-    void handleConnect (const boost::system::error_code& ecResult);
-
-    void handleRequest (const boost::system::error_code& ecResult);
-
-    void handleWrite (const boost::system::error_code& ecResult, std::size_t bytes_transferred);
-
-    void handleHeader (const boost::system::error_code& ecResult, std::size_t bytes_transferred);
-
-    void handleData (const boost::system::error_code& ecResult, std::size_t bytes_transferred);
-
-    void handleShutdown (const boost::system::error_code& ecResult);
-
-    void httpsNext ();
-
-    void invokeComplete (const boost::system::error_code& ecResult, int iStatus = 0, const std::string& strData = "");
-
-    void makeGet (const std::string& strPath, boost::asio::streambuf& sb, const std::string& strHost);
 };
 
 #endif
-
