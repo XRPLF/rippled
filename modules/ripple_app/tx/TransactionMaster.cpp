@@ -81,16 +81,24 @@ SerializedTransaction::pointer TransactionMaster::fetch (SHAMapItem::ref item, S
     return txn;
 }
 
-bool TransactionMaster::canonicalize (Transaction::pointer& txn)
+bool TransactionMaster::canonicalize (Transaction::pointer* pTransaction)
 {
+    Transaction::pointer txn (*pTransaction);
+
     uint256 tid = txn->getID ();
 
     if (!tid)
         return false;
 
+    // VFALCO NOTE canonicalize can change the value of txn!
     if (mCache.canonicalize (tid, txn))
+    {
+        *pTransaction = txn;
         return true;
+    }
 
+    // VFALCO NOTE I am unsure if this is necessary but better safe than sorry.
+    *pTransaction = txn;
     return false;
 }
 

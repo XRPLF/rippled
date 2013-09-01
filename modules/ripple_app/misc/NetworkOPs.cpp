@@ -782,7 +782,7 @@ void NetworkOPsImp::runTransactionQueue ()
                     // transaction should be held
                     WriteLog (lsDEBUG, NetworkOPs) << "QTransaction should be held: " << r;
                     dbtx->setStatus (HELD);
-                    getApp().getMasterTransaction ().canonicalize (dbtx);
+                    getApp().getMasterTransaction ().canonicalize (&dbtx);
                     m_ledgerMaster.addHeldTransaction (dbtx);
                 }
                 else if (r == tefPAST_SEQ)
@@ -795,7 +795,7 @@ void NetworkOPsImp::runTransactionQueue ()
                 {
                     WriteLog (lsINFO, NetworkOPs) << "QTransaction is now included in open ledger";
                     dbtx->setStatus (INCLUDED);
-                    getApp().getMasterTransaction ().canonicalize (dbtx);
+                    getApp().getMasterTransaction ().canonicalize (&dbtx);
                 }
                 else
                 {
@@ -889,7 +889,8 @@ Transaction::pointer NetworkOPsImp::processTransaction (Transaction::pointer tra
 
         if (r == tefFAILURE)
         {
-            // VFALCO TODO determine if this is a real exception or a return value.
+            // VFALCO TODO All callers use a try block so this should be changed to
+            //             a return value.
             throw Fault (IO_ERROR);
         }
 
@@ -897,7 +898,9 @@ Transaction::pointer NetworkOPsImp::processTransaction (Transaction::pointer tra
         {
             WriteLog (lsINFO, NetworkOPs) << "Transaction is now included in open ledger";
             trans->setStatus (INCLUDED);
-            getApp().getMasterTransaction ().canonicalize (trans);
+
+            // VFALCO NOTE The value of trans can be changed here!!
+            getApp().getMasterTransaction ().canonicalize (&trans);
         }
         else if (r == tefPAST_SEQ)
         {
@@ -912,7 +915,7 @@ Transaction::pointer NetworkOPsImp::processTransaction (Transaction::pointer tra
                     // transaction should be held
                     WriteLog (lsDEBUG, NetworkOPs) << "Transaction should be held: " << r;
                     trans->setStatus (HELD);
-                    getApp().getMasterTransaction ().canonicalize (trans);
+                    getApp().getMasterTransaction ().canonicalize (&trans);
                     m_ledgerMaster.addHeldTransaction (trans);
             }
         }

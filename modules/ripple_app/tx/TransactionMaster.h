@@ -20,7 +20,7 @@ public:
 
     // return value: true = we had the transaction already
     bool inLedger (uint256 const& hash, uint32 ledger);
-    bool canonicalize (Transaction::pointer& txn);
+    bool canonicalize (Transaction::pointer* pTransaction);
     void sweep (void);
 
 private:
