@@ -25,7 +25,6 @@ class LedgerMaster;
 class LoadManager;
 class NetworkOPs;
 class OrderBookDB;
-class PeerDoor;
 class SerializedLedgerEntry;
 class TransactionMaster;
 class TXQueue;
@@ -95,7 +94,6 @@ public:
     virtual LedgerMaster&           getLedgerMaster () = 0;
     virtual NetworkOPs&             getOPs () = 0;
     virtual OrderBookDB&            getOrderBookDB () = 0;
-    virtual PeerDoor&               getPeerDoor () = 0;
     virtual TransactionMaster&      getMasterTransaction () = 0;
     virtual TXQueue&                getTxnQueue () = 0;
     virtual LocalCredentials&       getLocalCredentials () = 0;

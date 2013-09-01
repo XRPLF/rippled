@@ -8,8 +8,6 @@
 
 #include "ripple_app.h"
 
-#include "../ripple_net/ripple_net.h"
-
 #ifdef _MSC_VER
 #pragma warning (push)
 #pragma warning (disable: 4309) // truncation of constant value
@@ -23,7 +21,6 @@ namespace ripple
 #include "paths/ripple_PathState.cpp"
 
 #include "main/ParameterTable.cpp"
-#include "peers/PeerDoor.cpp"
 #include "paths/ripple_RippleLineCache.cpp"
 #include "ledger/SerializedValidation.cpp"
 

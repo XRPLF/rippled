@@ -39,6 +39,8 @@ namespace ripple
 #include "websocket/WSConnection.cpp"
 # include "websocket/WSDoor.h"
 #include "websocket/WSDoor.cpp"
+# include "peers/PeerDoor.h"
+#include "peers/PeerDoor.cpp"
 
 #ifdef _MSC_VER
 # pragma warning (push)

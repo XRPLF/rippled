@@ -277,11 +277,6 @@ public:
         return mTxnQueue;
     }
 
-    PeerDoor& getPeerDoor ()
-    {
-        return *m_peerDoor;
-    }
-
     OrderBookDB& getOrderBookDB ()
     {
         return mOrderBookDB;

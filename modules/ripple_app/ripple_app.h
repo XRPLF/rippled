@@ -142,7 +142,6 @@ namespace ripple
  #include "paths/ripple_RippleCalc.h"
 #include  "paths/ripple_Pathfinder.h"
 #include "tx/PaymentTransactor.h"
-#include "peers/PeerDoor.h"
 #include "tx/RegularKeySetTransactor.h"
 #include "paths/ripple_RippleState.h"
 #include "tx/AccountSetTransactor.h"
