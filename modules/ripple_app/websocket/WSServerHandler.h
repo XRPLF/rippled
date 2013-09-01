@@ -10,14 +10,14 @@
 extern bool serverOkay (std::string& reason);
 
 template <typename endpoint_type>
-class WSConnection;
+class WSConnectionType;
 
 // CAUTION: on_* functions are called by the websocket code while holding a lock
 
 struct WSServerHandlerLog;
 
 // This tag helps with mutex tracking
-struct WSServerHandlerBase
+struct WSServerHandlerBase : public Uncopyable
 {
 };
 
@@ -28,12 +28,12 @@ template <typename endpoint_type>
 class WSServerHandler
     : public WSServerHandlerBase
     , public endpoint_type::handler
-    , LeakChecked <WSServerHandler <endpoint_type> >
+    , public LeakChecked <WSServerHandler <endpoint_type> >
 {
 public:
     typedef typename endpoint_type::handler::connection_ptr     connection_ptr;
     typedef typename endpoint_type::handler::message_ptr        message_ptr;
-    typedef boost::shared_ptr< WSConnection<endpoint_type> >    wsc_ptr;
+    typedef boost::shared_ptr< WSConnectionType <endpoint_type> >    wsc_ptr;
 
     // Private reasons to close.
     enum
@@ -56,8 +56,8 @@ private:
 protected:
     // For each connection maintain an associated object to track subscriptions.
     boost::unordered_map <connection_ptr,
-        boost::shared_ptr <WSConnection <endpoint_type> > > mMap;
-    bool mPublic;
+        boost::shared_ptr <WSConnectionType <endpoint_type> > > mMap;
+    bool const mPublic;
 
 public:
     WSServerHandler (InfoSub::Source& source, boost::asio::ssl::context& ssl_context, bool bPublic)
@@ -72,13 +72,6 @@ public:
     {
         return mPublic;
     };
-
-    /*
-    boost::asio::ssl::context& getASIOContext ()
-    {
-        return *m_ssl_context;
-    }
-    */
 
     static void ssend (connection_ptr cpClient, message_ptr mpMessage)
     {
@@ -172,7 +165,7 @@ public:
 
         try
         {
-            mMap[cpClient]  = boost::make_shared< WSConnection<endpoint_type> > (m_source, this, cpClient);
+            mMap [cpClient] = boost::make_shared< WSConnectionType <endpoint_type> > (m_source, *this, cpClient);
         }
         catch (...)
         {
@@ -212,7 +205,7 @@ public:
 
         // Must be done without holding the websocket send lock
         getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::destroy",
-                                       BIND_TYPE (&WSConnection<endpoint_type>::destroy, ptr));
+                                       BIND_TYPE (&WSConnectionType <endpoint_type>::destroy, ptr));
     }
 
     void on_message (connection_ptr cpClient, message_ptr mpMessage)
@@ -352,5 +345,3 @@ public:
 };
 
 #endif
-
-// vim:ts=4

@@ -4,69 +4,101 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_WSCONNECTION_H
 #define RIPPLE_WSCONNECTION_H
 
-// This is for logging
-struct WSConnectionLog;
+//------------------------------------------------------------------------------
 
-// Helps with naming the lock
-struct WSConnectionBase
-{
-};
-
-template <typename endpoint_type>
-class WSServerHandler;
-//
-// Storage for connection specific info
-// - Subscriptions
-//
-template <typename endpoint_type>
+/** A Ripple WebSocket connection handler.
+    This handles everything that is independent of the endpint_type.
+*/
 class WSConnection
-    : public WSConnectionBase
+    : public boost::enable_shared_from_this <WSConnection>
     , public InfoSub
-    , public boost::enable_shared_from_this< WSConnection<endpoint_type> >
-    , public CountedObject <WSConnection <endpoint_type> >
+    , public CountedObject <WSConnection>
+    , public Uncopyable
 {
 public:
     static char const* getCountedObjectName () { return "WSConnection"; }
 
+protected:
+    typedef websocketpp::message::data::ptr message_ptr;
+
+    WSConnection (InfoSub::Source& source, bool isPublic,
+        std::string const& remoteIP, boost::asio::io_service& io_service);
+
+    virtual ~WSConnection ();
+
+    virtual void preDestroy () = 0;
+    virtual void disconnect () = 0;
+
+public:
+    void onPong (const std::string&);
+    void rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueue);
+    message_ptr getMessage ();
+    void returnMessage (message_ptr ptr);
+    Json::Value invokeCommand (Json::Value& jvRequest);
+
+protected:
+    bool const m_isPublic;
+    std::string const m_remoteIP;
+    LockType m_receiveQueueMutex;
+    std::deque <message_ptr> m_receiveQueue;
+    NetworkOPs& m_netOPs;
+    LoadSource m_loadSource;
+    boost::asio::deadline_timer m_pingTimer;
+    bool m_sentPing;
+    bool m_receiveQueueRunning;
+    bool m_isDead;
+
+private:
+    WSConnection (WSConnection const&);
+    WSConnection& operator= (WSConnection const&);
+};
+
+//------------------------------------------------------------------------------
+
+template <typename endpoint_type>
+class WSServerHandler;
+
+/** A Ripple WebSocket connection handler for a specific endpoint_type.
+*/
+template <typename endpoint_type>
+class WSConnectionType
+    : public WSConnection
+{
+public:
     typedef typename endpoint_type::connection_type connection;
     typedef typename boost::shared_ptr<connection> connection_ptr;
     typedef typename boost::weak_ptr<connection> weak_connection_ptr;
-    typedef typename endpoint_type::handler::message_ptr message_ptr;
+    typedef WSServerHandler <endpoint_type> server_type;
 
 public:
-    WSConnection (InfoSub::Source& source, WSServerHandler<endpoint_type>* wshpHandler,
-        const connection_ptr& cpConnection)
-        : InfoSub (source)
-        , mRcvQueueLock (static_cast<WSConnectionBase const*>(this), "WSConn", __FILE__, __LINE__)
-        , mHandler (wshpHandler), mConnection (cpConnection), mNetwork (getApp().getOPs ()),
-          mRemoteIP (cpConnection->get_socket ().lowest_layer ().remote_endpoint ().address ().to_string ()),
-          mLoadSource (mRemoteIP), mPingTimer (cpConnection->get_io_service ()), mPinged (false),
-          mRcvQueueRunning (false), mDead (false)
+    WSConnectionType (InfoSub::Source& source, server_type& serverHandler,
+        connection_ptr const& cpConnection)
+        : WSConnection (source,
+            serverHandler.getPublic (),
+            cpConnection->get_socket ().lowest_layer ().remote_endpoint ().address ().to_string (),
+            cpConnection->get_io_service ())
+        , m_serverHandler (serverHandler)
+        , m_connection (cpConnection)
     {
-        WriteLog (lsDEBUG, WSConnectionLog) << "Websocket connection from " << mRemoteIP;
         setPingTimer ();
     }
 
     void preDestroy ()
     {
         // sever connection
-        mPingTimer.cancel ();
-        mConnection.reset ();
+        m_pingTimer.cancel ();
+        m_connection.reset ();
 
-        ScopedLockType sl (mRcvQueueLock, __FILE__, __LINE__);
-        mDead = true;
+        {
+            ScopedLockType sl (m_receiveQueueMutex, __FILE__, __LINE__);
+            m_isDead = true;
+        }
     }
 
-    virtual ~WSConnection ()
-    {
-        ;
-    }
-
-    static void destroy (boost::shared_ptr< WSConnection<endpoint_type> >)
+    static void destroy (boost::shared_ptr <WSConnectionType <endpoint_type> >)
     {
         // Just discards the reference
     }
@@ -74,130 +106,37 @@ public:
     // Implement overridden functions from base class:
     void send (const Json::Value& jvObj, bool broadcast)
     {
-        connection_ptr ptr = mConnection.lock ();
+        connection_ptr ptr = m_connection.lock ();
 
         if (ptr)
-            mHandler->send (ptr, jvObj, broadcast);
+            m_serverHandler.send (ptr, jvObj, broadcast);
     }
 
-    void send (const Json::Value& jvObj, const std::string& sObj, bool broadcast)
+    void disconnect ()
     {
-        connection_ptr ptr = mConnection.lock ();
+        // FIXME: Must dispatch to strand
+        connection_ptr ptr = m_connection.lock ();
 
         if (ptr)
-            mHandler->send (ptr, sObj, broadcast);
-    }
-
-    // Utilities
-    Json::Value invokeCommand (Json::Value& jvRequest)
-    {
-        if (getApp().getLoadManager ().shouldCutoff (mLoadSource))
-        {
-            // VFALCO TODO This must be implemented before open sourcing
-
-#if SHOULD_DISCONNECT
-            // FIXME: Must dispatch to strand
-            connection_ptr ptr = mConnection.lock ();
-
-            if (ptr)
-                ptr->close (websocketpp::close::status::PROTOCOL_ERROR, "overload");
-
-            return rpcError (rpcSLOW_DOWN);
-#endif
-        }
-
-        // Requests without "command" are invalid.
-        //
-        if (!jvRequest.isMember ("command"))
-        {
-            Json::Value jvResult (Json::objectValue);
-
-            jvResult["type"]    = "response";
-            jvResult["status"]  = "error";
-            jvResult["error"]   = "missingCommand";
-            jvResult["request"] = jvRequest;
-
-            if (jvRequest.isMember ("id"))
-            {
-                jvResult["id"]  = jvRequest["id"];
-            }
-
-            getApp().getLoadManager ().applyLoadCharge (mLoadSource, LT_RPCInvalid);
-
-            return jvResult;
-        }
-
-        LoadType loadType = LT_RPCReference;
-        RPCHandler  mRPCHandler (&mNetwork, boost::dynamic_pointer_cast<InfoSub> (this->shared_from_this ()));
-        Json::Value jvResult (Json::objectValue);
-
-        Config::Role const role = mHandler->getPublic ()
-                      ? Config::GUEST     // Don't check on the public interface.
-                      : getConfig ().getAdminRole (jvRequest, mRemoteIP);
-
-        if (Config::FORBID == role)
-        {
-            jvResult["result"]  = rpcError (rpcFORBIDDEN);
-        }
-        else
-        {
-            jvResult["result"] = mRPCHandler.doCommand (jvRequest, role, &loadType);
-        }
-
-        // Debit/credit the load and see if we should include a warning.
-        //
-        if (getApp().getLoadManager ().applyLoadCharge (mLoadSource, loadType) &&
-            getApp().getLoadManager ().shouldWarn (mLoadSource))
-        {
-            jvResult["warning"] = "load";
-        }
-
-        // Currently we will simply unwrap errors returned by the RPC
-        // API, in the future maybe we can make the responses
-        // consistent.
-        //
-        // Regularize result. This is duplicate code.
-        if (jvResult["result"].isMember ("error"))
-        {
-            jvResult            = jvResult["result"];
-            jvResult["status"]  = "error";
-            jvResult["request"] = jvRequest;
-
-        }
-        else
-        {
-            jvResult["status"]  = "success";
-        }
-
-        if (jvRequest.isMember ("id"))
-        {
-            jvResult["id"]      = jvRequest["id"];
-        }
-
-        jvResult["type"]        = "response";
-
-        return jvResult;
+            ptr->close (websocketpp::close::status::PROTOCOL_ERROR, "overload");
     }
 
     bool onPingTimer (std::string&)
     {
 #ifdef DISCONNECT_ON_WEBSOCKET_PING_TIMEOUTS
-
-        if (mPinged)
+        if (m_sentPing)
             return true; // causes connection to close
-
 #endif
-        mPinged = true;
+
+        m_sentPing = true;
         setPingTimer ();
         return false; // causes ping to be sent
     }
 
-    void onPong (const std::string&)
-    {
-        mPinged = false;
-    }
+    //--------------------------------------------------------------------------
 
-    static void pingTimer (weak_connection_ptr c, WSServerHandler<endpoint_type>* h, const boost::system::error_code& e)
+    static void pingTimer (weak_connection_ptr c, server_type* h,
+        boost::system::error_code const& e)
     {
         if (e)
             return;
@@ -210,89 +149,22 @@ public:
 
     void setPingTimer ()
     {
-        connection_ptr ptr = mConnection.lock ();
+        connection_ptr ptr = m_connection.lock ();
 
         if (ptr)
         {
-            mPingTimer.expires_from_now (boost::posix_time::seconds (getConfig ().WEBSOCKET_PING_FREQ));
-            mPingTimer.async_wait (ptr->get_strand ().wrap (boost::bind (
-                                       &WSConnection<endpoint_type>::pingTimer, mConnection, mHandler, boost::asio::placeholders::error)));
+            m_pingTimer.expires_from_now (boost::posix_time::seconds 
+                (getConfig ().WEBSOCKET_PING_FREQ));
+
+            m_pingTimer.async_wait (ptr->get_strand ().wrap (
+                boost::bind (&WSConnectionType <endpoint_type>::pingTimer,
+                    m_connection, &m_serverHandler, boost::asio::placeholders::error)));
         }
-    }
-
-    void rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueue)
-    {
-        ScopedLockType sl (mRcvQueueLock, __FILE__, __LINE__);
-
-        if (mDead)
-        {
-            msgRejected = false;
-            runQueue = false;
-            return;
-        }
-
-        if (mDead || (mRcvQueue.size () >= 1000))
-        {
-            msgRejected = !mDead;
-            runQueue = false;
-        }
-        else
-        {
-            msgRejected = false;
-            mRcvQueue.push_back (msg);
-
-            if (mRcvQueueRunning)
-                runQueue = false;
-            else
-            {
-                runQueue = true;
-                mRcvQueueRunning = true;
-            }
-        }
-    }
-
-    message_ptr getMessage ()
-    {
-        ScopedLockType sl (mRcvQueueLock, __FILE__, __LINE__);
-
-        if (mDead || mRcvQueue.empty ())
-        {
-            mRcvQueueRunning = false;
-            return message_ptr ();
-        }
-
-        message_ptr m = mRcvQueue.front ();
-        mRcvQueue.pop_front ();
-        return m;
-    }
-
-    void returnMessage (message_ptr ptr)
-    {
-        ScopedLockType sl (mRcvQueueLock, __FILE__, __LINE__);
-
-        if (!mDead)
-            mRcvQueue.push_front(ptr);
     }
 
 private:
-    typedef void (WSConnection::*doFuncPtr) (Json::Value& jvResult, Json::Value& jvRequest);
-
-    LockType                            mRcvQueueLock;
-
-    WSServerHandler<endpoint_type>*     mHandler;
-    weak_connection_ptr                 mConnection;
-    NetworkOPs&                         mNetwork;
-    std::string                         mRemoteIP;
-    LoadSource                          mLoadSource;
-
-    boost::asio::deadline_timer         mPingTimer;
-    bool                                mPinged;
-
-    std::deque<message_ptr>             mRcvQueue;
-    bool                                mRcvQueueRunning;
-    bool                                mDead;
+    server_type& m_serverHandler;
+    weak_connection_ptr m_connection;
 };
 
 #endif
-
-// vim:ts=4
