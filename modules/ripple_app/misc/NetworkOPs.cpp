@@ -78,7 +78,7 @@ void NetworkOPs::processHeartbeatTimer ()
 
         // VFALCO NOTE This is for diagnosing a crash on exit
         Application& app (getApp ());
-        ILoadManager& mgr (app.getLoadManager ());
+        LoadManager& mgr (app.getLoadManager ());
         mgr.resetDeadlockDetector ();
 
         std::size_t const numPeers = getApp().getPeers ().getPeerVector ().size ();

@@ -1436,9 +1436,6 @@
     <ClInclude Include="..\..\modules\ripple_app\main\ripple_Application.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\main\ripple_ILoadManager.h">
-      <Filter>[1] Ripple\ripple_app\main</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\main\ripple_LocalCredentials.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
@@ -1672,6 +1669,15 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_Peers.h">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\LoadSource.h">
+      <Filter>[1] Ripple\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\LoadType.h">
+      <Filter>[1] Ripple\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\main\ripple_LoadManager.h">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

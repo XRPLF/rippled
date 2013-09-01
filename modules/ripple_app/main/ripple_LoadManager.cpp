@@ -8,8 +8,8 @@ SETUP_LOG (LoadManager)
 
 //------------------------------------------------------------------------------
 
-class LoadManager
-    : public ILoadManager
+class LoadManagerImp
+    : public LoadManager
     , public beast::InterruptibleThread::EntryPoint
 {
 private:
@@ -59,8 +59,8 @@ private:
     };
 
 public:
-    LoadManager ()
-        : mLock (this, "LoadManager", __FILE__, __LINE__)
+    LoadManagerImp ()
+        : mLock (this, "LoadManagerImp", __FILE__, __LINE__)
         , m_thread ("loadmgr")
         , m_logThread ("loadmgr_log")
         , mCreditRate (100)
@@ -115,7 +115,7 @@ public:
     }
 
 private:
-    ~LoadManager ()
+    ~LoadManagerImp ()
     {
         UptimeTimer::getInstance ().endManualUpdates ();
 
@@ -430,7 +430,8 @@ private:
 
 //------------------------------------------------------------------------------
 
-ILoadManager* ILoadManager::New ()
+LoadManager* LoadManager::New ()
 {
-    return new LoadManager;
+    ScopedPointer <LoadManager> object (new LoadManagerImp);
+    return object.release ();
 }

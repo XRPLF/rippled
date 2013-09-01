@@ -83,7 +83,7 @@ public:
     virtual IFeeVote&               getFeeVote () = 0;
     virtual IHashRouter&            getHashRouter () = 0;
     virtual ILoadFeeTrack&          getFeeTrack () = 0;
-    virtual ILoadManager&           getLoadManager () = 0;
+    virtual LoadManager&           getLoadManager () = 0;
     virtual Peers&                 getPeers () = 0;
     virtual IProofOfWorkFactory&    getProofOfWorkFactory () = 0;
     virtual UniqueNodeList&         getUNL () = 0;

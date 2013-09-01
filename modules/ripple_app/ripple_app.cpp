@@ -126,7 +126,7 @@ namespace ripple
 #include "misc/ripple_NicknameState.h"
 #include "ledger/Ledger.h"
 #include "ledger/SerializedValidation.h"
-#include "main/ripple_ILoadManager.h"
+#include "main/ripple_LoadManager.h"
 #include "misc/ripple_ProofOfWork.h"
 #include "misc/ripple_InfoSub.h"
 #include "misc/ripple_OrderBook.h"

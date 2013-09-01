@@ -11,9 +11,7 @@
 */
 
 /** Core classes.
-
     This module contains the Ripple core instance object and related objects.
-
     @defgroup ripple_app
 */
 

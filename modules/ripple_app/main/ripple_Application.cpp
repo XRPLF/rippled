@@ -175,7 +175,7 @@ public:
         , mValidations (IValidations::New ())
         , mUNL (UniqueNodeList::New ())
         , mProofOfWorkFactory (IProofOfWorkFactory::New ())
-        , m_loadManager (ILoadManager::New ())
+        , m_loadManager (LoadManager::New ())
         // VFALCO End new stuff
         // VFALCO TODO replace all NULL with nullptr
         , mRpcDB (NULL)
@@ -267,7 +267,7 @@ public:
         return mMasterLock;
     }
 
-    ILoadManager& getLoadManager ()
+    LoadManager& getLoadManager ()
     {
         return *m_loadManager;
     }
@@ -703,7 +703,7 @@ private:
     ScopedPointer <UniqueNodeList> mUNL;
     ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
     ScopedPointer <Peers> m_peers;
-    ScopedPointer <ILoadManager> m_loadManager;
+    ScopedPointer <LoadManager> m_loadManager;
     ScopedPointer <PeerDoor> m_peerDoor;
     ScopedPointer <PeerDoor> m_peerProxyDoor;
     ScopedPointer <WSDoor>   m_wsPublicDoor;

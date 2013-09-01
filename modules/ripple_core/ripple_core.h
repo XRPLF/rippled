@@ -28,8 +28,8 @@
 namespace ripple
 {
 
-// VFALCO NOTE Indentation shows dependency hierarchy
-//
+// Order matters
+
 /***/#include "functional/ripple_ConfigSections.h"
 /**/#include "functional/ripple_Config.h"
 /**/#include "functional/ripple_ILoadFeeTrack.h"
@@ -37,6 +37,8 @@ namespace ripple
 /*..*/#include "functional/ripple_LoadMonitor.h"
 /*.*/#include "functional/ripple_Job.h"
 /**/#include "functional/ripple_JobQueue.h"
+/*.*/#include "functional/LoadType.h"
+/**/#include "functional/LoadSource.h"
 
 #include "validator/ripple_Validator.h"
 #include "validator/ripple_ValidatorList.h"
