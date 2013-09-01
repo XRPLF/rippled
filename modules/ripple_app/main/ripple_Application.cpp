@@ -449,10 +449,6 @@ public:
 
         initSqliteDbs ();
 
-        leveldb::Options options;
-        options.create_if_missing = true;
-        options.block_cache = leveldb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
-
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                 (getConfig ().getSize (siLgrDBCache) * 1024)));
         getApp().getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %

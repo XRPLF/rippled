@@ -214,6 +214,10 @@ private:
 
 LevelDBBackendFactory::LevelDBBackendFactory ()
 {
+    leveldb::Options options;
+    options.create_if_missing = true;
+    options.block_cache = leveldb::NewLRUCache (getConfig ().getSize (
+        siHashNodeDBCache) * 1024 * 1024);
 }
 
 LevelDBBackendFactory::~LevelDBBackendFactory ()
