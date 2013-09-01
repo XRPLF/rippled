@@ -25,9 +25,6 @@
     <Filter Include="[1] Ripple\ripple_core">
       <UniqueIdentifier>{e0dd916d-72b2-46cd-840a-fb5e924a470a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\ripple_json">
-      <UniqueIdentifier>{0d065d55-0a7b-480b-beee-67dad6ee6684}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\ripple_data">
       <UniqueIdentifier>{df861e00-baa6-43d4-bbbf-df61d66ee414}</UniqueIdentifier>
     </Filter>
@@ -66,9 +63,6 @@
     </Filter>
     <Filter Include="[1] Ripple\ripple_data\utility">
       <UniqueIdentifier>{a837f3ce-75b7-4e6c-b8b1-728b6a1216bd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\ripple_json\json">
-      <UniqueIdentifier>{9d43b540-fdec-484d-a8bd-0dc65d3b0c55}</UniqueIdentifier>
     </Filter>
     <Filter Include="[1] Ripple\ripple_websocket\autosocket">
       <UniqueIdentifier>{99ac4d07-04a7-4ce3-96c7-b8ea578f1a61}</UniqueIdentifier>
@@ -159,6 +153,9 @@
     </Filter>
     <Filter Include="[1] Ripple\ripple_app\websocket">
       <UniqueIdentifier>{7c14e9df-6d8d-4ba3-b208-f89c1d0b6b30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_basics\json">
+      <UniqueIdentifier>{083291b1-1498-490e-9794-4319d21d5668}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -305,18 +302,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\ripple_data.cpp">
       <Filter>[1] Ripple\ripple_data</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_json\json\json_reader.cpp">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_json\json\json_value.cpp">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_json\json\json_writer.cpp">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_json\ripple_json.cpp">
-      <Filter>[1] Ripple\ripple_json</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_leveldb\ripple_leveldb.cpp">
       <Filter>[1] Ripple\ripple_leveldb</Filter>
@@ -882,6 +867,21 @@
     <ClCompile Include="..\..\modules\ripple_data\protocol\BuildInfo.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCErr.cpp">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basics\json\json_reader.cpp">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basics\json\json_value.cpp">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basics\json\json_writer.cpp">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\ripple_app\ripple_app.h">
@@ -1045,33 +1045,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_data\ripple_data.h">
       <Filter>[1] Ripple\ripple_data</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\json\json_autolink.h">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\json\json_batchallocator.h">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\json\json_config.h">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\json\json_features.h">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\json\json_forwards.h">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\json\json_reader.h">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\json\json_value.h">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\json\json_writer.h">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_json\ripple_json.h">
-      <Filter>[1] Ripple\ripple_json</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_leveldb\ripple_leveldb.h">
       <Filter>[1] Ripple\ripple_leveldb</Filter>
@@ -1679,6 +1652,42 @@
     <ClInclude Include="..\..\modules\ripple_data\protocol\BuildInfo.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCErr.h">
+      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\LoadSource.h">
+      <Filter>[1] Ripple\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\functional\LoadType.h">
+      <Filter>[1] Ripple\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\main\ripple_LoadManager.h">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_autolink.h">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_batchallocator.h">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_config.h">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_features.h">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_forwards.h">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_reader.h">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_value.h">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_writer.h">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\modules\ripple_data\protocol\ripple.proto">
@@ -1686,15 +1695,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\modules\ripple_json\json\json_internalarray.inl">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </None>
-    <None Include="..\..\modules\ripple_json\json\json_internalmap.inl">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </None>
-    <None Include="..\..\modules\ripple_json\json\json_valueiterator.inl">
-      <Filter>[1] Ripple\ripple_json\json</Filter>
-    </None>
     <None Include="..\..\CheatSheet.md">
       <Filter>%28Notes%29</Filter>
     </None>
@@ -1712,6 +1712,21 @@
     </None>
     <None Include="..\..\SConstruct">
       <Filter>[2] Build</Filter>
+    </None>
+    <None Include="..\..\modules\ripple_basics\json\json_internalarray.inl">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </None>
+    <None Include="..\..\modules\ripple_basics\json\json_internalmap.inl">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </None>
+    <None Include="..\..\modules\ripple_basics\json\json_valueiterator.inl">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </None>
+    <None Include="..\..\modules\ripple_basics\json\LICENSE">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
+    </None>
+    <None Include="..\..\modules\ripple_basics\json\version">
+      <Filter>[1] Ripple\ripple_basics\json</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

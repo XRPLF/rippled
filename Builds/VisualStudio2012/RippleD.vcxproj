@@ -696,6 +696,24 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basics\json\json_reader.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basics\json\json_value.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_basics\json\json_writer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basics\ripple_basics.cpp" />
     <ClCompile Include="..\..\modules\ripple_basics\types\ripple_UInt256.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -959,25 +977,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\ripple_data.cpp" />
     <ClCompile Include="..\..\modules\ripple_hyperleveldb\ripple_hyperleveldb.cpp" />
-    <ClCompile Include="..\..\modules\ripple_json\json\json_reader.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_json\json\json_value.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_json\json\json_writer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_json\ripple_json.cpp" />
     <ClCompile Include="..\..\modules\ripple_leveldb\ripple_leveldb.cpp" />
     <ClCompile Include="..\..\modules\ripple_mdb\ripple_mdb.c" />
     <ClCompile Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.cpp">
@@ -1482,6 +1481,14 @@
     <ClInclude Include="..\..\modules\ripple_basics\containers\ripple_RangeSet.h" />
     <ClInclude Include="..\..\modules\ripple_basics\containers\ripple_SecureAllocator.h" />
     <ClInclude Include="..\..\modules\ripple_basics\containers\ripple_TaggedCache.h" />
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_autolink.h" />
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_batchallocator.h" />
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_config.h" />
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_features.h" />
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_forwards.h" />
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_reader.h" />
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_value.h" />
+    <ClInclude Include="..\..\modules\ripple_basics\json\json_writer.h" />
     <ClInclude Include="..\..\modules\ripple_basics\ripple_basics.h" />
     <ClInclude Include="..\..\modules\ripple_basics\system\ripple_BoostIncludes.h" />
     <ClInclude Include="..\..\modules\ripple_basics\system\ripple_OpenSSLIncludes.h" />
@@ -1547,15 +1554,6 @@
     <ClInclude Include="..\..\modules\ripple_data\ripple_data.h" />
     <ClInclude Include="..\..\modules\ripple_data\utility\ripple_UptimeTimerAdapter.h" />
     <ClInclude Include="..\..\modules\ripple_hyperleveldb\ripple_hyperleveldb.h" />
-    <ClInclude Include="..\..\modules\ripple_json\json\json_autolink.h" />
-    <ClInclude Include="..\..\modules\ripple_json\json\json_batchallocator.h" />
-    <ClInclude Include="..\..\modules\ripple_json\json\json_config.h" />
-    <ClInclude Include="..\..\modules\ripple_json\json\json_features.h" />
-    <ClInclude Include="..\..\modules\ripple_json\json\json_forwards.h" />
-    <ClInclude Include="..\..\modules\ripple_json\json\json_reader.h" />
-    <ClInclude Include="..\..\modules\ripple_json\json\json_value.h" />
-    <ClInclude Include="..\..\modules\ripple_json\json\json_writer.h" />
-    <ClInclude Include="..\..\modules\ripple_json\ripple_json.h" />
     <ClInclude Include="..\..\modules\ripple_leveldb\ripple_leveldb.h" />
     <ClInclude Include="..\..\modules\ripple_mdb\ripple_mdb.h" />
     <ClInclude Include="..\..\modules\ripple_net\basics\ripple_HTTPRequest.h" />
@@ -1650,9 +1648,11 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(RepoDir)\build\proto\%(Filename).pb.h;$(RepoDir)\build\proto\%(Filename).pb.cc</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(RepoDir)\build\proto\%(Filename).pb.h;$(RepoDir)\build\proto\%(Filename).pb.cc</Outputs>
     </CustomBuild>
-    <None Include="..\..\modules\ripple_json\json\json_internalarray.inl" />
-    <None Include="..\..\modules\ripple_json\json\json_internalmap.inl" />
-    <None Include="..\..\modules\ripple_json\json\json_valueiterator.inl" />
+    <None Include="..\..\modules\ripple_basics\json\json_internalarray.inl" />
+    <None Include="..\..\modules\ripple_basics\json\json_internalmap.inl" />
+    <None Include="..\..\modules\ripple_basics\json\json_valueiterator.inl" />
+    <None Include="..\..\modules\ripple_basics\json\LICENSE" />
+    <None Include="..\..\modules\ripple_basics\json\version" />
     <None Include="..\..\rippled-example.cfg" />
     <None Include="..\..\SConstruct" />
     <None Include="..\QtCreator\rippled.pro" />

@@ -149,7 +149,6 @@ COMPILED_FILES.extend([
     'modules/ripple_core/ripple_core.cpp',
     'modules/ripple_data/ripple_data.cpp',
     'modules/ripple_hyperleveldb/ripple_hyperleveldb.cpp',
-    'modules/ripple_json/ripple_json.cpp',
     'modules/ripple_leveldb/ripple_leveldb.cpp',
     'modules/ripple_mdb/ripple_mdb.c',
     'modules/ripple_net/ripple_net.cpp',

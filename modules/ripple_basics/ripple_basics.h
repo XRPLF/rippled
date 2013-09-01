@@ -22,7 +22,24 @@
 
 #include "system/ripple_StandardIncludes.h"
 
-// This must come before Boost, to fix the boost placeholders problem
+//------------------------------------------------------------------------------
+
+// For json/
+//
+// VFALCO TODO Clean up these one-offs
+#include "json/json_config.h" // Needed before these cpptl includes
+#ifndef JSON_USE_CPPTL_SMALLMAP
+# include <map>
+#else
+# include <cpptl/smallmap.h>
+#endif
+#ifdef JSON_USE_CPPTL
+# include <cpptl/forwards.h>
+#endif
+
+//------------------------------------------------------------------------------
+
+// Must come before <boost/bind.hpp>
 #include "beast/modules/beast_core/beast_core.h"
 
 #include "system/ripple_BoostIncludes.h"
@@ -72,8 +89,6 @@ namespace boost
 
 #include "beast/modules/beast_core/beast_core.h"
 
-#include "../ripple_json/ripple_json.h"
-
 namespace ripple
 {
 
@@ -105,6 +120,12 @@ using namespace beast;
 #include "containers/ripple_RangeSet.h"
 #include "containers/ripple_SecureAllocator.h"
 #include "containers/ripple_TaggedCache.h"
+
+#include "json/json_forwards.h"
+#include "json/json_features.h"
+#include "json/json_value.h"
+#include "json/json_reader.h"
+#include "json/json_writer.h"
 
 }
 
