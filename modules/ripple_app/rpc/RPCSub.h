@@ -4,28 +4,28 @@
 */
 //==============================================================================
 
-#ifndef __RPCSUB__
-#define __RPCSUB__
+#ifndef RIPPLE_RPCSUB_H_INCLUDED
+#define RIPPLE_RPCSUB_H_INCLUDED
 
+// VFALCO TODO replace this macro with a language constant
 #define RPC_EVENT_QUEUE_MAX 32
 
 // Subscription object for JSON-RPC
+// VFALCO TODO Move the implementation into the .cpp
+//
 class RPCSub
     : public InfoSub
-    , LeakChecked <RPCSub>
+    , public LeakChecked <RPCSub>
 {
 public:
     typedef boost::shared_ptr<RPCSub>   pointer;
     typedef const pointer&              ref;
 
-    RPCSub (boost::asio::io_service& io_service,
+    RPCSub (InfoSub::Source& source, boost::asio::io_service& io_service,
         JobQueue& jobQueue, const std::string& strUrl,
             const std::string& strUsername, const std::string& strPassword);
 
-    virtual ~RPCSub ()
-    {
-        ;
-    }
+    virtual ~RPCSub () { }
 
     // Implement overridden functions from base class:
     void send (const Json::Value& jvObj, bool broadcast);
@@ -67,4 +67,3 @@ private:
 };
 
 #endif
-// vim:ts=4

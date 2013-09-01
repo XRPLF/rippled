@@ -25,9 +25,11 @@ SETUP_LOG (WSDoor)
 class WSDoorImp : public WSDoor, protected Thread, LeakChecked <WSDoorImp>
 {
 public:
-    WSDoorImp (std::string const& strIp, int iPort, bool bPublic,
+    WSDoorImp (InfoSub::Source& source,
+        std::string const& strIp, int iPort, bool bPublic,
             boost::asio::ssl::context& ssl_context)
         : Thread ("websocket")
+        , m_source (source)
         , m_ssl_context (ssl_context)
         , m_endpointLock (this, "WSDoor", __FILE__, __LINE__)
         , mPublic (bPublic)
@@ -58,7 +60,7 @@ private:
                 (mPublic ? "Public" : "Private") % mIp % mPort);
 
         websocketpp::server_autotls::handler::ptr handler (
-            new WSServerHandler <websocketpp::server_autotls> (
+            new WSServerHandler <websocketpp::server_autotls> (m_source,
                 m_ssl_context, mPublic));
 
         {
@@ -105,6 +107,7 @@ private:
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
 
+    InfoSub::Source& m_source;
     boost::asio::ssl::context& m_ssl_context;
     LockType m_endpointLock;
 
@@ -116,14 +119,14 @@ private:
 
 //------------------------------------------------------------------------------
 
-WSDoor* WSDoor::New (std::string const& strIp, int iPort, bool bPublic,
-        boost::asio::ssl::context& ssl_context)
+WSDoor* WSDoor::New (InfoSub::Source& source, std::string const& strIp,
+    int iPort, bool bPublic, boost::asio::ssl::context& ssl_context)
 {
     ScopedPointer <WSDoor> door;
 
     try
     {
-        door = new WSDoorImp (strIp, iPort, bPublic, ssl_context);
+        door = new WSDoorImp (source, strIp, iPort, bPublic, ssl_context);
     }
     catch (...)
     {

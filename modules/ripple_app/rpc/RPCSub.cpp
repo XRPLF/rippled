@@ -6,9 +6,11 @@
 
 SETUP_LOG (RPCSub)
 
-RPCSub::RPCSub (boost::asio::io_service& io_service, JobQueue& jobQueue,
-    const std::string& strUrl, const std::string& strUsername, const std::string& strPassword)
-    : m_io_service (io_service)
+RPCSub::RPCSub (InfoSub::Source& source, boost::asio::io_service& io_service,
+    JobQueue& jobQueue, const std::string& strUrl, const std::string& strUsername,
+        const std::string& strPassword)
+    : InfoSub (source)
+    , m_io_service (io_service)
     , m_jobQueue (jobQueue)
     , mUrl (strUrl)
     , mSSL (false)

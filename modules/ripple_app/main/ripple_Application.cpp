@@ -557,7 +557,8 @@ public:
                     m_mainService,
                     m_peerSSLContext->get ());
 #else
-                WriteLog (lsWARNING, Application) << "Peer PROXY interface: configured but disabled by build configuration.";
+                WriteLog (lsWARNING, Application) <<
+                    "Peer PROXY interface: configured but disabled by build configuration.";
 #endif
             }
         }
@@ -583,7 +584,7 @@ public:
         //
         if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
         {
-            m_wsPrivateDoor = WSDoor::New (getConfig ().WEBSOCKET_IP,
+            m_wsPrivateDoor = WSDoor::New (getOPs(), getConfig ().WEBSOCKET_IP,
                 getConfig ().WEBSOCKET_PORT, false, m_wsSSLContext->get ());
 
             if (m_wsPrivateDoor == nullptr)
@@ -601,7 +602,7 @@ public:
         //
         if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
         {
-            m_wsPublicDoor = WSDoor::New (getConfig ().WEBSOCKET_PUBLIC_IP,
+            m_wsPublicDoor = WSDoor::New (getOPs(), getConfig ().WEBSOCKET_PUBLIC_IP,
                 getConfig ().WEBSOCKET_PUBLIC_PORT, true, m_wsSSLContext->get ());
 
             if (m_wsPublicDoor == nullptr)

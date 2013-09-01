@@ -11,8 +11,8 @@
 class WSDoor
 {
 public:
-    static WSDoor* New (std::string const& strIp, int iPort, bool bPublic,
-        boost::asio::ssl::context& ssl_context);
+    static WSDoor* New (InfoSub::Source& source, std::string const& strIp,
+        int iPort, bool bPublic, boost::asio::ssl::context& ssl_context);
 };
 
 #endif

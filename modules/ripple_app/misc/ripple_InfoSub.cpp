@@ -17,8 +17,9 @@
 
 // VFALCO TODO Figure out how to clean up these globals
 
-InfoSub::InfoSub ()
-    : mLock (this, "InfoSub", __FILE__, __LINE__)
+InfoSub::InfoSub (Source& source)
+    : m_source (source)
+    , mLock (this, "InfoSub", __FILE__, __LINE__)
 {
     static Atomic <int> s_seq_id;
     mSeq = ++s_seq_id;
@@ -26,13 +27,12 @@ InfoSub::InfoSub ()
 
 InfoSub::~InfoSub ()
 {
-    NetworkOPs& ops = getApp().getOPs ();
-    ops.unsubTransactions (mSeq);
-    ops.unsubRTTransactions (mSeq);
-    ops.unsubLedger (mSeq);
-    ops.unsubServer (mSeq);
-    ops.unsubAccount (mSeq, mSubAccountInfo, true);
-    ops.unsubAccount (mSeq, mSubAccountInfo, false);
+    m_source.unsubTransactions (mSeq);
+    m_source.unsubRTTransactions (mSeq);
+    m_source.unsubLedger (mSeq);
+    m_source.unsubServer (mSeq);
+    m_source.unsubAccount (mSeq, mSubAccountInfo, true);
+    m_source.unsubAccount (mSeq, mSubAccountInfo, false);
 }
 
 void InfoSub::send (const Json::Value& jvObj, const std::string& sObj, bool broadcast)

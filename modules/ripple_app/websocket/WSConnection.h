@@ -14,7 +14,6 @@ struct WSConnectionLog;
 // Helps with naming the lock
 struct WSConnectionBase
 {
-
 };
 
 template <typename endpoint_type>
@@ -39,12 +38,10 @@ public:
     typedef typename endpoint_type::handler::message_ptr message_ptr;
 
 public:
-    //  WSConnection()
-    //      : mHandler((WSServerHandler<websocketpp::WSDOOR_SERVER>*)(NULL)),
-    //          mConnection(connection_ptr()) { ; }
-
-    WSConnection (WSServerHandler<endpoint_type>* wshpHandler, const connection_ptr& cpConnection)
-        : mRcvQueueLock (static_cast<WSConnectionBase const*>(this), "WSConn", __FILE__, __LINE__)
+    WSConnection (InfoSub::Source& source, WSServerHandler<endpoint_type>* wshpHandler,
+        const connection_ptr& cpConnection)
+        : InfoSub (source)
+        , mRcvQueueLock (static_cast<WSConnectionBase const*>(this), "WSConn", __FILE__, __LINE__)
         , mHandler (wshpHandler), mConnection (cpConnection), mNetwork (getApp().getOPs ()),
           mRemoteIP (cpConnection->get_socket ().lowest_layer ().remote_endpoint ().address ().to_string ()),
           mLoadSource (mRemoteIP), mPingTimer (cpConnection->get_io_service ()), mPinged (false),

@@ -41,7 +41,11 @@ public:
         crTooSlow   = 4000,     // Client is too slow.
     };
 
+private:
+    InfoSub::Source& m_source;
+
 protected:
+    // VFALCO TODO Make this private.
     typedef RippleMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
     LockType mLock;
@@ -50,15 +54,15 @@ private:
     boost::asio::ssl::context& m_ssl_context;
 
 protected:
-
     // For each connection maintain an associated object to track subscriptions.
     boost::unordered_map <connection_ptr,
         boost::shared_ptr <WSConnection <endpoint_type> > > mMap;
     bool mPublic;
 
 public:
-    WSServerHandler (boost::asio::ssl::context& ssl_context, bool bPublic)
-        : mLock (static_cast <WSServerHandlerBase*> (this), "WSServerHandler", __FILE__, __LINE__)
+    WSServerHandler (InfoSub::Source& source, boost::asio::ssl::context& ssl_context, bool bPublic)
+        : m_source (source)
+        , mLock (static_cast <WSServerHandlerBase*> (this), "WSServerHandler", __FILE__, __LINE__)
         , m_ssl_context (ssl_context)
         , mPublic (bPublic)
     {
@@ -168,7 +172,7 @@ public:
 
         try
         {
-            mMap[cpClient]  = boost::make_shared< WSConnection<endpoint_type> > (this, cpClient);
+            mMap[cpClient]  = boost::make_shared< WSConnection<endpoint_type> > (m_source, this, cpClient);
         }
         catch (...)
         {

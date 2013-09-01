@@ -13,9 +13,22 @@
 class Peer;
 class LedgerConsensus;
 
+/** Provides server functionality for clients.
+
+    Clients include backend applications, local commands, and connected
+    clients. This class acts as a proxy, fulfilling the command with local
+    data if possible, or asking the network and returning the results if
+    needed.
+
+    A backend application or local client can trust a local instance of
+    rippled / NetworkOPs. However, client software connecting to non-local
+    instances of rippled will need to be hardened to protect against hostile
+    or unreliable servers.
+*/
 class NetworkOPs
     : public DeadlineTimer::Listener
-    , LeakChecked <NetworkOPs>
+    , public InfoSub::Source
+    , public LeakChecked <NetworkOPs>
 {
 public:
     enum Fault
@@ -355,9 +368,9 @@ public:
     void pubLedger (Ledger::ref lpAccepted);
     void pubProposedTransaction (Ledger::ref lpCurrent, SerializedTransaction::ref stTxn, TER terResult);
 
-
+    //--------------------------------------------------------------------------
     //
-    // Monitoring: subscriber side
+    // InfoSub::Source
     //
     void subAccount (InfoSub::ref ispListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, uint32 uLedgerIndex, bool rt);
     void unsubAccount (uint64 uListener, const boost::unordered_set<RippleAddress>& vnaAccountIDs, bool rt);
@@ -381,6 +394,9 @@ public:
 
     InfoSub::pointer    findRpcSub (const std::string& strUrl);
     InfoSub::pointer    addRpcSub (const std::string& strUrl, InfoSub::ref rspEntry);
+
+    //
+    //--------------------------------------------------------------------------
 
 private:
     void setHeartbeatTimer ();
