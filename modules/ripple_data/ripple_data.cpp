@@ -69,6 +69,7 @@ namespace ripple
 #include "crypto/ripple_Base58Data.cpp"
 #include "crypto/ripple_RFC1751.cpp"
 
+#include "protocol/BuildInfo.cpp"
 #include "protocol/ripple_FieldNames.cpp"
 #include "protocol/ripple_LedgerFormats.cpp"
 #include "protocol/ripple_PackedMessage.cpp"

@@ -35,6 +35,7 @@ namespace ripple
 #include "crypto/ripple_Base58Data.h"
 #include "crypto/ripple_RFC1751.h"
 
+#include "protocol/BuildInfo.h"
 #include "protocol/ripple_FieldNames.h"
 #include "protocol/ripple_HashPrefix.h"
 #include "protocol/ripple_PackedMessage.h"

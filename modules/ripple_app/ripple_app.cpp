@@ -197,7 +197,6 @@ namespace ripple
 #include "contracts/ripple_Interpreter.h"
 #include "contracts/ripple_Operation.h"
 
-#include "basics/ripple_BuildInfo.h" // private
 #include "basics/ripple_RPCServerHandler.h"
 
 #include "rpc/RPCDoor.h" // needs RPCServer
@@ -245,7 +244,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 #if ! defined (RIPPLE_MAIN_PART) || RIPPLE_MAIN_PART == 1
 
-#include "basics/ripple_BuildInfo.cpp"
 #include "basics/ripple_RPCServerHandler.cpp"
 #include "node/ripple_NodeObject.cpp"
 #include "node/ripple_NodeStore.cpp"

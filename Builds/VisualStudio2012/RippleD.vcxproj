@@ -19,12 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\modules\ripple_app\basics\ripple_BuildInfo.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -885,6 +879,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_data\protocol\BuildInfo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_data\protocol\ripple_FieldNames.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1370,7 +1370,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\BeastConfig.h" />
-    <ClInclude Include="..\..\modules\ripple_app\basics\ripple_BuildInfo.h" />
     <ClInclude Include="..\..\modules\ripple_app\basics\ripple_RPCServerHandler.h" />
     <ClInclude Include="..\..\modules\ripple_app\boost\ripple_IoService.h" />
     <ClInclude Include="..\..\modules\ripple_app\boost\ripple_SslContext.h" />
@@ -1528,6 +1527,7 @@
     <ClInclude Include="..\..\modules\ripple_data\crypto\ripple_CBigNum.h" />
     <ClInclude Include="..\..\modules\ripple_data\crypto\ripple_CKey.h" />
     <ClInclude Include="..\..\modules\ripple_data\crypto\ripple_RFC1751.h" />
+    <ClInclude Include="..\..\modules\ripple_data\protocol\BuildInfo.h" />
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_FieldNames.h" />
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_HashPrefix.h" />
     <ClInclude Include="..\..\modules\ripple_data\protocol\ripple_LedgerFormats.h" />
