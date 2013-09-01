@@ -2,6 +2,10 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Use new file naming convention
+
+- Rename ReadWriteMutex to SharedMutex
+
 - Use SemanticVersion for beast version numbers to replace BEAST_VERSION
 
 - add support for a __PRETTY_FUNCTION__ equivalent for all environments
@@ -22,8 +26,6 @@ BEAST TODO
 - Document and rename all the sqdb files and classes
 
 - Specialize UnsignedInteger<> for peformance in the storage format
-
-- Macro for acquiring a ScopedLock that records file and line.
 
 - Rename HeapBlock routines to not conflict with _CRTDBG_MAP_ALLOC macros
 
