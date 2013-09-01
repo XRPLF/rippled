@@ -60,7 +60,7 @@
 
 #include "../ripple_core/ripple_core.h"
 
-#include "../ripple_client/ripple_client.h"
+#include "../ripple_net/ripple_net.h"
 
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
 #include "beast/modules/beast_sqlite/beast_sqlite.h"
@@ -126,7 +126,6 @@ namespace ripple
 #include "main/ripple_Application.h"
 #include "tx/TransactionQueue.h"
 #include "ledger/OrderBookDB.h"
-#include "rpc/CallRPC.h"
 #include "tx/Transactor.h"
 #include "tx/ChangeTransactor.h"
 #include "tx/ripple_TransactionAcquire.h"
@@ -144,7 +143,6 @@ namespace ripple
 #include  "paths/ripple_Pathfinder.h"
 #include "tx/PaymentTransactor.h"
 #include "peers/PeerDoor.h"
-#include "rpc/RPCSub.h"
 #include "tx/RegularKeySetTransactor.h"
 #include "paths/ripple_RippleState.h"
 #include "tx/AccountSetTransactor.h"

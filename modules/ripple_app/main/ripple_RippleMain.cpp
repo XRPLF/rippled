@@ -487,7 +487,7 @@ int RippleMain::run (int argc, char const* const* argv)
             setCallingThreadName ("rpc");
             std::vector<std::string> vCmd   = vm["parameters"].as<std::vector<std::string> > ();
 
-            iResult = commandLineRPC (vCmd);
+            iResult = RPCCall::fromCommandLine (vCmd);
         }
     }
 

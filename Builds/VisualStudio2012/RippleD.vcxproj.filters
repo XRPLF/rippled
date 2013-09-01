@@ -46,9 +46,6 @@
     <Filter Include="[1] Ripple\ripple_basics\utility">
       <UniqueIdentifier>{c817e7d7-36d7-410e-ad16-f51c5eb024af}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\ripple_client">
-      <UniqueIdentifier>{c8fec1f5-496a-4a1e-bc8e-8096163c7766}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\ripple_core\functional">
       <UniqueIdentifier>{548037f2-eb8a-41bd-95dc-05f58cdbc041}</UniqueIdentifier>
     </Filter>
@@ -150,6 +147,9 @@
     </Filter>
     <Filter Include="[1] Ripple\ripple_net\basics\impl">
       <UniqueIdentifier>{331a5979-0bb5-4224-919d-b8df0bc4e94f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\ripple_net\rpc">
+      <UniqueIdentifier>{045285aa-9043-4cee-b8ca-cc8881e52f6a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -477,9 +477,6 @@
     <ClCompile Include="..\..\Subtrees\leveldb\port\port_win.cc">
       <Filter>[0] Subtrees\leveldb\port</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_client\ripple_client.cpp">
-      <Filter>[1] Ripple\ripple_client</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt5.cpp">
       <Filter>[1] Ripple\ripple_app</Filter>
     </ClCompile>
@@ -645,9 +642,6 @@
     <ClCompile Include="..\..\modules\ripple_app\misc\ripple_HashRouter.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_InfoSub.cpp">
-      <Filter>[1] Ripple\ripple_app\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\misc\ripple_NicknameState.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
@@ -708,13 +702,7 @@
     <ClCompile Include="..\..\modules\ripple_app\peers\PeerDoor.cpp">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\rpc\CallRPC.cpp">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\rpc\RPCHandler.cpp">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCSub.cpp">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\shamap\ripple_SHAMap.cpp">
@@ -825,9 +813,6 @@
     <ClCompile Include="..\..\modules\ripple_data\protocol\BuildInfo.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCErr.cpp">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ripple_app.cpp">
       <Filter>[1] Ripple\ripple_app</Filter>
     </ClCompile>
@@ -861,12 +846,6 @@
     <ClCompile Include="..\..\modules\ripple_net\basics\SNTPClient.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCErr.cpp">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\rpc\RPCUtil.cpp">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\basics\RPCDoor.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
@@ -887,6 +866,21 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\rpc\RPCServerHandler.cpp">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\rpc\RPCErr.cpp">
+      <Filter>[1] Ripple\ripple_net\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\rpc\RPCSub.cpp">
+      <Filter>[1] Ripple\ripple_net\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\rpc\RPCUtil.cpp">
+      <Filter>[1] Ripple\ripple_net\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\rpc\RPCCall.cpp">
+      <Filter>[1] Ripple\ripple_net\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_net\rpc\InfoSub.cpp">
+      <Filter>[1] Ripple\ripple_net\rpc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1268,9 +1262,6 @@
     <ClInclude Include="..\..\Subtrees\leveldb\port\port_posix.h">
       <Filter>[0] Subtrees\leveldb\port</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_client\ripple_client.h">
-      <Filter>[1] Ripple\ripple_client</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_basics\utility\ripple_LogFile.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
@@ -1427,9 +1418,6 @@
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IHashRouter.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_InfoSub.h">
-      <Filter>[1] Ripple\ripple_app\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IProofOfWorkFactory.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
@@ -1490,13 +1478,7 @@
     <ClInclude Include="..\..\modules\ripple_app\peers\ripple_ClusterNodeStatus.h">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\rpc\CallRPC.h">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\rpc\RPCHandler.h">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCSub.h">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\shamap\ripple_SHAMap.h">
@@ -1616,8 +1598,29 @@
     <ClInclude Include="..\..\modules\ripple_data\protocol\BuildInfo.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCErr.h">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    <ClInclude Include="..\..\modules\ripple_net\basics\RippleSSLContext.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\HTTPRequest.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\HTTPClient.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\MultiSocket.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\RPCServer.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\SNTPClient.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\impl\MultiSocketType.h">
+      <Filter>[1] Ripple\ripple_net\basics\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\RPCDoor.h">
+      <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\functional\LoadSource.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
@@ -1676,9 +1679,6 @@
     <ClInclude Include="..\..\modules\ripple_net\basics\impl\MultiSocketType.h">
       <Filter>[1] Ripple\ripple_net\basics\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\rpc\RPCErr.h">
-      <Filter>[1] Ripple\ripple_app\rpc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\rpc\RPCUtil.h">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClInclude>
@@ -1690,6 +1690,21 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\rpc\RPCServerHandler.h">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\rpc\RPCErr.h">
+      <Filter>[1] Ripple\ripple_net\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\rpc\RPCSub.h">
+      <Filter>[1] Ripple\ripple_net\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\rpc\RPCUtil.h">
+      <Filter>[1] Ripple\ripple_net\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\rpc\RPCCall.h">
+      <Filter>[1] Ripple\ripple_net\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\rpc\InfoSub.h">
+      <Filter>[1] Ripple\ripple_net\rpc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

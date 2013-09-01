@@ -26,18 +26,12 @@
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
 
-#include "beast/modules/beast_asio/beast_asio.h"
-
 #include "ripple_net.h"
-
-// VFALCO TODO Remove this dependency on theConfig
-#include "../modules/ripple_core/ripple_core.h" // theConfig for HttpsClient
 
 namespace ripple
 {
 
 #include "basics/impl/MultiSocketType.h"
-
 #include "basics/RippleSSLContext.cpp"
 #include "basics/MultiSocket.cpp"
 #include "basics/HTTPRequest.cpp"
@@ -45,5 +39,11 @@ namespace ripple
 #include "basics/RPCDoor.cpp"
 #include "basics/RPCServer.cpp"
 #include "basics/SNTPClient.cpp"
+
+#include "rpc/RPCCall.cpp"
+#include "rpc/RPCErr.cpp"
+#include "rpc/RPCSub.cpp"
+#include "rpc/RPCUtil.cpp"
+#include "rpc/InfoSub.cpp"
 
 }

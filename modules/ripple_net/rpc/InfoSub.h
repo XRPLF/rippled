@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_INFOSUB_H
-#define RIPPLE_INFOSUB_H
+#ifndef RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
+#define RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
 
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker

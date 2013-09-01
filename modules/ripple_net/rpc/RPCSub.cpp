@@ -38,11 +38,11 @@ RPCSub::RPCSub (InfoSub::Source& source, boost::asio::io_service& io_service,
     if (mPort < 0)
         mPort   = mSSL ? 443 : 80;
 
-    WriteLog (lsINFO, RPCSub) << boost::str (boost::format ("callRPC sub: ip='%s' port=%d ssl=%d path='%s'")
-                              % mIp
-                              % mPort
-                              % mSSL
-                              % mPath);
+    WriteLog (lsINFO, RPCSub) <<
+        "RPCCall::fromNetwork sub: ip=" << mIp <<
+        " port=" << mPort <<
+        " ssl= "<< (mSSL ? "yes" : "no") <<
+        " path='" << mPath << "'";
 }
 
 // XXX Could probably create a bunch of send jobs in a single get of the lock.
@@ -81,9 +81,9 @@ void RPCSub::sendThread ()
             // XXX Might not need this in a try.
             try
             {
-                WriteLog (lsINFO, RPCSub) << boost::str (boost::format ("callRPC calling: %s") % mIp);
+                WriteLog (lsINFO, RPCSub) << "RPCCall::fromNetwork: " << mIp;
 
-                callRPC (
+                RPCCall::fromNetwork (
                     m_io_service,
                     mIp, mPort,
                     mUsername, mPassword,
@@ -93,7 +93,7 @@ void RPCSub::sendThread ()
             }
             catch (const std::exception& e)
             {
-                WriteLog (lsINFO, RPCSub) << boost::str (boost::format ("callRPC exception: %s") % e.what ());
+                WriteLog (lsINFO, RPCSub) << "RPCCall::fromNetwork exception: " << e.what ();
             }
         }
     }
@@ -104,14 +104,15 @@ void RPCSub::send (const Json::Value& jvObj, bool broadcast)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    if (RPC_EVENT_QUEUE_MAX == mDeque.size ())
+    if (mDeque.size () >= eventQueueMax)
     {
         // Drop the previous event.
-        WriteLog (lsWARNING, RPCSub) << boost::str (boost::format ("callRPC drop"));
+        WriteLog (lsWARNING, RPCSub) << "RPCCall::fromNetwork drop";
         mDeque.pop_back ();
     }
 
-    WriteLog (broadcast ? lsDEBUG : lsINFO, RPCSub) << boost::str (boost::format ("callRPC push: %s") % jvObj);
+    WriteLog (broadcast ? lsDEBUG : lsINFO, RPCSub) <<
+        "RPCCall::fromNetwork push: " << jvObj;
 
     mDeque.push_back (std::make_pair (mSeq++, jvObj));
 
@@ -120,8 +121,8 @@ void RPCSub::send (const Json::Value& jvObj, bool broadcast)
         // Start a sending thread.
         mSending    = true;
 
-        WriteLog (lsINFO, RPCSub) << boost::str (boost::format ("callRPC start"));
-        
+        WriteLog (lsINFO, RPCSub) << "RPCCall::fromNetwork start";
+
         m_jobQueue.addJob (
             jtCLIENT, "RPCSub::sendThread", BIND_TYPE (&RPCSub::sendThread, this));
     }

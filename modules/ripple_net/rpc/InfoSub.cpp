@@ -18,8 +18,8 @@
 // VFALCO TODO Figure out how to clean up these globals
 
 InfoSub::InfoSub (Source& source)
-    : m_source (source)
-    , mLock (this, "InfoSub", __FILE__, __LINE__)
+    : mLock (this, "InfoSub", __FILE__, __LINE__)
+    , m_source (source)
 {
     static Atomic <int> s_seq_id;
     mSeq = ++s_seq_id;

@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef __RPCERR__
-#define __RPCERR__
+#ifndef RIPPLE_NET_RPC_RPCERR_H_INCLUDED
+#define RIPPLE_NET_RPC_RPCERR_H_INCLUDED
 
 enum
 {

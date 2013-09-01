@@ -10,7 +10,6 @@
 
 #include "beast/modules/beast_db/beast_db.h"
 
-#include "../ripple_client/ripple_client.h"
 #include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
 #include "../ripple_net/ripple_net.h"
 #include "../ripple_websocket/ripple_websocket.h"
@@ -33,8 +32,6 @@ namespace ripple
 # include "main/ripple_FatalErrorReporter.h"
 #include "main/ripple_FatalErrorReporter.cpp"
 
-# include "rpc/RPCErr.h"
-# include "rpc/RPCUtil.h"
 # include "rpc/RPCHandler.h"
 #include "rpc/RPCHandler.cpp"
 # include "rpc/RPCServerHandler.h"

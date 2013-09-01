@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_RPCUTIL_H_INCLUDED
-#define RIPPLE_RPC_RPCUTIL_H_INCLUDEDRIPPLE_RPC_H_INCLUDED
+#ifndef RIPPLE_NET_RPC_RPCUTIL_H_INCLUDED
+#define RIPPLE_NET_RPC_RPCUTIL_H_INCLUDED
 
 // VFALCO TODO Wrap these up into a class. It looks like they just do some
 //             convenience packaging of JSON data from the pieces. It looks

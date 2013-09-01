@@ -8,9 +8,7 @@
 
 #include "ripple_app.h"
 
-#include "../ripple_client/ripple_client.h"
 #include "../ripple_net/ripple_net.h"
-#include "../ripple_websocket/ripple_websocket.h"
 
 #ifdef _MSC_VER
 #pragma warning (push)
@@ -20,8 +18,7 @@
 namespace ripple
 {
 
-# include "rpc/RPCErr.h"
-#include "paths/ripple_PathRequest.cpp" // needs RPCErr.h
+#include "paths/ripple_PathRequest.cpp"
 #include "paths/ripple_RippleCalc.cpp"
 #include "paths/ripple_PathState.cpp"
 

@@ -4,11 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPCSUB_H_INCLUDED
-#define RIPPLE_RPCSUB_H_INCLUDED
-
-// VFALCO TODO replace this macro with a language constant
-#define RPC_EVENT_QUEUE_MAX 32
+#ifndef RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
+#define RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
 
 // Subscription object for JSON-RPC
 // VFALCO TODO Move the implementation into the .cpp
@@ -48,6 +45,12 @@ protected:
     void    sendThread ();
 
 private:
+// VFALCO TODO replace this macro with a language constant
+    enum
+    {
+        eventQueueMax = 32
+    };
+
     boost::asio::io_service& m_io_service;
     JobQueue& m_jobQueue;
 

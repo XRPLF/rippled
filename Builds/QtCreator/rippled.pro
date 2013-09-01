@@ -77,7 +77,6 @@ SOURCES += \
     ../../modules/ripple_app/ripple_app_pt8.cpp \
     ../../modules/ripple_basics/ripple_basics.cpp \
     ../../modules/ripple_core/ripple_core.cpp \
-    ../../modules/ripple_client/ripple_client.cpp \
     ../../modules/ripple_data/ripple_data.cpp \
     ../../modules/ripple_hyperleveldb/ripple_hyperleveldb.cpp \
     ../../modules/ripple_leveldb/ripple_leveldb.cpp \
