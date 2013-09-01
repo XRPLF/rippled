@@ -786,9 +786,6 @@
     <ClCompile Include="..\..\modules\ripple_basics\json\json_writer.cpp">
       <Filter>[1] Ripple\ripple_basics\json</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\protocol\BuildInfo.cpp">
-      <Filter>[1] Ripple\ripple_data\protocol</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\basics\RippleSSLContext.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
@@ -809,18 +806,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ripple_app.cpp">
       <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_basics\json\json_reader.cpp">
-      <Filter>[1] Ripple\ripple_basics\json</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_basics\json\json_value.cpp">
-      <Filter>[1] Ripple\ripple_basics\json</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_basics\json\json_writer.cpp">
-      <Filter>[1] Ripple\ripple_basics\json</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_data\protocol\BuildInfo.cpp">
-      <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\rpc\RPCServerHandler.cpp">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
