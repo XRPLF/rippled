@@ -161,6 +161,9 @@
     <Filter Include="beast_extras\traits">
       <UniqueIdentifier>{bf498396-2e1f-4903-be68-3053ba439af5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_core\containers\detail">
+      <UniqueIdentifier>{08ec13ba-4058-4ad7-afbb-cbb1c6e2fc4a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -179,9 +182,6 @@
       <Filter>beast_core\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\beast_ElementComparator.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_HashMap.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\beast_LinkedListPointer.h">
@@ -485,9 +485,6 @@
       <Filter>beast_core\zip\zlib</Filter>
     </ClInclude>
     <ClInclude Include="BeastConfig.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_List.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\beast_CacheLine.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
@@ -919,6 +916,24 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\system\TargetPlatform.h">
       <Filter>beast_core\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\containers\DynamicList.h">
+      <Filter>beast_core\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\containers\DynamicArray.h">
+      <Filter>beast_core\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\containers\HashMap.h">
+      <Filter>beast_core\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\containers\List.h">
+      <Filter>beast_core\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\containers\detail\copyconst.h">
+      <Filter>beast_core\containers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\containers\detail\removecv.h">
+      <Filter>beast_core\containers\detail</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1398,6 +1413,12 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\system\SystemStats.cpp">
       <Filter>beast_core\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\containers\DynamicArray.cpp">
+      <Filter>beast_core\containers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\containers\DynamicList.cpp">
+      <Filter>beast_core\containers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -143,6 +143,8 @@ namespace beast
 #include "containers/beast_NamedValueSet.cpp"
 #include "containers/beast_PropertySet.cpp"
 #include "containers/beast_Variant.cpp"
+#include "containers/DynamicArray.cpp"
+#include "containers/DynamicList.cpp"
 
 #include "diagnostic/beast_Debug.cpp"
 #include "diagnostic/beast_Error.cpp"

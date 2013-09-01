@@ -20,10 +20,6 @@
 #ifndef BEAST_CORE_THREAD_DETAIL_TRACKEDMUTEX_H_INCLUDED
 #define BEAST_CORE_THREAD_DETAIL_TRACKEDMUTEX_H_INCLUDED
 
-#include "../../containers/beast_List.h"
-#include "../../memory/beast_Atomic.h"
-#include "../../threads/beast_ThreadLocalValue.h"
-
 class TrackedMutex;
 
 namespace detail
