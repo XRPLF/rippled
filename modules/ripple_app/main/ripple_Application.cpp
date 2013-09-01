@@ -157,8 +157,8 @@ public:
                          (getConfig ().NODE_SIZE >= 2) ? 2 : 1,
                          (getConfig ().NODE_SIZE >= 2) ? 1 : 0)
         , m_auxService ("auxio", 1, 1)
-        , mNetOps (new NetworkOPs (&mLedgerMaster))
-        , m_rpcServerHandler (*mNetOps)
+        , m_networkOPs (NetworkOPs::New (m_ledgerMaster))
+        , m_rpcServerHandler (*m_networkOPs)
         , mTempNodeCache ("NodeCache", 16384, 90)
         , mSLECache ("LedgerEntryCache", 4096, 120)
         , mSNTPClient (m_auxService)
@@ -192,7 +192,7 @@ public:
 
     ~ApplicationImp ()
     {
-        mNetOps = nullptr;
+        m_networkOPs = nullptr;
 
         // VFALCO TODO Wrap these in ScopedPointer
         delete mTxnDB;
@@ -224,7 +224,7 @@ public:
 
     NetworkOPs& getOPs ()
     {
-        return *mNetOps;
+        return *m_networkOPs;
     }
 
     boost::asio::io_service& getIOService ()
@@ -234,7 +234,7 @@ public:
 
     LedgerMaster& getLedgerMaster ()
     {
-        return mLedgerMaster;
+        return m_ledgerMaster;
     }
 
     InboundLedgers& getInboundLedgers ()
@@ -482,7 +482,7 @@ public:
         {
             // This should probably become the default once we have a stable network
             if (!getConfig ().RUN_STANDALONE)
-                mNetOps->needNetworkLedger ();
+                m_networkOPs->needNetworkLedger ();
 
             startNewLedger ();
         }
@@ -505,11 +505,11 @@ public:
 
         mValidations->tune (getConfig ().getSize (siValidationsSize), getConfig ().getSize (siValidationsAge));
         m_nodeStore->tune (getConfig ().getSize (siNodeCacheSize), getConfig ().getSize (siNodeCacheAge));
-        mLedgerMaster.tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
+        m_ledgerMaster.tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
         mSLECache.setTargetSize (getConfig ().getSize (siSLECacheSize));
         mSLECache.setTargetAge (getConfig ().getSize (siSLECacheAge));
 
-        mLedgerMaster.setMinValidations (getConfig ().VALIDATION_QUORUM);
+        m_ledgerMaster.setMinValidations (getConfig ().VALIDATION_QUORUM);
 
         //----------------------------------------------------------------------
         //
@@ -653,13 +653,13 @@ public:
         {
             WriteLog (lsWARNING, Application) << "Running in standalone mode";
 
-            mNetOps->setStandAlone ();
+            m_networkOPs->setStandAlone ();
         }
         else
         {
             // VFALCO NOTE the state timer resets the deadlock detector.
             //
-            mNetOps->setStateTimer ();
+            m_networkOPs->setStateTimer ();
         }
     }
 
@@ -680,10 +680,10 @@ private:
     IoServiceThread m_auxService;
 
     LocalCredentials   m_localCredentials;
-    LedgerMaster       mLedgerMaster;
+    LedgerMaster       m_ledgerMaster;
     InboundLedgers     m_inboundLedgers;
     TransactionMaster  mMasterTransaction;
-    ScopedPointer <NetworkOPs> mNetOps;
+    ScopedPointer <NetworkOPs> m_networkOPs;
     RPCServerHandler   m_rpcServerHandler;
     NodeCache          mTempNodeCache;
     SLECache           mSLECache;
@@ -830,8 +830,8 @@ void ApplicationImp::doSweep(Job& j)
     //m_nodeStore->sweep ();
 
     logTimedCall <Application> ("LedgerMaster::sweep", __FILE__, __LINE__, boost::bind (
-        &LedgerMaster::sweep, &mLedgerMaster));
-    //mLedgerMaster.sweep ();
+        &LedgerMaster::sweep, &m_ledgerMaster));
+    //m_ledgerMaster.sweep ();
 
     logTimedCall <Application> ("TempNodeCache::sweep", __FILE__, __LINE__, boost::bind (
         &NodeCache::sweep, &mTempNodeCache));
@@ -858,8 +858,8 @@ void ApplicationImp::doSweep(Job& j)
     //SHAMap::sweep (); // VFALCO NOTE SHAMap is/has a singleton?
 
     logTimedCall <Application> ("NetworkOPs::sweepFetchPack", __FILE__, __LINE__, boost::bind (
-        &NetworkOPs::sweepFetchPack, mNetOps.get ()));
-    //mNetOps->sweepFetchPack ();
+        &NetworkOPs::sweepFetchPack, m_networkOPs.get ()));
+    //m_networkOPs->sweepFetchPack ();
 
     // VFALCO NOTE does the call to sweep() happen on another thread?
     mSweepTimer.expires_from_now (boost::posix_time::seconds (getConfig ().getSize (siSweepInterval)));
@@ -885,14 +885,14 @@ void ApplicationImp::startNewLedger ()
         firstLedger->updateHash ();
         firstLedger->setClosed ();
         firstLedger->setAccepted ();
-        mLedgerMaster.pushLedger (firstLedger);
+        m_ledgerMaster.pushLedger (firstLedger);
 
         Ledger::pointer secondLedger = boost::make_shared<Ledger> (true, boost::ref (*firstLedger));
         secondLedger->setClosed ();
         secondLedger->setAccepted ();
-        mLedgerMaster.pushLedger (secondLedger, boost::make_shared<Ledger> (true, boost::ref (*secondLedger)));
+        m_ledgerMaster.pushLedger (secondLedger, boost::make_shared<Ledger> (true, boost::ref (*secondLedger)));
         assert (!!secondLedger->getAccountState (rootAddress));
-        mNetOps->setLastCloseTime (secondLedger->getCloseTimeNC ());
+        m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
     }
 }
 
@@ -955,12 +955,12 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
             return false;
         }
 
-        mLedgerMaster.setLedgerRangePresent (loadLedger->getLedgerSeq (), loadLedger->getLedgerSeq ());
+        m_ledgerMaster.setLedgerRangePresent (loadLedger->getLedgerSeq (), loadLedger->getLedgerSeq ());
 
         Ledger::pointer openLedger = boost::make_shared<Ledger> (false, boost::ref (*loadLedger));
-        mLedgerMaster.switchLedgers (loadLedger, openLedger);
-        mLedgerMaster.forceValid(loadLedger);
-        mNetOps->setLastCloseTime (loadLedger->getCloseTimeNC ());
+        m_ledgerMaster.switchLedgers (loadLedger, openLedger);
+        m_ledgerMaster.forceValid(loadLedger);
+        m_networkOPs->setLastCloseTime (loadLedger->getCloseTimeNC ());
 
         if (bReplay)
         { // inject transaction from replayLedger into consensus set
