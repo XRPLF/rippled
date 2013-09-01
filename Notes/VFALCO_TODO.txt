@@ -5,6 +5,7 @@ RIPPLE TODO
 Vinnie's List: Changes day to day, descending priority
 - Full review of config docs / settings for RPC/WS
 - Fix RPCDoor to respect config setting for [rpc_secure]
+- Remove addRpcSub, findRpcSub, and notify the appropriate partner(s)
 - PeerFinder collaboration with Nikolaos
 - beast::Socket integration in Ripple
 - Configuration list for Jenkins
@@ -14,6 +15,10 @@ David Features:
 - change config via RPC, this is for debugging
 
 --------------------------------------------------------------------------------
+
+- class TCPEndpoint and refactoring of IPv4/IPv6 endpoint treatment
+
+- Consolidate JSON code maybe use Beast
 
 - Deeply create directories specified in config settings
 
