@@ -16,30 +16,23 @@ David Features:
 
 --------------------------------------------------------------------------------
 
-- class TCPEndpoint and refactoring of IPv4/IPv6 endpoint treatment
-
-- Consolidate JSON code maybe use Beast
-
-- Deeply create directories specified in config settings
-
-- Finish unit tests and code for Validators
-
-- Refactor Section code into ConfigFile
-
-- Improved Mutex to track deadlocks
-
-- Work on KeyvaDB
-
-- Allow skipped/disabled unit tests and reporting.
-
-- Supress useless gcc warnings
-  http://stackoverflow.com/questions/3378560/how-to-disable-gcc-warnings-for-a-few-lines-of-code
-
-- Get rid of boost::filesystem
-
-- Make some fatal_assert macro that calls FatalError
-
-- What the heck is up with site_scons/site_tools/protoc.py?
+- Fix all crash and leaks on exit
+    Say there's a leak, a ledger that can never be accessed is locked in some
+        structure. If the organized teardown code frees that structure, the leak
+        will not be reported.
+    Yes, so you'll detect some small subset of leaks that way.
+    You'll still have to be vigilant for the leaks that won't detect.
+    The problem is ordering. There are lots of circular dependencies.
+    The biggest problem is the order of destruction of global objects. (I think)
+    Getting rid of global objects is a good solution to that.
+    Vinnie Falco: Those I can resolve with my ReferenceCountedSingleton. And
+                  yeah thats a good approach, one that I am doing slowly anyway
+    Yeah, that's good for other reasons too, not just the unpredictability of
+        creation order that can hide bugs.
+    There may also just be some missing destructors.
+    Some of it may be things being shut down in the wrong order. Like if you shut
+        down the cache and then something that uses the cache, objects may get
+        put in the cache after it was shut down.
 
 - Figure out the right behavior of ProtectedCall
 
@@ -56,7 +49,24 @@ David Features:
   - Add UnhandledExceptionCatcher to beast
   - Return EXIT_FAILURE on unhandled exception
 
-- Option to print the list of available unit tests
+- class TCPEndpoint and refactoring of IPv4/IPv6 endpoint treatment
+
+- Consolidate JSON code maybe use Beast
+
+- Deeply create directories specified in config settings
+
+- Finish unit tests and code for Validators
+
+- Refactor Section code into ConfigFile
+
+- Work on KeyvaDB
+
+- Supress useless gcc warnings
+  http://stackoverflow.com/questions/3378560/how-to-disable-gcc-warnings-for-a-few-lines-of-code
+
+- Get rid of boost::filesystem
+
+- What the heck is up with site_scons/site_tools/protoc.py?
 
 - Add convenience variadic functions to JobQueue that do the bind for you
 
@@ -112,18 +122,11 @@ David Features:
   only some small part of it is used, then delete the rest. David says
   that it is broken anyway.
 
-- Tidy up convenience functions in RPC.h
-
-- Maybe rename RPCServer to RPCClientServicer
-
 - Profile/VTune the application to identify hot spots
   * Determine why rippled has a slow startup on Windows
   * Improve the performance when running all unit tests on Windows
 
 - Rename "fullBelow" to something like haveAllDescendants or haveAllChildren.
-
-- Class to represent IP and Port number, with members to print, check syntax,
-  etc... replace the boost calls.
 
 - Remove dependence on JobQueue, LoadFeeTrack, and NetworkOPs from LoadManager
   by providing an observer (beast::ListenerList or Listeners). This way
@@ -170,24 +173,6 @@ David Features:
 
 - Replace C11X with BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
 
-- Fix all leaks on exit (!)
-    Say there's a leak, a ledger that can never be accessed is locked in some
-        structure. If the organized teardown code frees that structure, the leak
-        will not be reported.
-    Yes, so you'll detect some small subset of leaks that way.
-    You'll still have to be vigilant for the leaks that won't detect.
-    The problem is ordering. There are lots of circular dependencies.
-    The biggest problem is the order of destruction of global objects. (I think)
-    Getting rid of global objects is a good solution to that.
-    Vinnie Falco: Those I can resolve with my ReferenceCountedSingleton. And
-                  yeah thats a good approach, one that I am doing slowly anyway
-    Yeah, that's good for other reasons too, not just the unpredictability of
-        creation order that can hide bugs.
-    There may also just be some missing destructors.
-    Some of it may be things being shut down in the wrong order. Like if you shut
-        down the cache and then something that uses the cache, objects may get
-        put in the cache after it was shut down.
-
 - Remove "ENABLE_INSECURE" when the time is right.
 
 - lift unique_ptr / auto_ptr into ripple namespace,
@@ -211,6 +196,12 @@ David Features:
 - Consolidate SQLite database classes: DatabaseCon, Database, SqliteDatabase.
 
 --------------------------------------------------------------------------------
+HYPERLEVELDB TODO
+--------------------------------------------------------------------------------
+
+- Port to Windows
+
+--------------------------------------------------------------------------------
 LEVELDB TODO
 --------------------------------------------------------------------------------
 
@@ -227,17 +218,7 @@ LEVELDB TODO
 WEBSOCKET TODO
 --------------------------------------------------------------------------------
 
-*** Figure out how hard we want to fork websocket first **
-
-- Think about stripping the ripple specifics out of AutoSocket, make AutoSocket
-  part of our websocketpp fork
-
-- Regroup all the sources together in one directory
-
-- Strip includes and enforce unity
-
-- Put a new front-end on websocket to hide ALL of their classes and templates
-  from the host application, make this part of the websocket fork
+- Rewrite for sanity
 
 --------------------------------------------------------------------------------
 PROTOCOL BUFFERS TODO
@@ -292,11 +273,6 @@ Ledger "Skip List"
   called an "index" although that name is currently used to identify hashes
   used as keys.
 
-Duplicate Code
-
-  LedgerEntryFormat and TxFormat
-  * Resolved with a todo item, create WireFormats<> template class.
-
 Interfaces
 
   Serializer
@@ -312,23 +288,6 @@ Interfaces
         bool write (OutputStream& stream);
 
     We have beast for InputStream and OutputStream, we can use those now.
-
-boost
-
-    Unclear from the class declaration what style of shared object management
-    is used. Prefer to derive from a SharedObject class so that the
-    behavior is explicit. Furthermore the use of intrusive containers is
-    preferred over the alternative.
-
-    make_shared <> () is awkward.
-
-boost::recursive_mutex
-
-    Recursive mutexes should never be necessary.
-
-    They require the "mutable" keyword for const members to acquire the lock (yuck)
-
-    Replace recursive_mutex with beast::Mutex to remove boost dependency
 
 --------------------------------------------------------------------------------
 Davidisms
@@ -386,104 +345,3 @@ What we want from the unique node list:
     * Or, just hardware problems (faulty drive or memory)
 
 
-
-
-
-
---------------------------------------------------------------------------------
-ChosenValidators
---------------------------------------------------------------------------------
-
-David:
-  I've cut 2 of the 6 active client-facing servers to hyper. Since then, we've
-  had 5 spinouts on 3 servers, none of them on the 2 I've cut over. But they
-  are also the most recently restarted servers, so it's not a 100% fair test.
-
-  Maybe OC should have a URL that you can query to get the latest list of URI's
-  for OC-approved organzations that publish lists of validators. The server and
-  client can ship with that master trust URL and also the list of URI's at the
-  time it's released, in case for some reason it can't pull from OC. That would
-  make the default installation safe even against major changes in the
-  organizations that publish validator lists.
-
-  The difference is that if an organization that provides lists of validators
-  goes rogue, administrators don't have to act.
-
-TODO:
-  Write up from end-user perspective on the deployment and administration
-  of this feature, on the wiki. "DRAFT" or "PROPOSE" to mark it as provisional.
-  Template: https://ripple.com/wiki/Federation_protocol
-  - What to do if you're a publisher of ValidatorList
-  - What to do if you're a rippled administrator
-  - Overview of how ChosenValidators works
-
-
-Goals:
-  Make default configuration of rippled secure.
-    * Ship with TrustedUriList
-    * Also have a preset RankedValidators
-  Eliminate administrative burden of maintaining
-  Produce the ChosenValidators list.
-  Allow quantitative analysis of network health.
-
-What determines that a validator is good?
-  - Are they present (i.e. sending validations)
-  - Are they on the consensus ledger
-  - What percentage of consensus rounds do they participate in
-  - Are they stalling consensus
-    * Measurements of constructive/destructive behavior is
-      calculated in units of percentage of ledgers for which
-      the behavior is measured.
-
-Nouns
-
-  Validator
-    - Signs ledgers and participate in consensus
-    - Fields
-      * Public key
-      * Friendly name
-      * Jurisdiction 
-      * Org type: profit, nonprofit, "profit/gateway"
-    - Metadata
-      * Visible on the network?
-      * On the consensus ledger?
-      * Percentage of recent participation in consensus
-      * Frequency of stalling the consensus process
-
-  ValidatorSource
-    - Abstract
-    - Provides a list of Validator
-
-  ValidatorList
-    - Essentially an array of Validator
-
-  TrustedUriValidatorSource
-    - ValidatorSource which uses HTTPS and a predefined URI
-    - Domain owner is responsible for removing bad validators
-
-  TrustedUriValidatorSource::List
-    - Essentially an array of TrustedUriValidatorSource
-    - Can be read from a file
-
-  LocalFileValidatorSource
-    - ValidatorSource which reads information from a local file.
-
-  TrustedUriList // A copy of this ships with the app
-  * has a KnownValidators
-
-  KnownValidators
-  * A series of KnownValidator that comes from a TrustedUri
-  * Persistent storage has a timestamp
-
-  RankedValidators
-  * Created as the union of all KnownValidators with "weight" being the
-  number of appearances.
-
-  ChosenValidators
-  * Result of the algorithm that chooses a random subset of RankedKnownValidators
-  * "local health" percentage is the percent of validations from this list that
-  you've seen recently. And have they been behaving.
-
-Algorithm
-
-  When updating a source
