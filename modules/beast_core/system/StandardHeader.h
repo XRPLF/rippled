@@ -47,7 +47,7 @@
 
 //------------------------------------------------------------------------------
 
-#include "beast_PlatformDefs.h"
+#include "PlatformDefs.h"
 
 // Now we'll include some common OS headers..
 #if BEAST_MSVC

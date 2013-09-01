@@ -172,101 +172,11 @@ Some files contain portions of these external projects, licensed separately:
 @copyright Provided under the [ISC LIcense][11]
 */
 
-//------------------------------------------------------------------------------
+# include "system/BeforeBoost.h"
+# include "system/BoostIncludes.h"
+#include "system/FunctionalIncludes.h"
 
-/** Implementation classes.
-
-    Thase classes are used internally.
-
-    @defgroup internal internal
-    @internal
-*/
-
-//------------------------------------------------------------------------------
-
-/** External modules.
-
-    These modules bring in functionality from third party or system libraries.
-
-    @defgroup external external
-*/
-
-//------------------------------------------------------------------------------
-
-/** Core classes.
-
-    This module provides core required functionality, and classes useful for
-    general development. All other modules require this module.
-
-    @todo Discuss the treatment of exceptions versus Error objects in the
-          library.
-
-    @todo Discuss the additions to BeastConfig.h
-
-    @defgroup beast_core beast_core
-*/
-
-//------------------------------------------------------------------------------
-
-/*  If you fail to make sure that all your compile units are building Beast with
-    the same set of option flags, then there's a risk that different compile
-    units will treat the classes as having different memory layouts, leading to
-    very nasty memory corruption errors when they all get linked together.
-    That's why it's best to always include the BeastConfig.h file before any
-    beast headers.
-*/
-#ifndef BEAST_BEASTCONFIG_H_INCLUDED
-# ifdef _MSC_VER
-#  pragma message ("Have you included your BeastConfig.h file before including the Beast headers?")
-# else
-#  warning "Have you included your BeastConfig.h file before including the Beast headers?"
-# endif
-#endif
-
-//------------------------------------------------------------------------------
-
-#include "system/beast_TargetPlatform.h"
-
-//
-// Apply sensible defaults for the configuration settings
-//
-
-#ifndef BEAST_LOG_ASSERTIONS
-# if BEAST_ANDROID
-#  define BEAST_LOG_ASSERTIONS 1
-# else
-#  define BEAST_LOG_ASSERTIONS 0
-# endif
-#endif
-
-#if BEAST_DEBUG && ! defined (BEAST_CHECK_MEMORY_LEAKS)
-#define BEAST_CHECK_MEMORY_LEAKS 1
-#endif
-
-#ifndef BEAST_INCLUDE_ZLIB_CODE
-#define BEAST_INCLUDE_ZLIB_CODE 1
-#endif
-
-#ifndef BEAST_ZLIB_INCLUDE_PATH
-#define BEAST_ZLIB_INCLUDE_PATH <zlib.h>
-#endif
-
-/*  Config: BEAST_CATCH_UNHANDLED_EXCEPTIONS
-    If enabled, this will add some exception-catching code to forward unhandled exceptions
-    to your BEASTApplication::unhandledException() callback.
-*/
-#ifndef BEAST_CATCH_UNHANDLED_EXCEPTIONS
-//#define BEAST_CATCH_UNHANDLED_EXCEPTIONS 1
-#endif
-
-#ifndef BEAST_STRING_UTF_TYPE
-# define BEAST_STRING_UTF_TYPE 8
-#endif
-
-#include "system/BoostIncludes.h"
-#include "system/BindIncludes.h"
-
-#include "system/beast_StandardHeader.h"
+#include "system/StandardHeader.h"
 
 #if BEAST_MSVC
 # pragma warning (disable: 4251) // (DLL build warning, must be disabled before pushing the warning state)
@@ -346,10 +256,10 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 # pragma warning (pop)
 #endif
 
-#include "system/beast_PlatformDefs.h"
-#include "system/beast_TargetPlatform.h"
+#include "system/PlatformDefs.h"
+#include "system/TargetPlatform.h"
 #include "diagnostic/beast_Throw.h"
-#include "system/beast_Functional.h"
+#include "system/Functional.h"
 #include "memory/beast_AtomicCounter.h"
 #include "memory/beast_AtomicFlag.h"
 #include "memory/beast_AtomicPointer.h"
@@ -449,7 +359,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "streams/beast_OutputStream.h"
 #include "streams/beast_SubregionStream.h"
 
-#include "system/beast_SystemStats.h"
+#include "system/SystemStats.h"
 #include "text/beast_Identifier.h"
 #include "text/beast_LocalisedStrings.h"
 #include "text/beast_NewLine.h"
