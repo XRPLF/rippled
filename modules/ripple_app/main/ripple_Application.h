@@ -27,7 +27,7 @@ class OrderBookDB;
 class ProofOfWorkFactory;
 class SerializedLedgerEntry;
 class TransactionMaster;
-class TXQueue;
+class TxQueue;
 class LocalCredentials;
 
 class DatabaseCon;
@@ -95,7 +95,7 @@ public:
     virtual NetworkOPs&             getOPs () = 0;
     virtual OrderBookDB&            getOrderBookDB () = 0;
     virtual TransactionMaster&      getMasterTransaction () = 0;
-    virtual TXQueue&                getTxnQueue () = 0;
+    virtual TxQueue&                getTxQueue () = 0;
     virtual LocalCredentials&       getLocalCredentials () = 0;
 
     virtual DatabaseCon* getRpcDB () = 0;

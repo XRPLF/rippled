@@ -582,7 +582,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\tx\TransactionQueue.cpp">
+    <ClCompile Include="..\..\modules\ripple_app\tx\TxQueue.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -595,6 +595,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\tx\TrustSetTransactor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\TxQueueEntry.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1440,9 +1446,10 @@
     <ClInclude Include="..\..\modules\ripple_app\tx\TransactionEngine.h" />
     <ClInclude Include="..\..\modules\ripple_app\tx\TransactionMaster.h" />
     <ClInclude Include="..\..\modules\ripple_app\tx\TransactionMeta.h" />
-    <ClInclude Include="..\..\modules\ripple_app\tx\TransactionQueue.h" />
+    <ClInclude Include="..\..\modules\ripple_app\tx\TxQueue.h" />
     <ClInclude Include="..\..\modules\ripple_app\tx\Transactor.h" />
     <ClInclude Include="..\..\modules\ripple_app\tx\TrustSetTransactor.h" />
+    <ClInclude Include="..\..\modules\ripple_app\tx\TxQueueEntry.h" />
     <ClInclude Include="..\..\modules\ripple_app\tx\WalletAddTransactor.h" />
     <ClInclude Include="..\..\modules\ripple_app\websocket\WSConnection.h" />
     <ClInclude Include="..\..\modules\ripple_app\websocket\WSDoor.h" />

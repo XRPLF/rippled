@@ -19,43 +19,19 @@
 //             purely abstract and move implementation into .cpp files.
 //
 
-#if 1
-#include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/array.hpp>
-#include <boost/asio.hpp>
 #include <boost/asio/read_until.hpp>
-#include <boost/asio/ssl.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/bimap.hpp>
-#include <boost/bimap/list_of.hpp>
-#include <boost/bimap/multiset_of.hpp>
-#include <boost/bimap/unordered_set_of.hpp>
-#include <boost/cstdint.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/function.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/mem_fn.hpp>
 #include <boost/pointer_cast.hpp>
 #include <boost/program_options.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/ref.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/smart_ptr/shared_ptr.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/recursive_mutex.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/weak_ptr.hpp>
-#endif
 
 //------------------------------------------------------------------------------
 
@@ -123,7 +99,6 @@ namespace ripple
 #include "tx/TransactionMaster.h"
 #include "main/ripple_LocalCredentials.h"
 #include "main/ripple_Application.h"
-#include "tx/TransactionQueue.h"
 #include "ledger/OrderBookDB.h"
 #include "tx/Transactor.h"
 #include "tx/ChangeTransactor.h"

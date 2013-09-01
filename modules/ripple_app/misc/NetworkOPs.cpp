@@ -748,11 +748,11 @@ Transaction::pointer NetworkOPsImp::submitTransactionSync (Transaction::ref tpTr
 
 void NetworkOPsImp::runTransactionQueue ()
 {
-    TXQEntry::pointer txn;
+    TxQueueEntry::pointer txn;
 
     for (int i = 0; i < 10; ++i)
     {
-        getApp().getTxnQueue ().getJob (txn);
+        getApp().getTxQueue ().getJob (txn);
 
         if (!txn)
             return;
@@ -829,7 +829,7 @@ void NetworkOPsImp::runTransactionQueue ()
         }
     }
 
-    if (getApp().getTxnQueue ().stopProcessing (txn))
+    if (getApp().getTxQueue ().stopProcessing (txn))
         getApp().getIOService ().post (BIND_TYPE (&NetworkOPsImp::runTransactionQueue, this));
 }
 

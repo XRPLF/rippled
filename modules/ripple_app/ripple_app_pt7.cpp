@@ -15,7 +15,10 @@ namespace ripple
 #include "ledger/ripple_LedgerHistory.cpp"
 #include "misc/ripple_SerializedLedger.cpp"
 #include "tx/ripple_TransactionAcquire.cpp"
-#include "misc/NetworkOPs.cpp"
 #include "peers/ripple_Peers.cpp"
+
+# include "tx/TxQueueEntry.h"
+# include "tx/TxQueue.h"
+#include "misc/NetworkOPs.cpp"
 
 }

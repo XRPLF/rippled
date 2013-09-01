@@ -762,9 +762,6 @@
     <ClCompile Include="..\..\modules\ripple_app\tx\TransactionMeta.cpp">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\tx\TransactionQueue.cpp">
-      <Filter>[1] Ripple\ripple_app\tx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\tx\Transactor.cpp">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClCompile>
@@ -872,6 +869,12 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\misc\ProofOfWork.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\TxQueue.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\tx\TxQueueEntry.cpp">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1526,9 +1529,6 @@
     <ClInclude Include="..\..\modules\ripple_app\tx\TransactionMeta.h">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\tx\TransactionQueue.h">
-      <Filter>[1] Ripple\ripple_app\tx</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\tx\Transactor.h">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClInclude>
@@ -1693,6 +1693,12 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\misc\ProofOfWorkFactory.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\TxQueue.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\tx\TxQueueEntry.h">
+      <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

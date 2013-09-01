@@ -9,7 +9,9 @@ class ProofOfWorkFactoryImp
     , public LeakChecked <ProofOfWorkFactoryImp>
 {
 public:
-    typedef boost::bimap< boost::bimaps::multiset_of<time_t>, boost::bimaps::unordered_set_of<uint256> > powMap_t;
+    typedef boost::bimap< boost::bimaps::multiset_of<time_t>,
+        boost::bimaps::unordered_set_of<uint256> > powMap_t;
+
     typedef powMap_t::value_type    powMap_vt;
 
     //--------------------------------------------------------------------------

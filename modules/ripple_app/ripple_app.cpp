@@ -6,6 +6,13 @@
 
 #include "BeastConfig.h"
 
+#include "beast/modules/beast_core/beast_core.h" // Must come before <boost/bind.hpp>
+
+#include <boost/bimap.hpp>
+#include <boost/bimap/list_of.hpp>
+#include <boost/bimap/multiset_of.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
+
 #include "ripple_app.h"
 
 #include "beast/modules/beast_db/beast_db.h"
@@ -29,21 +36,30 @@ namespace ripple
 # include "main/ripple_FatalErrorReporter.h"
 #include "main/ripple_FatalErrorReporter.cpp"
 
+# include "peers/PeerDoor.h"
+#include "peers/PeerDoor.cpp"
+
 # include "rpc/RPCHandler.h"
 #   include "misc/PowResult.h"
 #  include "misc/ProofOfWork.h"
 # include "misc/ProofOfWorkFactory.h"
 #include "rpc/RPCHandler.cpp"
+
 # include "rpc/RPCServerHandler.h"
 #include "rpc/RPCServerHandler.cpp"
 #include "websocket/WSConnection.h"
+
+# include "tx/TxQueueEntry.h"
+#include "tx/TxQueueEntry.cpp"
+# include "tx/TxQueue.h"
+#include "tx/TxQueue.cpp"
+
 # include "websocket/WSServerHandler.h"
 #include "websocket/WSServerHandler.cpp"
 #include "websocket/WSConnection.cpp"
 # include "websocket/WSDoor.h"
 #include "websocket/WSDoor.cpp"
-# include "peers/PeerDoor.h"
-#include "peers/PeerDoor.cpp"
+
 #include "main/ripple_Application.cpp"
 
 //

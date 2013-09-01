@@ -1,0 +1,131 @@
+//------------------------------------------------------------------------------
+/*
+    Copyright (c) 2011-2013, OpenCoin, Inc.
+*/
+//==============================================================================
+
+class TxQueueImp
+    : public TxQueue
+    , public LeakChecked <TxQueueImp>
+{
+public:
+    TxQueueImp ()
+        : mLock (this, "TxQueue", __FILE__, __LINE__)
+        , mRunning (false)
+    {
+    }
+
+    bool addEntryForSigCheck (TxQueueEntry::ref entry)
+    {
+        // we always dispatch a thread to check the signature
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+        if (!mTxMap.insert (valueType (entry->getID (), entry)).second)
+        {
+            if (!entry->mCallbacks.empty ())
+                mTxMap.left.find (entry->getID ())->second->addCallbacks (*entry);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    bool addEntryForExecution (TxQueueEntry::ref entry)
+    {
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+        entry->mSigChecked = true;
+
+        std::pair<mapType::iterator, bool> it = mTxMap.insert (valueType (entry->getID (), entry));
+
+        if (!it.second)
+        {
+            // There was an existing entry
+            it.first->right->mSigChecked = true;
+
+            if (!entry->mCallbacks.empty ())
+                it.first->right->addCallbacks (*entry);
+        }
+
+        if (mRunning)
+            return false;
+
+        mRunning = true;
+        return true; // A thread needs to handle this account
+    }
+
+    TxQueueEntry::pointer removeEntry (uint256 const& id)
+    {
+        TxQueueEntry::pointer ret;
+
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+        mapType::left_map::iterator it = mTxMap.left.find (id);
+
+        if (it != mTxMap.left.end ())
+        {
+            ret = it->second;
+            mTxMap.left.erase (it);
+        }
+
+        return ret;
+    }
+
+    void getJob (TxQueueEntry::pointer& job)
+    {
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        assert (mRunning);
+
+        if (job)
+            mTxMap.left.erase (job->getID ());
+
+        mapType::left_map::iterator it = mTxMap.left.begin ();
+
+        if (it == mTxMap.left.end () || !it->second->mSigChecked)
+        {
+            job.reset ();
+            mRunning = false;
+        }
+        else
+            job = it->second;
+    }
+
+    bool stopProcessing (TxQueueEntry::ref finishedJob)
+    {
+        // returns true if a new thread must be dispatched
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        assert (mRunning);
+
+        mTxMap.left.erase (finishedJob->getID ());
+
+        mapType::left_map::iterator it = mTxMap.left.begin ();
+
+        if ((it != mTxMap.left.end ()) && it->second->mSigChecked)
+            return true;
+
+        mRunning = false;
+        return false;
+    }
+
+private:
+    typedef boost::bimaps::unordered_set_of<uint256>    leftType;
+    typedef boost::bimaps::list_of<TxQueueEntry::pointer>   rightType;
+    typedef boost::bimap<leftType, rightType>           mapType;
+    typedef mapType::value_type                         valueType;
+
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
+    mapType         mTxMap;
+    bool            mRunning;
+};
+
+//------------------------------------------------------------------------------
+
+TxQueue* TxQueue::New ()
+{
+    ScopedPointer <TxQueue> object (new TxQueueImp);
+    return object.release ();
+}

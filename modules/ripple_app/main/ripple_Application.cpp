@@ -163,6 +163,7 @@ public:
         , mSLECache ("LedgerEntryCache", 4096, 120)
         , mSNTPClient (m_auxService)
         // VFALCO New stuff
+        , m_txQueue (TxQueue::New ())
         , m_nodeStore (NodeStore::New (
             getConfig ().nodeDatabase,
             getConfig ().ephemeralNodeDatabase,
@@ -272,9 +273,9 @@ public:
         return *m_loadManager;
     }
 
-    TXQueue& getTxnQueue ()
+    TxQueue& getTxQueue ()
     {
-        return mTxnQueue;
+        return *m_txQueue;
     }
 
     OrderBookDB& getOrderBookDB ()
@@ -684,12 +685,12 @@ private:
     SLECache           mSLECache;
     SNTPClient         mSNTPClient;
     JobQueue           mJobQueue;
-    TXQueue            mTxnQueue;
     OrderBookDB        mOrderBookDB;
 
     // VFALCO Clean stuff
     ScopedPointer <SSLContext> m_peerSSLContext;
     ScopedPointer <SSLContext> m_wsSSLContext;
+    ScopedPointer <TxQueue> m_txQueue;
     ScopedPointer <NodeStore> m_nodeStore;
     ScopedPointer <Validators> m_validators;
     ScopedPointer <IFeatures> mFeatures;
