@@ -134,17 +134,17 @@ public:
         RPCHandler  mRPCHandler (&mNetwork, boost::dynamic_pointer_cast<InfoSub> (this->shared_from_this ()));
         Json::Value jvResult (Json::objectValue);
 
-        int iRole   = mHandler->getPublic ()
-                      ? RPCHandler::GUEST     // Don't check on the public interface.
-                      : iAdminGet (jvRequest, mRemoteIP);
+        Config::Role const role = mHandler->getPublic ()
+                      ? Config::GUEST     // Don't check on the public interface.
+                      : getConfig ().getAdminRole (jvRequest, mRemoteIP);
 
-        if (RPCHandler::FORBID == iRole)
+        if (Config::FORBID == role)
         {
             jvResult["result"]  = rpcError (rpcFORBIDDEN);
         }
         else
         {
-            jvResult["result"] = mRPCHandler.doCommand (jvRequest, iRole, &loadType);
+            jvResult["result"] = mRPCHandler.doCommand (jvRequest, role, &loadType);
         }
 
         // Debit/credit the load and see if we should include a warning.

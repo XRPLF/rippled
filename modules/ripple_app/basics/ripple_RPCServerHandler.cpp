@@ -36,7 +36,7 @@ std::string RPCServerHandler::processRequest (std::string const& request, std::s
         }
     }
 
-    int role = iAdminGet (jvRequest, remoteAddress);
+    Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteAddress));
 
     // Parse id now so errors from here on will have the id
     //
@@ -71,7 +71,7 @@ std::string RPCServerHandler::processRequest (std::string const& request, std::s
 
     // VFALCO TODO Shouldn't we handle this earlier?
     //
-    if (role == RPCHandler::FORBID)
+    if (role == Config::FORBID)
     {
         // VFALCO TODO Needs implementing
         // FIXME Needs implementing

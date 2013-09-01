@@ -10,57 +10,22 @@
 
 SETUP_LOG (RPCHandler)
 
-int iAdminGet (const Json::Value& params, const std::string& strRemoteIp)
+RPCHandler::RPCHandler (NetworkOPs* netOps)
+    : mNetOps (netOps)
+    , mRole (Config::FORBID)
 {
-    int     iRole;
-    bool    bPasswordSupplied   = params.isMember ("admin_user") || params.isMember ("admin_password");
-    bool    bPasswordRequired   = !getConfig ().RPC_ADMIN_USER.empty () || !getConfig ().RPC_ADMIN_PASSWORD.empty ();
-
-    bool    bPasswordWrong      = bPasswordSupplied
-                                  ? bPasswordRequired
-                                  // Supplied, required, and incorrect.
-                                  ? getConfig ().RPC_ADMIN_USER != (params.isMember ("admin_user") ? params["admin_user"].asString () : "")
-                                  || getConfig ().RPC_ADMIN_PASSWORD != (params.isMember ("admin_user") ? params["admin_password"].asString () : "")
-                                  // Supplied and not required.
-                                      : true
-                                      : false;
-    // Meets IP restriction for admin.
-    bool    bAdminIP            = false;
-
-    BOOST_FOREACH (const std::string & strAllowIp, getConfig ().RPC_ADMIN_ALLOW)
-    {
-        if (strAllowIp == strRemoteIp)
-            bAdminIP    = true;
-    }
-
-    if (bPasswordWrong                          // Wrong
-            || (bPasswordSupplied && !bAdminIP))    // Supplied and doesn't meet IP filter.
-    {
-        iRole   = RPCHandler::FORBID;
-    }
-    // If supplied, password is correct.
-    else
-    {
-        // Allow admin, if from admin IP and no password is required or it was supplied and correct.
-        iRole = bAdminIP && (!bPasswordRequired || bPasswordSupplied) ? RPCHandler::ADMIN : RPCHandler::GUEST;
-    }
-
-    return iRole;
 }
 
-RPCHandler::RPCHandler (NetworkOPs* netOps) : mNetOps (netOps), mRole (FORBID)
+RPCHandler::RPCHandler (NetworkOPs* netOps, InfoSub::pointer infoSub)
+    : mNetOps (netOps)
+    , mInfoSub (infoSub)
+    , mRole (Config::FORBID)
 {
-    ;
-}
-
-RPCHandler::RPCHandler (NetworkOPs* netOps, InfoSub::pointer infoSub) : mNetOps (netOps), mInfoSub (infoSub), mRole (FORBID)
-{
-    ;
 }
 
 Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh)
 {
-    if (getApp().getFeeTrack().isLoadedCluster() && (mRole != ADMIN))
+    if (getApp().getFeeTrack().isLoadedCluster() && (mRole != Config::ADMIN))
         return rpcError(rpcTOO_BUSY);
 
     Json::Value     jvResult;
@@ -353,7 +318,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
     try
     {
         // FIXME: For performance, should use asynch interface
-        tpTrans = mNetOps->submitTransactionSync (tpTrans, mRole == ADMIN, bFailHard, bSubmit);
+        tpTrans = mNetOps->submitTransactionSync (tpTrans, mRole == Config::ADMIN, bFailHard, bSubmit);
 
         if (!tpTrans)
         {
@@ -1707,7 +1672,7 @@ Json::Value RPCHandler::doSubmit (Json::Value params, LoadType* loadType, Applic
 
     try
     {
-        (void) mNetOps->processTransaction (tpTrans, mRole == ADMIN,
+        (void) mNetOps->processTransaction (tpTrans, mRole == Config::ADMIN,
             params.isMember ("fail_hard") && params["fail_hard"].asBool ());
     }
     catch (std::exception& e)
@@ -1778,7 +1743,7 @@ Json::Value RPCHandler::doServerInfo (Json::Value, LoadType* loadType, Applicati
 {
     Json::Value ret (Json::objectValue);
 
-    ret["info"] = mNetOps->getServerInfo (true, mRole == ADMIN);
+    ret["info"] = mNetOps->getServerInfo (true, mRole == Config::ADMIN);
 
     return ret;
 }
@@ -1787,7 +1752,7 @@ Json::Value RPCHandler::doServerState (Json::Value, LoadType* loadType, Applicat
 {
     Json::Value ret (Json::objectValue);
 
-    ret["state"]    = mNetOps->getServerInfo (false, mRole == ADMIN);
+    ret["state"]    = mNetOps->getServerInfo (false, mRole == Config::ADMIN);
 
     return ret;
 }
@@ -1804,7 +1769,7 @@ Json::Value RPCHandler::doTxHistory (Json::Value params, LoadType* loadType, App
 
     unsigned int startIndex = params["start"].asUInt ();
 
-    if ((startIndex > 10000) &&  (mRole != ADMIN))
+    if ((startIndex > 10000) &&  (mRole != Config::ADMIN))
         return rpcError (rpcNO_PERMISSION);
 
     Json::Value obj;
@@ -1962,7 +1927,7 @@ Json::Value RPCHandler::doLedger (Json::Value params, LoadType* loadType, Applic
                               | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
                               | (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
-    if ((bFull || bAccounts) && getApp().getFeeTrack().isLoadedLocal() && (mRole != ADMIN))
+    if ((bFull || bAccounts) && getApp().getFeeTrack().isLoadedLocal() && (mRole != Config::ADMIN))
     {
        WriteLog (lsDEBUG, Peer) << "Too busy to give full ledger";
        return rpcError(rpcTOO_BUSY);
@@ -2064,7 +2029,7 @@ Json::Value RPCHandler::doAccountTransactions (Json::Value params, LoadType* loa
         if (bBinary)
         {
             std::vector<NetworkOPs::txnMetaLedgerType> txns =
-                mNetOps->getAccountTxsB (raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit, mRole == ADMIN);
+                mNetOps->getAccountTxsB (raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit, mRole == Config::ADMIN);
 
             for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin (), end = txns.end ();
                     it != end; ++it)
@@ -2081,7 +2046,7 @@ Json::Value RPCHandler::doAccountTransactions (Json::Value params, LoadType* loa
         }
         else
         {
-            std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs (raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit, mRole == ADMIN);
+            std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = mNetOps->getAccountTxs (raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit, mRole == Config::ADMIN);
 
             for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin (), end = txns.end (); it != end; ++it)
             {
@@ -2214,7 +2179,7 @@ Json::Value RPCHandler::doTxAccount (Json::Value params, LoadType* loadType, App
         if (bBinary)
         {
             std::vector<NetworkOPs::txnMetaLedgerType> txns =
-                mNetOps->getTxsAccountB (raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit, mRole == ADMIN);
+                mNetOps->getTxsAccountB (raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit, mRole == Config::ADMIN);
 
             for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin (), end = txns.end ();
                     it != end; ++it)
@@ -2232,7 +2197,7 @@ Json::Value RPCHandler::doTxAccount (Json::Value params, LoadType* loadType, App
         else
         {
             std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns =
-                 mNetOps->getTxsAccount (raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit, mRole == ADMIN);
+                 mNetOps->getTxsAccount (raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit, mRole == Config::ADMIN);
 
             for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin (), end = txns.end (); it != end; ++it)
             {
@@ -2275,7 +2240,7 @@ Json::Value RPCHandler::doTxAccount (Json::Value params, LoadType* loadType, App
 //   secret: <string>   // optional
 // }
 //
-// This command requires admin access because it makes no sense to ask an untrusted server for this.
+// This command requires Config::ADMIN access because it makes no sense to ask an untrusted server for this.
 Json::Value RPCHandler::doValidationCreate (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
     RippleAddress   raSeed;
@@ -2488,9 +2453,9 @@ Json::Value RPCHandler::doWalletSeed (Json::Value params, LoadType* loadType, Ap
 }
 
 #if ENABLE_INSECURE
-// TODO: for now this simply checks if this is the admin account
+// TODO: for now this simply checks if this is the Config::ADMIN account
 // TODO: need to prevent them hammering this over and over
-// TODO: maybe a better way is only allow admin from local host
+// TODO: maybe a better way is only allow Config::ADMIN from local host
 // {
 //   username: <string>,
 //   password: <string>
@@ -3247,7 +3212,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, LoadType* loadType, App
 
     if (params.isMember ("url"))
     {
-        if (mRole != ADMIN)
+        if (mRole != Config::ADMIN)
             return rpcError (rpcNO_PERMISSION);
 
         std::string strUrl      = params["url"].asString ();
@@ -3534,7 +3499,7 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value params, LoadType* loadType, A
 
     if (params.isMember ("url"))
     {
-        if (mRole != ADMIN)
+        if (mRole != Config::ADMIN)
             return rpcError (rpcNO_PERMISSION);
 
         std::string strUrl  = params["url"].asString ();
@@ -3754,7 +3719,7 @@ Json::Value RPCHandler::doInternal (Json::Value params, LoadType* loadType, Appl
 
 Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadType* loadType)
 {
-    if (iRole != ADMIN)
+    if (iRole != Config::ADMIN)
     {
         int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
 
@@ -3862,7 +3827,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
     {
         return rpcError (rpcUNKNOWN_COMMAND);
     }
-    else if (commandsA[i].bAdminRequired && mRole != ADMIN)
+    else if (commandsA[i].bAdminRequired && mRole != Config::ADMIN)
     {
         return rpcError (rpcNO_PERMISSION);
     }

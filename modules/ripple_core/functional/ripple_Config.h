@@ -216,41 +216,31 @@ public:
     //
 public:
     /** Get the client or server RPC IP address.
-
         @note The string may not always be in a valid parsable state.
-
         @return A string representing the address.
     */
     std::string getRpcIP () const { return m_rpcIP; }
 
     /** Get the client or server RPC port number.
-
         @note The port number may be invalid (out of range or zero)
-
         @return The RPC port number.
     */
     int getRpcPort () const { return m_rpcPort; }
 
     /** Set the client or server RPC IP and optional port.
-
         @note The string is not syntax checked.
-
         @param newAddress A string in the format <ip-address>[':'<port-number>]
     */
     void setRpcIpAndOptionalPort (std::string const& newAddress);
 
     /** Set the client or server RPC IP.
-
         @note The string is not syntax-checked.
-
         @param newIP A string representing the IP address to use.
     */
     void setRpcIP (std::string const& newIP) { m_rpcIP = newIP; }
 
     /** Set the client or server RPC port number.
-
         @note The port number is not range checked.
-
         @param newPort The RPC port number to use.
     */
     void setRpcPort (int newPort) { m_rpcPort = newPort; }
@@ -265,6 +255,17 @@ public:
 
         return s;
     }
+
+    /** Determine the level of administrative permission to grant.
+    */
+    enum Role
+    {
+        GUEST,
+        USER,
+        ADMIN,
+        FORBID
+    };
+    Role getAdminRole (Json::Value const& params, std::string const& strRemoteIp) const;
 
 private:
     std::string                 m_rpcIP;

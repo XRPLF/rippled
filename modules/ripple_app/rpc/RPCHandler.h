@@ -20,14 +20,6 @@ class InfoSub;
 class RPCHandler
 {
 public:
-    enum
-    {
-        GUEST,
-        USER,
-        ADMIN,
-        FORBID
-    };
-
     explicit RPCHandler (NetworkOPs* netOps);
 
     RPCHandler (NetworkOPs* netOps, InfoSub::pointer infoSub);
@@ -185,8 +177,4 @@ private:
     handler_t                   mHandler;
 };
 
-// VFALCO TODO tidy up this loose function
-int iAdminGet (const Json::Value& jvRequest, const std::string& strRemoteIp);
-
 #endif
-// vim:ts=4

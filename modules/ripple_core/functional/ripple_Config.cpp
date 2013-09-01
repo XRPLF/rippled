@@ -579,3 +579,43 @@ void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
     }
 }
 
+//------------------------------------------------------------------------------
+
+Config::Role Config::getAdminRole (Json::Value const& params, std::string const& strRemoteIp) const
+{
+    Config::Role role;
+    bool    bPasswordSupplied   = params.isMember ("admin_user") || params.isMember ("admin_password");
+    bool    bPasswordRequired   = !this->RPC_ADMIN_USER.empty () || !this->RPC_ADMIN_PASSWORD.empty ();
+
+    bool    bPasswordWrong      = bPasswordSupplied
+                                  ? bPasswordRequired
+                                  // Supplied, required, and incorrect.
+                                  ? this->RPC_ADMIN_USER != (params.isMember ("admin_user") ? params["admin_user"].asString () : "")
+                                  || this->RPC_ADMIN_PASSWORD != (params.isMember ("admin_user") ? params["admin_password"].asString () : "")
+                                  // Supplied and not required.
+                                      : true
+                                      : false;
+    // Meets IP restriction for admin.
+    bool    bAdminIP            = false;
+
+    BOOST_FOREACH (const std::string & strAllowIp, this->RPC_ADMIN_ALLOW)
+    {
+        if (strAllowIp == strRemoteIp)
+            bAdminIP    = true;
+    }
+
+    if (bPasswordWrong                          // Wrong
+            || (bPasswordSupplied && !bAdminIP))    // Supplied and doesn't meet IP filter.
+    {
+        role   = Config::FORBID;
+    }
+    // If supplied, password is correct.
+    else
+    {
+        // Allow admin, if from admin IP and no password is required or it was supplied and correct.
+        role = bAdminIP && (!bPasswordRequired || bPasswordSupplied) ? Config::ADMIN : Config::GUEST;
+    }
+
+    return role;
+}
+
