@@ -20,7 +20,7 @@
 #ifndef BEAST_FIFOFREESTOREWITHTLS_H_INCLUDED
 #define BEAST_FIFOFREESTOREWITHTLS_H_INCLUDED
 
-#if BEAST_BOOST_IS_AVAILABLE
+#if BEAST_USE_BOOST_FEATURES
 
 /*============================================================================*/
 /**

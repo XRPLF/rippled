@@ -208,13 +208,16 @@
     <ClInclude Include="..\..\modules\beast_core\streams\beast_MemoryOutputStream.h" />
     <ClInclude Include="..\..\modules\beast_core\streams\beast_OutputStream.h" />
     <ClInclude Include="..\..\modules\beast_core\streams\beast_SubregionStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\system\beast_Functional.h" />
-    <ClInclude Include="..\..\modules\beast_core\system\beast_PlatformDefs.h" />
-    <ClInclude Include="..\..\modules\beast_core\system\beast_StandardHeader.h" />
-    <ClInclude Include="..\..\modules\beast_core\system\beast_SystemStats.h" />
-    <ClInclude Include="..\..\modules\beast_core\system\beast_TargetPlatform.h" />
-    <ClInclude Include="..\..\modules\beast_core\system\BindIncludes.h" />
+    <ClInclude Include="..\..\modules\beast_core\system\BeastConfigCheck.h" />
+    <ClInclude Include="..\..\modules\beast_core\system\Functional.h" />
+    <ClInclude Include="..\..\modules\beast_core\system\PlatformDefs.h" />
+    <ClInclude Include="..\..\modules\beast_core\system\StandardHeader.h" />
+    <ClInclude Include="..\..\modules\beast_core\system\SystemStats.h" />
+    <ClInclude Include="..\..\modules\beast_core\system\TargetPlatform.h" />
+    <ClInclude Include="..\..\modules\beast_core\system\BeforeBoost.h" />
     <ClInclude Include="..\..\modules\beast_core\system\BoostIncludes.h" />
+    <ClInclude Include="..\..\modules\beast_core\system\BoostPlaceholdersFix.h" />
+    <ClInclude Include="..\..\modules\beast_core\system\FunctionalIncludes.h" />
     <ClInclude Include="..\..\modules\beast_core\text\beast_CharacterFunctions.h" />
     <ClInclude Include="..\..\modules\beast_core\text\beast_CharPointer_ASCII.h" />
     <ClInclude Include="..\..\modules\beast_core\text\beast_CharPointer_UTF16.h" />
@@ -829,10 +832,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\system\beast_SystemStats.cpp">
+    <ClCompile Include="..\..\modules\beast_core\system\SystemStats.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\system\BoostPlaceholdersFix.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\text\beast_CharacterFunctions.cpp">

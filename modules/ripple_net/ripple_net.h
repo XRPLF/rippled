@@ -7,8 +7,7 @@
 #ifndef RIPPLE_NET_H_INCLUDED
 #define RIPPLE_NET_H_INCLUDED
 
-#include "beast/modules/beast_core/beast_core.h" // Must come before <boost/bind.hpp>
-
+#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
 #include <boost/unordered_set.hpp> // For InfoSub
 
 #include "beast/modules/beast_asio/beast_asio.h"

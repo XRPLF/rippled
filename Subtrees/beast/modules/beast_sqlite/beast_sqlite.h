@@ -30,7 +30,7 @@
           see BeastConfig.h.
 */
 
-#include "../beast_core/system/beast_TargetPlatform.h"
+#include "../beast_core/system/TargetPlatform.h"
 
 #if BEAST_IOS || BEAST_MAC
 # define BEAST_HAVE_NATIVE_SQLITE 1

@@ -17,22 +17,26 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FIFOFREESTORE_H_INCLUDED
-#define BEAST_FIFOFREESTORE_H_INCLUDED
+#if BEAST_USE_BOOST_FEATURES
 
-/** Selected free store based on compilation settings.
+namespace boost
+{
 
-    @ingroup beast_concurrent
-*/
-// VFALCO NOTE Disabled this because it seems that the TLS
-//             implementation has a leak. Although the other
-//             one also seems to have a leak.
-//
-//#if BEAST_USE_BOOST_FEATURES
-#if 0
-typedef FifoFreeStoreWithTLS FifoFreeStoreType;
-#else
-typedef FifoFreeStoreWithoutTLS FifoFreeStoreType;
-#endif
+namespace placeholders
+{
+
+boost::arg<1> _1;
+boost::arg<2> _2;
+boost::arg<3> _3;
+boost::arg<4> _4;
+boost::arg<5> _5;
+boost::arg<6> _6;
+boost::arg<7> _7;
+boost::arg<8> _8;
+boost::arg<9> _9;
+
+}
+
+}
 
 #endif

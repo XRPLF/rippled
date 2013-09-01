@@ -6,7 +6,7 @@
 
 #include "BeastConfig.h"
 
-#include "beast/modules/beast_core/beast_core.h" // Must come before <boost/bind.hpp>
+#include "beast/modules/beast_core/beast_core.h"
 
 #include <boost/bimap.hpp>
 #include <boost/bimap/list_of.hpp>

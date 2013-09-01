@@ -276,7 +276,7 @@ struct trait_name                                                               
 */ 
 
 #ifndef BEAST_BIND_PLACEHOLDERS_N
-# if BEAST_MSVC && BEAST_BIND_USES_STD
+# if BEAST_MSVC && BEAST_FUNCTIONAL_USES_STD
 #  define BEAST_BIND_PLACEHOLDERS_N 20 // Visual Studio 2012
 # else
 #  define BEAST_BIND_PLACEHOLDERS_N 8 // Seems a reasonable number
@@ -297,7 +297,7 @@ struct trait_name                                                               
 
 //------------------------------------------------------------------------------
 
-#if BEAST_BIND_USES_STD
+#if BEAST_FUNCTIONAL_USES_STD
 
 namespace functional
 {
@@ -400,7 +400,7 @@ using namespace placeholders;
 
 //------------------------------------------------------------------------------
 
-#elif BEAST_BIND_USES_TR1
+#elif BEAST_FUNCTIONAL_USES_TR1
 
 namespace functional
 {
@@ -503,7 +503,7 @@ using namespace placeholders;
 
 //------------------------------------------------------------------------------
 
-#elif BEAST_BIND_USES_BOOST
+#elif BEAST_FUNCTIONAL_USES_BOOST
 
 namespace functional
 {
@@ -608,7 +608,7 @@ using namespace placeholders;
 
 #else
 
-#error Unknown bind source in beast_Functional.h
+#error Unknown bind source in Functional.h
 
 #endif
 

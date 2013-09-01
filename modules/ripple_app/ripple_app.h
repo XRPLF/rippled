@@ -7,8 +7,6 @@
 #ifndef RIPPLE_APP_H_INCLUDED
 #define RIPPLE_APP_H_INCLUDED
 
-#include "beast/modules/beast_core/beast_core.h" // Must come before <boost/bind.hpp>
-
 #if BEAST_LINUX || BEAST_MAC || BEAST_BSD
 #include <sys/resource.h>
 #endif
@@ -19,6 +17,7 @@
 //             purely abstract and move implementation into .cpp files.
 //
 
+#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/array.hpp>
 #include <boost/asio/read_until.hpp>

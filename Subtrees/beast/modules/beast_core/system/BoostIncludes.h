@@ -3,10 +3,6 @@
     This file is part of Beast: https://github.com/vinniefalco/Beast
     Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
-    Portions of this file are from JUCE.
-    Copyright (c) 2013 - Raw Material Software Ltd.
-    Please visit http://www.juce.com
-
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
@@ -24,63 +20,13 @@
 #ifndef BEAST_CORE_SYSTEM_BOOSTINCLUDES_H_INCLUDED
 #define BEAST_CORE_SYSTEM_BOOSTINCLUDES_H_INCLUDED
 
-// If boost is available we activate some boost-specific features.
-//
-#ifndef BEAST_BOOST_IS_AVAILABLE
-# define BEAST_BOOST_IS_AVAILABLE 0
-#endif
+#if BEAST_USE_BOOST_FEATURES
 
-//------------------------------------------------------------------------------
-
-#if BEAST_BOOST_IS_AVAILABLE
-
-// Prevent <boost/bind/placeholders.hpp> from being included
-#ifdef BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
-# error "boost/bind.hpp must not be included before this file"
-#else
-# define BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
-#endif
-
-#include <boost/bind.hpp>
-#include <boost/bind/arg.hpp>
 #include <boost/config.hpp>
 #include <boost/function.hpp>
 #include <boost/thread/tss.hpp>         // for FifoFreeStoreWithTLS
 #include <boost/version.hpp>
 
-#if BOOST_VERSION > 105499
-# error "This hasnt been tested with boost versions above 1.54"
 #endif
-
-// This is a hack to fix boost's goofy placeholders going into the global
-// namespace. First we prevent the user from including boost/bind.hpp
-// before us. Then we define the include guard macro and include
-// boost/bind.hpp ourselves to get the declarations. Finally we repeat
-// the missing placeholder declarations but put them in a proper namespace.
-//
-// We put the placeholders in boost::placeholders so they can be accessed
-// explicitly to handle the common case of a "using namespace oost" directive
-// being in effect.
-//
-// Declarations based on boost/bind/placeholders.cpp
-//
-namespace boost {
-namespace placeholders {
-extern boost::arg<1> _1;
-extern boost::arg<2> _2;
-extern boost::arg<3> _3;
-extern boost::arg<4> _4;
-extern boost::arg<5> _5;
-extern boost::arg<6> _6;
-extern boost::arg<7> _7;
-extern boost::arg<8> _8;
-extern boost::arg<9> _9;
-}
-using namespace placeholders;
-}
-
-#endif
-
-//------------------------------------------------------------------------------
 
 #endif

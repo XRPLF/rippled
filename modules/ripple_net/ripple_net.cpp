@@ -12,8 +12,7 @@
 
 #include "BeastConfig.h"
 
-#include "beast/modules/beast_core/beast_core.h" // Must come before <boost/bind.hpp>
-
+#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
 #include <boost/version.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl.hpp>

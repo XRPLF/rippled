@@ -32,7 +32,7 @@
 //   affecting performance.
 //
 
-#if BEAST_BOOST_IS_AVAILABLE
+#if BEAST_USE_BOOST_FEATURES
 
 // This precedes every allocation
 //
