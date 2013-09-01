@@ -28,8 +28,8 @@ namespace ripple
  #include "main/ripple_FatalErrorReporter.h"
 #include "main/ripple_FatalErrorReporter.cpp"
 
-# include "basics/ripple_RPCServerHandler.h"
-#include "basics/ripple_RPCServerHandler.cpp"
+# include "rpc/RPCServerHandler.h"
+#include "rpc/RPCServerHandler.cpp"
 #ifdef _MSC_VER
 # pragma warning (push)
 # pragma warning (disable: 4244) // conversion, possible loss of data
