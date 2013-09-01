@@ -289,8 +289,25 @@ public:
         
         msg->set_header(std::string(1,0x00));
 
-        // VFALCO: TODO fix this warning C4309 "truncation of constant value"
-        msg->append_payload(std::string(1,0xFF));
+        struct Marker
+        {
+            Marker ()
+            {
+                union
+                {
+                    char c;
+                    unsigned char uc;
+                } v;
+                
+                v.uc = 0xff;
+
+                value = std::string (1, v.c);
+            }
+
+            std::string value;
+        };
+        static Marker marker;
+        msg->append_payload(marker.value);
         
         msg->set_prepared(true);
     }
@@ -306,8 +323,18 @@ public:
         
         msg->set_header(std::string());
         
+        struct Marker
+        {
+            Marker () { value.uc = 0xff; }
+            union {
+                char c;
+                unsigned char uc;
+            } value;
+        };
+        static Marker marker;
+
         std::string val;
-        val.append(1,0xFF);
+        val.append(1,marker.value.c);
         val.append(1,0x00);
         msg->set_payload(val);
         
