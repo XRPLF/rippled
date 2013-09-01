@@ -39,8 +39,9 @@ public:
 
     void startListening ()
     {
-        RPCServer::pointer new_connection = RPCServer::New (
-            mAcceptor.get_io_service (), m_sslContext->get (), m_rpcServerHandler);
+        // VFALCO NOTE Why not use make_shared?
+        RPCServerImp::pointer new_connection (boost::make_shared <RPCServerImp> (
+            mAcceptor.get_io_service (), m_sslContext->get (), m_rpcServerHandler));
 
         mAcceptor.set_option (boost::asio::ip::tcp::acceptor::reuse_address (true));
 
@@ -66,7 +67,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void handleConnect (RPCServer::pointer new_connection, boost::system::error_code const& error)
+    void handleConnect (RPCServerImp::pointer new_connection, boost::system::error_code const& error)
     {
         bool delay = false;
 

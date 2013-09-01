@@ -840,9 +840,6 @@
     <ClCompile Include="..\..\modules\ripple_net\basics\MultiSocket.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_net\basics\RPCServer.cpp">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\basics\SNTPClient.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
@@ -1705,6 +1702,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_net\rpc\InfoSub.h">
       <Filter>[1] Ripple\ripple_net\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_net\basics\impl\RPCServerImp.h">
+      <Filter>[1] Ripple\ripple_net\basics\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

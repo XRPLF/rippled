@@ -8,16 +8,10 @@
 #define RIPPLE_NET_BASICS_RPCSERVER_H_INCLUDED
 
 /** Provides RPC services to a client.
-
     Each client has a separate instance of this object.
 */
-// VFALCO NOTE This looks like intrusve shared object?
-//
-class RPCServer : public boost::enable_shared_from_this <RPCServer>
+class RPCServer
 {
-public:
-    typedef boost::shared_ptr <RPCServer> pointer;
-
 public:
     /** Handles a RPC client request.
     */
@@ -42,19 +36,11 @@ public:
         virtual std::string processRequest (std::string const& request, std::string const& remoteAddress) = 0;
     };
 
-    static pointer New (
-        boost::asio::io_service& io_service,
-        boost::asio::ssl::context& context,
-        Handler& handler);
-
     virtual ~RPCServer () { }
 
     /** Called when the connection is established.
     */
     virtual void connected () = 0;
-
-    // VFALCO TODO AutoSocket exposes all sorts of boost::asio interface
-    virtual AutoSocket& getSocket () = 0;
 
     // VFALCO TODO Remove this since it exposes boost
     virtual boost::asio::ip::tcp::socket& getRawSocket () = 0;

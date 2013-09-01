@@ -28,6 +28,8 @@
 
 #include "ripple_net.h"
 
+#include "../ripple_websocket/ripple_websocket.h" // for HTTPClient, RPCDoor
+
 namespace ripple
 {
 
@@ -36,8 +38,8 @@ namespace ripple
 #include "basics/MultiSocket.cpp"
 #include "basics/HTTPRequest.cpp"
 #include "basics/HTTPClient.cpp"
+# include "basics/impl/RPCServerImp.h"
 #include "basics/RPCDoor.cpp"
-#include "basics/RPCServer.cpp"
 #include "basics/SNTPClient.cpp"
 
 #include "rpc/RPCCall.cpp"

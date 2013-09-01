@@ -17,9 +17,6 @@
 #include "../ripple_core/ripple_core.h"
 #include "../ripple_data/ripple_data.h"
 
-// VFALCO TODO MOVE TO .cpp ASAP!, make users abstract!
-#include "../ripple_websocket/ripple_websocket.h"
-
 namespace ripple
 {
 

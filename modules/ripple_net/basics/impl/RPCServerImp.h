@@ -6,9 +6,14 @@
 
 SETUP_LOG (RPCServer)
 
-class RPCServerImp : public RPCServer, LeakChecked <RPCServerImp>
+class RPCServerImp
+    : public RPCServer
+    , public boost::enable_shared_from_this <RPCServerImp>
+    , public LeakChecked <RPCServerImp>
 {
 public:
+    typedef boost::shared_ptr <RPCServerImp> pointer;
+
     RPCServerImp (
         boost::asio::io_service& io_service,
         boost::asio::ssl::context& context,
@@ -20,7 +25,7 @@ public:
     }
 
     //--------------------------------------------------------------------------
-private:
+
     enum
     {
         maxQueryBytes = 1024 * 1024
@@ -256,13 +261,3 @@ private:
 
     HTTPRequest mHTTPRequest;
 };
-
-//------------------------------------------------------------------------------
-
-RPCServer::pointer RPCServer::New (
-    boost::asio::io_service& io_service,
-    boost::asio::ssl::context& context,
-    Handler& handler)
-{
-    return pointer (new RPCServerImp (io_service, context, handler));
-}
