@@ -30,6 +30,9 @@ namespace ripple
 #include "main/ripple_FatalErrorReporter.cpp"
 
 # include "rpc/RPCHandler.h"
+#   include "misc/PowResult.h"
+#  include "misc/ProofOfWork.h"
+# include "misc/ProofOfWorkFactory.h"
 #include "rpc/RPCHandler.cpp"
 # include "rpc/RPCServerHandler.h"
 #include "rpc/RPCServerHandler.cpp"

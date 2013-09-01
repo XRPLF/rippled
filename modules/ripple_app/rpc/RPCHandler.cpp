@@ -893,7 +893,7 @@ Json::Value RPCHandler::doProofCreate (Json::Value params, LoadType* loadType, A
     if (params.isMember ("difficulty") || params.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
-        beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
+        beast::ScopedPointer <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
 
         if (params.isMember ("difficulty"))
         {
@@ -902,7 +902,7 @@ Json::Value RPCHandler::doProofCreate (Json::Value params, LoadType* loadType, A
 
             int iDifficulty = params["difficulty"].asInt ();
 
-            if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
+            if (iDifficulty < 0 || iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
                 return rpcError (rpcINVALID_PARAMS);
 
             pgGen->setDifficulty (iDifficulty);
@@ -974,12 +974,12 @@ Json::Value RPCHandler::doProofVerify (Json::Value params, LoadType* loadType, A
     std::string     strToken    = params["token"].asString ();
     uint256         uSolution (params["solution"].asString ());
 
-    POWResult       prResult;
+    PowResult       prResult;
 
     if (params.isMember ("difficulty") || params.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
-        beast::ScopedPointer <IProofOfWorkFactory> pgGen (IProofOfWorkFactory::New ());
+        beast::ScopedPointer <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
 
         if (params.isMember ("difficulty"))
         {
@@ -988,7 +988,7 @@ Json::Value RPCHandler::doProofVerify (Json::Value params, LoadType* loadType, A
 
             int iDifficulty = params["difficulty"].asInt ();
 
-            if (iDifficulty < 0 || iDifficulty > ProofOfWork::sMaxDifficulty)
+            if (iDifficulty < 0 || iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
                 return rpcError (rpcINVALID_PARAMS);
 
             pgGen->setDifficulty (iDifficulty);
@@ -1013,7 +1013,7 @@ Json::Value RPCHandler::doProofVerify (Json::Value params, LoadType* loadType, A
     std::string sToken;
     std::string sHuman;
 
-    powResultInfo (prResult, sToken, sHuman);
+    ProofOfWork::calcResultInfo (prResult, sToken, sHuman);
 
     jvResult["proof_result"]            = sToken;
     jvResult["proof_result_code"]       = prResult;

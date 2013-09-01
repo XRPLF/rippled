@@ -13,9 +13,11 @@ namespace ripple
 
 #include "peers/ripple_PeerSet.cpp"
 #include "misc/ripple_OrderBook.cpp"
-#include "misc/ripple_ProofOfWork.cpp"
-#include "misc/ripple_ProofOfWorkFactory.h"
-#include "misc/ripple_ProofOfWorkFactory.cpp" // requires ProofOfWork.cpp for ProofOfWork::sMaxDifficulty
+#   include "misc/PowResult.h"
+#  include "misc/ProofOfWork.h"
+# include "misc/ProofOfWorkFactory.h"
+#include "misc/ProofOfWorkFactory.cpp"
+#include "misc/ProofOfWork.cpp"
 #include "misc/ripple_SerializedTransaction.cpp"
 
 #include "shamap/ripple_SHAMapSyncFilters.cpp" // requires Application

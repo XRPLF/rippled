@@ -1779,7 +1779,7 @@ void PeerImp::recvProofWork (protocol::TMProofWork& packet)
 
         uint256 response;
         memcpy (response.begin (), packet.response ().data (), 256 / 8);
-        POWResult r = getApp().getProofOfWorkFactory ().checkProof (packet.token (), response);
+        PowResult r = getApp().getProofOfWorkFactory ().checkProof (packet.token (), response);
 
         if (r == powOK)
         {

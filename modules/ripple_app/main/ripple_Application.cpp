@@ -174,7 +174,7 @@ public:
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
         , mValidations (IValidations::New ())
         , mUNL (UniqueNodeList::New ())
-        , mProofOfWorkFactory (IProofOfWorkFactory::New ())
+        , mProofOfWorkFactory (ProofOfWorkFactory::New ())
         , m_loadManager (LoadManager::New ())
         // VFALCO End new stuff
         // VFALCO TODO replace all NULL with nullptr
@@ -322,7 +322,7 @@ public:
         return *mUNL;
     }
 
-    IProofOfWorkFactory& getProofOfWorkFactory ()
+    ProofOfWorkFactory& getProofOfWorkFactory ()
     {
         return *mProofOfWorkFactory;
     }
@@ -698,7 +698,7 @@ private:
     ScopedPointer <IHashRouter> mHashRouter;
     ScopedPointer <IValidations> mValidations;
     ScopedPointer <UniqueNodeList> mUNL;
-    ScopedPointer <IProofOfWorkFactory> mProofOfWorkFactory;
+    ScopedPointer <ProofOfWorkFactory> mProofOfWorkFactory;
     ScopedPointer <Peers> m_peers;
     ScopedPointer <LoadManager> m_loadManager;
     ScopedPointer <PeerDoor> m_peerDoor;

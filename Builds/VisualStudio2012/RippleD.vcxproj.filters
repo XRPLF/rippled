@@ -648,12 +648,6 @@
     <ClCompile Include="..\..\modules\ripple_app\misc\ripple_OrderBook.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_ProofOfWork.cpp">
-      <Filter>[1] Ripple\ripple_app\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_ProofOfWorkFactory.cpp">
-      <Filter>[1] Ripple\ripple_app\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\misc\ripple_SerializedLedger.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
@@ -872,6 +866,12 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_net\rpc\InfoSub.cpp">
       <Filter>[1] Ripple\ripple_net\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ProofOfWorkFactory.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\misc\ProofOfWork.cpp">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1409,9 +1409,6 @@
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IHashRouter.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IProofOfWorkFactory.h">
-      <Filter>[1] Ripple\ripple_app\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IValidations.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
@@ -1422,12 +1419,6 @@
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_OrderBook.h">
-      <Filter>[1] Ripple\ripple_app\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_ProofOfWork.h">
-      <Filter>[1] Ripple\ripple_app\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_ProofOfWorkFactory.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_SerializedLedger.h">
@@ -1693,6 +1684,15 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_net\basics\impl\RPCServerImp.h">
       <Filter>[1] Ripple\ripple_net\basics\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\PowResult.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ProofOfWork.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ProofOfWorkFactory.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

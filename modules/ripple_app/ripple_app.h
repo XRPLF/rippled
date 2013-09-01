@@ -19,6 +19,7 @@
 //             purely abstract and move implementation into .cpp files.
 //
 
+#if 1
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/array.hpp>
@@ -44,7 +45,6 @@
 #include <boost/program_options.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/ref.hpp>
-#include <boost/regex.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/thread/condition_variable.hpp>
@@ -55,6 +55,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/weak_ptr.hpp>
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -95,7 +96,6 @@ namespace ripple
 #include "ledger/Ledger.h"
 #include "ledger/SerializedValidation.h"
 #include "main/ripple_LoadManager.h"
-#include "misc/ripple_ProofOfWork.h"
 #include "misc/ripple_OrderBook.h"
 #include "shamap/ripple_SHAMapSyncFilters.h"
 #include "misc/ripple_IFeatures.h"
@@ -103,7 +103,6 @@ namespace ripple
 #include "misc/ripple_IHashRouter.h"
 #include "peers/ripple_Peer.h"
 #include "peers/ripple_Peers.h"
-#include "misc/ripple_IProofOfWorkFactory.h"
 #include "peers/ripple_ClusterNodeStatus.h"
 #include "peers/ripple_UniqueNodeList.h"
 #include "misc/ripple_IValidations.h"

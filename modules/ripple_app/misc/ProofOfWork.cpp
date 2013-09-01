@@ -6,42 +6,8 @@
 
 SETUP_LOG (ProofOfWork)
 
-bool powResultInfo (POWResult powCode, std::string& strToken, std::string& strHuman)
-{
-    static struct
-    {
-        POWResult       powCode;
-        const char*     cpToken;
-        const char*     cpHuman;
-    } powResultInfoA[] =
-    {
-        {   powREUSED,              "powREUSED",                "Proof-of-work has already been used."                  },
-        {   powBADNONCE,            "powBADNONCE",              "The solution does not meet the required difficulty."   },
-        {   powEXPIRED,             "powEXPIRED",               "Token is expired."                                     },
-        {   powCORRUPT,             "powCORRUPT",               "Invalid token."                                        },
-        {   powTOOEASY,             "powTOOEASY",               "Difficulty has increased since token was issued."      },
-
-        {   powOK,                  "powOK",                    "Valid proof-of-work."                                  },
-    };
-
-    int iIndex  = NUMBER (powResultInfoA);
-
-    while (iIndex-- && powResultInfoA[iIndex].powCode != powCode)
-        ;
-
-    if (iIndex >= 0)
-    {
-        strToken    = powResultInfoA[iIndex].cpToken;
-        strHuman    = powResultInfoA[iIndex].cpHuman;
-    }
-
-    return iIndex >= 0;
-}
-
-// VFALCO TODO Move these to a header because they are used by ripple_ProofOfWorkFactory.cpp
+// VFALCO TODO Move these to a header
 const uint256 ProofOfWork::sMinTarget ("00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-const int ProofOfWork::sMaxIterations (1 << 23);
-const int ProofOfWork::sMaxDifficulty (30);
 
 ProofOfWork::ProofOfWork (const std::string& token,
                           int iterations,
@@ -70,7 +36,7 @@ ProofOfWork::ProofOfWork (const std::string& token)
 
 bool ProofOfWork::isValid () const
 {
-    if ((mIterations <= sMaxIterations) && (mTarget >= sMinTarget))
+    if ((mIterations <= kMaxIterations) && (mTarget >= sMinTarget))
         return true;
 
     WriteLog (lsWARNING, ProofOfWork) << "Invalid PoW: " << mIterations << ", " << mTarget;
@@ -80,10 +46,10 @@ bool ProofOfWork::isValid () const
 uint64 ProofOfWork::getDifficulty (uint256 const& target, int iterations)
 {
     // calculate the approximate number of hashes required to solve this proof of work
-    if ((iterations > sMaxIterations) || (target < sMinTarget))
+    if ((iterations > kMaxIterations) || (target < sMinTarget))
     {
         WriteLog (lsINFO, ProofOfWork) << "Iterations:" << iterations;
-        WriteLog (lsINFO, ProofOfWork) << "MaxIterat: " << sMaxIterations;
+        WriteLog (lsINFO, ProofOfWork) << "MaxIterat: " << kMaxIterations;
         WriteLog (lsINFO, ProofOfWork) << "Target:    " << target;
         WriteLog (lsINFO, ProofOfWork) << "MinTarget: " << sMinTarget;
         throw std::runtime_error ("invalid proof of work target/iteration");
@@ -149,7 +115,7 @@ uint256 ProofOfWork::solve (int maxIterations) const
 
 bool ProofOfWork::checkSolution (uint256 const& solution) const
 {
-    if (mIterations > sMaxIterations)
+    if (mIterations > kMaxIterations)
         return false;
 
     std::vector<uint256> buf1;
@@ -178,4 +144,36 @@ bool ProofOfWork::validateToken (const std::string& strToken)
 }
 
 //------------------------------------------------------------------------------
+
+bool ProofOfWork::calcResultInfo (PowResult powCode, std::string& strToken, std::string& strHuman)
+{
+    static struct
+    {
+        PowResult       powCode;
+        const char*     cpToken;
+        const char*     cpHuman;
+    } powResultInfoA[] =
+    {
+        {   powREUSED,              "powREUSED",                "Proof-of-work has already been used."                  },
+        {   powBADNONCE,            "powBADNONCE",              "The solution does not meet the required difficulty."   },
+        {   powEXPIRED,             "powEXPIRED",               "Token is expired."                                     },
+        {   powCORRUPT,             "powCORRUPT",               "Invalid token."                                        },
+        {   powTOOEASY,             "powTOOEASY",               "Difficulty has increased since token was issued."      },
+
+        {   powOK,                  "powOK",                    "Valid proof-of-work."                                  },
+    };
+
+    int iIndex  = NUMBER (powResultInfoA);
+
+    while (iIndex-- && powResultInfoA[iIndex].powCode != powCode)
+        ;
+
+    if (iIndex >= 0)
+    {
+        strToken    = powResultInfoA[iIndex].cpToken;
+        strHuman    = powResultInfoA[iIndex].cpHuman;
+    }
+
+    return iIndex >= 0;
+}
 

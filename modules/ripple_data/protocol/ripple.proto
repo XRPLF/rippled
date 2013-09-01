@@ -47,7 +47,7 @@ message TMProofWork
     optional bytes challenge    = 4;
     optional bytes response     = 5;
 
-    enum POWResult
+    enum PowResult
     {
         powrOK          = 0;
         powrREUSED      = 1;
@@ -56,7 +56,7 @@ message TMProofWork
         powrINVALID     = 4;
         powrDISCONNECT  = 5;    // We are disconnecting
     }
-    optional POWResult result   = 6;
+    optional PowResult result   = 6;
 }
 
 // Sent on connect

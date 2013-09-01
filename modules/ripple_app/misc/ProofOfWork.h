@@ -10,7 +10,10 @@
 class ProofOfWork : LeakChecked <ProofOfWork>
 {
 public:
-    static const int sMaxDifficulty;
+    enum
+    {
+        kMaxIterations = (1 << 23)
+    };
 
     typedef boost::shared_ptr <ProofOfWork> pointer;
 
@@ -23,7 +26,7 @@ public:
 
     bool isValid () const;
 
-    uint256 solve (int maxIterations = 2 * sMaxIterations) const;
+    uint256 solve (int maxIterations = 2 * kMaxIterations) const;
     bool checkSolution (uint256 const& solution) const;
 
     const std::string& getToken () const
@@ -45,6 +48,8 @@ public:
 
     static bool validateToken (const std::string& strToken);
 
+    static bool calcResultInfo (PowResult powCode, std::string& strToken, std::string& strHuman);
+
 private:
     std::string     mToken;
     uint256         mChallenge;
@@ -52,7 +57,7 @@ private:
     int             mIterations;
 
     static const uint256 sMinTarget;
-    static const int sMaxIterations;
+    static const int maxIterations;
 };
 
 #endif

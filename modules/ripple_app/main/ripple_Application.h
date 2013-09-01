@@ -13,7 +13,6 @@ class IFeeVote;
 class IHashRouter;
 class ILoadFeeTrack;
 class Peers;
-class IProofOfWorkFactory;
 class UniqueNodeList;
 class IValidations;
 class Validators;
@@ -25,6 +24,7 @@ class LedgerMaster;
 class LoadManager;
 class NetworkOPs;
 class OrderBookDB;
+class ProofOfWorkFactory;
 class SerializedLedgerEntry;
 class TransactionMaster;
 class TXQueue;
@@ -82,9 +82,9 @@ public:
     virtual IFeeVote&               getFeeVote () = 0;
     virtual IHashRouter&            getHashRouter () = 0;
     virtual ILoadFeeTrack&          getFeeTrack () = 0;
-    virtual LoadManager&           getLoadManager () = 0;
-    virtual Peers&                 getPeers () = 0;
-    virtual IProofOfWorkFactory&    getProofOfWorkFactory () = 0;
+    virtual LoadManager&            getLoadManager () = 0;
+    virtual Peers&                  getPeers () = 0;
+    virtual ProofOfWorkFactory&     getProofOfWorkFactory () = 0;
     virtual UniqueNodeList&         getUNL () = 0;
     virtual IValidations&           getValidations () = 0;
 

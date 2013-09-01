@@ -19,6 +19,9 @@ namespace ripple
 #include "tx/OfferCreateTransactor.cpp"
 #include "tx/WalletAddTransactor.cpp"
 #include "misc/ripple_FeeVote.cpp"
+#   include "misc/PowResult.h"
+#  include "misc/ProofOfWork.h"
+# include "misc/ProofOfWorkFactory.h"
 #include "peers/ripple_Peer.cpp"
 
 }

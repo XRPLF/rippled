@@ -253,13 +253,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_ProofOfWork.cpp">
+    <ClCompile Include="..\..\modules\ripple_app\misc\ProofOfWork.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\misc\ripple_ProofOfWorkFactory.cpp">
+    <ClCompile Include="..\..\modules\ripple_app\misc\ProofOfWorkFactory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1381,6 +1381,7 @@
     <ClInclude Include="..\..\modules\ripple_app\main\ripple_LocalCredentials.h" />
     <ClInclude Include="..\..\modules\ripple_app\main\ripple_RippleMain.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\NetworkOPs.h" />
+    <ClInclude Include="..\..\modules\ripple_app\misc\PowResult.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_AccountItem.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_AccountItems.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_AccountState.h" />
@@ -1388,13 +1389,12 @@
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IFeatures.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IFeeVote.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IHashRouter.h" />
-    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IProofOfWorkFactory.h" />
+    <ClInclude Include="..\..\modules\ripple_app\misc\ProofOfWorkFactory.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IValidations.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_NicknameState.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_Offer.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_OrderBook.h" />
-    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_ProofOfWork.h" />
-    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_ProofOfWorkFactory.h" />
+    <ClInclude Include="..\..\modules\ripple_app\misc\ProofOfWork.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_SerializedLedger.h" />
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_SerializedTransaction.h" />
     <ClInclude Include="..\..\modules\ripple_app\node\ripple_HyperLevelDBBackendFactory.h" />
