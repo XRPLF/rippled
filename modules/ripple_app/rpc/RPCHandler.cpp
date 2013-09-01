@@ -3233,7 +3233,8 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, LoadType* loadType, App
         {
             WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("doSubscribe: building: %s") % strUrl);
 
-            RPCSub::pointer rspSub = boost::make_shared<RPCSub> (strUrl, strUsername, strPassword);
+            RPCSub::pointer rspSub = boost::make_shared<RPCSub> (getApp ().getIOService (),
+                getApp ().getJobQueue (), strUrl, strUsername, strPassword);
             ispSub  = mNetOps->addRpcSub (strUrl, boost::dynamic_pointer_cast<InfoSub> (rspSub));
         }
         else

@@ -18,7 +18,9 @@ public:
     typedef boost::shared_ptr<RPCSub>   pointer;
     typedef const pointer&              ref;
 
-    RPCSub (const std::string& strUrl, const std::string& strUsername, const std::string& strPassword);
+    RPCSub (boost::asio::io_service& io_service,
+        JobQueue& jobQueue, const std::string& strUrl,
+            const std::string& strUsername, const std::string& strPassword);
 
     virtual ~RPCSub ()
     {
@@ -46,6 +48,9 @@ protected:
     void    sendThread ();
 
 private:
+    boost::asio::io_service& m_io_service;
+    JobQueue& m_jobQueue;
+
     std::string             mUrl;
     std::string             mIp;
     int                     mPort;

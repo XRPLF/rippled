@@ -6,8 +6,15 @@
 
 SETUP_LOG (RPCSub)
 
-RPCSub::RPCSub (const std::string& strUrl, const std::string& strUsername, const std::string& strPassword)
-    : mUrl (strUrl), mSSL (false), mUsername (strUsername), mPassword (strPassword), mSending (false)
+RPCSub::RPCSub (boost::asio::io_service& io_service, JobQueue& jobQueue,
+    const std::string& strUrl, const std::string& strUsername, const std::string& strPassword)
+    : m_io_service (io_service)
+    , m_jobQueue (jobQueue)
+    , mUrl (strUrl)
+    , mSSL (false)
+    , mUsername (strUsername)
+    , mPassword (strPassword)
+    , mSending (false)
 {
     std::string strScheme;
 
@@ -75,7 +82,7 @@ void RPCSub::sendThread ()
                 WriteLog (lsINFO, RPCSub) << boost::str (boost::format ("callRPC calling: %s") % mIp);
 
                 callRPC (
-                    getApp().getIOService (),
+                    m_io_service,
                     mIp, mPort,
                     mUsername, mPassword,
                     mPath, "event",
@@ -113,7 +120,7 @@ void RPCSub::send (const Json::Value& jvObj, bool broadcast)
 
         WriteLog (lsINFO, RPCSub) << boost::str (boost::format ("callRPC start"));
         
-        getApp().getJobQueue ().addJob (
+        m_jobQueue.addJob (
             jtCLIENT, "RPCSub::sendThread", BIND_TYPE (&RPCSub::sendThread, this));
     }
 }

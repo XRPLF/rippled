@@ -631,7 +631,8 @@ public:
             catch (const std::exception& e)
             {
                 // Must run as directed or exit.
-                WriteLog (lsFATAL, Application) << boost::str (boost::format ("Can not open RPC service: %s") % e.what ());
+                WriteLog (lsFATAL, Application) <<
+                    "Can not open RPC service: " << e.what ();
 
                 exit (3);
             }
