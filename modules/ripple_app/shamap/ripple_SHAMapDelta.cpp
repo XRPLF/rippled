@@ -83,10 +83,10 @@ bool SHAMap::walkBranch (SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, boo
                 if (item->peekData () != otherMapItem->peekData ())
                 {
                     // non-matching items
-                    if (isFirstMap) differences.insert (std::make_pair (otherMapItem->getTag (),
-                                                            std::make_pair (item, otherMapItem)));
-                    else differences.insert (std::make_pair (otherMapItem->getTag (),
-                                                 std::make_pair (otherMapItem, item)));
+                    if (isFirstMap)
+                        differences.insert (std::make_pair (otherMapItem->getTag (), std::make_pair (item, otherMapItem)));
+                    else
+                        differences.insert (std::make_pair (otherMapItem->getTag (), std::make_pair (otherMapItem, item)));
 
                     if (--maxCount <= 0)
                         return false;

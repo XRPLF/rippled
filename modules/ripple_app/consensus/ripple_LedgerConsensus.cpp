@@ -266,7 +266,10 @@ void LedgerConsensus::takeInitialPosition (Ledger& initialLedger)
             boost::unordered_map<uint256, SHAMap::pointer>::iterator iit = mAcquired.find (set);
 
             if (iit != mAcquired.end ())
+            {
+                mCompares.insert(iit->second->getHash());
                 createDisputes (initialSet, iit->second);
+	    }
         }
     }
 
@@ -289,12 +292,15 @@ bool LedgerConsensus::stillNeedTXSet (uint256 const& hash)
 
 void LedgerConsensus::createDisputes (SHAMap::ref m1, SHAMap::ref m2)
 {
+    WriteLog (lsDEBUG, LedgerConsensus) << "createDisputes " << m1->getHash() << " to " << m2->getHash();
     SHAMap::Delta differences;
     m1->compare (m2, differences, 16384);
 
+    int dc = 0;
     typedef std::map<uint256, SHAMap::DeltaItem>::value_type u256_diff_pair;
     BOOST_FOREACH (u256_diff_pair & pos, differences)
     {
+        ++dc;
         // create disputed transactions (from the ledger that has them)
         if (pos.second.first)
         {
@@ -311,6 +317,7 @@ void LedgerConsensus::createDisputes (SHAMap::ref m1, SHAMap::ref m2)
         else // No other disagreement over a transaction should be possible
             assert (false);
     }
+    WriteLog (lsDEBUG, LedgerConsensus) << dc << " differences found";
 }
 
 void LedgerConsensus::mapComplete (uint256 const& hash, SHAMap::ref map, bool acquired)
@@ -350,11 +357,14 @@ void LedgerConsensus::mapComplete (uint256 const& hash, SHAMap::ref map, bool ac
         if (it2 != mAcquired.end ())
         {
             assert ((it2->first == mOurPosition->getCurrentHash ()) && it2->second);
+            mCompares.insert(hash);
             createDisputes (it2->second, map);
         }
         else
             assert (false); // We don't have our own position?!
     }
+    else
+        WriteLog (lsDEBUG, LedgerConsensus) << "Not ready to create disputes";
 
     mAcquired[hash] = map;
     mAcquiring.erase (hash);
@@ -708,6 +718,7 @@ bool LedgerConsensus::haveConsensus (bool forReal)
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
     uint256 ourPosition = mOurPosition->getCurrentHash ();
+
     BOOST_FOREACH (u160_prop_pair & it, mPeerPositions)
     {
         if (!it.second->isBowOut ())
@@ -718,6 +729,18 @@ bool LedgerConsensus::haveConsensus (bool forReal)
             {
                 WriteLog (lsDEBUG, LedgerConsensus) << it.first.GetHex () << " has " << it.second->getCurrentHash ().GetHex ();
                 ++disagree;
+                if (mCompares.count(it.second->getCurrentHash()) == 0)
+                {
+                    uint256 hash = it.second->getCurrentHash();
+                    WriteLog (lsDEBUG, LedgerConsensus) << "We have not compared to " << hash;
+                    boost::unordered_map<uint256, SHAMap::pointer>::iterator it1 = mAcquired.find (hash);
+                    boost::unordered_map<uint256, SHAMap::pointer>::iterator it2 = mAcquired.find (mOurPosition->getCurrentHash ());
+                    if ((it1 != mAcquired.end()) && (it2 != mAcquired.end()) && (it1->second) && (it2->second))
+                    {
+                        mCompares.insert(hash);
+                        createDisputes(it2->second, it1->second);
+                    }
+                }
             }
         }
     }
@@ -742,6 +765,7 @@ SHAMap::pointer LedgerConsensus::getTransactionTree (uint256 const& hash, bool d
 
         if (currentMap->getHash () == hash)
         {
+            WriteLog (lsDEBUG, LedgerConsensus) << "Map " << hash << " is our current";
             currentMap = currentMap->snapShot (false);
             mapComplete (hash, currentMap, false);
             return currentMap;

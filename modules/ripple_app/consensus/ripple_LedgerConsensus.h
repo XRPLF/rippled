@@ -148,6 +148,7 @@ private:
 
     // Disputed transactions
     boost::unordered_map<uint256, DisputedTx::pointer> mDisputes;
+    boost::unordered_set<uint256> mCompares;
 
     // Close time estimates
     std::map<uint32, int> mCloseTimes;
