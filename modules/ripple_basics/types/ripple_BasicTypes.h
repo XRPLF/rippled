@@ -27,4 +27,12 @@ typedef UntrackedMutexType <boost::recursive_mutex> RippleRecursiveMutex;
 typedef boost::recursive_mutex DeprecatedRecursiveMutex;
 typedef DeprecatedRecursiveMutex::scoped_lock DeprecatedScopedLock;
 
+//------------------------------------------------------------------------------
+
+/** A container used to hold a public key in binary format. */
+typedef UnsignedInteger <33> RipplePublicKey;
+
+/** A container holding the hash of a public key in binary format. */
+typedef UnsignedInteger <20> RipplePublicKeyHash;
+
 #endif

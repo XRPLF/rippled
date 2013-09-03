@@ -159,18 +159,6 @@
     <ClCompile Include="..\..\src\cpp\protobuf_core.cpp">
       <Filter>[0] Subtrees\protobuf</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt1.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt2.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt3.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt4.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basics\containers\ripple_RangeSet.cpp">
       <Filter>[1] Ripple\ripple_basics\containers</Filter>
     </ClCompile>
@@ -477,6 +465,18 @@
     <ClCompile Include="..\..\Subtrees\leveldb\port\port_win.cc">
       <Filter>[0] Subtrees\leveldb\port</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt1.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt2.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt3.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt4.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ripple_app_pt5.cpp">
       <Filter>[1] Ripple\ripple_app</Filter>
     </ClCompile>
@@ -528,12 +528,6 @@
     <ClCompile Include="..\..\modules\ripple_app\data\ripple_SqliteDatabase.cpp">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\validator\ripple_Validator.cpp">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\validator\ripple_Validators.cpp">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ledger\Ledger.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
@@ -569,12 +563,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_app\ledger\SerializedValidation.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\validator\ripple_TrustedUriValidatorSource.cpp">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\validator\ripple_StringsValidatorSource.cpp">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_crypto\beast_crypto.cpp">
       <Filter>[0] Subtrees\beast</Filter>
@@ -863,6 +851,18 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\node\NullBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_core\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceStrings.cpp">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedUri.cpp">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\validator\Validator.cpp">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\validator\Validators.cpp">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1286,12 +1286,6 @@
     <ClInclude Include="..\..\modules\ripple_app\data\ripple_SqliteDatabase.h">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_Validator.h">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_Validators.h">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\ledger\Ledger.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
@@ -1328,15 +1322,6 @@
     <ClInclude Include="..\..\modules\ripple_app\ledger\SerializedValidation.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorList.h">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_TrustedUriValidatorSource.h">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_StringsValidatorSource.h">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\functional\ripple_ConfigSections.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
@@ -1371,9 +1356,6 @@
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IHashRouter.h">
-      <Filter>[1] Ripple\ripple_app\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_IValidations.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\misc\ripple_NicknameState.h">
@@ -1498,9 +1480,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\tx\WalletAddTransactor.h">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_core\validator\ripple_ValidatorImp.h">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_app\main\ripple_FatalErrorReporter.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
@@ -1687,6 +1666,24 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\node\NullBackendFactory.h">
       <Filter>[1] Ripple\ripple_core\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_app\misc\ripple_Validations.h">
+      <Filter>[1] Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceStrings.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedUri.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\Validator.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\Validators.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorsImp.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

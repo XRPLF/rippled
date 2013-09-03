@@ -4,19 +4,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_IVALIDATIONS_H
-#define RIPPLE_IVALIDATIONS_H
+#ifndef RIPPLE_VALIDATIONS_H_INCLUDED
+#define RIPPLE_VALIDATIONS_H_INCLUDED
 
-// VFALCO TODO rename and move these typedefs into the IValidations interface
+// VFALCO TODO rename and move these typedefs into the Validations interface
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
 typedef std::pair<int, uint160> currentValidationCount; // nodes validating and highest node ID validating
 
-class IValidations : LeakChecked <IValidations>
+class Validations : LeakChecked <Validations>
 {
 public:
-    static IValidations* New ();
+    static Validations* New ();
 
-    virtual ~IValidations () { }
+    virtual ~Validations () { }
 
     virtual bool addValidation (SerializedValidation::ref, const std::string& source) = 0;
 

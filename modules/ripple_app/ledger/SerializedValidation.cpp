@@ -33,7 +33,7 @@ SerializedValidation::SerializedValidation (
     assert (mNodeID.isNonZero ());
 
     if (!isFull)
-        setFlag (sFullFlag);
+        setFlag (kFullFlag);
 }
 
 void SerializedValidation::sign (const RippleAddress& raPriv)
@@ -98,7 +98,7 @@ RippleAddress SerializedValidation::getSignerPublic () const
 
 bool SerializedValidation::isFull () const
 {
-    return (getFlags () & sFullFlag) != 0;
+    return (getFlags () & kFullFlag) != 0;
 }
 
 Blob SerializedValidation::getSignature () const

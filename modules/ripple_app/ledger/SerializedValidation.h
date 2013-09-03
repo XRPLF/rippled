@@ -17,7 +17,10 @@ public:
     typedef boost::shared_ptr<SerializedValidation>         pointer;
     typedef const boost::shared_ptr<SerializedValidation>&  ref;
 
-    static const uint32 sFullFlag = 0x1;
+    enum
+    {
+        kFullFlag = 0x1
+    };
 
     // These throw if the object is not valid
     SerializedValidation (SerializerIterator & sit, bool checkSignature = true);

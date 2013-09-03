@@ -14,7 +14,6 @@ class IHashRouter;
 class ILoadFeeTrack;
 class Peers;
 class UniqueNodeList;
-class IValidations;
 class Validators;
 
 class NodeStore;
@@ -86,8 +85,7 @@ public:
     virtual Peers&                  getPeers () = 0;
     virtual ProofOfWorkFactory&     getProofOfWorkFactory () = 0;
     virtual UniqueNodeList&         getUNL () = 0;
-    virtual IValidations&           getValidations () = 0;
-
+    virtual Validations&            getValidations () = 0;
     virtual NodeStore&              getNodeStore () = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual InboundLedgers&         getInboundLedgers () = 0;

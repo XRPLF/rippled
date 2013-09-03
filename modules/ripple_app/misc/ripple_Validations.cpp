@@ -4,14 +4,14 @@
 */
 //==============================================================================
 
-class Validations;
+class ValidationsImp;
 
 SETUP_LOG (Validations)
 
 typedef std::map<uint160, SerializedValidation::pointer>::value_type u160_val_pair;
 typedef boost::shared_ptr<ValidationSet> VSpointer;
 
-class Validations : public IValidations
+class ValidationsImp : public Validations
 {
 private:
     typedef RippleMutex LockType;
@@ -45,7 +45,7 @@ private:
     }
 
 public:
-    Validations ()
+    ValidationsImp ()
         : mLock (this, "Validations", __FILE__, __LINE__)
         , mValidations ("Validations", 128, 600), mWriting (false)
     {
@@ -394,7 +394,7 @@ private:
 
         mWriting = true;
         getApp().getJobQueue ().addJob (jtWRITE, "Validations::doWrite",
-                                       BIND_TYPE (&Validations::doWrite, this, P_1));
+                                       BIND_TYPE (&ValidationsImp::doWrite, this, P_1));
     }
 
     void doWrite (Job&)
@@ -443,9 +443,9 @@ private:
     }
 };
 
-IValidations* IValidations::New ()
+Validations* Validations::New ()
 {
-    return new Validations;
+    return new ValidationsImp;
 }
 
 // vim:ts=4

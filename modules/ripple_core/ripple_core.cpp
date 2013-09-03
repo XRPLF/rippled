@@ -46,10 +46,13 @@ namespace ripple
 #include "node/NodeStore.cpp"
 #include "node/NodeObject.cpp"
 
-#include "validator/ripple_Validator.cpp"
-#include "validator/ripple_ValidatorImp.h" // private
-#include "validator/ripple_Validators.cpp"
-#include "validator/ripple_StringsValidatorSource.cpp"
-#include "validator/ripple_TrustedUriValidatorSource.cpp"
+# include "validator/Validator.h"
+#include "validator/Validator.cpp"
+# include "validator/ValidatorSourceStrings.h"
+# include "validator/ValidatorSourceTrustedUri.h"
+# include "validator/ValidatorsImp.h" // private
+#include "validator/ValidatorSourceStrings.cpp"
+#include "validator/ValidatorSourceTrustedUri.cpp"
+#include "validator/Validators.cpp"
 
 }

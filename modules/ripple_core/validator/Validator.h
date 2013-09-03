@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATOR_H_INCLUDED
-#define RIPPLE_VALIDATOR_H_INCLUDED
+#ifndef RIPPLE_CORE_VALIDATOR_VALIDATOR_H_INCLUDED
+#define RIPPLE_CORE_VALIDATOR_VALIDATOR_H_INCLUDED
 
 //------------------------------------------------------------------------------
 
@@ -18,6 +18,8 @@
 class Validator : public SharedObject
 {
 public:
+    typedef SharedObjectPtr <Validator> Ptr;
+
     /** Fixed information on a validator.
 
         This describes a validator.
@@ -41,12 +43,7 @@ public:
             }
         };
 
-        // VFALCO TODO magic number argh!!!
-        //             This type should be located elsewhere.
-        //
-        typedef UnsignedInteger <33> PublicKey;
-
-        PublicKey publicKey;
+        RipplePublicKey publicKey;
         //String friendlyName;
         //String organizationType;
         //String jurisdicton;
@@ -73,10 +70,6 @@ public:
             arrayToSort.swapWith (sorted);
         }
     };
-
-    typedef SharedObjectPtr <Validator> Ptr;
-
-    typedef Info::PublicKey PublicKey;
 
     //--------------------------------------------------------------------------
 
@@ -135,12 +128,12 @@ public:
 
     //--------------------------------------------------------------------------
 
-    explicit Validator (PublicKey const& publicKey);
+    explicit Validator (RipplePublicKey const& publicKey);
 
-    PublicKey const& getPublicKey () const { return m_publicKey; }
+    RipplePublicKey const& getPublicKey () const { return m_publicKey; }
 
 private:
-    PublicKey const m_publicKey;
+    RipplePublicKey const m_publicKey;
 
 };
 

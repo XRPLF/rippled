@@ -78,7 +78,7 @@ namespace ripple
 #include "peers/ripple_Peers.h"
 #include "peers/ripple_ClusterNodeStatus.h"
 #include "peers/ripple_UniqueNodeList.h"
-#include "misc/ripple_IValidations.h"
+#include "misc/ripple_Validations.h"
 #include "peers/ripple_PeerSet.h"
 #include "ledger/ripple_InboundLedger.h"
 #include "ledger/ripple_InboundLedgers.h"

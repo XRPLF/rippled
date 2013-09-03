@@ -1468,6 +1468,19 @@ static void checkValidation (Job&, SerializedValidation::pointer val, bool isTru
 
         std::set<uint64> peers;
 
+        //----------------------------------------------------------------------
+        //
+        {
+            SerializedValidation const& sv (*val);
+            Validators::ReceivedValidation rv;
+            rv.ledgerHash = sv.getLedgerHash ();
+            uint160 const publicKeyHash (sv.getSignerPublic ().getNodeID ());
+            rv.signerPublicKeyHash = RipplePublicKeyHash (publicKeyHash.begin ());
+            getApp ().getValidators ().receiveValidation (rv);
+        }
+        //
+        //----------------------------------------------------------------------
+
         if (getApp().getOPs ().recvValidation (val, source) &&
                 getApp().getHashRouter ().swapSet (signingHash, peers, SF_RELAYED))
         {

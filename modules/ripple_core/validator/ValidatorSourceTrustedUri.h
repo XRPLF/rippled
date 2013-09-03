@@ -4,15 +4,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TRUSTEDURIVALIDATORSOURCE_H_INCLUDED
-#define RIPPLE_TRUSTEDURIVALIDATORSOURCE_H_INCLUDED
+#ifndef RIPPLE_CORE_VALIDATOR_VALIDATORSOURCETRUSTEDURI_H_INCLUDED
+#define RIPPLE_CORE_VALIDATOR_VALIDATORSOURCETRUSTEDURI_H_INCLUDED
 
 /** Provides validators from a trusted URI (e.g. HTTPS)
 */
-class TrustedUriValidatorSource : public Validators::Source
+class ValidatorSourceTrustedUri : public Validators::Source
 {
 public:
-    static TrustedUriValidatorSource* New (String url);
+    static ValidatorSourceTrustedUri* New (String const& uri);
 };
 
 #endif

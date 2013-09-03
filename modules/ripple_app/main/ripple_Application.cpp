@@ -15,7 +15,6 @@ SETUP_LOG (Application)
 class ApplicationImp
     : public Application
     , public SharedSingleton <ApplicationImp>
-    , public Validators::Listener
     , public NodeStore::Scheduler
     , LeakChecked <ApplicationImp>
 {
@@ -168,12 +167,12 @@ public:
             getConfig ().nodeDatabase,
             getConfig ().ephemeralNodeDatabase,
             *this))
-        , m_validators (Validators::New (this))
+        , m_validators (Validators::New ())
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
         , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
         , mFeeTrack (ILoadFeeTrack::New ())
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
-        , mValidations (IValidations::New ())
+        , mValidations (Validations::New ())
         , mUNL (UniqueNodeList::New ())
         , mProofOfWorkFactory (ProofOfWorkFactory::New ())
         , m_loadManager (LoadManager::New ())
@@ -313,7 +312,7 @@ public:
         return *mHashRouter;
     }
 
-    IValidations& getValidations ()
+    Validations& getValidations ()
     {
         return *mValidations;
     }
@@ -697,7 +696,7 @@ private:
     ScopedPointer <IFeeVote> mFeeVote;
     ScopedPointer <ILoadFeeTrack> mFeeTrack;
     ScopedPointer <IHashRouter> mHashRouter;
-    ScopedPointer <IValidations> mValidations;
+    ScopedPointer <Validations> mValidations;
     ScopedPointer <UniqueNodeList> mUNL;
     ScopedPointer <ProofOfWorkFactory> mProofOfWorkFactory;
     ScopedPointer <Peers> m_peers;
@@ -819,43 +818,33 @@ void ApplicationImp::doSweep(Job& j)
 
     logTimedCall <Application> ("TransactionMaster::sweep", __FILE__, __LINE__, boost::bind (
         &TransactionMaster::sweep, &mMasterTransaction));
-    //mMasterTransaction.sweep ();
 
     logTimedCall <Application> ("NodeStore::sweep", __FILE__, __LINE__, boost::bind (
         &NodeStore::sweep, m_nodeStore.get ()));
-    //m_nodeStore->sweep ();
 
     logTimedCall <Application> ("LedgerMaster::sweep", __FILE__, __LINE__, boost::bind (
         &LedgerMaster::sweep, &m_ledgerMaster));
-    //m_ledgerMaster.sweep ();
 
     logTimedCall <Application> ("TempNodeCache::sweep", __FILE__, __LINE__, boost::bind (
         &NodeCache::sweep, &mTempNodeCache));
-    //mTempNodeCache.sweep ();
 
     logTimedCall <Application> ("Validations::sweep", __FILE__, __LINE__, boost::bind (
-        &IValidations::sweep, mValidations.get ()));
-    //mValidations->sweep ();
+        &Validations::sweep, mValidations.get ()));
 
     logTimedCall <Application> ("InboundLedgers::sweep", __FILE__, __LINE__, boost::bind (
         &InboundLedgers::sweep, &getInboundLedgers ()));
-    //getInboundLedgers ().sweep ();
 
     logTimedCall <Application> ("SLECache::sweep", __FILE__, __LINE__, boost::bind (
         &SLECache::sweep, &mSLECache));
-    //mSLECache.sweep ();
 
     logTimedCall <Application> ("AcceptedLedger::sweep", __FILE__, __LINE__,
         &AcceptedLedger::sweep);
-    //AcceptedLedger::sweep (); // VFALCO NOTE AcceptedLedger is/has a singleton?
 
     logTimedCall <Application> ("SHAMap::sweep", __FILE__, __LINE__,
         &SHAMap::sweep);
-    //SHAMap::sweep (); // VFALCO NOTE SHAMap is/has a singleton?
 
     logTimedCall <Application> ("NetworkOPs::sweepFetchPack", __FILE__, __LINE__, boost::bind (
         &NetworkOPs::sweepFetchPack, m_networkOPs.get ()));
-    //m_networkOPs->sweepFetchPack ();
 
     // VFALCO NOTE does the call to sweep() happen on another thread?
     mSweepTimer.expires_from_now (boost::posix_time::seconds (getConfig ().getSize (siSweepInterval)));
