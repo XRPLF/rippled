@@ -33,13 +33,7 @@ struct copyconst
 template <typename T, typename U>
 struct copyconst <T const, U>
 {
-    typedef U const type;
-};
-
-template <typename T, typename U>
-struct copyconst <T const, U const>
-{
-    typedef U type;
+    typedef typename removecv <U>::type const type;
 };
 
 }
