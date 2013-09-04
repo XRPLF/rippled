@@ -1,18 +1,19 @@
 var async       = require('async');
+var assert      = require('assert');
 var extend      = require('extend');
-
 var Amount      = require('ripple-lib').Amount;
 var Remote      = require('ripple-lib').Remote;
-var Server      = require('./server').Server;
 var Transaction = require('ripple-lib').Transaction;
+var Server      = require('./server').Server;
+var server      = { };
 
 function get_config() {
-  var cfg = require('./config-example');
+  var cfg = require(__dirname + '/config-example');
 
   // See if the person testing wants to override the configuration by creating a
   // file called test/config.js.
   try {
-    cfg = extend({}, cfg, require('./config'));
+    cfg = extend({}, cfg, require(__dirname + '/config'));
   } catch (e) { }
 
   return cfg;
@@ -40,7 +41,7 @@ function account_dump(remote, account, callback) {
   request.ledger_hash(remote.ledger_hash());
   request.account_root('root');
   request.callback(function(err, r) {
-    buster.isNull(err);
+    assert(!err, self.what);
     if (err) {
       //console.log('error: %s', m);
       callback(err);
@@ -119,7 +120,10 @@ function build_setup(opts, host) {
 
         data.server = Server.from_config(host, server_config, !!opts.verbose_server);
 
-        data.server.once('started', callback);
+        data.server.once('started', function() {
+          callback();
+        });
+
         data.server.once('exited', function () {
           // If know the remote, tell it server is gone.
           if (self.remote) {
@@ -127,12 +131,15 @@ function build_setup(opts, host) {
           }
         });
 
+        server[host] = data.server;
         data.server.start();
       },
 
       function connect_websocket(callback) {
         self.remote = data.remote = Remote.from_config(host, !!opts.verbose_ws);
-        self.remote.once('ledger_closed', callback);
+        self.remote.once('ledger_closed', function(ledger) {
+          callback();
+        });
         self.remote.connect();
       }
     ];
@@ -158,21 +165,22 @@ function build_teardown(host) {
 
     var series = [
       function disconnect_websocket(callback) {
-      data.remote.once('disconnected', callback)
-      data.remote.once('error', function (m) {
-        console.log('server error: ', m);
-      })
-      data.remote.connect(false);
-    },
+        data.remote.once('disconnected', callback)
+        data.remote.once('error', function (m) {
+          //console.log('server error: ', m);
+        })
+        data.remote.connect(false);
+      },
 
-    function stop_server(callback) {
-      if (opts.no_server) {
-        callback();
-      } else {
-        data.server.once('stopped', callback)
-        data.server.stop();
+      function stop_server(callback) {
+        if (opts.no_server) {
+          callback();
+        } else {
+          data.server.once('stopped', callback)
+          data.server.stop();
+          delete server[host];
+        }
       }
-    }
     ];
 
     async.series(series, done);
@@ -196,12 +204,12 @@ function create_accounts(remote, src, amount, accounts, callback) {
     tx.payment(src, account, amount);
 
     tx.once('proposed', function (m) {
-      // console.log('proposed: %s', JSON.stringify(m));
+      //console.log('proposed: %s', JSON.stringify(m));
       callback(m.engine_result === 'tesSUCCESS' ? null : new Error());
     });
 
     tx.once('error', function (m) {
-      // console.log('error: %s', JSON.stringify(m));
+      //console.log('error: %s', JSON.stringify(m));
       callback(m);
     });
 
@@ -220,9 +228,9 @@ function credit_limit(remote, src, amount, callback) {
   }
 
   // console.log('credit_limit: parsed: %s', JSON.stringify(_m, undefined, 2));
-  var account_limit  = _m[1];
-  var quality_in     = _m[2];
-  var quality_out    = _m[3];
+  var account_limit = _m[1];
+  var quality_in    = _m[2];
+  var quality_out   = _m[3];
 
   var tx = remote.transaction()
 
@@ -269,9 +277,9 @@ function verify_limit(remote, src, amount, callback) {
     if (err) {
       callback(err);
     } else {
-      buster.assert(m.account_limit.equals(limit));
-      buster.assert(isNaN(quality_in) || m.account_quality_in === quality_in);
-      buster.assert(isNaN(quality_out) || m.account_quality_out === quality_out);
+      assert(m.account_limit.equals(limit));
+      assert(isNaN(quality_in) || m.account_quality_in === quality_in);
+      assert(isNaN(quality_out) || m.account_quality_out === quality_out);
       callback(null);
     }
   });
@@ -321,7 +329,6 @@ function payment(remote, src, dst, amount, callback) {
     // console.log('error: %s', JSON.stringify(m));
     callback(m);
   });
-
   tx.submit();
 };
 
@@ -348,7 +355,7 @@ function payments(remote, balances, callback) {
 };
 
 function transfer_rate(remote, src, billionths, callback) {
-  assert(arguments.length === 4);
+  assert.strictEqual(arguments.length, 4);
 
   var tx = remote.transaction();
   tx.account_set(src);
@@ -517,5 +524,11 @@ exports.verify_offer            = verify_offer;
 exports.verify_offer_not_found  = verify_offer_not_found;
 exports.verify_owner_count      = verify_owner_count;
 exports.verify_owner_counts     = verify_owner_counts;
+
+process.on('uncaughtException', function() {
+  Object.keys(server).forEach(function(host) {
+    server[host].stop();
+  });
+});
 
 // vim:sw=2:sts=2:ts=8:et
