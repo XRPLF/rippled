@@ -235,20 +235,19 @@ int RippleMain::run (int argc, char const* const* argv)
 
     // At exit, reports all memory blocks which have not been freed.
     //
-#if 1
-    Debug::setHeapReportLeaks (false);
-
+#if RIPPLE_DUMP_LEAKS_ON_EXIT
+    Debug::setHeapReportLeaks (true);
 #else
-    // This is some temporary leak checking test code
-    //
     Debug::setHeapReportLeaks (false);
+#endif
 
+#if 0
+    // This is some temporary leak checking test code
+    Debug::setHeapReportLeaks (false);
     //malloc (512); // Any leaks before this line in the output are from static initializations.
-
     ThreadWithCallQueue t ("test");
     GlobalPagedFreeStore::getInstance ();
     t.start ();
-
     return 0;
 #endif
 

@@ -147,6 +147,14 @@
 //#define RIPPLE_VERIFY_NODEOBJECT_KEYS 1
 #endif
 
+/** Config: RIPPLE_DUMP_LEAKS_ON_EXIT
+    Displays heap blocks and counted objects which were not disposed of
+    during exit.
+*/
+#ifndef RIPPLE_DUMP_LEAKS_ON_EXIT
+#define RIPPLE_DUMP_LEAKS_ON_EXIT 1
+#endif
+
 /** Config: RIPPLE_TRACK_MUTEXES
     Turns on a feature that enables tracking and diagnostics for mutex
     and recursive mutex objects. This affects the type of lock used

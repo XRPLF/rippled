@@ -6,6 +6,7 @@ Vinnie's List: Changes day to day, descending priority
 - Full review of config docs / settings for RPC/WS
 - Fix RPCDoor to respect config setting for [rpc_secure]
 - Remove addRpcSub, findRpcSub, and notify the appropriate partner(s)
+- Make RPCHandler/Server asynchronous
 - PeerFinder collaboration with Nikolaos
 - beast::Socket integration in Ripple
 - Configuration list for Jenkins
