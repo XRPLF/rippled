@@ -1940,6 +1940,15 @@ Json::Value RPCHandler::doLedger (Json::Value params, LoadType* loadType, Applic
     return ret;
 }
 
+// Temporary switching code until the old account_tx is removed
+Json::Value RPCHandler::doAccountTxSwitch (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
+{
+    if (params.isMember("offset") || params.isMember("count") || params.isMember("descending") ||
+            params.isMember("ledger_max") || params.isMember("ledger_min"))
+        return doAccountTxOld(params, loadType, masterLockHolder);
+    return doAccountTx(params, loadType, masterLockHolder);
+}
+
 // {
 //   account: account,
 //   ledger_index_min: ledger_index,
@@ -1950,7 +1959,7 @@ Json::Value RPCHandler::doLedger (Json::Value params, LoadType* loadType, Applic
 //   offset: integer,              // optional, defaults to 0
 //   limit: integer                // optional
 // }
-Json::Value RPCHandler::doAccountTransactions (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value RPCHandler::doAccountTxOld (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
     RippleAddress   raAccount;
     uint32          offset      = params.isMember ("offset") ? params["offset"].asUInt () : 0;
@@ -2100,7 +2109,7 @@ Json::Value RPCHandler::doAccountTransactions (Json::Value params, LoadType* loa
 //   fwd_marker: opaque,             // optional, resume forward
 //   rev_marker: opaque              // optional, resume reverse
 // }
-Json::Value RPCHandler::doTxAccount (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value RPCHandler::doAccountTx (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
     RippleAddress   raAccount;
     int             limit       = params.isMember ("limit") ? params["limit"].asUInt () : -1;
@@ -3754,7 +3763,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {   "account_info",         &RPCHandler::doAccountInfo,         false,  optCurrent  },
         {   "account_lines",        &RPCHandler::doAccountLines,        false,  optCurrent  },
         {   "account_offers",       &RPCHandler::doAccountOffers,       false,  optCurrent  },
-        {   "account_tx",           &RPCHandler::doAccountTransactions, false,  optNetwork  },
+        {   "account_tx",           &RPCHandler::doAccountTxSwitch,     false,  optNetwork  },
         {   "book_offers",          &RPCHandler::doBookOffers,          false,  optCurrent  },
         {   "connect",              &RPCHandler::doConnect,             true,   optNone     },
         {   "consensus_info",       &RPCHandler::doConsensusInfo,       true,   optNone     },
@@ -3789,7 +3798,6 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {   "stop",                 &RPCHandler::doStop,                true,   optNone     },
         {   "transaction_entry",    &RPCHandler::doTransactionEntry,    false,  optCurrent  },
         {   "tx",                   &RPCHandler::doTx,                  false,  optNetwork  },
-        {   "tx_account",           &RPCHandler::doTxAccount,           false,  optNetwork  },
         {   "tx_history",           &RPCHandler::doTxHistory,           false,  optNone     },
 
         {   "unl_add",              &RPCHandler::doUnlAdd,              true,   optNone     },

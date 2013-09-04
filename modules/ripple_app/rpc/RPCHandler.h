@@ -84,7 +84,9 @@ private:
     Json::Value doAccountInfo           (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doAccountLines          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doAccountOffers         (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
-    Json::Value doAccountTransactions   (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doAccountTx             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doAccountTxSwitch       (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doAccountTxOld          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doBookOffers            (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doConnect               (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doConsensusInfo         (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
@@ -122,7 +124,6 @@ private:
     Json::Value doSubscribe             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doTransactionEntry      (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doTx                    (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
-    Json::Value doTxAccount             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doTxHistory             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doUnlAdd                (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doUnlDelete             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
