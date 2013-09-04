@@ -69,6 +69,16 @@
     <None Include="..\..\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\beast\intrusive\ForwardList.h" />
+    <ClInclude Include="..\..\beast\intrusive\PointerTraits.h" />
+    <ClInclude Include="..\..\beast\mpl.h" />
+    <ClInclude Include="..\..\beast\mpl\AddConst.h" />
+    <ClInclude Include="..\..\beast\mpl\IfConst.h" />
+    <ClInclude Include="..\..\beast\mpl\PointerToOther.h" />
+    <ClInclude Include="..\..\beast\mpl\RemoveConst.h" />
+    <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h" />
+    <ClInclude Include="..\..\beast\mpl\RemoveReference.h" />
+    <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\beast_ComposedAsyncOperation.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\beast_SharedHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\beast_SharedHandlerAllocator.h" />

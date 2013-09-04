@@ -164,6 +164,15 @@
     <Filter Include="beast_core\containers\detail">
       <UniqueIdentifier>{08ec13ba-4058-4ad7-afbb-cbb1c6e2fc4a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast">
+      <UniqueIdentifier>{92d1bb42-289a-4444-85c7-cb87540f2fff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\intrusive">
+      <UniqueIdentifier>{8832eb52-53f9-4850-8dc9-1d579a386a0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\mpl">
+      <UniqueIdentifier>{5904368f-a0f2-4d26-a031-8cbe4448dc3f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -940,6 +949,36 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\text\StringFromNumber.h">
       <Filter>beast_core\text</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\intrusive\ForwardList.h">
+      <Filter>beast\intrusive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\intrusive\PointerTraits.h">
+      <Filter>beast\intrusive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\RemoveConst.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\RemoveReference.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\AddConst.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\IfConst.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\PointerToOther.h">
+      <Filter>beast\mpl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
