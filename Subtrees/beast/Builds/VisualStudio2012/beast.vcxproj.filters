@@ -935,6 +935,12 @@
     <ClInclude Include="..\..\modules\beast_core\containers\detail\removecv.h">
       <Filter>beast_core\containers\detail</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\text\StringCharPointerType.h">
+      <Filter>beast_core\text</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\text\StringFromNumber.h">
+      <Filter>beast_core\text</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">

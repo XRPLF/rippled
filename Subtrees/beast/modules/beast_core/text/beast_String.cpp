@@ -235,13 +235,24 @@ private:
 StringHolder StringHolder::empty;
 const String String::empty;
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
+StringCharPointerType NumberToStringConverters::createFromFixedLength (
+    const char* const src, const size_t numChars)
+{
+    return StringHolder::createFromFixedLength (src, numChars);
+}
+
+//------------------------------------------------------------------------------
+
 void String::preallocateBytes (const size_t numBytesNeeded)
 {
-    text = StringHolder::makeUniqueWithByteSize (text, numBytesNeeded + sizeof (CharPointerType::CharType));
+    text = StringHolder::makeUniqueWithByteSize (
+        text, numBytesNeeded + sizeof (CharPointerType::CharType));
 }
 
 //==============================================================================
+
 String::String() noexcept  : text (StringHolder::getEmpty())
 {
 }
@@ -356,130 +367,7 @@ String String::charToString (const beast_wchar character)
 }
 
 //==============================================================================
-namespace NumberToStringConverters
-{
-    enum
-    {
-        charsNeededForInt = 32,
-        charsNeededForDouble = 48
-    };
 
-    template <typename Type>
-    static char* printDigits (char* t, Type v) noexcept
-    {
-        *--t = 0;
-
-        do
-        {
-            *--t = '0' + (char) (v % 10);
-            v /= 10;
-
-        } while (v > 0);
-
-        return t;
-    }
-
-#ifdef _MSC_VER
-#pragma warning (push)
-#pragma warning (disable: 4127) // conditional expression is constant
-#pragma warning (disable: 4146) // unary minus operator applied to unsigned type, result still unsigned
-#endif
-    // pass in a pointer to the END of a buffer..
-    template <typename IntegerType>
-    static char* numberToString (char* t, IntegerType const n) noexcept
-    {
-        if (std::numeric_limits <IntegerType>::is_signed)
-        {
-            if (n >= 0)
-                return printDigits (t, static_cast <uint64> (n));
-
-            // NB: this needs to be careful not to call -std::numeric_limits<int64>::min(),
-            // which has undefined behaviour
-            t = printDigits (t, static_cast <uint64> (-(n + 1)) + 1);
-            *--t = '-';
-            return t;
-        }
-        return printDigits (t, n);
-    }
-#ifdef _MSC_VER
-#pragma warning (pop)
-#endif
-
-    struct StackArrayStream  : public std::basic_streambuf<char, std::char_traits<char> >
-    {
-        explicit StackArrayStream (char* d)
-        {
-            imbue (std::locale::classic());
-            setp (d, d + charsNeededForDouble);
-        }
-
-        size_t writeDouble (double n, int numDecPlaces)
-        {
-            {
-                std::ostream o (this);
-
-                if (numDecPlaces > 0)
-                    o.precision ((std::streamsize) numDecPlaces);
-
-                o << n;
-            }
-
-            return (size_t) (pptr() - pbase());
-        }
-    };
-
-    static char* doubleToString (char* buffer, const int numChars, double n, int numDecPlaces, size_t& len) noexcept
-    {
-        if (numDecPlaces > 0 && numDecPlaces < 7 && n > -1.0e20 && n < 1.0e20)
-        {
-            char* const end = buffer + numChars;
-            char* t = end;
-            int64 v = (int64) (pow (10.0, numDecPlaces) * std::abs (n) + 0.5);
-            *--t = (char) 0;
-
-            while (numDecPlaces >= 0 || v > 0)
-            {
-                if (numDecPlaces == 0)
-                    *--t = '.';
-
-                *--t = (char) ('0' + (v % 10));
-
-                v /= 10;
-                --numDecPlaces;
-            }
-
-            if (n < 0)
-                *--t = '-';
-
-            len = (size_t) (end - t - 1);
-            return t;
-        }
-
-        StackArrayStream strm (buffer);
-        len = strm.writeDouble (n, numDecPlaces);
-        bassert (len <= charsNeededForDouble);
-        return buffer;
-    }
-
-    template <typename IntegerType>
-    static String::CharPointerType createFromInteger (const IntegerType number)
-    {
-        char buffer [charsNeededForInt];
-        char* const end = buffer + numElementsInArray (buffer);
-        char* const start = numberToString (end, number);
-        return StringHolder::createFromFixedLength (start, (size_t) (end - start - 1));
-    }
-
-    static String::CharPointerType createFromDouble (const double number, const int numberOfDecimalPlaces)
-    {
-        char buffer [charsNeededForDouble];
-        size_t len;
-        char* const start = doubleToString (buffer, numElementsInArray (buffer), (double) number, numberOfDecimalPlaces, len);
-        return StringHolder::createFromFixedLength (start, len);
-    }
-}
-
-//==============================================================================
 String::String (const int number)            : text (NumberToStringConverters::createFromInteger (number)) {}
 String::String (const unsigned int number)   : text (NumberToStringConverters::createFromInteger (number)) {}
 String::String (const short number)          : text (NumberToStringConverters::createFromInteger ((int) number)) {}
@@ -491,40 +379,6 @@ String::String (const float number)          : text (NumberToStringConverters::c
 String::String (const double number)         : text (NumberToStringConverters::createFromDouble (number, 0)) {}
 String::String (const float number, const int numberOfDecimalPlaces)   : text (NumberToStringConverters::createFromDouble ((double) number, numberOfDecimalPlaces)) {}
 String::String (const double number, const int numberOfDecimalPlaces)  : text (NumberToStringConverters::createFromDouble (number, numberOfDecimalPlaces)) {}
-
-template <typename Number>
-String String::fromNumber (Number number, int)
-{
-    return String (NumberToStringConverters::createFromInteger <Number> (number), FromNumber ());
-}
-
-template <>
-String String::fromNumber <float> (float number, int numberOfDecimalPlaces)
-{
-    if (numberOfDecimalPlaces == 0)
-        number = std::floor (number);
-
-    return String (NumberToStringConverters::createFromDouble (
-        number, numberOfDecimalPlaces));
-}
-
-template <>
-String String::fromNumber <double> (double number, int numberOfDecimalPlaces)
-{
-    if (numberOfDecimalPlaces == 0)
-        number = std::floor (number);
-
-    return String (NumberToStringConverters::createFromDouble (
-        number, numberOfDecimalPlaces));
-}
-
-template String String::fromNumber <int16> (int16, int);
-template String String::fromNumber <int32> (int32, int);
-template String String::fromNumber <int64> (int64, int);
-template String String::fromNumber <uint16> (uint16, int);
-template String String::fromNumber <uint32> (uint32, int);
-template String String::fromNumber <uint64> (uint64, int);
-template String String::fromNumber <std::size_t> (std::size_t, int);
 
 //==============================================================================
 int String::length() const noexcept
