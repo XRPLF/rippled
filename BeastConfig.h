@@ -166,4 +166,11 @@
 #define RIPPLE_PEER_USES_BEAST_MULTISOCKET 0
 #endif
 
+// Here temporarily to turn off new Validations code while it
+// is being written.
+//
+#ifndef RIPPLE_USE_NEW_VALIDATIONS
+#define RIPPLE_USE_NEW_VALIDATIONS 0
+#endif
+
 #endif
