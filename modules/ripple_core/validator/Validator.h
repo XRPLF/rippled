@@ -18,7 +18,7 @@
 class Validator : public SharedObject
 {
 public:
-    typedef SharedObjectPtr <Validator> Ptr;
+    typedef SharedPtr <Validator> Ptr;
 
     /** Fixed information on a validator.
 
@@ -93,7 +93,7 @@ public:
     class List : public SharedObject
     {
     public:
-        typedef SharedObjectPtr <List> Ptr;
+        typedef SharedPtr <List> Ptr;
 
         explicit List (SharedObjectArray <Validator>& list)
         {

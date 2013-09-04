@@ -24,9 +24,6 @@
 #ifndef BEAST_WEAKREFERENCE_H_INCLUDED
 #define BEAST_WEAKREFERENCE_H_INCLUDED
 
-#include "beast_SharedObject.h"
-
-
 //==============================================================================
 /**
     This class acts as a pointer which will automatically become null if the object
@@ -142,7 +139,7 @@ public:
         ObjectType* volatile owner;
     };
 
-    typedef SharedObjectPtr<SharedPointer> SharedRef;
+    typedef SharedPtr<SharedPointer> SharedRef;
 
     //==============================================================================
     /**

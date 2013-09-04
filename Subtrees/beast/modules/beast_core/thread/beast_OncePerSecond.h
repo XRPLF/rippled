@@ -48,7 +48,7 @@ protected:
 
 private:
     class TimerSingleton;
-    typedef SharedObjectPtr <TimerSingleton> TimerPtr;
+    typedef SharedPtr <TimerSingleton> TimerPtr;
 
     struct Elem : List <Elem>::Node
     {

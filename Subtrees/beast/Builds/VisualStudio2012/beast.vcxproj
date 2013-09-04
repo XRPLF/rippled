@@ -194,12 +194,13 @@
     <ClInclude Include="..\..\modules\beast_core\memory\beast_OptionalScopedPointer.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_PagedFreeStore.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_RecycledObjectPool.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_SharedObject.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedObject.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ScopedPointer.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_SharedSingleton.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_StaticObject.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_Uncopyable.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_WeakReference.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedPtr.h" />
     <ClInclude Include="..\..\modules\beast_core\misc\beast_Main.h" />
     <ClInclude Include="..\..\modules\beast_core\misc\beast_Result.h" />
     <ClInclude Include="..\..\modules\beast_core\misc\beast_Uuid.h" />

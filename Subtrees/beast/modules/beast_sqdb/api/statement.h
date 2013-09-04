@@ -95,7 +95,7 @@ private:
     void clean_up();
 
 private:
-    SharedObjectPtr <detail::statement_imp> m_imp;
+    SharedPtr <detail::statement_imp> m_imp;
 };
 
 }

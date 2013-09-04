@@ -58,7 +58,7 @@ public:
     class ChosenList : public SharedObject
     {
     public:
-        typedef SharedObjectPtr <ChosenList> Ptr;
+        typedef SharedPtr <ChosenList> Ptr;
         
         struct Info
         {
