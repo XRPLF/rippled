@@ -100,36 +100,48 @@ public:
 
     //--------------------------------------------------------------------------
 
+    void doScore ()
+    {
+        mtpScoreNext    = boost::posix_time::ptime (boost::posix_time::not_a_date_time); // Timer not set.
+        mtpScoreStart   = boost::posix_time::second_clock::universal_time ();           // Scoring.
+
+        WriteLog (lsTRACE, UniqueNodeList) << "Scoring: Start";
+
+        scoreCompute ();
+
+        WriteLog (lsTRACE, UniqueNodeList) << "Scoring: End";
+
+        // Save update time.
+        mtpScoreUpdated = mtpScoreStart;
+        miscSave ();
+
+        mtpScoreStart   = boost::posix_time::ptime (boost::posix_time::not_a_date_time); // Not scoring.
+
+        // Score again if needed.
+        scoreNext (false);
+
+        // Scan may be dirty due to new ips.
+        getApp().getPeers ().scanRefresh ();
+    }
+
+    void doFetch ()
+    {
+        // Time to check for another fetch.
+        WriteLog (lsTRACE, UniqueNodeList) << "fetchTimerHandler";
+        fetchNext ();
+    }
+
     void onDeadlineTimer (DeadlineTimer& timer)
     {
         if (timer == m_scoreTimer)
         {
-            mtpScoreNext    = boost::posix_time::ptime (boost::posix_time::not_a_date_time); // Timer not set.
-            mtpScoreStart   = boost::posix_time::second_clock::universal_time ();           // Scoring.
-
-            WriteLog (lsTRACE, UniqueNodeList) << "Scoring: Start";
-
-            scoreCompute ();
-
-            WriteLog (lsTRACE, UniqueNodeList) << "Scoring: End";
-
-            // Save update time.
-            mtpScoreUpdated = mtpScoreStart;
-            miscSave ();
-
-            mtpScoreStart   = boost::posix_time::ptime (boost::posix_time::not_a_date_time); // Not scoring.
-
-            // Score again if needed.
-            scoreNext (false);
-
-            // Scan may be dirty due to new ips.
-            getApp().getPeers ().scanRefresh ();
+            getApp().getJobQueue ().addJob (jtUNL, "UNL.score",
+                BIND_TYPE (&UniqueNodeListImp::doScore, this));
         }
         else if (timer == m_fetchTimer)
         {
-            // Time to check for another fetch.
-            WriteLog (lsTRACE, UniqueNodeList) << "fetchTimerHandler";
-            fetchNext ();
+            getApp().getJobQueue ().addJob (jtUNL, "UNL.fetch",
+                BIND_TYPE (&UniqueNodeListImp::doFetch, this));
         }
     }
 

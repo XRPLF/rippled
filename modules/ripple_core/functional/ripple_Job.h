@@ -23,17 +23,18 @@ enum JobType
     jtUPDATE_PF     = 8,    // Update pathfinding requests
     jtCLIENT        = 9,    // A websocket command from the client
     jtTRANSACTION   = 10,   // A transaction received from the network
-    jtADVANCE       = 11,   // Advance validated/acquired ledgers
-    jtPUBLEDGER     = 12,   // Publish a fully-accepted ledger
-    jtTXN_DATA      = 13,   // Fetch a proposed set
-    jtWAL           = 14,   // Write-ahead logging
-    jtVALIDATION_t  = 15,   // A validation from a trusted source
-    jtWRITE         = 16,   // Write out hashed objects
-    jtPROPOSAL_t    = 17,   // A proposal from a trusted source
-    jtSWEEP         = 18,   // Sweep for stale structures
-    jtNETOP_CLUSTER = 19,   // NetworkOPs cluster peer report
-    jtNETOP_TIMER   = 20,   // NetworkOPs net timer processing
-    jtADMIN         = 21,   // An administrative operation
+    jtUNL           = 11,   // A Score or Fetch of the UNL (DEPRECATED)
+    jtADVANCE       = 12,   // Advance validated/acquired ledgers
+    jtPUBLEDGER     = 13,   // Publish a fully-accepted ledger
+    jtTXN_DATA      = 14,   // Fetch a proposed set
+    jtWAL           = 15,   // Write-ahead logging
+    jtVALIDATION_t  = 16,   // A validation from a trusted source
+    jtWRITE         = 17,   // Write out hashed objects
+    jtPROPOSAL_t    = 18,   // A proposal from a trusted source
+    jtSWEEP         = 19,   // Sweep for stale structures
+    jtNETOP_CLUSTER = 20,   // NetworkOPs cluster peer report
+    jtNETOP_TIMER   = 21,   // NetworkOPs net timer processing
+    jtADMIN         = 22,   // An administrative operation
 
     // special types not dispatched by the job pool
     jtPEER          = 24,
