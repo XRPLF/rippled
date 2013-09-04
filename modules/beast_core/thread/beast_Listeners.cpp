@@ -106,7 +106,7 @@ struct ListenersBase::Proxy::Entry : Entries::Node,
         SharedObject,
         AllocatedBy <AllocatorType>
 {
-    typedef SharedObjectPtr <Entry> Ptr;
+    typedef SharedPtr <Entry> Ptr;
 
     explicit Entry (Group* g)
         : group (g)

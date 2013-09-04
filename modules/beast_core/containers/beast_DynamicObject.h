@@ -25,7 +25,6 @@
 #define BEAST_DYNAMICOBJECT_H_INCLUDED
 
 #include "beast_NamedValueSet.h"
-#include "../memory/beast_SharedObject.h"
 
 
 //==============================================================================
@@ -50,7 +49,7 @@ public:
     /** Destructor. */
     virtual ~DynamicObject();
 
-    typedef SharedObjectPtr<DynamicObject> Ptr;
+    typedef SharedPtr<DynamicObject> Ptr;
 
     //==============================================================================
     /** Returns true if the object has a property with this name.

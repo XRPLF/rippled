@@ -30,20 +30,20 @@ public:
 
     virtual Type getType() const noexcept = 0;
     virtual Term* clone() const = 0;
-    virtual SharedObjectPtr<Term> resolve (const Scope&, int recursionDepth) = 0;
+    virtual SharedPtr<Term> resolve (const Scope&, int recursionDepth) = 0;
     virtual String toString() const = 0;
     virtual double toDouble() const                                          { return 0; }
     virtual int getInputIndexFor (const Term*) const                         { return -1; }
     virtual int getOperatorPrecedence() const                                { return 0; }
     virtual int getNumInputs() const                                         { return 0; }
     virtual Term* getInput (int) const                                       { return nullptr; }
-    virtual SharedObjectPtr<Term> negated();
+    virtual SharedPtr<Term> negated();
 
-    virtual SharedObjectPtr<Term> createTermToEvaluateInput (const Scope&, const Term* /*inputTerm*/,
+    virtual SharedPtr<Term> createTermToEvaluateInput (const Scope&, const Term* /*inputTerm*/,
                                                                        double /*overallTarget*/, Term* /*topLevelTerm*/) const
     {
         bassertfalse;
-        return SharedObjectPtr<Term>();
+        return SharedPtr<Term>();
     }
 
     virtual String getName() const
@@ -76,7 +76,7 @@ public:
 //==============================================================================
 struct Expression::Helpers
 {
-    typedef SharedObjectPtr<Term> TermPtr;
+    typedef SharedPtr<Term> TermPtr;
 
     static void checkRecursionDepth (const int depth)
     {
@@ -929,13 +929,13 @@ Expression& Expression::operator= (const Expression& other)
 
 #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
 Expression::Expression (Expression&& other) noexcept
-    : term (static_cast <SharedObjectPtr<Term>&&> (other.term))
+    : term (static_cast <SharedPtr<Term>&&> (other.term))
 {
 }
 
 Expression& Expression::operator= (Expression&& other) noexcept
 {
-    term = static_cast <SharedObjectPtr<Term>&&> (other.term);
+    term = static_cast <SharedPtr<Term>&&> (other.term);
     return *this;
 }
 #endif
@@ -1077,7 +1077,7 @@ int Expression::getNumInputs() const                    { return term->getNumInp
 Expression Expression::getInput (int index) const       { return Expression (term->getInput (index)); }
 
 //==============================================================================
-SharedObjectPtr<Expression::Term> Expression::Term::negated()
+SharedPtr<Expression::Term> Expression::Term::negated()
 {
     return new Helpers::Negate (this);
 }

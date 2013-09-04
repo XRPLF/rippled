@@ -24,7 +24,6 @@
 #ifndef BEAST_EXPRESSION_H_INCLUDED
 #define BEAST_EXPRESSION_H_INCLUDED
 
-#include "../memory/beast_SharedObject.h"
 #include "../containers/beast_Array.h"
 #include "../memory/beast_ScopedPointer.h"
 
@@ -260,8 +259,8 @@ private:
     friend class Term;
     friend struct Helpers;
     friend class ScopedPointer<Term>;
-    friend class SharedObjectPtr<Term>;
-    SharedObjectPtr<Term> term;
+    friend class SharedPtr<Term>;
+    SharedPtr<Term> term;
 
     explicit Expression (Term*);
 };

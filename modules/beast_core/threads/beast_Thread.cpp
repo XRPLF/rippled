@@ -52,7 +52,7 @@ struct CurrentThreadHolder : public SharedObject
 {
     CurrentThreadHolder() noexcept {}
 
-    typedef SharedObjectPtr <CurrentThreadHolder> Ptr;
+    typedef SharedPtr <CurrentThreadHolder> Ptr;
     ThreadLocalValue<Thread*> value;
 };
 

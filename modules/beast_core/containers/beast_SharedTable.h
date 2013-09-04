@@ -159,7 +159,7 @@ private:
     class Data : public SharedObject
     {
     public:
-        typedef SharedObjectPtr <Data> Ptr;
+        typedef SharedPtr <Data> Ptr;
 
         explicit Data (int numEntries)
             : m_numEntries (numEntries)
@@ -200,7 +200,7 @@ private:
     {
     }
 
-    SharedObjectPtr <Data> m_data;
+    SharedPtr <Data> m_data;
 };
 
 template <class ElementType>

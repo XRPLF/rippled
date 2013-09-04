@@ -24,7 +24,6 @@
 #ifndef BEAST_SHAREDOBJECTARRAY_H_INCLUDED
 #define BEAST_SHAREDOBJECTARRAY_H_INCLUDED
 
-#include "../memory/beast_SharedObject.h"
 #include "beast_ArrayAllocationBase.h"
 #include "beast_ElementComparator.h"
 #include "../threads/beast_CriticalSection.h"
@@ -47,7 +46,7 @@ template <class ObjectClass, class TypeOfCriticalSectionToUse = DummyCriticalSec
 class SharedObjectArray
 {
 public:
-    typedef SharedObjectPtr<ObjectClass> ObjectClassPtr;
+    typedef SharedPtr<ObjectClass> ObjectClassPtr;
 
     //==============================================================================
     /** Creates an empty array.

@@ -560,9 +560,6 @@
     <ClInclude Include="..\..\modules\beast_core\time\beast_PerformedAtExit.h">
       <Filter>beast_core\time</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_SharedObject.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
@@ -979,6 +976,12 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\PointerToOther.h">
       <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedPtr.h">
+      <Filter>beast_core\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedObject.h">
+      <Filter>beast_core\memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
