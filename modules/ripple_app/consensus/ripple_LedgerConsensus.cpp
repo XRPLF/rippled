@@ -1002,7 +1002,7 @@ void LedgerConsensus::beginAccept (bool synchronous)
     if (synchronous)
         accept (consensusSet, LoadEvent::pointer ());
     else
-    {
+    { // FIXME: Post to JobQueue, not I/O service
         getApp().getIOService ().post (BIND_TYPE (&LedgerConsensus::accept, shared_from_this (), consensusSet,
                                       getApp().getJobQueue ().getLoadEvent (jtACCEPTLEDGER, "LedgerConsensus::beginAccept")));
     }
