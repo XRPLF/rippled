@@ -218,6 +218,13 @@ Some files contain portions of these external projects, licensed separately:
 #undef _aligned_msize
 #endif
 
+//------------------------------------------------------------------------------
+
+// New header-only library modeled more closely according to boost
+#include "../../beast/intrusive/ForwardList.h"
+
+//------------------------------------------------------------------------------
+
 namespace beast
 {
 
@@ -444,7 +451,5 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #if BEAST_MSVC
 #pragma warning (pop)
 #endif
-
-//------------------------------------------------------------------------------
 
 #endif
