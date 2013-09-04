@@ -18,8 +18,7 @@ buster.testCase("Offer tests", {
   // 'setUp'     : testutils.build_setup({ verbose: true, standalone: true }),
   'tearDown'  : testutils.build_teardown(),
 
-  "offer create then cancel in one ledger" :
-    function (done) {
+  "offer create then cancel in one ledger" : function (done) {
       var self = this;
       var final_create;
 
@@ -27,9 +26,9 @@ buster.testCase("Offer tests", {
           function (callback) {
             self.remote.transaction()
               .offer_create("root", "500", "100/USD/root")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS', m);
+                  callback(m.engine_result !== 'tesSUCCESS', m);
                 })
               .on('final', function (m) {
                   // console.log("FINAL: offer_create: %s", JSON.stringify(m));
@@ -43,9 +42,9 @@ buster.testCase("Offer tests", {
           function (m, callback) {
             self.remote.transaction()
               .offer_cancel("root", m.tx_json.Sequence)
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS', m);
+                  callback(m.engine_result !== 'tesSUCCESS', m);
                 })
               .on('final', function (m) {
                   // console.log("FINAL: offer_cancel: %s", JSON.stringify(m, undefined, 2));
@@ -72,8 +71,7 @@ buster.testCase("Offer tests", {
         });
     },
 
-  "offer create then offer create with cancel in one ledger" :
-    function (done) {
+  "offer create then offer create with cancel in one ledger" : function (done) {
       var self = this;
       var final_create;
       var sequence_first;
@@ -84,9 +82,9 @@ buster.testCase("Offer tests", {
           function (callback) {
             self.remote.transaction()
               .offer_create("root", "500", "100/USD/root")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS', m);
+                  callback(m.engine_result !== 'tesSUCCESS', m);
                 })
               .on('final', function (m) {
                   // console.log("FINAL: offer_create: %s", JSON.stringify(m));
@@ -105,9 +103,9 @@ buster.testCase("Offer tests", {
             // Test canceling existant offer.
             self.remote.transaction()
               .offer_create("root", "300", "100/USD/root", undefined, sequence_first)
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS', m);
+                  callback(m.engine_result !== 'tesSUCCESS', m);
                 })
               .on('final', function (m) {
                   // console.log("FINAL: offer_create: %s", JSON.stringify(m));
@@ -135,9 +133,9 @@ buster.testCase("Offer tests", {
             // Test canceling non-existant offer.
             self.remote.transaction()
               .offer_create("root", "400", "200/USD/root", undefined, sequence_first)
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS', m);
+                  callback(m.engine_result !== 'tesSUCCESS', m);
                 })
               .on('final', function (m) {
                   // console.log("FINAL: offer_create: %s", JSON.stringify(m));
@@ -166,8 +164,7 @@ buster.testCase("Offer tests", {
         });
     },
 
-  "Offer create then self crossing offer, no trust lines with self" :
-    function (done) {
+  "Offer create then self crossing offer, no trust lines with self" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -176,10 +173,10 @@ buster.testCase("Offer tests", {
 
           self.remote.transaction()
             .offer_create("root", "500/BTC/root", "100/USD/root")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
         },
@@ -188,10 +185,10 @@ buster.testCase("Offer tests", {
 
           self.remote.transaction()
             .offer_create("root", "100/USD/root", "500/BTC/root")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
         }
@@ -202,8 +199,7 @@ buster.testCase("Offer tests", {
       });
     },
 
-  "Offer create then crossing offer with XRP. Negative balance." :
-    function (done) {
+  "Offer create then crossing offer with XRP. Negative balance." : function (done) {
       var self = this;
 
       var alices_initial_balance = 499946999680;
@@ -232,7 +228,7 @@ buster.testCase("Offer tests", {
             .transfer_rate(1005000000)
             .once('proposed', function (m) {
                 // console.log("proposed: %s", JSON.stringify(m));
-                callback(m.result !== 'tesSUCCESS');
+                callback(m.engine_result !== 'tesSUCCESS');
               })
             .submit();
         },
@@ -261,10 +257,10 @@ buster.testCase("Offer tests", {
 
           self.remote.transaction()
             .offer_create("alice", "50/USD/mtgox", "150000.0")    // get 50/USD pay 150000/XRP
-              .on('proposed', function (m) {
+              .once('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
         },
@@ -301,10 +297,10 @@ buster.testCase("Offer tests", {
 
           self.remote.transaction()
             .offer_create("bob", "2000.0", "1/USD/mtgox")  // get 2,000/XRP pay 1/USD (has insufficient USD)
-              .on('proposed', function (m) {
+              .once('proposed', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
         },
@@ -333,7 +329,6 @@ buster.testCase("Offer tests", {
             {
               "alice"   : [ "-50/USD/mtgox", alices_final_balance.to_json()],
               "bob"     : [   "2710505431213761e-33/USD/mtgox",
-              
               bobs_final_balance.to_json()
 
                   // bobs_final_balance.to_json()
@@ -360,8 +355,7 @@ buster.testCase("Offer tests", {
       });
     },
 
-  "Offer create then crossing offer with XRP. Reverse order." :
-    function (done) {
+  "Offer create then crossing offer with XRP. Reverse order." : function (done) {
       var self = this;
 
       async.waterfall([
@@ -394,10 +388,10 @@ buster.testCase("Offer tests", {
 
           self.remote.transaction()
             .offer_create("bob", "1/USD/mtgox", "4000.0")         // get 1/USD pay 4000/XRP : offer pays 4000 XRP for 1 USD
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
         },
@@ -410,10 +404,10 @@ buster.testCase("Offer tests", {
 
           self.remote.transaction()
             .offer_create("alice", "150000.0", "50/USD/mtgox")  // get 150,000/XRP pay 50/USD : offer pays 1 USD for 3000 XRP
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
         },
@@ -446,8 +440,7 @@ buster.testCase("Offer tests", {
       });
     },
 
-  "Offer create then crossing offer with XRP." :
-    function (done) {
+  "Offer create then crossing offer with XRP." : function (done) {
       var self = this;
 
       async.waterfall([
@@ -480,10 +473,10 @@ buster.testCase("Offer tests", {
 
           self.remote.transaction()
             .offer_create("alice", "150000.0", "50/USD/mtgox")  // pays 1 USD for 3000 XRP
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
         },
@@ -492,10 +485,10 @@ buster.testCase("Offer tests", {
 
           self.remote.transaction()
             .offer_create("bob", "1/USD/mtgox", "4000.0") // pays 4000 XRP for 1 USD
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
         },
@@ -531,8 +524,7 @@ buster.testCase("Offer tests", {
       });
     },
 
-  "Offer create then crossing offer with XRP with limit override." :
-    function (done) {
+  "Offer create then crossing offer with XRP with limit override." : function (done) {
       var self = this;
 
       async.waterfall([
@@ -565,10 +557,10 @@ buster.testCase("Offer tests", {
 
           self.remote.transaction()
             .offer_create("alice", "150000.0", "50/USD/mtgox")  // 300 XRP = 1 USD
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
         },
@@ -588,10 +580,10 @@ buster.testCase("Offer tests", {
 
           self.remote.transaction()
             .offer_create("bob", "1/USD/mtgox", "3000.0") //
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
         },
@@ -623,8 +615,7 @@ buster.testCase("Offer tests", {
       });
     },
 
-  "offer_create then ledger_accept then offer_cancel then ledger_accept." :
-    function (done) {
+  "offer_create then ledger_accept then offer_cancel then ledger_accept." : function (done) {
       var self = this;
       var final_create;
       var offer_seq;
@@ -633,12 +624,12 @@ buster.testCase("Offer tests", {
           function (callback) {
             self.remote.transaction()
               .offer_create("root", "500", "100/USD/root")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
                   offer_seq = m.tx_json.Sequence;
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .on('final', function (m) {
                   // console.log("FINAL: offer_create: %s", JSON.stringify(m));
@@ -669,9 +660,9 @@ buster.testCase("Offer tests", {
 
             self.remote.transaction()
               .offer_cancel("root", offer_seq)
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .on('final', function (m) {
                   // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
@@ -708,8 +699,7 @@ buster.testCase("Offer tests", {
         });
     },
 
-  "//new user offer_create then ledger_accept then offer_cancel then ledger_accept." :
-    function (done) {
+  "//new user offer_create then ledger_accept then offer_cancel then ledger_accept." : function (done) {
       var self = this;
       var final_create;
       var offer_seq;
@@ -718,9 +708,9 @@ buster.testCase("Offer tests", {
           function (callback) {
             self.remote.transaction()
               .payment('root', 'alice', "1000")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                 // console.log("proposed: %s", JSON.stringify(m));
-                buster.assert.equals(m.result, 'tesSUCCESS');
+                buster.assert.equals(m.engine_result, 'tesSUCCESS');
                 callback();
               })
               .submit()
@@ -728,12 +718,12 @@ buster.testCase("Offer tests", {
           function (callback) {
             self.remote.transaction()
               .offer_create("alice", "500", "100/USD/alice")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
 
                   offer_seq = m.tx_json.Sequence;
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .on('final', function (m) {
                   // console.log("FINAL: offer_create: %s", JSON.stringify(m));
@@ -764,9 +754,9 @@ buster.testCase("Offer tests", {
 
             self.remote.transaction()
               .offer_cancel("alice", offer_seq)
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_cancel: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .on('final', function (m) {
                   // console.log("FINAL: offer_cancel: %s", JSON.stringify(m));
@@ -802,8 +792,7 @@ buster.testCase("Offer tests", {
         });
     },
 
-  "offer cancel past and future sequence" :
-    function (done) {
+  "offer cancel past and future sequence" : function (done) {
       var self = this;
       var final_create;
 
@@ -811,13 +800,12 @@ buster.testCase("Offer tests", {
           function (callback) {
             self.remote.transaction()
               .payment('root', 'alice', Amount.from_json("10000.0"))
-              .on('proposed', function (m) {
-                  // console.log("PROPOSED: CreateAccount: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS', m);
+              .once('submitted', function (m) {
+                  //console.log("PROPOSED: CreateAccount: %s", JSON.stringify(m));
+                  callback(m.engine_result !== 'tesSUCCESS', m);
                 })
-              .on('error', function(m) {
-                  // console.log("error: %s", m);
-
+              .once('error', function(m) {
+                  //console.log("error: %s", m);
                   buster.assert(false);
                   callback(m);
                 })
@@ -827,9 +815,9 @@ buster.testCase("Offer tests", {
           function (m, callback) {
             self.remote.transaction()
               .offer_cancel("root", m.tx_json.Sequence)
-              .on('proposed', function (m) {
-                  // console.log("PROPOSED: offer_cancel past: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS', m);
+              .once('submitted', function (m) {
+                  //console.log("PROPOSED: offer_cancel past: %s", JSON.stringify(m));
+                  callback(m.engine_result !== 'tesSUCCESS', m);
                 })
               .submit();
           },
@@ -837,9 +825,9 @@ buster.testCase("Offer tests", {
           function (m, callback) {
             self.remote.transaction()
               .offer_cancel("root", m.tx_json.Sequence+1)
-              .on('proposed', function (m) {
-                  // console.log("PROPOSED: offer_cancel same: %s", JSON.stringify(m));
-                  callback(m.result !== 'temBAD_SEQUENCE', m);
+              .once('submitted', function (m) {
+                  //console.log("PROPOSED: offer_cancel same: %s", JSON.stringify(m));
+                  callback(m.engine_result !== 'temBAD_SEQUENCE', m);
                 })
               .submit();
           },
@@ -847,17 +835,17 @@ buster.testCase("Offer tests", {
           function (m, callback) {
             self.remote.transaction()
               .offer_cancel("root", m.tx_json.Sequence+2)
-              .on('proposed', function (m) {
-                  // console.log("ERROR: offer_cancel future: %s", JSON.stringify(m));
-                  callback(m.result !== 'temBAD_SEQUENCE');
+              .once('submitted', function (m) {
+                  //console.log("ERROR: offer_cancel future: %s", JSON.stringify(m));
+                  callback(m.engine_result !== 'temBAD_SEQUENCE');
                 })
               .submit();
           },
           // See if ledger_accept will crash.
           function (callback) {
             self.remote
-              .once('ledger_closed', function (mesage) {
-                  // console.log("LEDGER_CLOSED: A: %d: %s", ledger_index, ledger_hash);
+              .once('ledger_closed', function (message) {
+                  //console.log("LEDGER_CLOSED: A: %d: %s", message.ledger_index, message.ledger_hash);
                   callback();
                 })
               .ledger_accept();
@@ -865,7 +853,7 @@ buster.testCase("Offer tests", {
           function (callback) {
             self.remote
               .once('ledger_closed', function (mesage) {
-                  // console.log("LEDGER_CLOSED: B: %d: %s", ledger_index, ledger_hash);
+                  //console.log("LEDGER_CLOSED: B: %d: %s", message.ledger_index, message.ledger_hash);
                   callback();
                 })
               .ledger_accept();
@@ -874,16 +862,14 @@ buster.testCase("Offer tests", {
             callback();
           }
         ], function (error) {
-          // console.log("result: error=%s", error);
+          //console.log("result: error=%s", error);
           buster.refute(error, self.what);
-
           done();
         });
     },
 
-  "ripple currency conversion : entire offer" :
+  "ripple currency conversion : entire offer" : function (done) {
     // mtgox in, XRP out
-    function (done) {
       var self = this;
       var seq;
 
@@ -932,9 +918,9 @@ buster.testCase("Offer tests", {
 
             self.remote.transaction()
               .offer_create("bob", "100/USD/mtgox", "500")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq = m.tx_json.Sequence;
                 })
@@ -961,10 +947,10 @@ buster.testCase("Offer tests", {
             self.remote.transaction()
               .payment("alice", "alice", "500")
               .send_max("100/USD/mtgox")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
           },
@@ -999,9 +985,8 @@ buster.testCase("Offer tests", {
         });
     },
 
-  "ripple currency conversion : offerer into debt" :
+  "ripple currency conversion : offerer into debt" : function (done) {
     // alice in, carol out
-    function (done) {
       var self = this;
       var seq;
 
@@ -1027,9 +1012,9 @@ buster.testCase("Offer tests", {
 
             self.remote.transaction()
               .offer_create("bob", "50/USD/alice", "200/EUR/carol")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tecUNFUNDED_OFFER');
+                  callback(m.engine_result !== 'tecUNFUNDED_OFFER');
 
                   seq = m.tx_json.Sequence;
                 })
@@ -1040,9 +1025,9 @@ buster.testCase("Offer tests", {
 //
 //            self.remote.transaction()
 //              .offer_create("alice", "200/EUR/carol", "50/USD/alice")
-//              .on('proposed', function (m) {
+//              .on('submitted', function (m) {
 //                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-//                  callback(m.result !== 'tesSUCCESS');
+//                  callback(m.engine_result !== 'tesSUCCESS');
 //
 //                  seq = m.tx_json.Sequence;
 //                })
@@ -1070,8 +1055,7 @@ buster.testCase("Offer tests", {
         });
     },
 
-  "ripple currency conversion : in parts" :
-    function (done) {
+  "ripple currency conversion : in parts" : function (done) {
       var self = this;
       var seq;
 
@@ -1105,9 +1089,9 @@ buster.testCase("Offer tests", {
 
             self.remote.transaction()
               .offer_create("bob", "100/USD/mtgox", "500")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq = m.tx_json.Sequence;
                 })
@@ -1119,10 +1103,10 @@ buster.testCase("Offer tests", {
             self.remote.transaction()
               .payment("alice", "alice", "200")
               .send_max("100/USD/mtgox")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
           },
@@ -1147,10 +1131,10 @@ buster.testCase("Offer tests", {
             self.remote.transaction()
               .payment("alice", "alice", "600")
               .send_max("100/USD/mtgox")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tecPATH_PARTIAL');
+                  callback(m.engine_result !== 'tecPATH_PARTIAL');
                 })
               .submit();
           },
@@ -1161,10 +1145,10 @@ buster.testCase("Offer tests", {
               .payment("alice", "alice", "600")
               .send_max("100/USD/mtgox")
               .set_flags('PartialPayment')
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
           },
@@ -1195,10 +1179,8 @@ buster.testCase("Offer cross currency", {
   // 'setUp'     : testutils.build_setup({ verbose: true }),
   'tearDown' : testutils.build_teardown(),
 
-  "ripple cross currency payment - start with XRP" :
+  "ripple cross currency payment - start with XRP" : function (done) {
     // alice --> [XRP --> carol --> USD/mtgox] --> bob
-
-    function (done) {
       var self = this;
       var seq;
 
@@ -1234,9 +1216,9 @@ buster.testCase("Offer cross currency", {
 
             self.remote.transaction()
               .offer_create("carol", "500.0", "50/USD/mtgox")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq = m.tx_json.Sequence;
                 })
@@ -1248,10 +1230,10 @@ buster.testCase("Offer cross currency", {
             self.remote.transaction()
               .payment("alice", "bob", "25/USD/mtgox")
               .send_max("333.0")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
           },
@@ -1277,10 +1259,8 @@ buster.testCase("Offer cross currency", {
         });
     },
 
-  "ripple cross currency payment - end with XRP" :
+  "ripple cross currency payment - end with XRP" : function (done) {
     // alice --> [USD/mtgox --> carol --> XRP] --> bob
-
-    function (done) {
       var self = this;
       var seq;
 
@@ -1316,9 +1296,9 @@ buster.testCase("Offer cross currency", {
 
             self.remote.transaction()
               .offer_create("carol", "50/USD/mtgox", "500")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq = m.tx_json.Sequence;
                 })
@@ -1330,10 +1310,10 @@ buster.testCase("Offer cross currency", {
             self.remote.transaction()
               .payment("alice", "bob", "250")
               .send_max("333/USD/mtgox")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
           },
@@ -1359,15 +1339,13 @@ buster.testCase("Offer cross currency", {
         });
     },
 
-  "ripple cross currency bridged payment" :
+  "ripple cross currency bridged payment" : function (done) {
     // alice --> [USD/mtgox --> carol --> XRP] --> [XRP --> dan --> EUR/bitstamp] --> bob
-
-    function (done) {
       var self = this;
       var seq_carol;
       var seq_dan;
 
-      // self.remote.set_trace();
+      //self.remote.set_trace();
 
       async.waterfall([
           function (callback) {
@@ -1402,9 +1380,9 @@ buster.testCase("Offer cross currency", {
 
             self.remote.transaction()
               .offer_create("carol", "50/USD/mtgox", "500")
-              .on('proposed', function (m) {
-                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+              .once('proposed', function (m) {
+                  //console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq_carol = m.tx_json.Sequence;
                 })
@@ -1415,9 +1393,9 @@ buster.testCase("Offer cross currency", {
 
             self.remote.transaction()
               .offer_create("dan", "500", "50/EUR/bitstamp")
-              .on('proposed', function (m) {
-                  // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+              .once('proposed', function (m) {
+                  //console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq_dan = m.tx_json.Sequence;
                 })
@@ -1430,10 +1408,10 @@ buster.testCase("Offer cross currency", {
               .payment("alice", "bob", "30/EUR/bitstamp")
               .send_max("333/USD/mtgox")
               .path_add( [ { currency: "XRP" } ])
-              .on('proposed', function (m) {
-                  // console.log("proposed: %s", JSON.stringify(m));
+              .once('submitted', function (m) {
+                  //console.log("PROPOSED: %s", JSON.stringify(m));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
           },
@@ -1472,8 +1450,7 @@ buster.testCase("Offer tests 3", {
   // 'setUp'     : testutils.build_setup({ verbose: true, standalone: true }),
   'tearDown'  : testutils.build_teardown(),
 
-  "offer fee consumes funds" :
-    function (done) {
+  "offer fee consumes funds" : function (done) {
       var self = this;
       var final_create;
 
@@ -1536,9 +1513,9 @@ buster.testCase("Offer tests 3", {
 
             self.remote.transaction()
               .offer_create("bob", "200.0", "200/USD/mtgox")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                   seq_carol = m.tx_json.sequence;
                 })
               .submit();
@@ -1550,9 +1527,9 @@ buster.testCase("Offer tests 3", {
 
             self.remote.transaction()
               .offer_create("alice", "200/USD/mtgox", "200.0")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq_carol = m.tx_json.sequence;
                 })
@@ -1586,8 +1563,7 @@ buster.testCase("Offer tests 3", {
           done();
         });
     },
-  "offer create then cross offer" :
-    function (done) {
+  "offer create then cross offer" : function (done) {
       var self = this;
       var final_create;
 
@@ -1605,7 +1581,7 @@ buster.testCase("Offer tests 3", {
               .transfer_rate(1005000000)
               .once('proposed', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
           },
@@ -1644,9 +1620,9 @@ buster.testCase("Offer tests 3", {
 
             self.remote.transaction()
               .offer_create("alice", "50/USD/mtgox", "150000.0")
-              .on('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq_carol = m.tx_json.sequence;
                 })
@@ -1657,9 +1633,9 @@ buster.testCase("Offer tests 3", {
 
             self.remote.transaction()
               .offer_create("bob", "100.0", ".1/USD/mtgox")
-              .on('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq_carol = m.tx_json.sequence;
                 })
@@ -1689,7 +1665,6 @@ buster.testCase("Offer tests 3", {
         ], function (error) {
           // console.log("result: error=%s", error);
           buster.refute(error, self.what);
-
           done();
         });
     },
@@ -1701,8 +1676,7 @@ buster.testCase("Offer tfSell", {
   // 'setUp'     : testutils.build_setup({ verbose: true, standalone: true }),
   'tearDown'  : testutils.build_teardown(),
 
-  "basic sell" :
-    function (done) {
+  "basic sell" : function (done) {
       var self = this;
       var final_create, seq_carol;
 
@@ -1740,10 +1714,10 @@ buster.testCase("Offer tfSell", {
             self.remote.transaction()
               .offer_create("bob", "200.0", "200/USD/mtgox")
               .set_flags('Sell')            // Should not matter at all.
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  if (m.result !== 'tesSUCCESS') {
-                    throw new Error("Bob's OfferCreate tx did not succeed: "+m.result);
+                  if (m.engine_result !== 'tesSUCCESS') {
+                    throw new Error("Bob's OfferCreate tx did not succeed: "+m.engine_result);
                   } else callback(null);
 
                   seq_carol = m.tx_json.sequence;
@@ -1758,9 +1732,9 @@ buster.testCase("Offer tfSell", {
             self.remote.transaction()
               .offer_create("alice", "200/USD/mtgox", "200.0")
               .set_flags('Sell')            // Should not matter at all.
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq_carol = m.tx_json.sequence;
                 })
@@ -1795,8 +1769,7 @@ buster.testCase("Offer tfSell", {
         });
     },
 
-  "2x sell exceed limit" :
-    function (done) {
+  "2x sell exceed limit" : function (done) {
       var self = this;
       var final_create, seq_carol;
 
@@ -1804,7 +1777,6 @@ buster.testCase("Offer tfSell", {
           function (callback) {
             // Provide micro amounts to compensate for fees to make results round nice.
             self.what = "Create accounts.";
-            
             var starting_xrp = self.amount_for({
               ledger_entries: 1,
               default_transactions: 2,
@@ -1838,9 +1810,9 @@ buster.testCase("Offer tfSell", {
             // Selling USD.
             self.remote.transaction()
               .offer_create("bob", "100.0", "200/USD/mtgox")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                   seq_carol = m.tx_json.sequence;
                 })
               .submit();
@@ -1856,10 +1828,10 @@ buster.testCase("Offer tfSell", {
             self.remote.transaction()
               .offer_create("alice", "100/USD/mtgox", "100.0")
               .set_flags('Sell')
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  if (m.result !== 'tesSUCCESS') {
-                    callback(new Error("Alice's OfferCreate didn't succeed: "+m.result));
+                  if (m.engine_result !== 'tesSUCCESS') {
+                    callback(new Error("Alice's OfferCreate didn't succeed: "+m.engine_result));
                   } else callback(null);
 
                   seq_carol = m.tx_json.sequence;
@@ -1902,8 +1874,7 @@ buster.testCase("Client Issue #535", {
   // 'setUp'     : testutils.build_setup({ verbose: true, standalone: true }),
   'tearDown'  : testutils.build_teardown(),
 
-  "gateway cross currency" :
-    function (done) {
+  "gateway cross currency" : function (done) {
       var self = this;
       var final_create;
 
@@ -1911,7 +1882,7 @@ buster.testCase("Client Issue #535", {
           function (callback) {
             // Provide micro amounts to compensate for fees to make results round nice.
             self.what = "Create accounts.";
-            
+
             var starting_xrp = self.amount_for({
               ledger_entries: 1,
               default_transactions: 2,
@@ -1944,9 +1915,9 @@ buster.testCase("Client Issue #535", {
 
             self.remote.transaction()
               .offer_create("alice", "100/XTS/mtgox", "100/XXX/mtgox")
-              .on('proposed', function (m) {
+              .on('submitted', function (m) {
                   // console.log("proposed: offer_create: %s", json.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
 
                   seq_carol = m.tx_json.sequence;
                 })
@@ -1959,11 +1930,11 @@ buster.testCase("Client Issue #535", {
               .payment("bob", "bob", "1/XXX/bob")
               .send_max("1.5/XTS/bob")
               .build_path(true)
-              .on('proposed', function (m) {
-                  if (m.result !== 'tesSUCCESS')
+              .on('submitted', function (m) {
+                  if (m.engine_result !== 'tesSUCCESS')
                     console.log("proposed: %s", JSON.stringify(m, undefined, 2));
 
-                  callback(m.result !== 'tesSUCCESS');
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
           },
@@ -1990,7 +1961,7 @@ buster.testCase("Client Issue #535", {
           },
         ], function (error) {
           if (error)
-            console.log("result: %s: error=%s", self.what, error);
+            //console.log("result: %s: error=%s", self.what, error);
           buster.refute(error, self.what);
 
           done();
