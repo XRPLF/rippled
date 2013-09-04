@@ -100,6 +100,8 @@ private:
 namespace detail
 {
 
+struct BucketTag { };
+
 template <typename M, typename I>
 class HashMapLocalIterator
     : public std::iterator <std::forward_iterator_tag, typename M::size_type>
@@ -194,7 +196,7 @@ private:
     typedef detail::ListIterator <typename detail::copyconst <M,
         typename List <Bucket>::Node>::type> bucket_iterator;
     typedef detail::ListIterator <typename detail::copyconst <M,
-        typename List <Item, Bucket>::Node>::type> item_iterator;
+        typename List <Item, detail::BucketTag>::Node>::type> item_iterator;
 
 public:
     typedef typename M::Pair      value_type;
@@ -202,12 +204,33 @@ public:
     typedef value_type&           reference;
     typedef typename M::size_type size_type;
 
-    HashMapIterator (M* map = nullptr,
-        bucket_iterator bucket = bucket_iterator (),
-            item_iterator local = item_iterator ())
+    HashMapIterator ()
+        : m_map (nullptr)
+        , m_bucket (bucket_iterator ())
+        , m_local (item_iterator ())
+    {
+    }
+
+    // represents end()
+    explicit HashMapIterator (M* map)
+        : m_map (map)
+        , m_bucket (bucket_iterator ())
+        , m_local (item_iterator ())
+    {
+    }
+
+    HashMapIterator (M* map, bucket_iterator const& bucket, item_iterator const& local)
         : m_map (map)
         , m_bucket (bucket)
         , m_local (local)
+    {
+    }
+
+#if 0
+    HashMapIterator (HashMapIterator const& other) noexcept
+        : m_map (other.m_map)
+        , m_bucket (other.m_bucket)
+        , m_local (other.m_local)
     {
     }
 
@@ -218,7 +241,7 @@ public:
         , m_local (other.m_local)
     {
     }
-
+#endif
     template <typename N>
     HashMapIterator& operator= (HashMapIterator <N> const& other) noexcept
     {
@@ -359,7 +382,7 @@ private:
             return items.empty ();
         }
 
-        List <Item, Bucket> items;
+        List <Item, detail::BucketTag> items;
 
     private:
         Bucket& operator= (Bucket const&);
@@ -369,7 +392,7 @@ private:
     // Every item in the map is in one linked list
     struct Item 
         : List <Item>::Node
-        , List <Item, Bucket>::Node
+        , List <Item, detail::BucketTag>::Node
     {
         Item (Pair const& pair_)
             : m_pair (pair_)
@@ -403,17 +426,17 @@ public:
     typedef value_type&       reference;
     typedef value_type const* const_pointer;
     typedef value_type const& const_reference;
+    
+    typedef HashMap <Key, T, Hash, KeyEqual, Allocator> container_type;
 
-    typedef detail::HashMapIterator <HashMap <Key, T, Hash> > iterator;
-    typedef detail::HashMapIterator <HashMap <Key, T, Hash> const> const_iterator;
+    typedef detail::HashMapIterator <container_type> iterator;
+    typedef detail::HashMapIterator <container_type const> const_iterator;
 
-    typedef detail::HashMapLocalIterator <
-        HashMap <Key, T, Hash>,
-        typename List <Item, Bucket>::iterator> local_iterator;
+    typedef detail::HashMapLocalIterator <container_type,
+        typename List <Item, detail::BucketTag>::iterator> local_iterator;
 
-    typedef detail::HashMapLocalIterator <
-        HashMap <Key, T, Hash> const,
-        typename List <Item, Bucket>::const_iterator> const_local_iterator;
+    typedef detail::HashMapLocalIterator <container_type const,
+        typename List <Item, detail::BucketTag>::const_iterator> const_local_iterator;
 
     //--------------------------------------------------------------------------
 
@@ -514,17 +537,17 @@ public:
 
     iterator end () noexcept
     {
-        return iterator (this, m_bucketlist.end ());
+        return iterator (static_cast <container_type*> (this));
     }
 
     const_iterator end () const noexcept
     {
-        return const_iterator (this, m_bucketlist.end ());
+        return const_iterator (this);
     }
 
     const_iterator cend () const noexcept
     {
-        return const_iterator (this, m_bucketlist.cend ());
+        return const_iterator (this);
     }
 
     //--------------------------------------------------------------------------
@@ -601,10 +624,10 @@ public:
     {
         size_type found (0);
         Bucket& b (m_buckets [bucket (key)]);
-        for (typename List <Item, Bucket>::iterator iter (b.items.begin ());
+        for (typename List <Item, detail::BucketTag>::iterator iter (b.items.begin ());
             iter != b.items.end ();)
         {
-            typename List <Item, Bucket>::iterator cur (iter++);
+            typename List <Item, detail::BucketTag>::iterator cur (iter++);
             if (m_equal (cur->pair ().key (), key))
             {
                 erase (b, cur);
@@ -641,7 +664,7 @@ public:
     {
         size_type n = 0;
         Bucket const& b (m_buckets [bucket (key)]);
-        for (typename List <Item, Bucket>::iterator iter = b.items.begin ();
+        for (typename List <Item, detail::BucketTag>::iterator iter = b.items.begin ();
             iter != b.items.end (); ++iter)
             if (m_equal (iter->key (), key))
                 ++n;
@@ -765,16 +788,16 @@ private:
 
     void grow_buckets ()
     {
-        float const scale = 1.f + (float (percentageIncrease) / 100.f);
-        size_type const count (std::ceil (
-            (size () / max_load_factor ()) * scale));
+        double const scale = 1. + (double (percentageIncrease) / 100.);
+        size_type const count (size_type (std::ceil (
+            (double (size ()) / double (max_load_factor ())) * scale)));
         rehash (count);
     }
 
     iterator find (KeyParam key, size_type n) noexcept
     {
         Bucket& b (m_buckets [n]);
-        for (typename List <Item, Bucket>::iterator iter =
+        for (typename List <Item, detail::BucketTag>::iterator iter =
             b.items.begin (); iter != b.items.end (); ++iter)
             if (m_equal (iter->pair ().key (), key))
                 return iterator (this, m_bucketlist.iterator_to (b), iter);
@@ -784,7 +807,7 @@ private:
     const_iterator find (KeyParam key, size_type n) const noexcept
     {
         Bucket const& b (m_buckets [n]);
-        for (typename List <Item, Bucket>::const_iterator iter =
+        for (typename List <Item, detail::BucketTag>::const_iterator iter =
             b.items.begin (); iter != b.items.end (); ++iter)
             if (m_equal (iter->pair ().key (), key))
                 return const_iterator (this,
@@ -805,7 +828,7 @@ private:
                 b.items.begin ());
     }
 
-    void erase (Bucket& b, typename List <Item, Bucket>::iterator pos)
+    void erase (Bucket& b, typename List <Item, detail::BucketTag>::iterator pos)
     {
         Item& item (*pos);
         b.items.erase (b.items.iterator_to (item));
