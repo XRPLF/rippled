@@ -129,7 +129,6 @@
     <ClInclude Include="..\..\modules\beast_core\containers\beast_SparseSet.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\DynamicList.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\beast_Variant.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\lashMap.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Debug.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Error.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_FatalError.h" />
@@ -237,6 +236,8 @@
     <ClInclude Include="..\..\modules\beast_core\text\beast_StringPairArray.h" />
     <ClInclude Include="..\..\modules\beast_core\text\beast_StringPool.h" />
     <ClInclude Include="..\..\modules\beast_core\text\beast_TextDiff.h" />
+    <ClInclude Include="..\..\modules\beast_core\text\StringCharPointerType.h" />
+    <ClInclude Include="..\..\modules\beast_core\text\StringFromNumber.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\beast_ChildProcess.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\beast_CriticalSection.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\beast_DynamicLibrary.h" />
