@@ -83,8 +83,9 @@ public:
             + ", copy_assign(" + String::fromNumber (copy_assign) + ")"
     #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
             + ", move_ctor(" +   String::fromNumber (move_ctor) + ")"
-            + ", move_assign(" + String::fromNumber (move_assign) + ")";
+            + ", move_assign(" + String::fromNumber (move_assign) + ")"
     #endif
+            ;
     }
 
     count_type default_ctor;
