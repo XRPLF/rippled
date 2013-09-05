@@ -19,10 +19,12 @@ var account_dump = function (remote, account, callback) {
           .account_root("root")
           .on('success', function (r) {
               //console.log("account_root: %s", JSON.stringify(r, undefined, 2));
+
               callback();
             })
-          .on('error', function(m) {
+          .once('error', function(m) {
               console.log("error: %s", m);
+
               buster.assert(false);
               callback();
             })
@@ -99,25 +101,27 @@ var build_setup = function (opts, host) {
       function runServerStep(callback) {
         if (opts.no_server) return callback();
 
-        var server_config = extend({}, config.default_server_config, config.servers[host]);
+        var server_config = extend({}, config.default_server_config,
+                                   config.servers[host]);
 
         data.server = Server
-        .from_config(host, server_config,
-                     !!opts.verbose_server)
-                     .on('started', callback)
-                     .on('exited', function () {
-                       // If know the remote, tell it server is gone.
-                       if (self.remote)
-                         self.remote.server_fatal();
-                     })
-                     .start();
-    },
-    function connectWebsocketStep(callback) {
-      self.remote = data.remote = Remote
-        .from_config(host, !!opts.verbose_ws)
-        .once('ledger_closed', callback)
-        .connect();
-    }
+                        .from_config(host, server_config,
+                                     !!opts.verbose_server)
+                        .on('started', callback)
+                        .on('exited', function () {
+                            // If know the remote, tell it server is gone.
+                            if (self.remote)
+                              self.remote.server_fatal();
+                          })
+                        .start();
+      },
+      function connectWebsocketStep(callback) {
+        self.remote = data.remote =
+          Remote
+            .from_config(host, !!opts.verbose_ws)
+            .once('ledger_closed', callback)
+            .connect();
+      }
     ], done);
   };
 };
@@ -141,7 +145,7 @@ var build_teardown = function (host) {
 
         data.remote
           .on('disconnected', callback)
-          .on('error', function (m) {
+          .once('error', function (m) {
               console.log("server error: ", m);
             })
           .connect(false);
@@ -169,19 +173,20 @@ var create_accounts = function (remote, src, amount, accounts, callback) {
     // Cache the seq as 1.
     // Otherwise, when other operations attempt to opperate async against the account they may get confused.
     remote.set_account_seq(account, 1);
+
     remote.transaction()
       .payment(src, account, amount)
-        .on('submitted', function(m) {
+      .once('proposed', function (m) {
+          // console.log("proposed: %s", JSON.stringify(m));
           if (m.engine_result !== 'tesSUCCESS') {
             callback(new Error("Payment to create account did not succeed."));
-          } else {
-            callback(null);
-          }
+          } else callback(null);
         })
-      .on('error', function (m) {
-        // console.log("error: %s", JSON.stringify(m));
-        callback(m);
-      })
+      .once('error', function (m) {
+          // console.log("error: %s", JSON.stringify(m));
+
+          callback(m);
+        })
       .submit();
     }, callback);
 };
@@ -189,12 +194,14 @@ var create_accounts = function (remote, src, amount, accounts, callback) {
 var credit_limit = function (remote, src, amount, callback) {
   assert(4 === arguments.length);
 
-  var _m = amount.match(/^(\d+\/...\/[^\:]+)(?::(\d+)(?:,(\d+))?)?$/);
-
+  var _m      = amount.match(/^(\d+\/...\/[^\:]+)(?::(\d+)(?:,(\d+))?)?$/);
   if (!_m) {
     console.log("credit_limit: parse error: %s", amount);
+
     callback('parse_error');
-  } else {
+  }
+  else
+  {
     // console.log("credit_limit: parsed: %s", JSON.stringify(_m, undefined, 2));
     var _account_limit  = _m[1];
     var _quality_in     = _m[2];
@@ -202,22 +209,16 @@ var credit_limit = function (remote, src, amount, callback) {
 
     remote.transaction()
       .ripple_line_set(src, _account_limit, _quality_in, _quality_out)
-      .on('proposed', function() {
-        remote.ledger_accept();
-      })
-      .on('submitted', function (m) {
-        //console.log("proposed: %s", JSON.stringify(m));
-        //callback(m.engine_result !== 'tesSUCCESS');
-        if (m.engine_result === 'tesSUCCESS') {
-          callback(null);
-        } else {
-          callback(new Error(m.engine_result));
-        }
-      })
-      .on('error', function (m) {
-        //console.log("error: %s", JSON.stringify(m));
-        callback(m);
-      })
+      .once('proposed', function (m) {
+          // console.log("proposed: %s", JSON.stringify(m));
+
+          callback(m.engine_result !== 'tesSUCCESS');
+        })
+      .once('error', function (m) {
+          // console.log("error: %s", JSON.stringify(m));
+
+          callback(m);
+        })
       .submit();
   }
 };
@@ -309,11 +310,12 @@ var payment = function (remote, src, dst, amount, callback) {
 
   remote.transaction()
     .payment(src, dst, amount)
-    .on('submitted', function (m) {
+    .once('proposed', function (m) {
         // console.log("proposed: %s", JSON.stringify(m));
+
         callback(m.engine_result !== 'tesSUCCESS');
       })
-    .on('error', function (m) {
+    .once('error', function (m) {
         // console.log("error: %s", JSON.stringify(m));
 
         callback(m);
@@ -354,12 +356,12 @@ var transfer_rate = function (remote, src, billionths, callback) {
   remote.transaction()
     .account_set(src)
     .transfer_rate(billionths)
-    .on('submitted', function (m) {
+    .once('proposed', function (m) {
         // console.log("proposed: %s", JSON.stringify(m));
 
-        callback(m.engine_result != 'tesSUCCESS');
+        callback(m.engine_result !== 'tesSUCCESS');
       })
-    .on('error', function (m) {
+    .once('error', function (m) {
         // console.log("error: %s", JSON.stringify(m));
 
         callback(m);
@@ -462,7 +464,7 @@ var verify_offer_not_found = function (remote, owner, seq, callback) {
 
         callback('entryFound');
       })
-    .on('error', function (m) {
+    .once('error', function (m) {
         // console.log("verify_offer_not_found: success: %s", JSON.stringify(m));
 
         callback('remoteError' !== m.error
