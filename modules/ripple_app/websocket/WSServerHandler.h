@@ -165,7 +165,9 @@ public:
 
         try
         {
-            mMap [cpClient] = boost::make_shared< WSConnectionType <endpoint_type> > (m_source, *this, cpClient);
+            mMap [cpClient] = boost::make_shared <
+                WSConnectionType <endpoint_type>
+                    > (boost::ref (m_source), boost::ref(*this), boost::cref(cpClient));
         }
         catch (...)
         {

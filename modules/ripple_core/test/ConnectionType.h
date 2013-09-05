@@ -44,6 +44,7 @@ public:
     {
         m_peer = other.m_peer;
         m_inbound = other.m_inbound;
+        return *this;
     }
 
     /** Returns `true` if there is no connection. */

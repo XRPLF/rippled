@@ -41,7 +41,9 @@ public:
     {
         // VFALCO NOTE Why not use make_shared?
         RPCServerImp::pointer new_connection (boost::make_shared <RPCServerImp> (
-            mAcceptor.get_io_service (), m_sslContext->get (), m_rpcServerHandler));
+            boost::ref (mAcceptor.get_io_service ()),
+                boost::ref (m_sslContext->get ()),
+                    boost::ref (m_rpcServerHandler)));
 
         mAcceptor.set_option (boost::asio::ip::tcp::acceptor::reuse_address (true));
 
