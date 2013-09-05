@@ -81,7 +81,8 @@ inline PagedFreeStore::Page* PagedFreeStore::toPage (void* const p)
 //------------------------------------------------------------------------------
 
 PagedFreeStore::PagedFreeStore (const size_t pageBytes)
-    : m_pageBytes (pageBytes)
+    : m_timer (this)
+    , m_pageBytes (pageBytes)
     , m_pageBytesAvailable (pageBytes - Memory::sizeAdjustedForAlignment (sizeof (Page)))
     , m_newPagesLeft (int ((hardLimitMegaBytes * 1024 * 1024) / m_pageBytes))
 #if LOG_GC
@@ -91,12 +92,12 @@ PagedFreeStore::PagedFreeStore (const size_t pageBytes)
     m_hot  = m_pool1;
     m_cold = m_pool2;
 
-    startOncePerSecond ();
+    m_timer.setExpiration (1.0);
 }
 
 PagedFreeStore::~PagedFreeStore ()
 {
-    endOncePerSecond ();
+    m_timer.reset ();
 
 #if LOG_GC
     bassert (!m_used.isSignaled ());
@@ -162,7 +163,7 @@ void PagedFreeStore::deallocate (void* const p)
 //
 // Perform garbage collection.
 //
-void PagedFreeStore::doOncePerSecond ()
+void PagedFreeStore::onDeadlineTimer (DeadlineTimer&)
 {
     // Physically free one page.
     // This will reduce the working set over time after a spike.
@@ -195,6 +196,8 @@ void PagedFreeStore::doOncePerSecond ()
       << String (m_newPagesLeft.get ()) << ")";
     Logger::outputDebugString (s);
 #endif
+
+    m_timer.setExpiration (1.0);
 }
 
 void PagedFreeStore::dispose (Pages& pages)
