@@ -213,7 +213,6 @@ namespace beast
 
 #include "thread/impl/TrackedMutex.cpp"
 #include "thread/beast_DeadlineTimer.cpp"
-#include "thread/beast_OncePerSecond.cpp"
 #include "thread/beast_InterruptibleThread.cpp"
 #include "thread/beast_Semaphore.cpp"
 #include "thread/beast_CallQueue.cpp"

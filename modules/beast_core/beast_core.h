@@ -409,7 +409,6 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "functional/beast_Function.h"
 
 #include "thread/beast_DeadlineTimer.h"
-#include "thread/beast_OncePerSecond.h"
 
 #include "memory/beast_AllocatedBy.h"
 #include "memory/beast_PagedFreeStore.h"

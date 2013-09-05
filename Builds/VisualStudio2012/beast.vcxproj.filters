@@ -809,9 +809,6 @@
     <ClInclude Include="..\..\modules\beast_core\thread\beast_DeadlineTimer.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_OncePerSecond.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\beast_CallQueue.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
@@ -1403,9 +1400,6 @@
       <Filter>beast_core\thread\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\beast_DeadlineTimer.cpp">
-      <Filter>beast_core\thread</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_OncePerSecond.cpp">
       <Filter>beast_core\thread</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\beast_CallQueue.cpp">

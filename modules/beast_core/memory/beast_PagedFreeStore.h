@@ -29,7 +29,7 @@
 
   @ingroup beast_concurrent
 */
-class BEAST_API PagedFreeStore : private OncePerSecond
+class BEAST_API PagedFreeStore : private DeadlineTimer::Listener
 {
 public:
     explicit PagedFreeStore (const size_t pageBytes);
@@ -56,7 +56,7 @@ public:
 
 private:
     void* newPage ();
-    void doOncePerSecond ();
+    void  onDeadlineTimer (DeadlineTimer&);
 
 private:
     struct Page;
@@ -75,6 +75,7 @@ private:
     void dispose (Pool& pool);
 
 private:
+    DeadlineTimer m_timer;
     const size_t m_pageBytes;
     const size_t m_pageBytesAvailable;
     CacheLine::Aligned <Pool> m_pool1;  // pair of pools
