@@ -23,6 +23,11 @@
 
 #include "beast_asio.h"
 
+namespace http_parser
+{
+#include "parsehttp/http_parser.h"
+}
+
 namespace beast
 {
 
@@ -49,3 +54,18 @@ namespace beast
 #include "system/beast_BoostUnitTests.cpp"
 
 }
+
+//------------------------------------------------------------------------------
+
+#ifdef _MSC_VER
+#pragma warning (push)
+#pragma warning (disable: 4127) // conditional expression is constant
+#pragma warning (disable: 4244) // integer conversion, possible loss of data
+#endif
+namespace http_parser
+{
+#include "parsehttp/http_parser.c"
+}
+#ifdef _MSC_VER
+#pragma warning (pop)
+#endif
