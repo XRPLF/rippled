@@ -13,6 +13,7 @@
 #include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
+#include <boost/unordered_set.hpp>
 
 // For NodeStore backends
 #include "beast/modules/beast_db/beast_db.h"
@@ -45,6 +46,18 @@ namespace ripple
 # include "node/MdbBackendFactory.cpp"
 #include "node/NodeStore.cpp"
 #include "node/NodeObject.cpp"
+
+#  include "test/Results.h"
+#  include "test/SimplePayload.h"
+#  include "test/MessageType.h"
+#  include "test/ConnectionType.h"
+#  include "test/PeerType.h"
+#  include "test/NetworkType.h"
+#  include "test/StateBase.h"
+#  include "test/PeerLogicBase.h"
+#  include "test/InitPolicy.h"
+# include "test/ConfigType.h"
+#include "test/TestOverlay.cpp"
 
 # include "validator/Validator.h"
 #include "validator/Validator.cpp"

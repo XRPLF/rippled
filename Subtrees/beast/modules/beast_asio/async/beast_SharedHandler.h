@@ -53,7 +53,7 @@ public:
     // For asio::async_result<>
     typedef void result_type;
 
-    typedef SharedObjectPtr <SharedHandler> Ptr;
+    typedef SharedPtr <SharedHandler> Ptr;
 
     virtual void operator() ();
     virtual void operator() (error_code const&);
@@ -92,11 +92,11 @@ private:
 
 //--------------------------------------------------------------------------
 
-// For SharedObjectPtr <SharedHandler>
+// For SharedPtr <SharedHandler>
 template <>
 struct ContainerDeletePolicy <SharedHandler>
 {
-    // SharedObjectPtr will use this when
+    // SharedPtr will use this when
     // the reference count drops to zero.
     //
     inline static void destroy (SharedHandler* handler)

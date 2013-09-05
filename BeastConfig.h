@@ -147,6 +147,14 @@
 //#define RIPPLE_VERIFY_NODEOBJECT_KEYS 1
 #endif
 
+/** Config: RIPPLE_DUMP_LEAKS_ON_EXIT
+    Displays heap blocks and counted objects which were not disposed of
+    during exit.
+*/
+#ifndef RIPPLE_DUMP_LEAKS_ON_EXIT
+#define RIPPLE_DUMP_LEAKS_ON_EXIT 1
+#endif
+
 /** Config: RIPPLE_TRACK_MUTEXES
     Turns on a feature that enables tracking and diagnostics for mutex
     and recursive mutex objects. This affects the type of lock used
@@ -163,7 +171,14 @@
 // in Peer code if you suspect you're having problems because of it.
 //
 #ifndef RIPPLE_PEER_USES_BEAST_MULTISOCKET
-#define RIPPLE_PEER_USES_BEAST_MULTISOCKET 0
+#define RIPPLE_PEER_USES_BEAST_MULTISOCKET 1
+#endif
+
+// Here temporarily to turn off new Validations code while it
+// is being written.
+//
+#ifndef RIPPLE_USE_NEW_VALIDATIONS
+#define RIPPLE_USE_NEW_VALIDATIONS 0
 #endif
 
 #endif

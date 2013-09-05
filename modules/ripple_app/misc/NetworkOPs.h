@@ -61,7 +61,7 @@ public:
     typedef boost::unordered_map <uint64, InfoSub::wptr> SubMapType;
 
 public:
-    // VFALCO TODO Make LedgerMaster a SharedObjectPtr or a reference.
+    // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
     static NetworkOPs* New (LedgerMaster& ledgerMaster);
 

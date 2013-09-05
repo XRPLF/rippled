@@ -218,7 +218,7 @@ public:
         public AllocatedBy <CallAllocatorType>
     {
     public:
-        typedef SharedObjectPtr <Call> Ptr;
+        typedef SharedPtr <Call> Ptr;
         virtual void operator () (void* const listener) = 0;
     };
 
@@ -242,7 +242,7 @@ private:
         public AllocatedBy <AllocatorType>
     {
     public:
-        typedef SharedObjectPtr <Group> Ptr;
+        typedef SharedPtr <Group> Ptr;
 
         explicit Group    (CallQueue& callQueue);
         ~Group            ();

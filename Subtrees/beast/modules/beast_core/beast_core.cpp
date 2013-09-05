@@ -145,6 +145,7 @@ namespace beast
 #include "containers/beast_Variant.cpp"
 #include "containers/DynamicArray.cpp"
 #include "containers/DynamicList.cpp"
+#include "containers/HashMap.cpp"
 
 #include "diagnostic/beast_Debug.cpp"
 #include "diagnostic/beast_Error.cpp"
@@ -212,7 +213,6 @@ namespace beast
 
 #include "thread/impl/TrackedMutex.cpp"
 #include "thread/beast_DeadlineTimer.cpp"
-#include "thread/beast_OncePerSecond.cpp"
 #include "thread/beast_InterruptibleThread.cpp"
 #include "thread/beast_Semaphore.cpp"
 #include "thread/beast_CallQueue.cpp"

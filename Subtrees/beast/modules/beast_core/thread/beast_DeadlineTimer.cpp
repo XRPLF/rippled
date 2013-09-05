@@ -46,24 +46,24 @@ public:
     // Okay to call on an active timer.
     // However, an extra notification may still happen due to concurrency.
     //
-    void activate (DeadlineTimer* timer, double secondsRecurring, Time const& when)
+    void activate (DeadlineTimer& timer, double secondsRecurring, Time const& when)
     {
         bassert (secondsRecurring >= 0);
 
         LockType::ScopedLockType lock (m_mutex);
 
-        if (timer->m_isActive)
+        if (timer.m_isActive)
         {
-            m_items.erase (m_items.iterator_to (*timer));
+            m_items.erase (m_items.iterator_to (timer));
 
-            timer->m_isActive = false;
+            timer.m_isActive = false;
         }
 
-        timer->m_secondsRecurring = secondsRecurring;
-        timer->m_notificationTime = when;
+        timer.m_secondsRecurring = secondsRecurring;
+        timer.m_notificationTime = when;
 
-        insertSorted (*timer);
-        timer->m_isActive = true;
+        insertSorted (timer);
+        timer.m_isActive = true;
 
         m_thread.interrupt ();
     }
@@ -71,18 +71,18 @@ public:
     // Okay to call this on an inactive timer.
     // This can happen naturally based on concurrency.
     //
-    void deactivate (DeadlineTimer* timer)
+    void deactivate (DeadlineTimer& timer)
     {
         LockType::ScopedLockType lock (m_mutex);
 
-        if (timer->m_isActive)
+        if (timer.m_isActive)
         {
-            m_items.erase (m_items.iterator_to (*timer));
+            m_items.erase (m_items.iterator_to (timer));
 
-            timer->m_isActive = false;
+            timer.m_isActive = false;
+
+            m_thread.interrupt ();
         }
-
-        m_thread.interrupt ();
     }
 
     void threadRun ()
@@ -90,6 +90,7 @@ public:
         while (! m_shouldStop)
         {
             Time const currentTime = Time::getCurrentTime ();
+            
             double seconds = 0;
 
             {
@@ -97,44 +98,44 @@ public:
 
                 // Notify everyone whose timer has expired
                 //
-                if (! m_items.empty ())
+                while (! m_items.empty ())
                 {
-                    for (;;)
+                    Items::iterator const iter = m_items.begin ();
+                    DeadlineTimer& timer (*iter);
+
+                    // Has this timer expired?
+                    if (timer.m_notificationTime <= currentTime)
                     {
-                        Items::iterator const iter = m_items.begin ();
+                        // Expired, remove it from the list.
+                        m_items.erase (iter);
 
-                        // Has this timer expired?
-                        if (iter->m_notificationTime <= currentTime)
+                        // Call the listener
+                        //
+                        // NOTE
+                        //      The lock is held.
+                        //      The listener MUST NOT block for long.
+                        //
+                        timer.m_listener->onDeadlineTimer (timer);
+
+                        // Is the timer recurring?
+                        if (timer.m_secondsRecurring > 0)
                         {
-                            // Yes, so call the listener.
-                            //
-                            // Note that this happens while the lock is held.
-                            //
-                            iter->m_listener->onDeadlineTimer (*iter);
+                            // Yes so set the timer again.
+                            timer.m_notificationTime =
+                                currentTime + RelativeTime (iter->m_secondsRecurring);
 
-                            // Remove it from the list.
-                            m_items.erase (iter);
-
-                            // Is the timer recurring?
-                            if (iter->m_secondsRecurring > 0)
-                            {
-                                // Yes so set the timer again.
-                                iter->m_notificationTime =
-                                    currentTime + RelativeTime (iter->m_secondsRecurring);
-
-                                // Keep it active.
-                                insertSorted (*iter);
-                            }
-                            else
-                            {
-                                // Not a recurring timer, deactivate it.
-                                iter->m_isActive = false;
-                            }
+                            // Keep it active.
+                            insertSorted (timer);
                         }
                         else
                         {
-                            break;
+                            // Not a recurring timer, deactivate it.
+                            timer.m_isActive = false;
                         }
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
 
@@ -175,7 +176,7 @@ public:
     }
 
     // Caller is responsible for locking
-    void insertSorted (DeadlineTimer& item)
+    void insertSorted (DeadlineTimer& timer)
     {
         if (! m_items.empty ())
         {
@@ -183,9 +184,9 @@ public:
 
             for (;;)
             {
-                if (before->m_notificationTime >= item.m_notificationTime)
+                if (before->m_notificationTime >= timer.m_notificationTime)
                 {
-                    m_items.insert (before, item);
+                    m_items.insert (before, timer);
                     break;
                 }
 
@@ -193,14 +194,14 @@ public:
 
                 if (before == m_items.end ())
                 {
-                    m_items.push_back (item);
+                    m_items.push_back (timer);
                     break;
                 }
             }
         }
         else
         {
-            m_items.push_back (item);
+            m_items.push_back (timer);
         }
     }
 
@@ -227,7 +228,7 @@ DeadlineTimer::DeadlineTimer (Listener* listener)
 
 DeadlineTimer::~DeadlineTimer ()
 {
-    m_manager->deactivate (this);
+    m_manager->deactivate (*this);
 }
 
 void DeadlineTimer::setExpiration (double secondsUntilDeadline)
@@ -236,7 +237,7 @@ void DeadlineTimer::setExpiration (double secondsUntilDeadline)
 
     Time const when = Time::getCurrentTime () + RelativeTime (secondsUntilDeadline);
 
-    m_manager->activate (this, 0, when);
+    m_manager->activate (*this, 0, when);
 }
 
 void DeadlineTimer::setRecurringExpiration (double secondsUntilDeadline)
@@ -245,15 +246,15 @@ void DeadlineTimer::setRecurringExpiration (double secondsUntilDeadline)
 
     Time const when = Time::getCurrentTime () + RelativeTime (secondsUntilDeadline);
 
-    m_manager->activate (this, secondsUntilDeadline, when);
+    m_manager->activate (*this, secondsUntilDeadline, when);
 }
 
 void DeadlineTimer::setExpirationTime (Time const& when)
 {
-    m_manager->activate (this, 0, when);
+    m_manager->activate (*this, 0, when);
 }
 
 void DeadlineTimer::reset ()
 {
-    m_manager->deactivate (this);
+    m_manager->deactivate (*this);
 }

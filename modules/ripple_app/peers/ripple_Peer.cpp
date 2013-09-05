@@ -34,7 +34,8 @@ public:
 
 #if RIPPLE_PEER_USES_BEAST_MULTISOCKET
     ScopedPointer <MultiSocket> m_socket;
-    boost::asio::io_service& m_strand;
+    //boost::asio::io_service& m_strand;
+    boost::asio::io_service::strand m_strand;
 
     NativeSocketType& getNativeSocket ()
     {
@@ -1471,12 +1472,14 @@ static void checkValidation (Job&, SerializedValidation::pointer val, bool isTru
         //----------------------------------------------------------------------
         //
         {
+#if RIPPLE_USE_NEW_VALIDATIONS
             SerializedValidation const& sv (*val);
             Validators::ReceivedValidation rv;
             rv.ledgerHash = sv.getLedgerHash ();
             uint160 const publicKeyHash (sv.getSignerPublic ().getNodeID ());
             rv.signerPublicKeyHash = RipplePublicKeyHash (publicKeyHash.begin ());
             getApp ().getValidators ().receiveValidation (rv);
+#endif
         }
         //
         //----------------------------------------------------------------------

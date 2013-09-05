@@ -23,87 +23,109 @@
 template <typename, typename>
 class DynamicList;
 
-namespace detail
-{
-
-template <typename I>
+template <class Container, bool IsConst>
 class DynamicListIterator
-    : public std::iterator <std::bidirectional_iterator_tag,
-        typename I::size_type>
+    : public std::iterator <
+        std::bidirectional_iterator_tag,
+        typename Container::value_type,
+        typename Container::difference_type,
+        typename mpl::IfConst <IsConst,
+            typename Container::const_pointer,
+            typename Container::pointer>::type,
+        typename mpl::IfConst <IsConst,
+            typename Container::const_reference,
+            typename Container::reference>::type>
 {
+private:
+    typedef typename mpl::IfConst <IsConst,
+        typename List <typename Container::Item>::const_iterator,
+        typename List <typename Container::Item>::iterator>::type iterator_type;
+
+    typedef typename mpl::IfConst <IsConst,
+        typename Container::const_pointer,
+        typename Container::pointer>::type pointer;
+
+    typedef typename mpl::IfConst <IsConst,
+        typename Container::const_reference,
+        typename Container::reference>::type reference;
+
 public:
-    typedef typename I::value_type ItemType; // this will be <Item>
-    typedef typename ItemType::value_type T; // this is the original T
+    DynamicListIterator ()
+    {
+    }
 
-    typedef typename copyconst <ItemType, T>::type
-
-                                  value_type;
-    typedef value_type*           pointer;
-    typedef value_type&           reference;
-    typedef typename I::size_type size_type;
-
-    DynamicListIterator (I iter = I ()) noexcept
+    DynamicListIterator (iterator_type iter)
         : m_iter (iter)
     {
     }
 
-#if 1
-    template <typename J>
-    DynamicListIterator (DynamicListIterator <J> const& other) noexcept
+    DynamicListIterator (DynamicListIterator const& other)
         : m_iter (other.m_iter)
     {
     }
 
-    template <typename J>
-    DynamicListIterator& operator= (DynamicListIterator <J> const& other) noexcept
+    template <bool OtherIsConst>
+    DynamicListIterator (DynamicListIterator <Container, OtherIsConst> const& other)
+        : m_iter (other.m_iter)
+    {
+    }
+
+    DynamicListIterator& operator= (DynamicListIterator const& other)
     {
         m_iter = other.m_iter;
         return *this;
     }
-#endif
 
-    template <typename J>
-    bool operator== (DynamicListIterator <J> const& other) const noexcept
+    template <bool OtherIsConst>
+    DynamicListIterator& operator= (DynamicListIterator <
+        Container, OtherIsConst> const& other)
+    {
+        m_iter = other.m_iter;
+        return *this;
+    }
+
+    template <bool OtherIsConst>
+    bool operator== (DynamicListIterator <Container, OtherIsConst> const& other) const
     {
         return m_iter == other.m_iter;
     }
 
-    template <typename J>
-    bool operator != (DynamicListIterator <J> const& other) const noexcept
+    template <bool OtherIsConst>
+    bool operator!= (DynamicListIterator <Container, OtherIsConst> const& other) const
     {
-        return ! this->operator== (other);
+        return ! ((*this) == other);
     }
 
-    reference operator* () const noexcept
+    reference operator* () const
     {
         return dereference ();
     }
 
-    pointer operator-> () const noexcept
+    pointer operator-> () const
     {
         return &dereference ();
     }
 
-    DynamicListIterator& operator++ () noexcept
+    DynamicListIterator& operator++ ()
     {
         increment ();
         return *this;
     }
 
-    DynamicListIterator operator++ (int) noexcept
+    DynamicListIterator operator++ (int)
     {
         DynamicListIterator const result (*this);
         increment ();
         return result;
     }
 
-    DynamicListIterator& operator-- () noexcept
+    DynamicListIterator& operator-- ()
     {
         decrement ();
         return *this;
     }
 
-    DynamicListIterator operator-- (int) noexcept
+    DynamicListIterator operator-- (int)
     {
         DynamicListIterator const result (*this);
         decrement ();
@@ -114,27 +136,23 @@ private:
     template <typename, typename>
     friend class DynamicList;
 
-    typedef typename I::value_type Item;
-
-    reference dereference () const noexcept
+    reference dereference () const
     {
         return *(m_iter->get ());
     }
 
-    void increment () noexcept
+    void increment ()
     {
         ++m_iter;
     }
 
-    void decrement () noexcept
+    void decrement ()
     {
         --m_iter;
     }
 
-    I m_iter;
+    iterator_type m_iter;
 };
-
-}
 
 //------------------------------------------------------------------------------
 
@@ -155,7 +173,7 @@ private:
         Destructible
 */
 template <typename T,
-          typename Allocator = std::allocator <char> >
+          class Allocator = std::allocator <char> >
 class DynamicList
 {
 private:
@@ -175,34 +193,15 @@ public:
     typedef T&             reference;
     typedef T const*       const_pointer;
     typedef T const&       const_reference;
+    
+    typedef DynamicList <
+        T,
+        Allocator>         container_type;
 
-private:
-    struct Item : List <Item>::Node
-    {
-        typedef T value_type;
-
-        T* get () noexcept
-        {
-            return reinterpret_cast <T*> (&storage [0]);
-        }
-
-        T const* get () const noexcept
-        {
-            return reinterpret_cast <T const*> (&storage [0]);
-        }
-
-    private:
-        // Lets hope this is padded correctly
-        uint8 storage [sizeof (T)];
-    };
+    typedef DynamicListIterator <container_type, false> iterator;
+    typedef DynamicListIterator <container_type, true>  const_iterator;
 
 public:
-    typedef detail::DynamicListIterator <
-        typename List <Item>::iterator> iterator;
-
-    typedef detail::DynamicListIterator <
-        typename List <Item>::const_iterator> const_iterator;
-
     explicit DynamicList (
         size_type blocksize = defaultBlocksize,
         Allocator const& allocator = Allocator ())
@@ -418,6 +417,28 @@ public:
     }
 
 private:
+    template <class, bool>
+    friend class DynamicListIterator;
+
+    struct Item : List <Item>::Node
+    {
+        typedef T value_type;
+
+        T* get () noexcept
+        {
+            return reinterpret_cast <T*> (&storage [0]);
+        }
+
+        T const* get () const noexcept
+        {
+            return reinterpret_cast <T const*> (&storage [0]);
+        }
+
+    private:
+        // Lets hope this is padded correctly
+        uint8 storage [sizeof (T)];
+    };
+
     Item* alloc () noexcept
     {
         Item* item;

@@ -20,7 +20,7 @@ public:
     };
 
 public:
-    // VFALCO TODO Make LedgerMaster a SharedObjectPtr or a reference.
+    // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
     NetworkOPsImp (LedgerMaster& ledgerMaster)
         : mLock (this, "NetOPs", __FILE__, __LINE__)

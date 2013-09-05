@@ -26,16 +26,20 @@ namespace UnitTestUtilities
 /** Fairly shuffle an array pseudo-randomly.
 */
 template <class T>
-void repeatableShuffle (int const numberOfItems, T& arrayOfItems, int64 seedValue)
+void repeatableShuffle (int const numberOfItems, T& arrayOfItems, Random& r)
 {
-    Random r (seedValue);
-
     for (int i = numberOfItems - 1; i > 0; --i)
     {
         int const choice = r.nextInt (i + 1);
-
         std::swap (arrayOfItems [i], arrayOfItems [choice]);
     }
+}
+
+template <class T>
+void repeatableShuffle (int const numberOfItems, T& arrayOfItems, int64 seedValue)
+{
+    Random r (seedValue);
+    repeatableShuffle (numberOfItems, arrayOfItems, r);
 }
 
 //------------------------------------------------------------------------------

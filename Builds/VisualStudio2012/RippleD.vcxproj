@@ -778,6 +778,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\ripple_core.cpp" />
+    <ClCompile Include="..\..\modules\ripple_core\test\TestOverlay.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceStrings.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1501,6 +1507,16 @@
     <ClInclude Include="..\..\modules\ripple_core\node\NodeStore.h" />
     <ClInclude Include="..\..\modules\ripple_core\node\NullBackendFactory.h" />
     <ClInclude Include="..\..\modules\ripple_core\ripple_core.h" />
+    <ClInclude Include="..\..\modules\ripple_core\test\ConnectionType.h" />
+    <ClInclude Include="..\..\modules\ripple_core\test\InitPolicy.h" />
+    <ClInclude Include="..\..\modules\ripple_core\test\MessageType.h" />
+    <ClInclude Include="..\..\modules\ripple_core\test\NetworkType.h" />
+    <ClInclude Include="..\..\modules\ripple_core\test\PeerLogicBase.h" />
+    <ClInclude Include="..\..\modules\ripple_core\test\ConfigType.h" />
+    <ClInclude Include="..\..\modules\ripple_core\test\PeerType.h" />
+    <ClInclude Include="..\..\modules\ripple_core\test\Results.h" />
+    <ClInclude Include="..\..\modules\ripple_core\test\SimplePayload.h" />
+    <ClInclude Include="..\..\modules\ripple_core\test\StateBase.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceStrings.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedUri.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\Validator.h" />

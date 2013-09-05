@@ -164,6 +164,15 @@
     <Filter Include="beast_core\containers\detail">
       <UniqueIdentifier>{08ec13ba-4058-4ad7-afbb-cbb1c6e2fc4a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast">
+      <UniqueIdentifier>{92d1bb42-289a-4444-85c7-cb87540f2fff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\intrusive">
+      <UniqueIdentifier>{8832eb52-53f9-4850-8dc9-1d579a386a0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\mpl">
+      <UniqueIdentifier>{5904368f-a0f2-4d26-a031-8cbe4448dc3f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -551,9 +560,6 @@
     <ClInclude Include="..\..\modules\beast_core\time\beast_PerformedAtExit.h">
       <Filter>beast_core\time</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_SharedObject.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
@@ -803,9 +809,6 @@
     <ClInclude Include="..\..\modules\beast_core\thread\beast_DeadlineTimer.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_OncePerSecond.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\beast_CallQueue.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
@@ -940,6 +943,42 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\text\StringFromNumber.h">
       <Filter>beast_core\text</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\intrusive\ForwardList.h">
+      <Filter>beast\intrusive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\intrusive\PointerTraits.h">
+      <Filter>beast\intrusive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\RemoveConst.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\RemoveReference.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\AddConst.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\IfConst.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\PointerToOther.h">
+      <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedPtr.h">
+      <Filter>beast_core\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedObject.h">
+      <Filter>beast_core\memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1363,9 +1402,6 @@
     <ClCompile Include="..\..\modules\beast_core\thread\beast_DeadlineTimer.cpp">
       <Filter>beast_core\thread</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_OncePerSecond.cpp">
-      <Filter>beast_core\thread</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\beast_CallQueue.cpp">
       <Filter>beast_core\thread</Filter>
     </ClCompile>
@@ -1424,6 +1460,9 @@
       <Filter>beast_core\containers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicList.cpp">
+      <Filter>beast_core\containers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\containers\HashMap.cpp">
       <Filter>beast_core\containers</Filter>
     </ClCompile>
   </ItemGroup>

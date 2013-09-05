@@ -151,6 +151,9 @@
     <Filter Include="[1] Ripple\ripple_app\node">
       <UniqueIdentifier>{1d9bc26d-d76e-4fd4-a737-b968e31e614b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\ripple_core\test">
+      <UniqueIdentifier>{129c51dc-e885-4023-999b-e133d800fb80}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Subtrees\beast\modules\beast_core\beast_core.cpp">
@@ -863,6 +866,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\validator\Validators.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\test\TestOverlay.cpp">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1684,6 +1690,36 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorsImp.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\test\Results.h">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\test\SimplePayload.h">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\test\MessageType.h">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\test\ConnectionType.h">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\test\PeerType.h">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\test\NetworkType.h">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\test\StateBase.h">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\test\PeerLogicBase.h">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\test\InitPolicy.h">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\test\ConfigType.h">
+      <Filter>[1] Ripple\ripple_core\test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -107,7 +107,7 @@ protected:
     }
 
 public:
-    typedef SharedObjectPtr <Object> Ptr;
+    typedef SharedPtr <Object> Ptr;
 
     /** Retrieve a reference to the singleton.
     */
@@ -136,22 +136,20 @@ public:
 
     inline void incReferenceCount () noexcept
     {
-        m_refs.addref ();
+        ++m_refCount;
     }
 
-    inline bool decReferenceCount (bool = true) noexcept
+    inline bool decReferenceCount (bool = false) noexcept
     {
-        if (m_refs.release ())
+        if (--m_refCount == 0)
             destroySingleton ();
-
-        // We let destroySingleton enforce the ContainerDeletePolicy
         return false;
     }
 
     // Caller must synchronize.
     inline bool isBeingReferenced () const
     {
-        return m_refs.isSignaled ();
+        return m_refCount.get () != 0;
     }
 
 private:
@@ -186,13 +184,13 @@ private:
         {
             bassert (m_lifetime != neverDestroyed);
 
-            ContainerDeletePolicy <Object>::destroy (static_cast <Object*>(this));
+            delete static_cast <Object*> (this);
         }
     }
 
 private:
     Lifetime const m_lifetime;
-    AtomicCounter m_refs;
+    Atomic <int> m_refCount;
 
 private:
     static Object* s_instance;

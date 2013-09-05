@@ -236,13 +236,14 @@ public:
         : m_node (node)
     {
     }
-#if 0
+
     template <typename M>
     ListIterator (ListIterator <M> const& other) noexcept
         : m_node (other.m_node)
     {
     }
 
+#if 0
     template <typename M>
     ListIterator& operator= (ListIterator <M> const& other) noexcept
     {

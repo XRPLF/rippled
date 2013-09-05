@@ -218,6 +218,13 @@ Some files contain portions of these external projects, licensed separately:
 #undef _aligned_msize
 #endif
 
+//------------------------------------------------------------------------------
+
+// New header-only library modeled more closely according to boost
+#include "../../beast/intrusive/ForwardList.h"
+
+//------------------------------------------------------------------------------
+
 namespace beast
 {
 
@@ -303,6 +310,8 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "diagnostic/beast_ProtectedCall.h"
 #include "containers/beast_AbstractFifo.h"
 #include "containers/beast_ArrayAllocationBase.h"
+#include "memory/SharedObject.h"
+#include "memory/SharedPtr.h"
 #include "containers/beast_DynamicObject.h"
 #include "containers/beast_ElementComparator.h"
 #include "maths/beast_Random.h"
@@ -343,7 +352,6 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "memory/beast_Memory.h"
 #include "memory/beast_MemoryBlock.h"
 #include "memory/beast_OptionalScopedPointer.h"
-#include "memory/beast_SharedObject.h"
 #include "memory/beast_ScopedPointer.h"
 #include "memory/beast_SharedSingleton.h"
 #include "memory/beast_WeakReference.h"
@@ -401,7 +409,6 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "functional/beast_Function.h"
 
 #include "thread/beast_DeadlineTimer.h"
-#include "thread/beast_OncePerSecond.h"
 
 #include "memory/beast_AllocatedBy.h"
 #include "memory/beast_PagedFreeStore.h"
@@ -444,7 +451,5 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #if BEAST_MSVC
 #pragma warning (pop)
 #endif
-
-//------------------------------------------------------------------------------
 
 #endif
