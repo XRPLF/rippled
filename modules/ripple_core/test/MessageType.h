@@ -16,7 +16,7 @@ class MessageType : public Config
 {
 public:
     typedef typename Config::State::UniqueID UniqueID;
-    using typename Config::Payload;
+    typedef typename Config::Payload Payload;
 
     MessageType ()
         : m_id (0)

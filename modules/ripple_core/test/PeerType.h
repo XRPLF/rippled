@@ -17,14 +17,16 @@ class PeerType
     , public Uncopyable
 {
 public:
-    using typename Config::Peer;
-    using typename Config::Payload;
-    using typename Config::PeerLogic;
-    using typename Config::Message;
-    using typename Config::Network;
-    typedef typename Config::State::UniqueID UniqueID;
-    typedef ConnectionType <Config> Connection;
-    typedef std::vector <Connection> Connections;
+    typedef typename Config::Peer       Peer;
+    typedef typename Config::Payload    Payload;
+    typedef typename Config::PeerLogic  PeerLogic;
+    typedef typename Config::Message    Message;
+    typedef typename Config::Network    Network;
+    typedef typename Config::State      State;
+    typedef typename State::UniqueID    UniqueID;
+    typedef ConnectionType <Config>     Connection;
+    typedef std::vector <Connection>    Connections;
+    
     typedef boost::unordered_set <UniqueID> MessageTable;
 
     explicit PeerType (Network& network)

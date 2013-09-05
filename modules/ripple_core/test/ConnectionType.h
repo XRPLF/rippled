@@ -15,11 +15,12 @@ template <class Config>
 class ConnectionType : public Config
 {
 public:
-    using typename Config::Peer;
-    using typename Config::Message;
+    typedef typename Config::Peer    Peer;
+    typedef typename Config::Message Message;
+    typedef typename Config::State   State;
+    typedef typename State::UniqueID UniqueID;
 
     typedef std::vector <Message> Messages;
-    typedef typename Config::State::UniqueID UniqueID;
     typedef boost::unordered_set <UniqueID> MessageTable;
 
     /** Create the 'no connection' object. */

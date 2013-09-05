@@ -18,9 +18,9 @@ template <class Config>
 class PeerLogicBase : public Config
 {
 public:
-    typedef typename Config::Peer Peer; 
-    typedef typename Peer::Connection Connection;
-    typedef typename Connection::Message Message;
+    typedef typename Config::Peer           Peer; 
+    typedef typename Peer::Connection       Connection;
+    typedef typename Connection::Message    Message;
 
     explicit PeerLogicBase (Peer& peer)
         : m_peer (peer)

@@ -16,9 +16,9 @@ class NetworkType : public ConfigParam
 public:
     typedef ConfigParam Config;
 
-    using typename Config::SizeType;
-    using typename Config::State;
-    using typename Config::Peer;
+    typedef typename Config::Peer       Peer;
+    typedef typename Config::State      State;
+    typedef typename Config::SizeType   SizeType;
 
     typedef std::vector <ScopedPointer <Peer> > Peers;
 
