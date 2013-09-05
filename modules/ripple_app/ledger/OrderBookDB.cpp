@@ -25,7 +25,7 @@ void OrderBookDB::setup (Ledger::ref ledger)
 
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    if (ledger->getLedgerSeq () == mSeq)
+    if ((mSeq != 0) && (ledger->getLedgerSeq () >= mSeq) && ((ledger->getLedgerSeq() - mSeq) < 10))
         return;
 
     mSeq = ledger->getLedgerSeq ();
