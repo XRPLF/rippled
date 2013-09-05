@@ -173,6 +173,9 @@
     <Filter Include="beast\mpl">
       <UniqueIdentifier>{5904368f-a0f2-4d26-a031-8cbe4448dc3f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_asio\parsehttp">
+      <UniqueIdentifier>{ac367054-ddbf-4118-a41a-07bea34d32c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -983,6 +986,9 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\ContractChecks.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\parsehttp\http_parser.h">
+      <Filter>beast_asio\parsehttp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
@@ -1467,6 +1473,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\containers\HashMap.cpp">
       <Filter>beast_core\containers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\parsehttp\http_parser.c">
+      <Filter>beast_asio\parsehttp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
