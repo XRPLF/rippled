@@ -861,9 +861,6 @@
     <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedUri.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\validator\Validator.cpp">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\validator\Validators.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
@@ -1680,9 +1677,6 @@
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedUri.h">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_core\validator\Validator.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\validator\Validators.h">

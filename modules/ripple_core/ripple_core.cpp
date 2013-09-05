@@ -21,6 +21,9 @@
 #include "../ripple_leveldb/ripple_leveldb.h"
 #include "../ripple_mdb/ripple_mdb.h"
 
+// For Validators 
+//#include "../ripple_net/ripple_net.h"
+
 namespace ripple
 {
 
@@ -59,8 +62,6 @@ namespace ripple
 # include "test/ConfigType.h"
 #include "test/TestOverlay.cpp"
 
-# include "validator/Validator.h"
-#include "validator/Validator.cpp"
 # include "validator/ValidatorSourceStrings.h"
 # include "validator/ValidatorSourceTrustedUri.h"
 # include "validator/ValidatorsImp.h" // private

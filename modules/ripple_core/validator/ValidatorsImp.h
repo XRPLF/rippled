@@ -357,7 +357,7 @@ public:
         , m_thread ("Validators")
         , m_timer (this)
     {
-        //m_thread.start (this);
+        m_thread.start (this);
     }
 
     ~ValidatorsImp ()
