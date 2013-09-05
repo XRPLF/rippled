@@ -1165,3 +1165,158 @@ Application& getApp ()
 {
     return *ApplicationImp::getInstance ();
 }
+
+//------------------------------------------------------------------------------
+
+// Holds a loaned object. The destructor returns it to the source.
+template <typename Object>
+class LoanedObjectHolder : public SharedObject
+{
+public:
+    class Owner
+    {
+    public:
+        virtual void recoverLoanedObject (Object* object) = 0;
+    };
+
+    // The class that loans out the object uses this constructor
+    LoanedObjectHolder (Owner* owner, Object* object)
+        : m_owner (owner)
+        , m_object (object)
+    {
+    }
+
+    ~LoanedObjectHolder ()
+    {
+        m_owner->recoverLoanedObject (m_object);
+    }
+
+    Object& get ()
+    {
+        return *m_object;
+    }
+
+    Object const& get () const
+    {
+        return *m_object;
+    }
+
+private:
+    Owner* m_owner;
+    Object* m_object;
+};
+
+//------------------------------------------------------------------------------
+
+class LoanedObjectTests : public UnitTest
+{
+public:
+    // Meets the LoaningContainer requirements
+    //
+    class LoanedObject : public List <LoanedObject>::Node
+    {
+    public:
+        void useful ()
+        {
+        }
+    };
+
+    // Requirements:
+    //  Object must be derived from List <Object>::Node
+    //
+    template <class Object>
+    class LoaningContainer : protected LoanedObjectHolder <Object>::Owner
+    {
+    protected:
+        void recoverLoanedObject (Object* object)
+        {
+            m_list.push_front (*object);
+        }
+
+    public:
+        typedef Object                      ValueType;
+        typedef Object&                     Reference;
+        typedef Object*                     Pointer;
+        typedef LoanedObjectHolder <Object> Holder;
+        typedef SharedPtr <Holder >         Ptr;
+
+        LoaningContainer ()
+        {
+        }
+
+        ~LoaningContainer ()
+        {
+            while (! m_list.empty ())
+                delete (&m_list.pop_front ());
+        }
+
+        bool empty () const
+        {
+            return m_list.empty ();
+        }
+
+        std::size_t size () const
+        {
+            return m_list.size ();
+        }
+
+        // Donate an object that can be loaned out later
+        // Ownership is transferred, the object must have been
+        // allocated via operator new.
+        //
+        void donate (Object* object)
+        {
+            m_list.push_front (*object);
+        }
+
+        // Check an object out
+        Ptr borrow ()
+        {
+            if (m_list.empty ())
+                return Ptr ();
+            
+            Object& object (m_list.pop_front ());
+            return Ptr (new Holder (this, &object));
+        }
+
+    private:
+        List <Object> m_list;
+    };
+
+    enum
+    {
+        numberAvailable = 5
+    };
+
+    void runTest ()
+    {
+        beginTestCase ("loan objects");
+
+        typedef LoaningContainer <LoanedObject> Container;
+
+        Container items;
+
+        expect (items.size () == 0);
+
+        for (int i = 0; i < numberAvailable; ++i)
+            items.donate (new LoanedObject);
+
+        expect (items.size () == numberAvailable);
+
+        {
+            Container::Ptr item (items.borrow());
+
+            item->get().useful ();
+
+            expect (items.size () == numberAvailable - 1);
+        }
+
+        expect (items.size () == numberAvailable);
+    }
+
+    LoanedObjectTests () : UnitTest ("LoanedObject", "ripple", runManual)
+    {
+    }
+};
+
+static LoanedObjectTests loanedObjectTests;
