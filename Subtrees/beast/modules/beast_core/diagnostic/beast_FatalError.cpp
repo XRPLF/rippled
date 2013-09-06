@@ -130,7 +130,7 @@ public:
         // We don't really expect the program to run after this
         // but the unit test is here so you can manually test it.
         int shouldBeZero (1);
-        fatal_assert (shouldBeZero == 0);
+        check_invariant (shouldBeZero == 0);
     }
 };
 
