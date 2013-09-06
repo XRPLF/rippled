@@ -79,17 +79,17 @@ private:
         JobCounts jobCounts;
     };
 
-    typedef SharedData <State> SharedState;
-
-    void queueJob (Job const& job, SharedState::WriteAccess& state);
-    void getNextJob (Job& job, SharedState::WriteAccess& state);
+    void queueJob (Job const& job, ScopedLock const& lock);
+    void getNextJob (Job& job, ScopedLock const& lock);
     void finishJob (Job const& job);
     void processTask ();
 
     static int getJobLimit (JobType type);
 
 private:
-    SharedState m_state;
+    typedef CriticalSection::ScopedLockType ScopedLock;
+    CriticalSection m_mutex;
+    State m_state;
     Workers m_workers;
     LoadMonitor mJobLoads [NUM_JOB_TYPES];
 };
