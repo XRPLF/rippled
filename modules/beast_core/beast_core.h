@@ -408,6 +408,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "diagnostic/MeasureFunctionCallTime.h"
 
 #include "functional/beast_Function.h"
+#include "functional/SharedFunction.h"
 
 #include "thread/beast_DeadlineTimer.h"
 

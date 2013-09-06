@@ -163,6 +163,7 @@
     <ClInclude Include="..\..\modules\beast_core\files\beast_RandomAccessFile.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_TemporaryFile.h" />
     <ClInclude Include="..\..\modules\beast_core\functional\beast_Function.h" />
+    <ClInclude Include="..\..\modules\beast_core\functional\SharedFunction.h" />
     <ClInclude Include="..\..\modules\beast_core\json\beast_JSON.h" />
     <ClInclude Include="..\..\modules\beast_core\logging\beast_FileLogger.h" />
     <ClInclude Include="..\..\modules\beast_core\logging\beast_Logger.h" />

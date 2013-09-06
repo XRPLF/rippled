@@ -992,6 +992,9 @@
     <ClInclude Include="..\..\modules\beast_asio\protocol\UniformResourceLocator.h">
       <Filter>beast_asio\protocol</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\functional\SharedFunction.h">
+      <Filter>beast_core\functional</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">

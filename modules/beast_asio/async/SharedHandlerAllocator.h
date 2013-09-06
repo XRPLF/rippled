@@ -112,18 +112,16 @@ private:
 
 //------------------------------------------------------------------------------
 
+#if 0
 template <typename Function>
 void SharedHandler::invoke (BOOST_ASIO_MOVE_ARG(Function) f)
 {
-#if BEAST_USE_HANDLER_ALLOCATIONS
     // The allocator will hold a reference to the SharedHandler
     // so that we can safely destroy the function object.
     invoked_type invoked (BOOST_ASIO_MOVE_CAST(Function)(f),
         SharedHandlerAllocator <char> (this));
-#else
-    invoked_type invoked (BOOST_ASIO_MOVE_CAST(Function)(f));
-#endif
     invoke (invoked);
 }
+#endif
 
 #endif
