@@ -53,13 +53,6 @@
 # define BEAST_SOCKET_VIRTUAL
 #endif
 
-// A potentially dangerous but powerful feature which
-// might need to be turned off to see if it fixes anything.
-//
-#ifndef BEAST_USE_HANDLER_ALLOCATIONS
-# define BEAST_USE_HANDLER_ALLOCATIONS 1
-#endif
-
 namespace beast
 {
 

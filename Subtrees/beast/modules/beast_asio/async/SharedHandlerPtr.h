@@ -215,6 +215,26 @@ inline bool asio_handler_is_continuation (SharedHandlerPtr* ptr)
 //
 //--------------------------------------------------------------------------
 
+// void(error_code)
+template <typename Handler>
+SharedHandlerPtr newErrorHandler (
+    BOOST_ASIO_MOVE_ARG(Handler) handler)
+{
+    return newSharedHandlerContainer <ErrorSharedHandlerType> (
+        BOOST_ASIO_MOVE_CAST(Handler)(handler));
+}
+
+// void(error_code, size_t)
+template <typename Handler>
+SharedHandlerPtr newTransferHandler (
+    BOOST_ASIO_MOVE_ARG(Handler) handler)
+{
+    return newSharedHandlerContainer <TransferSharedHandlerType> (
+        BOOST_ASIO_MOVE_CAST(Handler)(handler));
+}
+
+//--------------------------------------------------------------------------
+
 // CompletionHandler
 //
 // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/CompletionHandler.html
