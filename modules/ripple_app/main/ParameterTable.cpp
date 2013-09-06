@@ -81,7 +81,7 @@ bool ParameterNode::addNode (const std::string& name, Parameter::ref node)
     else
     {
         // existing node passed through must be inner
-        ParameterNode* n = dynamic_cast<ParameterNode*> (it->second.get ());
+        n = dynamic_cast<ParameterNode*> (it->second.get ());
 
         if (!n)
             return false;
