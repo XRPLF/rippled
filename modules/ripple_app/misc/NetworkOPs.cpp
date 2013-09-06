@@ -1824,18 +1824,16 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int
     uint32 NONBINARY_PAGE_LENGTH = 200;
     uint32 EXTRA_LENGTH = 20;
 
-    uint32 numberOfResults = limit;
-    uint32 queryLimit = limit;
-
     bool foundResume = token.isNull();
 
+    uint32 numberOfResults, queryLimit;
     if (limit <= 0)
-        queryLimit = NONBINARY_PAGE_LENGTH;
+        numberOfResults = NONBINARY_PAGE_LENGTH;
     else if (bAdmin && (limit > NONBINARY_PAGE_LENGTH))
-        queryLimit = NONBINARY_PAGE_LENGTH;
+        numberOfResults = NONBINARY_PAGE_LENGTH;
     else
-        queryLimit = limit;
-    numberOfResults = queryLimit + (foundResume? 0 : EXTRA_LENGTH);
+        numberOfResults = limit;
+    queryLimit = numberOfResults + (foundResume ? 0 : EXTRA_LENGTH);
 
     uint32 findLedger = 0, findSeq = 0;
     if (!foundResume)
@@ -1933,18 +1931,16 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, int32 minLedger, in
     uint32 BINARY_PAGE_LENGTH = 500;
     uint32 EXTRA_LENGTH = 20;
 
-    uint32 numberOfResults = limit;
-    uint32 queryLimit = limit;
-
     bool foundResume = token.isNull();
 
+    uint32 numberOfResults, queryLimit;
     if (limit <= 0)
-        queryLimit = BINARY_PAGE_LENGTH;
+        numberOfResults = BINARY_PAGE_LENGTH;
     else if (bAdmin && (limit > BINARY_PAGE_LENGTH))
-        queryLimit = BINARY_PAGE_LENGTH;
+        numberOfResults = BINARY_PAGE_LENGTH;
     else
-        queryLimit = limit;
-    numberOfResults = queryLimit + (foundResume? 0 : EXTRA_LENGTH);
+        numberOfResults = limit;
+    queryLimit = numberOfResults + (foundResume ? 0 : EXTRA_LENGTH);
 
     uint32 findLedger = 0, findSeq = 0;
     if (!foundResume)
