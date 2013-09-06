@@ -36,7 +36,8 @@ namespace beast
 
 #include "protocol/HandshakeDetectLogicPROXY.cpp"
 
-#include "parsehttp/http_parser.h"
+# include "parsehttp/http_parser.h"
+#include "protocol/UniformResourceLocator.cpp"
 
 #include "tests/PeerTest.cpp"
 #include "tests/TestPeerBasics.cpp"

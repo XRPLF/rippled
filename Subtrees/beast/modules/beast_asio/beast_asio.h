@@ -87,6 +87,7 @@ namespace beast
 #include "protocol/HandshakeDetectLogicSSL3.h"
 #include "protocol/HandshakeDetector.h"
 #include "protocol/PrefilledReadStream.h"
+#include "protocol/UniformResourceLocator.h"
 
 #include "tests/TestPeerBasics.h"
 #include "tests/TestPeer.h"
