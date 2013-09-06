@@ -176,6 +176,9 @@
     <Filter Include="beast_asio\protocol">
       <UniqueIdentifier>{c0724499-ab69-40c3-90e2-65242dbd2eaa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast_asio\http">
+      <UniqueIdentifier>{f7252567-a5bb-4be2-bbd0-c9d9b62298de}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -989,11 +992,38 @@
     <ClInclude Include="..\..\modules\beast_asio\protocol\PrefilledReadStream.h">
       <Filter>beast_asio\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\protocol\UniformResourceLocator.h">
-      <Filter>beast_asio\protocol</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\functional\SharedFunction.h">
       <Filter>beast_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponse.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPClientType.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPMessage.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPVersion.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPField.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPHeaders.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPParser.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPParserImpl.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\UniformResourceLocator.h">
+      <Filter>beast_asio\http</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1483,8 +1513,32 @@
     <ClCompile Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicPROXY.cpp">
       <Filter>beast_asio\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\protocol\UniformResourceLocator.cpp">
-      <Filter>beast_asio\protocol</Filter>
+    <ClCompile Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.cpp">
+      <Filter>beast_asio\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponse.cpp">
+      <Filter>beast_asio\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPClientType.cpp">
+      <Filter>beast_asio\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPMessage.cpp">
+      <Filter>beast_asio\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPVersion.cpp">
+      <Filter>beast_asio\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPField.cpp">
+      <Filter>beast_asio\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPHeaders.cpp">
+      <Filter>beast_asio\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPParser.cpp">
+      <Filter>beast_asio\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\UniformResourceLocator.cpp">
+      <Filter>beast_asio\http</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
