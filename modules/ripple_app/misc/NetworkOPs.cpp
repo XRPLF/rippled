@@ -1843,7 +1843,7 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int
             if (!token.isMember("ledger") || !token.isMember("seq"))
                 return ret;
             findLedger = token["ledger"].asInt();
-            findSeq = token["ledger"].asInt();
+            findSeq = token["seq"].asInt();
         }
         catch (...)
         {
