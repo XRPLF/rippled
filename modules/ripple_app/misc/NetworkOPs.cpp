@@ -1730,7 +1730,7 @@ NetworkOPsImp::getAccountTxs (const RippleAddress& account, int32 minLedger, int
 
             if (rawMeta.getLength() == 0)
             { // Work around a bug that could leave the metadata missing
-                uint32 seq = static_cast<uint32>(db->getBigInt("AccountTransactions.LedgerSeq"));
+                uint32 seq = static_cast<uint32>(db->getBigInt("LedgerSeq"));
                 WriteLog(lsWARNING, NetworkOPs) << "Recovering ledger " << seq << ", txn " << txn->getID();
                 Ledger::pointer ledger = getLedgerBySeq(seq);
                 if (ledger)
@@ -1824,18 +1824,16 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int
     uint32 NONBINARY_PAGE_LENGTH = 200;
     uint32 EXTRA_LENGTH = 20;
 
-    uint32 numberOfResults = limit;
-    uint32 queryLimit = limit;
-
     bool foundResume = token.isNull();
 
+    uint32 numberOfResults, queryLimit;
     if (limit <= 0)
-        queryLimit = NONBINARY_PAGE_LENGTH;
+        numberOfResults = NONBINARY_PAGE_LENGTH;
     else if (bAdmin && (limit > NONBINARY_PAGE_LENGTH))
-        queryLimit = NONBINARY_PAGE_LENGTH;
+        numberOfResults = NONBINARY_PAGE_LENGTH;
     else
-        queryLimit = limit;
-    numberOfResults = queryLimit + (foundResume? 0 : EXTRA_LENGTH);
+        numberOfResults = limit;
+    queryLimit = numberOfResults + 1 + (foundResume ? 0 : EXTRA_LENGTH);
 
     uint32 findLedger = 0, findSeq = 0;
     if (!foundResume)
@@ -1874,14 +1872,14 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int
         {
             if (!foundResume)
             {
-                if ((findLedger == db->getInt("AccountTransactions.LedgerSeq")) && (findSeq == db->getInt("AccountTransactions.TxnSeq")))
+                if ((findLedger == db->getInt("LedgerSeq")) && (findSeq == db->getInt("TxnSeq")))
                     foundResume = true;
             }
             else if (numberOfResults == 0)
             {
                 token = Json::objectValue;
-                token["ledger"] = db->getInt("AccountTransactions.LedgerSeq");
-                token["seq"] = db->getInt("AccountTransactions.TxnSeq");
+                token["ledger"] = db->getInt("LedgerSeq");
+                token["seq"] = db->getInt("TxnSeq");
                 break;
             }
 
@@ -1904,13 +1902,14 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int
 
                 if (rawMeta.getLength() == 0)
                 { // Work around a bug that could leave the metadata missing
-                    uint32 seq = static_cast<uint32>(db->getBigInt("AccountTransactions.LedgerSeq"));
+                    uint32 seq = static_cast<uint32>(db->getBigInt("LedgerSeq"));
                     WriteLog(lsWARNING, NetworkOPs) << "Recovering ledger " << seq << ", txn " << txn->getID();
                     Ledger::pointer ledger = getLedgerBySeq(seq);
                     if (ledger)
                         ledger->pendSaveValidated(false, false);
                 }
 
+                --numberOfResults;
                 TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
 
 #ifdef C11X
@@ -1933,18 +1932,16 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, int32 minLedger, in
     uint32 BINARY_PAGE_LENGTH = 500;
     uint32 EXTRA_LENGTH = 20;
 
-    uint32 numberOfResults = limit;
-    uint32 queryLimit = limit;
-
     bool foundResume = token.isNull();
 
+    uint32 numberOfResults, queryLimit;
     if (limit <= 0)
-        queryLimit = BINARY_PAGE_LENGTH;
+        numberOfResults = BINARY_PAGE_LENGTH;
     else if (bAdmin && (limit > BINARY_PAGE_LENGTH))
-        queryLimit = BINARY_PAGE_LENGTH;
+        numberOfResults = BINARY_PAGE_LENGTH;
     else
-        queryLimit = limit;
-    numberOfResults = queryLimit + (foundResume? 0 : EXTRA_LENGTH);
+        numberOfResults = limit;
+    queryLimit = numberOfResults + 1 + (foundResume ? 0 : EXTRA_LENGTH);
 
     uint32 findLedger = 0, findSeq = 0;
     if (!foundResume)
@@ -1983,14 +1980,14 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, int32 minLedger, in
         {
             if (!foundResume)
             {
-                if ((findLedger == db->getInt("AccountTransactions.LedgerSeq")) && (findSeq == db->getInt("AccountTransactions.TxnSeq")))
+                if ((findLedger == db->getInt("LedgerSeq")) && (findSeq == db->getInt("TxnSeq")))
                     foundResume = true;
             }
             else if (numberOfResults == 0)
             {
                 token = Json::objectValue;
-                token["ledger"] = db->getInt("AccountTransactions.LedgerSeq");
-                token["seq"] = db->getInt("AccountTransactions.TxnSeq");
+                token["ledger"] = db->getInt("LedgerSeq");
+                token["seq"] = db->getInt("TxnSeq");
                 break;
             }
 
@@ -2021,6 +2018,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, int32 minLedger, in
                     rawMeta.resize (metaSize);
 
                 ret.push_back (boost::make_tuple (strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq")));
+                --numberOfResults;
             }
         }
     }
