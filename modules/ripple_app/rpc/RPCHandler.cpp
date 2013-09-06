@@ -2106,8 +2106,7 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, LoadType* loadType, 
 //   binary: boolean,                // optional, defaults to false
 //   forward: boolean,               // optional, defaults to false
 //   limit: integer,                 // optional
-//   fwd_marker: opaque,             // optional, resume forward
-//   rev_marker: opaque              // optional, resume reverse
+//   marker: opaque                  // optional, resume previous query
 // }
 Json::Value RPCHandler::doAccountTx (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
@@ -2160,17 +2159,9 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, LoadType* loadType, App
 
     Json::Value resumeToken;
 
-    if (params.isMember("fwd_marker"))
+    if (params.isMember("marker"))
     {
-         if ((!bForward) || params.isMember("rev_marker"))
-             return rpcError (rpcINVALID_PARAMS);
-         resumeToken = params["fwd_marker"];
-    }
-    if (params.isMember("rev_marker"))
-    {
-         if (bForward || params.isMember("fwd_marker"))
-             return rpcError (rpcINVALID_PARAMS);
-         resumeToken = params["rev_marker"];
+         resumeToken = params["marker"];
     }
 
 #ifndef BEAST_DEBUG
@@ -2232,7 +2223,7 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, LoadType* loadType, App
         if (params.isMember ("limit"))
             ret["limit"]        = limit;
         if (!resumeToken.isNull())
-            ret[bForward ? "fwd_token" : "rev_token"] = resumeToken;
+            ret["marker"] = resumeToken;
 
         return ret;
 #ifndef BEAST_DEBUG
