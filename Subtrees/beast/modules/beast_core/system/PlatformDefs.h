@@ -283,6 +283,14 @@ template <> struct BeastStaticAssert <true> { static void dummy() {} };
 # define BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL 1
 #endif
 
+#if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
+# define BEAST_MOVE_ARG(type) type&&
+# define BEAST_MOVE_CAST(type) static_cast<type&&>
+#else
+# define BEAST_MOVE_ARG(type) type
+# define BEAST_MOVE_CAST(type) type
+#endif
+
 //------------------------------------------------------------------------------
 
 // Declare some fake versions of nullptr and noexcept, for older compilers:
