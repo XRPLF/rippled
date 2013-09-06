@@ -77,7 +77,6 @@ public:
     virtual void* allocate (std::size_t size) = 0;
     virtual void  deallocate (void* p, std::size_t size) = 0;
     virtual bool  is_continuation () = 0;
-    virtual void  destroy () = 0;
 
     static void pure_virtual_called (char const* fileName, int lineNumber);
 
@@ -87,22 +86,6 @@ private:
     friend void* asio_handler_allocate (std::size_t, SharedHandler*);
     friend void  asio_handler_deallocate (void*, std::size_t, SharedHandler*);
     friend bool  asio_handler_is_continuation (SharedHandler*);
-    friend struct ContainerDeletePolicy <SharedHandler>;
-};
-
-//--------------------------------------------------------------------------
-
-// For SharedPtr <SharedHandler>
-template <>
-struct ContainerDeletePolicy <SharedHandler>
-{
-    // SharedPtr will use this when
-    // the reference count drops to zero.
-    //
-    inline static void destroy (SharedHandler* handler)
-    {
-        handler->destroy ();
-    }
 };
 
 //--------------------------------------------------------------------------

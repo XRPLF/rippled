@@ -69,9 +69,9 @@ protected:
 #endif
     }
 
-    // Called by our ContainerDeletePolicy hook to destroy the
-    // object. We need this because we allocated it using a custom
-    // allocator. Destruction is tricky, the algorithm is as follows:
+    // Called by SharedObject hook to destroy the object. We need
+    // this because we allocated it using a custom allocator.
+    // Destruction is tricky, the algorithm is as follows:
     //
     // First we move-assign the handler to our stack. If the build
     // doesn't support move-assignment it will be a copy, still ok.
