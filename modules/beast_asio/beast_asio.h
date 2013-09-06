@@ -63,7 +63,8 @@ namespace beast
 # include "async/ComposedAsyncOperation.h"
 #include "async/SharedHandlerAllocator.h"
 
-#include "basics/BufferType.h"
+# include "basics/BufferType.h"
+#include "basics/ContentBodyBuffer.h"
 #include "basics/FixedInputBuffer.h"
 #include "basics/PeerRole.h"
 #include "basics/SSLContext.h"
@@ -73,6 +74,15 @@ namespace beast
 # include "sockets/SocketWrapper.h"
 #include "sockets/SocketWrapperStrand.h"
 
+#   include "http/HTTPVersion.h"
+#   include "http/HTTPField.h"
+#   include "http/HTTPHeaders.h"
+#  include "http/HTTPMessage.h"
+# include "http/HTTPResponse.h"
+# include "http/HTTPParser.h"
+# include "http/UniformResourceLocator.h"
+#include "http/HTTPClientType.h"
+
 #  include "protocol/InputParser.h"
 # include "protocol/HandshakeDetectLogic.h"
 #include "protocol/HandshakeDetectLogicPROXY.h"
@@ -80,7 +90,6 @@ namespace beast
 #include "protocol/HandshakeDetectLogicSSL3.h"
 #include "protocol/HandshakeDetector.h"
 #include "protocol/PrefilledReadStream.h"
-#include "protocol/UniformResourceLocator.h"
 
 #include "tests/TestPeerBasics.h"
 #include "tests/TestPeer.h"

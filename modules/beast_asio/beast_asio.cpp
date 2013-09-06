@@ -28,6 +28,7 @@ namespace beast
 
 #include "async/SharedHandler.cpp"
 
+#include "basics/ContentBodyBuffer.cpp"
 #include "basics/PeerRole.cpp"
 #include "basics/SSLContext.cpp"
 
@@ -37,7 +38,15 @@ namespace beast
 #include "protocol/HandshakeDetectLogicPROXY.cpp"
 
 # include "parsehttp/http_parser.h"
-#include "protocol/UniformResourceLocator.cpp"
+# include "http/HTTPParserImpl.h"
+#include "http/HTTPParser.cpp"
+#include "http/UniformResourceLocator.cpp"
+#include "http/HTTPClientType.cpp"
+#include "http/HTTPField.cpp"
+#include "http/HTTPHeaders.cpp"
+#include "http/HTTPMessage.cpp"
+#include "http/HTTPResponse.cpp"
+#include "http/HTTPVersion.cpp"
 
 #include "tests/PeerTest.cpp"
 #include "tests/TestPeerBasics.cpp"
