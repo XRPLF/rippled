@@ -31,8 +31,9 @@ template <class Buffer>
 class BufferType
 {
 public:
-    typedef Buffer value_type;
-    typedef typename std::vector <Buffer>::const_iterator const_iterator;
+    typedef Buffer                                  value_type;
+    typedef std::vector <Buffer>                    container_type;
+    typedef typename container_type::const_iterator const_iterator;
 
     /** Construct a null buffer.
         This is the equivalent of @ref asio::null_buffers.
@@ -40,6 +41,19 @@ public:
     BufferType ()
         : m_size (0)
     {
+    }
+
+    /** Construct from a container.
+        Ownership of the container is transferred, the caller's
+        value becomes undefined, but valid.
+    */
+    explicit BufferType (container_type& container)
+        : m_size (0)
+    {
+        m_buffers.swap (container);
+        for (typename container_type::const_iterator iter (m_buffers.begin ());
+            iter != m_buffers.end (); ++iter)
+            m_size += boost::asio::buffer_size (*iter);
     }
 
     /** Construct a BufferType from an existing BufferSequence.
