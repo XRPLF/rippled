@@ -238,8 +238,7 @@ private:
     static void release (T* t)
     {
         if (t != nullptr)
-            if (t->decReferenceCount (false))
-                ContainerDeletePolicy <T>::destroy (t);
+            t->decReferenceCount ();
     }
 
     // Swap ownership of the currently referenced object.

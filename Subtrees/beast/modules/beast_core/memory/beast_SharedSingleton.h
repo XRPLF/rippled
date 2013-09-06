@@ -139,11 +139,10 @@ public:
         ++m_refCount;
     }
 
-    inline bool decReferenceCount (bool = false) noexcept
+    inline void decReferenceCount () noexcept
     {
         if (--m_refCount == 0)
             destroySingleton ();
-        return false;
     }
 
     // Caller must synchronize.
