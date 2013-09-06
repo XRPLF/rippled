@@ -44,6 +44,13 @@ StringPairArray& StringPairArray::operator= (const StringPairArray& other)
     return *this;
 }
 
+void StringPairArray::swapWith (StringPairArray& other)
+{
+    std::swap (ignoreCase, other.ignoreCase);
+    keys.swapWith (other.keys);
+    values.swapWith (other.values);
+}
+
 bool StringPairArray::operator== (const StringPairArray& other) const
 {
     for (int i = keys.size(); --i >= 0;)
