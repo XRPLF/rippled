@@ -89,16 +89,15 @@
     <ClInclude Include="..\..\modules\beast_asio\basics\PeerRole.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\SSLContext.h" />
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
-    <ClInclude Include="..\..\modules\beast_asio\client\HttpClient.h" />
     <ClInclude Include="..\..\modules\beast_asio\parsehttp\http_parser.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogic.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicPROXY.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicSSL2.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicSSL3.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetector.h" />
-    <ClInclude Include="..\..\modules\beast_asio\protocol\HttpClient.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\InputParser.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\PrefilledReadStream.h" />
+    <ClInclude Include="..\..\modules\beast_asio\protocol\UniformResourceLocator.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\Socket.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\SocketBase.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapper.h" />
@@ -368,6 +367,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicPROXY.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\protocol\UniformResourceLocator.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

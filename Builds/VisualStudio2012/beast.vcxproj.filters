@@ -968,9 +968,6 @@
     <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerType.h">
       <Filter>beast_asio\tests</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\client\HttpClient.h">
-      <Filter>beast_asio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogic.h">
       <Filter>beast_asio\protocol</Filter>
     </ClInclude>
@@ -986,13 +983,13 @@
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetector.h">
       <Filter>beast_asio\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\protocol\HttpClient.h">
-      <Filter>beast_asio\protocol</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\protocol\InputParser.h">
       <Filter>beast_asio\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\protocol\PrefilledReadStream.h">
+      <Filter>beast_asio\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\protocol\UniformResourceLocator.h">
       <Filter>beast_asio\protocol</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1481,6 +1478,9 @@
       <Filter>beast_asio\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicPROXY.cpp">
+      <Filter>beast_asio\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\protocol\UniformResourceLocator.cpp">
       <Filter>beast_asio\protocol</Filter>
     </ClCompile>
   </ItemGroup>
