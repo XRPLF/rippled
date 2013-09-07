@@ -97,12 +97,16 @@ bool InterruptibleThread::wait (int milliSeconds)
         }
     }
 
-    if (!interrupted)
+    if (! interrupted)
     {
+        bassert (m_state == stateWait);
+
         interrupted = m_thread.wait (milliSeconds);
 
-        if (!interrupted)
+        if (! interrupted)
         {
+            // The wait timed out
+            //
             if (m_state.tryChangeState (stateWait, stateRun))
             {
                 interrupted = false;
@@ -113,6 +117,13 @@ bool InterruptibleThread::wait (int milliSeconds)
 
                 interrupted = true;
             }
+        }
+        else
+        {
+            // The event became signalled, which can only
+            // happen via m_event.notify() in interrupt()
+            //
+            bassert (m_state == stateRun);
         }
     }
 

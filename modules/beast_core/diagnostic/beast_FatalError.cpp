@@ -20,7 +20,6 @@
 //
 // FatalError::Reporter
 //
-
 void FatalError::Reporter::onFatalError (
     char const* message, char const* stackBacktrace, char const* filePath, int lineNumber)
 {
@@ -103,6 +102,14 @@ FatalError::FatalError (char const* message, char const* fileName, int lineNumbe
     }
 
     Process::terminate ();
+}
+
+void reportFatalError (char const* message, char const* fileName, int lineNumber)
+{
+    if (beast::beast_isRunningUnderDebugger())
+        beast_breakDebugger;
+    FatalError (message, fileName, lineNumber);
+    BEAST_ANALYZER_NORETURN
 }
 
 //------------------------------------------------------------------------------

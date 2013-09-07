@@ -107,7 +107,11 @@
     correct behaviour of your program!
     @see bassertfalse
   */
+#if 0
 #define bassert(expression)   { if (! (expression)) bassertfalse; }
+#else
+#define bassert(expression)   { if (! (expression)) fatal_error(#expression); }
+#endif
 
 #else
 
