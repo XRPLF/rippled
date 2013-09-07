@@ -170,7 +170,6 @@ public:
                 // is extremely short, or if a listener wastes too much time in
                 // their callback.
             }
-            }
         }
     }
 
