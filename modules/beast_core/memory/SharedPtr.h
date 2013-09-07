@@ -225,7 +225,7 @@ public:
     }
 
 private:
-    // Acquire a reference to u for the caller if not null.
+    // Acquire a reference to u for the caller.
     //
     template <class U>
     static T* acquire (U* u) noexcept
@@ -235,12 +235,11 @@ private:
         return u;
     }
 
-    // Release a reference to t if not null.
-    //
-    static void release (T* t) noexcept
+    static void release (T* t)
     {
         if (t != nullptr)
-            t->decReferenceCount ();
+            if (t->decReferenceCount (false))
+                ContainerDeletePolicy <T>::destroy (t);
     }
 
     // Swap ownership of the currently referenced object.
