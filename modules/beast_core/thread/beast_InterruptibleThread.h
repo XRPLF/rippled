@@ -71,20 +71,11 @@ public:
     */
     void join ();
 
-    /** Wait for interrupt or timeout.
-
-        This call blocks until the thread is interrupted, or until the timeout
-        expires if milliSeconds is non-negative.
-
+    /** Wait for interrupt.
+        This call blocks until the thread is interrupted.
         May only be called by the thread of execution.
-
-        @param milliSeconds The amount of time to wait. Negative values mean
-                            no timeout.
-
-        @return `true` if the interrupt occurred, or `false` if the
-                       timeout expired.
     */
-    bool wait (int milliSeconds = -1);
+    void wait ();
 
     /** Interrupt the thread of execution.
 
@@ -159,7 +150,6 @@ private:
     {
         stateRun,
         stateInterrupt,
-        stateReturn,
         stateWait
     };
 
