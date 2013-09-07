@@ -18,8 +18,7 @@ buster.testCase("Basic Path finding", {
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   'tearDown' : testutils.build_teardown(),
 
-  "no direct path, no intermediary -> no alternatives" :
-    function (done) {
+  "no direct path, no intermediary -> no alternatives" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -46,8 +45,7 @@ buster.testCase("Basic Path finding", {
         });
     },
 
-  "direct path, no intermediary" :
-    function (done) {
+  "direct path, no intermediary" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -110,8 +108,7 @@ buster.testCase("Basic Path finding", {
         });
     },
 
-  "payment auto path find (using build_path)" :
-    function (done) {
+  "payment auto path find (using build_path)" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -145,9 +142,9 @@ buster.testCase("Basic Path finding", {
             self.remote.transaction()
               .payment('alice', 'bob', "24/USD/bob")
               .build_path(true)
-              .once('proposed', function (m) {
-                  // console.log("proposed: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+              .once('submitted', function (m) {
+                  //console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
           },
@@ -163,13 +160,13 @@ buster.testCase("Basic Path finding", {
               callback);
           },
         ], function (error) {
+          console.log(error);
           buster.refute(error, self.what);
           done();
         });
     },
 
-  "path find" :
-    function (done) {
+  "path find" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -221,14 +218,15 @@ buster.testCase("Basic Path finding", {
     },
 });
 
+
+
 buster.testCase("Extended Path finding", {
   // 'setUp' : testutils.build_setup({ verbose: true, no_server: true }),
   // 'setUp' : testutils.build_setup({ verbose: true }),
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "alternative paths - consume both" :
-    function (done) {
+  "alternative paths - consume both" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -263,7 +261,7 @@ buster.testCase("Extended Path finding", {
             self.remote.transaction()
               .payment('alice', 'bob', "140/USD/bob")
               .build_path(true)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -287,8 +285,7 @@ buster.testCase("Extended Path finding", {
         });
     },
 
-  "alternative paths - consume best transfer" :
-    function (done) {
+  "alternative paths - consume best transfer" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -303,7 +300,7 @@ buster.testCase("Extended Path finding", {
             self.remote.transaction()
               .account_set("bitstamp")
               .transfer_rate(1e9*1.1)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -335,7 +332,7 @@ buster.testCase("Extended Path finding", {
             self.remote.transaction()
               .payment('alice', 'bob', "70/USD/bob")
               .build_path(true)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -359,8 +356,7 @@ buster.testCase("Extended Path finding", {
         });
     },
 
-  "alternative paths - consume best transfer first" :
-    function (done) {
+  "alternative paths - consume best transfer first" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -375,7 +371,7 @@ buster.testCase("Extended Path finding", {
             self.remote.transaction()
               .account_set("bitstamp")
               .transfer_rate(1e9*1.1)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -408,7 +404,7 @@ buster.testCase("Extended Path finding", {
               .payment('alice', 'bob', "77/USD/bob")
               .build_path(true)
               .send_max("100/USD/alice")
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -441,12 +437,11 @@ buster.testCase("More Path finding", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "// alternative paths - limit returned paths to best quality" :
     // alice +- bitstamp         -+ bob
     //       |- carol(fee)       -|     // To be excluded.
     //       |- dan(issue)       -|
     //       |- mtgox            -|
-    function (done) {
+  "// alternative paths - limit returned paths to best quality" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -461,7 +456,7 @@ buster.testCase("More Path finding", {
             self.remote.transaction()
               .account_set("carol")
               .transfer_rate(1e9*1.1)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -513,8 +508,7 @@ buster.testCase("More Path finding", {
         });
     },
 
-  "alternative paths - consume best transfer" :
-    function (done) {
+  "alternative paths - consume best transfer" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -529,7 +523,7 @@ buster.testCase("More Path finding", {
             self.remote.transaction()
               .account_set("bitstamp")
               .transfer_rate(1e9*1.1)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -561,7 +555,7 @@ buster.testCase("More Path finding", {
             self.remote.transaction()
               .payment('alice', 'bob', "70/USD/bob")
               .build_path(true)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -585,8 +579,7 @@ buster.testCase("More Path finding", {
         });
     },
 
-  "alternative paths - consume best transfer first" :
-    function (done) {
+  "alternative paths - consume best transfer first" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -601,7 +594,7 @@ buster.testCase("More Path finding", {
             self.remote.transaction()
               .account_set("bitstamp")
               .transfer_rate(1e9*1.1)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -634,7 +627,7 @@ buster.testCase("More Path finding", {
               .payment('alice', 'bob', "77/USD/bob")
               .build_path(true)
               .send_max("100/USD/alice")
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -667,8 +660,7 @@ buster.testCase("Issues", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "Path negative: Issue #5" :
-    function (done) {
+  "Path negative: Issue #5" : function (done) {
       var self = this;
 
       async.waterfall([
@@ -696,7 +688,7 @@ buster.testCase("Issues", {
 
             self.remote.transaction()
               .payment("bob", "carol", "75/USD/bob")
-              .on('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
                   callback(m.result !== 'tesSUCCESS');
@@ -745,7 +737,7 @@ buster.testCase("Issues", {
 
             self.remote.transaction()
               .payment('alice', 'bob', "25/USD/alice")
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tecPATH_DRY');
                 })
@@ -801,7 +793,7 @@ buster.testCase("Issues", {
             self.remote.transaction()
               .payment('alice', 'bob', "55/USD/bob")
               .build_path(true)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -865,7 +857,7 @@ buster.testCase("Issues", {
             self.remote.transaction()
               .payment('alice', 'bob', "50/USD/bob")
               .build_path(true)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -926,7 +918,7 @@ buster.testCase("Via offers", {
             self.remote.transaction()
               .account_set("mtgox")
               .transfer_rate(1005000000)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -956,7 +948,7 @@ buster.testCase("Via offers", {
 
             self.remote.transaction()
               .offer_create("carol", "50.0", "50/AUD/mtgox")
-              .on('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
 
@@ -972,7 +964,7 @@ buster.testCase("Via offers", {
               .payment("alice", "bob", "10/AUD/mtgox")
               .build_path(true)
               .send_max("100.0")
-              .on('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
                   callback(m.result !== 'tesSUCCESS');
@@ -1041,7 +1033,7 @@ buster.testCase("Via offers", {
             self.remote.transaction()
               .account_set("mtgox")
               .transfer_rate(1005000000)
-              .once('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
                 })
@@ -1071,7 +1063,7 @@ buster.testCase("Via offers", {
 
             self.remote.transaction()
               .offer_create("carol", "50", "50/AUD/mtgox")
-              .on('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("PROPOSED: offer_create: %s", JSON.stringify(m));
                   callback(m.result !== 'tesSUCCESS');
 
@@ -1087,7 +1079,7 @@ buster.testCase("Via offers", {
               .payment("alice", "bob", "10/AUD/mtgox")
               .build_path(true)
               .send_max("100")
-              .on('proposed', function (m) {
+              .once('submitted', function (m) {
                   // console.log("proposed: %s", JSON.stringify(m));
 
                   callback(m.result !== 'tesSUCCESS');
@@ -1246,14 +1238,16 @@ buster.testCase("Quality paths", {
           function (callback) {
             self.what = "Payment with auto path";
 
+            self.remote.trace = true;
+
             self.remote.transaction()
               .payment('alice', 'bob', "100/USD/bob")
               .send_max("120/USD/alice")
 //              .set_flags('PartialPayment')
 //              .build_path(true)
-              .once('proposed', function (m) {
-                  // console.log("proposed: %s", JSON.stringify(m));
-                  callback(m.result !== 'tesSUCCESS');
+              .once('submitted', function (m) {
+                  console.log("proposed: %s", JSON.stringify(m));
+                  callback(m.engine_result !== 'tesSUCCESS');
                 })
               .submit();
           },

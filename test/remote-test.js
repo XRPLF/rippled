@@ -10,31 +10,25 @@ var config    = testutils.init_config();
 // How long to wait for server to start.
 var serverDelay = 1500;   // XXX Not implemented.
 
-buster.testRunner.timeout = 5000;
+buster.testRunner.timeout = 5000 * 10;
 
 buster.testCase("Remote functions", {
   'setUp' : testutils.build_setup(),
   'tearDown' : testutils.build_teardown(),
 
-  "request_ledger_current" :
-    function (done) {
+  "request_ledger_current" : function (done) {
       this.remote.request_ledger_current().on('success', function (m) {
-          // console.log(m);
-
           buster.assert.equals(m.ledger_current_index, 3);
           done();
         })
       .on('error', function(m) {
-          // console.log(m);
-
           buster.assert(false);
         })
 
       .request();
     },
 
-  "request_ledger_hash" :
-    function (done) {
+  "request_ledger_hash" : function (done) {
       this.remote.request_ledger_hash().on('success', function (m) {
           // console.log("result: %s", JSON.stringify(m));
 
@@ -49,8 +43,7 @@ buster.testCase("Remote functions", {
       .request();
     },
 
-  "manual account_root success" :
-    function (done) {
+  "manual account_root success" : function (done) {
       var self = this;
 
       this.remote.request_ledger_hash().on('success', function (r) {
@@ -82,8 +75,7 @@ buster.testCase("Remote functions", {
     },
 
   // XXX This should be detected locally.
-  "account_root remote malformedAddress" :
-    function (done) {
+  "account_root remote malformedAddress" : function (done) {
       var self = this;
 
       this.remote.request_ledger_hash().on('success', function (r) {
@@ -95,12 +87,10 @@ buster.testCase("Remote functions", {
             .account_root("zHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh")
             .on('success', function (r) {
                 // console.log("account_root: %s", JSON.stringify(r));
-
                 buster.assert(false);
               })
             .on('error', function(m) {
                 // console.log("error: %s", m);
-
                 buster.assert.equals(m.error, 'remoteError');
                 buster.assert.equals(m.remote.error, 'malformedAddress');
                 done();
@@ -115,8 +105,7 @@ buster.testCase("Remote functions", {
       .request();
     },
 
-  "account_root entryNotFound" :
-    function (done) {
+  "account_root entryNotFound" : function (done) {
       var self = this;
 
       this.remote.request_ledger_hash().on('success', function (r) {
@@ -147,8 +136,7 @@ buster.testCase("Remote functions", {
         }).request();
     },
 
-  "ledger_entry index" :
-    function (done) {
+  "ledger_entry index" : function (done) {
       var self = this;
 
       this.remote.request_ledger_hash().on('success', function (r) {
@@ -180,63 +168,64 @@ buster.testCase("Remote functions", {
       .request();
     },
 
-  "create account" :
-    function (done) {
-      this.remote.transaction()
-        .payment('root', 'alice', "10000.0")
-        .on('success', function (r) {
-            // console.log("account_root: %s", JSON.stringify(r));
+  "create account" : function (done) {
+    var self = this;
 
-            // Need to verify account and balance.
-            buster.assert(true);
-            done();
-          })
-        .on('error', function(m) {
-            // console.log("error: %s", m);
+    var root_id = this.remote.account('root')._account_id;
+    this.remote.request_subscribe().accounts(root_id).request();
 
-            buster.assert(false);
-          })
-        .submit();
+    this.remote.transaction()
+      .payment('root', 'alice', "10000.0")
+      .on('proposed', function(res) {
+        //console.log('Submitted', res);
+        self.remote.ledger_accept();
+      })
+      .on('success', function (r) {
+          //console.log("account_root: %s", JSON.stringify(r));
+          // Need to verify account and balance.
+          buster.assert(true);
+          done();
+        })
+      .on('error', function(m) {
+        console.log('Error');
+          console.log("error: %s", m);
+          buster.assert(false);
+        })
+      .submit();
     },
 
-  "create account final" :
-    function (done) {
+  "create account final" : function (done) {
       var self = this;
+      var got_proposed;
+      var got_success;
 
-      var   got_proposed;
-      var   got_success;
+      var root_id = this.remote.account('root')._account_id;
+      this.remote.request_subscribe().accounts(root_id).request();
 
       this.remote.transaction()
         .payment('root', 'alice', "10000.0")
         .on('success', function (r) {
-            // console.log("create_account: %s", JSON.stringify(r));
-
-            got_success = true;
-          })
+          // console.log("create_account: %s", JSON.stringify(r));
+          got_success = true;
+        })
         .on('error', function (m) {
-            // console.log("error: %s", m);
-
-            buster.assert(false);
-          })
+          // console.log("error: %s", m);
+          buster.assert(false);
+        })
         .on('final', function (m) {
-            // console.log("final: %s", JSON.stringify(m));
-
-            buster.assert(got_success && got_proposed);
-            done();
-          })
-        .on('proposed', function (m) {
-            // console.log("proposed: %s", JSON.stringify(m));
-
-            // buster.assert.equals(m.result, 'terNO_DST_INSUF_XRP');
-            buster.assert.equals(m.result, 'tesSUCCESS');
-
-            got_proposed  = true;
-
-            self.remote.ledger_accept();
-          })
-        .on('status', function (s) {
-            // console.log("status: %s", JSON.stringify(s));
-          })
+          // console.log("final: %s", JSON.stringify(m));
+          buster.assert(got_success && got_proposed);
+          done();
+        })
+        .on('proposed', function() {
+          got_proposed = true;
+          self.remote.ledger_accept();
+        })
+        .on('submitted', function (m) {
+          // console.log("proposed: %s", JSON.stringify(m));
+          // buster.assert.equals(m.result, 'terNO_DST_INSUF_XRP');
+          buster.assert.equals(m.engine_result, 'tesSUCCESS');
+        })
         .submit();
     },
 });
