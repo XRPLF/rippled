@@ -26,6 +26,13 @@
 namespace beast
 {
 
+#if BEAST_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 #include "keyvalue/beast_KeyvaDB.cpp"
+#if BEAST_GCC
+#pragma GCC diagnostic pop
+#endif
 
 }
