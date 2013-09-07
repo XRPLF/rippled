@@ -1250,14 +1250,7 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, Application::Sco
                 return;
         }
 
-        if (getApp().getMasterTransaction().fetch(txID, true))
-        {
-            WriteLog (lsDEBUG, Peer) << "Peer " << getDisplayName() << " send old TX " << txID;
-            applyLoadCharge (LT_InvalidRequest);
-            return;
-        }
-
-        WriteLog (lsDEBUG, Peer) << "Got new transaction from peer " << getDisplayName () << " : " << txID;
+        WriteLog (lsDEBUG, Peer) << "Got transaction from peer " << getDisplayName () << " : " << txID;
 
         if (mCluster)
             flags |= SF_TRUSTED | SF_SIGGOOD;
@@ -1943,6 +1936,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
         uint256 txHash;
         memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
         map = getApp().getOPs ().getTXMap (txHash);
+        masterLockHolder.unlock();
 
         if (!map)
         {
@@ -1982,6 +1976,12 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
     }
     else
     {
+        if (getApp().getFeeTrack().isLoadedLocal() && !mCluster)
+        {
+            WriteLog (lsDEBUG, Peer) << "Too busy to fetch ledger data";
+            return;
+        }
+
         // Figure out what ledger they want
         WriteLog (lsTRACE, Peer) << "Received request for ledger data " << getIP ();
         Ledger::pointer ledger;
@@ -2280,7 +2280,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
 }
 
 bool PeerImp::hasLedger (uint256 const& hash, uint32 seq) const
-{
+{ // FIXME: mRecentLedgers needs some kind of synchronization
     if ((seq != 0) && (seq >= mMinLedger) && (seq <= mMaxLedger))
         return true;
 

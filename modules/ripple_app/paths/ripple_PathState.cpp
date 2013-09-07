@@ -391,7 +391,7 @@ void PathState::setExpanded (
     const uint160   uOutIssuerID    = saOutReq.getIssuer ();
     const uint160   uSenderIssuerID = !!uMaxCurrencyID ? uSenderID : ACCOUNT_XRP;   // Sender is always issuer for non-XRP.
 
-    WriteLog (lsDEBUG, RippleCalc) << boost::str (boost::format ("setExpanded> %s") % spSourcePath.getJson (0));
+    WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("setExpanded> %s") % spSourcePath.getJson (0));
 
     lesEntries  = lesSource.duplicate ();
 
@@ -467,7 +467,7 @@ void PathState::setExpanded (
     {
         if (tesSUCCESS == terStatus)
         {
-            WriteLog (lsDEBUG, RippleCalc) << boost::str (boost::format ("setExpanded: element in path:"));
+            WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("setExpanded: element in path:"));
             terStatus   = pushNode (speElement.getNodeType (), speElement.getAccountID (), speElement.getCurrency (), speElement.getIssuerID ());
         }
     }

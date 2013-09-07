@@ -187,7 +187,7 @@ bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& node
         if ((!fatRoot && node->isRoot ()) || node->isLeaf ()) // don't get a fat root, can't get a fat leaf
             return true;
 
-        SHAMapTreeNode* nextNode;
+        SHAMapTreeNode* nextNode = NULL;
 
         count = 0;
         for (int i = 0; i < 16; ++i)

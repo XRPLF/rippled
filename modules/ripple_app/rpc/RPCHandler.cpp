@@ -159,7 +159,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
                 Pathfinder pf (cache, raSrcAddressID, dstAccountID,
                                saSendMax.getCurrency (), saSendMax.getIssuer (), saSend, bValid);
 
-                if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_SIZE, 3, spsPaths))
+                if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_OLD, 4, spsPaths))
                 {
                     WriteLog (lsDEBUG, RPCHandler) << "transactionSign: build_path: No paths found.";
 
@@ -1513,7 +1513,10 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, LoadType* loadType
             bool        bValid;
             Pathfinder  pf (cache, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
 
-            if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_SIZE, 3, spsComputed))
+            int level = getConfig().PATH_SEARCH_OLD;
+            if ((getConfig().PATH_SEARCH_MAX > level) && !getApp().getFeeTrack().isLoadedLocal())
+                ++level;
+            if (!bValid || !pf.findPaths (level, 4, spsComputed))
             {
                 WriteLog (lsWARNING, RPCHandler) << "ripple_path_find: No paths found.";
             }
@@ -2106,8 +2109,7 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, LoadType* loadType, 
 //   binary: boolean,                // optional, defaults to false
 //   forward: boolean,               // optional, defaults to false
 //   limit: integer,                 // optional
-//   fwd_marker: opaque,             // optional, resume forward
-//   rev_marker: opaque              // optional, resume reverse
+//   marker: opaque                  // optional, resume previous query
 // }
 Json::Value RPCHandler::doAccountTx (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
@@ -2160,17 +2162,9 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, LoadType* loadType, App
 
     Json::Value resumeToken;
 
-    if (params.isMember("fwd_marker"))
+    if (params.isMember("marker"))
     {
-         if ((!bForward) || params.isMember("rev_marker"))
-             return rpcError (rpcINVALID_PARAMS);
-         resumeToken = params["fwd_marker"];
-    }
-    if (params.isMember("rev_marker"))
-    {
-         if (bForward || params.isMember("fwd_marker"))
-             return rpcError (rpcINVALID_PARAMS);
-         resumeToken = params["rev_marker"];
+         resumeToken = params["marker"];
     }
 
 #ifndef BEAST_DEBUG
@@ -2232,7 +2226,7 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, LoadType* loadType, App
         if (params.isMember ("limit"))
             ret["limit"]        = limit;
         if (!resumeToken.isNull())
-            ret[bForward ? "fwd_token" : "rev_token"] = resumeToken;
+            ret["marker"] = resumeToken;
 
         return ret;
 #ifndef BEAST_DEBUG

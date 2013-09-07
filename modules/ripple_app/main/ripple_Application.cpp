@@ -456,6 +456,7 @@ public:
             updateTables ();
 
         mFeatures->addInitialFeatures ();
+        Pathfinder::initPathTable ();
 
         if (getConfig ().START_UP == Config::FRESH)
         {

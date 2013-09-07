@@ -20,7 +20,7 @@ class RippleLineCache;
 class PathRequest : public boost::enable_shared_from_this<PathRequest>
 {
 public:
-    typedef boost::weak_ptr<PathRequest>        wptr;
+    typedef boost::weak_ptr<PathRequest>    wptr;
     typedef boost::shared_ptr<PathRequest>  pointer;
     typedef const pointer&                  ref;
     typedef const wptr&                     wref;
@@ -56,14 +56,18 @@ private:
     Json::Value                     jvStatus;                   // Last result
 
     // Client request parameters
-    RippleAddress                   raSrcAccount;
-    RippleAddress                   raDstAccount;
-    STAmount                        saDstAmount;
-    std::set<currIssuer_t>          sciSourceCurrencies;
-    std::vector<Json::Value>        vjvBridges;
+    RippleAddress                     raSrcAccount;
+    RippleAddress                     raDstAccount;
+    STAmount                          saDstAmount;
+    std::set<currIssuer_t>            sciSourceCurrencies;
+    std::vector<Json::Value>          vjvBridges;
+    std::map<currIssuer_t, STPathSet> mContext;
 
     bool                            bValid;
     bool                            bNew;
+
+    int                             iLastLevel;
+    bool                            bLastSuccess;
 
     // Track all requests
     static std::set<wptr>           sRequests;

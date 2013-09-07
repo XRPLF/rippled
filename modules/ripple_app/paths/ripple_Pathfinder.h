@@ -47,24 +47,54 @@ public:
                 const RippleAddress& srcAccountID, const RippleAddress& dstAccountID,
                 const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount, bool& bValid);
 
-    bool findPaths (const unsigned int iMaxSteps, const unsigned int iMaxPaths, STPathSet& spsDst);
-
-    bool bDefaultPath (const STPath& spPath);
+    static void initPathTable();
+    bool findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet& spsDst);
 
 private:
-    //  void addOptions(PathOption::pointer tail);
+
+    enum PaymentType
+    {
+        pt_XRP_to_XRP,
+        pt_XRP_to_nonXRP,
+        pt_nonXRP_to_XRP,
+        pt_nonXRP_to_same,
+        pt_nonXRP_to_nonXRP
+    };
+
+    enum NodeType
+    {
+        nt_SOURCE,  // The source account with an issuer account, if required
+        nt_ACCOUNTS,     // Accounts that connect from this source/currency
+        nt_BOOKS,        // Order books that connect to this currency
+        nt_XRP_BOOK,     // The order book from this currency to XRP
+        nt_DEST_BOOK,    // The order book to the destination currency/issuer
+        nt_DESTINATION   // The destination account only
+    };
+
+    typedef std::vector<NodeType>         PathType_t;
+    typedef std::pair<int, PathType_t>    CostedPath_t;
+    typedef std::vector<CostedPath_t>     CostedPathList_t;
 
     // returns true if any building paths are now complete?
     bool checkComplete (STPathSet& retPathSet);
 
-    //  void addPathOption(PathOption::pointer pathOption);
+    static std::string pathTypeToString(PathType_t const&);
 
     bool matchesOrigin (const uint160& currency, const uint160& issuer);
 
     int getPathsOut (const uint160& currency, const uint160& accountID,
                      bool isDestCurrency, const uint160& dest);
 
-private:
+    void addLink(const STPath& currentPath, STPathSet& incompletePaths, int addFlags);
+    void addLink(const STPathSet& currentPaths, STPathSet& incompletePaths, int addFlags);
+    STPathSet& getPaths(const PathType_t& type, bool addComplete = true);
+    STPathSet filterPaths(int iMaxPaths);
+
+    // Our main table of paths
+
+    static std::map<PaymentType, CostedPathList_t> mPathTable;
+    static PathType_t makePath(char const*);
+
     uint160             mSrcAccountID;
     uint160             mDstAccountID;
     STAmount            mDstAmount;
@@ -73,15 +103,21 @@ private:
     STAmount            mSrcAmount;
 
     Ledger::pointer     mLedger;
-    PathState::pointer  mPsDefault;
     LoadEvent::pointer  m_loadEvent;
     RippleLineCache::pointer    mRLCache;
+
+    STPathElement                     mSource;
+    STPathSet                         mCompletePaths;
+    std::map< PathType_t, STPathSet > mPaths;
 
     boost::unordered_map<uint160, AccountItems::pointer>    mRLMap;
     boost::unordered_map<std::pair<uint160, uint160>, int>  mPOMap;
 
-    //  std::list<PathOption::pointer> mBuildingPaths;
-    //  std::list<PathOption::pointer> mCompletePaths;
+    static const uint32 afADD_ACCOUNTS = 0x001;  // Add ripple paths
+    static const uint32 afADD_BOOKS    = 0x002;  // Add order books
+    static const uint32 afOB_XRP       = 0x010;  // Add order book to XRP only
+    static const uint32 afOB_LAST      = 0x040;  // Must link to destination currency
+    static const uint32 afAC_LAST      = 0x080;  // Destination account only
 };
 
 boost::unordered_set<uint160> usAccountDestCurrencies (const RippleAddress& raAccountID, Ledger::ref lrLedger,
