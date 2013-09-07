@@ -150,6 +150,7 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Throw.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\ContractChecks.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\MeasureFunctionCallTime.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_DirectoryIterator.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_File.h" />

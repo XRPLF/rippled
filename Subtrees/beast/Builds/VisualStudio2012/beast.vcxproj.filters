@@ -980,6 +980,9 @@
     <ClInclude Include="..\..\modules\beast_core\memory\SharedObject.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\ContractChecks.h">
+      <Filter>beast_core\diagnostic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">

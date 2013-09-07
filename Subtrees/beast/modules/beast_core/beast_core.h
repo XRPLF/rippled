@@ -244,6 +244,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
 
+#include "diagnostic/ContractChecks.h"
 #include "memory/beast_Uncopyable.h"
 #include "memory/beast_Memory.h"
 #include "maths/beast_MathsFunctions.h"
