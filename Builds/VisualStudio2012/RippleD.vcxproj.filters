@@ -867,6 +867,9 @@
     <ClCompile Include="..\..\modules\ripple_core\test\TestOverlay.cpp">
       <Filter>[1] Ripple\ripple_core\test</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorsUtilities.cpp">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\ripple_app\ripple_app.h">
@@ -1714,6 +1717,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\test\ConfigType.h">
       <Filter>[1] Ripple\ripple_core\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorsUtilities.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

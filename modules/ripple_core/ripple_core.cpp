@@ -62,6 +62,8 @@ namespace ripple
 # include "test/ConfigType.h"
 #include "test/TestOverlay.cpp"
 
+# include "validator/ValidatorsUtilities.h"
+#include "validator/ValidatorsUtilities.cpp"
 # include "validator/ValidatorSourceStrings.h"
 # include "validator/ValidatorSourceTrustedUri.h"
 # include "validator/ValidatorsImp.h" // private
