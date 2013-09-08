@@ -683,8 +683,8 @@ void Pathfinder::addLink(
                         else
                             incompletePaths.addPath(newPath);
                     }
-                    else
-                    {
+                    else if (!currentPath.hasSeen(book->getIssuerOut(), book->getCurrencyOut(), book->getIssuerOut()))
+                    { // Don't want the book if we've already seen the issuer
                         // add the order book itself
                         newPath.addElement(STPathElement(STPathElement::typeCurrency | STPathElement::typeIssuer,
                             ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()));
