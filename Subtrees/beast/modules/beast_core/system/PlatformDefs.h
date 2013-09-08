@@ -107,7 +107,11 @@
     correct behaviour of your program!
     @see bassertfalse
   */
+#if 0
 #define bassert(expression)   { if (! (expression)) bassertfalse; }
+#else
+#define bassert(expression)   { if (! (expression)) fatal_error(#expression); }
+#endif
 
 #else
 
@@ -277,6 +281,14 @@ template <> struct BeastStaticAssert <true> { static void dummy() {} };
 
 #if defined (_MSC_VER) && _MSC_VER >= 1700
 # define BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL 1
+#endif
+
+#if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
+# define BEAST_MOVE_ARG(type) type&&
+# define BEAST_MOVE_CAST(type) static_cast<type&&>
+#else
+# define BEAST_MOVE_ARG(type) type
+# define BEAST_MOVE_CAST(type) type
 #endif
 
 //------------------------------------------------------------------------------

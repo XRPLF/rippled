@@ -911,7 +911,7 @@ protected:
 
             // Call the original handler with the error code and end.
             m_owner.get_io_service ().wrap (
-                BOOST_ASIO_MOVE_CAST (SharedHandlerPtr)(m_handler))
+                BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(m_handler))
                     (ec);
         }
 

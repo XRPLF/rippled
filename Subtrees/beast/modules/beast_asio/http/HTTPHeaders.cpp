@@ -17,22 +17,58 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
-
-#include "beast_db.h"
-
-#include "../beast_crypto/beast_crypto.h"
-
-namespace beast
+HTTPHeaders::HTTPHeaders ()
 {
+}
 
-#if BEAST_GCC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include "keyvalue/beast_KeyvaDB.cpp"
-#if BEAST_GCC
-#pragma GCC diagnostic pop
-#endif
+HTTPHeaders::HTTPHeaders (StringPairArray& fields)
+{
+    m_fields.swapWith (fields);
+}
 
+HTTPHeaders::HTTPHeaders (StringPairArray const& fields)
+    : m_fields (fields)
+{
+}
+
+HTTPHeaders::HTTPHeaders (HTTPHeaders const& other)
+    : m_fields (other.m_fields)
+{
+}
+
+HTTPHeaders& HTTPHeaders::operator= (HTTPHeaders const& other)
+{
+    m_fields = other.m_fields;
+    return *this;
+}
+
+bool HTTPHeaders::empty () const
+{
+    return m_fields.size () == 0;
+}
+
+std::size_t HTTPHeaders::size () const
+{
+    return m_fields.size ();
+}
+
+HTTPField HTTPHeaders::at (std::size_t index) const
+{
+    return HTTPField (m_fields.getAllKeys () [index],
+                      m_fields.getAllValues () [index]);
+}
+
+HTTPField HTTPHeaders::operator[] (std::size_t index) const
+{
+    return at (index);
+}
+
+String HTTPHeaders::get (String const& field) const
+{
+    return m_fields [field];
+}
+
+String HTTPHeaders::operator[] (String const& field) const
+{
+    return get (field);
 }

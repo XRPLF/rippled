@@ -19,33 +19,57 @@
 
 #include "BeastConfig.h"
 
-#include "system/beast_OpenSSLIncludes.h"
+#include "system/OpenSSLIncludes.h"
 
 #include "beast_asio.h"
 
 namespace beast
 {
 
-#include "async/beast_SharedHandler.cpp"
+#include "async/SharedHandler.cpp"
 
-#include "basics/beast_PeerRole.cpp"
+#include "basics/ContentBodyBuffer.cpp"
+#include "basics/PeerRole.cpp"
 #include "basics/SSLContext.cpp"
 
-#include "sockets/beast_SocketBase.cpp"
-#include "sockets/beast_Socket.cpp"
+#include "sockets/SocketBase.cpp"
+#include "sockets/Socket.cpp"
 
-#include "handshake/beast_HandshakeDetectLogicPROXY.cpp"
+#include "protocol/HandshakeDetectLogicPROXY.cpp"
 
-#include "tests/beast_PeerTest.cpp"
-#include "tests/beast_TestPeerBasics.cpp"
-#include "tests/beast_TestPeerLogic.cpp"
-#include "tests/beast_TestPeerLogicProxyClient.cpp"
-#include "tests/beast_TestPeerLogicSyncServer.cpp"
-#include "tests/beast_TestPeerLogicSyncClient.cpp"
-#include "tests/beast_TestPeerLogicAsyncServer.cpp"
-#include "tests/beast_TestPeerLogicAsyncClient.cpp"
-#include "tests/beast_TestPeerUnitTests.cpp"
+# include "parsehttp/http_parser.h"
+# include "http/HTTPParserImpl.h"
+#include "http/HTTPParser.cpp"
+#include "http/UniformResourceLocator.cpp"
+#include "http/HTTPClientType.cpp"
+#include "http/HTTPField.cpp"
+#include "http/HTTPHeaders.cpp"
+#include "http/HTTPMessage.cpp"
+#include "http/HTTPResponse.cpp"
+#include "http/HTTPVersion.cpp"
 
-#include "system/beast_BoostUnitTests.cpp"
+#include "tests/PeerTest.cpp"
+#include "tests/TestPeerBasics.cpp"
+#include "tests/TestPeerLogic.cpp"
+#include "tests/TestPeerLogicProxyClient.cpp"
+#include "tests/TestPeerLogicSyncServer.cpp"
+#include "tests/TestPeerLogicSyncClient.cpp"
+#include "tests/TestPeerLogicAsyncServer.cpp"
+#include "tests/TestPeerLogicAsyncClient.cpp"
+#include "tests/TestPeerUnitTests.cpp"
+
+#include "system/BoostUnitTests.cpp"
+
+#ifdef _MSC_VER
+#pragma warning (push)
+#pragma warning (disable: 4127) // conditional expression is constant
+#pragma warning (disable: 4244) // integer conversion, possible loss of data
+#endif
+#include "parsehttp/http_parser.c"
+#ifdef _MSC_VER
+#pragma warning (pop)
+#endif
 
 }
+
+//------------------------------------------------------------------------------

@@ -69,9 +69,9 @@ protected:
 #endif
     }
 
-    // Called by our ContainerDeletePolicy hook to destroy the
-    // object. We need this because we allocated it using a custom
-    // allocator. Destruction is tricky, the algorithm is as follows:
+    // Called by SharedObject hook to destroy the object. We need
+    // this because we allocated it using a custom allocator.
+    // Destruction is tricky, the algorithm is as follows:
     //
     // First we move-assign the handler to our stack. If the build
     // doesn't support move-assignment it will be a copy, still ok.
@@ -87,19 +87,14 @@ protected:
     //
     void destroy ()
     {
-#if BEAST_USE_HANDLER_ALLOCATIONS
         Handler local (BOOST_ASIO_MOVE_CAST(Handler)(m_handler));
         std::size_t const size (m_size);
         SharedHandler* const shared (static_cast <SharedHandler*>(this));
         shared->~SharedHandler ();
         boost_asio_handler_alloc_helpers::
             deallocate <Handler> (shared, size, local);
-#else
-        delete this;
-#endif
     }
 
-#if BEAST_USE_HANDLER_ALLOCATIONS
     // If these somehow get called, bad things will happen
     //
     void* operator new (std::size_t)
@@ -111,7 +106,6 @@ protected:
     {
         return pure_virtual_called (__FILE__, __LINE__);
     }
-#endif
 
 protected:
     std::size_t const m_size;
@@ -219,15 +213,10 @@ Container <Handler>* newSharedHandlerContainer (BOOST_ASIO_MOVE_ARG(Handler) han
 {
     typedef Container <Handler> ContainerType;
     std::size_t const size (sizeof (ContainerType));
-#if BEAST_USE_HANDLER_ALLOCATIONS
     Handler local (BOOST_ASIO_MOVE_CAST(Handler)(handler));
     void* const p (boost_asio_handler_alloc_helpers::
         allocate <Handler> (size, local));
     return ::new (p) ContainerType (size, BOOST_ASIO_MOVE_CAST(Handler)(local));
-#else
-    void* const p = ::operator new (size);
-    return ::new (p) ContainerType (size, BOOST_ASIO_MOVE_CAST(Handler)(handler));
-#endif
 }
 
 #endif

@@ -17,22 +17,26 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_ASIO_HTTPRESPONSE_H_INCLUDED
+#define BEAST_ASIO_HTTPRESPONSE_H_INCLUDED
 
-#include "beast_db.h"
-
-#include "../beast_crypto/beast_crypto.h"
-
-namespace beast
+class HTTPResponse : public HTTPMessage
 {
+public:
+    /** Construct a complete response from values.
+        Ownership of the fields and body parameters are
+        transferred from the caller.
+    */
+    HTTPResponse (
+        HTTPVersion const& version_,
+        StringPairArray& fields,
+        ContentBodyBuffer& body,
+        unsigned short status_);
 
-#if BEAST_GCC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include "keyvalue/beast_KeyvaDB.cpp"
-#if BEAST_GCC
-#pragma GCC diagnostic pop
-#endif
+    unsigned short status () const;
 
-}
+private:
+    unsigned short m_status;
+};
+
+#endif

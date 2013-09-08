@@ -293,3 +293,22 @@ String commandLineToString (const String& commandLine)
 }
 
 }
+
+//------------------------------------------------------------------------------
+
+class DebugTests : public UnitTest
+{
+public:
+    DebugTests () : UnitTest ("Debug", "beast", runManual)
+    {
+    }
+
+    void runTest ()
+    {
+        beginTestCase ("bassert");
+        bassertfalse;
+        fail ();
+    }
+};
+
+static DebugTests debugTests;

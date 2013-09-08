@@ -79,9 +79,17 @@ std::string RPCServerHandler::processRequest (std::string const& request, std::s
         return HTTPReply (403, "Forbidden");
     }
 
+    // This code does all the work on the io_service thread and
+    // has no rate-limiting based on source IP or anything.
+    // This is a temporary safety
+    if ((role != Config::ADMIN) && (getApp().getFeeTrack().isLoadedLocal()))
+    {
+        return HTTPReply (503, "Unable to service at this time");
+    }
+
     std::string response;
 
-    WriteLog (lsINFO, RPCServer) << params;
+    WriteLog (lsDEBUG, RPCServer) << "Query: " << strMethod << params;
 
     RPCHandler rpcHandler (&m_networkOPs);
 
@@ -90,7 +98,7 @@ std::string RPCServerHandler::processRequest (std::string const& request, std::s
     Json::Value const result = rpcHandler.doRpcCommand (strMethod, params, role, &loadType);
     // VFALCO NOTE We discard loadType since there is no endpoint to punish
 
-    WriteLog (lsINFO, RPCServer) << result;
+    WriteLog (lsDEBUG, RPCServer) << "Reply: " << result;
 
     response = JSONRPCReply (result, Json::Value (), id);
 

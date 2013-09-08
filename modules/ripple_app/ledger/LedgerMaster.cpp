@@ -631,7 +631,9 @@ void LedgerMaster::advanceThread()
                     {
                         WriteLog (lsFATAL, LedgerMaster) << "Unable to find ledger following prevMissing " << missing;
                         WriteLog (lsFATAL, LedgerMaster) << "Pub:" << mPubLedger->getLedgerSeq() << " Val:" << mValidLedger->getLedgerSeq();
-                        assert(false);
+                        WriteLog (lsFATAL, LedgerMaster) << "Ledgers: " << getApp().getLedgerMaster().getCompleteLedgers();
+                        mCompleteLedgers.clearValue (missing + 1);
+                        progress = true;
                     }
                     sl.lock(__FILE__, __LINE__);
                     if (mValidLedger->getLedgerSeq() != mPubLedger->getLedgerSeq())

@@ -469,6 +469,7 @@ int JobQueue::getJobLimit (JobType type)
         // Someone added a JobType but forgot to set a limit.
         // Did they also forget to add it to ripple_Job.cpp?
         bassertfalse;
+        break;
 
     case jtVALIDATION_ut:
     case jtPROOFWORK:
@@ -492,6 +493,7 @@ int JobQueue::getJobLimit (JobType type)
     case jtPACK:                limit = 1; break;
     case jtPUBOLDLEDGER:        limit = 2; break;
     case jtTXN_DATA:            limit = 1; break;
+    case jtUNL:                 limit = 1; break;
 
     // If either of the next two are processing so slowly
     // or we are so busy we have two of them at once, it

@@ -45,7 +45,11 @@ class SharedHandler : public SharedObject
 {
 protected:
     typedef boost::system::error_code error_code;
+#if 0
     typedef boost::function <void(void)> invoked_type;
+#else
+    typedef SharedFunction <void(void), SharedHandlerAllocator <char> > invoked_type;
+#endif
 
     SharedHandler () noexcept { }
 
@@ -59,25 +63,24 @@ public:
     virtual void operator() (error_code const&);
     virtual void operator() (error_code const&, std::size_t);
 
-    /** Dispatch the Function on our context. */
-    /*
-    template <typename Dispatcher, typename Function>
-    void dispatch (Dispatcher& dispatcher, BOOST_ASIO_MOVE_ARG(Function) function)
-    {
-        dispatcher.dispatch (boost::bind (
-            &SharedHandler::invoke <Function>, this,
-                BOOST_ASIO_MOVE_CAST(Function)(function)));
-    }
-    */
-
     template <typename Function>
-    void invoke (BOOST_ASIO_MOVE_ARG(Function) f);
+    void invoke (BOOST_ASIO_MOVE_ARG(Function) f)
+#if 0
+        ;
+#else
+    {
+        // The allocator will hold a reference to the SharedHandler
+        // so that we can safely destroy the function object.
+        invoked_type invoked (f,
+            SharedHandlerAllocator <char> (this));
+        invoke (invoked);
+    }
+#endif
 
     virtual void  invoke (invoked_type& invoked) = 0;
     virtual void* allocate (std::size_t size) = 0;
     virtual void  deallocate (void* p, std::size_t size) = 0;
     virtual bool  is_continuation () = 0;
-    virtual void  destroy () = 0;
 
     static void pure_virtual_called (char const* fileName, int lineNumber);
 
@@ -87,22 +90,6 @@ private:
     friend void* asio_handler_allocate (std::size_t, SharedHandler*);
     friend void  asio_handler_deallocate (void*, std::size_t, SharedHandler*);
     friend bool  asio_handler_is_continuation (SharedHandler*);
-    friend struct ContainerDeletePolicy <SharedHandler>;
-};
-
-//--------------------------------------------------------------------------
-
-// For SharedPtr <SharedHandler>
-template <>
-struct ContainerDeletePolicy <SharedHandler>
-{
-    // SharedPtr will use this when
-    // the reference count drops to zero.
-    //
-    inline static void destroy (SharedHandler* handler)
-    {
-        handler->destroy ();
-    }
 };
 
 //--------------------------------------------------------------------------

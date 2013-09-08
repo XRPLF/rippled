@@ -17,22 +17,17 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
-
-#include "beast_db.h"
-
-#include "../beast_crypto/beast_crypto.h"
-
-namespace beast
+HTTPResponse::HTTPResponse (
+    HTTPVersion const& version_,
+    StringPairArray& fields,
+    ContentBodyBuffer& body,
+    unsigned short status_)
+    : HTTPMessage (version_, fields, body)
+    , m_status (status_)
 {
+}
 
-#if BEAST_GCC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include "keyvalue/beast_KeyvaDB.cpp"
-#if BEAST_GCC
-#pragma GCC diagnostic pop
-#endif
-
+unsigned short HTTPResponse::status () const
+{
+    return m_status;
 }

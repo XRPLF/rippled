@@ -71,7 +71,6 @@ Ledger::Ledger (uint256 const& parentHash,
     , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION, transHash))
     , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE, accountHash))
 {
-    // This will throw if the root nodes are not available locally
     updateHash ();
     loaded = true;
 

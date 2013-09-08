@@ -71,15 +71,6 @@
 //#define BEAST_CHECK_MEMORY_LEAKS 0
 #endif
 
-/** Config: BEAST_DISABLE_CONTRACT_CHECKS
-    Set this to 1 to prevent check_contract macros from evaluating their
-    conditions, which might be expensive. meet_contract macros will still
-    evaluate their conditions since their return values are checked.
-*/
-#ifndef   BEAST_DISABLE_CONTRACT_CHECKS
-//#define BEAST_DISABLE_CONTRACT_CHECKS 1
-#endif
-
 /** Config: BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
     Setting this option makes Socket-derived classes generate compile errors
     if they forget any of the virtual overrides As some Socket-derived classes
