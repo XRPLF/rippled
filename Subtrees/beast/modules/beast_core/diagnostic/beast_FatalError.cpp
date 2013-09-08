@@ -20,7 +20,6 @@
 //
 // FatalError::Reporter
 //
-
 void FatalError::Reporter::onFatalError (
     char const* message, char const* stackBacktrace, char const* filePath, int lineNumber)
 {
@@ -105,6 +104,14 @@ FatalError::FatalError (char const* message, char const* fileName, int lineNumbe
     Process::terminate ();
 }
 
+void reportFatalError (char const* message, char const* fileName, int lineNumber)
+{
+    if (beast::beast_isRunningUnderDebugger())
+        beast_breakDebugger;
+    FatalError (message, fileName, lineNumber);
+    BEAST_ANALYZER_NORETURN
+}
+
 //------------------------------------------------------------------------------
 
 // Yes even this class can have a unit test. It's manually triggered though.
@@ -123,7 +130,7 @@ public:
         // We don't really expect the program to run after this
         // but the unit test is here so you can manually test it.
         int shouldBeZero (1);
-        fatal_assert (shouldBeZero == 0);
+        check_invariant (shouldBeZero == 0);
     }
 };
 

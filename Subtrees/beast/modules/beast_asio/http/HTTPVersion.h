@@ -17,22 +17,30 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_ASIO_HTTPVERSION_H_INCLUDED
+#define BEAST_ASIO_HTTPVERSION_H_INCLUDED
 
-#include "beast_db.h"
-
-#include "../beast_crypto/beast_crypto.h"
-
-namespace beast
+/** The HTTP version. This is the major.minor version number. */
+class HTTPVersion
 {
+public:
+    HTTPVersion ();
+    HTTPVersion (unsigned short major_, unsigned short minor_);
+    HTTPVersion (HTTPVersion const& other);
+    HTTPVersion& operator= (HTTPVersion const& other);
+    String toString () const;
+    unsigned short major () const;
+    unsigned short minor () const;
+    bool operator== (HTTPVersion const& rhs) const;
+    bool operator!= (HTTPVersion const& rhs) const;
+    bool operator>  (HTTPVersion const& rhs) const;
+    bool operator>= (HTTPVersion const& rhs) const;
+    bool operator<  (HTTPVersion const& rhs) const;
+    bool operator<= (HTTPVersion const& rhs) const;
 
-#if BEAST_GCC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include "keyvalue/beast_KeyvaDB.cpp"
-#if BEAST_GCC
-#pragma GCC diagnostic pop
-#endif
+private:
+    unsigned short m_major;
+    unsigned short m_minor;;
+};
 
-}
+#endif

@@ -49,6 +49,9 @@ public:
     /** Copies the contents of another string array into this one */
     StringPairArray& operator= (const StringPairArray& other);
 
+    /** Swap the contents of this array with another. */
+    void swapWith (StringPairArray& other);
+
     //==============================================================================
     /** Compares two arrays.
         Comparisons are case-sensitive.

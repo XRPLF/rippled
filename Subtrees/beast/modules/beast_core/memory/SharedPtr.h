@@ -189,9 +189,7 @@ public:
     */
     ~SharedPtr ()
     {
-        if (m_p != nullptr)
-            if (m_p->decReferenceCount (false))
-                ContainerDeletePolicy <T>::destroy (m_p);
+        release (m_p);
     }
 
     /** Returns `true` if the container is not pointing to an object. */
@@ -237,6 +235,12 @@ private:
         return u;
     }
 
+    static void release (T* t)
+    {
+        if (t != nullptr)
+            t->decReferenceCount ();
+    }
+
     // Swap ownership of the currently referenced object.
     // The caller receives a pointer to the original object,
     // and this container is left with the passed object. No
@@ -257,8 +261,7 @@ private:
     SharedPtr& assign (U* u)
     {
         if (m_p != u)
-            SharedPtr <T> old (
-                this->swap (acquire (u)));
+            release (this->swap (acquire (u)));
         return *this;
     }
 

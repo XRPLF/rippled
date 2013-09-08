@@ -79,41 +79,52 @@
     <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveReference.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\beast_ComposedAsyncOperation.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\beast_SharedHandler.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\beast_SharedHandlerAllocator.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\beast_SharedHandlerPtr.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\beast_SharedHandlerType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\beast_BufferType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\beast_FixedInputBuffer.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\beast_PeerRole.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandler.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerPtr.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerType.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\BufferType.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\PeerRole.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\SSLContext.h" />
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogic.h" />
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicPROXY.h" />
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicSSL2.h" />
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicSSL3.h" />
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetector.h" />
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_InputParser.h" />
-    <ClInclude Include="..\..\modules\beast_asio\handshake\beast_PrefilledReadStream.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_Socket.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketBase.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\beast_SocketWrapper.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPClientType.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPField.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPHeaders.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPMessage.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPParserImpl.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPParser.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponse.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPVersion.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\UniformResourceLocator.h" />
+    <ClInclude Include="..\..\modules\beast_asio\parsehttp\http_parser.h" />
+    <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogic.h" />
+    <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicPROXY.h" />
+    <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicSSL2.h" />
+    <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicSSL3.h" />
+    <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetector.h" />
+    <ClInclude Include="..\..\modules\beast_asio\protocol\InputParser.h" />
+    <ClInclude Include="..\..\modules\beast_asio\protocol\PrefilledReadStream.h" />
+    <ClInclude Include="..\..\modules\beast_asio\sockets\Socket.h" />
+    <ClInclude Include="..\..\modules\beast_asio\sockets\SocketBase.h" />
+    <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapper.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapperStrand.h" />
     <ClInclude Include="..\..\modules\beast_asio\system\BoostIncludes.h" />
-    <ClInclude Include="..\..\modules\beast_asio\system\beast_OpenSSLIncludes.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeer.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerBasics.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerDetails.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerDetailsTcp.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogic.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicAsyncClient.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicAsyncServer.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicProxyClient.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicSyncClient.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicSyncServer.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_PeerTest.h" />
-    <ClInclude Include="..\..\modules\beast_asio\tests\beast_TestPeerType.h" />
+    <ClInclude Include="..\..\modules\beast_asio\system\OpenSSLIncludes.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeer.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerBasics.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerDetails.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerDetailsTcp.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerLogic.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerLogicAsyncClient.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerLogicAsyncServer.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerLogicProxyClient.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerLogicSyncClient.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerLogicSyncServer.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\PeerTest.h" />
+    <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerType.h" />
     <ClInclude Include="..\..\modules\beast_core\beast_core.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\beast_AbstractFifo.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\beast_Array.h" />
@@ -150,6 +161,7 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Throw.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\ContractChecks.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\MeasureFunctionCallTime.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_DirectoryIterator.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_File.h" />
@@ -160,6 +172,7 @@
     <ClInclude Include="..\..\modules\beast_core\files\beast_RandomAccessFile.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_TemporaryFile.h" />
     <ClInclude Include="..\..\modules\beast_core\functional\beast_Function.h" />
+    <ClInclude Include="..\..\modules\beast_core\functional\SharedFunction.h" />
     <ClInclude Include="..\..\modules\beast_core\json\beast_JSON.h" />
     <ClInclude Include="..\..\modules\beast_core\logging\beast_FileLogger.h" />
     <ClInclude Include="..\..\modules\beast_core\logging\beast_Logger.h" />
@@ -340,13 +353,19 @@
     <ClInclude Include="BeastConfig.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\modules\beast_asio\async\beast_SharedHandler.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\async\SharedHandler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\basics\beast_PeerRole.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\basics\PeerRole.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -357,79 +376,133 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp" />
-    <ClCompile Include="..\..\modules\beast_asio\handshake\beast_HandshakeDetectLogicPROXY.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPClientType.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\sockets\beast_Socket.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPField.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\sockets\beast_SocketBase.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPHeaders.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\system\beast_BoostUnitTests.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPMessage.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerLogic.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPParser.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicAsyncClient.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponse.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicAsyncServer.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPVersion.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicProxyClient.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicSyncClient.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\http\UniformResourceLocator.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerLogicSyncServer.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\parsehttp\http_parser.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\tests\beast_PeerTest.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicPROXY.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerUnitTests.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\sockets\Socket.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\tests\beast_TestPeerBasics.cpp">
+    <ClCompile Include="..\..\modules\beast_asio\sockets\SocketBase.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\system\BoostUnitTests.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\TestPeerLogic.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\TestPeerLogicAsyncClient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\TestPeerLogicAsyncServer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\TestPeerLogicProxyClient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\TestPeerLogicSyncClient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\TestPeerLogicSyncServer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\PeerTest.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\TestPeerUnitTests.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\tests\TestPeerBasics.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

@@ -17,22 +17,26 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_ASIO_HTTPFIELD_H_INCLUDED
+#define BEAST_ASIO_HTTPFIELD_H_INCLUDED
 
-#include "beast_db.h"
-
-#include "../beast_crypto/beast_crypto.h"
-
-namespace beast
+/** A single header.
+    The header is a field/value pair.
+    Time complexity of copies is constant.
+*/
+class HTTPField
 {
+public:
+    HTTPField ();
+    HTTPField (String name_, String value_);
+    HTTPField (HTTPField const& other);
+    HTTPField& operator= (HTTPField const& other);
+    String name () const;
+    String value () const;
 
-#if BEAST_GCC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include "keyvalue/beast_KeyvaDB.cpp"
-#if BEAST_GCC
-#pragma GCC diagnostic pop
-#endif
+private:
+    String m_name;
+    String m_value;
+};
 
-}
+#endif

@@ -17,22 +17,35 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
-
-#include "beast_db.h"
-
-#include "../beast_crypto/beast_crypto.h"
-
-namespace beast
+HTTPField::HTTPField ()
 {
+}
 
-#if BEAST_GCC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include "keyvalue/beast_KeyvaDB.cpp"
-#if BEAST_GCC
-#pragma GCC diagnostic pop
-#endif
+HTTPField::HTTPField (String name_, String value_)
+    : m_name (name_)
+    , m_value (value_)
+{
+}
 
+HTTPField::HTTPField (HTTPField const& other)
+    : m_name (other.m_name)
+    , m_value (other.m_value)
+{
+}
+
+HTTPField& HTTPField::operator= (HTTPField const& other)
+{
+    m_name = other.m_name;
+    m_value = other.m_value;
+    return *this;
+}
+
+String HTTPField::name () const
+{
+    return m_name;
+}
+
+String HTTPField::value () const
+{
+    return m_value;
 }

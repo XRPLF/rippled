@@ -79,20 +79,18 @@ public:
         The return value indicates if the reference count dropped to zero,
         so callers who know the derived type can use the ContainerDeletePolicy.
     */
-    inline bool decReferenceCount (bool doDelete = true) noexcept
+    void decReferenceCount ()
     {
         bassert (getReferenceCount() > 0);
         if (--refCount == 0)
-        {
-            if (doDelete)
-                delete this;
-            return true;
-        }
-        return false;
+            destroy ();
     }
 
     /** Returns the object's current reference count. */
-    inline int getReferenceCount() const noexcept       { return refCount.get(); }
+    inline int getReferenceCount() const noexcept
+    {
+        return refCount.get();
+    }
 
 protected:
     //==============================================================================
@@ -106,6 +104,14 @@ protected:
     {
         // it's dangerous to delete an object that's still referenced by something else!
         bassert (getReferenceCount() == 0);
+    }
+
+    /** Destroy the object.
+        Derived classes can override this for different behaviors.
+    */
+    virtual void destroy ()
+    {
+        delete this;
     }
 
     /** Resets the reference count to zero without deleting the object.
@@ -155,17 +161,11 @@ public:
         The return value indicates if the reference count dropped to zero,
         so callers who know the derived type can use the ContainerDeletePolicy.
     */
-    inline bool decReferenceCount (bool doDelete = true) noexcept
+    inline void decReferenceCount ()
     {
         bassert (getReferenceCount() > 0);
         if (--refCount == 0)
-        {
-            if (doDelete)
-                delete this;
-            else
-                return true;
-        }
-        return false;
+            destroy ();
     }
 
     /** Returns the object's current reference count. */
@@ -182,6 +182,11 @@ protected:
     {
         // it's dangerous to delete an object that's still referenced by something else!
         bassert (getReferenceCount() == 0);
+    }
+
+    virtual void destroy ()
+    {
+        delete this;
     }
 
 private:

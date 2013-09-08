@@ -53,53 +53,56 @@
 # define BEAST_SOCKET_VIRTUAL
 #endif
 
-// A potentially dangerous but powerful feature which
-// might need to be turned off to see if it fixes anything.
-//
-#ifndef BEAST_USE_HANDLER_ALLOCATIONS
-# define BEAST_USE_HANDLER_ALLOCATIONS 1
-#endif
-
 namespace beast
 {
 
 // Order matters
-  #include "async/beast_SharedHandler.h"
- #include "async/beast_SharedHandlerType.h"
- #include "async/beast_SharedHandlerPtr.h"
- #include "async/beast_ComposedAsyncOperation.h"
-#include "async/beast_SharedHandlerAllocator.h"
+#  include "async/SharedHandler.h"
+# include "async/SharedHandlerType.h"
+# include "async/SharedHandlerPtr.h"
+# include "async/ComposedAsyncOperation.h"
+#include "async/SharedHandlerAllocator.h"
 
-#include "basics/beast_BufferType.h"
-#include "basics/beast_FixedInputBuffer.h"
-#include "basics/beast_PeerRole.h"
+# include "basics/BufferType.h"
+#include "basics/ContentBodyBuffer.h"
+#include "basics/FixedInputBuffer.h"
+#include "basics/PeerRole.h"
 #include "basics/SSLContext.h"
 
-   #include "sockets/beast_SocketBase.h"
-  #include "sockets/beast_Socket.h"
- #include "sockets/beast_SocketWrapper.h"
+#   include "sockets/SocketBase.h"
+#  include "sockets/Socket.h"
+# include "sockets/SocketWrapper.h"
 #include "sockets/SocketWrapperStrand.h"
 
-  #include "handshake/beast_InputParser.h"
- #include "handshake/beast_HandshakeDetectLogic.h"
-#include "handshake/beast_HandshakeDetectLogicPROXY.h"
-#include "handshake/beast_HandshakeDetectLogicSSL2.h"
-#include "handshake/beast_HandshakeDetectLogicSSL3.h"
-#include "handshake/beast_HandshakeDetector.h"
-#include "handshake/beast_PrefilledReadStream.h"
+#   include "http/HTTPVersion.h"
+#   include "http/HTTPField.h"
+#   include "http/HTTPHeaders.h"
+#  include "http/HTTPMessage.h"
+# include "http/HTTPResponse.h"
+# include "http/HTTPParser.h"
+# include "http/UniformResourceLocator.h"
+#include "http/HTTPClientType.h"
 
-#include "tests/beast_TestPeerBasics.h"
-#include "tests/beast_TestPeer.h"
-#include "tests/beast_TestPeerDetails.h"
-#include "tests/beast_TestPeerLogic.h"
-#include "tests/beast_TestPeerLogicSyncServer.h"
-#include "tests/beast_TestPeerLogicSyncClient.h"
-#include "tests/beast_TestPeerLogicProxyClient.h"
-#include "tests/beast_TestPeerLogicAsyncServer.h"
-#include "tests/beast_TestPeerLogicAsyncClient.h"
-#include "tests/beast_TestPeerType.h"
-#include "tests/beast_TestPeerDetailsTcp.h"
-#include "tests/beast_PeerTest.h"
+#  include "protocol/InputParser.h"
+# include "protocol/HandshakeDetectLogic.h"
+#include "protocol/HandshakeDetectLogicPROXY.h"
+#include "protocol/HandshakeDetectLogicSSL2.h"
+#include "protocol/HandshakeDetectLogicSSL3.h"
+#include "protocol/HandshakeDetector.h"
+#include "protocol/PrefilledReadStream.h"
+
+#include "tests/TestPeerBasics.h"
+#include "tests/TestPeer.h"
+#include "tests/TestPeerDetails.h"
+#include "tests/TestPeerLogic.h"
+#include "tests/TestPeerLogicSyncServer.h"
+#include "tests/TestPeerLogicSyncClient.h"
+#include "tests/TestPeerLogicProxyClient.h"
+#include "tests/TestPeerLogicAsyncServer.h"
+#include "tests/TestPeerLogicAsyncClient.h"
+#include "tests/TestPeerType.h"
+#include "tests/TestPeerDetailsTcp.h"
+#include "tests/PeerTest.h"
 
 }
 

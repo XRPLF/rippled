@@ -78,6 +78,7 @@ ScopedPointer <UnitTest::Suite>& UnitTest::run (UnitTests* const runner)
 
     initialise();
 
+#if 0
     try
     {
         runTest();
@@ -86,6 +87,9 @@ ScopedPointer <UnitTest::Suite>& UnitTest::run (UnitTests* const runner)
     {
         failException ();
     }
+#else
+    runTest ();
+#endif
 
     shutdown();
 
@@ -377,8 +381,10 @@ void UnitTests::logReport (StringArray const& report)
 
 void UnitTests::runTest (UnitTest& test)
 {
+#if 0
     try
     {
+#endif
         ScopedPointer <UnitTest::Suite> suite (test.run (this).release ());
 
         m_results->cases += suite->cases.size ();
@@ -386,12 +392,14 @@ void UnitTests::runTest (UnitTest& test)
         m_results->failures += suite->failures;
 
         m_results->suites.add (suite.release ());
+#if 0
     }
     catch (...)
     {
         // Should never get here.
         Throw (std::runtime_error ("unhandled exception during unit tests"));
     }
+#endif
 }
 
 //------------------------------------------------------------------------------

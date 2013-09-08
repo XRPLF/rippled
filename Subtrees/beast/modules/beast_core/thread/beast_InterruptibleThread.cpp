@@ -66,69 +66,56 @@ void InterruptibleThread::join ()
     m_thread.stopThread (-1);
 }
 
-bool InterruptibleThread::wait (int milliSeconds)
+// Block until there is an interruption.
+// This counts as an interruption point.
+//
+void InterruptibleThread::wait ()
 {
-    // Can only be called from the corresponding thread of execution.
-    //
+    // Can only be called from the thread of execution.
     bassert (isTheCurrentThread ());
-
-    bool interrupted = false;
 
     for (;;)
     {
+        // Impossible for us to already be in the wait state.
         bassert (m_state != stateWait);
 
-        // See if we are interrupted
-        //
+        // See if we are interrupted.
         if (m_state.tryChangeState (stateInterrupt, stateRun))
         {
-            // We were interrupted, state is changed to Run. Caller must run now.
-            //
-            interrupted = true;
-            break;
+            // We were interrupted, so the wait is satisfied.
+            return;
         }
-        else if (m_state.tryChangeState (stateRun, stateWait) ||
-                 m_state.tryChangeState (stateReturn, stateWait))
+        else
         {
-            // Transitioned to wait. Caller must wait now.
-            //
-            interrupted = false;
-            break;
-        }
-    }
-
-    if (!interrupted)
-    {
-        interrupted = m_thread.wait (milliSeconds);
-
-        if (!interrupted)
-        {
-            if (m_state.tryChangeState (stateWait, stateRun))
+            // Try to get into the wait state.
+            if (m_state.tryChangeState (stateRun, stateWait))
             {
-                interrupted = false;
-            }
-            else
-            {
-                bassert (m_state == stateInterrupt);
+                bassert (m_state == stateWait);
 
-                interrupted = true;
+                // Got into the wait state so block until interrupt.
+                m_thread.wait ();
+
+                // Event is signalled means we were
+                // interrupted, so the wait is satisfied.
+                bassert (m_state != stateWait || m_thread.threadShouldExit ());
+                return;
             }
         }
     }
-
-    return interrupted;
 }
 
 void InterruptibleThread::interrupt ()
 {
     for (;;)
     {
-        int const state = m_state;
+        int const state (m_state);
 
         if (state == stateInterrupt ||
-                state == stateReturn ||
-                m_state.tryChangeState (stateRun, stateInterrupt))
+            m_state.tryChangeState (stateRun, stateInterrupt))
         {
+            // We got into the interrupt state, the thead
+            // will see this at the next interruption point.
+            //
             // Thread will see this at next interruption point.
             //
             break;
@@ -141,27 +128,18 @@ void InterruptibleThread::interrupt ()
     }
 }
 
+// Returns true if the thead function should stop
+// its activities as soon as possible and return.
+//
 bool InterruptibleThread::interruptionPoint ()
 {
     // Can only be called from the thread of execution.
-    //
     bassert (isTheCurrentThread ());
 
-    if (m_state == stateWait)
-    {
-        // It is impossible for this function to be called while in the wait state.
-        //
-        Throw (Error ().fail (__FILE__, __LINE__));
-    }
-    else if (m_state == stateReturn)
-    {
-        // If this goes off it means the thread called the
-        // interruption a second time after already getting interrupted.
-        //
-        Throw (Error ().fail (__FILE__, __LINE__));
-    }
+    // Impossible for this to be called in the wait state.
+    bassert (m_state != stateWait);
 
-    bool const interrupted = m_state.tryChangeState (stateInterrupt, stateRun);
+    bool const interrupted (m_state.tryChangeState (stateInterrupt, stateRun));
 
     return interrupted;
 }

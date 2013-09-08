@@ -19,7 +19,7 @@
 
 class DeadlineTimer::Manager
     : public SharedSingleton <DeadlineTimer::Manager>
-    , public InterruptibleThread::EntryPoint
+    , protected Thread
 {
 private:
     typedef CriticalSection LockType;
@@ -28,18 +28,16 @@ private:
 public:
     Manager ()
         : SharedSingleton <Manager> (SingletonLifetime::persistAfterCreation)
-        , m_shouldStop (false)
-        , m_thread ("DeadlineTimer::Manager")
+        , Thread ("DeadlineTimer::Manager")
     {
-        m_thread.start (this);
+        startThread ();
     }
 
     ~Manager ()
     {
-        m_shouldStop = true;
-
-        m_thread.interrupt ();
-
+        signalThreadShouldExit ();
+        notify ();
+        waitForThreadToExit ();
         bassert (m_items.empty ());
     }
 
@@ -65,7 +63,7 @@ public:
         insertSorted (timer);
         timer.m_isActive = true;
 
-        m_thread.interrupt ();
+        notify ();
     }
 
     // Okay to call this on an inactive timer.
@@ -81,13 +79,13 @@ public:
 
             timer.m_isActive = false;
 
-            m_thread.interrupt ();
+            notify ();
         }
     }
 
-    void threadRun ()
+    void run ()
     {
-        while (! m_shouldStop)
+        while (! threadShouldExit ())
         {
             Time const currentTime = Time::getCurrentTime ();
             
@@ -158,13 +156,13 @@ public:
             {
                 // Wait until interrupt or next timer.
                 //
-                m_thread.wait (static_cast <int> (seconds * 1000 + 0.5));
+                wait (static_cast <int> (seconds * 1000 + 0.5));
             }
             else if (seconds == 0)
             {
                 // Wait until interrupt
                 //
-                m_thread.wait ();
+                wait ();
             }
             else
             {
@@ -212,8 +210,6 @@ public:
 
 private:
     CriticalSection m_mutex;
-    bool volatile m_shouldStop;
-    InterruptibleThread m_thread;
     Items m_items;
 };
 
