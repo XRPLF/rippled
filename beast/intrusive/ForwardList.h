@@ -150,10 +150,10 @@ class ForwardListIterator
         std::forward_iterator_tag,
         typename Container::value_type,
         typename Container::difference_type,
-        typename mpl::IfConst <IsConst,
+        typename mpl::IfCond <IsConst,
             typename Container::const_pointer,
             typename Container::pointer>::type,
-        typename mpl::IfConst <IsConst,
+        typename mpl::IfCond <IsConst,
             typename Container::const_reference,
             typename Container::reference>::type>
 {
@@ -167,10 +167,10 @@ protected:
 
 public:
     typedef typename Container::value_type value_type;
-    typedef typename mpl::IfConst <IsConst,
+    typedef typename mpl::IfCond <IsConst,
         typename Container::const_pointer,
         typename Container::pointer>::type pointer;
-    typedef typename mpl::IfConst <IsConst,
+    typedef typename mpl::IfCond <IsConst,
         typename Container::const_reference,
         typename Container::reference>::type reference;
 

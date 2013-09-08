@@ -29,23 +29,23 @@ class DynamicListIterator
         std::bidirectional_iterator_tag,
         typename Container::value_type,
         typename Container::difference_type,
-        typename mpl::IfConst <IsConst,
+        typename mpl::IfCond <IsConst,
             typename Container::const_pointer,
             typename Container::pointer>::type,
-        typename mpl::IfConst <IsConst,
+        typename mpl::IfCond <IsConst,
             typename Container::const_reference,
             typename Container::reference>::type>
 {
 private:
-    typedef typename mpl::IfConst <IsConst,
+    typedef typename mpl::IfCond <IsConst,
         typename List <typename Container::Item>::const_iterator,
         typename List <typename Container::Item>::iterator>::type iterator_type;
 
-    typedef typename mpl::IfConst <IsConst,
+    typedef typename mpl::IfCond <IsConst,
         typename Container::const_pointer,
         typename Container::pointer>::type pointer;
 
-    typedef typename mpl::IfConst <IsConst,
+    typedef typename mpl::IfCond <IsConst,
         typename Container::const_reference,
         typename Container::reference>::type reference;
 
