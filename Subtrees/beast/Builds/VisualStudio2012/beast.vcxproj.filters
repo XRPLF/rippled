@@ -878,9 +878,6 @@
     <ClInclude Include="..\..\beast\mpl\AddConst.h">
       <Filter>beast\mpl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\mpl\IfConst.h">
-      <Filter>beast\mpl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\mpl.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1024,6 +1021,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\http\UniformResourceLocator.h">
       <Filter>beast_asio\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\IfCond.h">
+      <Filter>beast\mpl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

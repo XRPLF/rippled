@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MPL_IFCONST_H_INCLUDED
-#define BEAST_MPL_IFCONST_H_INCLUDED
+#ifndef BEAST_MPL_IFCOND_H_INCLUDED
+#define BEAST_MPL_IFCOND_H_INCLUDED
 
 namespace beast {
 namespace mpl {
@@ -28,13 +28,13 @@ namespace mpl {
 /// Select between T1 or T2 depending on Condition.
 /// @{
 template <bool Condition, typename T1, typename T2>
-struct IfConst
+struct IfCond
 {
     typedef T1 type;
 };
 
 template <typename T1, typename T2>
-struct IfConst <false, T1, T2>
+struct IfCond <false, T1, T2>
 {
     typedef T2 type;
 };

@@ -73,7 +73,7 @@
     <ClInclude Include="..\..\beast\intrusive\PointerTraits.h" />
     <ClInclude Include="..\..\beast\mpl.h" />
     <ClInclude Include="..\..\beast\mpl\AddConst.h" />
-    <ClInclude Include="..\..\beast\mpl\IfConst.h" />
+    <ClInclude Include="..\..\beast\mpl\IfCond.h" />
     <ClInclude Include="..\..\beast\mpl\PointerToOther.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveConst.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h" />

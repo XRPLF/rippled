@@ -21,7 +21,7 @@
 #define BEAST_MPL_H_INCLUDED
 
 #include "mpl/AddConst.h"
-#include "mpl/IfConst.h"
+#include "mpl/IfCond.h"
 #include "mpl/PointerToOther.h"
 #include "mpl/RemoveConst.h"
 #include "mpl/RemoveConstVolatile.h"
