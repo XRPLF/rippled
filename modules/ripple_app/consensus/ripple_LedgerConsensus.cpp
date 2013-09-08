@@ -292,6 +292,9 @@ bool LedgerConsensus::stillNeedTXSet (uint256 const& hash)
 
 void LedgerConsensus::createDisputes (SHAMap::ref m1, SHAMap::ref m2)
 {
+    if (m1->getHash() == m2->getHash())
+        return;
+
     WriteLog (lsDEBUG, LedgerConsensus) << "createDisputes " << m1->getHash() << " to " << m2->getHash();
     SHAMap::Delta differences;
     m1->compare (m2, differences, 16384);
