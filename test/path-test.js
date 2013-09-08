@@ -160,7 +160,7 @@ buster.testCase("Basic Path finding", {
               callback);
           },
         ], function (error) {
-          console.log(error);
+          //console.log(error);
           buster.refute(error, self.what);
           done();
         });
