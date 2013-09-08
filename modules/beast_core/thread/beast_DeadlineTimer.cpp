@@ -88,75 +88,72 @@ public:
         while (! threadShouldExit ())
         {
             Time const currentTime = Time::getCurrentTime ();
-            
-            double seconds = 0;
+
+            double seconds (0);
+            DeadlineTimer* timer (nullptr);
 
             {
                 LockType::ScopedLockType lock (m_mutex);
 
-                // Notify everyone whose timer has expired
-                //
-                while (! m_items.empty ())
+                // See if a timer expired
+                if (! m_items.empty ())
                 {
-                    Items::iterator const iter = m_items.begin ();
-                    DeadlineTimer& timer (*iter);
+                    timer = &m_items.front ();
 
                     // Has this timer expired?
-                    if (timer.m_notificationTime <= currentTime)
+                    if (timer->m_notificationTime <= currentTime)
                     {
                         // Expired, remove it from the list.
-                        m_items.erase (iter);
-
-                        // Call the listener
-                        //
-                        // NOTE
-                        //      The lock is held.
-                        //      The listener MUST NOT block for long.
-                        //
-                        timer.m_listener->onDeadlineTimer (timer);
+                        bassert (timer->m_isActive);
+                        m_items.pop_front ();
 
                         // Is the timer recurring?
-                        if (timer.m_secondsRecurring > 0)
+                        if (timer->m_secondsRecurring > 0)
                         {
                             // Yes so set the timer again.
-                            timer.m_notificationTime =
-                                currentTime + RelativeTime (iter->m_secondsRecurring);
+                            timer->m_notificationTime =
+                                currentTime + RelativeTime (timer->m_secondsRecurring);
 
-                            // Keep it active.
-                            insertSorted (timer);
+                            // Put it back into the list as active
+                            insertSorted (*timer);
                         }
                         else
                         {
                             // Not a recurring timer, deactivate it.
-                            timer.m_isActive = false;
+                            timer->m_isActive = false;
                         }
+
+                        // Listener will be called later and we will
+                        // go through the loop again without waiting.
                     }
                     else
                     {
-                        break;
-                    }
-                }
+                        seconds = (
+                            timer->m_notificationTime - currentTime).inSeconds ();
 
-                // Figure out how long we need to wait.
-                // This has to be done while holding the lock.
-                //
-                if (! m_items.empty ())
-                {
-                    seconds = (m_items.front ().m_notificationTime - currentTime).inSeconds ();
-                }
-                else
-                {
-                    seconds = 0;
+                        // Can't be zero and come into the else clause.
+                        bassert (seconds != 0);
+
+                        // Don't call the listener
+                        timer = nullptr;
+                    }
                 }
             }
 
             // Note that we have released the lock here.
-            //
-            if (seconds > 0)
+
+            if (timer != nullptr)
+            {
+                timer->m_listener->onDeadlineTimer (*timer);
+            }
+            else if (seconds > 0)
             {
                 // Wait until interrupt or next timer.
                 //
-                wait (static_cast <int> (seconds * 1000 + 0.5));
+                int const milliSeconds (std::max (
+                    static_cast <int> (seconds * 1000 + 0.5), 1));
+                bassert (milliSeconds > 0);
+                wait (milliSeconds);
             }
             else if (seconds == 0)
             {
