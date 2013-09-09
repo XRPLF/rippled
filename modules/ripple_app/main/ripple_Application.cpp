@@ -193,12 +193,27 @@ public:
 
     ~ApplicationImp ()
     {
+        stop ();
         m_networkOPs = nullptr;
 
         // VFALCO TODO Wrap these in ScopedPointer
-        delete mTxnDB;
-        delete mLedgerDB;
-        delete mWalletDB;
+        if (mTxnDB != nullptr)
+        {
+            delete mTxnDB;
+            mTxnDB = nullptr;
+        }
+
+        if (mLedgerDB != nullptr)
+        {
+            delete mLedgerDB;
+            mLedgerDB = nullptr;
+        }
+
+        if (mWalletDB != nullptr)
+        {
+            delete mWalletDB;
+            mWalletDB = nullptr;
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -563,7 +578,6 @@ public:
 
             if (getConfig ().peerPROXYListeningPort != 0)
             {
-#if RIPPLE_PEER_USES_BEAST_MULTISOCKET
                 // Also listen on a PROXY-only port.
                 m_peerProxyDoor = PeerDoor::New (
                     PeerDoor::sslAndPROXYRequired,
@@ -571,10 +585,6 @@ public:
                     getConfig ().peerPROXYListeningPort,
                     m_mainService,
                     m_peerSSLContext->get ());
-#else
-                WriteLog (lsWARNING, Application) <<
-                    "Peer PROXY interface: configured but disabled by build configuration.";
-#endif
             }
         }
         else

@@ -150,13 +150,6 @@
 
 //------------------------------------------------------------------------------
 
-// This is only here temporarily. Use it to turn off MultiSocket
-// in Peer code if you suspect you're having problems because of it.
-//
-#ifndef RIPPLE_PEER_USES_BEAST_MULTISOCKET
-#define RIPPLE_PEER_USES_BEAST_MULTISOCKET 1
-#endif
-
 // Here temporarily to turn off new Validations code while it
 // is being written.
 //

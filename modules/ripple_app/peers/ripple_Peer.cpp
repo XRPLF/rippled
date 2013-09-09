@@ -32,9 +32,7 @@ public:
     //
     //
 
-#if RIPPLE_PEER_USES_BEAST_MULTISOCKET
     ScopedPointer <MultiSocket> m_socket;
-    //boost::asio::io_service& m_strand;
     boost::asio::io_service::strand m_strand;
 
     NativeSocketType& getNativeSocket ()
@@ -52,30 +50,6 @@ public:
         return *m_socket;
     }
 
-    //---------------------------------------------------------------------------
-#else
-    typedef boost::asio::ssl::stream <NativeSocketType&> SslStreamType;
-    NativeSocketType m_socket;
-    SslStreamType m_ssl_stream;
-    boost::asio::io_service::strand m_strand;
-
-    NativeSocketType& getNativeSocket ()
-    {
-        return m_socket;
-    }
-
-    SslStreamType& getHandshakeStream ()
-    {
-        return m_ssl_stream;
-    }
-
-    SslStreamType& getStream ()
-    {
-        return m_ssl_stream;
-    }
-
-#endif
-
     //
     //
     //
@@ -88,15 +62,9 @@ public:
                       bool inbound,
                       MultiSocket::Flag flags)
         : m_isInbound (inbound)
-#if RIPPLE_PEER_USES_BEAST_MULTISOCKET
         , m_socket (MultiSocket::New (
             io_service, ssl_context, flags.asBits ()))
         , m_strand (io_service)
-#else
-        , m_socket (io_service)
-        , m_ssl_stream (m_socket, ssl_context)
-        , m_strand (io_service)
-#endif
         , mHelloed (false)
         , mDetaching (false)
         , mActive (2)
@@ -317,7 +285,6 @@ private:
         }
         else
         {
-        #if RIPPLE_PEER_USES_BEAST_MULTISOCKET
             if (m_socket->getFlags ().set (MultiSocket::Flag::proxy) && m_isInbound)
             {
                 MultiSocket::ProxyInfo const proxyInfo (m_socket->getProxyInfo ());
@@ -350,7 +317,6 @@ private:
                 }
             }
             else
-        #endif
             {
                 // Must compute mCookieHash before receiving a hello.
                 sendHello ();
@@ -2604,12 +2570,7 @@ Peer::pointer Peer::New (boost::asio::io_service& io_service,
 
         if (requirePROXYHandshake)
         {
-#if RIPPLE_PEER_USES_BEAST_MULTISOCKET
             flags = flags.with (MultiSocket::Flag::proxy);
-#else
-            FatalError ("PROXY Handshake support disabled in this build",
-                __FILE__, __LINE__);
-#endif
         }
     }
     else
