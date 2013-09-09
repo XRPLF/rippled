@@ -78,11 +78,6 @@ static const uint64 tenTo17m1 = tenTo17 - 1;
 
 }
 
-// VFALCO TODO Fix this for SConstruct
-#if BEAST_MSVC
-#include "ripple.pb.cc"
-#endif
-
 #if BEAST_MSVC
 #pragma warning (pop)
 #endif

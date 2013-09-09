@@ -873,6 +873,9 @@
     <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedURL.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\build\proto\ripple.pb.cc">
+      <Filter>[1] Ripple</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\ripple_app\ripple_app.h">
