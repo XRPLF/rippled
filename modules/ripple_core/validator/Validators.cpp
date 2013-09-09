@@ -35,10 +35,6 @@ ChosenValidators
 --------------------------------------------------------------------------------
 
 David:
-  I've cut 2 of the 6 active client-facing servers to hyper. Since then, we've
-  had 5 spinouts on 3 servers, none of them on the 2 I've cut over. But they
-  are also the most recently restarted servers, so it's not a 100% fair test.
-
   Maybe OC should have a URL that you can query to get the latest list of URI's
   for OC-approved organzations that publish lists of validators. The server and
   client can ship with that master trust URL and also the list of URI's at the
@@ -57,7 +53,6 @@ TODO:
   - What to do if you're a rippled administrator
   - Overview of how ChosenValidators works
 
-
 Goals:
   Make default configuration of rippled secure.
     * Ship with TrustedUriList
@@ -74,56 +69,22 @@ What determines that a validator is good?
     * Measurements of constructive/destructive behavior is
       calculated in units of percentage of ledgers for which
       the behavior is measured.
-
-Nouns
-
-  Validator
-    - Signs ledgers and participate in consensus
-    - Fields
-      * Public key
-      * Friendly name
-      * Jurisdiction 
-      * Org type: profit, nonprofit, "profit/gateway"
-    - Metadata
-      * Visible on the network?
-      * On the consensus ledger?
-      * Percentage of recent participation in consensus
-      * Frequency of stalling the consensus process
-
-  ValidatorSource
-    - Abstract
-    - Provides a list of Validator
-
-  ValidatorList
-    - Essentially an array of Validator
-
-  ValidatorSourceTrustedUri
-    - ValidatorSource which uses HTTPS and a predefined URI
-    - Domain owner is responsible for removing bad validators
-
-  ValidatorSourceTrustedUri::List
-    - Essentially an array of ValidatorSourceTrustedUri
-    - Can be read from a file
-
-  LocalFileValidatorSource
-    - ValidatorSource which reads information from a local file.
-
-  TrustedUriList // A copy of this ships with the app
-  * has a KnownValidators
-
-  KnownValidators
-  * A series of KnownValidator that comes from a TrustedUri
-  * Persistent storage has a timestamp
-
-  RankedValidators
-  * Created as the union of all KnownValidators with "weight" being the
-  number of appearances.
-
-  ChosenValidators
-  * Result of the algorithm that chooses a random subset of RankedKnownValidators
-  * "local health" percentage is the percent of validations from this list that
-  you've seen recently. And have they been behaving.
 */
+
+//------------------------------------------------------------------------------
+
+Validators::Source::Result::Result ()
+    : success (false)
+    , message ("uninitialized")
+{
+}
+
+void Validators::Source::Result::swapWith (Result& other)
+{
+    std::swap (success, other.success);
+    std::swap (message, other.message);
+    list.swapWith (other.list);
+}
 
 //------------------------------------------------------------------------------
 
@@ -142,6 +103,72 @@ public:
         numberOfTestValidators = 1000
     };
 
+    //--------------------------------------------------------------------------
+
+    struct Payload
+    {
+        Payload ()
+        {
+        }
+    };
+
+    template <class Config>
+    class PeerLogic : public TestOverlay::PeerLogicBase <Config>
+    {
+    public:
+        typedef TestOverlay::PeerLogicBase <Config> Base;
+        typedef typename Config::Payload    Payload;
+        typedef typename Base::Connection   Connection;
+        typedef typename Base::Peer         Peer;
+        typedef typename Base::Message      Message;
+        typedef typename Config::SizeType   SizeType;
+
+        explicit PeerLogic (Peer& peer)
+            : TestOverlay::PeerLogicBase <Config> (peer)
+        {
+        }
+
+        ~PeerLogic ()
+        {
+        }
+
+        void step ()
+        {
+            if (this->peer().id () == 1)
+            {
+                if (this->peer().network().steps() == 0)
+                {
+                    this->peer().network().state().increment();
+                    this->peer().send_all (Payload (1));
+                }
+            }
+        }
+
+        void receive (Connection const& c, Message const& m)
+        {
+            if (this->peer().id () != 1)
+            {
+                this->peer().network().state().increment();
+                this->peer().send_all_if (Message (m.id(),
+                    m.payload().withHop ()),
+                        typename Connection::IsNotPeer (c.peer()));
+            }
+        }
+    };
+
+    struct Params : TestOverlay::ConfigType <
+        Params,
+        TestOverlay::StateBase,
+        PeerLogic
+    >
+    {
+        typedef TestOverlay::PremadeInitPolicy <250, 3> InitPolicy;
+    };
+
+    typedef Params::Network Network;
+
+    //--------------------------------------------------------------------------
+
     struct TestSource : Validators::Source
     {
         TestSource (String const& name, uint32 start, uint32 end)
@@ -151,17 +178,22 @@ public:
         {
         }
 
-        Array <Info> fetch (CancelCallback& cancel)
+        Result fetch (CancelCallback& cancel)
         {
-            Array <Info> list;
-            list.ensureStorageAllocated (numberOfTestValidators);
+            Result result;
+
+            result.success = true;
+            result.message = String::empty;
+            result.list.ensureStorageAllocated (numberOfTestValidators);
+
             for (uint32 i = m_start ; i < m_end; ++i)
             {
                 Info info;
                 info.key = Validators::KeyType::createFromInteger (i);
-                list.add (info);
+                result.list.add (info);
             }
-            return list;
+
+            return result;
         }
 
         String m_name;
@@ -173,11 +205,15 @@ public:
 
     void addSources (ValidatorsImp::Logic& logic)
     {
+#if 0
         logic.addSource (new TestSource ("source 1",    0, 1000));
         logic.addSource (new TestSource ("source 2",  200, 1500));
         logic.addSource (new TestSource ("source 3",  500, 2000));
         logic.addSource (new TestSource ("source 4",  750, 2200));
         logic.addSource (new TestSource ("source 5", 1500, 3200));
+#else
+        logic.addSource (new TestSource ("source 1",    0, 1));
+#endif
     }
 
     void testLogic ()

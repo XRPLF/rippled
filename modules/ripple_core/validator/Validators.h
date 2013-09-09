@@ -50,7 +50,16 @@ public:
             returns `true`.
             This call will block.
         */
-        virtual Array <Info> fetch (CancelCallback& callback) = 0;
+        struct Result
+        {
+            Result ();
+            void swapWith (Result& other);
+
+            bool success;
+            String message;
+            Array <Info> list;
+        };
+        virtual Result fetch (CancelCallback& callback) = 0;
     };
 
     //--------------------------------------------------------------------------
@@ -68,12 +77,14 @@ public:
     */
     virtual ~Validators () { }
 
-    /** Add a live source of validators.
-        The caller loses ownership of the object.
-        Thread safety:
-            Can be called from any thread.
-    */
-    virtual void addSource (Source* source) = 0;
+    /** Add a static source of validators from a string array. */
+    /** @{ */
+    virtual void addStrings (std::vector <std::string> const& strings) = 0;
+    virtual void addStrings (StringArray const& stringArray) = 0;
+    /** @} */
+
+    /** Add a static source of validators from a text file. */
+    virtual void addFile (String const& path) = 0;
 
     /** Add a static source of validators.
         The Source is called to fetch once and the results are kept
@@ -84,6 +95,18 @@ public:
             Can be called from any thread.
     */
     virtual void addStaticSource (Source* source) = 0;
+
+    /** Add a live source of validators from a trusted URL.
+        The URL will be contacted periodically to update the list.
+    */
+    virtual void addTrustedURL (UniformResourceLocator const& url) = 0;
+
+    /** Add a live source of validators.
+        The caller loses ownership of the object.
+        Thread safety:
+            Can be called from any thread.
+    */
+    virtual void addSource (Source* source) = 0;
 
     //--------------------------------------------------------------------------
 

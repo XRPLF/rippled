@@ -168,8 +168,8 @@
 // Here temporarily to turn off new Validations code while it
 // is being written.
 //
-#ifndef RIPPLE_USE_NEW_VALIDATIONS
-#define RIPPLE_USE_NEW_VALIDATIONS 0
+#ifndef RIPPLE_USE_NEW_VALIDATORS
+#define RIPPLE_USE_NEW_VALIDATORS 0
 #endif
 
 #endif

@@ -459,14 +459,14 @@ public:
         }
 
         // Always load from rippled.cfg
-        if (!getConfig ().VALIDATORS.empty ())
+        if (!getConfig ().validators.empty ())
         {
             RippleAddress   naInvalid;  // Don't want a referrer on added entries.
 
             WriteLog (lsINFO, UniqueNodeList) << boost::str (boost::format ("Bootstrapping UNL: loading from '%s'.")
                                               % getConfig ().CONFIG_FILE);
 
-            if (processValidators ("local", getConfig ().CONFIG_FILE.string (), naInvalid, vsConfig, &getConfig ().VALIDATORS))
+            if (processValidators ("local", getConfig ().CONFIG_FILE.string (), naInvalid, vsConfig, &getConfig ().validators))
                 bLoaded = true;
         }
 

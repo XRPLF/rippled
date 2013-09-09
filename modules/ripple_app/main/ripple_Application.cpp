@@ -188,6 +188,8 @@ public:
     {
         // VFALCO TODO remove these once the call is thread safe.
         HashMaps::getInstance ().initializeNonce <size_t> ();
+
+        initValidatorsConfig ();
     }
 
     ~ApplicationImp ()
@@ -198,6 +200,24 @@ public:
         delete mTxnDB;
         delete mLedgerDB;
         delete mWalletDB;
+    }
+
+    //--------------------------------------------------------------------------
+
+    // Initialize the Validators object with Config information.
+    void initValidatorsConfig ()
+    {
+        {
+            std::vector <std::string> const& strings (getConfig().validators);
+            if (! strings.empty ())
+                m_validators->addStrings (strings);
+        }
+
+        {
+            String const& localValidatorsPath (getConfig().localValidatorsPath);
+            if (localValidatorsPath != String::empty)
+                m_validators->addFile (localValidatorsPath);
+        }
     }
 
     //--------------------------------------------------------------------------

@@ -67,10 +67,13 @@ public:
             }
         };
 
-        typedef HashMap <KeyType, Info, KeyType::HashFunction> MapType;
+        //typedef HashMap <KeyType, Info, KeyType::HashFunction> MapType;
+        typedef boost::unordered_map <KeyType, Info, KeyType::HashFunction> MapType;
 
-        ChosenList ()
+        ChosenList (std::size_t expectedSize = 0)
         {
+            // Available only in recent boost versions?
+            //m_map.reserve (expectedSize);
         }
 
         std::size_t size () const noexcept
@@ -102,7 +105,7 @@ public:
     public:
         // Information associated with each Source
         //
-        struct SourceInfo
+        struct SourceDesc
         {
             enum
             {
@@ -121,25 +124,24 @@ public:
             Time whenToFetch;
             int numberOfFailures;
 
-            // The result of hte last fetch
-            Array <Source::Info> list;
+            // The result of the last fetch
+            Source::Result result;
 
             //------------------------------------------------------------------
 
-            SourceInfo () noexcept
+            SourceDesc () noexcept
                 : status (statusNone)
                 , whenToFetch (Time::getCurrentTime ())
                 , numberOfFailures (0)
             {
-                list.ensureStorageAllocated (keysPreallocationSize);
             }
 
-            ~SourceInfo ()
+            ~SourceDesc ()
             {
             }
         };
 
-        typedef DynamicList <SourceInfo> SourcesType;
+        typedef DynamicList <SourceDesc> SourcesType;
 
         //----------------------------------------------------------------------
 
@@ -152,25 +154,17 @@ public:
             {
             }
 
-            KeyType key;
             int refCount;
         };
 
-        typedef HashMap <KeyType, ValidatorInfo, KeyType::HashFunction> MapType;
+        //typedef HashMap <KeyType, ValidatorInfo, KeyType::HashFunction> MapType;
+        typedef boost::unordered_map <KeyType, ValidatorInfo, KeyType::HashFunction> MapType;
 
         //----------------------------------------------------------------------
 
         Logic ()
             : m_chosenListNeedsUpdate (false)
         {
-        }
-
-        // Add a live source to the list of sources.
-        //
-        void addSource (Source* source)
-        {
-            SourceInfo& info (*m_sources.emplace_back ());
-            info.source = source;
         }
 
         // Add a one-time static source.
@@ -181,10 +175,25 @@ public:
             ScopedPointer <Source> object (source);
 
             NoOpCancelCallback cancelCallback;
-            
-            Array <Source::Info> list (object->fetch (cancelCallback));
 
-            addSourceInfo (list);
+            Source::Result result (object->fetch (cancelCallback));
+
+            if (result.success)
+            {
+                addSourceInfo (result.list);
+            }
+            else
+            {
+                // VFALCO NOTE Maybe log the error and message?
+            }
+        }
+
+        // Add a live source to the list of sources.
+        //
+        void addSource (Source* source)
+        {
+            SourceDesc& desc (*m_sources.emplace_back ());
+            desc.source = source;
         }
 
         // Called when we receive a validation from a peer.
@@ -212,10 +221,11 @@ public:
             for (std::size_t i = 0; i < list.size (); ++i)
             {
                 Source::Info const& info (list.getReference (i));
-                MapType::Result result (m_map.insert (info.key));
-                ValidatorInfo& validatorInfo (result.iter->value ());
+                std::pair <MapType::iterator, bool> result (
+                    m_map.emplace (info.key, ValidatorInfo ()));
+                ValidatorInfo& validatorInfo (result.first->second);
                 ++validatorInfo.refCount;
-                if (result.inserted)
+                if (result.second)
                 {
                     // This is a new one
                     markDirtyChosenList ();
@@ -233,11 +243,11 @@ public:
                 Source::Info const& info (list.getReference (i));
                 MapType::iterator iter (m_map.find (info.key));
                 bassert (iter != m_map.end ());
-                ValidatorInfo& validatorInfo (iter->value ());
+                ValidatorInfo& validatorInfo (iter->second);
                 if (--validatorInfo.refCount == 0)
                 {
                     // Last reference removed
-                    m_map.erase (info.key);
+                    m_map.erase (iter);
                     markDirtyChosenList ();
                 }
             }
@@ -245,26 +255,39 @@ public:
 
         // Fetch one source
         //
-        void fetchSource (SourceInfo& info, Source::CancelCallback& callback)
+        void fetchSource (SourceDesc& desc, Source::CancelCallback& callback)
         {
-            Array <Source::Info> list (info.source->fetch (callback));
+            Source::Result result (desc.source->fetch (callback));
+
             if (! callback.shouldCancel ())
             {
                 // Reset fetch timer for the source.
-                info.whenToFetch = Time::getCurrentTime () +
+                desc.whenToFetch = Time::getCurrentTime () +
                     RelativeTime (secondsBetweenFetches);
 
-                // Add the new source info to the map
-                addSourceInfo (list);
+                if (result.success)
+                {
+                    // Add the new source info to the map
+                    addSourceInfo (result.list);
 
-                // Swap lists
-                info.list.swapWith (list);
+                    // Swap lists
+                    desc.result.swapWith (result);
 
-                // Remove the old source info from the map
-                removeSourceInfo (list);
+                    // Remove the old source info from the map
+                    removeSourceInfo (result.list);
 
-                // See if we need to rebuild
-                checkDirtyChosenList ();
+                    // See if we need to rebuild
+                    checkDirtyChosenList ();
+
+                    // Reset failure status
+                    desc.numberOfFailures = 0;
+                    desc.status = SourceDesc::statusFetched;
+                }
+                else
+                {
+                    ++desc.numberOfFailures;
+                    desc.status = SourceDesc::statusFailed;
+                }
             }
         }
 
@@ -276,9 +299,9 @@ public:
             for (SourcesType::iterator iter = m_sources.begin ();
                  ! callback.shouldCancel () && iter != m_sources.end (); ++iter)
             {
-                SourceInfo& info (*iter);
-                if (info.whenToFetch <= currentTime)
-                    fetchSource (info, callback);
+                SourceDesc& desc (*iter);
+                if (desc.whenToFetch <= currentTime)
+                    fetchSource (desc, callback);
             }
         }
 
@@ -305,14 +328,13 @@ public:
         //
         void buildChosenList ()
         {
-            ChosenList::Ptr list (new ChosenList);
+            ChosenList::Ptr list (new ChosenList (m_map.size ()));
 
             for (MapType::iterator iter = m_map.begin ();
                 iter != m_map.end (); ++iter)
             {
-                //ValidatorInfo const& validatorInfo (iter->value ());
                 ChosenList::Info info;
-                list->insert (iter->key (), info);
+                list->insert (iter->first, info);
             }
 
             // This is thread safe
@@ -362,6 +384,31 @@ public:
 
     ~ValidatorsImp ()
     {
+    }
+
+    void addStrings (std::vector <std::string> const& strings)
+    {
+        StringArray stringArray;
+        stringArray.ensureStorageAllocated (strings.size());
+        for (std::size_t i = 0; i < strings.size(); ++i)
+            stringArray.add (strings [i]);
+        addStrings (stringArray);
+    }
+
+    void addStrings (StringArray const& stringArray)
+    {
+        addStaticSource (
+            ValidatorSourceStrings::New (stringArray));
+    }
+
+    void addFile (String const& path)
+    {
+        addStaticSource (ValidatorSourceFile::New (path));
+    }
+
+    void addTrustedURL (UniformResourceLocator const& url)
+    {
+        addSource (ValidatorSourceTrustedURL::New (url));
     }
 
     void addSource (Source* source)

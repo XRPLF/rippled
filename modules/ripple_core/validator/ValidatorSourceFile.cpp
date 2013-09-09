@@ -4,14 +4,16 @@
 */
 //==============================================================================
 
-class ValidatorSourceStringsImp : public ValidatorSourceStrings
+class ValidatorSourceFileImp : public ValidatorSourceFile
 {
 public:
-    ValidatorSourceStringsImp (StringArray const& strings)
+    ValidatorSourceFileImp (String const& path)
+        : m_path (path)
+        , m_file (File::getCurrentWorkingDirectory().getChildFile (path))
     {
     }
 
-    ~ValidatorSourceStringsImp ()
+    ~ValidatorSourceFileImp ()
     {
     }
 
@@ -23,14 +25,16 @@ public:
     }
 
 private:
+    String m_path;
+    File m_file;
 };
 
 //------------------------------------------------------------------------------
 
-ValidatorSourceStrings* ValidatorSourceStrings::New (StringArray const& strings)
+ValidatorSourceFile* ValidatorSourceFile::New (String const& path)
 {
-    ScopedPointer <ValidatorSourceStrings> object (
-        new ValidatorSourceStringsImp (strings));
+    ScopedPointer <ValidatorSourceFile> object (
+        new ValidatorSourceFileImp (path));
 
     return object.release ();
 }

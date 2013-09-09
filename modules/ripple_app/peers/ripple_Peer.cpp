@@ -1465,7 +1465,7 @@ static void checkValidation (Job&, SerializedValidation::pointer val, bool isTru
         //----------------------------------------------------------------------
         //
         {
-#if RIPPLE_USE_NEW_VALIDATIONS
+#if RIPPLE_USE_NEW_VALIDATORS
             SerializedValidation const& sv (*val);
             Validators::ReceivedValidation rv;
             rv.ledgerHash = sv.getLedgerHash ();

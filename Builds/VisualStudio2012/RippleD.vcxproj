@@ -784,13 +784,19 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceFile.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceStrings.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedUri.cpp">
+    <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedURL.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1517,8 +1523,9 @@
     <ClInclude Include="..\..\modules\ripple_core\test\Results.h" />
     <ClInclude Include="..\..\modules\ripple_core\test\SimplePayload.h" />
     <ClInclude Include="..\..\modules\ripple_core\test\StateBase.h" />
+    <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceFile.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceStrings.h" />
-    <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedUri.h" />
+    <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedURL.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorsImp.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\Validators.h" />
     <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorsUtilities.h" />

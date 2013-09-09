@@ -13,6 +13,7 @@
 #include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 
 // For NodeStore backends
@@ -20,9 +21,6 @@
 #include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
 #include "../ripple_leveldb/ripple_leveldb.h"
 #include "../ripple_mdb/ripple_mdb.h"
-
-// For Validators 
-//#include "../ripple_net/ripple_net.h"
 
 namespace ripple
 {
@@ -64,11 +62,13 @@ namespace ripple
 
 # include "validator/ValidatorsUtilities.h"
 #include "validator/ValidatorsUtilities.cpp"
-# include "validator/ValidatorSourceStrings.h"
-# include "validator/ValidatorSourceTrustedUri.h"
-# include "validator/ValidatorsImp.h" // private
+#  include "validator/ValidatorSourceFile.h"
+#  include "validator/ValidatorSourceStrings.h"
+#  include "validator/ValidatorSourceTrustedURL.h"
+# include "validator/ValidatorsImp.h"
+#include "validator/ValidatorSourceFile.cpp"
 #include "validator/ValidatorSourceStrings.cpp"
-#include "validator/ValidatorSourceTrustedUri.cpp"
+#include "validator/ValidatorSourceTrustedURL.cpp"
 #include "validator/Validators.cpp"
 
 }

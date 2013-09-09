@@ -137,6 +137,12 @@ public:
     */
     int peerPROXYListeningPort;
 
+    /** List of Validators entries from rippled.cfg */
+    std::vector <std::string> validators;
+
+    /** Path to local validators.txt file from rippled.cfg */
+    String localValidatorsPath;
+
     //--------------------------------------------------------------------------
 
     bool                        ELB_SUPPORT;            // Support Amazon ELB
@@ -144,7 +150,6 @@ public:
     std::string                 VALIDATORS_SITE;        // Where to find validators.txt on the Internet.
     std::string                 VALIDATORS_URI;         // URI of validators.txt.
     std::string                 VALIDATORS_BASE;        // Name with testnet-, if needed.
-    std::vector<std::string>    VALIDATORS;             // Validators from rippled.cfg.
     std::vector<std::string>    IPS;                    // Peer IPs from rippled.cfg.
     std::vector<std::string>    SNTP_SERVERS;           // SNTP servers from rippled.cfg.
 

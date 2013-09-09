@@ -261,8 +261,8 @@ void Config::load ()
 
             if (smtTmp)
             {
-                VALIDATORS  = *smtTmp;
-                // SectionEntriesPrint(&VALIDATORS, SECTION_VALIDATORS);
+                validators  = *smtTmp;
+                // SectionEntriesPrint(&validators, SECTION_VALIDATORS);
             }
 
             smtTmp = SectionEntries (secConfig, SECTION_CLUSTER_NODES);
@@ -525,7 +525,10 @@ void Config::load ()
             (void) SectionSingleB (secConfig, SECTION_SMS_URL, SMS_URL);
 
             if (SectionSingleB (secConfig, SECTION_VALIDATORS_FILE, strTemp))
+            {
+                localValidatorsPath = strTemp;
                 VALIDATORS_FILE     = strTemp;
+            }
 
             if (SectionSingleB (secConfig, SECTION_DEBUG_LOGFILE, strTemp))
                 DEBUG_LOGFILE       = strTemp;

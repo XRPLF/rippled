@@ -858,9 +858,6 @@
     <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceStrings.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedUri.cpp">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\validator\Validators.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
@@ -868,6 +865,12 @@
       <Filter>[1] Ripple\ripple_core\test</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorsUtilities.cpp">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceFile.cpp">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedURL.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1679,9 +1682,6 @@
     <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceStrings.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedUri.h">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\validator\Validators.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
@@ -1719,6 +1719,12 @@
       <Filter>[1] Ripple\ripple_core\test</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorsUtilities.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceFile.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\ripple_core\validator\ValidatorSourceTrustedURL.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
   </ItemGroup>
