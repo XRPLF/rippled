@@ -1418,6 +1418,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, LoadType* loadType
         // Parse saDstAmount.
         !params.isMember ("destination_amount")
         || !saDstAmount.bSetJson (params["destination_amount"])
+        || !saDstAmount.isPositive()
         || (!!saDstAmount.getCurrency () && (!saDstAmount.getIssuer () || ACCOUNT_ONE == saDstAmount.getIssuer ())))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad destination_amount.";
