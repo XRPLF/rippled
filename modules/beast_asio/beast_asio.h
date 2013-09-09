@@ -63,7 +63,8 @@ namespace beast
 # include "async/ComposedAsyncOperation.h"
 #include "async/SharedHandlerAllocator.h"
 
-# include "basics/BufferType.h"
+#  include "basics/BufferType.h"
+# include "basics/BuffersType.h"
 #include "basics/ContentBodyBuffer.h"
 #include "basics/FixedInputBuffer.h"
 #include "basics/PeerRole.h"

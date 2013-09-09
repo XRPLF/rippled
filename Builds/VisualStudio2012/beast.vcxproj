@@ -84,8 +84,9 @@
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerPtr.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\BufferType.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\BuffersType.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\PeerRole.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\SSLContext.h" />
