@@ -67,6 +67,13 @@ public:
             return hash;
         }
 
+        HashValue operator() (UnsignedInteger <Bytes> const& key) const noexcept
+        {
+            HashValue hash;
+            Murmur::Hash (key.cbegin (), key.sizeInBytes, m_seed, &hash);
+            return hash;
+        }
+
     private:
         HashValue m_seed;
     };
