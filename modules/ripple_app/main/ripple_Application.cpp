@@ -141,7 +141,7 @@ public:
     // VFALCO NOTE Change this to control whether or not the Application
     //             object is destroyed on exit
     //
-    #if 1
+    #if RIPPLE_APPLICATION_CLEAN_EXIT
         // Application object will be deleted on exit. If the code doesn't exit
         // cleanly this could cause hangs or crashes on exit.
         //
@@ -149,9 +149,8 @@ public:
     #else
         // This will make it so that the Application object is not deleted on exit.
         //
-        : SharedSingleton <Application> (SingletonLifetime::neverDestroyed)
+        : SharedSingleton <ApplicationImp> (SingletonLifetime::neverDestroyed)
     #endif
-        , mMasterLock (this, "MasterLock", __FILE__, __LINE__)
         , m_mainService ("io",
                          (getConfig ().NODE_SIZE >= 2) ? 2 : 1,
                          (getConfig ().NODE_SIZE >= 2) ? 1 : 0)

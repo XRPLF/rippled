@@ -164,4 +164,10 @@
 #define RIPPLE_USE_NEW_VALIDATORS 0
 #endif
 
+// Turning this on makes the Application object get destroyed,
+// which is part of an attempt to have a "clean exit."
+#ifndef RIPPLE_APPLICATION_CLEAN_EXIT
+#define RIPPLE_APPLICATION_CLEAN_EXIT 0
+#endif
+
 #endif
