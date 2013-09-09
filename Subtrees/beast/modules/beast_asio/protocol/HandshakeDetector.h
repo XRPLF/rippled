@@ -57,7 +57,7 @@ public:
     error_code detect (Stream& stream,
         boost::asio::basic_streambuf <Allocator>& buffer)
     {
-        typedef boost::asio::basic_streambuf <Allocator> BufferType;
+        typedef boost::asio::basic_streambuf <Allocator> BuffersType;
 
         error_code ec;
 
@@ -80,7 +80,7 @@ public:
             // If postcondition fails, loop will never end
             if (meets_postcondition (available < needed))
             {
-                typename BufferType::mutable_buffers_type buffers (
+                typename BuffersType::mutable_buffers_type buffers (
                     buffer.prepare (needed - available));
                 buffer.commit (stream.read_some (buffers, ec));
             }
@@ -125,10 +125,10 @@ private:
     template <typename Allocator>
     struct AsyncOp : ComposedAsyncOperation
     {
-        typedef boost::asio::basic_streambuf <Allocator> BufferType;
+        typedef boost::asio::basic_streambuf <Allocator> BuffersType;
         
         AsyncOp (HandshakeDetectLogicType <Logic>& logic, Stream& stream,
-            BufferType& buffer, SharedHandlerPtr const& handler)
+            BuffersType& buffer, SharedHandlerPtr const& handler)
             : ComposedAsyncOperation (sizeof (*this), handler)
             , m_logic (logic)
             , m_stream (stream)
@@ -163,7 +163,7 @@ private:
                     // If postcondition fails, loop will never end
                     if (meets_postcondition (available < needed))
                     {
-                         typename BufferType::mutable_buffers_type buffers (
+                         typename BuffersType::mutable_buffers_type buffers (
                             m_buffer.prepare (needed - available));
 
                         m_stream.async_read_some (buffers, SharedHandlerPtr (this));
@@ -194,7 +194,7 @@ private:
     private:
         HandshakeDetectLogicType <Logic>& m_logic;
         Stream& m_stream;
-        BufferType& m_buffer;
+        BuffersType& m_buffer;
         SharedHandlerPtr m_handler;
         bool m_running;
     };

@@ -911,9 +911,6 @@
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerType.h">
       <Filter>beast_asio\async</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\basics\BufferType.h">
-      <Filter>beast_asio\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h">
       <Filter>beast_asio\basics</Filter>
     </ClInclude>
@@ -1024,6 +1021,12 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\IfCond.h">
       <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\BuffersType.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\BufferType.h">
+      <Filter>beast_asio\basics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -20,128 +20,83 @@
 #ifndef BEAST_ASIO_BASICS_BUFFERTYPE_H_INCLUDED
 #define BEAST_ASIO_BASICS_BUFFERTYPE_H_INCLUDED
 
-/** Storage for a BufferSequence.
-
-    Meets these requirements:
-        BufferSequence
-        ConstBufferSequence (when Buffer is mutable_buffer)
-        MutableBufferSequence (when Buffer is const_buffer)
+/** General linear memory buffer.
+    This wraps the underlying buffer type and provides additional methods
+    to create a uniform interface. Specializations allow asio-compatible
+    buffers without having to include boost/asio.h.
 */
-template <class Buffer>
+/** @{ */
+template <bool IsConst>
 class BufferType
 {
+private:
+    typedef typename mpl::IfCond <IsConst,
+        void const*,
+        void*>::type pointer_type;
+
+    typedef typename mpl::IfCond <IsConst,
+        uint8 const,
+        uint8>::type byte_type;
+
 public:
-    typedef Buffer                                  value_type;
-    typedef std::vector <Buffer>                    container_type;
-    typedef typename container_type::const_iterator const_iterator;
+    typedef std::size_t size_type;
 
-    /** Construct a null buffer.
-        This is the equivalent of @ref asio::null_buffers.
-    */
     BufferType ()
-        : m_size (0)
+        : m_data (nullptr)
+        , m_size (0)
     {
     }
 
-    /** Construct from a container.
-        Ownership of the container is transferred, the caller's
-        value becomes undefined, but valid.
-    */
-    explicit BufferType (container_type& container)
-        : m_size (0)
+    template <bool OtherIsConst>
+    BufferType (BufferType <OtherIsConst> const& other)
+        : m_data (other.cast <pointer_type> ())
+        , m_size (other.size ())
     {
-        m_buffers.swap (container);
-        for (typename container_type::const_iterator iter (m_buffers.begin ());
-            iter != m_buffers.end (); ++iter)
-            m_size += boost::asio::buffer_size (*iter);
     }
 
-    /** Construct a BufferType from an existing BufferSequence.
-        @see assign
-    */
-    template <class BufferSequence>
-    BufferType (BufferSequence const& buffers)
+    BufferType (pointer_type data, std::size_t size) noexcept
+        : m_data (data)
+        , m_size (size)
     {
-        assign (buffers);
     }
 
-    /** Assign a BufferType from an existing BufferSequence.
-        @see assign
-    */
-    template <class BufferSequence>
-    BufferType <Buffer>& operator= (BufferSequence const& buffers)
+    BufferType& operator= (BufferType const& other) noexcept
     {
-        return assign (buffers);
-    }
-
-    /** Assign a BufferType from an existing BufferSequence
-        A copy is not made. The data is still owned by the original
-        BufferSequence object. This merely points to that data.
-    */
-    template <class BufferSequence>
-    BufferType <Buffer>& assign (BufferSequence const& buffers)
-    {
-        m_size = 0;
-        m_buffers.clear ();
-        m_buffers.reserve (std::distance (buffers.begin (), buffers.end ()));
-        BOOST_FOREACH (typename BufferSequence::value_type buffer, buffers)
-        {
-            m_size += boost::asio::buffer_size (buffer);
-            m_buffers.push_back (buffer);
-        }
+        m_data = other.cast <pointer_type> ();
+        m_size = other.size ();
         return *this;
     }
 
-    /** Determine the total size of all buffers.
-        This is faster than calling boost::asio::buffer_size.
-    */
-    std::size_t size () const noexcept
+    template <bool OtherIsConst>
+    BufferType& operator= (
+        BufferType <OtherIsConst> const& other) noexcept
+    {
+        m_data = other.cast <pointer_type> ();
+        m_size = other.size ();
+        return *this;
+    }
+
+    template <typename T>
+    T cast () const noexcept
+    {
+        return static_cast <T> (m_data);
+    }
+
+    size_type size () const
     {
         return m_size;
     }
 
-    const_iterator begin () const noexcept
+    BufferType operator+ (size_type n) const noexcept
     {
-        return m_buffers.begin ();
-    }
-
-    const_iterator end () const noexcept
-    {
-        return m_buffers.end ();
-    }
-
-    /** Retrieve a consumed BufferSequence. */
-    BufferType consumed (std::size_t bytes) const
-    {
-        BufferType result;
-        result.m_buffers.reserve (m_buffers.size ());
-        BOOST_FOREACH (Buffer buffer, m_buffers)
-        {
-            std::size_t const have = boost::asio::buffer_size (buffer);
-            std::size_t const reduce = std::min (bytes, have);
-            bytes -= reduce;
-
-            if (have > reduce)
-                result.m_buffers.push_back (buffer + reduce);
-        }
-        return result;
+        return BufferType (cast <byte_type*> (),
+            size () - std::min (size(), n));
     }
 
 private:
+    pointer_type m_data;
     std::size_t m_size;
-    std::vector <Buffer> m_buffers;
 };
-
-/** A single linear read-only buffer. */
-typedef boost::asio::const_buffer ConstBuffer;
-
-/** A single linear writable buffer. */
-typedef boost::asio::mutable_buffer MutableBuffer;
-
-/** Meets the requirements of ConstBufferSequence */
-typedef BufferType <ConstBuffer> ConstBuffers;
-
-/** Meets the requirements of MutableBufferSequence */
-typedef BufferType <MutableBuffer> MutableBuffers;
+/** @} */
 
 #endif
