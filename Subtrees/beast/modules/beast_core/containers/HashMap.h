@@ -443,7 +443,7 @@ public:
     enum
     {
         initialBucketCount = 101,
-        percentageIncrease = 75
+        percentageIncrease = 25
     };
 
     static float getDefaultLoadFactor () noexcept

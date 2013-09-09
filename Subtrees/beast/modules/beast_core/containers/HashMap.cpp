@@ -130,7 +130,12 @@ public:
         for (std::size_t i = 0; i < numberOfKeys; ++i)
             map.insert (traits.getKey (i));
 
-        this->logMessage ("load_factor = " + String::fromNumber (map.load_factor ()));
+        String s (
+            "load_factor = " + String::fromNumber (map.load_factor (), 2) +
+            ", bucket_count = " + String::fromNumber (map.bucket_count ()));
+        this->logMessage (s);
+
+        expect (map.size () == numberOfKeys);
     }
 
     void runTest ()
