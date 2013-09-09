@@ -359,7 +359,7 @@ void LedgerMaster::tryFill (Ledger::pointer ledger)
     {
         ScopedLockType ml (mLock, __FILE__, __LINE__);
         mCompleteLedgers.setRange (minHas, maxHas);
-        mFillInProgress = false;
+        mFillInProgress = 0;
         tryAdvance();
     }
 }
@@ -555,25 +555,25 @@ void LedgerMaster::advanceThread()
     ScopedLockType sl (mLock, __FILE__, __LINE__);
     assert (mValidLedger && mAdvanceThread);
 
-    bool progress;
-
     WriteLog (lsTRACE, LedgerMaster) << "advanceThread<";
 
     do
     {
-        progress = false;
+        mAdvanceWork = false; // If there's work to do, we'll make progress
+        bool progress = false;
 
         std::list<Ledger::pointer> pubLedgers = findNewLedgersToPublish (sl);
         if (pubLedgers.empty())
         {
-            if (!mFillInProgress && !getConfig().RUN_STANDALONE && !getApp().getFeeTrack().isLoadedLocal() &&
+            if (!getConfig().RUN_STANDALONE && !getApp().getFeeTrack().isLoadedLocal() &&
                 (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
                 (mValidLedger->getLedgerSeq() == mPubLedger->getLedgerSeq()))
             { // We are in sync, so can acquire
                 uint32 missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
                 WriteLog (lsTRACE, LedgerMaster) << "tryAdvance discovered missing " << missing;
                 if ((missing != RangeSet::absent) && (missing > 0) &&
-                    shouldAcquire(mValidLedger->getLedgerSeq(), getConfig().LEDGER_HISTORY, missing))
+                    shouldAcquire(mValidLedger->getLedgerSeq(), getConfig().LEDGER_HISTORY, missing) &&
+                    ((mFillInProgress == 0) || (missing > mFillInProgress)))
                 {
                     WriteLog (lsTRACE, LedgerMaster) << "advanceThread should acquire";
                     sl.unlock();
@@ -607,10 +607,10 @@ void LedgerMaster::advanceThread()
                             assert(ledger->getLedgerSeq() == missing);
                             WriteLog (lsTRACE, LedgerMaster) << "tryAdvance acquired " << ledger->getLedgerSeq();
                             setFullLedger(ledger, false, false);
-                            if (Ledger::getHashByIndex(ledger->getLedgerSeq() - 1) == ledger->getParentHash())
+                            if ((mFillInProgress == 0) && (Ledger::getHashByIndex(ledger->getLedgerSeq() - 1) == ledger->getParentHash()))
                             { // Previous ledger is in DB
                                 sl.lock(__FILE__, __LINE__);
-                                mFillInProgress = true;
+                                mFillInProgress = ledger->getLedgerSeq();
                                 getApp().getJobQueue().addJob(jtADVANCE, "tryFill", BIND_TYPE (&LedgerMaster::tryFill, this, ledger));
                                 sl.unlock();
                             }
@@ -671,7 +671,9 @@ void LedgerMaster::advanceThread()
                     BIND_TYPE (&LedgerMaster::updatePaths, this));
             }
         }
-    } while (progress);
+        if (progress)
+            mAdvanceWork = true;
+    } while (mAdvanceWork);
 
     mAdvanceThread = false;
     WriteLog (lsTRACE, LedgerMaster) << "advanceThread>";
@@ -771,6 +773,7 @@ void LedgerMaster::tryAdvance()
     ScopedLockType ml (mLock, __FILE__, __LINE__);
 
     // Can't advance without at least one fully-valid ledger
+    mAdvanceWork = true;
     if (!mAdvanceThread && mValidLedger)
     {
         mAdvanceThread = true;
