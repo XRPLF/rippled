@@ -335,26 +335,18 @@ bool DynamicLibrary::open (const String& name)
 {
     close();
 
-    BEAST_TRY
-    {
-        handle = LoadLibrary (name.toWideCharPointer());
-    }
-    BEAST_CATCH_ALL
+    handle = LoadLibrary (name.toWideCharPointer());
 
     return handle != nullptr;
 }
 
 void DynamicLibrary::close()
 {
-    BEAST_TRY
+    if (handle != nullptr)
     {
-        if (handle != nullptr)
-        {
-            FreeLibrary ((HMODULE) handle);
-            handle = nullptr;
-        }
+        FreeLibrary ((HMODULE) handle);
+        handle = nullptr;
     }
-    BEAST_CATCH_ALL
 }
 
 void* DynamicLibrary::getFunction (const String& functionName) noexcept

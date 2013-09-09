@@ -54,14 +54,6 @@
 //#define BEAST_LOG_ASSERTIONS 1
 #endif
 
-/** Config: BEAST_CATCH_UNHANDLED_EXCEPTIONS
-    This will wrap certain operating system calls with exception catching
-    code that converts the system exception into a regular error.
-*/
-#ifndef   BEAST_CATCH_UNHANDLED_EXCEPTIONS
-//#define BEAST_CATCH_UNHANDLED_EXCEPTIONS 0
-#endif
-
 /** Config: BEAST_CHECK_MEMORY_LEAKS
     Enables a memory-leak check for certain objects when the app terminates.
     See the LeakChecked class for more details about enabling leak checking for

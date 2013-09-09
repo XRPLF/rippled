@@ -860,12 +860,8 @@ bool Process::openDocument (const String& fileName, const String& parameters)
 {
     HINSTANCE hInstance = 0;
 
-    BEAST_TRY
-    {
-        hInstance = ShellExecute (0, 0, fileName.toWideCharPointer(),
-                                  parameters.toWideCharPointer(), 0, SW_SHOWDEFAULT);
-    }
-    BEAST_CATCH_ALL
+    hInstance = ShellExecute (0, 0, fileName.toWideCharPointer(),
+                                parameters.toWideCharPointer(), 0, SW_SHOWDEFAULT);
 
     return hInstance > (HINSTANCE) 32;
 }
