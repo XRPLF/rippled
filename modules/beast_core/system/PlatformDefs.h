@@ -172,22 +172,6 @@ template <> struct BeastStaticAssert <true> { static void dummy() {} };
 
 //------------------------------------------------------------------------------
 
-#if BEAST_CATCH_UNHANDLED_EXCEPTIONS
-# define BEAST_TRY try
-# define BEAST_CATCH_ALL            catch (...) {}
-# define BEAST_CATCH_ALL_ASSERT     catch (...) { bassertfalse; }
-# define BEAST_CATCH_EXCEPTION    BEAST_CATCH_ALL
-
-#else
-# define BEAST_TRY
-# define BEAST_CATCH_EXCEPTION
-# define BEAST_CATCH_ALL
-# define BEAST_CATCH_ALL_ASSERT
-
-#endif
-
-//------------------------------------------------------------------------------
-
 #if BEAST_DEBUG || DOXYGEN
 /** A platform-independent way of forcing an inline function.
     Use the syntax: @code

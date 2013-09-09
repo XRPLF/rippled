@@ -332,11 +332,7 @@ bool ThreadPool::runNextJob()
 
     ThreadPoolJob::JobStatus result = ThreadPoolJob::jobHasFinished;
 
-    BEAST_TRY
-    {
-        result = job->runJob();
-    }
-    BEAST_CATCH_ALL_ASSERT
+    result = job->runJob();
 
     OwnedArray<ThreadPoolJob> deletionList;
 

@@ -79,22 +79,18 @@ void Thread::threadEntryPoint()
     const CurrentThreadHolder::Ptr currentThreadHolder (getCurrentThreadHolder());
     currentThreadHolder->value = this;
 
-    BEAST_TRY
+    if (threadName.isNotEmpty())
+        setCurrentThreadName (threadName);
+
+    if (startSuspensionEvent.wait (10000))
     {
-        if (threadName.isNotEmpty())
-            setCurrentThreadName (threadName);
+        bassert (getCurrentThreadId() == threadId);
 
-        if (startSuspensionEvent.wait (10000))
-        {
-            bassert (getCurrentThreadId() == threadId);
+        if (affinityMask != 0)
+            setCurrentThreadAffinityMask (affinityMask);
 
-            if (affinityMask != 0)
-                setCurrentThreadAffinityMask (affinityMask);
-
-            run();
-        }
+        run();
     }
-    BEAST_CATCH_ALL_ASSERT
 
     currentThreadHolder->value.releaseCurrentThreadStorage();
     closeThreadHandle();
