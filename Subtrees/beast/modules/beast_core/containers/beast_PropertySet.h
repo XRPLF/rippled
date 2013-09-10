@@ -24,11 +24,6 @@
 #ifndef BEAST_PROPERTYSET_H_INCLUDED
 #define BEAST_PROPERTYSET_H_INCLUDED
 
-#include "../text/beast_StringPairArray.h"
-#include "../xml/beast_XmlElement.h"
-#include "../containers/beast_Variant.h"
-
-
 //==============================================================================
 /**
     A set of named property values, which can be strings, integers, floating point, etc.

@@ -29,29 +29,14 @@ CriticalSection::CriticalSection() noexcept
    #if ! BEAST_ANDROID
     pthread_mutexattr_setprotocol (&atts, PTHREAD_PRIO_INHERIT);
    #endif
-    pthread_mutex_init (&internal, &atts);
+    pthread_mutex_init (&mutex, &atts);
+    pthread_mutexattr_destroy (&atts);
 }
 
-CriticalSection::~CriticalSection() noexcept
-{
-    pthread_mutex_destroy (&internal);
-}
-
-void CriticalSection::enter() const noexcept
-{
-    pthread_mutex_lock (&internal);
-}
-
-bool CriticalSection::tryEnter() const noexcept
-{
-    return pthread_mutex_trylock (&internal) == 0;
-}
-
-void CriticalSection::exit() const noexcept
-{
-    pthread_mutex_unlock (&internal);
-}
-
+CriticalSection::~CriticalSection() noexcept    { pthread_mutex_destroy (&mutex); }
+void CriticalSection::enter() const noexcept    { pthread_mutex_lock (&mutex); }
+bool CriticalSection::tryEnter() const noexcept { return pthread_mutex_trylock (&mutex) == 0; }
+void CriticalSection::exit() const noexcept     { pthread_mutex_unlock (&mutex); }
 
 //==============================================================================
 WaitableEvent::WaitableEvent (const bool useManualReset, bool initiallySignaled) noexcept

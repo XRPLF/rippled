@@ -24,9 +24,6 @@
 #ifndef BEAST_SOCKET_H_INCLUDED
 #define BEAST_SOCKET_H_INCLUDED
 
-#include "../text/beast_String.h"
-
-
 //==============================================================================
 /**
     A wrapper for a streaming (TCP) socket.

@@ -24,11 +24,6 @@
 #ifndef BEAST_BIGINTEGER_H_INCLUDED
 #define BEAST_BIGINTEGER_H_INCLUDED
 
-#include "../text/beast_String.h"
-#include "../memory/beast_HeapBlock.h"
-class MemoryBlock;
-
-
 //==============================================================================
 /**
     An arbitrarily large integer class.

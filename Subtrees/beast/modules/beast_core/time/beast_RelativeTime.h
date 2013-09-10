@@ -24,9 +24,6 @@
 #ifndef BEAST_RELATIVETIME_H_INCLUDED
 #define BEAST_RELATIVETIME_H_INCLUDED
 
-#include "../text/beast_String.h"
-
-
 //==============================================================================
 /** A relative measure of time.
 

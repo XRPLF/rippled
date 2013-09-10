@@ -24,8 +24,6 @@
 #ifndef BEAST_NAMEDVALUESET_H_INCLUDED
 #define BEAST_NAMEDVALUESET_H_INCLUDED
 
-#include "beast_Variant.h"
-#include "../containers/beast_LinkedListPointer.h"
 class XmlElement;
 #ifndef DOXYGEN
  class JSONFormatter;

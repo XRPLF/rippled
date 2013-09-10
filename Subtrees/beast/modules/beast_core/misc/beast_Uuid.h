@@ -24,9 +24,6 @@
 #ifndef BEAST_UUID_H_INCLUDED
 #define BEAST_UUID_H_INCLUDED
 
-#include "../text/beast_String.h"
-
-
 //==============================================================================
 /**
     A universally unique 128-bit identifier.

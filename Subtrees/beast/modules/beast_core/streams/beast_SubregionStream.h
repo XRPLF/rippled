@@ -24,10 +24,6 @@
 #ifndef BEAST_SUBREGIONSTREAM_H_INCLUDED
 #define BEAST_SUBREGIONSTREAM_H_INCLUDED
 
-#include "beast_InputStream.h"
-#include "../memory/beast_OptionalScopedPointer.h"
-
-
 //==============================================================================
 /** Wraps another input stream, and reads from a specific part of it.
 

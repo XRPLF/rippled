@@ -24,13 +24,6 @@
 #ifndef BEAST_XMLDOCUMENT_H_INCLUDED
 #define BEAST_XMLDOCUMENT_H_INCLUDED
 
-#include "beast_XmlElement.h"
-#include "../text/beast_StringArray.h"
-#include "../files/beast_File.h"
-#include "../memory/beast_ScopedPointer.h"
-class InputSource;
-
-
 //==============================================================================
 /**
     Parses a text-based XML document and creates an XmlElement object from it.
@@ -150,6 +143,22 @@ public:
 
     //==============================================================================
 private:
+    XmlElement* parseDocumentElement (String::CharPointerType, bool outer);
+    void setLastError (const String& desc, bool carryOn);
+    bool parseHeader();
+    bool parseDTD();
+    void skipNextWhiteSpace();
+    beast_wchar readNextChar() noexcept;
+    XmlElement* readNextElement (bool alsoParseSubElements);
+    void readChildElements (XmlElement* parent);
+    void readQuotedString (String& result);
+    void readEntity (String& result);
+
+    String getFileContents (const String& filename) const;
+    String expandEntity (const String& entity);
+    String expandExternalEntity (const String& entity);
+    String getParameterEntity (const String& entity);
+
     String originalText;
     String::CharPointerType input;
     bool outOfData, errorOccurred;
@@ -158,22 +167,7 @@ private:
     StringArray tokenisedDTD;
     bool needToLoadDTD, ignoreEmptyTextElements;
     ScopedPointer <InputSource> inputSource;
-
-    void setLastError (const String& desc, bool carryOn);
-    void skipHeader();
-    void skipNextWhiteSpace();
-    beast_wchar readNextChar() noexcept;
-    XmlElement* readNextElement (bool alsoParseSubElements);
-    void readChildElements (XmlElement* parent);
-    int findNextTokenLength() noexcept;
-    void readQuotedString (String& result);
-    void readEntity (String& result);
-
-    String getFileContents (const String& filename) const;
-    String expandEntity (const String& entity);
-    String expandExternalEntity (const String& entity);
-    String getParameterEntity (const String& entity);
 };
 
+#endif
 
-#endif   // BEAST_XMLDOCUMENT_H_INCLUDED

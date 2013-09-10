@@ -24,9 +24,6 @@
 #ifndef BEAST_LOGGER_H_INCLUDED
 #define BEAST_LOGGER_H_INCLUDED
 
-#include "../text/beast_String.h"
-
-
 //==============================================================================
 /**
     Acts as an application-wide logging class.

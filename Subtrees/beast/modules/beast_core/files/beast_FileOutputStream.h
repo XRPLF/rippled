@@ -24,9 +24,6 @@
 #ifndef BEAST_FILEOUTPUTSTREAM_H_INCLUDED
 #define BEAST_FILEOUTPUTSTREAM_H_INCLUDED
 
-#include "beast_File.h"
-#include "../streams/beast_OutputStream.h"
-
 //==============================================================================
 /**
     An output stream that writes into a local file.

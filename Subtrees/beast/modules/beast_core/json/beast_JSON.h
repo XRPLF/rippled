@@ -24,12 +24,9 @@
 #ifndef BEAST_JSON_H_INCLUDED
 #define BEAST_JSON_H_INCLUDED
 
-#include "../misc/beast_Result.h"
-#include "../containers/beast_Variant.h"
 class InputStream;
 class OutputStream;
 class File;
-
 
 //==============================================================================
 /**

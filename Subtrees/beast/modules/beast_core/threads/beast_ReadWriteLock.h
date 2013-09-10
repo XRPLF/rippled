@@ -24,13 +24,6 @@
 #ifndef BEAST_READWRITELOCK_H_INCLUDED
 #define BEAST_READWRITELOCK_H_INCLUDED
 
-#include "beast_CriticalSection.h"
-#include "beast_SpinLock.h"
-#include "beast_WaitableEvent.h"
-#include "beast_Thread.h"
-#include "../containers/beast_Array.h"
-
-
 //==============================================================================
 /**
     A critical section that allows multiple simultaneous readers.

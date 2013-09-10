@@ -24,11 +24,6 @@
 #ifndef BEAST_ARRAY_H_INCLUDED
 #define BEAST_ARRAY_H_INCLUDED
 
-#include "beast_ArrayAllocationBase.h"
-#include "beast_ElementComparator.h"
-#include "../threads/beast_CriticalSection.h"
-
-
 //==============================================================================
 /**
     Holds a resizable array of primitive or copy-by-value objects.
@@ -788,7 +783,7 @@ public:
 
         @param startIndex       the index of the first element to remove
         @param numberToRemove   how many elements should be removed
-        @see remove, removeValue
+        @see remove, removeFirstMatchingValue, removeAllInstancesOf
     */
     void removeRange (int startIndex, int numberToRemove)
     {
@@ -816,7 +811,7 @@ public:
     /** Removes the last n elements from the array.
 
         @param howManyToRemove   how many elements to remove from the end of the array
-        @see remove, removeValue, removeRange
+        @see remove, removeFirstMatchingValue, removeAllInstancesOf, removeRange
     */
     void removeLast (int howManyToRemove = 1)
     {
@@ -835,7 +830,7 @@ public:
     /** Removes any elements which are also in another array.
 
         @param otherArray   the other array in which to look for elements to remove
-        @see removeValuesNotIn, remove, removeValue, removeRange
+        @see removeValuesNotIn, remove, removeFirstMatchingValue, removeAllInstancesOf, removeRange
     */
     template <class OtherArrayType>
     void removeValuesIn (const OtherArrayType& otherArray)
@@ -863,7 +858,7 @@ public:
         Only elements which occur in this other array will be retained.
 
         @param otherArray    the array in which to look for elements NOT to remove
-        @see removeValuesIn, remove, removeValue, removeRange
+        @see removeValuesIn, remove, removeFirstMatchingValue, removeAllInstancesOf, removeRange
     */
     template <class OtherArrayType>
     void removeValuesNotIn (const OtherArrayType& otherArray)

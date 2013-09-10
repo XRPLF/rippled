@@ -24,10 +24,6 @@
 #ifndef BEAST_MEMORYBLOCK_H_INCLUDED
 #define BEAST_MEMORYBLOCK_H_INCLUDED
 
-#include "../text/beast_String.h"
-#include "../memory/beast_HeapBlock.h"
-
-
 //==============================================================================
 /**
     A class to hold a resizable block of raw data.
@@ -266,8 +262,7 @@ private:
     //==============================================================================
     HeapBlock <char> data;
     size_t size;
-    static const char* const encodingTable;
 };
 
+#endif
 
-#endif   // BEAST_MEMORYBLOCK_H_INCLUDED

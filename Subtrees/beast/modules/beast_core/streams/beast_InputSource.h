@@ -24,8 +24,6 @@
 #ifndef BEAST_INPUTSOURCE_H_INCLUDED
 #define BEAST_INPUTSOURCE_H_INCLUDED
 
-#include "beast_InputStream.h"
-
 //==============================================================================
 /**
     A lightweight object that can create a stream to read some kind of resource.

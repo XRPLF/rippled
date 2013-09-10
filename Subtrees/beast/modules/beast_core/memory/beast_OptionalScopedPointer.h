@@ -24,9 +24,6 @@
 #ifndef BEAST_OPTIONALSCOPEDPOINTER_H_INCLUDED
 #define BEAST_OPTIONALSCOPEDPOINTER_H_INCLUDED
 
-#include "beast_ScopedPointer.h"
-
-
 //==============================================================================
 /**
     Holds a pointer to an object which can optionally be deleted when this pointer

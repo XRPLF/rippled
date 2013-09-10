@@ -478,6 +478,30 @@ public:
         byteOrderMarkLE2 = 0xfe
     };
 
+    /** Returns true if the first pair of bytes in this pointer are the UTF16 byte-order mark (big endian).
+        The pointer must not be null, and must contain at least two valid bytes.
+    */
+    static bool isByteOrderMarkBigEndian (const void* possibleByteOrder) noexcept
+    {
+        bassert (possibleByteOrder != nullptr);
+        const uint8* const c = static_cast<const uint8*> (possibleByteOrder);
+
+        return c[0] == (uint8) byteOrderMarkBE1
+            && c[1] == (uint8) byteOrderMarkBE2;
+    }
+
+    /** Returns true if the first pair of bytes in this pointer are the UTF16 byte-order mark (little endian).
+        The pointer must not be null, and must contain at least two valid bytes.
+    */
+    static bool isByteOrderMarkLittleEndian (const void* possibleByteOrder) noexcept
+    {
+        bassert (possibleByteOrder != nullptr);
+        const uint8* const c = static_cast<const uint8*> (possibleByteOrder);
+
+        return c[0] == (uint8) byteOrderMarkLE1
+            && c[1] == (uint8) byteOrderMarkLE2;
+    }
+
 private:
     CharType* data;
 
@@ -491,6 +515,5 @@ private:
         return n;
     }
 };
-
 
 #endif   // BEAST_CHARPOINTER_UTF16_H_INCLUDED

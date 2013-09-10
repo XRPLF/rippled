@@ -24,14 +24,10 @@
 #ifndef BEAST_SORTEDSET_H_INCLUDED
 #define BEAST_SORTEDSET_H_INCLUDED
 
-#include "beast_ArrayAllocationBase.h"
-#include "../threads/beast_CriticalSection.h"
-
 #if BEAST_MSVC
   #pragma warning (push)
   #pragma warning (disable: 4512)
 #endif
-
 
 //==============================================================================
 /**
@@ -492,4 +488,5 @@ private:
   #pragma warning (pop)
 #endif
 
-#endif   // BEAST_SORTEDSET_H_INCLUDED
+#endif
+

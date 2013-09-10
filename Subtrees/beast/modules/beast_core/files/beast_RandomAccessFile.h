@@ -20,8 +20,6 @@
 #ifndef BEAST_RANDOMACCESSFILE_H_INCLUDED
 #define BEAST_RANDOMACCESSFILE_H_INCLUDED
 
-#include "../misc/beast_Result.h"
-
 /** Provides random access reading and writing to an operating system file.
 
     This class wraps the underlying native operating system routines for

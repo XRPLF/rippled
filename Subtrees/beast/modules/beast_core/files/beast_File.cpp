@@ -57,10 +57,6 @@ File::File (const File& other)
 {
 }
 
-File::~File() noexcept
-{
-}
-
 File File::createFileWithoutCheckingPath (const String& path) noexcept
 {
     File f;

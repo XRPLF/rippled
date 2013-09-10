@@ -24,9 +24,6 @@
 #ifndef BEAST_PROCESS_H_INCLUDED
 #define BEAST_PROCESS_H_INCLUDED
 
-#include "../text/beast_String.h"
-
-
 //==============================================================================
 /** Represents the current executable's process.
 

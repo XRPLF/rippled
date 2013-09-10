@@ -68,7 +68,7 @@ const Error sqliteError(const char* sourceFileName,
                         int sqliteErrorCode)
 {
     /*
-    jassert (sqliteErrorCode != SQLITE_ROW &&
+    bassert (sqliteErrorCode != SQLITE_ROW &&
              sqliteErrorCode != SQLITE_DONE);
     */
 

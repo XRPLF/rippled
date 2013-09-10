@@ -103,6 +103,7 @@ File File::getSpecialLocation (const SpecialLocationType type)
         case userMoviesDirectory:
         case userPicturesDirectory:
         case userApplicationDataDirectory:
+        case commonDocumentsDirectory:
         case userDesktopDirectory:
             return File (android.appDataDir);
 
@@ -113,7 +114,6 @@ File File::getSpecialLocation (const SpecialLocationType type)
             return File ("/system/app");
 
         case tempDirectory:
-            //return File (AndroidStatsHelpers::getSystemProperty ("java.io.tmpdir"));
             return File (android.appDataDir).getChildFile (".temp");
 
         case invokedExecutableFile:

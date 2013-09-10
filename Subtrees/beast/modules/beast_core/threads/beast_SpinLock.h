@@ -24,9 +24,6 @@
 #ifndef BEAST_SPINLOCK_H_INCLUDED
 #define BEAST_SPINLOCK_H_INCLUDED
 
-#include "beast_ScopedLock.h"
-
-
 //==============================================================================
 /**
     A simple spin-lock class that can be used as a simple, low-overhead mutex for

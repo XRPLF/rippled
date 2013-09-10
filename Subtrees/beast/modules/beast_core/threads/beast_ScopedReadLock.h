@@ -24,9 +24,6 @@
 #ifndef BEAST_SCOPEDREADLOCK_H_INCLUDED
 #define BEAST_SCOPEDREADLOCK_H_INCLUDED
 
-#include "beast_ReadWriteLock.h"
-
-
 //==============================================================================
 /**
     Automatically locks and unlocks a ReadWriteLock object.

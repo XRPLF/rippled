@@ -24,10 +24,6 @@
 #ifndef BEAST_INTERPROCESSLOCK_H_INCLUDED
 #define BEAST_INTERPROCESSLOCK_H_INCLUDED
 
-#include "../text/beast_String.h"
-#include "../memory/beast_ScopedPointer.h"
-
-
 //==============================================================================
 /**
     Acts as a critical section which processes can use to block each other.

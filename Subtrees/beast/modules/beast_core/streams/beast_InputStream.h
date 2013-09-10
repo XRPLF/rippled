@@ -24,9 +24,7 @@
 #ifndef BEAST_INPUTSTREAM_H_INCLUDED
 #define BEAST_INPUTSTREAM_H_INCLUDED
 
-#include "../text/beast_String.h"
 class MemoryBlock;
-
 
 //==============================================================================
 /** The base class for streams that read data.

@@ -24,11 +24,6 @@
 #ifndef BEAST_FILELOGGER_H_INCLUDED
 #define BEAST_FILELOGGER_H_INCLUDED
 
-#include "beast_Logger.h"
-#include "../files/beast_File.h"
-#include "../memory/beast_ScopedPointer.h"
-
-
 //==============================================================================
 /**
     A simple implementation of a Logger that writes to a file.

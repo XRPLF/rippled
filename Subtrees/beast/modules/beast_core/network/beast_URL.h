@@ -24,8 +24,6 @@
 #ifndef BEAST_URL_H_INCLUDED
 #define BEAST_URL_H_INCLUDED
 
-#include "../text/beast_StringPairArray.h"
-#include "../files/beast_File.h"
 class InputStream;
 class XmlElement;
 

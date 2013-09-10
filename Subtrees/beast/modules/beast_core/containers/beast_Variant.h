@@ -24,11 +24,6 @@
 #ifndef BEAST_VARIANT_H_INCLUDED
 #define BEAST_VARIANT_H_INCLUDED
 
-#include "../text/beast_Identifier.h"
-#include "../streams/beast_OutputStream.h"
-#include "../streams/beast_InputStream.h"
-#include "../containers/beast_Array.h"
-
 #ifndef DOXYGEN
  class SharedObject;
  class DynamicObject;

@@ -24,10 +24,6 @@
 #ifndef BEAST_MEMORYINPUTSTREAM_H_INCLUDED
 #define BEAST_MEMORYINPUTSTREAM_H_INCLUDED
 
-#include "beast_InputStream.h"
-#include "../memory/beast_HeapBlock.h"
-
-
 //==============================================================================
 /**
     Allows a block of data to be accessed as a stream.

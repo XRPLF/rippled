@@ -24,10 +24,6 @@
 #ifndef BEAST_FILEINPUTSTREAM_H_INCLUDED
 #define BEAST_FILEINPUTSTREAM_H_INCLUDED
 
-#include "beast_File.h"
-#include "../streams/beast_InputStream.h"
-
-
 //==============================================================================
 /**
     An input stream that reads from a local file.

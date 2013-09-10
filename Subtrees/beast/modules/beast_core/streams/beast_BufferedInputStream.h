@@ -24,11 +24,6 @@
 #ifndef BEAST_BUFFEREDINPUTSTREAM_H_INCLUDED
 #define BEAST_BUFFEREDINPUTSTREAM_H_INCLUDED
 
-#include "beast_InputStream.h"
-#include "../memory/beast_OptionalScopedPointer.h"
-#include "../memory/beast_HeapBlock.h"
-
-
 //==============================================================================
 /** Wraps another input stream, and reads from it using an intermediate buffer
 
