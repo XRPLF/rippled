@@ -34,10 +34,16 @@ public:
     void sweep ()
     {
         mLedgersByHash.sweep ();
+        mConsensusValidated.sweep ();
     }
+
+    void builtLedger (Ledger::ref);
+    void validatedLedger (Ledger::ref);
 
 private:
     TaggedCacheType <LedgerHash, Ledger, UptimeTimerAdapter> mLedgersByHash;
+    TaggedCacheType <LedgerIndex, std::pair< LedgerHash, LedgerHash >, UptimeTimerAdapter> mConsensusValidated;
+
 
     // Maps ledger indexes to the corresponding hash.
     std::map <LedgerIndex, LedgerHash> mLedgersByIndex; // validated ledgers

@@ -133,7 +133,10 @@ void LedgerMaster::pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL)
         tryAdvance();
     }
     else
+    {
+        mLedgerHistory.builtLedger (newLCL);
         checkAccept (newLCL);
+    }
 }
 
 void LedgerMaster::switchLedgers (Ledger::pointer lastClosed, Ledger::pointer current)
@@ -448,6 +451,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
 
     ledger->setValidated();
     mLedgerHistory.addLedger(ledger);
+
 
     ScopedLockType ml (mLock, __FILE__, __LINE__);
 

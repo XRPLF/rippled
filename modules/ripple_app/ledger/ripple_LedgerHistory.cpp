@@ -16,7 +16,9 @@
 
 // FIXME: Need to clean up ledgers by index at some point
 
-LedgerHistory::LedgerHistory () : mLedgersByHash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE)
+LedgerHistory::LedgerHistory ()
+	: mLedgersByHash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE)
+	, mConsensusValidated ("ConsensusValidated", 64, 300)
 {
     ;
 }
@@ -121,6 +123,54 @@ Ledger::pointer LedgerHistory::canonicalizeLedger (Ledger::pointer ledger, bool 
         mLedgersByIndex[ledger->getLedgerSeq ()] = ledger->getHash ();
 
     return ledger;
+}
+
+void LedgerHistory::builtLedger (Ledger::ref ledger)
+{
+    LedgerIndex index = ledger->getLedgerSeq();
+    LedgerHash hash = ledger->getHash();
+    assert (!hash.isZero());
+    TaggedCache::ScopedLockType sl(mConsensusValidated.peekMutex(), __FILE__, __LINE__);
+
+    boost::shared_ptr< std::pair< LedgerHash, LedgerHash > > entry = boost::make_shared<std::pair< LedgerHash, LedgerHash >>();
+    mConsensusValidated.canonicalize(index, entry, false);
+
+    if (entry->first != hash)
+    {
+        if (entry->first.isNonZero() && (entry->first != hash))
+        {
+            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " built:" << entry->first << " then:" << hash;
+        }
+        if (entry->second.isNonZero() && (entry->second != hash))
+        {
+            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " validated:" << entry->second << " accepted:" << hash;
+        }
+        entry->first = hash;
+    }
+}
+
+void LedgerHistory::validatedLedger (Ledger::ref ledger)
+{
+    LedgerIndex index = ledger->getLedgerSeq();
+    LedgerHash hash = ledger->getHash();
+    assert (!hash.isZero());
+    TaggedCache::ScopedLockType sl(mConsensusValidated.peekMutex(), __FILE__, __LINE__);
+
+    boost::shared_ptr< std::pair< LedgerHash, LedgerHash > > entry = boost::make_shared<std::pair< LedgerHash, LedgerHash >>();
+    mConsensusValidated.canonicalize(index, entry, false);
+
+    if (entry->second != hash)
+    {
+        if (entry->second.isNonZero() && (entry->second != hash))
+        {
+            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " validated:" << entry->second << " then:" << hash;
+        }
+        if (entry->first.isNonZero() && (entry->first != hash))
+        {
+            WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " built:" << entry->first << " validated:" << hash;
+        }
+        entry->second = hash;
+    }
 }
 
 void LedgerHistory::tune (int size, int age)
