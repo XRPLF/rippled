@@ -23,6 +23,13 @@
 
 HWND beast_messageWindowHandle = 0;  // (this is used by other parts of the codebase)
 
+void* getUser32Function (const char* functionName)
+{
+    HMODULE module = GetModuleHandleA ("user32.dll");
+    bassert (module != 0);
+    return (void*) GetProcAddress (module, functionName);
+}
+
 //==============================================================================
 #if ! BEAST_USE_INTRINSICS
 // In newer compilers, the inline versions of these are used (in beast_Atomic.h), but in
@@ -47,64 +54,37 @@ __int64 beast_InterlockedCompareExchange64 (volatile __int64* value, __int64 new
 #endif
 
 //==============================================================================
+
 CriticalSection::CriticalSection() noexcept
 {
     // (just to check the MS haven't changed this structure and broken things...)
-  #if BEAST_VC7_OR_EARLIER
+   #if BEAST_VC7_OR_EARLIER
     static_bassert (sizeof (CRITICAL_SECTION) <= 24);
-  #else
-    static_bassert (sizeof (CRITICAL_SECTION) <= sizeof (internal));
-  #endif
+   #else
+    static_bassert (sizeof (CRITICAL_SECTION) <= sizeof (section));
+   #endif
 
-    InitializeCriticalSection ((CRITICAL_SECTION*) internal);
+    InitializeCriticalSection ((CRITICAL_SECTION*) section);
 }
 
-CriticalSection::~CriticalSection() noexcept
-{
-    DeleteCriticalSection ((CRITICAL_SECTION*) internal);
-}
-
-void CriticalSection::enter() const noexcept
-{
-    EnterCriticalSection ((CRITICAL_SECTION*) internal);
-}
-
-bool CriticalSection::tryEnter() const noexcept
-{
-    return TryEnterCriticalSection ((CRITICAL_SECTION*) internal) != FALSE;
-}
-
-void CriticalSection::exit() const noexcept
-{
-    LeaveCriticalSection ((CRITICAL_SECTION*) internal);
-}
+CriticalSection::~CriticalSection() noexcept { DeleteCriticalSection ((CRITICAL_SECTION*) section); }
+void CriticalSection::enter() const noexcept { EnterCriticalSection ((CRITICAL_SECTION*) section); }
+bool CriticalSection::tryEnter() const noexcept { return TryEnterCriticalSection ((CRITICAL_SECTION*) section) != FALSE; }
+void CriticalSection::exit() const noexcept { LeaveCriticalSection ((CRITICAL_SECTION*) section); }
 
 //==============================================================================
+
 WaitableEvent::WaitableEvent (const bool manualReset, bool initiallySignaled) noexcept
-    : internal (CreateEvent (0, manualReset ? TRUE : FALSE, FALSE, 0))
-{
-    if (initiallySignaled)
-        signal ();
-}
+    : handle (CreateEvent (0, manualReset ? TRUE : FALSE, initiallySignaled ? TRUE : FALSE, 0)) {}
 
-WaitableEvent::~WaitableEvent() noexcept
-{
-    CloseHandle (internal);
-}
+WaitableEvent::~WaitableEvent() noexcept { CloseHandle (handle); }
 
-bool WaitableEvent::wait (const int timeOutMillisecs) const noexcept
-{
-    return WaitForSingleObject (internal, (DWORD) timeOutMillisecs) == WAIT_OBJECT_0;
-}
+void WaitableEvent::signal() const noexcept { SetEvent (handle); }
+void WaitableEvent::reset() const noexcept { ResetEvent (handle); }
 
-void WaitableEvent::signal() const noexcept
+bool WaitableEvent::wait (const int timeOutMs) const noexcept
 {
-    SetEvent (internal);
-}
-
-void WaitableEvent::reset() const noexcept
-{
-    ResetEvent (internal);
+    return WaitForSingleObject (handle, (DWORD) timeOutMs) == WAIT_OBJECT_0;
 }
 
 //==============================================================================

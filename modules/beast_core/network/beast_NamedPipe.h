@@ -24,8 +24,6 @@
 #ifndef BEAST_NAMEDPIPE_H_INCLUDED
 #define BEAST_NAMEDPIPE_H_INCLUDED
 
-#include "../threads/beast_ReadWriteLock.h"
-
 //==============================================================================
 /**
     A cross-process pipe that can have data written to and read from it.

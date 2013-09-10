@@ -24,12 +24,6 @@
 #ifndef BEAST_XMLELEMENT_H_INCLUDED
 #define BEAST_XMLELEMENT_H_INCLUDED
 
-#include "../text/beast_String.h"
-#include "../streams/beast_OutputStream.h"
-#include "../files/beast_File.h"
-#include "../containers/beast_LinkedListPointer.h"
-
-
 //==============================================================================
 /** A handy macro to make it easy to iterate all the child elements in an XmlElement.
 

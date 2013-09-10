@@ -24,12 +24,9 @@
 #ifndef BEAST_OUTPUTSTREAM_H_INCLUDED
 #define BEAST_OUTPUTSTREAM_H_INCLUDED
 
-#include "../text/beast_String.h"
-#include "../text/beast_NewLine.h"
 class InputStream;
 class MemoryBlock;
 class File;
-
 
 //==============================================================================
 /**

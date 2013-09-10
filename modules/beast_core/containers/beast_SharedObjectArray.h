@@ -24,11 +24,6 @@
 #ifndef BEAST_SHAREDOBJECTARRAY_H_INCLUDED
 #define BEAST_SHAREDOBJECTARRAY_H_INCLUDED
 
-#include "beast_ArrayAllocationBase.h"
-#include "beast_ElementComparator.h"
-#include "../threads/beast_CriticalSection.h"
-
-
 //==============================================================================
 /**
     Holds a list of objects derived from SharedObject.

@@ -24,9 +24,6 @@
 #ifndef BEAST_CRITICALSECTION_H_INCLUDED
 #define BEAST_CRITICALSECTION_H_INCLUDED
 
-#include "beast_ScopedLock.h"
-
-
 //==============================================================================
 /**
     A re-entrant mutex.
@@ -114,19 +111,18 @@ public:
 private:
     //==============================================================================
    #if BEAST_WINDOWS
-    // To avoid including windows.h in the public BEAST headers, we'll just allocate a
-    // block of memory here that's big enough to be used internally as a windows critical
-    // section structure.
+    // To avoid including windows.h in the public Beast headers, we'll just allocate
+    // a block of memory here that's big enough to be used internally as a windows
+    // CRITICAL_SECTION structure.
     #if BEAST_64BIT
-     uint8 internal [44];
+     uint8 section[44];
     #else
-     uint8 internal [24];
+     uint8 section[24];
     #endif
    #else
-    mutable pthread_mutex_t internal;
+    mutable pthread_mutex_t mutex;
    #endif
 };
-
 
 //==============================================================================
 /**

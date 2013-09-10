@@ -311,7 +311,7 @@ private:
             buffer.appendUTF8Char (c);
         }
 
-        result = buffer.toString();
+        result = buffer.toUTF8 ();
         return Result::ok();
     }
 };
@@ -521,7 +521,7 @@ String JSON::toString (const var& data, const bool allOnOneLine)
 {
     MemoryOutputStream mo (1024);
     JSONFormatter::write (mo, data, 0, allOnOneLine);
-    return mo.toString();
+    return mo.toUTF8 ();
 }
 
 void JSON::writeToStream (OutputStream& output, const var& data, const bool allOnOneLine)

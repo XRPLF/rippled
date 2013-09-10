@@ -24,7 +24,6 @@
 #ifndef BEAST_MEMORYMAPPEDFILE_H_INCLUDED
 #define BEAST_MEMORYMAPPEDFILE_H_INCLUDED
 
-#include "beast_File.h"
 
 //==============================================================================
 /**

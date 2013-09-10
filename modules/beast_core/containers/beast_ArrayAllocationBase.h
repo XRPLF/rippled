@@ -24,9 +24,6 @@
 #ifndef BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
 #define BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
 
-#include "../memory/beast_HeapBlock.h"
-
-
 //==============================================================================
 /**
     Implements some basic array storage allocation functions.

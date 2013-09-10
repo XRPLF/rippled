@@ -24,9 +24,6 @@
 #ifndef BEAST_STRINGPAIRARRAY_H_INCLUDED
 #define BEAST_STRINGPAIRARRAY_H_INCLUDED
 
-#include "beast_StringArray.h"
-
-
 //==============================================================================
 /**
     A container for holding a set of strings which are keyed by another string.

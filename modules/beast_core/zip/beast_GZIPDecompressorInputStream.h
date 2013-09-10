@@ -29,11 +29,6 @@
 #ifndef BEAST_GZIPDECOMPRESSORINPUTSTREAM_H_INCLUDED
 #define BEAST_GZIPDECOMPRESSORINPUTSTREAM_H_INCLUDED
 
-#include "../streams/beast_InputStream.h"
-#include "../memory/beast_OptionalScopedPointer.h"
-#include "../memory/beast_HeapBlock.h"
-
-
 //==============================================================================
 /**
     This stream will decompress a source-stream using zlib.

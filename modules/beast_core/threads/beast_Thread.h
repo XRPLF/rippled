@@ -24,10 +24,6 @@
 #ifndef BEAST_THREAD_H_INCLUDED
 #define BEAST_THREAD_H_INCLUDED
 
-#include "beast_WaitableEvent.h"
-#include "beast_CriticalSection.h"
-
-
 //==============================================================================
 /**
     Encapsulates a thread.

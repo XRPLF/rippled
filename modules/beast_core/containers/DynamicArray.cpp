@@ -83,6 +83,7 @@ public:
         beginTestCase (s);
         for (std::size_t i = 0; i < numberToMutate; ++i)
             v.push_back (T (String::fromNumber (i)));
+        pass ();
 
         s = "read [] (" + String::fromNumber <int> (numberToMutate) + ")";
         beginTestCase (s);
@@ -93,6 +94,7 @@ public:
         beginTestCase (s);
         for (std::size_t i = 0; i < numberToMutate; ++i)
             v [i].msg = "+" + String::fromNumber (i);
+        pass ();
 
         s = "verify [] (" + String::fromNumber <int> (numberToMutate) + ")";
         beginTestCase (s);
@@ -141,6 +143,7 @@ public:
                 step ++;
                 iter - v.rend ();
             }
+            pass ();
         }
 
         {
@@ -152,6 +155,7 @@ public:
                 step ++;
                 iter - v.crend ();
             }
+            pass ();
         }
     }
 

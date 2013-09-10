@@ -24,9 +24,6 @@
 #ifndef BEAST_DYNAMICOBJECT_H_INCLUDED
 #define BEAST_DYNAMICOBJECT_H_INCLUDED
 
-#include "beast_NamedValueSet.h"
-
-
 //==============================================================================
 /**
     Represents a dynamically implemented object.

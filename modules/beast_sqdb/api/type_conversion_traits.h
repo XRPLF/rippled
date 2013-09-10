@@ -96,7 +96,7 @@ struct type_conversion <Time>
     {
         if (ind == i_null)
         {
-            // jassertfalse
+            // bassertfalse
             result = Time(0);
         }
         else

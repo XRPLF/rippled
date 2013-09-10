@@ -24,10 +24,6 @@
 #ifndef BEAST_STRINGPOOL_H_INCLUDED
 #define BEAST_STRINGPOOL_H_INCLUDED
 
-#include "beast_String.h"
-#include "../containers/beast_Array.h"
-
-
 //==============================================================================
 /**
     A StringPool holds a set of shared strings, which reduces storage overheads and improves

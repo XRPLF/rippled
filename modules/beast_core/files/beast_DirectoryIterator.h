@@ -24,10 +24,6 @@
 #ifndef BEAST_DIRECTORYITERATOR_H_INCLUDED
 #define BEAST_DIRECTORYITERATOR_H_INCLUDED
 
-#include "beast_File.h"
-#include "../memory/beast_ScopedPointer.h"
-
-
 //==============================================================================
 /**
     Searches through a the files in a directory, returning each file that is found.

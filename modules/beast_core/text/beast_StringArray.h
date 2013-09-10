@@ -24,10 +24,6 @@
 #ifndef BEAST_STRINGARRAY_H_INCLUDED
 #define BEAST_STRINGARRAY_H_INCLUDED
 
-#include "beast_String.h"
-#include "../containers/beast_Array.h"
-
-
 //==============================================================================
 /**
     A special array for holding a list of strings.

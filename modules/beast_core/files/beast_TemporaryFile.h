@@ -24,9 +24,6 @@
 #ifndef BEAST_TEMPORARYFILE_H_INCLUDED
 #define BEAST_TEMPORARYFILE_H_INCLUDED
 
-#include "beast_File.h"
-
-
 //==============================================================================
 /**
     Manages a temporary file, which will be deleted when this object is deleted.

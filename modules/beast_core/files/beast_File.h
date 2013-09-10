@@ -24,16 +24,6 @@
 #ifndef BEAST_FILE_H_INCLUDED
 #define BEAST_FILE_H_INCLUDED
 
-#include "../containers/beast_Array.h"
-#include "../time/beast_Time.h"
-#include "../text/beast_StringArray.h"
-#include "../memory/beast_MemoryBlock.h"
-#include "../memory/beast_ScopedPointer.h"
-#include "../misc/beast_Result.h"
-class FileInputStream;
-class FileOutputStream;
-
-
 //==============================================================================
 /**
     Represents a local file or directory.
@@ -46,14 +36,14 @@ class FileOutputStream;
 
     @see FileInputStream, FileOutputStream
 */
-class BEAST_API File : LeakChecked <File>
+class BEAST_API  File
 {
 public:
     //==============================================================================
     /** Creates an (invalid) file object.
 
         The file is initially set to an empty path, so getFullPath() will return
-        an empty string, and comparing the file to File::nonexistent() will return
+        an empty string, and comparing the file to File::nonexistent will return
         true.
 
         You can use its operator= method to point it at a proper file.
@@ -70,13 +60,13 @@ public:
         On the Mac/Linux, the path can include "~" notation for referring to
         user home directories.
     */
-    File (const String& path);
+    File (const String& absolutePath);
 
     /** Creates a copy of another file object. */
-    File (const File& other);
+    File (const File&);
 
     /** Destructor. */
-    ~File() noexcept;
+    ~File() noexcept  {}
 
     /** Sets the file based on an absolute pathname.
 
@@ -88,14 +78,14 @@ public:
         On the Mac/Linux, the path can include "~" notation for referring to
         user home directories.
     */
-    File& operator= (const String& newFilePath);
+    File& operator= (const String& newAbsolutePath);
 
     /** Copies from another file object. */
     File& operator= (const File& otherFile);
 
    #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
-    File (File&& otherFile) noexcept;
-    File& operator= (File&& otherFile) noexcept;
+    File (File&&) noexcept;
+    File& operator= (File&&) noexcept;
    #endif
 
     //==============================================================================
@@ -200,8 +190,7 @@ public:
 
         @param extensionToTest  the extension to look for - it doesn't matter whether or
                                 not this string has a dot at the start, so ".wav" and "wav"
-                                will have the same effect. The comparison used is
-                                case-insensitve. To compare with multiple extensions, this
+                                will have the same effect. To compare with multiple extensions, this
                                 parameter can contain multiple strings, separated by semi-colons -
                                 so, for example: hasFileExtension (".jpeg;png;gif") would return
                                 true if the file has any of those three extensions.
@@ -256,7 +245,7 @@ public:
             File ("/moose/fish").getChildFile ("../foo.txt") will produce "/moose/foo.txt".
 
         If the string is actually an absolute path, it will be treated as such, e.g.
-        File ("/moose/fish").getChildFile ("/foo.txt") will produce "/foo.txt"
+            File ("/moose/fish").getChildFile ("/foo.txt") will produce "/foo.txt"
 
         @see getSiblingFile, getParentDirectory, getRelativePathFrom, isAChildOf
     */
@@ -323,13 +312,13 @@ public:
 
     //==============================================================================
     /** Compares the pathnames for two files. */
-    bool operator== (const File& otherFile) const;
+    bool operator== (const File&) const;
     /** Compares the pathnames for two files. */
-    bool operator!= (const File& otherFile) const;
+    bool operator!= (const File&) const;
     /** Compares the pathnames for two files. */
-    bool operator< (const File& otherFile) const;
+    bool operator< (const File&) const;
     /** Compares the pathnames for two files. */
-    bool operator> (const File& otherFile) const;
+    bool operator> (const File&) const;
 
     //==============================================================================
     /** Checks whether a file can be created or written to.
@@ -767,6 +756,15 @@ public:
         /** The folder that contains the user's desktop objects. */
         userDesktopDirectory,
 
+        /** The most likely place where a user might store their music files. */
+        userMusicDirectory,
+
+        /** The most likely place where a user might store their movie files. */
+        userMoviesDirectory,
+
+        /** The most likely place where a user might store their picture files. */
+        userPicturesDirectory,
+
         /** The folder in which applications store their persistent user-specific settings.
             On Windows, this might be "\Documents and Settings\username\Application Data".
             On the Mac, it might be "~/Library". If you're going to store your settings in here,
@@ -783,6 +781,13 @@ public:
             Depending on the setup, this folder may be read-only.
         */
         commonApplicationDataDirectory,
+
+        /** A place to put documents which are shared by all users of the machine.
+            On Windows this may be somewhere like "C:\Users\Public\Documents", on OSX it
+            will be something like "/Users/Shared". Other OSes may have no such concept
+            though, so be careful.
+        */
+        commonDocumentsDirectory,
 
         /** The folder that should be used for temporary files.
             Always delete them when you're finished, to keep the user's computer tidy!
@@ -826,16 +831,7 @@ public:
             So on windows, this would be something like "c:\program files", on the
             Mac "/Applications", or "/usr" on linux.
         */
-        globalApplicationsDirectory,
-
-        /** The most likely place where a user might store their music files. */
-        userMusicDirectory,
-
-        /** The most likely place where a user might store their movie files. */
-        userMoviesDirectory,
-
-        /** The most likely place where a user might store their picture files. */
-        userPicturesDirectory
+        globalApplicationsDirectory
     };
 
     /** Finds the location of a special type of file or directory, such as a home folder or
@@ -880,19 +876,20 @@ public:
     static const String separatorString;
 
     //==============================================================================
-    /** Removes illegal characters from a filename.
+    /** Returns a version of a filename with any illegal characters removed.
 
         This will return a copy of the given string after removing characters
         that are not allowed in a legal filename, and possibly shortening the
         string if it's too long.
 
-        Because this will remove slashes, don't use it on an absolute pathname.
+        Because this will remove slashes, don't use it on an absolute pathname - use
+        createLegalPathName() for that.
 
         @see createLegalPathName
     */
     static String createLegalFileName (const String& fileNameToFix);
 
-    /** Removes illegal characters from a pathname.
+    /** Returns a version of a path with any illegal characters removed.
 
         Similar to createLegalFileName(), but this won't remove slashes, so can
         be used on a complete pathname.
@@ -912,7 +909,7 @@ public:
 
         Best to avoid this unless you really know what you're doing.
     */
-    static File createFileWithoutCheckingPath (const String& path) noexcept;
+    static File createFileWithoutCheckingPath (const String& absolutePath) noexcept;
 
     /** Adds a separator character to the end of a path if it doesn't already have one. */
     static String addTrailingSeparator (const String& path);
@@ -951,4 +948,5 @@ private:
     bool setFileReadOnlyInternal (bool) const;
 };
 
-#endif   // BEAST_FILE_H_INCLUDED
+#endif
+

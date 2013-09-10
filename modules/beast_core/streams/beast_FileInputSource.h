@@ -24,10 +24,6 @@
 #ifndef BEAST_FILEINPUTSOURCE_H_INCLUDED
 #define BEAST_FILEINPUTSOURCE_H_INCLUDED
 
-#include "beast_InputSource.h"
-#include "../files/beast_File.h"
-
-
 //==============================================================================
 /**
     A type of InputSource that represents a normal file.

@@ -24,10 +24,6 @@
 #ifndef BEAST_FILESEARCHPATH_H_INCLUDED
 #define BEAST_FILESEARCHPATH_H_INCLUDED
 
-#include "beast_File.h"
-#include "../text/beast_StringArray.h"
-
-
 //==============================================================================
 /**
     Encapsulates a set of folders that make up a search path.

@@ -24,10 +24,6 @@
 #ifndef BEAST_EXPRESSION_H_INCLUDED
 #define BEAST_EXPRESSION_H_INCLUDED
 
-#include "../containers/beast_Array.h"
-#include "../memory/beast_ScopedPointer.h"
-
-
 //==============================================================================
 /**
     A class for dynamically evaluating simple numeric expressions.

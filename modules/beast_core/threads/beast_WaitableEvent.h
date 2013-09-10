@@ -24,9 +24,6 @@
 #ifndef BEAST_WAITABLEEVENT_H_INCLUDED
 #define BEAST_WAITABLEEVENT_H_INCLUDED
 
-#include "../text/beast_String.h"
-
-
 //==============================================================================
 /**
     Allows threads to wait for events triggered by other threads.
@@ -103,7 +100,7 @@ public:
 private:
     //==============================================================================
    #if BEAST_WINDOWS
-    void* internal;
+    void* handle;
    #else
     mutable pthread_cond_t condition;
     mutable pthread_mutex_t mutex;

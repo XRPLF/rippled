@@ -24,9 +24,6 @@
 #ifndef BEAST_MACADDRESS_H_INCLUDED
 #define BEAST_MACADDRESS_H_INCLUDED
 
-#include "../containers/beast_Array.h"
-
-
 //==============================================================================
 /**
     A wrapper for a streaming (TCP) socket.

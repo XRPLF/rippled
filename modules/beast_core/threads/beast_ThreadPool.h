@@ -24,13 +24,8 @@
 #ifndef BEAST_THREADPOOL_H_INCLUDED
 #define BEAST_THREADPOOL_H_INCLUDED
 
-#include "beast_Thread.h"
-#include "../text/beast_StringArray.h"
-#include "../containers/beast_Array.h"
-#include "../containers/beast_OwnedArray.h"
 class ThreadPool;
 class ThreadPoolThread;
-
 
 //==============================================================================
 /**

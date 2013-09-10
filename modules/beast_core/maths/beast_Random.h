@@ -24,9 +24,6 @@
 #ifndef BEAST_RANDOM_H_INCLUDED
 #define BEAST_RANDOM_H_INCLUDED
 
-#include "beast_BigInteger.h"
-
-
 //==============================================================================
 /**
     A random number generator.

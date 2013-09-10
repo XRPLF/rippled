@@ -24,11 +24,7 @@
 #ifndef BEAST_TIMESLICETHREAD_H_INCLUDED
 #define BEAST_TIMESLICETHREAD_H_INCLUDED
 
-#include "beast_Thread.h"
-#include "../containers/beast_Array.h"
-#include "../time/beast_Time.h"
 class TimeSliceThread;
-
 
 //==============================================================================
 /**

@@ -24,9 +24,6 @@
 #ifndef BEAST_LOCALISEDSTRINGS_H_INCLUDED
 #define BEAST_LOCALISEDSTRINGS_H_INCLUDED
 
-#include "beast_StringPairArray.h"
-#include "../files/beast_File.h"
-
 //==============================================================================
 /**
     Used to convert strings to localised foreign-language versions.

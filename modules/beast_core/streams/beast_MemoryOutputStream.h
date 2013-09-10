@@ -24,10 +24,6 @@
 #ifndef BEAST_MEMORYOUTPUTSTREAM_H_INCLUDED
 #define BEAST_MEMORYOUTPUTSTREAM_H_INCLUDED
 
-#include "beast_OutputStream.h"
-#include "../memory/beast_MemoryBlock.h"
-#include "../memory/beast_ScopedPointer.h"
-
 //==============================================================================
 /**
     Writes data to an internal memory buffer, which grows as required.

@@ -29,12 +29,6 @@
 #ifndef BEAST_ZIPFILE_H_INCLUDED
 #define BEAST_ZIPFILE_H_INCLUDED
 
-#include "../files/beast_File.h"
-#include "../streams/beast_InputSource.h"
-#include "../threads/beast_CriticalSection.h"
-#include "../containers/beast_OwnedArray.h"
-
-
 //==============================================================================
 /**
     Decodes a ZIP file from a stream.

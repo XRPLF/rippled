@@ -24,9 +24,6 @@
 #ifndef BEAST_TIME_H_INCLUDED
 #define BEAST_TIME_H_INCLUDED
 
-#include "beast_RelativeTime.h"
-
-
 //==============================================================================
 /**
     Holds an absolute date and time.
