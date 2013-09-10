@@ -1737,18 +1737,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\CheatSheet.md">
-      <Filter>%28Notes%29</Filter>
-    </None>
-    <None Include="..\..\CodingStyle.md">
-      <Filter>%28Notes%29</Filter>
-    </None>
-    <None Include="..\..\Doxyfile">
-      <Filter>[2] Build</Filter>
-    </None>
-    <None Include="..\..\rippled-example.cfg">
-      <Filter>[2] Build</Filter>
-    </None>
     <None Include="..\QtCreator\rippled.pro">
       <Filter>[2] Build</Filter>
     </None>
@@ -1770,9 +1758,25 @@
     <None Include="..\..\modules\ripple_basics\json\version">
       <Filter>[1] Ripple\ripple_basics\json</Filter>
     </None>
+    <None Include="..\..\doc\CheatSheet.md">
+      <Filter>%28Notes%29</Filter>
+    </None>
+    <None Include="..\..\doc\CodingStyle.md">
+      <Filter>%28Notes%29</Filter>
+    </None>
+    <None Include="..\..\README.md" />
+    <None Include="..\..\doc\rippled-example.cfg">
+      <Filter>[2] Build</Filter>
+    </None>
+    <None Include="..\..\doc\Doxyfile">
+      <Filter>[2] Build</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\Notes\VFALCO_TODO.txt">
+    <Text Include="..\..\doc\todo\NIKB_TODO.txt">
+      <Filter>%28Notes%29</Filter>
+    </Text>
+    <Text Include="..\..\doc\todo\VFALCO_TODO.txt">
       <Filter>%28Notes%29</Filter>
     </Text>
   </ItemGroup>

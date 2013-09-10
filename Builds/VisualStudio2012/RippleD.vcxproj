@@ -1645,9 +1645,8 @@
     <ClInclude Include="..\..\Subtrees\websocket\src\websocket_frame.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\CheatSheet.md" />
-    <None Include="..\..\CodingStyle.md" />
-    <None Include="..\..\Doxyfile" />
+    <None Include="..\..\doc\CheatSheet.md" />
+    <None Include="..\..\doc\CodingStyle.md" />
     <CustomBuild Include="..\..\modules\ripple_data\protocol\ripple.proto">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">protoc --cpp_out=$(RepoDir)\build\proto -I=$(RepoDir)\modules\ripple_data\protocol\ "$(RepoDir)\modules\ripple_data\protocol\%(Filename)%(Extension)"</Command>
@@ -1659,17 +1658,20 @@
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(RepoDir)\build\proto\%(Filename).pb.h;$(RepoDir)\build\proto\%(Filename).pb.cc</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(RepoDir)\build\proto\%(Filename).pb.h;$(RepoDir)\build\proto\%(Filename).pb.cc</Outputs>
     </CustomBuild>
+    <None Include="..\..\doc\Doxyfile" />
+    <None Include="..\..\doc\rippled-example.cfg" />
     <None Include="..\..\modules\ripple_basics\json\json_internalarray.inl" />
     <None Include="..\..\modules\ripple_basics\json\json_internalmap.inl" />
     <None Include="..\..\modules\ripple_basics\json\json_valueiterator.inl" />
     <None Include="..\..\modules\ripple_basics\json\LICENSE" />
     <None Include="..\..\modules\ripple_basics\json\version" />
-    <None Include="..\..\rippled-example.cfg" />
+    <None Include="..\..\README.md" />
     <None Include="..\..\SConstruct" />
     <None Include="..\QtCreator\rippled.pro" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\Notes\VFALCO_TODO.txt" />
+    <Text Include="..\..\doc\todo\NIKB_TODO.txt" />
+    <Text Include="..\..\doc\todo\VFALCO_TODO.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B7F39ECD-473C-484D-BC34-31F8362506A5}</ProjectGuid>
