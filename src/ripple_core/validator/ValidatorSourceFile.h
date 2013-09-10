@@ -13,7 +13,7 @@
 class ValidatorSourceFile : public Validators::Source
 {
 public:
-    static ValidatorSourceFile* New (String const& path);
+    static ValidatorSourceFile* New (File const& path);
 };
 
 #endif

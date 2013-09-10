@@ -201,6 +201,7 @@ public:
     /** Returns the optional URL to a trusted network source of validators. */
     UniformResourceLocator getValidatorsURL () const;
 
+    // DEPRECATED
     boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
 
     //--------------------------------------------------------------------------

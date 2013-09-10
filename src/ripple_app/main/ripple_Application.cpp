@@ -230,16 +230,14 @@ public:
                 m_validators->addStrings (strings);
         }
 
-        /*
-        if (getConfig().getValidatorsFile() != File::nonexistent())
-        {
-            m_validators->addFile (getConfig().getValidatorsFile());
-        }
-        */
-
         if (! getConfig().getValidatorsURL().empty())
         {
             m_validators->addURL (getConfig().getValidatorsURL());
+        }
+
+        if (getConfig().getValidatorsFile() != File::nonexistent ())
+        {
+            m_validators->addFile (getConfig().getValidatorsFile());
         }
 #endif
     }

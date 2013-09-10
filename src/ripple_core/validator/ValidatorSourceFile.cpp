@@ -7,9 +7,8 @@
 class ValidatorSourceFileImp : public ValidatorSourceFile
 {
 public:
-    ValidatorSourceFileImp (String const& path)
-        : m_path (path)
-        , m_file (File::getCurrentWorkingDirectory().getChildFile (path))
+    ValidatorSourceFileImp (File const& file)
+        : m_file (file)
     {
     }
 
@@ -25,16 +24,15 @@ public:
     }
 
 private:
-    String m_path;
     File m_file;
 };
 
 //------------------------------------------------------------------------------
 
-ValidatorSourceFile* ValidatorSourceFile::New (String const& path)
+ValidatorSourceFile* ValidatorSourceFile::New (File const& file)
 {
     ScopedPointer <ValidatorSourceFile> object (
-        new ValidatorSourceFileImp (path));
+        new ValidatorSourceFileImp (file));
 
     return object.release ();
 }

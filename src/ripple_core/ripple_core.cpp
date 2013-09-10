@@ -74,7 +74,6 @@ namespace ripple
 #include "validator/ValidatorSourceURL.cpp"
 #include "validator/Validators.cpp"
 
- #include "peerfinder/ripple_PeerFinder.h" // private (for now)
 #include "peerfinder/ripple_PeerFinder.cpp"
 
 }

@@ -85,7 +85,7 @@ public:
     /** @} */
 
     /** Add a static source of validators from a text file. */
-    virtual void addFile (String const& path) = 0;
+    virtual void addFile (File const& file) = 0;
 
     /** Add a static source of validators.
         The Source is called to fetch once and the results are kept

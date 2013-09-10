@@ -729,7 +729,8 @@ File Config::getValidatorsFile () const
 
 UniformResourceLocator Config::getValidatorsURL () const
 {
-    String s = "https://" + VALIDATORS_SITE + VALIDATORS_URI;
+    //String s = "https://" + VALIDATORS_SITE + VALIDATORS_URI;
+    String s = VALIDATORS_SITE;
     return ParsedURL (s).url ();
 }
 

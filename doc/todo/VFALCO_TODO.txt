@@ -3,6 +3,11 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's List: Changes day to day, descending priority
+- Validators should delay the application of newly downloaded lists from
+  sources, to mitigate the effects of attacks. Unless there's no validators
+  in the list.
+- Validators RPC options to immediately apply UNL,
+  manually revisit sources, etc...
 - Clean up calculation of COnfig file location.
 - Remove TESTNET and all related code and settings.
 - Full review of config docs / settings for RPC/WS

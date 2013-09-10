@@ -401,9 +401,9 @@ public:
             ValidatorSourceStrings::New (stringArray));
     }
 
-    void addFile (String const& path)
+    void addFile (File const& file)
     {
-        addStaticSource (ValidatorSourceFile::New (path));
+        addStaticSource (ValidatorSourceFile::New (file));
     }
 
     void addURL (UniformResourceLocator const& url)
