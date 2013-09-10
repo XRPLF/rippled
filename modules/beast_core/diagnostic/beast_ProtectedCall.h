@@ -125,33 +125,15 @@ public:
 #endif
 
 private:
-    struct Call
+    typedef SharedFunction <void (void)> FunctionType;
+    typedef FunctionType::Call Call;
+
+    template <class Function>
+    void callf (Function f)
     {
-        virtual void operator() () = 0;
-    };
-
-    template <class Functor>
-    struct CallType : public Call
-    {
-    public:
-        explicit CallType (Functor f)
-            : m_f (f)
-        {
-        }
-
-        void operator() ()
-        {
-            m_f ();
-        }
-
-    private:
-        Functor m_f;
-    };
-
-    template <class Functor>
-    void callf (Functor f)
-    {
-        CallType <Functor> wrapper (f);
+        //CallType <Functor> wrapper (f);
+        FunctionType::CallType <Function> wrapper (
+            BEAST_MOVE_CAST(Function)(f));
 
         call (wrapper);
     }

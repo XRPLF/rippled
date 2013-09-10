@@ -308,11 +308,12 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "maths/beast_uint24.h"
 #include "logging/beast_Logger.h"
 #include "diagnostic/beast_FPUFlags.h"
+#include "memory/SharedObject.h"
+#include "memory/SharedPtr.h"
+#include "functional/SharedFunction.h"
 #include "diagnostic/beast_ProtectedCall.h"
 #include "containers/beast_AbstractFifo.h"
 #include "containers/beast_ArrayAllocationBase.h"
-#include "memory/SharedObject.h"
-#include "memory/SharedPtr.h"
 #include "containers/beast_DynamicObject.h"
 #include "containers/beast_ElementComparator.h"
 #include "maths/beast_Random.h"
@@ -408,7 +409,6 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "diagnostic/MeasureFunctionCallTime.h"
 
 #include "functional/beast_Function.h"
-#include "functional/SharedFunction.h"
 
 #include "thread/beast_DeadlineTimer.h"
 

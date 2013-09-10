@@ -31,6 +31,36 @@ template <typename R, class A>
 class SharedFunction <R (void), A>
 {
 public:
+    class Call : public SharedObject
+    {
+    public:
+        virtual R operator() () = 0;
+    };
+
+    template <typename F>
+    class CallType : public Call
+    {
+    public:
+        typedef typename A:: template rebind <CallType <F> >::other Allocator;
+
+        CallType (BEAST_MOVE_ARG(F) f, A a = A ())
+            : m_f (BEAST_MOVE_CAST(F)(f))
+            , m_a (a)
+        {
+        }
+
+        R operator() ()
+        {
+            return m_f ();
+        }
+
+    private:
+        F m_f;
+        Allocator m_a;
+    };
+
+    //--------------------------------------------------------------------------
+
     template <typename F>
     SharedFunction (F f, A a = A ())
         : m_ptr (::new (
@@ -62,34 +92,6 @@ public:
     }
 
 private:
-    class Call : public SharedObject
-    {
-    public:
-        virtual R operator() () = 0;
-    };
-
-    template <typename F>
-    class CallType : public Call
-    {
-    public:
-        typedef typename A:: template rebind <CallType <F> >::other Allocator;
-
-        CallType (BEAST_MOVE_ARG(F) f, A const& a)
-            : m_f (BEAST_MOVE_CAST(F)(f))
-            , m_a (a)
-        {
-        }
-
-        R operator() ()
-        {
-            return m_f ();
-        }
-
-    private:
-        F m_f;
-        Allocator m_a;
-    };
-
     SharedPtr <Call> m_ptr;
 };
 
