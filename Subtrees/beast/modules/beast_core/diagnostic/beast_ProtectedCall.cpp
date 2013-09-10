@@ -314,6 +314,7 @@ void ProtectedCall::call (Call& c)
     if (handler == nullptr)
         handler = &defaultHandler;
 
+#if BEAST_CATCH_UNHANDLED_EXCEPTIONS
     try
     {
         c ();
@@ -324,6 +325,11 @@ void ProtectedCall::call (Call& c)
 
         handler->onException (e);
     }
+
+#else
+    c ();
+
+#endif
 }
 
 //------------------------------------------------------------------------------
