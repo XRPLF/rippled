@@ -88,8 +88,9 @@ ripple-fork
 
 ## protobuf
 
-Ripple's fork of protobuf doesn't have any actual changes, but since the upstream
-repository uses SVN, we have created a Git version to use with the git-subtree command.
+Ripple's fork of protobuf. We've changed some names in order to support the
+unity-style of build (a single .cpp addded to the project, instead of
+linking to a separately built static library).
 
 Repository
 ```
