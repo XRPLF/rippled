@@ -136,23 +136,23 @@ COMPILED_FILES.extend([
     'src/beast/modules/beast_db/beast_db.cpp',
     'src/beast/modules/beast_sqdb/beast_sqdb.cpp',
     'src/beast/modules/beast_sqlite/beast_sqlite.c',
-    'modules/ripple_app/ripple_app.cpp',
-    'modules/ripple_app/ripple_app_pt1.cpp',
-    'modules/ripple_app/ripple_app_pt2.cpp',
-    'modules/ripple_app/ripple_app_pt3.cpp',
-    'modules/ripple_app/ripple_app_pt4.cpp',
-    'modules/ripple_app/ripple_app_pt5.cpp',
-    'modules/ripple_app/ripple_app_pt6.cpp',
-    'modules/ripple_app/ripple_app_pt7.cpp',
-    'modules/ripple_app/ripple_app_pt8.cpp',
-    'modules/ripple_basics/ripple_basics.cpp',
-    'modules/ripple_core/ripple_core.cpp',
-    'modules/ripple_data/ripple_data.cpp',
-    'modules/ripple_hyperleveldb/ripple_hyperleveldb.cpp',
-    'modules/ripple_leveldb/ripple_leveldb.cpp',
-    'modules/ripple_mdb/ripple_mdb.c',
-    'modules/ripple_net/ripple_net.cpp',
-    'modules/ripple_websocket/ripple_websocket.cpp'
+    'src/ripple_app/ripple_app.cpp',
+    'src/ripple_app/ripple_app_pt1.cpp',
+    'src/ripple_app/ripple_app_pt2.cpp',
+    'src/ripple_app/ripple_app_pt3.cpp',
+    'src/ripple_app/ripple_app_pt4.cpp',
+    'src/ripple_app/ripple_app_pt5.cpp',
+    'src/ripple_app/ripple_app_pt6.cpp',
+    'src/ripple_app/ripple_app_pt7.cpp',
+    'src/ripple_app/ripple_app_pt8.cpp',
+    'src/ripple_basics/ripple_basics.cpp',
+    'src/ripple_core/ripple_core.cpp',
+    'src/ripple_data/ripple_data.cpp',
+    'src/ripple_hyperleveldb/ripple_hyperleveldb.cpp',
+    'src/ripple_leveldb/ripple_leveldb.cpp',
+    'src/ripple_mdb/ripple_mdb.c',
+    'src/ripple_net/ripple_net.cpp',
+    'src/ripple_websocket/ripple_websocket.cpp'
     ])
 
 #-------------------------------------------------------------------------------
@@ -161,7 +161,6 @@ COMPILED_FILES.extend([
 #
 
 VariantDir('build/obj/src', 'src', duplicate=0)
-VariantDir('build/obj/modules', 'modules', duplicate=0)
 
 #-------------------------------------------------------------------------------
 
@@ -224,7 +223,7 @@ if OSX:
     env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
     env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
-PROTO_SRCS = env.Protoc([], 'modules/ripple_data/protocol/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
+PROTO_SRCS = env.Protoc([], 'src/ripple_data/protocol/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 
 # Only tag actual Ripple files.

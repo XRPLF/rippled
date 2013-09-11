@@ -1,7 +1,7 @@
 
 # Ripple protocol buffers
 
-PROTOS = ../../modules/ripple_data/protocol/ripple.proto
+PROTOS = ../../src/ripple_data/protocol/ripple.proto
 PROTOS_DIR = ../../build/proto
 
 # Google Protocol Buffers support
@@ -51,12 +51,12 @@ INCLUDEPATH += \
     $${PROTOS_DIR}
 
 OTHER_FILES += \
+#   $$files(../../src/*, true) \
 #   $$files(../../src/beast/*) \
 #   $$files(../../src/beast/modules/beast_basics/diagnostic/*)
 #   $$files(../../src/beast/modules/beast_core/, true)
-#   $$files(../../modules/*, true) \
 
-UI_HEADERS_DIR += ../../modules/ripple_basics
+UI_HEADERS_DIR += ../../src/ripple_basics
 
 SOURCES += \
     ../../src/beast/modules/beast_asio/beast_asio.cpp \
@@ -66,23 +66,23 @@ SOURCES += \
     ../../src/beast/modules/beast_extras/beast_extras.cpp \
     ../../src/beast/modules/beast_sqdb/beast_sqdb.cpp \
     ../../src/beast/modules/beast_sqlite/beast_sqlite.c \
-    ../../modules/ripple_app/ripple_app.cpp \
-    ../../modules/ripple_app/ripple_app_pt1.cpp \
-    ../../modules/ripple_app/ripple_app_pt2.cpp \
-    ../../modules/ripple_app/ripple_app_pt3.cpp \
-    ../../modules/ripple_app/ripple_app_pt4.cpp \
-    ../../modules/ripple_app/ripple_app_pt5.cpp \
-    ../../modules/ripple_app/ripple_app_pt6.cpp \
-    ../../modules/ripple_app/ripple_app_pt7.cpp \
-    ../../modules/ripple_app/ripple_app_pt8.cpp \
-    ../../modules/ripple_basics/ripple_basics.cpp \
-    ../../modules/ripple_core/ripple_core.cpp \
-    ../../modules/ripple_data/ripple_data.cpp \
-    ../../modules/ripple_hyperleveldb/ripple_hyperleveldb.cpp \
-    ../../modules/ripple_leveldb/ripple_leveldb.cpp \
-    ../../modules/ripple_mdb/ripple_mdb.c \
-    ../../modules/ripple_net/ripple_net.cpp \
-    ../../modules/ripple_websocket/ripple_websocket.cpp
+    ../../src/ripple_app/ripple_app.cpp \
+    ../../src/ripple_app/ripple_app_pt1.cpp \
+    ../../src/ripple_app/ripple_app_pt2.cpp \
+    ../../src/ripple_app/ripple_app_pt3.cpp \
+    ../../src/ripple_app/ripple_app_pt4.cpp \
+    ../../src/ripple_app/ripple_app_pt5.cpp \
+    ../../src/ripple_app/ripple_app_pt6.cpp \
+    ../../src/ripple_app/ripple_app_pt7.cpp \
+    ../../src/ripple_app/ripple_app_pt8.cpp \
+    ../../src/ripple_basics/ripple_basics.cpp \
+    ../../src/ripple_core/ripple_core.cpp \
+    ../../src/ripple_data/ripple_data.cpp \
+    ../../src/ripple_hyperleveldb/ripple_hyperleveldb.cpp \
+    ../../src/ripple_leveldb/ripple_leveldb.cpp \
+    ../../src/ripple_mdb/ripple_mdb.c \
+    ../../src/ripple_net/ripple_net.cpp \
+    ../../src/ripple_websocket/ripple_websocket.cpp
 
 LIBS += \
     -lboost_date_time-mt\

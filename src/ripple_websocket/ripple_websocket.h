@@ -32,7 +32,7 @@
 //        TODO Remove the dependency on ripple_basics and Log.
 //             Perhaps by using an adapter.
 //
-#include "../modules/ripple_basics/ripple_basics.h"
+#include "../ripple_basics/ripple_basics.h"
 
 //------------------------------------------------------------------------------
 
