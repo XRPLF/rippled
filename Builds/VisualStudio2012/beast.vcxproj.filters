@@ -1030,9 +1030,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
-      <Filter>beast_core</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\containers\beast_AbstractFifo.cpp">
       <Filter>beast_core\containers</Filter>
     </ClCompile>
@@ -1312,9 +1309,6 @@
     <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.cpp">
       <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_crypto\beast_crypto.cpp">
-      <Filter>beast_crypto</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.cpp">
       <Filter>beast_crypto\math</Filter>
     </ClCompile>
@@ -1392,9 +1386,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_SemanticVersion.cpp">
       <Filter>beast_core\diagnostic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp">
-      <Filter>beast_asio</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\threads\beast_ReadWriteMutex.cpp">
       <Filter>beast_core\threads</Filter>
@@ -1542,6 +1533,15 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\http\UniformResourceLocator.cpp">
       <Filter>beast_asio\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_crypto\beast_crypto.cpp">
+      <Filter>beast_crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
+      <Filter>beast_core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp">
+      <Filter>beast_asio</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
