@@ -26,14 +26,10 @@ Platform or IDE-specific project files.
 #### ./doc
 Documentation and example configuration files.
 
-#### ./modules
-Ripple source code.
-
 #### ./src
-Legacy source code directory (contains protoc sources).
-
-#### ./Subtrees
-External dependencies inlined into the repository as full source trees via `git subtree`.
+Source code directory. Some of the directories contained here are
+external repositories inlined via git-subtree, see the corresponding
+README for more details.
 
 #### ./test
 Javascript / Mocha tests.

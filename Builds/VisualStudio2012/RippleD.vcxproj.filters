@@ -1762,11 +1762,9 @@
     <None Include="..\..\doc\Doxyfile">
       <Filter>[2] doc</Filter>
     </None>
-    <None Include="..\..\README.md">
-      <Filter>[2] doc</Filter>
-    </None>
     <None Include="..\..\SConstruct" />
     <None Include="..\QtCreator\rippled.pro" />
+    <None Include="..\..\README.md" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\doc\todo\NIKB_TODO.txt">
