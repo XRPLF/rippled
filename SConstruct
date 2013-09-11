@@ -111,11 +111,11 @@ else:
 INCLUDE_PATHS = [
     '.',
     'build/proto',
-    'Subtrees',
-    'Subtrees/leveldb',
-    'Subtrees/leveldb/port',
-    'Subtrees/leveldb/include',
-    'Subtrees/beast',
+    'src',
+    'src/leveldb',
+    'src/leveldb/port',
+    'src/leveldb/include',
+    'src/beast',
     ]
 
 # if BOOST_HOME:
@@ -123,19 +123,19 @@ INCLUDE_PATHS = [
 
 if OSX:
     COMPILED_FILES = [
-        'Subtrees/beast/modules/beast_core/beast_core.mm'
+        'src/beast/modules/beast_core/beast_core.mm'
     ]
 else:
     COMPILED_FILES = [
-        'Subtrees/beast/modules/beast_core/beast_core.cpp'
+        'src/beast/modules/beast_core/beast_core.cpp'
     ]
 
 COMPILED_FILES.extend([
-    'Subtrees/beast/modules/beast_asio/beast_asio.cpp',
-    'Subtrees/beast/modules/beast_crypto/beast_crypto.cpp',
-    'Subtrees/beast/modules/beast_db/beast_db.cpp',
-    'Subtrees/beast/modules/beast_sqdb/beast_sqdb.cpp',
-    'Subtrees/beast/modules/beast_sqlite/beast_sqlite.c',
+    'src/beast/modules/beast_asio/beast_asio.cpp',
+    'src/beast/modules/beast_crypto/beast_crypto.cpp',
+    'src/beast/modules/beast_db/beast_db.cpp',
+    'src/beast/modules/beast_sqdb/beast_sqdb.cpp',
+    'src/beast/modules/beast_sqlite/beast_sqlite.c',
     'modules/ripple_app/ripple_app.cpp',
     'modules/ripple_app/ripple_app_pt1.cpp',
     'modules/ripple_app/ripple_app_pt2.cpp',
@@ -162,7 +162,6 @@ COMPILED_FILES.extend([
 
 VariantDir('build/obj/src', 'src', duplicate=0)
 VariantDir('build/obj/modules', 'modules', duplicate=0)
-VariantDir('build/obj/Subtrees', 'Subtrees', duplicate=0)
 
 #-------------------------------------------------------------------------------
 

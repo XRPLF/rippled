@@ -44,28 +44,28 @@ linux-g++:QMAKE_CXXFLAGS += \
 
 INCLUDEPATH += \
     "../.." \
-    "../../Subtrees" \
-    "../../Subtrees/leveldb/" \
-    "../../Subtrees/leveldb/port" \
-    "../../Subtrees/leveldb/include" \
+    "../../src" \
+    "../../src/leveldb/" \
+    "../../src/leveldb/port" \
+    "../../src/leveldb/include" \
     $${PROTOS_DIR}
 
 OTHER_FILES += \
-#   $$files(../../Subtrees/beast/*) \
-#   $$files(../../Subtrees/beast/modules/beast_basics/diagnostic/*)
-#   $$files(../../Subtrees/beast/modules/beast_core/, true)
+#   $$files(../../src/beast/*) \
+#   $$files(../../src/beast/modules/beast_basics/diagnostic/*)
+#   $$files(../../src/beast/modules/beast_core/, true)
 #   $$files(../../modules/*, true) \
 
 UI_HEADERS_DIR += ../../modules/ripple_basics
 
 SOURCES += \
-    ../../Subtrees/beast/modules/beast_asio/beast_asio.cpp \
-    ../../Subtrees/beast/modules/beast_boost/beast_boost.cpp \
-    ../../Subtrees/beast/modules/beast_core/beast_core.cpp \
-    ../../Subtrees/beast/modules/beast_crypto/beast_crypto.cpp \
-    ../../Subtrees/beast/modules/beast_db/beast_db.cpp \
-    ../../Subtrees/beast/modules/beast_sqdb/beast_sqdb.cpp \
-    ../../Subtrees/beast/modules/beast_sqlite/beast_sqlite.c \
+    ../../src/beast/modules/beast_asio/beast_asio.cpp \
+    ../../src/beast/modules/beast_core/beast_core.cpp \
+    ../../src/beast/modules/beast_crypto/beast_crypto.cpp \
+    ../../src/beast/modules/beast_db/beast_db.cpp \
+    ../../src/beast/modules/beast_extras/beast_extras.cpp \
+    ../../src/beast/modules/beast_sqdb/beast_sqdb.cpp \
+    ../../src/beast/modules/beast_sqlite/beast_sqlite.c \
     ../../modules/ripple_app/ripple_app.cpp \
     ../../modules/ripple_app/ripple_app_pt1.cpp \
     ../../modules/ripple_app/ripple_app_pt2.cpp \
