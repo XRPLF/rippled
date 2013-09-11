@@ -3,6 +3,8 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's List: Changes day to day, descending priority
+- Clean up calculation of COnfig file location.
+- Remove TESTNET and all related code and settings.
 - Full review of config docs / settings for RPC/WS
 - Fix RPCDoor to respect config setting for [rpc_secure]
 - Remove addRpcSub, findRpcSub, and notify the appropriate partner(s)

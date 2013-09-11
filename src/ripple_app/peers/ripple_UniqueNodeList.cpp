@@ -515,21 +515,24 @@ public:
     {
         if (pConfig.empty ())
         {
-            WriteLog (lsINFO, UniqueNodeList) << VALIDATORS_FILE_NAME " path not specified.";
+            WriteLog (lsINFO, UniqueNodeList) << Config::Helpers::getValidatorsFileName() <<
+                " path not specified.";
 
             return false;
         }
 
         if (!boost::filesystem::exists (pConfig))
         {
-            WriteLog (lsWARNING, UniqueNodeList) << str (boost::format (VALIDATORS_FILE_NAME " not found: %s") % pConfig);
+            WriteLog (lsWARNING, UniqueNodeList) << Config::Helpers::getValidatorsFileName() <<
+                " not found: " << pConfig;
 
             return false;
         }
 
         if (!boost::filesystem::is_regular_file (pConfig))
         {
-            WriteLog (lsWARNING, UniqueNodeList) << str (boost::format (VALIDATORS_FILE_NAME " not regular file: %s") % pConfig);
+            WriteLog (lsWARNING, UniqueNodeList) << Config::Helpers::getValidatorsFileName() <<
+                " not regular file: " << pConfig;
 
             return false;
         }
@@ -538,7 +541,8 @@ public:
 
         if (!ifsDefault)
         {
-            WriteLog (lsFATAL, UniqueNodeList) << str (boost::format (VALIDATORS_FILE_NAME " failed to open: %s") % pConfig);
+            WriteLog (lsFATAL, UniqueNodeList) << Config::Helpers::getValidatorsFileName() <<
+                " failed to open: " << pConfig;
 
             return false;
         }
@@ -550,7 +554,8 @@ public:
 
         if (ifsDefault.bad ())
         {
-            WriteLog (lsFATAL, UniqueNodeList) << str (boost::format ("Failed to read: %s") % pConfig);
+            WriteLog (lsFATAL, UniqueNodeList) << Config::Helpers::getValidatorsFileName() <<
+            "Failed to read: " << pConfig;
 
             return false;
         }
@@ -2002,7 +2007,10 @@ private:
 
         if (!bReject)
         {
-            WriteLog (lsTRACE, UniqueNodeList) << "Fetch '" VALIDATORS_FILE_NAME "' complete.";
+            WriteLog (lsTRACE, UniqueNodeList) <<
+                "Fetch '" <<
+                Config::Helpers::getValidatorsFileName () <<
+                "' complete.";
 
             if (!err)
             {

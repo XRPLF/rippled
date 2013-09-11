@@ -1,23 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="[0] src">
-      <UniqueIdentifier>{ddf42dfe-eaad-4275-8cb7-5c02be627366}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple">
       <UniqueIdentifier>{9766e229-8795-43d8-871e-60de90501333}</UniqueIdentifier>
     </Filter>
     <Filter Include="[1] Ripple\ripple_app">
       <UniqueIdentifier>{bcc68889-41a4-4090-ac3f-12a3ba1d8961}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[0] src\beast">
-      <UniqueIdentifier>{f669c93c-60da-4674-a693-9eebcddacb6f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[0] src\leveldb">
-      <UniqueIdentifier>{3debb18d-0f76-4208-accb-f96cb9ce6dab}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[0] src\protobuf">
-      <UniqueIdentifier>{1f093002-9955-4915-a17b-398d55c9fc76}</UniqueIdentifier>
     </Filter>
     <Filter Include="[1] Ripple\ripple_basics">
       <UniqueIdentifier>{ca8e7c6c-0e6d-4915-b7b4-0a0b21f91d16}</UniqueIdentifier>
@@ -60,24 +48,6 @@
     </Filter>
     <Filter Include="[1] Ripple\ripple_websocket\autosocket">
       <UniqueIdentifier>{99ac4d07-04a7-4ce3-96c7-b8ea578f1a61}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[0] src\websocket">
-      <UniqueIdentifier>{6967f835-a1b0-47e3-9bd9-6fc8bd0f3df7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[0] src\leveldb\db">
-      <UniqueIdentifier>{fe2722a9-6550-4098-91eb-1575f7419a42}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[0] src\leveldb\port">
-      <UniqueIdentifier>{e1f02660-3d99-4ef3-b79a-2a8da16e2ec7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[0] src\leveldb\table">
-      <UniqueIdentifier>{5280f25b-a657-45f7-a0e6-822891d0f20f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[0] src\leveldb\util">
-      <UniqueIdentifier>{8710b403-2cfa-4991-b8b4-8214d1947528}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[0] src\leveldb\port\win">
-      <UniqueIdentifier>{223ac5ce-c9a0-4196-9b75-4f5fbe8bfa00}</UniqueIdentifier>
     </Filter>
     <Filter Include="[1] Ripple\ripple_net">
       <UniqueIdentifier>{c84fc3af-f487-4eba-af78-d4be009f76d1}</UniqueIdentifier>
@@ -157,6 +127,36 @@
     <Filter Include="[1] Ripple\ripple_core\peerfinder">
       <UniqueIdentifier>{d1648d3f-7d71-495d-afc9-576ed00d7185}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[0] Libraries">
+      <UniqueIdentifier>{ddf42dfe-eaad-4275-8cb7-5c02be627366}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[0] Libraries\beast">
+      <UniqueIdentifier>{f669c93c-60da-4674-a693-9eebcddacb6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[0] Libraries\leveldb">
+      <UniqueIdentifier>{3debb18d-0f76-4208-accb-f96cb9ce6dab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[0] Libraries\leveldb\db">
+      <UniqueIdentifier>{fe2722a9-6550-4098-91eb-1575f7419a42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[0] Libraries\leveldb\port">
+      <UniqueIdentifier>{e1f02660-3d99-4ef3-b79a-2a8da16e2ec7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[0] Libraries\leveldb\port\win">
+      <UniqueIdentifier>{223ac5ce-c9a0-4196-9b75-4f5fbe8bfa00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[0] Libraries\leveldb\table">
+      <UniqueIdentifier>{5280f25b-a657-45f7-a0e6-822891d0f20f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[0] Libraries\leveldb\util">
+      <UniqueIdentifier>{8710b403-2cfa-4991-b8b4-8214d1947528}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[0] Libraries\protobuf">
+      <UniqueIdentifier>{1f093002-9955-4915-a17b-398d55c9fc76}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[0] Libraries\websocket">
+      <UniqueIdentifier>{6967f835-a1b0-47e3-9bd9-6fc8bd0f3df7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\ripple_RangeSet.cpp">
@@ -203,9 +203,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\ripple_basics.cpp">
       <Filter>[1] Ripple\ripple_basics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_Config.cpp">
-      <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\functional\ripple_Job.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
@@ -292,175 +289,175 @@
       <Filter>[1] Ripple\ripple_websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\base64\base64.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\md5\md5.c">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\messages\data.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\processors\hybi_header.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\processors\hybi_util.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\rng\blank_rng.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\rng\boost_rng.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\sha1\sha1.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\sha1\shacmp.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\sha1\shatest.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\sha1\sha.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\network_utilities.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\uri.cpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\builder.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\db_bench.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\db_impl.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\db_iter.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\db_test.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\dbformat.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\filename.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\leveldb_main.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\log_reader.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\log_test.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\log_writer.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\memtable.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\repair.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\table_cache.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\version_edit.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\version_set.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\write_batch.cc">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\bloom.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\cache.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\coding.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\comparator.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\crc32c.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\env.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\env_posix.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\env_test.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\env_win.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\filter_policy.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\hash.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\histogram.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\logging.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\options.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\status.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\util\arena.cc">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\table\block.cc">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\table\block_builder.cc">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\table\filter_block.cc">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\table\format.cc">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\table\iterator.cc">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\table\merger.cc">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\table\table.cc">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\table\table_builder.cc">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\table\two_level_iterator.cc">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\port\port_posix.cc">
-      <Filter>[0] src\leveldb\port</Filter>
+      <Filter>[0] Libraries\leveldb\port</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\port\port_win.cc">
-      <Filter>[0] src\leveldb\port</Filter>
+      <Filter>[0] Libraries\leveldb\port</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt1.cpp">
       <Filter>[1] Ripple\ripple_app</Filter>
@@ -853,25 +850,25 @@
       <Filter>[1] Ripple</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\protobuf_core.cpp">
-      <Filter>[0] src\protobuf</Filter>
+      <Filter>[0] Libraries\protobuf</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\modules\beast_asio\beast_asio.cpp">
-      <Filter>[0] src\beast</Filter>
+      <Filter>[0] Libraries\beast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\modules\beast_core\beast_core.cpp">
-      <Filter>[0] src\beast</Filter>
+      <Filter>[0] Libraries\beast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\modules\beast_crypto\beast_crypto.cpp">
-      <Filter>[0] src\beast</Filter>
+      <Filter>[0] Libraries\beast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\modules\beast_db\beast_db.cpp">
-      <Filter>[0] src\beast</Filter>
+      <Filter>[0] Libraries\beast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\modules\beast_sqdb\beast_sqdb.cpp">
-      <Filter>[0] src\beast</Filter>
+      <Filter>[0] Libraries\beast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\modules\beast_sqlite\beast_sqlite.c">
-      <Filter>[0] src\beast</Filter>
+      <Filter>[0] Libraries\beast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_core\test\TestOverlay.cpp" />
     <ClCompile Include="..\..\src\ripple_core\ripple_core.cpp">
@@ -879,6 +876,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.cpp">
       <Filter>[1] Ripple\ripple_core\peerfinder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\functional\Config.cpp">
+      <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -956,9 +956,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\ripple_basics.h">
       <Filter>[1] Ripple\ripple_basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_Config.h">
-      <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\functional\ripple_ILoadFeeTrack.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
@@ -1054,211 +1051,211 @@
       <Filter>[1] Ripple\ripple_websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\base64\base64.h">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\http\constants.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\http\parser.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\logger\logger.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\md5\md5.h">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\md5\md5.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\messages\control.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\messages\data.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\processors\hybi.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\processors\hybi_header.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\processors\hybi_legacy.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\processors\hybi_util.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\processors\processor.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\rng\blank_rng.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\rng\boost_rng.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\roles\client.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\roles\server.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sha1\sha1.h">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\autotls.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\plain.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\socket_base.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\tls.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\utf8_validator\utf8_validator.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\common.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\connection.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\endpoint.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\network_utilities.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\shared_const_buffer.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\uri.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\websocket_frame.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\websocketpp.hpp">
-      <Filter>[0] src\websocket</Filter>
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\builder.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\db_impl.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\db_iter.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\dbformat.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\filename.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\log_format.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\log_reader.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\log_writer.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\memtable.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\skiplist.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\snapshot.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\table_cache.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\version_edit.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\version_set.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\write_batch_internal.h">
-      <Filter>[0] src\leveldb\db</Filter>
+      <Filter>[0] Libraries\leveldb\db</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\util\coding.h">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\util\crc32c.h">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\util\hash.h">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\util\histogram.h">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\util\logging.h">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\util\mutexlock.h">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\util\posix_logger.h">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\util\random.h">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\util\arena.h">
-      <Filter>[0] src\leveldb\util</Filter>
+      <Filter>[0] Libraries\leveldb\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\table\block.h">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\table\block_builder.h">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\table\filter_block.h">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\table\format.h">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\table\iterator_wrapper.h">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\table\merger.h">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\table\two_level_iterator.h">
-      <Filter>[0] src\leveldb\table</Filter>
+      <Filter>[0] Libraries\leveldb\table</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\port\win\stdint.h">
-      <Filter>[0] src\leveldb\port\win</Filter>
+      <Filter>[0] Libraries\leveldb\port\win</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\port\port_win.h">
-      <Filter>[0] src\leveldb\port</Filter>
+      <Filter>[0] Libraries\leveldb\port</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\port\thread_annotations.h">
-      <Filter>[0] src\leveldb\port</Filter>
+      <Filter>[0] Libraries\leveldb\port</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\port\atomic_pointer.h">
-      <Filter>[0] src\leveldb\port</Filter>
+      <Filter>[0] Libraries\leveldb\port</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\port\port.h">
-      <Filter>[0] src\leveldb\port</Filter>
+      <Filter>[0] Libraries\leveldb\port</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\port\port_example.h">
-      <Filter>[0] src\leveldb\port</Filter>
+      <Filter>[0] Libraries\leveldb\port</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\port\port_posix.h">
-      <Filter>[0] src\leveldb\port</Filter>
+      <Filter>[0] Libraries\leveldb\port</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_LogFile.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
@@ -1734,6 +1731,9 @@
     <ClInclude Include="..\..\src\BeastConfig.h" />
     <ClInclude Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.h">
       <Filter>[1] Ripple\ripple_core\peerfinder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\functional\Config.h">
+      <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

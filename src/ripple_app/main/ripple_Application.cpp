@@ -229,11 +229,13 @@ public:
                 m_validators->addStrings (strings);
         }
 
+#if 0
         {
             String const& localValidatorsPath (getConfig().localValidatorsPath);
             if (localValidatorsPath != String::empty)
                 m_validators->addFile (localValidatorsPath);
         }
+#endif
     }
 
     //--------------------------------------------------------------------------

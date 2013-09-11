@@ -28,7 +28,7 @@
 namespace ripple
 {
 
-#include "functional/ripple_Config.cpp"
+#include "functional/Config.cpp"
 # include "functional/ripple_LoadFeeTrack.h" // private
 #include "functional/ripple_LoadFeeTrack.cpp"
 #include "functional/ripple_Job.cpp"

@@ -700,7 +700,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_Config.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\Config.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1502,7 +1502,7 @@
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_UptimeTimer.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadSource.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadType.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_Config.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\Config.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\ripple_ConfigSections.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\ripple_ILoadFeeTrack.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\ripple_Job.h" />

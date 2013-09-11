@@ -16,18 +16,26 @@
 #define DEFAULT_FEE_OFFER               DEFAULT_FEE_DEFAULT
 #define DEFAULT_FEE_OPERATION           1
 
-// VFALCO TODO Convert this to a SharedSingleton to prevent exit leaks
-//
-Config& getConfig ()
-{
-    static Config config;
-    return config;
-}
+//------------------------------------------------------------------------------
 
 Config::Config ()
     : m_rpcPort (5001)
     , SSL_CONTEXT (boost::asio::ssl::context::sslv23)
 {
+    //--------------------------------------------------------------------------
+    //
+    // VFALCO NOTE Clean member area
+    //
+
+    peerListeningPort = SYSTEM_PEER_PORT;
+
+    peerPROXYListeningPort = 0;
+
+    //
+    //
+    //
+    //--------------------------------------------------------------------------
+
     //
     // Defaults
     //
@@ -86,21 +94,6 @@ Config::Config ()
     ELB_SUPPORT             = false;
     RUN_STANDALONE          = false;
     START_UP                = NORMAL;
-
-
-    //--------------------------------------------------------------------------
-    //
-    // VFALCO NOTE Clean area
-    //
-
-    peerListeningPort = SYSTEM_PEER_PORT;
-
-    peerPROXYListeningPort = 0;
-
-    //
-    //
-    //
-    //--------------------------------------------------------------------------
 }
 
 void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
@@ -118,13 +111,15 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
     QUIET       = bQuiet;
     NODE_SIZE   = 0;
 
-    // TESTNET forces a "testnet-" prefix on the conf file and db directory.
-    strDbPath           = TESTNET ? "testnet-db" : "db";
-    strConfFile         = boost::str (boost::format (TESTNET ? "testnet-%s" : "%s")
-                                      % (strConf.empty () ? CONFIG_FILE_NAME : strConf));
+    // VFALCO NOTE TESTNET forces a "testnet-" prefix on the conf
+    //             file and db directory, unless --conf is specified
+    //             in which case there is no forced prefix.
 
-    VALIDATORS_BASE     = boost::str (boost::format (TESTNET ? "testnet-%s" : "%s")
-                                      % VALIDATORS_FILE_NAME);
+    strDbPath           = Helpers::getDatabaseDirName (TESTNET);
+    strConfFile         = strConf.empty () ? Helpers::getConfigFileName (TESTNET) : strConf;
+
+    VALIDATORS_BASE     = Helpers::getValidatorsFileName (TESTNET);
+
     VALIDATORS_URI      = boost::str (boost::format ("/%s") % VALIDATORS_BASE);
 
     if (TESTNET)
@@ -526,7 +521,6 @@ void Config::load ()
 
             if (SectionSingleB (secConfig, SECTION_VALIDATORS_FILE, strTemp))
             {
-                localValidatorsPath = strTemp;
                 VALIDATORS_FILE     = strTemp;
             }
 
@@ -571,6 +565,164 @@ int Config::getSize (SizedItemName item)
     assert (false);
     return -1;
 }
+
+//------------------------------------------------------------------------------
+//
+// VFALCO NOTE Clean members area
+//
+
+Config& getConfig ()
+{
+    static Config config;
+    return config;
+}
+
+//------------------------------------------------------------------------------
+
+/*  The location of the configuration file is checked as follows,
+    in order of descending priority:
+
+    1. In the path specified by --conf command line option if present
+       (which is relative to the current directory)
+    2. In the current user's "home" directory
+    3. In the same directory as the rippled executable
+    4. In the "current" directory defined by the process which launched rippled
+*/
+File Config::findConfigFile (String commandLineLocation, bool forTestNetwork)
+{
+    File file (File::nonexistent ());
+
+#if 0
+    // Highest priority goes to commandLineLocation
+    //
+    if (file == File::nonexistent() && commandLineLocation != String::empty)
+    {
+        // If commandLineLocation is a full path,
+        // this will just assign the full path to file.
+        //
+        file = File::getCurrentDirectory().getChildFile (commandLineLocation);
+
+        if (! file.existsAsFile ())
+            file = File::nonexistent ();
+    }
+
+    // Next, we will look in the user's home directory
+    //
+#else
+
+#if 0
+    // VFALCO NOTE This is the original legacy code...
+
+    std::string strConfFile;
+
+    // Determine the config and data directories.
+    // If the config file is found in the current working directory,
+    // use the current working directory as the config directory and
+    // that with "db" as the data directory.
+    {
+        String s;
+        
+        if (forTestNetwork)
+            s += "testnet-";
+
+        if (commandLineLocation != String::empty)
+            s += Helpers::getConfigFileName (forTestNetwork);
+
+    strConfFile = boost::str (boost::format (forTestNetwork ? "testnet-%s" : "%s")
+                                      % (strConf.empty () ? Helpers::getConfigFileName() : strConf));
+
+    VALIDATORS_BASE     = boost::str (boost::format (TESTNET ? "testnet-%s" : "%s")
+                                      % VALIDATORS_FILE_NAME);
+    VALIDATORS_URI      = boost::str (boost::format ("/%s") % VALIDATORS_BASE);
+
+    if (TESTNET)
+    {
+        SIGN_TRANSACTION    = HashPrefix::txSignTestnet;
+        SIGN_VALIDATION     = HashPrefix::validationTestnet;
+        SIGN_PROPOSAL       = HashPrefix::proposalTestnet;
+    }
+    else
+    {
+        SIGN_TRANSACTION    = HashPrefix::txSign;
+        SIGN_VALIDATION     = HashPrefix::validation;
+        SIGN_PROPOSAL       = HashPrefix::proposal;
+    }
+
+    if (TESTNET)
+        Base58::setCurrentAlphabet (Base58::getTestnetAlphabet ());
+
+    if (!strConf.empty ())
+    {
+        // --conf=<path> : everything is relative that file.
+        CONFIG_FILE             = strConfFile;
+        CONFIG_DIR              = boost::filesystem::absolute (CONFIG_FILE);
+        CONFIG_DIR.remove_filename ();
+        DATA_DIR                = CONFIG_DIR / strDbPath;
+    }
+    else
+    {
+        CONFIG_DIR              = boost::filesystem::current_path ();
+        CONFIG_FILE             = CONFIG_DIR / strConfFile;
+        DATA_DIR                = CONFIG_DIR / strDbPath;
+
+        if (exists (CONFIG_FILE)
+                // Can we figure out XDG dirs?
+                || (!getenv ("HOME") && (!getenv ("XDG_CONFIG_HOME") || !getenv ("XDG_DATA_HOME"))))
+        {
+            // Current working directory is fine, put dbs in a subdir.
+            nothing ();
+        }
+        else
+        {
+            // Construct XDG config and data home.
+            // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+            std::string strHome             = strGetEnv ("HOME");
+            std::string strXdgConfigHome    = strGetEnv ("XDG_CONFIG_HOME");
+            std::string strXdgDataHome      = strGetEnv ("XDG_DATA_HOME");
+
+            if (strXdgConfigHome.empty ())
+            {
+                // $XDG_CONFIG_HOME was not set, use default based on $HOME.
+                strXdgConfigHome    = boost::str (boost::format ("%s/.config") % strHome);
+            }
+
+            if (strXdgDataHome.empty ())
+            {
+                // $XDG_DATA_HOME was not set, use default based on $HOME.
+                strXdgDataHome  = boost::str (boost::format ("%s/.local/share") % strHome);
+            }
+
+            CONFIG_DIR          = boost::str (boost::format ("%s/" SYSTEM_NAME) % strXdgConfigHome);
+            CONFIG_FILE         = CONFIG_DIR / strConfFile;
+            DATA_DIR            = boost::str (boost::format ("%s/" SYSTEM_NAME) % strXdgDataHome);
+
+            boost::filesystem::create_directories (CONFIG_DIR, ec);
+
+            if (ec)
+                throw std::runtime_error (boost::str (boost::format ("Can not create %s") % CONFIG_DIR));
+        }
+    }
+
+#endif
+
+#endif
+
+    return file;
+}
+
+//------------------------------------------------------------------------------
+
+File Config::getConfigDir () const
+{
+    return File (String (CONFIG_FILE.native ().c_str ())).getParentDirectory ();
+}
+
+File Config::getDatabaseDir () const
+{
+    return File (String (DATA_DIR.native ().c_str ()));
+}
+
+//------------------------------------------------------------------------------
 
 void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
 {
@@ -632,3 +784,6 @@ Config::Role Config::getAdminRole (Json::Value const& params, std::string const&
     return role;
 }
 
+//
+//
+//------------------------------------------------------------------------------
