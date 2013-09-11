@@ -8,6 +8,9 @@
 
 #include "ripple_core.h"
 
+// Needed for InputParser
+#include "beast/modules/beast_asio/beast_asio.h"
+
 #include <fstream>
 
 #include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
@@ -70,5 +73,8 @@ namespace ripple
 #include "validator/ValidatorSourceStrings.cpp"
 #include "validator/ValidatorSourceTrustedURL.cpp"
 #include "validator/Validators.cpp"
+
+ #include "peerfinder/ripple_PeerFinder.h" // private (for now)
+#include "peerfinder/ripple_PeerFinder.cpp"
 
 }

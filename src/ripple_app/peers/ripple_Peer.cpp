@@ -335,6 +335,7 @@ private:
     void sendPacketForce (const PackedMessage::pointer & packet);
 
     void sendHello ();
+    void SendAnnounce ();
 
     void recvHello (protocol::TMHello & packet);
     void recvCluster (protocol::TMCluster & packet);
@@ -345,6 +346,7 @@ private:
     void recvGetContacts (protocol::TMGetContacts & packet);
     void recvGetPeers (protocol::TMGetPeers & packet, Application::ScopedLockType& masterLockHolder);
     void recvPeers (protocol::TMPeers & packet);
+    void recvAnnounce (protocol::TMAnnounce & packet);
     void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet);
     void recvPing (protocol::TMPing & packet);
     void recvErrorMessage (protocol::TMErrorMsg & packet);
@@ -833,6 +835,17 @@ void PeerImp::processReadBuffer ()
                     WriteLog (lsWARNING, Peer) << "parse error: " << type;
             }
             break;
+
+            case protocol::mtANNOUNCE:
+            {
+                    event->reName ("PeerImp::announce");
+                    protocol::TMAnnounce msg;
+
+                    if(msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size() - PackedMessage::kHeaderBytes))
+                        recvAnnounce (msg);
+                    else
+                        WriteLog (lsWARNING, Peer) << "parse error: " << type;;
+            }
 
             case protocol::mtSEARCH_TRANSACTION:
             {
@@ -1606,6 +1619,15 @@ void PeerImp::recvPeers (protocol::TMPeers& packet)
     }
 }
 
+void PeerImp::recvAnnounce (protocol::TMAnnounce& packet)
+{
+    // NIKB TODO: First we need to push this announcement to peerfinder
+    // and then this is not a private peer, we need to "adjust" this
+    // announcement (i.e. the hop count) and push it out to all our
+    // other peers. We must be careful to avoid cycles (that is to 
+    // never send an ANNOUNCE back to the peer we got it from).
+}
+
 void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& ptr)
 {
     protocol::TMGetObjectByHash& packet = *ptr;
@@ -2359,6 +2381,32 @@ void PeerImp::sendHello ()
     }
 
     PackedMessage::pointer packet = boost::make_shared<PackedMessage> (h, protocol::mtHELLO);
+    sendPacket (packet, true);
+}
+
+void PeerImp::SendAnnounce ()
+{
+    protocol::TMAnnounce a;
+
+    std::string selfID = getApp().getLocalCredentials ().getNodePublic ().humanNodePublic ();
+
+    a.set_serverid(selfID);
+
+    // Since we are announcing ourselves, the hopcount is one and the "via" peer is us.
+    // If hopcount is anything else, the "via" peer must be different from the "serverid".
+    a.set_viapeerid(selfID);
+    a.set_hopcount(1); // A direct connection
+
+    // Announce whether we're a private peer or not. Should we even send an ANNOUNCE
+    // for private peers?
+    a.set_privatepeer(getConfig ().PEER_PRIVATE);
+    
+    protocol::TMIPv4EndPoint *ep = a.add_connectpoints();
+
+    ep->set_ipv4(inet_addr (getNativeSocket ().local_endpoint ().address ().to_string ().c_str()));
+    ep->set_ipv4port(getConfig ().peerListeningPort);
+
+    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (a, protocol::mtANNOUNCE);
     sendPacket (packet, true);
 }
 

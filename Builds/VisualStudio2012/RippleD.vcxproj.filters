@@ -154,6 +154,9 @@
     <Filter Include="[2] doc">
       <UniqueIdentifier>{c69b07a2-44e5-4b06-99a9-81f5d137ea15}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\ripple_core\peerfinder">
+      <UniqueIdentifier>{d1648d3f-7d71-495d-afc9-576ed00d7185}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\ripple_RangeSet.cpp">
@@ -218,9 +221,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\functional\ripple_LoadMonitor.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\ripple_core.cpp">
-      <Filter>[1] Ripple\ripple_core</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\crypto\ripple_Base58.cpp">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
@@ -840,9 +840,6 @@
     <ClCompile Include="..\..\src\ripple_core\validator\Validators.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\test\TestOverlay.cpp">
-      <Filter>[1] Ripple\ripple_core\test</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\validator\ValidatorsUtilities.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
@@ -875,6 +872,13 @@
     </ClCompile>
     <ClCompile Include="..\..\src\beast\modules\beast_sqlite\beast_sqlite.c">
       <Filter>[0] src\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ripple_core\test\TestOverlay.cpp" />
+    <ClCompile Include="..\..\src\ripple_core\ripple_core.cpp">
+      <Filter>[1] Ripple\ripple_core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.cpp">
+      <Filter>[1] Ripple\ripple_core\peerfinder</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1728,6 +1732,9 @@
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\BeastConfig.h" />
+    <ClInclude Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.h">
+      <Filter>[1] Ripple\ripple_core\peerfinder</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\ripple_data\protocol\ripple.proto">

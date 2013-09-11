@@ -38,6 +38,7 @@ namespace ripple
 #include "node/NodeObject.h"
 #include "node/NodeStore.h"
 
+#include "peerfinder/ripple_PeerFinder.h"
 #include "validator/Validators.h"
 
 }

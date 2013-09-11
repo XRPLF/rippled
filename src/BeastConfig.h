@@ -173,4 +173,12 @@
 #define RIPPLE_APPLICATION_CLEAN_EXIT 0
 #endif
 
+// This is only here temporarily. Use it to turn off the sending of
+// "ANNOUNCE" messages if you suspect that you're having problems
+// because of it.
+
+#ifndef RIPPLE_USE_MT_ANNOUNCE
+#define RIPPLE_USE_MT_ANNOUNCE 0
+#endif
+
 #endif

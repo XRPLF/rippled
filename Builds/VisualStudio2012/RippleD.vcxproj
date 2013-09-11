@@ -784,13 +784,19 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\ripple_core.cpp" />
-    <ClCompile Include="..\..\src\ripple_core\test\TestOverlay.cpp">
+    <ClCompile Include="..\..\modules\ripple_core\test\TestOverlay.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\ripple_core.cpp" />
     <ClCompile Include="..\..\src\ripple_core\validator\ValidatorSourceFile.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1512,6 +1518,7 @@
     <ClInclude Include="..\..\src\ripple_core\node\NodeObject.h" />
     <ClInclude Include="..\..\src\ripple_core\node\NodeStore.h" />
     <ClInclude Include="..\..\src\ripple_core\node\NullBackendFactory.h" />
+    <ClInclude Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.h" />
     <ClInclude Include="..\..\src\ripple_core\ripple_core.h" />
     <ClInclude Include="..\..\src\ripple_core\test\ConnectionType.h" />
     <ClInclude Include="..\..\src\ripple_core\test\InitPolicy.h" />

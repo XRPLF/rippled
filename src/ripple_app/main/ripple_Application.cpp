@@ -17,6 +17,7 @@ class ApplicationImp
     , public SharedSingleton <ApplicationImp>
     , public NodeStore::Scheduler
     , LeakChecked <ApplicationImp>
+    , PeerFinder::Callback
 {
 public:
     // RAII container for a boost::asio::io_service run by beast threads
@@ -175,6 +176,7 @@ public:
         , mUNL (UniqueNodeList::New ())
         , mProofOfWorkFactory (ProofOfWorkFactory::New ())
         , m_loadManager (LoadManager::New ())
+        , mPeerFinder (PeerFinder::New (*this))
         // VFALCO End new stuff
         // VFALCO TODO replace all NULL with nullptr
         , mRpcDB (NULL)
@@ -364,6 +366,11 @@ public:
     Peers& getPeers ()
     {
         return *m_peers;
+    }
+
+    PeerFinder& getPeerFinder ()
+    {
+        return *mPeerFinder;
     }
 
     // VFALCO TODO Move these to the .cpp
@@ -698,6 +705,8 @@ private:
     void startNewLedger ();
     bool loadOldLedger (const std::string&, bool);
 
+    void onAnnounceAddress ();
+
 private:
     Application::LockType mMasterLock;
 
@@ -735,6 +744,7 @@ private:
     ScopedPointer <PeerDoor> m_peerProxyDoor;
     ScopedPointer <WSDoor>   m_wsPublicDoor;
     ScopedPointer <WSDoor>   m_wsPrivateDoor;
+    ScopedPointer <PeerFinder> mPeerFinder;
     // VFALCO End Clean stuff
 
     DatabaseCon* mRpcDB;
@@ -1187,6 +1197,11 @@ void ApplicationImp::updateTables ()
 
         getApp().getNodeStore().import (*source);
     }
+}
+
+void ApplicationImp::onAnnounceAddress ()
+{
+    // NIKB CODEME
 }
 
 //------------------------------------------------------------------------------
