@@ -1,16 +1,55 @@
-# Subtrees
+# src
 
-These directories come from entire outside repositories
-brought in using git-subtree.
+Some of these directories come from entire outside repositories
+brought in using git-subtree. This means that the source files are
+inserted directly into the rippled repository. They can be edited
+and committed just as if they were normal files.
+
+However, if you create a commit that contains files both from a
+subtree, and from the ripple source tree please use care when designing
+the commit message, since it will appear in the subtree's individual
+repository when the changes are pushed back to the upstream.
+
+When submitting pull request, make sure that any commits which include
+files from subtrees are isolated - i.e. do not mix files from subtrees
+and ripple in the same commit. This way, the commit message will make
+sense. We don't want to see "Fix pathfinding bug with XRP" appearing
+in the LevelDB or Beast commit log, for example.
 
 About git-subtree:
 
 https://github.com/apenwarr/git-subtree <br>
 http://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/ <br>
 
+## ./beast
+
+Beast, the amazing cross-platform library.
+
+Repository <br>
+```
+git@github.com:vinniefalco/Beast.git
+```
+Branch
+```
+master
+```
+
+## HyperLevelDB
+
+Ripple's fork of HyperLevelDB
+
+Repository <br>
+```
+git@github.com:ripple/HyperLevelDB.git
+```
+Branch
+```
+ripple-fork
+```
+
 ## LevelDB
 
-Ripple's fork of LevelDB is shared by the Bitcoin reference client project.
+Ripple's fork of LevelDB.
 
 Repository <br>
 ```
@@ -23,15 +62,15 @@ ripple-fork
 
 ## LightningDB (a.k.a. MDB)
 
-A supposedly fast memory-mapped key value database system
+Ripple's fork of MDB, a fast memory-mapped key value database system.
 
 Repository <br>
 ```
-git://gitorious.org/mdb/mdb.git
+git@github.com:ripple/LightningDB.git
 ```
 Branch
 ```
-mdb.master
+ripple-fork
 ```
 
 ## websocket
