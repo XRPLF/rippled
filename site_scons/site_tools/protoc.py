@@ -57,7 +57,7 @@ def ProtocEmitter(target, source, env):
 
     # XXX KLUDGE: Force things to be right.
     env['PROTOCOUTDIR']	    = 'build/proto'
-    env['PROTOCPROTOPATH']  = ['modules/ripple_data/protocol']
+    env['PROTOCPROTOPATH']  = ['src/ripple_data/protocol']
 
     #~ print "PROTOC SOURCE:", [str(s) for s in source]
     #~ print "PROTOC TARGET:", [str(s) for s in target]
