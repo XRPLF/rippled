@@ -159,9 +159,6 @@
     <ClCompile Include="..\..\src\beast\modules\beast_core\beast_core.cpp">
       <Filter>[0] src\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cpp\protobuf_core.cpp">
-      <Filter>[0] src\protobuf</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\ripple_basics\containers\ripple_RangeSet.cpp">
       <Filter>[1] Ripple\ripple_basics\containers</Filter>
     </ClCompile>
@@ -875,6 +872,9 @@
     </ClCompile>
     <ClCompile Include="..\..\build\proto\ripple.pb.cc">
       <Filter>[1] Ripple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\protobuf_core.cpp">
+      <Filter>[0] src\protobuf</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

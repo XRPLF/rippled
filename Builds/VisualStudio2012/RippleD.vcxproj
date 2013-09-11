@@ -1021,7 +1021,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\ripple_websocket\ripple_websocket.cpp" />
-    <ClCompile Include="..\..\src\cpp\protobuf_core.cpp" />
     <ClCompile Include="..\..\src\beast\modules\beast_asio\beast_asio.cpp" />
     <ClCompile Include="..\..\src\beast\modules\beast_core\beast_core.cpp" />
     <ClCompile Include="..\..\src\beast\modules\beast_crypto\beast_crypto.cpp" />
@@ -1292,6 +1291,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\protobuf_core.cpp" />
     <ClCompile Include="..\..\src\websocket\src\base64\base64.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
