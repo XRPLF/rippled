@@ -4,8 +4,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_VALIDATOR_VALIDATORS_H_INCLUDED
-#define RIPPLE_CORE_VALIDATOR_VALIDATORS_H_INCLUDED
+#ifndef RIPPLE_VALIDATORS_MANAGER_H_INCLUDED
+#define RIPPLE_VALIDATORS_MANAGER_H_INCLUDED
+
+namespace Validators
+{
 
 /** Maintains the list of chosen validators.
 
@@ -14,60 +17,12 @@
 
     All operations are performed asynchronously on an internal thread.
 */
-class Validators : public Uncopyable
+class Manager : public Uncopyable
 {
 public:
-    typedef RipplePublicKeyHash KeyType;
-
-    //--------------------------------------------------------------------------
-
-    /** A source of validator descriptors. */
-    class Source
-    {
-    public:
-        /** A Source's descriptor for a Validator. */
-        struct Info
-        {
-            /** The unique key for this validator. */
-            KeyType key;
-        };
-
-        /** Destroy the Source.
-            This can be called from any thread. If the Source is busy
-            fetching, the destructor must block until the operation is either
-            canceled or complete.
-        */
-        virtual ~Source () { }
-
-        struct CancelCallback
-        {
-            virtual bool shouldCancel () = 0;
-        };
-
-        /** Fetch the most recent list from the Source.
-            If possible, the Source should periodically poll the
-            CancelCallback, and abort the operation if shouldCancel
-            returns `true`.
-            This call will block.
-        */
-        struct Result
-        {
-            Result ();
-            void swapWith (Result& other);
-
-            bool success;
-            String message;
-            Time expirationTime;
-            Array <Info> list;
-        };
-        virtual Result fetch (CancelCallback& callback) = 0;
-    };
-
-    //--------------------------------------------------------------------------
-
-    /** Create a new Validators object.
+    /** Create a new Manager object.
     */
-    static Validators* New ();
+    static Manager* New (Journal journal);
 
     /** Destroy the object.
 
@@ -76,12 +31,14 @@ public:
         There may be some listener calls made before the
         destructor returns.
     */
-    virtual ~Validators () { }
+    virtual ~Manager () { }
 
     /** Add a static source of validators from a string array. */
     /** @{ */
-    virtual void addStrings (std::vector <std::string> const& strings) = 0;
-    virtual void addStrings (StringArray const& stringArray) = 0;
+    virtual void addStrings (String name,
+                             std::vector <std::string> const& strings) = 0;
+    virtual void addStrings (String name,
+                             StringArray const& stringArray) = 0;
     /** @} */
 
     /** Add a static source of validators from a text file. */
@@ -113,19 +70,15 @@ public:
 
     // Trusted Validators
 
-    //virtual bool isPublicKeyTrusted (Validator::PublicKey const&) = 0;
+    //virtual bool isPublicKeyTrusted (PublicKey const& publicKey) = 0;
 
     //--------------------------------------------------------------------------
-
-    struct ReceivedValidation
-    {
-        uint256 ledgerHash;
-        RipplePublicKeyHash signerPublicKeyHash;
-    };
 
     /** Called when a validation with a proper signature is received.
     */
     virtual void receiveValidation (ReceivedValidation const& rv) = 0;
 };
+
+}
 
 #endif

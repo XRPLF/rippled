@@ -4,15 +4,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_VALIDATOR_VALIDATORSOURCETRUSTEDURL_H_INCLUDED
-#define RIPPLE_CORE_VALIDATOR_VALIDATORSOURCETRUSTEDURL_H_INCLUDED
+#ifndef RIPPLE_VALIDATORS_SOURCEURL_H_INCLUDED
+#define RIPPLE_VALIDATORS_SOURCEURL_H_INCLUDED
+
+namespace Validators
+{
 
 /** Provides validators from a trusted URI (e.g. HTTPS)
 */
-class ValidatorSourceURL : public Validators::Source
+class SourceURL : public Source
 {
 public:
-    static ValidatorSourceURL* New (UniformResourceLocator const& url);
+    static SourceURL* New (UniformResourceLocator const& url);
 };
+
+}
 
 #endif

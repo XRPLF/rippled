@@ -15,7 +15,8 @@ SETUP_LOG (Application)
 //
 // Specializations for LogPartition names
 
-template <> char const* LogPartition::getPartitionName <Validators> () { return "Validators"; }
+class ValidatorsLog;
+template <> char const* LogPartition::getPartitionName <ValidatorsLog> () { return "Validators"; }
 
 //
 //------------------------------------------------------------------------------
@@ -165,7 +166,7 @@ public:
             getConfig ().nodeDatabase,
             getConfig ().ephemeralNodeDatabase,
             *this))
-        , m_validators (Validators::New ())
+        , m_validators (Validators::Manager::New (LogJournal::get <ValidatorsLog> ()))
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
         , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
         , mFeeTrack (ILoadFeeTrack::New ())
@@ -231,7 +232,7 @@ public:
         {
             std::vector <std::string> const& strings (getConfig().validators);
             if (! strings.empty ())
-                m_validators->addStrings (strings);
+                m_validators->addStrings ("rippled.cfg", strings);
         }
 
         if (! getConfig().getValidatorsURL().empty())
@@ -333,7 +334,7 @@ public:
         return mSLECache;
     }
 
-    Validators& getValidators ()
+    Validators::Manager& getValidators ()
     {
         return *m_validators;
     }
@@ -740,7 +741,7 @@ private:
     ScopedPointer <SSLContext> m_wsSSLContext;
     ScopedPointer <TxQueue> m_txQueue;
     ScopedPointer <NodeStore> m_nodeStore;
-    ScopedPointer <Validators> m_validators;
+    ScopedPointer <Validators::Manager> m_validators;
     ScopedPointer <IFeatures> mFeatures;
     ScopedPointer <IFeeVote> mFeeVote;
     ScopedPointer <ILoadFeeTrack> mFeeTrack;

@@ -33,31 +33,43 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\testoverlay\ripple_testoverlay.cpp" />
-    <ClCompile Include="..\..\src\ripple\validators\impl\Validators.cpp">
+    <ClCompile Include="..\..\src\ripple\validators\impl\Manager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorSourceFile.cpp">
+    <ClCompile Include="..\..\src\ripple\validators\impl\Source.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorSourceStrings.cpp">
+    <ClCompile Include="..\..\src\ripple\validators\impl\SourceFile.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorSourceURL.cpp">
+    <ClCompile Include="..\..\src\ripple\validators\impl\SourceStrings.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorsUtilities.cpp">
+    <ClCompile Include="..\..\src\ripple\validators\impl\SourceURL.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\Tests.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\Utilities.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1409,11 +1421,17 @@
     <ClInclude Include="..\..\src\ripple\testoverlay\api\SimplePayload.h" />
     <ClInclude Include="..\..\src\ripple\testoverlay\api\StateBase.h" />
     <ClInclude Include="..\..\src\ripple\testoverlay\ripple_testoverlay.h" />
-    <ClInclude Include="..\..\src\ripple\validators\api\Validators.h" />
-    <ClInclude Include="..\..\src\ripple\validators\impl\ValidatorSourceFile.h" />
-    <ClInclude Include="..\..\src\ripple\validators\impl\ValidatorSourceStrings.h" />
-    <ClInclude Include="..\..\src\ripple\validators\impl\ValidatorSourceURL.h" />
-    <ClInclude Include="..\..\src\ripple\validators\impl\ValidatorsUtilities.h" />
+    <ClInclude Include="..\..\src\ripple\validators\api\Source.h" />
+    <ClInclude Include="..\..\src\ripple\validators\api\Types.h" />
+    <ClInclude Include="..\..\src\ripple\validators\api\Manager.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\CancelCallbacks.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\ChosenList.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceFile.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceStrings.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceURL.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\Store.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\Utilities.h" />
     <ClInclude Include="..\..\src\ripple\validators\ripple_validators.h" />
     <ClInclude Include="..\..\src\ripple_app\consensus\ripple_DisputedTx.h" />
     <ClInclude Include="..\..\src\ripple_app\consensus\ripple_LedgerConsensus.h" />

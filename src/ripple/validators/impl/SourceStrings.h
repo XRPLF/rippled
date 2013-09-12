@@ -4,16 +4,22 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_VALIDATOR_VALIDATORSOURCESTRINGS_H_INCLUDED
-#define RIPPLE_CORE_VALIDATOR_VALIDATORSOURCESTRINGS_H_INCLUDED
+#ifndef RIPPLE_VALIDATORS_SOURCESTRINGS_H_INCLUDED
+#define RIPPLE_VALIDATORS_SOURCESTRINGS_H_INCLUDED
+
+namespace Validators
+{
 
 /** Provides validators from a set of Validator strings.
     Typically this will come from a local configuration file.
 */
-class ValidatorSourceStrings : public Validators::Source
+class SourceStrings : public Source
 {
 public:
-    static ValidatorSourceStrings* New (StringArray const& strings);
+    static SourceStrings* New (
+        String name, StringArray const& strings);
 };
+
+}
 
 #endif

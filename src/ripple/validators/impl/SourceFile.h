@@ -4,16 +4,21 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_VALIDATOR_VALIDATORSOURCEFILE_H_INCLUDED
-#define RIPPLE_CORE_VALIDATOR_VALIDATORSOURCEFILE_H_INCLUDED
+#ifndef RIPPLE_VALIDATORS_SOURCEFILE_H_INCLUDED
+#define RIPPLE_VALIDATORS_SOURCEFILE_H_INCLUDED
+
+namespace Validators
+{
 
 /** Provides validators from a text file.
     Typically this will come from a local configuration file.
 */
-class ValidatorSourceFile : public Validators::Source
+class SourceFile : public Source
 {
 public:
-    static ValidatorSourceFile* New (File const& path);
+    static SourceFile* New (File const& path);
 };
+
+}
 
 #endif

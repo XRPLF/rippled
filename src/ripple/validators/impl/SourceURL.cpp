@@ -4,29 +4,43 @@
 */
 //==============================================================================
 
-class ValidatorSourceURLImp : public ValidatorSourceURL
+namespace Validators
+{
+
+class SourceURLImp : public SourceURL
 {
 public:
-    explicit ValidatorSourceURLImp (UniformResourceLocator const& url)
+    explicit SourceURLImp (UniformResourceLocator const& url)
         : m_url (url)
     {
     }
 
-    ~ValidatorSourceURLImp ()
+    ~SourceURLImp ()
     {
     }
 
-    Result fetch (CancelCallback&)
+    String name ()
+    {
+        return "URL: '" + m_url.full() + "'";
+    }
+
+    Result fetch (CancelCallback&, Journal journal)
     {
         Result result;
 
         ScopedPointer <HTTPClientBase> client (HTTPClientBase::New ());
 
         HTTPClientBase::Result httpResult (client->get (m_url));
-        
+
         if (httpResult.error == 0)
         {
             //Logger::outputDebugString (httpResult.response->toString ());
+        }
+        else
+        {
+            journal.error() <<
+                "HTTP GET to " << m_url.full().toStdString() <<
+                " failed: '" << httpResult.error.message () << "'";
         }
 
         return result;
@@ -38,11 +52,13 @@ private:
 
 //------------------------------------------------------------------------------
 
-ValidatorSourceURL* ValidatorSourceURL::New (
+SourceURL* SourceURL::New (
     UniformResourceLocator const& url)
 {
-    ScopedPointer <ValidatorSourceURL> object (
-        new ValidatorSourceURLImp (url));
+    ScopedPointer <SourceURL> object (
+        new SourceURLImp (url));
 
     return object.release ();
+}
+
 }

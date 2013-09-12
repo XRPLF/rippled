@@ -4,12 +4,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_VALIDATORSUTILITIES_H_INCLUDED
-#define RIPPLE_CORE_VALIDATORSUTILITIES_H_INCLUDED
+#ifndef RIPPLE_VALIDATORS_UTILITIES_H_INCLUDED
+#define RIPPLE_VALIDATORS_UTILITIES_H_INCLUDED
+
+namespace Validators
+{
 
 /** Common code for Validators classes.
 */
-class ValidatorsUtilities
+class Utilities
 {
 public:
     typedef std::vector <std::string> Strings;
@@ -39,14 +42,20 @@ public:
         Metadata lines will update the corresponding Result fields.
     */
     static void parseResultLine (
-        Validators::Source::Result& result,
-        String line);
+        Source::Result& result,
+        std::string const& line,
+        Journal journal = Journal());
 
 private:
+    struct Helpers;
+
     /** Parse a string into a Source::Info.
         @return `true` on success.
     */
-    static bool parseInfoLine (Validators::Source::Info& info, String line);
+    static bool parseInfoLine (
+        Source::Info& info, std::string const& line, Journal journal);
 };
+
+}
 
 #endif

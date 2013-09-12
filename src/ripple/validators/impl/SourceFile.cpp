@@ -4,19 +4,27 @@
 */
 //==============================================================================
 
-class ValidatorSourceFileImp : public ValidatorSourceFile
+namespace Validators
+{
+
+class SourceFileImp : public SourceFile
 {
 public:
-    ValidatorSourceFileImp (File const& file)
+    SourceFileImp (File const& file)
         : m_file (file)
     {
     }
 
-    ~ValidatorSourceFileImp ()
+    ~SourceFileImp ()
     {
     }
+    
+    String name ()
+    {
+        return "File :'" + m_file.getFullPathName () + "'";
+    }
 
-    Result fetch (CancelCallback&)
+    Result fetch (CancelCallback&, Journal journal)
     {
         Result result;
         
@@ -29,10 +37,12 @@ private:
 
 //------------------------------------------------------------------------------
 
-ValidatorSourceFile* ValidatorSourceFile::New (File const& file)
+SourceFile* SourceFile::New (File const& file)
 {
-    ScopedPointer <ValidatorSourceFile> object (
-        new ValidatorSourceFileImp (file));
+    ScopedPointer <SourceFile> object (
+        new SourceFileImp (file));
 
     return object.release ();
+}
+
 }
