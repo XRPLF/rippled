@@ -145,7 +145,7 @@ private:
 
     typedef SpinLock LockType;
 
-    class ExitHook
+    class ExitHook : public PerformedAtExit
     {
     public:
         explicit ExitHook (SharedSingleton* owner)
@@ -153,7 +153,7 @@ private:
         {
         }
 
-        void performaAtExit ()
+        void performAtExit ()
         {
             m_owner->performAtExit();
         }
