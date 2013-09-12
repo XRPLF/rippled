@@ -282,9 +282,6 @@ public:
         testThreads (4);
         testThreads (16);
         testThreads (64);
-        testThreads (128);
-        testThreads (256);
-        testThreads (512);
     }
 };
 
