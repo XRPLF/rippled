@@ -93,12 +93,6 @@ protected:
         {
             incReferenceCount ();
         }
-        else if (m_lifetime == createOnDemandOnce && *s_created)
-        {
-            Throw (Error ().fail (__FILE__, __LINE__));
-        }
-
-        *s_created = true;
     }
 
     virtual ~SharedSingleton ()
@@ -194,7 +188,6 @@ private:
 private:
     static Object* s_instance;
     static Static::Storage <LockType, SharedSingleton <Object> > s_mutex;
-    static Static::Storage <bool, SharedSingleton <Object> > s_created;
 };
 /** @{ */
 
@@ -204,9 +197,5 @@ Object* SharedSingleton <Object>::s_instance;
 template <class Object>
 Static::Storage <typename SharedSingleton <Object>::LockType, SharedSingleton <Object> >
 SharedSingleton <Object>::s_mutex;
-
-template <class Object>
-Static::Storage <bool, SharedSingleton <Object> >
-SharedSingleton <Object>::s_created;
 
 #endif
