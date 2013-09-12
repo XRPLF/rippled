@@ -79,6 +79,65 @@ private:
 
 //------------------------------------------------------------------------------
 
+// A singleton which performs the actual logging.
+//
+class LogInstance : public SharedSingleton <LogInstance>
+{
+public:
+    LogInstance ();
+    ~LogInstance ();
+    static LogInstance* createInstance ();
+
+    LogSeverity getMinSeverity ();
+
+    void setMinSeverity (LogSeverity, bool all);
+
+    void setLogFile (boost::filesystem::path const& pathToLogFile);
+
+    /** Rotate the log file.
+
+        The log file is closed and reopened. This is for compatibility
+        with log management tools.
+
+        @return A human readable string describing the result of the operation.
+    */
+    std::string rotateLog ();
+
+    /** Write to log output.
+
+        All logging eventually goes through this function. If a
+        debugger is attached, the string goes to the debugging console,
+        else it goes to the standard error output. If a log file is
+        open, then the message is additionally written to the open log
+        file.
+
+        The text should not contain a newline, it will be automatically
+        added as needed.
+
+        @note  This acquires a global mutex.
+
+        @param text     The text to write.
+        @param toStdErr `true` to also write to std::cerr
+    */
+    void print (std::string const& text, bool toStdErr = true);
+
+    void print (StringArray const& strings, bool toStdErr = true);
+
+private:
+    void write (std::string const& line, bool toStdErr);
+
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType m_mutex;
+
+    LogFile m_logFile;
+    LogSeverity m_minSeverity;
+};
+
+//------------------------------------------------------------------------------
+
+// A RAII helper for writing to the LogInstance
+//
 class Log : public Uncopyable
 {
 public:
@@ -105,46 +164,10 @@ public:
         return oss;
     }
 
+public:
     static std::string severityToString (LogSeverity);
 
     static LogSeverity stringToSeverity (std::string const&);
-
-    static LogSeverity getMinSeverity ();
-
-    static void setMinSeverity (LogSeverity, bool all);
-
-    static void setLogFile (boost::filesystem::path const& pathToLogFile);
-
-    /** Rotate the log file.
-
-        The log file is closed and reopened. This is for compatibility
-        with log management tools.
-
-        @return A human readable string describing the result of the operation.
-    */
-    static std::string rotateLog ();
-
-public:
-    /** Write to log output.
-
-        All logging eventually goes through this function. If a
-        debugger is attached, the string goes to the debugging console,
-        else it goes to the standard error output. If a log file is
-        open, then the message is additionally written to the open log
-        file.
-
-        The text should not contain a newline, it will be automatically
-        added as needed.
-
-        @note  This acquires a global mutex.
-
-        @param text     The text to write.
-        @param toStdErr `true` to also write to std::cerr
-    */
-    static void print (std::string const& text,
-                       bool toStdErr = true);
-
-    static void print (StringArray const& strings, bool toStdErr = true);
 
     /** Output stream for logging
 
@@ -169,7 +192,7 @@ public:
         
         ~out ()
         {
-            Log::print (m_ss.str ());
+            LogInstance::getInstance()->print (m_ss.str ());
         }
 
         template <class T>
@@ -196,15 +219,6 @@ private:
 
     static std::string replaceFirstSecretWithAsterisks (std::string s);
 
-    // Singleton variables
-    //
-    typedef RippleRecursiveMutex StaticLockType;
-    typedef StaticLockType::ScopedLockType StaticScopedLockType;
-    static StaticLockType s_lock;
-
-    static LogFile s_logFile;
-    static LogSeverity sMinSeverity;
-
     mutable std::ostringstream  oss;
     LogSeverity                 mSeverity;
     std::string                 mPartitionName;
@@ -223,5 +237,3 @@ private:
 #define CondLog(c, s, k) if (!ShouldLog (s, k) || !(c)) do {} while(0); else Log(s, LogPartition::get <k> ())
 
 #endif
-
-// vim:ts=4

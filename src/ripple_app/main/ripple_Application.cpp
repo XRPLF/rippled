@@ -480,9 +480,9 @@ public:
         if (!getConfig ().DEBUG_LOGFILE.empty ())
         {
             // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
-            Log::setLogFile (getConfig ().DEBUG_LOGFILE);
+            LogInstance::getInstance()->setLogFile (getConfig ().DEBUG_LOGFILE);
 
-            if (Log::getMinSeverity () > lsDEBUG)
+            if (LogInstance::getInstance()->getMinSeverity () > lsDEBUG)
                 LogPartition::setSeverity (lsDEBUG);
         }
 
