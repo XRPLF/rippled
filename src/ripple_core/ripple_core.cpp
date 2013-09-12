@@ -67,11 +67,11 @@ namespace ripple
 #include "validator/ValidatorsUtilities.cpp"
 #  include "validator/ValidatorSourceFile.h"
 #  include "validator/ValidatorSourceStrings.h"
-#  include "validator/ValidatorSourceTrustedURL.h"
+#  include "validator/ValidatorSourceURL.h"
 # include "validator/ValidatorsImp.h"
 #include "validator/ValidatorSourceFile.cpp"
 #include "validator/ValidatorSourceStrings.cpp"
-#include "validator/ValidatorSourceTrustedURL.cpp"
+#include "validator/ValidatorSourceURL.cpp"
 #include "validator/Validators.cpp"
 
  #include "peerfinder/ripple_PeerFinder.h" // private (for now)

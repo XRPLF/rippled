@@ -843,9 +843,6 @@
     <ClCompile Include="..\..\src\ripple_core\validator\ValidatorSourceFile.cpp">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\validator\ValidatorSourceTrustedURL.cpp">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\build\proto\ripple.pb.cc">
       <Filter>[1] Ripple</Filter>
     </ClCompile>
@@ -879,6 +876,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\functional\Config.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\validator\ValidatorSourceURL.cpp">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1725,15 +1725,15 @@
     <ClInclude Include="..\..\src\ripple_core\validator\ValidatorSourceFile.h">
       <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\validator\ValidatorSourceTrustedURL.h">
-      <Filter>[1] Ripple\ripple_core\validator</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\BeastConfig.h" />
     <ClInclude Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.h">
       <Filter>[1] Ripple\ripple_core\peerfinder</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\functional\Config.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\validator\ValidatorSourceURL.h">
+      <Filter>[1] Ripple\ripple_core\validator</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -406,9 +406,9 @@ public:
         addStaticSource (ValidatorSourceFile::New (path));
     }
 
-    void addTrustedURL (UniformResourceLocator const& url)
+    void addURL (UniformResourceLocator const& url)
     {
-        addSource (ValidatorSourceTrustedURL::New (url));
+        addSource (ValidatorSourceURL::New (url));
     }
 
     void addSource (Source* source)

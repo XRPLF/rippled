@@ -223,17 +223,23 @@ public:
     // Initialize the Validators object with Config information.
     void initValidatorsConfig ()
     {
+#if RIPPLE_USE_NEW_VALIDATORS
         {
             std::vector <std::string> const& strings (getConfig().validators);
             if (! strings.empty ())
                 m_validators->addStrings (strings);
         }
 
-#if 0
+        /*
+        if (getConfig().getValidatorsFile() != File::nonexistent())
         {
-            String const& localValidatorsPath (getConfig().localValidatorsPath);
-            if (localValidatorsPath != String::empty)
-                m_validators->addFile (localValidatorsPath);
+            m_validators->addFile (getConfig().getValidatorsFile());
+        }
+        */
+
+        if (! getConfig().getValidatorsURL().empty())
+        {
+            m_validators->addURL (getConfig().getValidatorsURL());
         }
 #endif
     }

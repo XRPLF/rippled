@@ -19,8 +19,6 @@
 // VFALCO NOTE Set this to 1 to enable code which is unnecessary
 #define ENABLE_INSECURE             0
 
-#define DEFAULT_VALIDATORS_SITE     ""
-
 const int DOMAIN_BYTES_MAX              = 256;
 const int PUBLIC_BYTES_MAX              = 33;       // Maximum bytes for an account public key.
 
@@ -196,6 +194,12 @@ public:
     //--------------------------------------------------------------------------
 
     // Settings related to validators
+
+    /** Return the path to the separate, optional validators file. */
+    File getValidatorsFile () const;
+
+    /** Returns the optional URL to a trusted network source of validators. */
+    UniformResourceLocator getValidatorsURL () const;
 
     boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
 

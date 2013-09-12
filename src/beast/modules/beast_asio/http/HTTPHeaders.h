@@ -61,6 +61,9 @@ public:
     String operator[] (String const& field) const;
     /** @} */
 
+    /** Outputs all the headers into one string. */
+    String toString () const;
+
 private:
     StringPairArray m_fields;
 };

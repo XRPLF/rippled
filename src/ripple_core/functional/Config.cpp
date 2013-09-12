@@ -87,7 +87,7 @@ Config::Config ()
 
     ACCOUNT_PROBE_MAX       = 10;
 
-    VALIDATORS_SITE         = DEFAULT_VALIDATORS_SITE;
+    VALIDATORS_SITE         = "";
 
     SSL_VERIFY              = true;
 
@@ -720,6 +720,17 @@ File Config::getConfigDir () const
 File Config::getDatabaseDir () const
 {
     return File (String (DATA_DIR.native ().c_str ()));
+}
+
+File Config::getValidatorsFile () const
+{
+    return getConfigDir().getChildFile (String (VALIDATORS_FILE.native().c_str()));
+}
+
+UniformResourceLocator Config::getValidatorsURL () const
+{
+    String s = "https://" + VALIDATORS_SITE + VALIDATORS_URI;
+    return ParsedURL (s).url ();
 }
 
 //------------------------------------------------------------------------------

@@ -9,10 +9,10 @@
 
 /** Provides validators from a trusted URI (e.g. HTTPS)
 */
-class ValidatorSourceTrustedURL : public Validators::Source
+class ValidatorSourceURL : public Validators::Source
 {
 public:
-    static ValidatorSourceTrustedURL* New (UniformResourceLocator const& url);
+    static ValidatorSourceURL* New (UniformResourceLocator const& url);
 };
 
 #endif

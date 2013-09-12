@@ -4,15 +4,15 @@
 */
 //==============================================================================
 
-class ValidatorSourceTrustedURLImp : public ValidatorSourceTrustedURL
+class ValidatorSourceURLImp : public ValidatorSourceURL
 {
 public:
-    explicit ValidatorSourceTrustedURLImp (UniformResourceLocator const& url)
+    explicit ValidatorSourceURLImp (UniformResourceLocator const& url)
         : m_url (url)
     {
     }
 
-    ~ValidatorSourceTrustedURLImp ()
+    ~ValidatorSourceURLImp ()
     {
     }
 
@@ -37,11 +37,11 @@ private:
 
 //------------------------------------------------------------------------------
 
-ValidatorSourceTrustedURL* ValidatorSourceTrustedURL::New (
+ValidatorSourceURL* ValidatorSourceURL::New (
     UniformResourceLocator const& url)
 {
-    ScopedPointer <ValidatorSourceTrustedURL> object (
-        new ValidatorSourceTrustedURLImp (url));
+    ScopedPointer <ValidatorSourceURL> object (
+        new ValidatorSourceURLImp (url));
 
     return object.release ();
 }

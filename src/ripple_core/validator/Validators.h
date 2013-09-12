@@ -57,6 +57,7 @@ public:
 
             bool success;
             String message;
+            Time expirationTime;
             Array <Info> list;
         };
         virtual Result fetch (CancelCallback& callback) = 0;
@@ -99,7 +100,7 @@ public:
     /** Add a live source of validators from a trusted URL.
         The URL will be contacted periodically to update the list.
     */
-    virtual void addTrustedURL (UniformResourceLocator const& url) = 0;
+    virtual void addURL (UniformResourceLocator const& url) = 0;
 
     /** Add a live source of validators.
         The caller loses ownership of the object.
