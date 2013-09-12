@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-namespace Implemented
+namespace detail
 {
 
 class LeakCheckedBase::CounterBase::Singleton

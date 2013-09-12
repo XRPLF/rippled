@@ -297,19 +297,18 @@ ProtectedCall::DefaultHandler::LockType ProtectedCall::DefaultHandler::s_mutex;
 
 //------------------------------------------------------------------------------
 
-Static::Storage <Atomic <ProtectedCall::Handler const*>, ProtectedCall>
-    ProtectedCall::s_handler;
+ProtectedCall::Handler const* ProtectedCall::s_handler;
 
 void ProtectedCall::setHandler (Handler const& handler)
 {
-    s_handler->set (&handler);
+    s_handler = &handler;
 }
 
 void ProtectedCall::call (Call& c)
 {
     static DefaultHandler defaultHandler;
 
-    Handler const* handler = s_handler->get ();
+    Handler const* handler = s_handler;
 
     if (handler == nullptr)
         handler = &defaultHandler;

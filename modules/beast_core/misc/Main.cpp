@@ -17,31 +17,33 @@
 */
 //==============================================================================
 
-Static::Storage <Atomic <Main*>, Main> Main::s_instance;
+Main* Main::s_instance;
 
 Main::Main ()
 {
-    bool const replaced = s_instance->compareAndSetBool (this, nullptr);
-
     // If this happens it means there are two instances of Main!
-    if (! replaced)
-        FatalError ("Multiple instances of Main", __FILE__, __LINE__);
+    check_precondition (s_instance == nullptr);
+
+    s_instance = this;
+
 }
 
 Main::~Main ()
 {
-    s_instance->set (nullptr);
+    s_instance = nullptr;
 }
 
 Main& Main::getInstance ()
 {
-    bassert (s_instance->get () != nullptr);
+    bassert (s_instance != nullptr);
 
-    return *s_instance->get ();
+    return *s_instance;
 }
 
-void Main::runStartupUnitTests ()
+int Main::runStartupUnitTests ()
 {
+    int exitCode = EXIT_SUCCESS;
+
     struct StartupUnitTests : UnitTests
     {
         void logMessage (String const&)
@@ -105,15 +107,20 @@ void Main::runStartupUnitTests ()
     {
         tests.reportResults  ();
 
-        tests.log ("Terminating due to failed startup tests");
+        tests.log ("Terminating with an error due to failed startup tests.");
 
-        Process::terminate ();
+        exitCode = EXIT_FAILURE;
     }
+
+    return exitCode;
 }
 
 int Main::runFromMain (int argc, char const* const* argv)
 {
-    runStartupUnitTests ();
+    int exitCode (runStartupUnitTests ());
 
-    return run (argc, argv);
+    if (exitCode == EXIT_SUCCESS)
+        exitCode = run (argc, argv);
+
+    return exitCode;
 }

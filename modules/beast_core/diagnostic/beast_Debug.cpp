@@ -296,18 +296,64 @@ String commandLineToString (const String& commandLine)
 
 //------------------------------------------------------------------------------
 
+// A simple unit test to determine the diagnostic settings in a build.
+//
 class DebugTests : public UnitTest
 {
 public:
-    DebugTests () : UnitTest ("Debug", "beast", runManual)
+    static int envDebug ()
     {
+    #ifdef _DEBUG
+        return 1;
+    #else
+        return 0;
+    #endif
+    }
+
+    static int beastDebug ()
+    {
+    #ifdef BEAST_DEBUG
+        return BEAST_DEBUG;
+    #else
+        return 0;
+    #endif
+    }
+
+    static int beastForceDebug ()
+    {
+    #ifdef BEAST_FORCE_DEBUG
+        return BEAST_FORCE_DEBUG;
+    #else
+        return 0;
+    #endif
+    }
+
+    static int beastCatchExceptions ()
+    {
+    #ifdef BEAST_CATCH_UNHANDLED_EXCEPTIONS
+        return BEAST_CATCH_UNHANDLED_EXCEPTIONS;
+    #else
+        return 0;
+    #endif
     }
 
     void runTest ()
     {
-        beginTestCase ("bassert");
+        beginTestCase ("diagnostics");
+
+        logMessage ("operatingSystemName              = '" + SystemStats::getOperatingSystemName () + "'");
+        logMessage ("_DEBUG                           = " + String::fromNumber (envDebug ()));
+        logMessage ("BEAST_DEBUG                      = " + String::fromNumber (beastDebug ()));
+        logMessage ("BEAST_FORCE_DEBUG                = " + String::fromNumber (beastForceDebug ()));
+        logMessage ("BEAST_CATCH_UNHANDLED_EXCEPTIONS = " + String::fromNumber (beastCatchExceptions ()));
+
         bassertfalse;
+
         fail ();
+    }
+
+    DebugTests () : UnitTest ("Debug", "beast", runManual)
+    {
     }
 };
 

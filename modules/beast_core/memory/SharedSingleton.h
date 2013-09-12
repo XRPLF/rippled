@@ -86,6 +86,7 @@ public:
             instance = staticData.instance;
             if (instance == nullptr)
             {
+                bassert (lifetime == SingletonLifetime::createOnDemand || ! staticData.destructorCalled);
                 staticData.instance = &staticData.object;
                 ::new (staticData.instance) SharedSingleton (lifetime);
                 instance = staticData.instance;
@@ -107,7 +108,7 @@ private:
     {
     }
 
-    void performAtExit ()
+    void onExit ()
     {
         if (m_lifetime == SingletonLifetime::persistAfterCreation)
             this->decReferenceCount ();
@@ -132,6 +133,7 @@ private:
             {
                 callDestructor = true;
                 staticData.instance = nullptr;
+                staticData.destructorCalled = true;
             }
         }
 
@@ -145,31 +147,16 @@ private:
 
     typedef SpinLock LockType;
 
-    class ExitHook : public PerformedAtExit
-    {
-    public:
-        explicit ExitHook (SharedSingleton* owner)
-            : m_owner (owner)
-        {
-        }
-
-        void performAtExit ()
-        {
-            m_owner->performAtExit();
-        }
-
-    private:
-        SharedSingleton* m_owner;
-    };
-
     // This structure gets zero-filled at static initialization time.
     // No constructors are called.
     //
-    struct StaticData
+    class StaticData : public Uncopyable
     {
+    public:
         LockType mutex;
         SharedSingleton* instance;
         SharedSingleton  object;
+        bool destructorCalled;
 
     private:
         StaticData();
@@ -183,9 +170,10 @@ private:
     }
 
     friend class SharedPtr <SharedSingleton>;
+    friend class AtExitMemberHook <SharedSingleton>;
 
     SingletonLifetime::Lifetime m_lifetime;
-    ExitHook m_exitHook;
+    AtExitMemberHook <SharedSingleton> m_exitHook;
 };
 
 //------------------------------------------------------------------------------

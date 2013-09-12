@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_SYSTEM_BEASTCONFIGCHECK_H_INCLUDED
-#define BEAST_CORE_SYSTEM_BEASTCONFIGCHECK_H_INCLUDED
+#ifndef BEAST_CORE_BEASTCONFIGCHECK_H_INCLUDED
+#define BEAST_CORE_BEASTCONFIGCHECK_H_INCLUDED
 
 // This file makes sure that BeastConfig.h was included.
 // It also sets defaults for all config options.

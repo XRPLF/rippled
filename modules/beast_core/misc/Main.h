@@ -17,15 +17,14 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MAIN_H_INCLUDED
-#define BEAST_MAIN_H_INCLUDED
+#ifndef BEAST_CORE_MAIN_H_INCLUDED
+#define BEAST_CORE_MAIN_H_INCLUDED
 
-/** Represents a command line program's entry point.
-
+/** Represents a command line program's entry point
     To use this, derive your class from @ref Main and implement the
     function run ();
 */
-class BEAST_API Main : public Uncopyable
+class Main : public Uncopyable
 {
 public:
     Main ();
@@ -70,10 +69,10 @@ protected:
     virtual int run (int argc, char const* const* argv) = 0;
 
 private:
-    void runStartupUnitTests ();
+    int runStartupUnitTests ();
 
 private:
-    static Static::Storage <Atomic <Main*>, Main> s_instance;
+    static Main* s_instance;
 };
 
 #endif

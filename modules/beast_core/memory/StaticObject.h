@@ -112,61 +112,86 @@ private:
 template <class ObjectType, class Tag>
 char Storage <ObjectType, Tag>::s_storage [sizeof (ObjectType)];
 
+}
+
 //------------------------------------------------------------------------------
 
-// Provides a thread safe flag for indicating if and when
-// initialization is required for an object with static storage duration.
-//
-class Initializer
+namespace detail
+{
+
+extern void staticObjectWait (std::size_t n);
+
+}
+
+/** Wrapper to produce an object with static storage duration.
+    
+    The object is constructed in a thread-safe fashion when the get function
+    is first called. Note that the destructor for Object is never called. To
+    invoke the destructor, use the AtExitHook facility (with caution).
+
+    The Tag parameter allows multiple instances of the same Object type, by
+    using different tags.
+
+    Object must meet these requirements:
+        DefaultConstructible
+
+    @see AtExitHook
+*/
+template <class Object, typename Tag = void>
+class StaticObject
 {
 public:
-    // If the condition is not initialized, the first caller will
-    // receive true, while concurrent callers get blocked until
-    // initialization completes.
-    //
-    bool beginConstruction ()
+    static Object& get ()
     {
-        bool needsInitialization = false;
+        StaticData& staticData (StaticData::get());
 
-        if (m_state.get () != stateInitialized)
+        if (staticData.state.get() != initialized)
         {
-            if (m_state.compareAndSetBool (stateInitializing, stateUninitialized))
+            if (staticData.state.compareAndSetBool (initializing, uninitialized))
             {
-                needsInitialization = true;
+                // Initialize the object.
+                ::new (&staticData.object) Object;
+                staticData.state = initialized;
             }
             else
             {
-                SpinDelay delay;
-
-                do
+                for (std::size_t n = 0; staticData.state.get() != initialized; ++n)
                 {
-                    delay.pause ();
+                    detail::staticObjectWait (n);
                 }
-                while (m_state.get () != stateInitialized);
             }
         }
 
-        return needsInitialization;
-    }
-
-    // Called to signal that the initialization is complete
-    //
-    void endConstruction ()
-    {
-        m_state.set (stateInitialized);
+        return staticData.object;
     }
 
 private:
     enum
     {
-        stateUninitialized = 0, // must be zero
-        stateInitializing,
-        stateInitialized
+        uninitialized = 0,          // must be zero to function properly
+        initializing,
+        initialized
     };
 
-    Atomic <int> m_state;
-};
+    // This structure gets zero-filled at static initialization time.
+    // No constructors are called.
+    //
+    class StaticData : public Uncopyable
+    {
+    public:
+        Atomic <int> state;
+        Object object;
 
-}
+        static StaticData& get ()
+        {
+            static uint8 storage [sizeof (StaticData)];
+            return *(reinterpret_cast <StaticData*> (&storage [0]));
+        }
+
+    private:
+        StaticData();
+        ~StaticData();
+    };
+};
 
 #endif
