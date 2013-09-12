@@ -69,6 +69,11 @@ UniformResourceLocator& UniformResourceLocator::operator= (UniformResourceLocato
 
 //------------------------------------------------------------------------------
 
+bool UniformResourceLocator::empty () const
+{
+    return m_scheme == String::empty;
+}
+
 String UniformResourceLocator::scheme () const
 {
     return m_scheme;
