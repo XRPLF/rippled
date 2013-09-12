@@ -170,7 +170,7 @@
 // Turning this on makes the Application object get destroyed,
 // which is part of an attempt to have a "clean exit."
 #ifndef RIPPLE_APPLICATION_CLEAN_EXIT
-#define RIPPLE_APPLICATION_CLEAN_EXIT 0
+#define RIPPLE_APPLICATION_CLEAN_EXIT 1
 #endif
 
 // This is only here temporarily. Use it to turn off the sending of

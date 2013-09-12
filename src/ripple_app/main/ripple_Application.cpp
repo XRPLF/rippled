@@ -14,12 +14,20 @@ SETUP_LOG (Application)
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp
     : public Application
-    , public SharedSingleton <ApplicationImp>
     , public NodeStore::Scheduler
     , LeakChecked <ApplicationImp>
     , PeerFinder::Callback
 {
+private:
+    static ApplicationImp* s_instance;
+
 public:
+    static Application& getInstance ()
+    {
+        bassert (s_instance != nullptr);
+        return *s_instance;
+    }
+
     // RAII container for a boost::asio::io_service run by beast threads
     class IoServiceThread
     {
@@ -132,27 +140,8 @@ public:
 
     //--------------------------------------------------------------------------
 
-    static ApplicationImp* createInstance ()
-    {
-        return new ApplicationImp;
-    }
-
     ApplicationImp ()
-    //
-    // VFALCO NOTE Change this to control whether or not the Application
-    //             object is destroyed on exit
-    //
-    #if RIPPLE_APPLICATION_CLEAN_EXIT
-        // Application object will be deleted on exit. If the code doesn't exit
-        // cleanly this could cause hangs or crashes on exit.
-        //
-        : SharedSingleton <ApplicationImp> (SingletonLifetime::persistAfterCreation)
-    #else
-        // This will make it so that the Application object is not deleted on exit.
-        //
-        : SharedSingleton <ApplicationImp> (SingletonLifetime::neverDestroyed)
-    #endif
-        , m_mainService ("io",
+        : m_mainService ("io",
                          (getConfig ().NODE_SIZE >= 2) ? 2 : 1,
                          (getConfig ().NODE_SIZE >= 2) ? 1 : 0)
         , m_auxService ("auxio", 1, 1)
@@ -187,6 +176,9 @@ public:
         , mSweepTimer (m_auxService)
         , mShutdown (false)
     {
+        bassert (s_instance == nullptr);
+        s_instance = this;
+
         // VFALCO TODO remove these once the call is thread safe.
         HashMaps::getInstance ().initializeNonce <size_t> ();
 
@@ -216,6 +208,9 @@ public:
             delete mWalletDB;
             mWalletDB = nullptr;
         }
+
+        bassert (s_instance == this);
+        s_instance = nullptr;
     }
 
     //--------------------------------------------------------------------------
@@ -223,17 +218,23 @@ public:
     // Initialize the Validators object with Config information.
     void initValidatorsConfig ()
     {
+#if RIPPLE_USE_NEW_VALIDATORS
         {
             std::vector <std::string> const& strings (getConfig().validators);
             if (! strings.empty ())
                 m_validators->addStrings (strings);
         }
 
+        if (! getConfig().getValidatorsURL().empty())
         {
-            String const& localValidatorsPath (getConfig().localValidatorsPath);
-            if (localValidatorsPath != String::empty)
-                m_validators->addFile (localValidatorsPath);
+            m_validators->addURL (getConfig().getValidatorsURL());
         }
+
+        if (getConfig().getValidatorsFile() != File::nonexistent ())
+        {
+            m_validators->addFile (getConfig().getValidatorsFile());
+        }
+#endif
     }
 
     //--------------------------------------------------------------------------
@@ -474,9 +475,9 @@ public:
         if (!getConfig ().DEBUG_LOGFILE.empty ())
         {
             // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
-            Log::setLogFile (getConfig ().DEBUG_LOGFILE);
+            LogInstance::getInstance()->setLogFile (getConfig ().DEBUG_LOGFILE);
 
-            if (Log::getMinSeverity () > lsDEBUG)
+            if (LogInstance::getInstance()->getMinSeverity () > lsDEBUG)
                 LogPartition::setSeverity (lsDEBUG);
         }
 
@@ -1206,10 +1207,37 @@ void ApplicationImp::onAnnounceAddress ()
 
 //------------------------------------------------------------------------------
 
+ApplicationImp* ApplicationImp::s_instance;
+
+//------------------------------------------------------------------------------
+
+Application* Application::New ()
+{
+    ScopedPointer <Application> object (new ApplicationImp);
+    return object.release();
+}
+
 Application& getApp ()
 {
-    return *ApplicationImp::getInstance ();
+    return ApplicationImp::getInstance ();
 }
+
+#if 0
+#if RIPPLE_APPLICATION_CLEAN_EXIT
+    // Application object will be deleted on exit. If the code doesn't exit
+    // cleanly this could cause hangs or crashes on exit.
+    //
+    SingletonLifetime::Lifetime lifetime (SingletonLifetime::persistAfterCreation);
+
+#else
+    // This will make it so that the Application object is not deleted on exit.
+    //
+    SingletonLifetime::Lifetime lifetime (SingletonLifetime::neverDestroyed);
+
+#endif
+
+    return *SharedSingleton <ApplicationImp>::getInstance (lifetime);
+#endif
 
 //------------------------------------------------------------------------------
 

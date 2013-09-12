@@ -61,8 +61,6 @@ String ChildProcess::readAllProcessOutput()
 class ChildProcessTests  : public UnitTest
 {
 public:
-    ChildProcessTests() : UnitTest ("ChildProcess", "beast") {}
-
     void runTest()
     {
         beginTestCase ("Child Processes");
@@ -76,9 +74,24 @@ public:
         expect (p.start ("ls /"));
        #endif
 
+        if (! p.waitForProcessToFinish (10 * 1000))
+        {
+            if (p.kill ())
+                p.waitForProcessToFinish (-1);
+        }
+
         //String output (p.readAllProcessOutput());
         //expect (output.isNotEmpty());
       #endif
+    }
+
+    // VFALCO NOTE I had to disable this test because it was leaving
+    //             behind a zombie process and making other unit tests fail.
+    //             It doesnt happen with a debugger attached, or if the
+    //             unit test is run individually.
+    //
+    ChildProcessTests() : UnitTest ("ChildProcess", "beast", runManual)
+    {
     }
 };
 

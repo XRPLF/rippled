@@ -17,18 +17,14 @@
 */
 //==============================================================================
 
-class DeadlineTimer::Manager
-    : public SharedSingleton <DeadlineTimer::Manager>
-    , protected Thread
+class DeadlineTimer::Manager : protected Thread
 {
 private:
     typedef CriticalSection LockType;
     typedef List <DeadlineTimer> Items;
 
 public:
-    Manager ()
-        : SharedSingleton <Manager> (SingletonLifetime::persistAfterCreation)
-        , Thread ("DeadlineTimer::Manager")
+    Manager () : Thread ("DeadlineTimer::Manager")
     {
         startThread ();
     }
@@ -200,11 +196,6 @@ public:
         }
     }
 
-    static Manager* createInstance ()
-    {
-        return new Manager;
-    }
-
 private:
     CriticalSection m_mutex;
     Items m_items;
@@ -214,7 +205,8 @@ private:
 
 DeadlineTimer::DeadlineTimer (Listener* listener)
     : m_listener (listener)
-    , m_manager (Manager::getInstance ())
+    , m_manager (SharedSingleton <Manager>::getInstance (
+        SingletonLifetime::persistAfterCreation))
     , m_isActive (false)
 {
 }

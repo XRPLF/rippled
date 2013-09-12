@@ -20,6 +20,8 @@
 // This .cpp will end up including all of the public header
 // material in Ripple since it holds the Application object.
 
+#include "../ripple/validators/ripple_validators.h"
+
 namespace ripple
 {
 
@@ -27,8 +29,8 @@ namespace ripple
 // Application
 //
 
-# include "main/ripple_FatalErrorReporter.h"
-#include "main/ripple_FatalErrorReporter.cpp"
+# include "main/FatalErrorReporter.h"
+#include "main/FatalErrorReporter.cpp"
 
 # include "peers/PeerDoor.h"
 #include "peers/PeerDoor.cpp"

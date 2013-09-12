@@ -616,7 +616,7 @@ void ListenersBase::remove_void (void* const listener)
 
                 // Remove it from the list and manually release
                 // the reference since the list uses raw pointers.
-                m_groups.erase (m_groups.iterator_to (*group.getObject ()));
+                m_groups.erase (m_groups.iterator_to (*group));
                 group->decReferenceCount ();
 
                 // It is still possible for the group to exist at this

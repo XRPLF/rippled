@@ -128,15 +128,13 @@ public:
     explicit RippleUnitTests (bool shouldLog)
         : m_shouldLog (shouldLog)
     {
+        setupConfigForUnitTests (&getConfig ());
+
         // VFALCO NOTE It sucks that we have to do this but some
         //             code demands the Application object exists.
         //
-        //        TODO To find out who, just change the #if 1 to #if 0
-#if 1
-        setupConfigForUnitTests (&getConfig ());
-
-        getApp ();
-#endif
+        //        TODO To find out who, just comment the next line out
+        m_app = Application::New ();
 
         setAssertOnFailure (false);
     }
@@ -172,6 +170,7 @@ private:
 
 private:
     bool const m_shouldLog;
+    ScopedPointer <Application> m_app;
 };
 
 static int runUnitTests (String const& match, String const& format)
@@ -361,15 +360,15 @@ int RippleMain::run (int argc, char const* const* argv)
 
     if (vm.count ("quiet"))
     {
-        Log::setMinSeverity (lsFATAL, true);
+        LogInstance::getInstance()->setMinSeverity (lsFATAL, true);
     }
     else if (vm.count ("verbose"))
     {
-        Log::setMinSeverity (lsTRACE, true);
+        LogInstance::getInstance()->setMinSeverity (lsTRACE, true);
     }
     else
     {
-        Log::setMinSeverity (lsINFO, true);
+        LogInstance::getInstance()->setMinSeverity (lsINFO, true);
     }
 
     // Run the unit tests if requested.
@@ -455,6 +454,7 @@ int RippleMain::run (int argc, char const* const* argv)
         if (!vm.count ("parameters"))
         {
             // No arguments. Run server.
+            ScopedPointer <Application> app (Application::New ());
             setupServer ();
             setCallingThreadName ("io");
             startServer ();

@@ -92,7 +92,6 @@ public:
         boost::asio::io_service io_service;
         async_get (io_service, nullptr, url);
         io_service.run ();
-        cancel ();
         return result ();
     }
 
@@ -224,6 +223,7 @@ private:
             , m_context (boost::asio::ssl::context::sslv23)
             , m_buffer (bufferSize)
             , m_parser (HTTPParser::typeResponse)
+            , m_timer_set (false)
             , m_timer_canceled (false)
             , m_timer_expired (false)
             , m_messageLimitBytes (messageLimitBytes)
@@ -241,6 +241,7 @@ private:
                 m_timer.expires_from_now (
                     boost::posix_time::milliseconds (
                         long (timeoutSeconds * 1000)));
+                m_timer_set = true;
 
                 ++m_io_pending;
                 m_timer.async_wait (TimerHandler (this));
@@ -261,7 +262,11 @@ private:
         //
         void cancel ()
         {
-            cancel_all ();
+            cancel_timer ();
+            m_resolver.cancel ();
+            error_code ec;
+            m_socket.close (ec);
+
             m_done.wait ();
         }
 
@@ -270,7 +275,7 @@ private:
 
         // Counts a pending i/o as canceled
         //
-        void cancel_io ()
+        void io_canceled ()
         {
             bassert (m_io_pending.get () > 0);
             if (--m_io_pending == 0)
@@ -281,22 +286,41 @@ private:
         //
         void cancel_timer ()
         {
-            m_timer_canceled = true;
-            error_code ec;
-            m_timer.cancel (ec);
+            // Make sure the timer was set (versus infinite timeout)
+            if (m_timer_set)
+            {
+                // See if it was already canceled.
+                if (! m_timer_canceled)
+                {
+                    m_timer_canceled = true;
+                    error_code ec;
+                    m_timer.cancel (ec);
+
+                    // At this point, there will either be a pending completion
+                    // or a pending abort for the handler. If its a completion,
+                    // they will see that the timer was canceled (since we're on
+                    // a strand, everything is serialized). If its an abort it
+                    // counts as a cancellation anyway. Either way, we will deduct
+                    // one i/o from the pending i/o count.
+                }
+            }
         }
 
         // Called to notify the original handler the operation is complete.
         //
         void complete (error_code const& ec)
         {
+            // Set the error code in the result.
             m_owner.m_result.error = ec;
 
+            // Cancel the deadline timer. This ensures that
+            // we will not return 'timeout' to the caller later.
+            //
             cancel_timer ();
 
             bassert (m_io_pending.get () > 0);
 
-            cancel_io ();
+            io_canceled ();
 
             // We call the handler directly since we know
             // we are already in the right context, and
@@ -314,62 +338,66 @@ private:
             if (m_timer_expired ||
                 ec == boost::asio::error::operation_aborted)
             {
-                cancel_io ();
+                // Timer expired, or the operation was aborted due to
+                // cancel, so we deduct one i/o and return immediately.
+                //
+                io_canceled ();
                 return true;
             }
-            else if (ec != 0 && ec != boost::asio::error::eof)
+
+            if (ec != 0 && ec != boost::asio::error::eof)
             {
+                // A real error happened, and the timer didn't expire, so
+                // notify the original handler that the operation is complete.
+                //
                 complete (ec);
                 return true;
             }
 
+            // Process the completion as usual. If the caller does not
+            // call another initiating function, it is their responsibility
+            // to call io_canceled() to deduce one pending i/o.
+            //
             return false;
-        }
-
-        // Cancels/closes all i/o objects.
-        //
-        void cancel_all ()
-        {
-            cancel_timer ();
-            m_resolver.cancel ();
-            error_code ec;
-            m_socket.close (ec);
         }
 
         // Called when the deadline timer expires or is canceled.
         //
         void timerCompletion (error_code ec)
         {
-            if (ec == boost::asio::error::operation_aborted)
+            bassert (m_timer_set);
+
+            if (m_timer_canceled || ec == boost::asio::error::operation_aborted)
             {
-                bassert (m_timer_canceled);
-                return cancel_io ();
+                // If the cancel flag is set or the operation was aborted it
+                // means we canceled the timer so deduct one i/o and return.
+                //
+                io_canceled ();
+                return;
             }
 
-            check_invariant (ec == 0);
+            bassert (ec == 0);
 
-            // Handle the case where the timer completion has already
-            // been queued for dispatch but we have finished the operation
-            // and queued the completion handler for dispatch.
+            // The timer expired, so this is a real timeout scenario.
+            // We want to set the error code, notify the handler, and cancel
+            // all other pending i/o.
             //
-            if (! m_timer_canceled)
-            {
-                m_timer_expired = true;
+            m_timer_expired = true;
 
-                ec = error_code (boost::asio::error::timed_out,
-                    boost::asio::error::get_system_category ());
+            ec = error_code (boost::asio::error::timed_out,
+                boost::asio::error::get_system_category ());
 
-                complete (ec);
+            // Cancel pending name resolution
+            m_resolver.cancel ();
 
-                io_complete (ec);
+            // Close the socket. This will cancel up to 2 pending i/o
+            m_socket.close (ec);
 
-                m_resolver.cancel ();
-                m_socket.close (ec);
-            }
-            else
-            {
-                cancel_io ();
-            }
+            // Notify the original handler of a timeout error.
+            // The call to complete() consumes one pending i/o, which
+            // we need since this function counts as one completion.
+            //
+            complete (ec);
         }
 
         //----------------------------------------------------------------------
@@ -594,7 +622,7 @@ private:
             }
 
             // deduct one i/o since we aren't issuing any new one
-            cancel_io ();
+            io_canceled ();
         }
 
         void read_complete (error_code ec, std::size_t bytes_transferred)
@@ -671,6 +699,7 @@ private:
         State m_state;
         HTTPParser m_parser;
         String m_get_string;
+        bool m_timer_set;
         bool m_timer_canceled;
         bool m_timer_expired;
         std::size_t m_messageLimitBytes;

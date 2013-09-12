@@ -31,6 +31,8 @@ TEMPLATE = app
 CONFIG += console thread warn_off
 CONFIG -= qt gui
 
+DEFINES += _DEBUG
+
 linux-g++:QMAKE_CXXFLAGS += \
     -Wall \
     -Wno-sign-compare \
@@ -43,7 +45,6 @@ linux-g++:QMAKE_CXXFLAGS += \
     -pthread
 
 INCLUDEPATH += \
-    "../.." \
     "../../src" \
     "../../src/leveldb/" \
     "../../src/leveldb/port" \
@@ -58,6 +59,9 @@ OTHER_FILES += \
 
 UI_HEADERS_DIR += ../../src/ripple_basics
 
+# -----
+# Beast
+#
 SOURCES += \
     ../../src/beast/modules/beast_asio/beast_asio.cpp \
     ../../src/beast/modules/beast_core/beast_core.cpp \
@@ -65,7 +69,12 @@ SOURCES += \
     ../../src/beast/modules/beast_db/beast_db.cpp \
     ../../src/beast/modules/beast_extras/beast_extras.cpp \
     ../../src/beast/modules/beast_sqdb/beast_sqdb.cpp \
-    ../../src/beast/modules/beast_sqlite/beast_sqlite.c \
+    ../../src/beast/modules/beast_sqlite/beast_sqlite.c
+
+# ---------
+# Old style
+#
+SOURCES += \
     ../../src/ripple_app/ripple_app.cpp \
     ../../src/ripple_app/ripple_app_pt1.cpp \
     ../../src/ripple_app/ripple_app_pt2.cpp \
@@ -83,6 +92,13 @@ SOURCES += \
     ../../src/ripple_mdb/ripple_mdb.c \
     ../../src/ripple_net/ripple_net.cpp \
     ../../src/ripple_websocket/ripple_websocket.cpp
+
+# ---------
+# New style
+#
+SOURCES += \
+    ../../src/ripple/testoverlay/ripple_testoverlay.cpp \
+    ../../src/ripple/validators/ripple_validators.cpp
 
 LIBS += \
     -lboost_date_time-mt\

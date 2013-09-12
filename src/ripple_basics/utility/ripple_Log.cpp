@@ -4,12 +4,6 @@
 */
 //==============================================================================
 
-LogFile Log::s_logFile;
-Log::StaticLockType Log::s_lock ("Log", __FILE__, __LINE__);
-LogSeverity Log::sMinSeverity = lsINFO;
-
-//------------------------------------------------------------------------------
-
 LogPartition* LogPartition::headLog = NULL;
 
 LogPartition::LogPartition (char const* partitionName)
@@ -116,73 +110,7 @@ Log::~Log ()
         logMsg += "...";
     }
 
-    print (logMsg, mSeverity >= sMinSeverity);
-}
-
-void Log::print (std::string const& text, bool toStdErr)
-{
-    StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
-
-    // Does nothing if not open.
-    s_logFile.writeln (text);
-
-    if (toStdErr)
-    {
-#if 0 //BEAST_MSVC
-        if (beast_isRunningUnderDebugger ())
-        {
-            // Send it to the attached debugger's Output window
-            //
-            Logger::outputDebugString (text);
-        }
-        else
-#endif
-        {
-            std::cerr << text << std::endl;
-        }
-    }
-}
-
-void Log::print (StringArray const& strings, bool toStdErr)
-{
-    StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
-
-    for (int i = 0; i < strings.size (); ++i)
-        print (strings [i].toStdString (), toStdErr);
-
-}
-
-std::string Log::rotateLog ()
-{
-    StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
-
-    bool const wasOpened = s_logFile.closeAndReopen ();
-
-    if (wasOpened)
-    {
-        return "The log file was closed and reopened.";
-    }
-    else
-    {
-        return "The log file could not be closed and reopened.";
-    }
-}
-
-void Log::setMinSeverity (LogSeverity s, bool all)
-{
-    StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
-
-    sMinSeverity = s;
-
-    if (all)
-        LogPartition::setSeverity (s);
-}
-
-LogSeverity Log::getMinSeverity ()
-{
-    StaticScopedLockType sl (s_lock, __FILE__, __LINE__);
-
-    return sMinSeverity;
+    LogInstance::getInstance()->print (logMsg, mSeverity >= LogInstance::getInstance()->getMinSeverity ());
 }
 
 std::string Log::severityToString (LogSeverity s)
@@ -236,16 +164,6 @@ LogSeverity Log::stringToSeverity (const std::string& s)
     return lsINVALID;
 }
 
-void Log::setLogFile (boost::filesystem::path const& path)
-{
-    bool const wasOpened = s_logFile.open (path.c_str ());
-
-    if (! wasOpened)
-    {
-        Log (lsFATAL) << "Unable to open logfile " << path;
-    }
-}
-
 bool LogPartition::setSeverity (const std::string& partition, LogSeverity severity)
 {
     for (LogPartition* p = headLog; p != NULL; p = p->mNextLog)
@@ -264,4 +182,101 @@ void LogPartition::setSeverity (LogSeverity severity)
         p->mMinSeverity = severity;
 }
 
-// vim:ts=4
+//------------------------------------------------------------------------------
+
+LogInstance::LogInstance ()
+    : m_mutex ("Log", __FILE__, __LINE__)
+    , m_minSeverity (lsINFO)
+{
+}
+
+LogInstance::~LogInstance ()
+{
+}
+
+LogInstance* LogInstance::getInstance ()
+{
+    return SharedSingleton <LogInstance>::getInstance ();
+}
+
+LogSeverity LogInstance::getMinSeverity ()
+{
+    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+
+    return m_minSeverity;
+}
+
+void LogInstance::setMinSeverity (LogSeverity s, bool all)
+{
+    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+
+    m_minSeverity = s;
+
+    if (all)
+        LogPartition::setSeverity (s);
+}
+
+void LogInstance::setLogFile (boost::filesystem::path const& path)
+{
+    bool const wasOpened = m_logFile.open (path.c_str ());
+
+    if (! wasOpened)
+    {
+        Log (lsFATAL) << "Unable to open logfile " << path;
+    }
+}
+
+std::string LogInstance::rotateLog ()
+{
+    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+
+    bool const wasOpened = m_logFile.closeAndReopen ();
+
+    if (wasOpened)
+    {
+        return "The log file was closed and reopened.";
+    }
+    else
+    {
+        return "The log file could not be closed and reopened.";
+    }
+}
+
+void LogInstance::print (std::string const& text, bool toStdErr)
+{
+    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+
+    write (text, toStdErr);
+}
+
+void LogInstance::print (StringArray const& strings, bool toStdErr)
+{
+    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+
+    for (int i = 0; i < strings.size (); ++i)
+        write (strings [i].toStdString (), toStdErr);
+
+}
+
+void LogInstance::write (std::string const& line, bool toStdErr)
+{
+    // Does nothing if not open.
+    m_logFile.writeln (line);
+
+    if (toStdErr)
+    {
+#if 0 //BEAST_MSVC
+        if (beast_isRunningUnderDebugger ())
+        {
+            // Send it to the attached debugger's Output window
+            //
+            Logger::outputDebugString (line);
+        }
+        else
+#endif
+        {
+            std::cerr << line << std::endl;
+        }
+    }
+}
+

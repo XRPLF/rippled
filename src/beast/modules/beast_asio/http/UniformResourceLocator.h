@@ -46,6 +46,9 @@ public:
     /** Copy assign a URL. */
     UniformResourceLocator& operator= (UniformResourceLocator const& other);
 
+    /** Returns `true` if this is an empty URL. */
+    bool empty () const;
+
     /** Returns the scheme of the URL.
         If no scheme was specified, the string will be empty.
     */

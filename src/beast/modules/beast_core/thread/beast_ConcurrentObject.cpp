@@ -30,7 +30,7 @@ private:
         m_thread.stop (true);
     }
 
-    void performAtExit ()
+    void onExit ()
     {
         //delete this;
     }

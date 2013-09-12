@@ -37,21 +37,18 @@ enum TxType
 
 /** Manages the list of known transaction formats.
 */
-class TxFormats
-    : public KnownFormats <TxType>
-    , public SharedSingleton <TxFormats>
+class TxFormats : public KnownFormats <TxType>
 {
 private:
-    /** Create the object.
+    void addCommonFields (Item& item);
 
+public:
+    /** Create the object.
         This will load the object will all the known transaction formats.
     */
     TxFormats ();
 
-    void addCommonFields (Item& item);
-
-public:
-    static TxFormats* createInstance ();
+    static TxFormats* getInstance ();
 };
 
 #endif

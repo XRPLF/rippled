@@ -24,20 +24,15 @@
 // We need to make a shared singleton or else there are
 // issues with the leak detector and order of detruction.
 //
-class NonexistentHolder : public SharedSingleton <NonexistentHolder>
+class NonexistentHolder
 {
 public:
-    NonexistentHolder ()
-        : SharedSingleton <NonexistentHolder> (SingletonLifetime::persistAfterCreation)
+    static NonexistentHolder* getInstance()
     {
+        return SharedSingleton <NonexistentHolder>::getInstance();
     }
 
-    static NonexistentHolder* createInstance ()
-    {
-        return new NonexistentHolder;
-    }
-
-    File const file;
+    File file;
 };
 
 File const& File::nonexistent ()

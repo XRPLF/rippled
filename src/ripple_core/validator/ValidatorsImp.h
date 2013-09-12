@@ -401,14 +401,14 @@ public:
             ValidatorSourceStrings::New (stringArray));
     }
 
-    void addFile (String const& path)
+    void addFile (File const& file)
     {
-        addStaticSource (ValidatorSourceFile::New (path));
+        addStaticSource (ValidatorSourceFile::New (file));
     }
 
-    void addTrustedURL (UniformResourceLocator const& url)
+    void addURL (UniformResourceLocator const& url)
     {
-        addSource (ValidatorSourceTrustedURL::New (url));
+        addSource (ValidatorSourceURL::New (url));
     }
 
     void addSource (Source* source)

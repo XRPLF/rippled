@@ -70,6 +70,8 @@ private:
     SharedState m_sharedState;
 
 public:
+    static Application* New ();
+
     virtual ~Application () { }
 
     virtual boost::asio::io_service& getIOService () = 0;

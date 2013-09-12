@@ -28,7 +28,7 @@
 namespace ripple
 {
 
-#include "functional/ripple_Config.cpp"
+#include "functional/Config.cpp"
 # include "functional/ripple_LoadFeeTrack.h" // private
 #include "functional/ripple_LoadFeeTrack.cpp"
 #include "functional/ripple_Job.cpp"
@@ -51,30 +51,6 @@ namespace ripple
 #include "node/NodeStore.cpp"
 #include "node/NodeObject.cpp"
 
-#  include "test/Results.h"
-#  include "test/SimplePayload.h"
-#  include "test/MessageType.h"
-#  include "test/ConnectionType.h"
-#  include "test/PeerType.h"
-#  include "test/NetworkType.h"
-#  include "test/StateBase.h"
-#  include "test/PeerLogicBase.h"
-#  include "test/InitPolicy.h"
-# include "test/ConfigType.h"
-#include "test/TestOverlay.cpp"
-
-# include "validator/ValidatorsUtilities.h"
-#include "validator/ValidatorsUtilities.cpp"
-#  include "validator/ValidatorSourceFile.h"
-#  include "validator/ValidatorSourceStrings.h"
-#  include "validator/ValidatorSourceTrustedURL.h"
-# include "validator/ValidatorsImp.h"
-#include "validator/ValidatorSourceFile.cpp"
-#include "validator/ValidatorSourceStrings.cpp"
-#include "validator/ValidatorSourceTrustedURL.cpp"
-#include "validator/Validators.cpp"
-
- #include "peerfinder/ripple_PeerFinder.h" // private (for now)
 #include "peerfinder/ripple_PeerFinder.cpp"
 
 }

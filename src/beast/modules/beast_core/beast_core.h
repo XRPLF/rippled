@@ -172,10 +172,14 @@ Some files contain portions of these external projects, licensed separately:
 @copyright Provided under the [ISC LIcense][11]
 */
 
+// TargetPlatform.h should not use anything from BeastConfig.h
+#include "system/TargetPlatform.h"
+#include "system/BeastConfigCheck.h"
+
 # include "system/BeforeBoost.h"
 # include "system/BoostIncludes.h"
 #include "system/FunctionalIncludes.h"
-
+#include "system/PlatformDefs.h"
 #include "system/StandardHeader.h"
 
 #if BEAST_MSVC
@@ -261,8 +265,6 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 
 # include "containers/detail/removecv.h"
 #include "containers/detail/copyconst.h"
-#include "system/PlatformDefs.h"
-#include "system/TargetPlatform.h"
 #include "diagnostic/beast_Throw.h"
 #include "system/Functional.h"
 #include "memory/beast_AtomicCounter.h"
@@ -272,12 +274,12 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "containers/List.h"
 #include "containers/beast_LockFreeStack.h"
 #include "threads/beast_SpinDelay.h"
-#include "memory/beast_StaticObject.h"
+#include "memory/StaticObject.h"
 
 #include "text/StringCharPointerType.h"
 #include "text/StringFromNumber.h"
 #include "text/beast_String.h"
-#include "time/beast_PerformedAtExit.h"
+#include "time/AtExitHook.h"
 #include "diagnostic/beast_LeakChecked.h"
 #include "time/beast_RelativeTime.h"
 #include "time/beast_Time.h"
@@ -304,7 +306,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "threads/beast_ThreadLocalValue.h"
 #include "thread/MutexTraits.h"
 #include "thread/TrackedMutex.h"
-#include "diagnostic/beast_FatalError.h"
+#include "diagnostic/FatalError.h"
 #include "diagnostic/beast_Error.h"
 #include "diagnostic/beast_Debug.h"
 #include "text/beast_LexicalCast.h"
@@ -317,7 +319,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "memory/SharedObject.h"
 #include "memory/SharedPtr.h"
 #include "functional/SharedFunction.h"
-#include "diagnostic/beast_ProtectedCall.h"
+#include "diagnostic/ProtectedCall.h"
 #include "containers/beast_AbstractFifo.h"
 #include "text/beast_Identifier.h"
 #include "containers/beast_Variant.h"
@@ -363,10 +365,10 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "memory/beast_ByteOrder.h"
 #include "memory/beast_Memory.h"
 #include "memory/beast_OptionalScopedPointer.h"
-#include "memory/beast_SharedSingleton.h"
+#include "memory/SharedSingleton.h"
 #include "memory/beast_WeakReference.h"
 #include "memory/beast_RecycledObjectPool.h"
-#include "misc/beast_Main.h"
+#include "misc/Main.h"
 #include "misc/beast_Uuid.h"
 #include "misc/beast_WindowsRegistry.h"
 #include "network/beast_IPAddress.h"
@@ -421,7 +423,6 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "thread/beast_InterruptibleThread.h"
 #include "thread/beast_ThreadGroup.h"
 #include "thread/beast_CallQueue.h"
-#include "thread/beast_GlobalThreadGroup.h"
 #include "thread/beast_Listeners.h"
 #include "thread/beast_ManualCallQueue.h"
 #include "thread/beast_ParallelFor.h"

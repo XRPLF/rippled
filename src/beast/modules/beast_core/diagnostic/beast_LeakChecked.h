@@ -20,18 +20,23 @@
 #ifndef BEAST_LEAKCHECKED_H_INCLUDED
 #define BEAST_LEAKCHECKED_H_INCLUDED
 
-namespace Implemented
+namespace detail
 {
 
-class BEAST_API LeakCheckedBase
+class LeakCheckedBase
 {
+public:
+    static void checkForLeaks ();
+
 protected:
     class CounterBase : public LockFreeStack <CounterBase>::Node
     {
     public:
         CounterBase ();
 
-        virtual ~CounterBase () { }
+        virtual ~CounterBase ()
+        {
+        }
 
         inline int increment ()
         {
@@ -47,24 +52,15 @@ protected:
 
     private:
         void checkForLeaks ();
-
         virtual void checkPureVirtual () const = 0;
 
-    private:
-        friend class LeakCheckedBase;
-
         class Singleton;
+        friend class LeakCheckedBase;
 
         Atomic <int> m_count;
     };
 
-protected:
     static void reportDanglingPointer (char const* objectName);
-
-private:
-    friend class PerformedAtExit::ExitHook;
-
-    static void checkForLeaks ();
 };
 
 //------------------------------------------------------------------------------
@@ -129,18 +125,7 @@ private:
     //
     static Counter& getCounter () noexcept
     {
-        static Counter* volatile s_instance;
-        static Static::Initializer s_initializer;
-
-        if (s_initializer.beginConstruction ())
-        {
-            static char s_storage [sizeof (Counter)];
-            s_instance = new (s_storage) Counter;
-
-            s_initializer.endConstruction ();
-        }
-
-        return *s_instance;
+        return StaticObject <Counter>::get();
     }
 };
 
@@ -148,35 +133,40 @@ private:
 
 //------------------------------------------------------------------------------
 
-namespace Dummy
+namespace detail
 {
 
-class BEAST_API LeakCheckedBase
+namespace disabled
 {
-private:
-    friend class PerformedAtExit;
 
+class LeakCheckedBase
+{
 public:
-    static void checkForLeaks () { }
+    static void checkForLeaks ()
+    {
+    }
 };
 
 template <class Object>
-struct LeakChecked : LeakCheckedBase
+class LeakChecked : public LeakCheckedBase
 {
+public:
 };
+
+}
 
 }
 
 //------------------------------------------------------------------------------
 
-// Lift the corresponding implementation
+// Lift the appropriate implementation into our namespace
 //
 #if BEAST_CHECK_MEMORY_LEAKS
-using Implemented::LeakChecked;
-using Implemented::LeakCheckedBase;
+using detail::LeakChecked;
+using detail::LeakCheckedBase;
 #else
-using Dummy::LeakChecked;
-using Dummy::LeakCheckedBase;
+using detail::disabled::LeakChecked;
+using detail::disabled::LeakCheckedBase;
 #endif
 
 #endif

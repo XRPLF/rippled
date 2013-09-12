@@ -26,9 +26,7 @@
 
   @ingroup beast_concurrent
 */
-class BEAST_API GlobalPagedFreeStore
-    : public SharedSingleton <GlobalPagedFreeStore>
-    , LeakChecked <GlobalPagedFreeStore>
+class BEAST_API GlobalPagedFreeStore : public LeakChecked <GlobalPagedFreeStore>
 {
 public:
     GlobalPagedFreeStore ();
@@ -50,7 +48,9 @@ public:
         PagedFreeStore::deallocate (p);
     }
 
-    static GlobalPagedFreeStore* createInstance ();
+    typedef SharedPtr <SharedSingleton <GlobalPagedFreeStore> > Ptr;
+    
+    static Ptr getInstance ();
 
 private:
     PagedFreeStore m_allocator;

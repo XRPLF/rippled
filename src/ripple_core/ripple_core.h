@@ -26,7 +26,7 @@ namespace ripple
 // Order matters
 
 # include "functional/ripple_ConfigSections.h"
-#include "functional/ripple_Config.h"
+#include "functional/Config.h"
 #include "functional/ripple_ILoadFeeTrack.h"
 #  include "functional/ripple_LoadEvent.h"
 #  include "functional/ripple_LoadMonitor.h"
@@ -39,7 +39,6 @@ namespace ripple
 #include "node/NodeStore.h"
 
 #include "peerfinder/ripple_PeerFinder.h"
-#include "validator/Validators.h"
 
 }
 

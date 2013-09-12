@@ -35,6 +35,9 @@ public:
 
     unsigned short status () const;
 
+    /** Convert the response into a string, excluding the body. */
+    String toString () const;
+
 private:
     unsigned short m_status;
 };

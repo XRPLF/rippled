@@ -47,7 +47,9 @@
 
 //------------------------------------------------------------------------------
 
-#include "PlatformDefs.h"
+#ifndef BEAST_CORE_PLATFORMDEFS_H_INCLUDED
+#error "PlatformDefs.h must be included first"
+#endif
 
 // Now we'll include some common OS headers..
 #if BEAST_MSVC

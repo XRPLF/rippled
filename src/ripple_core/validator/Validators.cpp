@@ -6,6 +6,19 @@
 
 /*
 
+Information to track:
+
+- Percentage of validations that the validator has signed
+- Number of validations the validator signed that never got accepted
+
+
+- Target number for Chosen
+- Pseudo-randomly choose a subset from Chosen
+
+
+
+
+
 Goal:
 
   Provide the listener with a ValidatorList.
