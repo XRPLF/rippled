@@ -60,12 +60,10 @@
 namespace sqdb
 {
 
-class session::Sqlite3 : public SharedSingleton <Sqlite3>
+class session::Sqlite3
 {
 public:
-    friend class SharedSingleton <Sqlite3>;
-
-    Sqlite3() : SharedSingleton <Sqlite3> (SingletonLifetime::persistAfterCreation)
+    Sqlite3()
     {
         int threadSafe = sqlite3_threadsafe();
 
@@ -84,30 +82,25 @@ public:
     {
         sqlite3_shutdown();
     }
-
-    static Sqlite3* createInstance()
-    {
-        return new Sqlite3;
-    }
 };
 
 //------------------------------------------------------------------------------
 
 session::session()
-    : prepare(this)
-    , m_instance(Sqlite3::getInstance())
-    , m_bInTransaction(false)
-    , m_connection(nullptr)
+    : prepare (this)
+    , m_instance (SharedSingleton <Sqlite3>::getInstance ())
+    , m_bInTransaction (false)
+    , m_connection (nullptr)
 {
 }
 
 session::session(const session& deferredClone)
-    : prepare(this)
-    , m_instance(Sqlite3::getInstance())
-    , m_bInTransaction(false)
-    , m_connection(nullptr)
-    , m_fileName(deferredClone.m_fileName)
-    , m_connectString(deferredClone.m_connectString)
+    : prepare (this)
+    , m_instance (SharedSingleton <Sqlite3>::getInstance ())
+    , m_bInTransaction (false)
+    , m_connection (nullptr)
+    , m_fileName (deferredClone.m_fileName)
+    , m_connectString (deferredClone.m_connectString)
 {
     // shouldn't be needed since deferredClone did it
     //Sqlite::initialize();

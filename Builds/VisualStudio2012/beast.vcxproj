@@ -210,7 +210,7 @@
     <ClInclude Include="..\..\modules\beast_core\memory\beast_RecycledObjectPool.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\SharedObject.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ScopedPointer.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_SharedSingleton.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedSingleton.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_StaticObject.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_Uncopyable.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_WeakReference.h" />
@@ -285,7 +285,6 @@
     <ClInclude Include="..\..\modules\beast_core\thread\beast_CallQueue.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_ConcurrentObject.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_DeadlineTimer.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_GlobalThreadGroup.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_InterruptibleThread.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_Listeners.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_ManualCallQueue.h" />

@@ -60,10 +60,9 @@ public:
         It is best to keep this object around instead of creating and destroying
         it every time you need to run a loop.
 
-        @param pool The ThreadGroup to use. If this is omitted then a singleton
-                    ThreadGroup is used which contains one thread per CPU.
+        @param pool The ThreadGroup to use.
     */
-    explicit ParallelFor (ThreadGroup& pool = *GlobalThreadGroup::getInstance ());
+    explicit ParallelFor (ThreadGroup& pool);
 
     /** Determine the number of threads in the group.
 

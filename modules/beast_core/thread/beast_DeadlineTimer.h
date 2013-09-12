@@ -112,7 +112,7 @@ private:
     class Manager;
 
     Listener* const m_listener;
-    SharedPtr <Manager> m_manager;
+    SharedPtr <SharedSingleton <Manager> > m_manager;
     bool m_isActive;
     Time m_notificationTime;
     double m_secondsRecurring; // non zero if recurring

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_REFERENCECOUNTEDSINGLETON_H_INCLUDED
-#define BEAST_REFERENCECOUNTEDSINGLETON_H_INCLUDED
+#ifndef BEAST_SHAREDSINGLETON_H_INCLUDED
+#define BEAST_SHAREDSINGLETON_H_INCLUDED
 
 /** Thread-safe singleton which comes into existence on first use. Use this
     instead of creating objects with static storage duration. These singletons
@@ -52,11 +52,6 @@ public:
         */
         createOnDemand,
 
-        /** Like createOnDemand, but after the Singleton is destroyed an
-            exception will be thrown if an attempt is made to create it again.
-        */
-        createOnDemandOnce,
-
         /** The singleton is created on first use and persists until program exit.
         */
         persistAfterCreation,
@@ -71,131 +66,128 @@ public:
 
 //------------------------------------------------------------------------------
 
+/** Wraps object to produce a reference counted singleton. */
 template <class Object>
 class SharedSingleton
-    : public SingletonLifetime
-    , private PerformedAtExit
+    : public Object
+    , private SharedObject
 {
-protected:
-    typedef SpinLock LockType;
-
-    /** Create the singleton.
-
-        @param lifetime The lifetime management option.
-    */
-    explicit SharedSingleton (Lifetime const lifetime)
-        : m_lifetime (lifetime)
-    {
-        bassert (s_instance == nullptr);
-
-        if (m_lifetime == persistAfterCreation ||
-            m_lifetime == neverDestroyed)
-        {
-            incReferenceCount ();
-        }
-    }
-
-    virtual ~SharedSingleton ()
-    {
-        bassert (s_instance == nullptr);
-    }
-
 public:
-    typedef SharedPtr <Object> Ptr;
+    typedef SharedPtr <SharedSingleton <Object> > Ptr;
 
-    /** Retrieve a reference to the singleton.
-    */
-    static Ptr getInstance ()
+    static Ptr getInstance (SingletonLifetime::Lifetime lifetime
+        = SingletonLifetime::persistAfterCreation)
     {
-        Ptr instance;
-
-        instance = s_instance;
-
+        StaticData& staticData (getStaticData ());
+        SharedSingleton* instance = staticData.instance;
         if (instance == nullptr)
         {
-            LockType::ScopedLockType lock (*s_mutex);
-
-            instance = s_instance;
-
+            LockType::ScopedLockType lock (staticData.mutex);
+            instance = staticData.instance;
             if (instance == nullptr)
             {
-                s_instance = Object::createInstance ();
-
-                instance = s_instance;
+                staticData.instance = &staticData.object;
+                ::new (staticData.instance) SharedSingleton (lifetime);
+                instance = staticData.instance;
             }
         }
-
         return instance;
     }
 
-    inline void incReferenceCount () noexcept
-    {
-        ++m_refCount;
-    }
-
-    inline void decReferenceCount () noexcept
-    {
-        if (--m_refCount == 0)
-            destroySingleton ();
-    }
-
-    // Caller must synchronize.
-    inline bool isBeingReferenced () const
-    {
-        return m_refCount.get () != 0;
-    }
-
 private:
+    explicit SharedSingleton (SingletonLifetime::Lifetime lifetime)
+        : m_lifetime (lifetime)
+        , m_exitHook (this)
+    {
+        if (m_lifetime == SingletonLifetime::persistAfterCreation)
+            this->incReferenceCount ();
+    }
+
+    ~SharedSingleton ()
+    {
+    }
+
     void performAtExit ()
     {
         if (m_lifetime == SingletonLifetime::persistAfterCreation)
-            decReferenceCount ();
+            this->decReferenceCount ();
     }
 
-    void destroySingleton ()
+    void destroy () const
     {
-        bool destroy;
+        bool callDestructor;
 
         // Handle the condition where one thread is releasing the last
         // reference just as another thread is trying to acquire it.
         //
         {
-            LockType::ScopedLockType lock (*s_mutex);
+            StaticData& staticData (getStaticData ());
+            LockType::ScopedLockType lock (staticData.mutex);
 
-            if (isBeingReferenced ())
+            if (this->getReferenceCount() != 0)
             {
-                destroy = false;
+                callDestructor = false;
             }
             else
             {
-                destroy = true;
-                s_instance = 0;
+                callDestructor = true;
+                staticData.instance = nullptr;
             }
         }
 
-        if (destroy)
+        if (callDestructor)
         {
-            bassert (m_lifetime != neverDestroyed);
+            bassert (m_lifetime != SingletonLifetime::neverDestroyed);
 
-            delete static_cast <Object*> (this);
+            this->~SharedSingleton();
         }
     }
 
-private:
-    Lifetime const m_lifetime;
-    Atomic <int> m_refCount;
+    typedef SpinLock LockType;
 
-private:
-    static Object* s_instance;
-    static Static::Storage <LockType, SharedSingleton <Object> > s_mutex;
+    class ExitHook
+    {
+    public:
+        explicit ExitHook (SharedSingleton* owner)
+            : m_owner (owner)
+        {
+        }
+
+        void performaAtExit ()
+        {
+            m_owner->performAtExit();
+        }
+
+    private:
+        SharedSingleton* m_owner;
+    };
+
+    // This structure gets zero-filled at static initialization time.
+    // No constructors are called.
+    //
+    struct StaticData
+    {
+        LockType mutex;
+        SharedSingleton* instance;
+        SharedSingleton  object;
+
+    private:
+        StaticData();
+        ~StaticData();
+    };
+
+    static StaticData& getStaticData ()
+    {
+        static uint8 storage [sizeof (StaticData)];
+        return *(reinterpret_cast <StaticData*> (&storage [0]));
+    }
+
+    friend class SharedPtr <SharedSingleton>;
+
+    SingletonLifetime::Lifetime m_lifetime;
+    ExitHook m_exitHook;
 };
-/** @{ */
 
-template <class Object>
-Object* SharedSingleton <Object>::s_instance;
-
-template <class Object>
-Static::Storage <typename SharedSingleton <Object>::LockType, SharedSingleton <Object> >
-SharedSingleton <Object>::s_mutex;
+//------------------------------------------------------------------------------
 
 #endif

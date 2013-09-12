@@ -74,7 +74,7 @@ public:
         Requirement:
             U* must be convertible to T*
     */
-    /// @{
+    /** @{ */
     SharedPtr (T* t) noexcept
         : m_p (acquire (t))
     {
@@ -85,14 +85,14 @@ public:
         : m_p (acquire (u))
     {
     }
-    /// @}
+    /** @} */
 
     /** Construct a container holding an object from another container.
         This will increment the object's reference-count (if it is non-null).
         Requirement:
             U* must be convertible to T*
     */
-    /// @{
+    /** @{ */
 #if BEAST_SHAREDPTR_PROVIDE_COMPILER_WORKAROUNDS
     SharedPtr (SharedPtr const& sp) noexcept
         : m_p (acquire (sp.get ()))
@@ -105,7 +105,7 @@ public:
         : m_p (acquire (sp.get ()))
     {
     }
-    /// @}
+    /** @} */
 
     /** Assign a different object to the container.
         The previous object beind held, if any, loses a reference count and
@@ -113,7 +113,7 @@ public:
         Requirement:
             U* must be convertible to T*
     */
-    /// @{
+    /** @{ */
 #if BEAST_SHAREDPTR_PROVIDE_COMPILER_WORKAROUNDS
     SharedPtr& operator= (T* t)
     {
@@ -126,10 +126,10 @@ public:
     {
         return assign (u);
     }
-    /// @}
+    /** @} */
 
     /** Assign an object from another container to this one. */
-    /// @{
+    /** @{ */
     SharedPtr& operator= (SharedPtr const& sp)
     {
         return assign (sp.get ());
@@ -141,7 +141,7 @@ public:
     {
         return assign (sp.get ());
     }
-    /// @}
+    /** @} */
 
 #if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
     /** Construct a container with an object transferred from another container.
@@ -149,7 +149,7 @@ public:
         Requires:
             U* must be convertible to T*
     */
-    /// @{
+    /** @{ */
 #if BEAST_SHAREDPTR_PROVIDE_COMPILER_WORKAROUNDS
     SharedPtr (SharedPtr && sp) noexcept
         : m_p (sp.swap <T> (nullptr))
@@ -162,14 +162,14 @@ public:
         : m_p (sp.swap <U> (nullptr))
     {
     }
-    /// @}
+    /** @} */
 
     /** Transfer ownership of another object to this container.
         The originating container loses its reference to the object.
         Requires:
             U* must be convertible to T*
     */
-    /// @{
+    /** @{ */
 #if BEAST_SHAREDPTR_PROVIDE_COMPILER_WORKAROUNDS
     SharedPtr& operator= (SharedPtr && sp)
     {
@@ -182,7 +182,7 @@ public:
     {
         return assign (sp.swap <U> (nullptr));
     }
-    /// @}
+    /** @} */
 #endif
 
     /** Destroy the container and release the held reference, if any.
@@ -262,8 +262,8 @@ private:
 
 //------------------------------------------------------------------------------
 
-/// SharedPtr comparisons.
-/// @{
+/** SharedPtr comparisons. */
+/** @{ */
 template <class T, class U>
 bool operator== (SharedPtr <T> const& lhs, U* const rhs) noexcept
 {
@@ -277,28 +277,28 @@ bool operator== (SharedPtr <T> const& lhs, SharedPtr <U> const& rhs) noexcept
 }
 
 template <class T, class U>
-bool operator== (T const* lhs, SharedPtr<T> const& rhs) noexcept
+bool operator== (T const* lhs, SharedPtr <U> const& rhs) noexcept
 {
     return lhs == rhs.get();
 }
 
 template <class T, class U>
-bool operator!= (SharedPtr <T> const& lhs, T const* rhs) noexcept
+bool operator!= (SharedPtr <T> const& lhs, U const* rhs) noexcept
 {
     return lhs.get() != rhs;
 }
 
 template <class T, class U>
-bool operator!= (SharedPtr <T> const& lhs, SharedPtr <T> const& rhs) noexcept
+bool operator!= (SharedPtr <T> const& lhs, SharedPtr <U> const& rhs) noexcept
 {
     return lhs.get() != rhs.get();
 }
 
 template <class T, class U>
-bool operator!= (T const* lhs, SharedPtr<T> const& rhs) noexcept
+bool operator!= (T const* lhs, SharedPtr <U> const& rhs) noexcept
 {
     return lhs != rhs.get();
 }
-/// @}
+/** @} */
 
 #endif
