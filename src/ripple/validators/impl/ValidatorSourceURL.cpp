@@ -26,7 +26,7 @@ public:
         
         if (httpResult.error == 0)
         {
-            Logger::outputDebugString (httpResult.response->toString ());
+            //Logger::outputDebugString (httpResult.response->toString ());
         }
 
         return result;
