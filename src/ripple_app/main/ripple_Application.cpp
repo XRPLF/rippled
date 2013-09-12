@@ -18,7 +18,16 @@ class ApplicationImp
     , LeakChecked <ApplicationImp>
     , PeerFinder::Callback
 {
+private:
+    static ApplicationImp* s_instance;
+
 public:
+    static Application& getInstance ()
+    {
+        bassert (s_instance != nullptr);
+        return *s_instance;
+    }
+
     // RAII container for a boost::asio::io_service run by beast threads
     class IoServiceThread
     {
@@ -167,6 +176,9 @@ public:
         , mSweepTimer (m_auxService)
         , mShutdown (false)
     {
+        bassert (s_instance == nullptr);
+        s_instance = this;
+
         // VFALCO TODO remove these once the call is thread safe.
         HashMaps::getInstance ().initializeNonce <size_t> ();
 
@@ -196,6 +208,9 @@ public:
             delete mWalletDB;
             mWalletDB = nullptr;
         }
+
+        bassert (s_instance == this);
+        s_instance = nullptr;
     }
 
     //--------------------------------------------------------------------------
@@ -1192,8 +1207,22 @@ void ApplicationImp::onAnnounceAddress ()
 
 //------------------------------------------------------------------------------
 
+ApplicationImp* ApplicationImp::s_instance;
+
+//------------------------------------------------------------------------------
+
+Application* Application::New ()
+{
+    ScopedPointer <Application> object (new ApplicationImp);
+    return object.release();
+}
+
 Application& getApp ()
 {
+    return ApplicationImp::getInstance ();
+}
+
+#if 0
 #if RIPPLE_APPLICATION_CLEAN_EXIT
     // Application object will be deleted on exit. If the code doesn't exit
     // cleanly this could cause hangs or crashes on exit.
@@ -1208,7 +1237,7 @@ Application& getApp ()
 #endif
 
     return *SharedSingleton <ApplicationImp>::getInstance (lifetime);
-}
+#endif
 
 //------------------------------------------------------------------------------
 
