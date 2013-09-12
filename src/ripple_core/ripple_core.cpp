@@ -51,29 +51,6 @@ namespace ripple
 #include "node/NodeStore.cpp"
 #include "node/NodeObject.cpp"
 
-#  include "test/Results.h"
-#  include "test/SimplePayload.h"
-#  include "test/MessageType.h"
-#  include "test/ConnectionType.h"
-#  include "test/PeerType.h"
-#  include "test/NetworkType.h"
-#  include "test/StateBase.h"
-#  include "test/PeerLogicBase.h"
-#  include "test/InitPolicy.h"
-# include "test/ConfigType.h"
-#include "test/TestOverlay.cpp"
-
-# include "validator/ValidatorsUtilities.h"
-#include "validator/ValidatorsUtilities.cpp"
-#  include "validator/ValidatorSourceFile.h"
-#  include "validator/ValidatorSourceStrings.h"
-#  include "validator/ValidatorSourceURL.h"
-# include "validator/ValidatorsImp.h"
-#include "validator/ValidatorSourceFile.cpp"
-#include "validator/ValidatorSourceStrings.cpp"
-#include "validator/ValidatorSourceURL.cpp"
-#include "validator/Validators.cpp"
-
 #include "peerfinder/ripple_PeerFinder.cpp"
 
 }

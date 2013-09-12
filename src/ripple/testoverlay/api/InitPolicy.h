@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_TEST_INITPOLICY_H_INCLUDED
-#define RIPPLE_CORE_TEST_INITPOLICY_H_INCLUDED
+#ifndef RIPPLE_TESTOVERLAY_INITPOLICY_H_INCLUDED
+#define RIPPLE_TESTOVERLAY_INITPOLICY_H_INCLUDED
 
 /** A simulated peer to peer network for unit tests. */
 namespace TestOverlay

@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_TEST_RESULTS_H_INCLUDED
-#define RIPPLE_CORE_TEST_RESULTS_H_INCLUDED
+#ifndef RIPPLE_TESTOVERLAY_RESULTS_H_INCLUDED
+#define RIPPLE_TESTOVERLAY_RESULTS_H_INCLUDED
 
 namespace TestOverlay
 {

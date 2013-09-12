@@ -9,6 +9,8 @@
 #include "ripple_app.h"
 #include "../ripple_net/ripple_net.h"
 
+#include "../ripple/validators/ripple_validators.h"
+
 namespace ripple
 {
 

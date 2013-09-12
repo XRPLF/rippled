@@ -101,41 +101,56 @@ else:
 
 #-------------------------------------------------------------------------------
 #
-# VFALCO This is my oasis of sanity. Nothing having to do with directories,
-#         source files, or include paths should reside outside the boundaries.
+# VFALCO NOTE Clean area.
+#
+#-------------------------------------------------------------------------------
+#
+# Nothing having to do with directories, source files,
+# or include paths should reside outside the boundaries.
 #
 
 # List of includes passed to the C++ compiler.
 # These are all relative to the repo dir.
 #
 INCLUDE_PATHS = [
-    '.',
-    'build/proto',
     'src',
     'src/leveldb',
     'src/leveldb/port',
     'src/leveldb/include',
     'src/beast',
+    'build/proto'
     ]
 
 # if BOOST_HOME:
 #     INCLUDE_PATHS.append(BOOST_HOME)
 
-if OSX:
-    COMPILED_FILES = [
-        'src/beast/modules/beast_core/beast_core.mm'
-    ]
-else:
-    COMPILED_FILES = [
-        'src/beast/modules/beast_core/beast_core.cpp'
-    ]
+#-------------------------------------------------------------------------------
+#
+# Compiled sources
+#
 
+COMPILED_FILES = []
+
+# -------------------
+# Beast unity sources
+#
 COMPILED_FILES.extend([
     'src/beast/modules/beast_asio/beast_asio.cpp',
     'src/beast/modules/beast_crypto/beast_crypto.cpp',
     'src/beast/modules/beast_db/beast_db.cpp',
     'src/beast/modules/beast_sqdb/beast_sqdb.cpp',
-    'src/beast/modules/beast_sqlite/beast_sqlite.c',
+    'src/beast/modules/beast_sqlite/beast_sqlite.c'
+    ])
+if OSX:
+    # OSX: Use the Objective C++ version of beast_core
+    COMPILED_FILES.extend (['src/beast/modules/beast_core/beast_core.mm'])
+else:
+    COMPILED_FILES.extend (['src/beast/modules/beast_core/beast_core.cpp'])
+
+# ------------------------------
+# Old-style Ripple unity sources
+#
+COMPILED_FILES.extend([
     'src/ripple_app/ripple_app.cpp',
     'src/ripple_app/ripple_app_pt1.cpp',
     'src/ripple_app/ripple_app_pt2.cpp',
@@ -155,6 +170,16 @@ COMPILED_FILES.extend([
     'src/ripple_websocket/ripple_websocket.cpp'
     ])
 
+# ------------------------------
+# New-style Ripple unity sources
+#
+COMPILED_FILES.extend([
+    'src/ripple/testoverlay/ripple_testoverlay.cpp',
+    'src/ripple/validators/ripple_validators.cpp'
+    ])
+
+#
+#
 #-------------------------------------------------------------------------------
 
 # Map top level source directories to their location in the outputs

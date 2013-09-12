@@ -4,15 +4,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_RIPPLEHEADER
-#define RIPPLE_CORE_RIPPLEHEADER
+#ifndef RIPPLE_VALIDATORS_H_INCLUDED
+#define RIPPLE_VALIDATORS_H_INCLUDED
 
-// For Validators
+// VFALCO TODO Remove buffers/beast_asio dependency
 //
 // VFALCO NOTE It is unfortunate that we are exposing boost/asio.hpp
 //             needlessly. Its only required because of the buffers types.
 //             The HTTPClient interface doesn't need asio (although the
-//             implementation does. This is also reuqired for
+//             implementation does. This is also required for
 //             UniformResourceLocator.
 //
 #include "beast/modules/beast_asio/beast_asio.h"
@@ -23,22 +23,9 @@
 namespace ripple
 {
 
-// Order matters
+using namespace beast;
 
-# include "functional/ripple_ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/ripple_ILoadFeeTrack.h"
-#  include "functional/ripple_LoadEvent.h"
-#  include "functional/ripple_LoadMonitor.h"
-# include "functional/ripple_Job.h"
-#include "functional/ripple_JobQueue.h"
-# include "functional/LoadType.h"
-#include "functional/LoadSource.h"
-
-#include "node/NodeObject.h"
-#include "node/NodeStore.h"
-
-#include "peerfinder/ripple_PeerFinder.h"
+#include "api/Validators.h"
 
 }
 

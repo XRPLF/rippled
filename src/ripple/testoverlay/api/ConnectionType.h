@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_TEST_CONNECTIONTYPE_H_INCLUDED
-#define RIPPLE_CORE_TEST_CONNECTIONTYPE_H_INCLUDED
+#ifndef RIPPLE_TESTOVERLAY_CONNECTIONTYPE_H_INCLUDED
+#define RIPPLE_TESTOVERLAY_CONNECTIONTYPE_H_INCLUDED
 
 namespace TestOverlay
 {
