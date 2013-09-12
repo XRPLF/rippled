@@ -216,14 +216,6 @@ public:
         return m_p;
     }
 
-    /** Returns the object that this pointer references if any, else nullptr.
-        DEPRECATED
-    */
-    T* getObject () const noexcept
-    {
-        return m_p;
-    }
-
 private:
     // Acquire a reference to u for the caller.
     //
