@@ -85,11 +85,13 @@ protected:
     // the size from the original allocation, which we saved at
     // the time of construction.
     //
-    void destroy ()
+    void destroy () const
     {
         Handler local (BOOST_ASIO_MOVE_CAST(Handler)(m_handler));
         std::size_t const size (m_size);
-        SharedHandler* const shared (static_cast <SharedHandler*>(this));
+        SharedHandler* const shared (
+            const_cast <SharedHandler*> (
+                static_cast <SharedHandler const*>(this)));
         shared->~SharedHandler ();
         boost_asio_handler_alloc_helpers::
             deallocate <Handler> (shared, size, local);
@@ -109,7 +111,7 @@ protected:
 
 protected:
     std::size_t const m_size;
-    Handler m_handler;
+    Handler mutable m_handler;
 };
 
 //--------------------------------------------------------------------------
