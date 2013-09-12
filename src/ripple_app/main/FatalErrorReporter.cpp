@@ -4,20 +4,14 @@
 */
 //==============================================================================
 
-#ifdef TWICE
-#error die
-#endif
-
-#define TWICE
-
 FatalErrorReporter::FatalErrorReporter ()
 {
-    FatalError::setReporter (*this);
+    m_savedReporter = FatalError::setReporter (this);
 }
 
 FatalErrorReporter::~FatalErrorReporter ()
 {
-    FatalError::resetReporter (*this);
+    FatalError::setReporter (m_savedReporter);
 }
 
 void FatalErrorReporter::reportMessage (String& formattedMessage)

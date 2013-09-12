@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FATALERROR_H_INCLUDED
-#define BEAST_FATALERROR_H_INCLUDED
+#ifndef BEAST_CORE_FATALERROR_H_INCLUDED
+#define BEAST_CORE_FATALERROR_H_INCLUDED
 
 /** Signal a fatal error.
 
@@ -109,6 +109,9 @@ public:
         virtual String formatFilePath (char const* filePath);
     };
 
+    /** Returns the current fatal error reporter. */
+    static Reporter* getReporter ();
+
     /** Set the fatal error reporter.
 
         Note that if a fatal error is raised during the construction of
@@ -122,16 +125,11 @@ public:
 
         If a reporter was previously set, this routine will do nothing.
 
+        @return The previous Reporter (Which may be null).
+
         @see SharedSingleton, Reporter
     */
-    static void setReporter (Reporter& reporter);
-
-    /** Clear the fatal error reporter.
-
-        If the current reporter is the same as the one passed in, this
-        will remove the reporter.
-    */
-    static void resetReporter (Reporter& reporter);
+    static Reporter* setReporter (Reporter* reporter);
 
     /** Raise a fatal error.
 
@@ -145,7 +143,7 @@ public:
     FatalError (char const* message, char const* filePath, int lineNumber);
 
 private:
-    static Static::Storage <Atomic <Reporter*>, FatalError> s_reporter;
+    static Reporter* s_reporter;
 };
 
 //------------------------------------------------------------------------------

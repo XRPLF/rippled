@@ -17,36 +17,18 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PERFORMEDATEXIT_H_INCLUDED
-#define BEAST_PERFORMEDATEXIT_H_INCLUDED
-
-/*============================================================================*/
-/**
-  Perform an action at program exit
-
-  To use, derive your class from PerformedAtExit, and override `performAtExit()`.
-  The call will be made during the destruction of objects with static storage
-  duration, before LeakChecked performs its diagnostics.
-
-  @ingroup beast_core
-*/
-// VFALCO TODO Make the linked list element a private type and use composition
-//             instead of inheritance, so that PerformedAtExit doesn't expose
-//             lock free stack node interfaces.
-//
-class BEAST_API PerformedAtExit : public LockFreeStack <PerformedAtExit>::Node
+namespace detail
 {
-public:
-    class ExitHook;
 
-protected:
-    PerformedAtExit ();
-    virtual ~PerformedAtExit () { }
+// This is here so we don't need the Thread class declaration
+void staticObjectWait (std::size_t n)
+{
+    // Wait for initialization
+    Thread::yield ();
+    if (n > 10)
+        Thread::sleep (1);
+    else if (n > 100)
+        Thread::sleep (10);
+}
 
-protected:
-    /** Called at program exit.
-    */
-    virtual void performAtExit () = 0;
-};
-
-#endif
+}

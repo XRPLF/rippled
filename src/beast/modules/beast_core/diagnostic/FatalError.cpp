@@ -66,16 +66,19 @@ String FatalError::Reporter::formatFilePath (char const* filePath)
 
 //------------------------------------------------------------------------------
 
-Static::Storage <Atomic <FatalError::Reporter*>, FatalError> FatalError::s_reporter;
+FatalError::Reporter *FatalError::s_reporter;
 
-void FatalError::setReporter (Reporter& reporter)
+/** Returns the current fatal error reporter. */
+FatalError::Reporter* FatalError::getReporter ()
 {
-    s_reporter->compareAndSetBool (&reporter, nullptr);
+    return s_reporter;
 }
 
-void FatalError::resetReporter (Reporter& reporter)
+FatalError::Reporter* FatalError::setReporter (Reporter* reporter)
 {
-    s_reporter->compareAndSetBool (nullptr, &reporter);
+    Reporter* const previous (s_reporter);
+    s_reporter = reporter;
+    return previous;
 }
 
 FatalError::FatalError (char const* message, char const* fileName, int lineNumber)
@@ -94,7 +97,7 @@ FatalError::FatalError (char const* message, char const* fileName, int lineNumbe
 
     char const* const szFileName = fileNameString.toRawUTF8 ();
 
-    Reporter* const reporter = s_reporter->get ();
+    Reporter* const reporter (s_reporter);
 
     if (reporter != nullptr)
     {

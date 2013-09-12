@@ -120,20 +120,7 @@ private:
     {
         // VFALCO TODO Research the thread safety of static initializers
         //             on all supported platforms
-        static Counter counter;
-        return counter;
-
-        /*
-        static Counter* volatile s_instance;
-        static beast::Static::Initializer s_initializer;
-        if (s_initializer.begin ())
-        {
-            static char s_storage [sizeof (Counter)];
-            s_instance = new (s_storage) Counter;
-            s_initializer.end ();
-        }
-        return *s_instance;
-        */
+        return StaticObject <Counter>::get();
     }
 };
 

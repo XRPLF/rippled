@@ -25,6 +25,9 @@ public:
     ~FatalErrorReporter ();
 
     void reportMessage (String& formattedMessage);
+
+private:
+    FatalError::Reporter* m_savedReporter;
 };
 
 #endif

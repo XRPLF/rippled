@@ -21,16 +21,14 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PLATFORMDEFS_H_INCLUDED
-#define BEAST_PLATFORMDEFS_H_INCLUDED
+#ifndef BEAST_CORE_PLATFORMDEFS_H_INCLUDED
+#define BEAST_CORE_PLATFORMDEFS_H_INCLUDED
 
 // This file defines miscellaneous macros for debugging, assertions, etc.
 
-#ifdef BEAST_FORCE_DEBUG
+#if BEAST_FORCE_DEBUG
 # undef BEAST_DEBUG
-# if BEAST_FORCE_DEBUG
-#  define BEAST_DEBUG 1
-# endif
+# define BEAST_DEBUG 1
 #endif
 
 /** This macro defines the C calling convention used as the standard for Beast calls.

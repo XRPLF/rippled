@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_PROTECTEDCALL_H_INCLUDED
-#define BEAST_PROTECTEDCALL_H_INCLUDED
+#ifndef BEAST_CORE_PROTECTEDCALL_H_INCLUDED
+#define BEAST_CORE_PROTECTEDCALL_H_INCLUDED
 
 /** Call a function in a protected exception context.
 
@@ -141,7 +141,7 @@ private:
     void call (Call& call);
 
 private:
-    static Static::Storage <Atomic <Handler const*>, ProtectedCall> s_handler;
+    static Handler const* s_handler;
 };
 
 #endif

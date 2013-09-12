@@ -31,6 +31,8 @@ TEMPLATE = app
 CONFIG += console thread warn_off
 CONFIG -= qt gui
 
+DEFINES += _DEBUG
+
 linux-g++:QMAKE_CXXFLAGS += \
     -Wall \
     -Wno-sign-compare \

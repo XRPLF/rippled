@@ -149,10 +149,10 @@ namespace beast
 
 #include "diagnostic/beast_Debug.cpp"
 #include "diagnostic/beast_Error.cpp"
-#include "diagnostic/beast_FatalError.cpp"
+#include "diagnostic/FatalError.cpp"
 #include "diagnostic/beast_FPUFlags.cpp"
 #include "diagnostic/beast_LeakChecked.cpp"
-#include "diagnostic/beast_ProtectedCall.cpp"
+#include "diagnostic/ProtectedCall.cpp"
 #include "diagnostic/beast_SemanticVersion.cpp"
 #include "diagnostic/beast_UnitTest.cpp"
 #include "diagnostic/beast_UnitTestUtilities.cpp"
@@ -180,8 +180,9 @@ namespace beast
 #include "memory/beast_FifoFreeStoreWithoutTLS.cpp"
 #include "memory/beast_GlobalPagedFreeStore.cpp"
 #include "memory/beast_PagedFreeStore.cpp"
+#include "memory/StaticObject.cpp"
 
-#include "misc/beast_Main.cpp"
+#include "misc/Main.cpp"
 #include "misc/beast_Result.cpp"
 #include "misc/beast_Uuid.cpp"
 
@@ -232,7 +233,7 @@ namespace beast
 #include "threads/beast_TimeSliceThread.cpp"
 
 #include "time/beast_PerformanceCounter.cpp"
-#include "time/beast_PerformedAtExit.cpp"
+#include "time/AtExitHook.cpp"
 #include "time/beast_RelativeTime.cpp"
 #include "time/beast_Time.cpp"
 
