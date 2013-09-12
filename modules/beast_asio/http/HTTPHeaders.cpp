@@ -72,3 +72,15 @@ String HTTPHeaders::operator[] (String const& field) const
 {
     return get (field);
 }
+
+String HTTPHeaders::toString () const
+{
+    String s;
+    for (int i = 0; i < m_fields.size (); ++i)
+    {
+        HTTPField const field (at(i));
+        s << field.name() << ": " << field.value() << newLine;
+    }
+    return s;
+}
+

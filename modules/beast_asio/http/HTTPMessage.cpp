@@ -40,3 +40,11 @@ ContentBodyBuffer const& HTTPMessage::body () const
 {
     return m_body;
 }
+
+String HTTPMessage::toString () const
+{
+    String s;
+    s << "HTTP " << version().toString() << newLine;
+    s << m_headers.toString ();
+    return s;
+}

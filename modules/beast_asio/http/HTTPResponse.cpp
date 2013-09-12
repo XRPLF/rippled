@@ -31,3 +31,12 @@ unsigned short HTTPResponse::status () const
 {
     return m_status;
 }
+
+String HTTPResponse::toString () const
+{
+    String s;
+    s << "Status: " << String::fromNumber (status ()) << newLine;
+    s << this->HTTPMessage::toString ();
+    return s;
+}
+
