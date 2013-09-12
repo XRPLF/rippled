@@ -65,7 +65,7 @@ public:
         This is done automatically by the smart pointer, but is public just
         in case it's needed for nefarious purposes.
     */
-    inline void incReferenceCount() noexcept
+    inline void incReferenceCount() const noexcept
     {
         ++refCount;
     }
@@ -79,7 +79,7 @@ public:
         The return value indicates if the reference count dropped to zero,
         so callers who know the derived type can use the ContainerDeletePolicy.
     */
-    void decReferenceCount ()
+    void decReferenceCount () const
     {
         bassert (getReferenceCount() > 0);
         if (--refCount == 0)
@@ -109,7 +109,7 @@ protected:
     /** Destroy the object.
         Derived classes can override this for different behaviors.
     */
-    virtual void destroy ()
+    virtual void destroy () const
     {
         delete this;
     }
@@ -124,7 +124,7 @@ protected:
 
 private:
     //==============================================================================
-    Atomic <int> refCount;
+    Atomic <int> mutable refCount;
 };
 
 //==============================================================================
@@ -184,7 +184,7 @@ protected:
         bassert (getReferenceCount() == 0);
     }
 
-    virtual void destroy ()
+    virtual void destroy () const
     {
         delete this;
     }
