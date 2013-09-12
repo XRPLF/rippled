@@ -1025,6 +1025,9 @@
     <ClInclude Include="..\..\modules\beast_core\memory\StaticObject.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\Journal.h">
+      <Filter>beast_core\diagnostic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\beast_AbstractFifo.cpp">
@@ -1544,6 +1547,9 @@
       <Filter>beast_core\memory</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\Assert.cpp">
+      <Filter>beast_core\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\Journal.cpp">
       <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
   </ItemGroup>

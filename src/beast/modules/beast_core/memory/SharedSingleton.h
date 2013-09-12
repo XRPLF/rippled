@@ -75,7 +75,7 @@ class SharedSingleton
 public:
     typedef SharedPtr <SharedSingleton <Object> > Ptr;
 
-    static Ptr getInstance (SingletonLifetime::Lifetime lifetime
+    static Ptr get (SingletonLifetime::Lifetime lifetime
         = SingletonLifetime::persistAfterCreation)
     {
         StaticData& staticData (getStaticData ());
@@ -95,12 +95,20 @@ public:
         return instance;
     }
 
+    // DEPRECATED LEGACY FUNCTION NAME
+    static Ptr getInstance (SingletonLifetime::Lifetime lifetime
+        = SingletonLifetime::persistAfterCreation)
+    {
+        return get (lifetime);
+    }
+
 private:
     explicit SharedSingleton (SingletonLifetime::Lifetime lifetime)
         : m_lifetime (lifetime)
         , m_exitHook (this)
     {
-        if (m_lifetime == SingletonLifetime::persistAfterCreation)
+        if (m_lifetime == SingletonLifetime::persistAfterCreation ||
+            m_lifetime == SingletonLifetime::neverDestroyed)
             this->incReferenceCount ();
     }
 

@@ -281,6 +281,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "text/beast_String.h"
 #include "time/AtExitHook.h"
 #include "diagnostic/beast_LeakChecked.h"
+#include "diagnostic/Journal.h"
 #include "time/beast_RelativeTime.h"
 #include "time/beast_Time.h"
 #include "memory/beast_HeapBlock.h"
