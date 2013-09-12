@@ -27,7 +27,7 @@
   @ingroup beast_concurrent
 */
 template <class Tag>
-class GlobalFifoFreeStore : public SharedSingleton <GlobalFifoFreeStore <Tag> >
+class GlobalFifoFreeStore
 {
 public:
     inline void* allocate (size_t bytes)
@@ -40,15 +40,15 @@ public:
         FifoFreeStoreType::deallocate (p);
     }
 
-    static GlobalFifoFreeStore* createInstance ()
+    typedef SharedPtr <SharedSingleton <GlobalFifoFreeStore> > Ptr;
+
+    static Ptr getInstance ()
     {
-        return new GlobalFifoFreeStore;
+        return SharedSingleton <GlobalFifoFreeStore>::getInstance();
     }
 
 public:
     GlobalFifoFreeStore ()
-        : SharedSingleton <GlobalFifoFreeStore <Tag> >
-        (SingletonLifetime::persistAfterCreation)
     {
     }
 

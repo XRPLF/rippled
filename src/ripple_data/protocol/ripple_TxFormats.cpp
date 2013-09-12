@@ -5,7 +5,6 @@
 //==============================================================================
 
 TxFormats::TxFormats ()
-    : SharedSingleton <TxFormats> (SingletonLifetime::persistAfterCreation)
 {
     add ("AccountSet", ttACCOUNT_SET)
             << SOElement (sfEmailHash,       SOE_OPTIONAL)
@@ -91,7 +90,7 @@ void TxFormats::addCommonFields (Item& item)
         ;
 }
 
-TxFormats* TxFormats::createInstance ()
+TxFormats* TxFormats::getInstance ()
 {
-    return new TxFormats;
+    return SharedSingleton <TxFormats>::getInstance ();
 }

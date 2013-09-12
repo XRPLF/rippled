@@ -185,8 +185,7 @@ void LogPartition::setSeverity (LogSeverity severity)
 //------------------------------------------------------------------------------
 
 LogInstance::LogInstance ()
-    : SharedSingleton <LogInstance> (SingletonLifetime::persistAfterCreation)
-    , m_mutex ("Log", __FILE__, __LINE__)
+    : m_mutex ("Log", __FILE__, __LINE__)
     , m_minSeverity (lsINFO)
 {
 }
@@ -195,9 +194,9 @@ LogInstance::~LogInstance ()
 {
 }
 
-LogInstance* LogInstance::createInstance ()
+LogInstance* LogInstance::getInstance ()
 {
-    return new LogInstance;
+    return SharedSingleton <LogInstance>::getInstance ();
 }
 
 LogSeverity LogInstance::getMinSeverity ()

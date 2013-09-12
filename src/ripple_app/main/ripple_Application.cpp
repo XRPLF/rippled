@@ -14,7 +14,6 @@ SETUP_LOG (Application)
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp
     : public Application
-    , public SharedSingleton <ApplicationImp>
     , public NodeStore::Scheduler
     , LeakChecked <ApplicationImp>
     , PeerFinder::Callback
@@ -132,27 +131,8 @@ public:
 
     //--------------------------------------------------------------------------
 
-    static ApplicationImp* createInstance ()
-    {
-        return new ApplicationImp;
-    }
-
     ApplicationImp ()
-    //
-    // VFALCO NOTE Change this to control whether or not the Application
-    //             object is destroyed on exit
-    //
-    #if RIPPLE_APPLICATION_CLEAN_EXIT
-        // Application object will be deleted on exit. If the code doesn't exit
-        // cleanly this could cause hangs or crashes on exit.
-        //
-        : SharedSingleton <ApplicationImp> (SingletonLifetime::persistAfterCreation)
-    #else
-        // This will make it so that the Application object is not deleted on exit.
-        //
-        : SharedSingleton <ApplicationImp> (SingletonLifetime::neverDestroyed)
-    #endif
-        , m_mainService ("io",
+        : m_mainService ("io",
                          (getConfig ().NODE_SIZE >= 2) ? 2 : 1,
                          (getConfig ().NODE_SIZE >= 2) ? 1 : 0)
         , m_auxService ("auxio", 1, 1)
@@ -1214,7 +1194,20 @@ void ApplicationImp::onAnnounceAddress ()
 
 Application& getApp ()
 {
-    return *ApplicationImp::getInstance ();
+#if RIPPLE_APPLICATION_CLEAN_EXIT
+    // Application object will be deleted on exit. If the code doesn't exit
+    // cleanly this could cause hangs or crashes on exit.
+    //
+    SingletonLifetime::Lifetime lifetime (SingletonLifetime::persistAfterCreation);
+
+#else
+    // This will make it so that the Application object is not deleted on exit.
+    //
+    SingletonLifetime::Lifetime lifetime (SingletonLifetime::neverDestroyed);
+
+#endif
+
+    return *SharedSingleton <ApplicationImp>::getInstance (lifetime);
 }
 
 //------------------------------------------------------------------------------

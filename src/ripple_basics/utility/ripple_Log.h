@@ -33,8 +33,14 @@ public:
     template <class Key>
     static LogPartition const& get ()
     {
-        static LogPartition logPartition (getPartitionName <Key> ());
-        return logPartition;
+        struct LogPartitionType : LogPartition
+        {
+            LogPartitionType () : LogPartition (getPartitionName <Key> ())
+            {
+            }
+        };
+
+        return *SharedSingleton <LogPartitionType>::getInstance();
     }
 
     bool doLog (LogSeverity s) const
@@ -81,12 +87,13 @@ private:
 
 // A singleton which performs the actual logging.
 //
-class LogInstance : public SharedSingleton <LogInstance>
+class LogInstance
 {
 public:
     LogInstance ();
     ~LogInstance ();
-    static LogInstance* createInstance ();
+
+    static LogInstance* getInstance ();
 
     LogSeverity getMinSeverity ();
 

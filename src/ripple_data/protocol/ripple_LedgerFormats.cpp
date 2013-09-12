@@ -5,7 +5,6 @@
 //==============================================================================
 
 LedgerFormats::LedgerFormats ()
-    : SharedSingleton <LedgerFormats> (SingletonLifetime::persistAfterCreation)
 {
     add ("AccountRoot", ltACCOUNT_ROOT)
             << SOElement (sfAccount,             SOE_REQUIRED)
@@ -105,11 +104,6 @@ LedgerFormats::LedgerFormats ()
             ;
 }
 
-LedgerFormats* LedgerFormats::createInstance ()
-{
-    return new LedgerFormats;
-}
-
 void LedgerFormats::addCommonFields (Item& item)
 {
     item
@@ -117,4 +111,9 @@ void LedgerFormats::addCommonFields (Item& item)
         << SOElement(sfLedgerEntryType,         SOE_REQUIRED)
         << SOElement(sfFlags,                   SOE_REQUIRED)
         ;
+}
+
+LedgerFormats* LedgerFormats::getInstance ()
+{
+    return SharedSingleton <LedgerFormats>::getInstance ();
 }

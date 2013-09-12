@@ -27,8 +27,7 @@ static const size_t globalPageBytes = 8 * 1024;
 }
 
 GlobalPagedFreeStore::GlobalPagedFreeStore ()
-    : SharedSingleton <GlobalPagedFreeStore> (SingletonLifetime::persistAfterCreation)
-    , m_allocator (globalPageBytes)
+    : m_allocator (globalPageBytes)
 {
 }
 
@@ -36,7 +35,9 @@ GlobalPagedFreeStore::~GlobalPagedFreeStore ()
 {
 }
 
-GlobalPagedFreeStore* GlobalPagedFreeStore::createInstance ()
+GlobalPagedFreeStore::Ptr GlobalPagedFreeStore::getInstance ()
 {
-    return new GlobalPagedFreeStore;
+    return SharedSingleton <GlobalPagedFreeStore>::getInstance();
 }
+
+

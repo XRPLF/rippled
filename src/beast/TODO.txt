@@ -2,9 +2,12 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
-- Use new file naming convention
+- Remove ReadWriteMutex and replace it with a CriticalSection
+  since the implementation is broken.
 
-- Rename ReadWriteMutex to SharedMutex
+- Rewrite SharedData to work with a CriticalSection
+
+- Use new file naming convention
 
 - Use SemanticVersion for beast version numbers to replace BEAST_VERSION
 

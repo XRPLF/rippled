@@ -103,15 +103,12 @@ enum LedgerSpecificFlags
 
 /** Holds the list of known ledger entry formats.
 */
-class LedgerFormats
-    : public KnownFormats <LedgerEntryType>
-    , public SharedSingleton <LedgerFormats>
+class LedgerFormats : public KnownFormats <LedgerEntryType>
 {
-private:
+public:
     LedgerFormats ();
 
-public:
-    static LedgerFormats* createInstance ();
+    static LedgerFormats* getInstance ();
 
 private:
     void addCommonFields (Item& item);
