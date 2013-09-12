@@ -94,8 +94,13 @@ using namespace beast;
 
 #include "types/ripple_BasicTypes.h"
 
-#include "utility/ripple_LogFile.h"
-#include "utility/ripple_Log.h" // Needed by others
+#  include "log/LogSeverity.h"
+#  include "log/LogFile.h"
+# include "log/LogSink.h"
+# include "log/LogPartition.h"
+# include "log/Log.h"
+#include "log/LogJournal.h"
+#include "log/LoggedTimings.h"
 
 #include "utility/ripple_ByteOrder.h"
 #include "utility/ripple_CountedObject.h"
@@ -107,7 +112,6 @@ using namespace beast;
 #include "utility/ripple_Sustain.h"
 #include "utility/ripple_ThreadName.h"
 #include "utility/ripple_Time.h"
-#include "utility/ripple_LoggedTimings.h"
 #include "utility/ripple_UptimeTimer.h"
 
 #include "types/ripple_UInt256.h"

@@ -11,6 +11,15 @@ class Application;
 
 SETUP_LOG (Application)
 
+//------------------------------------------------------------------------------
+//
+// Specializations for LogPartition names
+
+template <> char const* LogPartition::getPartitionName <Validators> () { return "Validators"; }
+
+//
+//------------------------------------------------------------------------------
+
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp
     : public Application
@@ -475,9 +484,9 @@ public:
         if (!getConfig ().DEBUG_LOGFILE.empty ())
         {
             // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
-            LogInstance::getInstance()->setLogFile (getConfig ().DEBUG_LOGFILE);
+            LogSink::get()->setLogFile (getConfig ().DEBUG_LOGFILE);
 
-            if (LogInstance::getInstance()->getMinSeverity () > lsDEBUG)
+            if (LogSink::get()->getMinSeverity () > lsDEBUG)
                 LogPartition::setSeverity (lsDEBUG);
         }
 

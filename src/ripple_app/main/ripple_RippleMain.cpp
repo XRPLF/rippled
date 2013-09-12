@@ -360,15 +360,15 @@ int RippleMain::run (int argc, char const* const* argv)
 
     if (vm.count ("quiet"))
     {
-        LogInstance::getInstance()->setMinSeverity (lsFATAL, true);
+        LogSink::get()->setMinSeverity (lsFATAL, true);
     }
     else if (vm.count ("verbose"))
     {
-        LogInstance::getInstance()->setMinSeverity (lsTRACE, true);
+        LogSink::get()->setMinSeverity (lsTRACE, true);
     }
     else
     {
-        LogInstance::getInstance()->setMinSeverity (lsINFO, true);
+        LogSink::get()->setMinSeverity (lsINFO, true);
     }
 
     // Run the unit tests if requested.

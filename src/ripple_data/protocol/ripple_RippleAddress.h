@@ -31,6 +31,11 @@ private:
 public:
     RippleAddress ();
 
+    // Convert to a binary public key. If the underlying data
+    // is not appropriate, this will cause a fatal error.
+    //
+    RipplePublicKey toRipplePublicKey () const;
+
     // For public and private key, checks if they are legal.
     bool isValid () const
     {

@@ -172,6 +172,9 @@
     <Filter Include="[2] Ripple %28New%29\testoverlay\impl">
       <UniqueIdentifier>{e614b68f-21cb-4866-82d1-1ea89ee11906}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\ripple_basics\log">
+      <UniqueIdentifier>{824b1f04-7313-4abb-a3db-6241c7c8a356}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\ripple_RangeSet.cpp">
@@ -193,9 +196,6 @@
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\utility\ripple_IniFile.cpp">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_Log.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\utility\ripple_RandomNumbers.cpp">
@@ -497,9 +497,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt8.cpp">
       <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_LogFile.cpp">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\protocol\ripple_LedgerFormats.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
@@ -903,6 +900,21 @@
     <ClCompile Include="..\..\src\ripple_app\main\FatalErrorReporter.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\Log.cpp">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogFile.cpp">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogJournal.cpp">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogSink.cpp">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogPartition.cpp">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_app\ripple_app.h">
@@ -951,9 +963,6 @@
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_IniFile.h">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_Log.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_PlatformMacros.h">
@@ -1280,9 +1289,6 @@
     <ClInclude Include="..\..\src\leveldb\port\port_posix.h">
       <Filter>[0] Libraries\leveldb\port</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_LogFile.h">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_data\protocol\ripple_KnownFormats.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
@@ -1519,9 +1525,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\ripple_RippleMain.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_LoggedTimings.h">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\websocket\WSConnection.h">
       <Filter>[1] Ripple\ripple_app\websocket</Filter>
@@ -1760,6 +1763,27 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\FatalErrorReporter.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\Log.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LogFile.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LoggedTimings.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LogJournal.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LogSink.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LogSeverity.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LogPartition.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

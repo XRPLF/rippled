@@ -826,7 +826,7 @@ Json::Value RPCHandler::doProfile (Json::Value params, LoadType* loadType, Appli
     if (iArgs >= 8 && "false" != params[7u].asString())
         bSubmit = true;
 
-    LogInstance::getInstance()->setMinSeverity(lsFATAL,true);
+    LogSink::get()->setMinSeverity(lsFATAL,true);
 
     boost::posix_time::ptime            ptStart(boost::posix_time::microsec_clock::local_time());
 
@@ -2387,7 +2387,7 @@ Json::Value RPCHandler::doWalletAccounts (Json::Value params, LoadType* loadType
 
 Json::Value RPCHandler::doLogRotate (Json::Value, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
-    return LogInstance::getInstance()->rotateLog ();
+    return LogSink::get()->rotateLog ();
 }
 
 // {
@@ -2592,7 +2592,7 @@ Json::Value RPCHandler::doLogLevel (Json::Value params, LoadType* loadType, Appl
         Json::Value ret (Json::objectValue);
         Json::Value lev (Json::objectValue);
 
-        lev["base"] = Log::severityToString (LogInstance::getInstance()->getMinSeverity ());
+        lev["base"] = Log::severityToString (LogSink::get()->getMinSeverity ());
         std::vector< std::pair<std::string, std::string> > logTable = LogPartition::getSeverities ();
         typedef std::map<std::string, std::string>::value_type stringPair;
         BOOST_FOREACH (const stringPair & it, logTable)
@@ -2611,7 +2611,7 @@ Json::Value RPCHandler::doLogLevel (Json::Value params, LoadType* loadType, Appl
     if (!params.isMember ("partition"))
     {
         // set base log severity
-        LogInstance::getInstance()->setMinSeverity (sv, true);
+        LogSink::get()->setMinSeverity (sv, true);
         return Json::objectValue;
     }
 
@@ -2622,7 +2622,7 @@ Json::Value RPCHandler::doLogLevel (Json::Value params, LoadType* loadType, Appl
         std::string partition (params["partition"].asString ());
 
         if (boost::iequals (partition, "base"))
-            LogInstance::getInstance()->setMinSeverity (sv, false);
+            LogSink::get()->setMinSeverity (sv, false);
         else if (!LogPartition::setSeverity (partition, sv))
             return rpcError (rpcINVALID_PARAMS);
 

@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOGGEDTIMINGS_H_INCLUDED
-#define RIPPLE_LOGGEDTIMINGS_H_INCLUDED
+#ifndef RIPPLE_BASICS_LOGGEDTIMINGS_H_INCLUDED
+#define RIPPLE_BASICS_LOGGEDTIMINGS_H_INCLUDED
 
 namespace detail
 {

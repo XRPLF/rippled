@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOGFILE_H_INCLUDED
-#define RIPPLE_LOGFILE_H_INCLUDED
+#ifndef RIPPLE_BASICS_LOGFILE_H_INCLUDED
+#define RIPPLE_BASICS_LOGFILE_H_INCLUDED
 
 /** Manages a system file containing logged output.
 

@@ -12,6 +12,15 @@ RippleAddress::RippleAddress ()
     nVersion = VER_NONE;
 }
 
+RipplePublicKey RippleAddress::toRipplePublicKey () const
+{
+    Blob const& b (getNodePublic ());
+
+    check_precondition (b.size () == RipplePublicKey::sizeInBytes);
+
+    return RipplePublicKey (&b [0]);
+}
+
 void RippleAddress::clear ()
 {
     nVersion = VER_NONE;

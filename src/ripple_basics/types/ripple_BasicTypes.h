@@ -35,4 +35,5 @@ typedef UnsignedInteger <33> RipplePublicKey;
 /** A container holding the hash of a public key in binary format. */
 typedef UnsignedInteger <20> RipplePublicKeyHash;
 
+
 #endif

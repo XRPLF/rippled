@@ -3,6 +3,11 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's List: Changes day to day, descending priority
+- Fix and tidy up broken beast classes
+- Parse Validator line using cribbed code
+- Parse ContentBodyBuffer from HTTPResponse
+- General cleanup of the repository and projcet files
+
 - Look into using CMake
 - Validators should delay the application of newly downloaded lists from
   sources, to mitigate the effects of attacks. Unless there's no validators

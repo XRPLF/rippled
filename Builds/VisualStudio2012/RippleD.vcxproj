@@ -659,6 +659,36 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\Log.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogFile.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogJournal.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogPartition.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogSink.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\ripple_basics.cpp" />
     <ClCompile Include="..\..\src\ripple_basics\types\ripple_UInt256.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -685,18 +715,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\utility\ripple_IniFile.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_Log.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_LogFile.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1497,6 +1515,13 @@
     <ClInclude Include="..\..\src\ripple_basics\json\json_reader.h" />
     <ClInclude Include="..\..\src\ripple_basics\json\json_value.h" />
     <ClInclude Include="..\..\src\ripple_basics\json\json_writer.h" />
+    <ClInclude Include="..\..\src\ripple_basics\log\Log.h" />
+    <ClInclude Include="..\..\src\ripple_basics\log\LogFile.h" />
+    <ClInclude Include="..\..\src\ripple_basics\log\LoggedTimings.h" />
+    <ClInclude Include="..\..\src\ripple_basics\log\LogJournal.h" />
+    <ClInclude Include="..\..\src\ripple_basics\log\LogPartition.h" />
+    <ClInclude Include="..\..\src\ripple_basics\log\LogSeverity.h" />
+    <ClInclude Include="..\..\src\ripple_basics\log\LogSink.h" />
     <ClInclude Include="..\..\src\ripple_basics\ripple_basics.h" />
     <ClInclude Include="..\..\src\ripple_basics\system\ripple_BoostIncludes.h" />
     <ClInclude Include="..\..\src\ripple_basics\system\ripple_OpenSSLIncludes.h" />
@@ -1509,15 +1534,12 @@
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_DiffieHellmanUtil.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_HashUtilities.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_IniFile.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_Log.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_LogFile.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_PlatformMacros.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_RandomNumbers.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_StringUtilities.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_Sustain.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_ThreadName.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_Time.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_LoggedTimings.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\ripple_UptimeTimer.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadSource.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadType.h" />

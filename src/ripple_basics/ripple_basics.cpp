@@ -79,8 +79,11 @@ namespace ripple
 #include "json/json_value.cpp"
 #include "json/json_writer.cpp"
 
-#include "utility/ripple_Log.cpp"
-#include "utility/ripple_LogFile.cpp"
+#include "log/Log.cpp"
+#include "log/LogFile.cpp"
+#include "log/LogJournal.cpp"
+#include "log/LogPartition.cpp"
+#include "log/LogSink.cpp"
 
 #include "utility/ripple_ByteOrder.cpp"
 #include "utility/ripple_CountedObject.cpp"
