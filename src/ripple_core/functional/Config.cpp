@@ -714,17 +714,26 @@ File Config::findConfigFile (String commandLineLocation, bool forTestNetwork)
 
 File Config::getConfigDir () const
 {
-    return File (String (CONFIG_FILE.native ().c_str ())).getParentDirectory ();
+    String const s (CONFIG_FILE.native().c_str ());
+    if (s.isNotEmpty ())
+        return File (s).getParentDirectory ();
+    return File::nonexistent ();
 }
 
 File Config::getDatabaseDir () const
 {
-    return File (String (DATA_DIR.native ().c_str ()));
+    String const s (DATA_DIR.native().c_str());
+    if (s.isNotEmpty ())
+        return File (s);
+    return File::nonexistent ();
 }
 
 File Config::getValidatorsFile () const
 {
-    return getConfigDir().getChildFile (String (VALIDATORS_FILE.native().c_str()));
+    String const s (VALIDATORS_FILE.native().c_str());
+    if (s.isNotEmpty() && getConfigDir() != File::nonexistent())
+        return getConfigDir().getChildFile (s);
+    return File::nonexistent ();
 }
 
 UniformResourceLocator Config::getValidatorsURL () const
