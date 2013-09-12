@@ -14,7 +14,7 @@ enum MessageType
     mtCONTACT               = 11;
     mtGET_PEERS             = 12;
     mtPEERS                 = 13;
-	mtANNOUNCE              = 14;
+    mtANNOUNCE              = 14;
 
     // operations for 'small' nodes
     mtSEARCH_TRANSACTION    = 20;
@@ -34,7 +34,6 @@ enum MessageType
     mtVALIDATION            = 41;
     mtGET_OBJECTS           = 42;
 }
-
 
 // token, iterations, target, challenge = issue demand for proof of work
 // token, response = give solution to proof of work
@@ -63,6 +62,9 @@ message TMProofWork
 // Sent on connect
 message TMHello
 {
+    // VFALCO NOTE The major and minor parts of the version number are
+    //             encoded in the high and low order 16 bits of the uint32.
+    //
     required uint32         protoVersion    = 1;
     required uint32         protoVersionMin = 2;
     required bytes          nodePublic      = 3;
@@ -185,15 +187,12 @@ message TMValidation
     optional bool checkedSignature  = 2;        // node vouches signature is correct
 }
 
-
 message TMGetValidations
 {
     required uint32 ledgerIndex     = 1;
     repeated bytes hanko            = 2;
     optional uint32 count           = 3; // get random validations
 }
-
-
 
 message TMContact
 {
@@ -221,6 +220,10 @@ message TMGetPeers
 message TMIPv4EndPoint
 {
     required uint32 ipv4            = 1;
+
+    // VFALCO NOTE There is no uint16 in google protocol buffers,
+    //             so we use a uint32 to represent the port.
+    //
     required uint32 ipv4Port        = 2;
 }
 
@@ -231,11 +234,11 @@ message TMPeers
 
 message TMAnnounce
 {
-	required bytes   serverID             = 1; // The ID of this server
-	required bool    privatePeer          = 2; // This peer is private - the announce will not be propagated
-	required uint32  hopCount             = 3; // The hop count of this server
-	required bytes   viaPeerID            = 4; // The ID of the peer through which we know this server
-	repeated TMIPv4EndPoint connectPoints = 5; // Addresses on which this server accepts connections (can be empty)
+    required bytes   serverID             = 1; // The ID of this server
+    required bool    privatePeer          = 2; // This peer is private - the announce will not be propagated
+    required uint32  hopCount             = 3; // The hop count of this server
+    required bytes   viaPeerID            = 4; // The ID of the peer through which we know this server
+    repeated TMIPv4EndPoint connectPoints = 5; // Addresses on which this server accepts connections (can be empty)
 };
 
 message TMSearchTransaction
