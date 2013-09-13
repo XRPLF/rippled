@@ -25,20 +25,20 @@ namespace ripple
 
 // Order matters
 
-# include "functional/ripple_ConfigSections.h"
+# include "functional/ConfigSections.h"
 #include "functional/Config.h"
-#include "functional/ripple_ILoadFeeTrack.h"
-#  include "functional/ripple_LoadEvent.h"
-#  include "functional/ripple_LoadMonitor.h"
-# include "functional/ripple_Job.h"
-#include "functional/ripple_JobQueue.h"
+#include "functional/ILoadFeeTrack.h"
+#  include "functional/LoadEvent.h"
+#  include "functional/LoadMonitor.h"
+# include "functional/Job.h"
+#include "functional/JobQueue.h"
 # include "functional/LoadType.h"
 #include "functional/LoadSource.h"
 
 #include "node/NodeObject.h"
 #include "node/NodeStore.h"
 
-#include "peerfinder/ripple_PeerFinder.h"
+#include "peerfinder/PeerFinder.h"
 
 }
 

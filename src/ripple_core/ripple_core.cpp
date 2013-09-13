@@ -29,12 +29,12 @@ namespace ripple
 {
 
 #include "functional/Config.cpp"
-# include "functional/ripple_LoadFeeTrack.h" // private
-#include "functional/ripple_LoadFeeTrack.cpp"
-#include "functional/ripple_Job.cpp"
-#include "functional/ripple_JobQueue.cpp"
-#include "functional/ripple_LoadEvent.cpp"
-#include "functional/ripple_LoadMonitor.cpp"
+# include "functional/LoadFeeTrack.h" // private
+#include "functional/LoadFeeTrack.cpp"
+#include "functional/Job.cpp"
+#include "functional/JobQueue.cpp"
+#include "functional/LoadEvent.cpp"
+#include "functional/LoadMonitor.cpp"
 
 #  include "node/HyperLevelDBBackendFactory.h"
 # include "node/HyperLevelDBBackendFactory.cpp"
@@ -51,6 +51,6 @@ namespace ripple
 #include "node/NodeStore.cpp"
 #include "node/NodeObject.cpp"
 
-#include "peerfinder/ripple_PeerFinder.cpp"
+#include "peerfinder/PeerFinder.cpp"
 
 }

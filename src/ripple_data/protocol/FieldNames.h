@@ -19,7 +19,7 @@ enum SerializedTypeID
 
 #define TYPE(name, field, value) STI_##field = value,
 #define FIELD(name, field, value)
-#include "../protocol/ripple_SerializeDeclarations.h"
+#include "../protocol/SerializeDeclarations.h"
 #undef TYPE
 #undef FIELD
 
@@ -212,7 +212,7 @@ extern SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction, sfValidation;
 
 #define FIELD(name, type, index) extern SField sf##name;
 #define TYPE(name, type, index)
-#include "../protocol/ripple_SerializeDeclarations.h"
+#include "../protocol/SerializeDeclarations.h"
 #undef FIELD
 #undef TYPE
 

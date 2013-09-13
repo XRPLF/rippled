@@ -30,29 +30,29 @@
 namespace ripple
 {
 
-#include "crypto/ripple_CBigNum.h"
-#include "crypto/ripple_Base58.h" // VFALCO TODO Can be moved to .cpp if we clean up setAlphabet stuff
-#include "crypto/ripple_Base58Data.h"
-#include "crypto/ripple_RFC1751.h"
+#include "crypto/CBigNum.h"
+#include "crypto/Base58.h" // VFALCO TODO Can be moved to .cpp if we clean up setAlphabet stuff
+#include "crypto/Base58Data.h"
+#include "crypto/RFC1751.h"
 
 #include "protocol/BuildInfo.h"
-#include "protocol/ripple_FieldNames.h"
-#include "protocol/ripple_HashPrefix.h"
-#include "protocol/ripple_PackedMessage.h"
-#include "protocol/ripple_Protocol.h"
-#include "protocol/ripple_RippleAddress.h"
-#include "protocol/ripple_RippleSystem.h"
-#include "protocol/ripple_Serializer.h" // needs CKey
-#include "protocol/ripple_TER.h"
-#include "protocol/ripple_SerializedTypes.h" // needs Serializer, TER
-#include "protocol/ripple_SerializedObjectTemplate.h"
- #include "protocol/ripple_KnownFormats.h"
- #include "protocol/ripple_LedgerFormats.h" // needs SOTemplate from SerializedObjectTemplate
- #include "protocol/ripple_TxFormats.h"
-#include "protocol/ripple_SerializedObject.h"
-#include "protocol/ripple_TxFlags.h"
+#include "protocol/FieldNames.h"
+#include "protocol/HashPrefix.h"
+#include "protocol/PackedMessage.h"
+#include "protocol/Protocol.h"
+#include "protocol/RippleAddress.h"
+#include "protocol/RippleSystem.h"
+#include "protocol/Serializer.h" // needs CKey
+#include "protocol/TER.h"
+#include "protocol/SerializedTypes.h" // needs Serializer, TER
+#include "protocol/SerializedObjectTemplate.h"
+ #include "protocol/KnownFormats.h"
+ #include "protocol/LedgerFormats.h" // needs SOTemplate from SerializedObjectTemplate
+ #include "protocol/TxFormats.h"
+#include "protocol/SerializedObject.h"
+#include "protocol/TxFlags.h"
 
-#include "utility/ripple_UptimeTimerAdapter.h"
+#include "utility/UptimeTimerAdapter.h"
 
 }
 

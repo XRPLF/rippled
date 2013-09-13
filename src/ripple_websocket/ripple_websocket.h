@@ -39,7 +39,7 @@
 #include "websocket/src/common.hpp"
 #include "websocket/src/sockets/socket_base.hpp"
 
-#include "autosocket/ripple_AutoSocket.h" // must come before autotls.hpp
+#include "autosocket/AutoSocket.h" // must come before autotls.hp
 
 #include "websocket/src/sockets/autotls.hpp"
 #include "websocket/src/websocketpp.hpp"

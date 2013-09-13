@@ -56,15 +56,15 @@ namespace ripple
 # include "websocket/WSDoor.h"
 #include "websocket/WSDoor.cpp"
 
-#include "main/ripple_Application.cpp"
+#include "main/Application.cpp"
 
 //
 // RippleMain
 //
-# include "main/ripple_RippleMain.h"
-# include "node/ripple_SqliteBackendFactory.h"
-#include "node/ripple_SqliteBackendFactory.cpp"
-#include "main/ripple_RippleMain.cpp"
+# include "main/RippleMain.h"
+# include "node/SqliteBackendFactory.h"
+#include "node/SqliteBackendFactory.cpp"
+#include "main/RippleMain.cpp"
 
 }
 

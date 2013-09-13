@@ -11,12 +11,12 @@
 namespace ripple
 {
 
-#include "ledger/ripple_LedgerEntrySet.cpp"
-#include "ledger/ripple_AcceptedLedger.cpp"
-#include "consensus/ripple_DisputedTx.cpp"
-#include "misc/ripple_HashRouter.cpp"
-#include "misc/ripple_Offer.cpp"
-#include "paths/ripple_Pathfinder.cpp"
-#include "misc/ripple_Features.cpp"
+#include "ledger/LedgerEntrySet.cpp"
+#include "ledger/AcceptedLedger.cpp"
+#include "consensus/DisputedTx.cpp"
+#include "misc/HashRouter.cpp"
+#include "misc/Offer.cpp"
+#include "paths/Pathfinder.cpp"
+#include "misc/Features.cpp"
 
 }

@@ -16,12 +16,12 @@
 namespace ripple
 {
 
-#include "paths/ripple_PathRequest.cpp"
-#include "paths/ripple_RippleCalc.cpp"
-#include "paths/ripple_PathState.cpp"
+#include "paths/PathRequest.cpp"
+#include "paths/RippleCalc.cpp"
+#include "paths/PathState.cpp"
 
 #include "main/ParameterTable.cpp"
-#include "paths/ripple_RippleLineCache.cpp"
+#include "paths/RippleLineCache.cpp"
 #include "ledger/SerializedValidation.cpp"
 
 }

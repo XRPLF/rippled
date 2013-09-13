@@ -82,61 +82,61 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\validators\ripple_validators.cpp" />
-    <ClCompile Include="..\..\src\ripple_app\consensus\ripple_DisputedTx.cpp">
+    <ClCompile Include="..\..\src\ripple_app\consensus\DisputedTx.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\consensus\ripple_LedgerConsensus.cpp">
+    <ClCompile Include="..\..\src\ripple_app\consensus\LedgerConsensus.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\ripple_Contract.cpp">
+    <ClCompile Include="..\..\src\ripple_app\contracts\Contract.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\ripple_Interpreter.cpp">
+    <ClCompile Include="..\..\src\ripple_app\contracts\Interpreter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\ripple_Operation.cpp">
+    <ClCompile Include="..\..\src\ripple_app\contracts\Operation.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\ripple_ScriptData.cpp">
+    <ClCompile Include="..\..\src\ripple_app\contracts\ScriptData.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\data\ripple_Database.cpp">
+    <ClCompile Include="..\..\src\ripple_app\data\Database.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\data\ripple_DatabaseCon.cpp">
+    <ClCompile Include="..\..\src\ripple_app\data\DatabaseCon.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\data\ripple_DBInit.cpp">
+    <ClCompile Include="..\..\src\ripple_app\data\DBInit.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\data\ripple_SqliteDatabase.cpp">
+    <ClCompile Include="..\..\src\ripple_app\data\SqliteDatabase.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -172,37 +172,37 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_AcceptedLedger.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\AcceptedLedger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_AcceptedLedgerTx.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\AcceptedLedgerTx.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_InboundLedger.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\InboundLedger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_InboundLedgers.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\InboundLedgers.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_LedgerEntrySet.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerEntrySet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_LedgerHistory.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerHistory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -220,7 +220,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\ripple_Application.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\Application.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -232,19 +232,19 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\ripple_LoadManager.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\LoadManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\ripple_LocalCredentials.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\LocalCredentials.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\ripple_RippleMain.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\RippleMain.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -256,61 +256,61 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_AccountItem.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\AccountItem.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_AccountItems.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\AccountItems.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_AccountState.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\AccountState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_CanonicalTXSet.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\CanonicalTXSet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_Features.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\Features.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_FeeVote.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\FeeVote.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_HashRouter.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\HashRouter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_NicknameState.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\NicknameState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_Offer.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\Offer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_OrderBook.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\OrderBook.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -328,61 +328,61 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_SerializedLedger.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\SerializedLedger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_SerializedTransaction.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\SerializedTransaction.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_Validations.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\Validations.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\node\ripple_SqliteBackendFactory.cpp">
+    <ClCompile Include="..\..\src\ripple_app\node\SqliteBackendFactory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_Pathfinder.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\Pathfinder.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_PathRequest.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\PathRequest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_PathState.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\PathState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_RippleCalc.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\RippleCalc.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_RippleLineCache.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\RippleLineCache.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_RippleState.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\RippleState.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -394,25 +394,25 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\ripple_Peer.cpp">
+    <ClCompile Include="..\..\src\ripple_app\peers\Peer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\ripple_Peers.cpp">
+    <ClCompile Include="..\..\src\ripple_app\peers\Peers.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\ripple_PeerSet.cpp">
+    <ClCompile Include="..\..\src\ripple_app\peers\PeerSet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\ripple_UniqueNodeList.cpp">
+    <ClCompile Include="..\..\src\ripple_app\peers\UniqueNodeList.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -479,49 +479,49 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMap.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMap.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapDelta.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapDelta.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapItem.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapItem.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapMissingNode.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapMissingNode.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapNode.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapNode.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapSync.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapSync.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapSyncFilters.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapSyncFilters.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapTreeNode.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapTreeNode.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -563,7 +563,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\ripple_TransactionAcquire.cpp">
+    <ClCompile Include="..\..\src\ripple_app\tx\TransactionAcquire.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -647,13 +647,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\containers\ripple_RangeSet.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\containers\ripple_TaggedCache.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\containers\TaggedCache.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -708,67 +708,67 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\ripple_basics.cpp" />
-    <ClCompile Include="..\..\src\ripple_basics\types\ripple_UInt256.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\types\UInt256.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_ByteOrder.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\ByteOrder.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_CountedObject.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\CountedObject.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_DiffieHellmanUtil.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\DiffieHellmanUtil.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_IniFile.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\IniFile.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_RandomNumbers.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\RandomNumbers.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_StringUtilities.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\StringUtilities.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_Sustain.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\Sustain.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_ThreadName.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\ThreadName.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_Time.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\Time.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_UptimeTimer.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\UptimeTimer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -780,31 +780,31 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_Job.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\Job.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_JobQueue.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\JobQueue.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_LoadEvent.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\LoadEvent.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_LoadFeeTrack.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\LoadFeeTrack.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_LoadMonitor.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\LoadMonitor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -858,50 +858,50 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.cpp">
+    <ClCompile Include="..\..\src\ripple_core\peerfinder\PeerFinder.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\ripple_core.cpp" />
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_Base58.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\Base58.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_Base58Data.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\Base58Data.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_CBigNum.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\CBigNum.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_CKey.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\CKey.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_CKeyDeterministic.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\CKeyDeterministic.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_CKeyECIES.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\CKeyECIES.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_RFC1751.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\RFC1751.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -913,73 +913,73 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_FieldNames.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\FieldNames.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_LedgerFormats.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\LedgerFormats.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_PackedMessage.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\PackedMessage.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_RippleAddress.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\RippleAddress.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_SerializedObject.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\SerializedObject.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_SerializedObjectTemplate.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\SerializedObjectTemplate.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_SerializedTypes.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\SerializedTypes.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_Serializer.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\Serializer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_STAmount.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\STAmount.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_STAmountRound.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\STAmountRound.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_TER.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\TER.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_TxFormats.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\TxFormats.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1058,13 +1058,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_websocket\autosocket\ripple_AutoSocket.cpp">
+    <ClCompile Include="..\..\src\ripple_websocket\autosocket\AutoSocket.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_websocket\autosocket\ripple_LogWebsockets.cpp">
+    <ClCompile Include="..\..\src\ripple_websocket\autosocket\LogWebsockets.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1441,82 +1441,82 @@
     <ClInclude Include="..\..\src\ripple\validators\impl\StoreSqdb.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\Utilities.h" />
     <ClInclude Include="..\..\src\ripple\validators\ripple_validators.h" />
-    <ClInclude Include="..\..\src\ripple_app\consensus\ripple_DisputedTx.h" />
-    <ClInclude Include="..\..\src\ripple_app\consensus\ripple_LedgerConsensus.h" />
-    <ClInclude Include="..\..\src\ripple_app\contracts\ripple_Contract.h" />
-    <ClInclude Include="..\..\src\ripple_app\contracts\ripple_Interpreter.h" />
-    <ClInclude Include="..\..\src\ripple_app\contracts\ripple_Operation.h" />
-    <ClInclude Include="..\..\src\ripple_app\contracts\ripple_ScriptData.h" />
-    <ClInclude Include="..\..\src\ripple_app\data\ripple_Database.h" />
-    <ClInclude Include="..\..\src\ripple_app\data\ripple_DatabaseCon.h" />
-    <ClInclude Include="..\..\src\ripple_app\data\ripple_DBInit.h" />
-    <ClInclude Include="..\..\src\ripple_app\data\ripple_SqliteDatabase.h" />
+    <ClInclude Include="..\..\src\ripple_app\consensus\DisputedTx.h" />
+    <ClInclude Include="..\..\src\ripple_app\consensus\LedgerConsensus.h" />
+    <ClInclude Include="..\..\src\ripple_app\contracts\Contract.h" />
+    <ClInclude Include="..\..\src\ripple_app\contracts\Interpreter.h" />
+    <ClInclude Include="..\..\src\ripple_app\contracts\Operation.h" />
+    <ClInclude Include="..\..\src\ripple_app\contracts\ScriptData.h" />
+    <ClInclude Include="..\..\src\ripple_app\data\Database.h" />
+    <ClInclude Include="..\..\src\ripple_app\data\DatabaseCon.h" />
+    <ClInclude Include="..\..\src\ripple_app\data\DBInit.h" />
+    <ClInclude Include="..\..\src\ripple_app\data\SqliteDatabase.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\Ledger.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerMaster.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerProposal.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerTiming.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\OrderBookDB.h" />
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_AcceptedLedger.h" />
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_AcceptedLedgerTx.h" />
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_InboundLedger.h" />
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_InboundLedgers.h" />
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_LedgerEntrySet.h" />
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_LedgerHistory.h" />
+    <ClInclude Include="..\..\src\ripple_app\ledger\AcceptedLedger.h" />
+    <ClInclude Include="..\..\src\ripple_app\ledger\AcceptedLedgerTx.h" />
+    <ClInclude Include="..\..\src\ripple_app\ledger\InboundLedger.h" />
+    <ClInclude Include="..\..\src\ripple_app\ledger\InboundLedgers.h" />
+    <ClInclude Include="..\..\src\ripple_app\ledger\LedgerEntrySet.h" />
+    <ClInclude Include="..\..\src\ripple_app\ledger\LedgerHistory.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\SerializedValidation.h" />
     <ClInclude Include="..\..\src\ripple_app\main\ParameterTable.h" />
-    <ClInclude Include="..\..\src\ripple_app\main\ripple_Application.h" />
+    <ClInclude Include="..\..\src\ripple_app\main\Application.h" />
     <ClInclude Include="..\..\src\ripple_app\main\FatalErrorReporter.h" />
-    <ClInclude Include="..\..\src\ripple_app\main\ripple_LoadManager.h" />
-    <ClInclude Include="..\..\src\ripple_app\main\ripple_LocalCredentials.h" />
-    <ClInclude Include="..\..\src\ripple_app\main\ripple_RippleMain.h" />
+    <ClInclude Include="..\..\src\ripple_app\main\LoadManager.h" />
+    <ClInclude Include="..\..\src\ripple_app\main\LocalCredentials.h" />
+    <ClInclude Include="..\..\src\ripple_app\main\RippleMain.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\NetworkOPs.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\PowResult.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_AccountItem.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_AccountItems.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_AccountState.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_CanonicalTXSet.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_IFeatures.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_IFeeVote.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_IHashRouter.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\AccountItem.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\AccountItems.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\AccountState.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\CanonicalTXSet.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\IFeatures.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\IFeeVote.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\IHashRouter.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\ProofOfWorkFactory.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_NicknameState.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_Offer.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_OrderBook.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\NicknameState.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\Offer.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\OrderBook.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\ProofOfWork.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_SerializedLedger.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_SerializedTransaction.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_Validations.h" />
-    <ClInclude Include="..\..\src\ripple_app\node\ripple_SqliteBackendFactory.h" />
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_Pathfinder.h" />
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_PathRequest.h" />
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_PathState.h" />
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_RippleCalc.h" />
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_RippleLineCache.h" />
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_RippleState.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\SerializedLedger.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\SerializedTransaction.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\Validations.h" />
+    <ClInclude Include="..\..\src\ripple_app\node\SqliteBackendFactory.h" />
+    <ClInclude Include="..\..\src\ripple_app\paths\Pathfinder.h" />
+    <ClInclude Include="..\..\src\ripple_app\paths\PathRequest.h" />
+    <ClInclude Include="..\..\src\ripple_app\paths\PathState.h" />
+    <ClInclude Include="..\..\src\ripple_app\paths\RippleCalc.h" />
+    <ClInclude Include="..\..\src\ripple_app\paths\RippleLineCache.h" />
+    <ClInclude Include="..\..\src\ripple_app\paths\RippleState.h" />
     <ClInclude Include="..\..\src\ripple_app\peers\PeerDoor.h" />
-    <ClInclude Include="..\..\src\ripple_app\peers\ripple_ClusterNodeStatus.h" />
-    <ClInclude Include="..\..\src\ripple_app\peers\ripple_Peers.h" />
-    <ClInclude Include="..\..\src\ripple_app\peers\ripple_Peer.h" />
-    <ClInclude Include="..\..\src\ripple_app\peers\ripple_PeerSet.h" />
-    <ClInclude Include="..\..\src\ripple_app\peers\ripple_UniqueNodeList.h" />
+    <ClInclude Include="..\..\src\ripple_app\peers\ClusterNodeStatus.h" />
+    <ClInclude Include="..\..\src\ripple_app\peers\Peers.h" />
+    <ClInclude Include="..\..\src\ripple_app\peers\Peer.h" />
+    <ClInclude Include="..\..\src\ripple_app\peers\PeerSet.h" />
+    <ClInclude Include="..\..\src\ripple_app\peers\UniqueNodeList.h" />
     <ClInclude Include="..\..\src\ripple_app\ripple_app.h" />
     <ClInclude Include="..\..\src\ripple_app\rpc\RPCServerHandler.h" />
     <ClInclude Include="..\..\src\ripple_app\rpc\RPCHandler.h" />
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMap.h" />
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapAddNode.h" />
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapItem.h" />
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapMissingNode.h" />
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapNode.h" />
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapSyncFilter.h" />
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapSyncFilters.h" />
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapTreeNode.h" />
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMap.h" />
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapAddNode.h" />
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapItem.h" />
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapMissingNode.h" />
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapNode.h" />
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapSyncFilter.h" />
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapSyncFilters.h" />
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapTreeNode.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\AccountSetTransactor.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\ChangeTransactor.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\OfferCancelTransactor.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\OfferCreateTransactor.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\PaymentTransactor.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\RegularKeySetTransactor.h" />
-    <ClInclude Include="..\..\src\ripple_app\tx\ripple_TransactionAcquire.h" />
+    <ClInclude Include="..\..\src\ripple_app\tx\TransactionAcquire.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\Transaction.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\TransactionEngine.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\TransactionMaster.h" />
@@ -1529,10 +1529,10 @@
     <ClInclude Include="..\..\src\ripple_app\websocket\WSConnection.h" />
     <ClInclude Include="..\..\src\ripple_app\websocket\WSDoor.h" />
     <ClInclude Include="..\..\src\ripple_app\websocket\WSServerHandler.h" />
-    <ClInclude Include="..\..\src\ripple_basics\containers\ripple_KeyCache.h" />
-    <ClInclude Include="..\..\src\ripple_basics\containers\ripple_RangeSet.h" />
-    <ClInclude Include="..\..\src\ripple_basics\containers\ripple_SecureAllocator.h" />
-    <ClInclude Include="..\..\src\ripple_basics\containers\ripple_TaggedCache.h" />
+    <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h" />
+    <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h" />
+    <ClInclude Include="..\..\src\ripple_basics\containers\SecureAllocator.h" />
+    <ClInclude Include="..\..\src\ripple_basics\containers\TaggedCache.h" />
     <ClInclude Include="..\..\src\ripple_basics\json\json_autolink.h" />
     <ClInclude Include="..\..\src\ripple_basics\json\json_batchallocator.h" />
     <ClInclude Include="..\..\src\ripple_basics\json\json_config.h" />
@@ -1549,34 +1549,34 @@
     <ClInclude Include="..\..\src\ripple_basics\log\LogSeverity.h" />
     <ClInclude Include="..\..\src\ripple_basics\log\LogSink.h" />
     <ClInclude Include="..\..\src\ripple_basics\ripple_basics.h" />
-    <ClInclude Include="..\..\src\ripple_basics\system\ripple_BoostIncludes.h" />
-    <ClInclude Include="..\..\src\ripple_basics\system\ripple_OpenSSLIncludes.h" />
-    <ClInclude Include="..\..\src\ripple_basics\system\ripple_StandardIncludes.h" />
-    <ClInclude Include="..\..\src\ripple_basics\types\ripple_BasicTypes.h" />
-    <ClInclude Include="..\..\src\ripple_basics\types\ripple_HashMaps.h" />
-    <ClInclude Include="..\..\src\ripple_basics\types\ripple_UInt256.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_ByteOrder.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_CountedObject.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_DiffieHellmanUtil.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_HashUtilities.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_IniFile.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_PlatformMacros.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_RandomNumbers.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_StringUtilities.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_Sustain.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_ThreadName.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_Time.h" />
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_UptimeTimer.h" />
+    <ClInclude Include="..\..\src\ripple_basics\system\BoostIncludes.h" />
+    <ClInclude Include="..\..\src\ripple_basics\system\OpenSSLIncludes.h" />
+    <ClInclude Include="..\..\src\ripple_basics\system\StandardIncludes.h" />
+    <ClInclude Include="..\..\src\ripple_basics\types\BasicTypes.h" />
+    <ClInclude Include="..\..\src\ripple_basics\types\HashMaps.h" />
+    <ClInclude Include="..\..\src\ripple_basics\types\UInt256.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\ByteOrder.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\CountedObject.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\DiffieHellmanUtil.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\HashUtilities.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\IniFile.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\PlatformMacros.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\RandomNumbers.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\StringUtilities.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\Sustain.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\ThreadName.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\Time.h" />
+    <ClInclude Include="..\..\src\ripple_basics\utility\UptimeTimer.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadSource.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadType.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\Config.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_ConfigSections.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_ILoadFeeTrack.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_Job.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_JobQueue.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_LoadEvent.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_LoadFeeTrack.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_LoadMonitor.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\ConfigSections.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\ILoadFeeTrack.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\Job.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\JobQueue.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadEvent.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadMonitor.h" />
     <ClInclude Include="..\..\src\ripple_core\node\HyperLevelDBBackendFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\node\KeyvaDBBackendFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\node\LevelDBBackendFactory.h" />
@@ -1585,32 +1585,32 @@
     <ClInclude Include="..\..\src\ripple_core\node\NodeObject.h" />
     <ClInclude Include="..\..\src\ripple_core\node\NodeStore.h" />
     <ClInclude Include="..\..\src\ripple_core\node\NullBackendFactory.h" />
-    <ClInclude Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.h" />
+    <ClInclude Include="..\..\src\ripple_core\peerfinder\PeerFinder.h" />
     <ClInclude Include="..\..\src\ripple_core\ripple_core.h" />
-    <ClInclude Include="..\..\src\ripple_data\crypto\ripple_Base58.h" />
-    <ClInclude Include="..\..\src\ripple_data\crypto\ripple_Base58Data.h" />
-    <ClInclude Include="..\..\src\ripple_data\crypto\ripple_CBigNum.h" />
-    <ClInclude Include="..\..\src\ripple_data\crypto\ripple_CKey.h" />
-    <ClInclude Include="..\..\src\ripple_data\crypto\ripple_RFC1751.h" />
+    <ClInclude Include="..\..\src\ripple_data\crypto\Base58.h" />
+    <ClInclude Include="..\..\src\ripple_data\crypto\Base58Data.h" />
+    <ClInclude Include="..\..\src\ripple_data\crypto\CBigNum.h" />
+    <ClInclude Include="..\..\src\ripple_data\crypto\CKey.h" />
+    <ClInclude Include="..\..\src\ripple_data\crypto\RFC1751.h" />
     <ClInclude Include="..\..\src\ripple_data\protocol\BuildInfo.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_FieldNames.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_HashPrefix.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_LedgerFormats.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_PackedMessage.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_KnownFormats.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_Protocol.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_RippleAddress.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_RippleSystem.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_SerializeDeclarations.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_SerializedObject.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_SerializedObjectTemplate.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_SerializedTypes.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_Serializer.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_TER.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_TxFlags.h" />
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_TxFormats.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\FieldNames.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\HashPrefix.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\LedgerFormats.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\PackedMessage.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\KnownFormats.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\Protocol.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\RippleAddress.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\RippleSystem.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializeDeclarations.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedObject.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedObjectTemplate.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedTypes.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\Serializer.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\TER.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\TxFlags.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\TxFormats.h" />
     <ClInclude Include="..\..\src\ripple_data\ripple_data.h" />
-    <ClInclude Include="..\..\src\ripple_data\utility\ripple_UptimeTimerAdapter.h" />
+    <ClInclude Include="..\..\src\ripple_data\utility\UptimeTimerAdapter.h" />
     <ClInclude Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.h" />
     <ClInclude Include="..\..\src\ripple_leveldb\ripple_leveldb.h" />
     <ClInclude Include="..\..\src\ripple_mdb\ripple_mdb.h" />
@@ -1629,7 +1629,7 @@
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCErr.h" />
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCSub.h" />
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCUtil.h" />
-    <ClInclude Include="..\..\src\ripple_websocket\autosocket\ripple_AutoSocket.h" />
+    <ClInclude Include="..\..\src\ripple_websocket\autosocket\AutoSocket.h" />
     <ClInclude Include="..\..\src\ripple_websocket\ripple_websocket.h" />
     <ClInclude Include="..\..\src\BeastConfig.h" />
     <ClInclude Include="..\..\src\leveldb\db\builder.h" />

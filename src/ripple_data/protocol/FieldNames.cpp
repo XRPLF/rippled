@@ -25,7 +25,7 @@ SField sfIndex (STI_HASH256, 258, "index");
 
 #define FIELD(name, type, index) SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
 #define TYPE(name, type, index)
-#include "../protocol/ripple_SerializeDeclarations.h"
+#include "../protocol/SerializeDeclarations.h"
 #undef FIELD
 #undef TYPE
 
@@ -79,7 +79,7 @@ SField::ref SField::getField (int code)
 
 #define FIELD(name, type, index)
 #define TYPE(name, type, index) case STI_##type:
-#include "../protocol/ripple_SerializeDeclarations.h"
+#include "../protocol/SerializeDeclarations.h"
 #undef FIELD
 #undef TYPE
 
