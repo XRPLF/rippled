@@ -37,8 +37,9 @@ public:
     };
 
     // Standard container compatibility
-    typedef unsigned char* iterator;
-    typedef unsigned char const* const_iterator;
+    typedef uint8               value_type;
+    typedef value_type*         iterator;
+    typedef value_type const*   const_iterator;
 
     /** Hardened hash function for use with HashMap.
         The seed is used to make the hash unpredictable. This prevents
@@ -124,7 +125,7 @@ public:
 
     /** Construct with a filled value.
     */
-    static UnsignedInteger <Bytes> createFilled (unsigned char value)
+    static UnsignedInteger <Bytes> createFilled (value_type value)
     {
         UnsignedInteger <Bytes> result;
         result.fill (value);
@@ -133,7 +134,7 @@ public:
 
     /** Fill with a particular byte value.
     */
-    void fill (unsigned char value) noexcept
+    void fill (value_type value) noexcept
     {
         memset (m_byte, value, Bytes);
     }
@@ -178,7 +179,7 @@ public:
 
     /** Access a particular byte.
     */
-    unsigned char& getByte (int byteIndex) noexcept
+    value_type& getByte (int byteIndex) noexcept
     {
         bassert (byteIndex >= 0 && byteIndex < Bytes);
 
@@ -187,7 +188,7 @@ public:
 
     /** Access a particular byte as `const`.
     */
-    unsigned char getByte (int byteIndex) const noexcept
+    value_type getByte (int byteIndex) const noexcept
     {
         bassert (byteIndex >= 0 && byteIndex < Bytes);
 
@@ -196,14 +197,14 @@ public:
 
     /** Access a particular byte.
     */
-    unsigned char& operator[] (int byteIndex) noexcept
+    value_type& operator[] (int byteIndex) noexcept
     {
         return getByte (byteIndex);
     }
 
     /** Access a particular byte as `const`.
     */
-    unsigned char const operator[] (int byteIndex) const noexcept
+    value_type const operator[] (int byteIndex) const noexcept
     {
         return getByte (byteIndex);
     }
@@ -372,7 +373,7 @@ public:
     //
 
 private:
-    unsigned char m_byte [Bytes];
+    value_type m_byte [Bytes];
 };
 
 #endif
