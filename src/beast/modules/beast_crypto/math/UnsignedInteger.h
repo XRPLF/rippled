@@ -176,7 +176,7 @@ public:
     /** Determine if all bits are zero. */
     bool isZero () const
     {
-        for (int i = 0; i < Bytes; ++i)
+        for (int i = 0; i < CalcCount; ++i)
         {
             if (m_values [i] != 0)
                 return false;
