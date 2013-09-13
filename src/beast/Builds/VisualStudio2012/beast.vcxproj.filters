@@ -1028,6 +1028,12 @@
     <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedInteger.h">
       <Filter>beast_crypto\math</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedIntegerCalc.h">
+      <Filter>beast_crypto\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_crypto\math\BinaryEncoding.h">
+      <Filter>beast_crypto\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\beast_AbstractFifo.cpp">
@@ -1550,6 +1556,9 @@
       <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_crypto\math\UnsignedInteger.cpp">
+      <Filter>beast_crypto\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_crypto\math\BinaryEncoding.cpp">
       <Filter>beast_crypto\math</Filter>
     </ClCompile>
   </ItemGroup>

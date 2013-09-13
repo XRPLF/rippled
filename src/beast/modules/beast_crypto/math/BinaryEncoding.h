@@ -17,14 +17,8 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_CRYPTO_BINARYENCODING_H_INCLUDED
+#define BEAST_CRYPTO_BINARYENCODING_H_INCLUDED
 
-#include "beast_crypto.h"
 
-namespace beast
-{
-
-#include "math/BinaryEncoding.cpp"
-#include "math/UnsignedInteger.cpp"
-
-}
+#endif

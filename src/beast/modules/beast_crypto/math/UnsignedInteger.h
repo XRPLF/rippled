@@ -17,15 +17,18 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UNSIGNEDINTEGER_H_INCLUDED
-#define BEAST_UNSIGNEDINTEGER_H_INCLUDED
+#ifndef BEAST_CRYPTO_UNSIGNEDINTEGER_H_INCLUDED
+#define BEAST_CRYPTO_UNSIGNEDINTEGER_H_INCLUDED
 
 /** Represents a set of bits of fixed size.
-    Integer representations are stored in network / big endian byte order.
-    @note The number of bits represented can only be a multiple of 8.
-    @tparam Bytes The number of bytes of storage.
+
+    The data is stored in "canonical" format which is network (big endian)
+    byte order, most significant byte first.
+
+    In this implementation the pointer to the beginning of the canonical format
+    may not be aligned.
 */
-template <size_t Bytes>
+template <std::size_t Bytes>
 class UnsignedInteger : public SafeBool <UnsignedInteger <Bytes> > 
 {
 public:
@@ -36,10 +39,16 @@ public:
         sizeInBytes = Bytes
     };
 
+    // The underlying integer type we use when converting to calculation format.
+    typedef uint32             IntCalcType;
+
+    // The type of object resulting from a conversion to calculation format.
+    typedef UnsignedIntegerCalc <IntCalcType> CalcType;
+
     // Standard container compatibility
-    typedef uint8               value_type;
-    typedef value_type*         iterator;
-    typedef value_type const*   const_iterator;
+    typedef uint8              ValueType;
+    typedef ValueType*         iterator;
+    typedef ValueType const*   const_iterator;
 
     /** Hardened hash function for use with HashMap.
         The seed is used to make the hash unpredictable. This prevents
@@ -61,14 +70,14 @@ public:
         }
 
         /** Generates a simple hash from an UnsignedInteger. */
-        HashValue generateHash (UnsignedInteger <Bytes> const& key) const noexcept
+        HashValue generateHash (UnsignedInteger const& key) const
         {
             HashValue hash;
             Murmur::Hash (key.cbegin (), key.sizeInBytes, m_seed, &hash);
             return hash;
         }
 
-        HashValue operator() (UnsignedInteger <Bytes> const& key) const noexcept
+        HashValue operator() (UnsignedInteger const& key) const
         {
             HashValue hash;
             Murmur::Hash (key.cbegin (), key.sizeInBytes, m_seed, &hash);
@@ -84,12 +93,12 @@ public:
     /** Construct the object.
         The values are uninitialized.
     */
-    UnsignedInteger () noexcept
+    UnsignedInteger ()
     {
     }
 
     /** Construct a copy. */
-    UnsignedInteger (UnsignedInteger <Bytes> const& other) noexcept
+    UnsignedInteger (UnsignedInteger const& other)
     {
         this->operator= (other);
     }
@@ -101,37 +110,31 @@ public:
     /** @{ */
     explicit UnsignedInteger (void const* buf)
     {
+        m_values [0] = 0; // clear any pad bytes
         std::memcpy (begin(), buf, Bytes);
     }
 
     template <typename T>
     explicit UnsignedInteger (T const* buf)
     {
+        m_values [0] = 0; // clear any pad bytes
         std::memcpy (begin(), buf, Bytes);
     }
     /** @} */
 
-    /** Construct from a sequence. */
-    template <class ForwardIterator>
-    UnsignedInteger (ForwardIterator start, ForwardIterator finish)
+    /** Assign from another UnsignedInteger. */
+    UnsignedInteger& operator= (UnsignedInteger const& other)
     {
-        bassert (std::distance (start, finish) == Bytes);
-        std::copy (start, finish, begin());
-    }
-
-    /** Assign from another value. */
-    UnsignedInteger <Bytes>& operator= (UnsignedInteger const& other) noexcept
-    {
-        std::memcpy (begin(), other.begin(), Bytes);
+        // Perform an aligned, all inclusive copy that includes padding.
+        std::copy (other.m_values, other.m_values + CalcCount, m_values);
         return *this;
     }
 
     /** Create from an integer type.
-
         @invariant IntegerType must be an unsigned integer type.
     */
     template <class IntegerType>
-    static UnsignedInteger <Bytes> createFromInteger (IntegerType value)
+    static UnsignedInteger createFromInteger (IntegerType value)
     {
         static_bassert (Bytes >= sizeof (IntegerType));
         UnsignedInteger <Bytes> result;
@@ -143,31 +146,39 @@ public:
 
     /** Construct with a filled value.
     */
-    static UnsignedInteger <Bytes> createFilled (value_type value)
+    static UnsignedInteger createFilled (ValueType value)
     {
-        UnsignedInteger <Bytes> result;
+        UnsignedInteger result;
         result.fill (value);
         return result;
     }
 
     /** Fill with a particular byte value. */
-    void fill (value_type value) noexcept
+    void fill (ValueType value)
     {
-        std::fill (begin(), end(), value);
+        IntCalcType c;
+        memset (&c, value, sizeof (c));
+        std::fill (m_values, m_values + CalcCount, c);
     }
 
     /** Clear the contents to zero. */
-    void clear () noexcept
+    void clear ()
     {
-        fill (0);
+        std::fill (m_values, m_values + CalcCount, 0);
+    }
+
+    /** Convert to calculation format. */
+    CalcType toCalcType (bool convert = true)
+    {
+        return CalcType::fromCanonical (m_values, Bytes, convert);
     }
 
     /** Determine if all bits are zero. */
-    bool isZero () const noexcept
+    bool isZero () const
     {
         for (int i = 0; i < Bytes; ++i)
         {
-            if (m_byte [i] != 0)
+            if (m_values [i] != 0)
                 return false;
         }
 
@@ -175,7 +186,7 @@ public:
     }
 
     /** Determine if any bit is non-zero. */
-    bool isNotZero () const noexcept
+    bool isNotZero () const
     {
         return ! isZero ();
     }
@@ -184,198 +195,107 @@ public:
         @return `true` if any bit is non-zero.
         @see SafeBool
     */
-    bool asBoolean () const noexcept
+    bool asBoolean () const
     {
         return isNotZero ();
     }
 
-    /** Access a particular byte. */
-    value_type& getByte (int byteIndex) noexcept
-    {
-        bassert (byteIndex >= 0 && byteIndex < Bytes);
-
-        return m_byte [byteIndex];
-    }
-
-    /** Access a particular byte as `const`. */
-    value_type getByte (int byteIndex) const noexcept
-    {
-        bassert (byteIndex >= 0 && byteIndex < Bytes);
-
-        return m_byte [byteIndex];
-    }
-
-    /** Access a particular byte. */
-    value_type& operator[] (int byteIndex) noexcept
-    {
-        return getByte (byteIndex);
-    }
-
-    /** Access a particular byte as `const`. */
-    value_type const operator[] (int byteIndex) const noexcept
-    {
-        return getByte (byteIndex);
-    }
-
     /** Get an iterator to the beginning. */
-    iterator begin () noexcept
+    iterator begin ()
     {
-        return &m_byte [0];
+        return get();
     }
 
     /** Get an iterator to past-the-end. */
-    iterator end () noexcept
+    iterator end ()
     {
-        return &m_byte [Bytes];
+        return get()+Bytes;
     }
 
     /** Get a const iterator to the beginning. */
-    const_iterator begin () const noexcept
+    const_iterator begin () const
     {
-        return &m_byte [0];
+        return get();
     }
 
     /** Get a const iterator to past-the-end. */
-    const_iterator end () const noexcept
+    const_iterator end () const
     {
-        return &m_byte [Bytes];
+        return get()+Bytes;
     }
 
     /** Get a const iterator to the beginning. */
-    const_iterator cbegin () const noexcept
+    const_iterator cbegin () const
     {
-        return &m_byte [0];
+        return get();
     }
 
     /** Get a const iterator to past-the-end. */
-    const_iterator cend () const noexcept
+    const_iterator cend () const
     {
-        return &m_byte [Bytes];
+        return get()+Bytes;
     }
 
-    /** Compare two objects. */
-    int compare (UnsignedInteger <Bytes> const& other) const noexcept
+    /** Compare two objects of equal size.
+        The comparison is performed using a numeric lexicographical comparison.
+    */
+    int compare (UnsignedInteger const& other) const
     {
         return memcmp (cbegin (), other.cbegin (), Bytes);
     }
 
     /** Determine equality. */
-    bool operator== (UnsignedInteger <Bytes> const& other) const noexcept
+    bool operator== (UnsignedInteger const& other) const
     {
         return compare (other) == 0;
     }
 
     /** Determine inequality. */
-    bool operator!= (UnsignedInteger <Bytes> const& other) const noexcept
+    bool operator!= (UnsignedInteger const& other) const
     {
         return compare (other) != 0;
     }
 
     /** Ordered comparison. */
-    bool operator< (UnsignedInteger <Bytes> const& other) const noexcept
+    bool operator< (UnsignedInteger const& other) const
     {
         return compare (other) < 0;
     }
 
     /** Ordered comparison. */
-    bool operator<= (UnsignedInteger <Bytes> const& other) const noexcept
+    bool operator<= (UnsignedInteger const& other) const
     {
         return compare (other) <= 0;
     }
 
     /** Ordered comparison. */
-    bool operator> (UnsignedInteger <Bytes> const& other) const noexcept
+    bool operator> (UnsignedInteger const& other) const
     {
         return compare (other) > 0;
     }
 
     /** Ordered comparison. */
-    bool operator>= (UnsignedInteger <Bytes> const& other) const noexcept
+    bool operator>= (UnsignedInteger const& other) const
     {
         return compare (other) >= 0;
     }
 
-    /** Perform bitwise logical-not. */
-    UnsignedInteger <Bytes> operator~ () const noexcept
-    {
-        UnsignedInteger <Bytes> result;
-
-        for (int i = 0; i < Bytes; ++i)
-            result [i] = ~getByte (i);
-
-        return result;
-    }
-
-    /** Perform bitwise logical-or. */
-    UnsignedInteger <Bytes>& operator|= (UnsignedInteger <Bytes> const& rhs) noexcept
-    {
-        for (int i = 0; i < Bytes; ++i)
-            getByte (i) |= rhs [i];
-
-        return *this;
-    }
-
-    /** Perform bitwise logical-or. */
-    UnsignedInteger <Bytes> operator| (UnsignedInteger <Bytes> const& rhs) const noexcept
-    {
-        UnsignedInteger <Bytes> result;
-
-        for (int i = 0; i < Bytes; ++i)
-            result [i] = getByte (i) | rhs [i];
-
-        return result;
-    }
-
-    /** Perform bitwise logical-and. */
-    UnsignedInteger <Bytes>& operator&= (UnsignedInteger <Bytes> const& rhs) noexcept
-    {
-        for (int i = 0; i < Bytes; ++i)
-            getByte (i) &= rhs [i];
-
-        return *this;
-    }
-
-    /** Perform bitwise logical-and. */
-    UnsignedInteger <Bytes> operator& (UnsignedInteger <Bytes> const& rhs) const noexcept
-    {
-        UnsignedInteger <Bytes> result;
-
-        for (int i = 0; i < Bytes; ++i)
-            result [i] = getByte (i) & rhs [i];
-
-        return result;
-    }
-
-    /** Perform bitwise logical-xor. */
-    UnsignedInteger <Bytes>& operator^= (UnsignedInteger <Bytes> const& rhs) noexcept
-    {
-        for (int i = 0; i < Bytes; ++i)
-            getByte (i) ^= rhs [i];
-
-        return *this;
-    }
-
-    /** Perform bitwise logical-xor. */
-    UnsignedInteger <Bytes> operator^ (UnsignedInteger <Bytes> const& rhs) const noexcept
-    {
-        UnsignedInteger <Bytes> result;
-
-        for (int i = 0; i < Bytes; ++i)
-            result [i] = getByte (i) ^ rhs [i];
-
-        return result;
-    }
-
-    // VFALCO TODO:
-    //
-    //      increment, decrement, add, subtract
-    //      negate
-    //      other stuff that makes sense from base_uint <>
-    //      missing stuff that built-in integers do
-    //
-
 private:
-    value_type m_byte [Bytes];
+    static std::size_t const CalcCount = (Bytes + sizeof (IntCalcType) - 1) / sizeof (IntCalcType);
+
+    ValueType* get ()
+    {
+        return (reinterpret_cast <ValueType*> (&m_values [0])) +
+            ((sizeof(IntCalcType)-(Bytes&(sizeof(IntCalcType)-1)))&(sizeof(IntCalcType)-1));
+    }
+
+    ValueType const* get () const
+    {
+        return (reinterpret_cast <ValueType const*> (&m_values [0])) +
+            ((sizeof(IntCalcType)-(Bytes&(sizeof(IntCalcType)-1)))&(sizeof(IntCalcType)-1));
+    }
+
+    IntCalcType m_values [CalcCount];
 };
 
 #endif
