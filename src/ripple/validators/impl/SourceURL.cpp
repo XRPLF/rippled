@@ -24,6 +24,16 @@ public:
         return "URL: '" + m_url.full() + "'";
     }
 
+    String uniqueID ()
+    {
+        return "URL," + m_url.full();
+    }
+
+    String createParam ()
+    {
+        return m_url.full();
+    }
+
     Result fetch (CancelCallback&, Journal journal)
     {
         Result result;

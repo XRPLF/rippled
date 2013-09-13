@@ -24,6 +24,16 @@ public:
         return "File :'" + m_file.getFullPathName () + "'";
     }
 
+    String uniqueID ()
+    {
+        return "File," + m_file.getFullPathName ();
+    }
+
+    String createParam ()
+    {
+        return m_file.getFullPathName ();
+    }
+
     Result fetch (CancelCallback&, Journal journal)
     {
         Result result;

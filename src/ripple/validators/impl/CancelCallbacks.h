@@ -12,7 +12,7 @@ namespace Validators
 
 // Dummy CancelCallback that does nothing
 //
-class NoOpCancelCallback : public Source::CancelCallback
+class NoOpCancelCallback : public CancelCallback
 {
 public:
     bool shouldCancel ()
@@ -27,7 +27,7 @@ public:
 // CancelCallback attached to ThreadWithCallQueue
 //
 class ThreadCancelCallback
-    : public Source::CancelCallback
+    : public CancelCallback
     , public Uncopyable
 {
 public:

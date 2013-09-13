@@ -921,6 +921,9 @@
     <ClCompile Include="..\..\src\ripple\validators\impl\Tests.cpp">
       <Filter>[2] Ripple %28New%29\validators\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\StoreSqdb.cpp">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_app\ripple_app.h">
@@ -1804,6 +1807,12 @@
       <Filter>[2] Ripple %28New%29\validators\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\ChosenList.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceDesc.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\StoreSqdb.h">
       <Filter>[2] Ripple %28New%29\validators\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\CancelCallbacks.h">

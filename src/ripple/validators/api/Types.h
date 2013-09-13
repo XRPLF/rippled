@@ -19,6 +19,12 @@ struct ReceivedValidation
     PublicKeyHash signerPublicKeyHash;
 };
 
+/** Callback used to optionally cancel long running fetch operations. */
+struct CancelCallback
+{
+    virtual bool shouldCancel () = 0;
+};
+
 }
 
 #endif

@@ -4,6 +4,10 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_VALIDATORS_DISABLE_MANAGER
+#define RIPPLE_VALIDATORS_DISABLE_MANAGER 1
+#endif
+
 /*
 
 Information to track:
@@ -95,10 +99,12 @@ class ManagerImp
 {
 public:
     explicit ManagerImp (Journal journal)
-        : m_logic (journal)
+        : m_store (journal)
+        , m_logic (m_store, journal)
         , m_journal (journal)
         , m_thread ("Validators")
         , m_checkTimer (this)
+        , m_checkSources (true) // true to cause a full scan on start
     {
         m_thread.start (this);
     }
@@ -136,40 +142,71 @@ public:
 
     void addSource (Source* source)
     {
-        m_thread.call (&Logic::addSource, &m_logic, source);
+#if RIPPLE_VALIDATORS_DISABLE_MANAGER
+        delete source;
+#else
+        m_thread.call (&Logic::add, &m_logic, source);
+#endif
     }
 
     void addStaticSource (Source* source)
     {
-        m_thread.call (&Logic::addStaticSource, &m_logic, source);
+#if RIPPLE_VALIDATORS_DISABLE_MANAGER
+        delete source;
+#else
+        m_thread.call (&Logic::addStatic, &m_logic, source);
+#endif
     }
 
     void receiveValidation (ReceivedValidation const& rv)
     {
+#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
         m_thread.call (&Logic::receiveValidation, &m_logic, rv);
+#endif
     }
 
     //--------------------------------------------------------------------------
 
-    // This intermediate function is used to provide the CancelCallback
-    void checkSources ()
-    {
-        ThreadCancelCallback cancelCallback (m_thread);
-
-        m_logic.checkSources (cancelCallback);
-    }
-
     void onDeadlineTimer (DeadlineTimer& timer)
     {
+#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
         if (timer == m_checkTimer)
-            m_thread.call (&ManagerImp::checkSources, this);
+        {
+            m_checkSources = true;
+
+            // This will kick us back into threadIdle
+            m_thread.interrupt();
+        }
+#endif
     }
 
     //--------------------------------------------------------------------------
 
     void threadInit ()
     {
-        m_checkTimer.setRecurringExpiration (checkEverySeconds);
+#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
+        File const file (File::getSpecialLocation (
+            File::userDocumentsDirectory).getChildFile ("validators.sqlite"));
+        
+        Error error (m_store.open (file));
+
+        if (error)
+        {
+            m_journal.fatal() <<
+                "Failed to open '" << file.getFullPathName() << "'";
+        }
+
+        if (! error)
+        {
+            m_logic.load ();
+
+            // This flag needs to be on, to force a full check of all
+            // sources on startup. Once we finish the check we will
+            // set the deadine timer.
+            //
+            bassert (m_checkSources);
+        }
+#endif
     }
 
     void threadExit ()
@@ -180,14 +217,35 @@ public:
     {
         bool interrupted = false;
 
+#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
+        if (m_checkSources)
+        {
+            ThreadCancelCallback cancelCallback (m_thread);
+            interrupted = m_logic.check (cancelCallback);
+            if (! interrupted)
+            {
+                // Made it through the list without interruption!
+                // Clear the flag and set the deadline timer again.
+                m_checkSources = false;
+                m_checkTimer.setExpiration (checkEverySeconds);
+            }
+        }
+#endif
+
         return interrupted;
     }
 
 private:
+    StoreSqdb m_store;
     Logic m_logic;
     Journal m_journal;
     ThreadWithCallQueue m_thread;
     DeadlineTimer m_checkTimer;
+
+    // True if we should call check on idle.
+    // This gets set to false once we make it through the whole
+    // list without interruption.
+    bool m_checkSources;
 };
 
 //------------------------------------------------------------------------------

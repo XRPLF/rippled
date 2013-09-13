@@ -46,7 +46,18 @@ public:
         std::string const& line,
         Journal journal = Journal());
 
-private:
+    // helpers
+    static String itos (int i, int fieldSize = 0);
+    static int stoi (String& s, int fieldSize, int minValue, int maxValue, beast_wchar delimiter);
+
+    // conversion betwen Time and String
+    static String timeToString (Time const& t);
+    static Time stringToTime (String s);
+
+    // conversion between PublicKey and String
+    static std::string publicKeyToString (PublicKey const& publicKey);
+    static PublicKey stringToPublicKey (std::string const& s);
+
     struct Helpers;
 
     /** Parse a string into a Source::Info.

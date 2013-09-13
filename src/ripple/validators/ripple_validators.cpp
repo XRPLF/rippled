@@ -24,8 +24,10 @@ namespace ripple
 # include "impl/SourceFile.h"
 # include "impl/SourceStrings.h"
 # include "impl/SourceURL.h"
-# include "impl/Store.h"
 # include "impl/Utilities.h"
+#  include "impl/SourceDesc.h"
+# include "impl/Store.h"
+# include "impl/StoreSqdb.h"
 #include "impl/Logic.h"
 
 #include "impl/Manager.cpp"
@@ -33,6 +35,7 @@ namespace ripple
 #include "impl/SourceFile.cpp"
 #include "impl/SourceStrings.cpp"
 #include "impl/SourceURL.cpp"
+#include "impl/StoreSqdb.cpp"
 #include "impl/Tests.cpp"
 #include "impl/Utilities.cpp"
 

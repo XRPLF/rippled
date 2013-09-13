@@ -18,7 +18,10 @@ public:
     struct Info
     {
         /** The unique key for this validator. */
-        PublicKey key;
+        PublicKey publicKey;
+
+        /** Optional human readable comment describing the validator. */
+        String label;
     };
 
     /** Destroy the Source.
@@ -30,10 +33,9 @@ public:
 
     virtual String name () = 0;
 
-    struct CancelCallback
-    {
-        virtual bool shouldCancel () = 0;
-    };
+    virtual String uniqueID () = 0;
+
+    virtual String createParam () = 0;
 
     /** Fetch the most recent list from the Source.
         If possible, the Source should periodically poll the

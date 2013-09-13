@@ -12,7 +12,8 @@ class Tests : public UnitTest
 public:
    enum
     {
-        numberOfTestValidators = 1000
+        numberOfTestValidators = 1000,
+        numberofTestSources = 50
     };
 
     //--------------------------------------------------------------------------
@@ -92,7 +93,19 @@ public:
 
         String name ()
         {
-            return "Test";
+            return uniqueID ();
+        }
+
+        String uniqueID ()
+        {
+            return String ("Test,") + m_name + "," +
+                String::fromNumber (m_start) + "," +
+                String::fromNumber (m_end);
+        }
+
+        String createParam ()
+        {
+            return String::empty;
         }
 
         Result fetch (CancelCallback& cancel, Journal)
@@ -106,7 +119,8 @@ public:
             for (uint32 i = m_start ; i < m_end; ++i)
             {
                 Info info;
-                info.key = Validators::PublicKey::createFromInteger (i);
+                info.publicKey = Validators::PublicKey::createFromInteger (i);
+                info.label = String::fromNumber (i);
                 result.list.add (info);
             }
 
@@ -120,36 +134,81 @@ public:
 
     //--------------------------------------------------------------------------
 
+    class TestStore : public Store
+    {
+    public:
+        TestStore ()
+        {
+        }
+
+        ~TestStore ()
+        {
+        }
+
+        void insertSourceDesc (SourceDesc& desc)
+        {
+        }
+
+        void updateSourceDesc (SourceDesc& desc)
+        {
+        }
+
+        void updateSourceDescInfo (SourceDesc& desc)
+        {
+        }
+    };
+
+    //--------------------------------------------------------------------------
+
     void addSources (Logic& logic)
     {
-#if 0
-        logic.addSource (new TestSource ("source 1",    0, 1000));
-        logic.addSource (new TestSource ("source 2",  200, 1500));
-        logic.addSource (new TestSource ("source 3",  500, 2000));
-        logic.addSource (new TestSource ("source 4",  750, 2200));
-        logic.addSource (new TestSource ("source 5", 1500, 3200));
-#else
-        logic.addSource (new TestSource ("source 1",    0, 1));
-#endif
+        for (int i = 1; i <= numberofTestSources; ++i)
+        {
+            String const name (String::fromNumber (i));
+            uint32 const start = random().nextInt (numberOfTestValidators);
+            uint32 const end   = start + random().nextInt (numberOfTestValidators);
+            logic.add (new TestSource (name, start, end));
+        }
     }
 
     void testLogic ()
     {
         beginTestCase ("logic");
 
-        Logic logic;
+        //TestStore store;
+        StoreSqdb storage;
+
+        File const file (
+            File::getSpecialLocation (
+                File::userDocumentsDirectory).getChildFile (
+                    "validators-test.sqlite"));
+
+        // Can't call this 'error' because of ADL and Journal::error
+        Error err (storage.open (file));
+
+        unexpected (err, err.what());
+
+        Logic logic (storage, Journal ());
+        logic.load ();
+
         addSources (logic);
 
         NoOpCancelCallback cancelCallback;
-        logic.checkSources (cancelCallback);
+        logic.check (cancelCallback);
 
-        ChosenList::Ptr list (logic.getChosenList ());
+        ChosenList::Ptr list (logic.getChosen ());
 
         pass ();
     }
 
     void runTest ()
     {
+        // We need to use the same seed so we create the
+        // same IDs for the set of TestSource objects.
+        //
+        int64 const seedValue = 10;
+        random().setSeed (seedValue);
+
         testLogic ();
     }
 

@@ -26,6 +26,16 @@ public:
         return m_name;
     }
 
+    String uniqueID ()
+    {
+        return String::empty;
+    }
+
+    String createParam ()
+    {
+        return String::empty;
+    }
+
     Result fetch (CancelCallback&, Journal journal)
     {
         Result result;
