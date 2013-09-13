@@ -218,7 +218,7 @@ DeadlineTimer::~DeadlineTimer ()
 
 void DeadlineTimer::setExpiration (double secondsUntilDeadline)
 {
-    bassert (secondsUntilDeadline > 0);
+    bassert (secondsUntilDeadline != 0);
 
     Time const when = Time::getCurrentTime () + RelativeTime (secondsUntilDeadline);
 
@@ -227,7 +227,7 @@ void DeadlineTimer::setExpiration (double secondsUntilDeadline)
 
 void DeadlineTimer::setRecurringExpiration (double secondsUntilDeadline)
 {
-    bassert (secondsUntilDeadline > 0);
+    bassert (secondsUntilDeadline != 0);
 
     Time const when = Time::getCurrentTime () + RelativeTime (secondsUntilDeadline);
 
