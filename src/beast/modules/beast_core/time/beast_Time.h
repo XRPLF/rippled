@@ -97,6 +97,21 @@ public:
     */
     static Time BEAST_CALLTYPE getCurrentTime() noexcept;
 
+    /** Returns `true` if this object represents "no time", or NULL.
+        Internally we check for milliseconds since Epoch equal to zero.
+    */
+    /** @{ */
+    bool isNull () const noexcept
+    {
+        return millisSinceEpoch == 0;
+    }
+
+    bool isNotNull () const noexcept
+    {
+        return millisSinceEpoch != 0;
+    }
+    /** @} */
+
     /** Returns the time as a number of milliseconds.
 
         @returns    the number of milliseconds this Time object represents, since
