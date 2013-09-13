@@ -30,7 +30,7 @@
 
     You can create a Random object and use it to generate a sequence of random numbers.
 */
-class BEAST_API Random : LeakChecked <Random>
+class Random
 {
 public:
     //==============================================================================

@@ -311,6 +311,9 @@ public:
 
     void logReport (StringArray const& report);
 
+    /** Returns a shared RNG that all unit tests should use. */
+    Random& random();
+
 private:
     void finishCase ();
 
@@ -322,6 +325,7 @@ private:
     UnitTests* m_runner;
     ScopedPointer <Suite> m_suite;
     ScopedPointer <Case> m_case;
+    Random m_random;
 };
 
 //==============================================================================
@@ -467,13 +471,14 @@ public:
         @param tests An optional parameter containing a list of tests to match.
     */
     void runSelectedTests (String const& match = "",
-                           TestList const& tests = UnitTest::getAllTests ());
+                           TestList const& tests = UnitTest::getAllTests (),
+                           int64 randomSeed = 0);
 
     /** Runs the specified list of tests.
         @note The tests are run regardless of the run settings.
         @param tests The list of tests to run.
     */
-    void runTests (TestList const& tests);
+    void runTests (TestList const& tests, int64 randomSeed = 0);
 
 protected:
     friend class UnitTest;
@@ -503,6 +508,7 @@ private:
 private:
     bool m_assertOnFailure;
     ScopedPointer <Results> m_results;
+    Random m_random;
 };
 
 #endif
