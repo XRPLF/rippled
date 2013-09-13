@@ -560,9 +560,6 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.h">
-      <Filter>beast_crypto\math</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_crypto\beast_crypto.h">
       <Filter>beast_crypto</Filter>
     </ClInclude>
@@ -1028,6 +1025,9 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\Journal.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedInteger.h">
+      <Filter>beast_crypto\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\beast_AbstractFifo.cpp">
@@ -1306,9 +1306,6 @@
     <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.cpp">
       <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.cpp">
-      <Filter>beast_crypto\math</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\files\beast_RandomAccessFile.cpp">
       <Filter>beast_core\files</Filter>
     </ClCompile>
@@ -1551,6 +1548,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\Journal.cpp">
       <Filter>beast_core\diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_crypto\math\UnsignedInteger.cpp">
+      <Filter>beast_crypto\math</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

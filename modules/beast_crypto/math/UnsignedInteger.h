@@ -79,6 +79,8 @@ public:
         HashValue m_seed;
     };
 
+    //--------------------------------------------------------------------------
+
     /** Construct the object.
         The values are uninitialized.
     */
@@ -92,19 +94,35 @@ public:
         this->operator= (other);
     }
 
-    /** Construct from raw memory.
+    /** Construct from a raw memory.
         The area pointed to by buffer must be at least Bytes in size,
         or else undefined behavior will result.
     */
-    explicit UnsignedInteger (void const* buffer)
+    /** @{ */
+    explicit UnsignedInteger (void const* buf)
     {
-        memcpy (m_byte, buffer, Bytes);
+        std::memcpy (begin(), buf, Bytes);
+    }
+
+    template <typename T>
+    explicit UnsignedInteger (T const* buf)
+    {
+        std::memcpy (begin(), buf, Bytes);
+    }
+    /** @} */
+
+    /** Construct from a sequence. */
+    template <class ForwardIterator>
+    UnsignedInteger (ForwardIterator start, ForwardIterator finish)
+    {
+        bassert (std::distance (start, finish) == Bytes);
+        std::copy (start, finish, begin());
     }
 
     /** Assign from another value. */
     UnsignedInteger <Bytes>& operator= (UnsignedInteger const& other) noexcept
     {
-        memcpy (m_byte, other.m_byte, Bytes);
+        std::memcpy (begin(), other.begin(), Bytes);
         return *this;
     }
 
@@ -119,7 +137,7 @@ public:
         UnsignedInteger <Bytes> result;
         value = toNetworkByteOrder <IntegerType> (value);
         result.clear ();
-        memcpy (result.end () - sizeof (value), &value, bmin (Bytes, sizeof (value)));
+        std::memcpy (result.end () - sizeof (value), &value, bmin (Bytes, sizeof (value)));
         return result;
     }
 
@@ -132,22 +150,19 @@ public:
         return result;
     }
 
-    /** Fill with a particular byte value.
-    */
+    /** Fill with a particular byte value. */
     void fill (value_type value) noexcept
     {
-        memset (m_byte, value, Bytes);
+        std::fill (begin(), end(), value);
     }
 
-    /** Clear the contents to zero.
-    */
+    /** Clear the contents to zero. */
     void clear () noexcept
     {
         fill (0);
     }
 
-    /** Determine if all bits are zero.
-    */
+    /** Determine if all bits are zero. */
     bool isZero () const noexcept
     {
         for (int i = 0; i < Bytes; ++i)
@@ -159,17 +174,14 @@ public:
         return true;
     }
 
-    /** Determine if any bit is non-zero.
-    */
+    /** Determine if any bit is non-zero. */
     bool isNotZero () const noexcept
     {
         return ! isZero ();
     }
 
     /** Support conversion to `bool`.
-
         @return `true` if any bit is non-zero.
-
         @see SafeBool
     */
     bool asBoolean () const noexcept
@@ -177,8 +189,7 @@ public:
         return isNotZero ();
     }
 
-    /** Access a particular byte.
-    */
+    /** Access a particular byte. */
     value_type& getByte (int byteIndex) noexcept
     {
         bassert (byteIndex >= 0 && byteIndex < Bytes);
@@ -186,8 +197,7 @@ public:
         return m_byte [byteIndex];
     }
 
-    /** Access a particular byte as `const`.
-    */
+    /** Access a particular byte as `const`. */
     value_type getByte (int byteIndex) const noexcept
     {
         bassert (byteIndex >= 0 && byteIndex < Bytes);
@@ -195,99 +205,97 @@ public:
         return m_byte [byteIndex];
     }
 
-    /** Access a particular byte.
-    */
+    /** Access a particular byte. */
     value_type& operator[] (int byteIndex) noexcept
     {
         return getByte (byteIndex);
     }
 
-    /** Access a particular byte as `const`.
-    */
+    /** Access a particular byte as `const`. */
     value_type const operator[] (int byteIndex) const noexcept
     {
         return getByte (byteIndex);
     }
 
-    /** Get an iterator to the beginning.
-    */
+    /** Get an iterator to the beginning. */
     iterator begin () noexcept
     {
         return &m_byte [0];
     }
 
-    /** Get an iterator to the end.
-    */
-    iterator end ()
+    /** Get an iterator to past-the-end. */
+    iterator end () noexcept
     {
         return &m_byte [Bytes];
     }
 
-    /** Get a const iterator to the beginning.
-    */
+    /** Get a const iterator to the beginning. */
+    const_iterator begin () const noexcept
+    {
+        return &m_byte [0];
+    }
+
+    /** Get a const iterator to past-the-end. */
+    const_iterator end () const noexcept
+    {
+        return &m_byte [Bytes];
+    }
+
+    /** Get a const iterator to the beginning. */
     const_iterator cbegin () const noexcept
     {
         return &m_byte [0];
     }
 
-    /** Get a const iterator to the end.
-    */
+    /** Get a const iterator to past-the-end. */
     const_iterator cend () const noexcept
     {
         return &m_byte [Bytes];
     }
 
-    /** Compare two objects.
-    */
+    /** Compare two objects. */
     int compare (UnsignedInteger <Bytes> const& other) const noexcept
     {
         return memcmp (cbegin (), other.cbegin (), Bytes);
     }
 
-    /** Determine equality.
-    */
+    /** Determine equality. */
     bool operator== (UnsignedInteger <Bytes> const& other) const noexcept
     {
         return compare (other) == 0;
     }
 
-    /** Determine inequality.
-    */
+    /** Determine inequality. */
     bool operator!= (UnsignedInteger <Bytes> const& other) const noexcept
     {
         return compare (other) != 0;
     }
 
-    /** Ordered comparison.
-    */
+    /** Ordered comparison. */
     bool operator< (UnsignedInteger <Bytes> const& other) const noexcept
     {
         return compare (other) < 0;
     }
 
-    /** Ordered comparison.
-    */
+    /** Ordered comparison. */
     bool operator<= (UnsignedInteger <Bytes> const& other) const noexcept
     {
         return compare (other) <= 0;
     }
 
-    /** Ordered comparison.
-    */
+    /** Ordered comparison. */
     bool operator> (UnsignedInteger <Bytes> const& other) const noexcept
     {
         return compare (other) > 0;
     }
 
-    /** Ordered comparison.
-    */
+    /** Ordered comparison. */
     bool operator>= (UnsignedInteger <Bytes> const& other) const noexcept
     {
         return compare (other) >= 0;
     }
 
-    /** Perform bitwise logical-not.
-    */
+    /** Perform bitwise logical-not. */
     UnsignedInteger <Bytes> operator~ () const noexcept
     {
         UnsignedInteger <Bytes> result;
@@ -298,8 +306,7 @@ public:
         return result;
     }
 
-    /** Perform bitwise logical-or.
-    */
+    /** Perform bitwise logical-or. */
     UnsignedInteger <Bytes>& operator|= (UnsignedInteger <Bytes> const& rhs) noexcept
     {
         for (int i = 0; i < Bytes; ++i)
@@ -308,8 +315,7 @@ public:
         return *this;
     }
 
-    /** Perform bitwise logical-or.
-    */
+    /** Perform bitwise logical-or. */
     UnsignedInteger <Bytes> operator| (UnsignedInteger <Bytes> const& rhs) const noexcept
     {
         UnsignedInteger <Bytes> result;
@@ -320,8 +326,7 @@ public:
         return result;
     }
 
-    /** Perform bitwise logical-and.
-    */
+    /** Perform bitwise logical-and. */
     UnsignedInteger <Bytes>& operator&= (UnsignedInteger <Bytes> const& rhs) noexcept
     {
         for (int i = 0; i < Bytes; ++i)
@@ -330,8 +335,7 @@ public:
         return *this;
     }
 
-    /** Perform bitwise logical-and.
-    */
+    /** Perform bitwise logical-and. */
     UnsignedInteger <Bytes> operator& (UnsignedInteger <Bytes> const& rhs) const noexcept
     {
         UnsignedInteger <Bytes> result;
@@ -342,8 +346,7 @@ public:
         return result;
     }
 
-    /** Perform bitwise logical-xor.
-    */
+    /** Perform bitwise logical-xor. */
     UnsignedInteger <Bytes>& operator^= (UnsignedInteger <Bytes> const& rhs) noexcept
     {
         for (int i = 0; i < Bytes; ++i)
@@ -352,8 +355,7 @@ public:
         return *this;
     }
 
-    /** Perform bitwise logical-xor.
-    */
+    /** Perform bitwise logical-xor. */
     UnsignedInteger <Bytes> operator^ (UnsignedInteger <Bytes> const& rhs) const noexcept
     {
         UnsignedInteger <Bytes> result;
