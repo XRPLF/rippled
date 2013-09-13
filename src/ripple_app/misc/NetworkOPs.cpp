@@ -1883,6 +1883,10 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int
         }
     }
 
+    // ST NOTE We're using the token reference both for passing inputs and
+    //         outputs, so we need to clear it in between.
+    token = Json::nullValue;
+
     std::string sql = boost::str (boost::format
         ("SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,Status,RawTxn,TxnMeta "
          "FROM AccountTransactions INNER JOIN Transactions ON Transactions.TransID = AccountTransactions.TransID "
