@@ -35,10 +35,11 @@ there must exist another node that has received the corresponding inbound
 connection.
 
 When a new peer joins the network it may or may not wish to receive inbound
-connections. Some peers are unable to accept incoming connections for various.
-For security reasons they may be behind a firewall that blocks accept requests.
-The administers may decide they don't want the connection traffic. Or they
-may wish to connect only to specific peers. Or they may simply be misconfigured.
+connections. Some peers are unable to accept incoming connections for various 
+reasons. For security reasons they may be behind a firewall that blocks accept 
+requests. The administers may decide they don't want the connection traffic. 
+Or they may wish to connect only to specific peers. Or they may simply be 
+misconfigured.
 
 If a peer decides that it wishes to receive incoming connections, it needs
 a method to announce its IP address and port number, the features that it
@@ -97,7 +98,7 @@ peers can enter the network.
 
 Lets consider the case where OutDesired is exactly equal to (MaxPeerCount / 2) - 1.
 The stable state for this network (assuming all peers can accept incoming) will
-leave us with network degree equal to MaxPeerCount - 2, with all peers having two
+leave us with a network degree equal to MaxPeerCount - 2, with all peers having two
 available incoming connection slots. The global number of incoming connection slots
 will be equal to twice the number of nodes on the network. While this might seem to
 be a desirable outcome, note that the connectedness (degree of the overlay) plays
@@ -118,24 +119,22 @@ This is the method a peer uses to establish outgoing connections into the
 Ripple network.
 
 A peer whose PeerCount is zero will use these steps:
+
     1. Attempt addresses from a local database of addresses
     2. Attempt addresses from a set of "well known" domains in rippled.cfg
-
 
 This is the method used by a peer that is already connected to the Ripple network,
 to adjust the number of outgoing connections it is maintaining.
 
-
 "Incoming Strategy"
-------------------------------
+-------------------
 
 This is the method used by a peer to announce its ability and desire to receive
 incoming connections both for the purpose of obtaining additional peer connections
 and also for receiving requests from clients.
 
-
-
 Terms
+-----
 
 Overlay Network
     http://en.wikipedia.org/wiki/Overlay_network
@@ -143,7 +142,8 @@ Overlay Network
 Directed Graph
     http://en.wikipedia.org/wiki/Directed_graph
 
-References:
+References
+----------
 
 Gnutella 0.6 Protocol
     2.2.2   Ping (0x00)
