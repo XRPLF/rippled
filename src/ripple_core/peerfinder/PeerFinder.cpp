@@ -23,7 +23,7 @@ availaibility of accepting incoming connections.
 
 The Ripple network, like all peer to peer networks, defines a "directed graph"
 where each node represents a computer running the rippled software, and each
-vertex indicates a network connection. The direction of the connection tells
+edge indicates a network connection. The direction of the connection tells
 us whether it is an outbound or inbound connection (from the perspective of
 a particular node).
 
