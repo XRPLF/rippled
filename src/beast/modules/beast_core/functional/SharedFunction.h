@@ -69,7 +69,7 @@ public:
 
     template <typename F>
     SharedFunction (F f, A a = A ())
-        : m_ptr (::new (
+        : m_ptr (new (
             typename CallType <F>::Allocator (a)
                 .allocate (sizeof (CallType <F>)))
                     CallType <F> (BEAST_MOVE_CAST(F)(f), a))
@@ -152,7 +152,7 @@ public:
 
     template <typename F>
     SharedFunction (F f, A a = A ())
-        : m_ptr (::new (
+        : m_ptr (new (
             typename CallType <F>::Allocator (a)
                 .allocate (sizeof (CallType <F>)))
                     CallType <F> (BEAST_MOVE_CAST(F)(f), a))
