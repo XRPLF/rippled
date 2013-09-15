@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
-class DeadlineTimer::Manager : protected Thread
+class DeadlineTimer::Manager
+    : public LeakChecked <Manager>
+    , protected Thread
 {
 private:
     typedef CriticalSection LockType;
@@ -203,8 +205,7 @@ private:
 
 DeadlineTimer::DeadlineTimer (Listener* listener)
     : m_listener (listener)
-    , m_manager (SharedSingleton <Manager>::getInstance (
-        SingletonLifetime::persistAfterCreation))
+    , m_manager (SharedSingleton <Manager>::getInstance ())
     , m_isActive (false)
 {
 }
