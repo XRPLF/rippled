@@ -214,6 +214,11 @@ DeadlineTimer::~DeadlineTimer ()
     m_manager->deactivate (*this);
 }
 
+void DeadlineTimer::cancel ()
+{
+    m_manager->deactivate (*this);
+}
+
 void DeadlineTimer::setExpiration (double secondsUntilDeadline)
 {
     bassert (secondsUntilDeadline != 0);
@@ -237,7 +242,3 @@ void DeadlineTimer::setExpirationTime (Time const& when)
     m_manager->activate (*this, 0, when);
 }
 
-void DeadlineTimer::reset ()
-{
-    m_manager->deactivate (*this);
-}
