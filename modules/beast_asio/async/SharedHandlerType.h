@@ -97,18 +97,6 @@ protected:
             deallocate <Handler> (shared, size, local);
     }
 
-    // If these somehow get called, bad things will happen
-    //
-    void* operator new (std::size_t)
-    {
-        return pure_virtual_called (__FILE__, __LINE__);
-    }
-
-    void operator delete (void*)
-    {
-        return pure_virtual_called (__FILE__, __LINE__);
-    }
-
 protected:
     std::size_t const m_size;
     Handler mutable m_handler;
@@ -218,7 +206,7 @@ Container <Handler>* newSharedHandlerContainer (BOOST_ASIO_MOVE_ARG(Handler) han
     Handler local (BOOST_ASIO_MOVE_CAST(Handler)(handler));
     void* const p (boost_asio_handler_alloc_helpers::
         allocate <Handler> (size, local));
-    return ::new (p) ContainerType (size, BOOST_ASIO_MOVE_CAST(Handler)(local));
+    return new (p) ContainerType (size, BOOST_ASIO_MOVE_CAST(Handler)(local));
 }
 
 #endif

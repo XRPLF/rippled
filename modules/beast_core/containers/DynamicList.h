@@ -367,43 +367,43 @@ public:
     */
     iterator emplace_back ()
     {
-        return iterator_to (*::new (alloc ()->get ()) T ());
+        return iterator_to (*new (alloc ()->get ()) T ());
     }
 
     template <class A1>
     iterator emplace_back (A1 a1)
     {
-        return iterator_to (*::new (alloc ()->get ()) T (a1));
+        return iterator_to (*new (alloc ()->get ()) T (a1));
     }
 
     template <class A1, class A2>
     iterator emplace_back (A1 a1, A2 a2)
     {
-        return iterator_to (*::new (alloc ()->get ()) T (a1, a2));
+        return iterator_to (*new (alloc ()->get ()) T (a1, a2));
     }
 
     template <class A1, class A2, class A3>
     iterator emplace_back (A1 a1, A2 a2, A3 a3)
     {
-        return iterator_to (*::new (alloc ()->get ()) T (a1, a2, a3));
+        return iterator_to (*new (alloc ()->get ()) T (a1, a2, a3));
     }
 
     template <class A1, class A2, class A3, class A4>
     iterator emplace_back (A1 a1, A2 a2, A3 a3, A4 a4)
     {
-        return iterator_to (*::new (alloc ()->get ()) T (a1, a2, a3, a4));
+        return iterator_to (*new (alloc ()->get ()) T (a1, a2, a3, a4));
     }
 
     template <class A1, class A2, class A3, class A4, class A5>
     iterator emplace_back (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5)
     {
-        return iterator_to (*::new (alloc ()->get ()) T (a1, a2, a3, a4, a5));
+        return iterator_to (*new (alloc ()->get ()) T (a1, a2, a3, a4, a5));
     }
 
     /** Allocate a new copy-constructed element and return the index. */
     iterator push_back (TParam value) noexcept
     {
-        return iterator_to (*::new (alloc ()->get ()) T (value));
+        return iterator_to (*new (alloc ()->get ()) T (value));
     }
 
     /** Erase the element at the specified position. */

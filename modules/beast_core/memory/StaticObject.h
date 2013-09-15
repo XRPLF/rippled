@@ -150,7 +150,7 @@ public:
             if (staticData.state.compareAndSetBool (initializing, uninitialized))
             {
                 // Initialize the object.
-                ::new (&staticData.object) Object;
+                new (&staticData.object) Object;
                 staticData.state = initialized;
             }
             else

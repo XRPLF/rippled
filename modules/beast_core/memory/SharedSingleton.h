@@ -88,7 +88,7 @@ public:
             {
                 bassert (lifetime == SingletonLifetime::createOnDemand || ! staticData.destructorCalled);
                 staticData.instance = &staticData.object;
-                ::new (staticData.instance) SharedSingleton (lifetime);
+                new (staticData.instance) SharedSingleton (lifetime);
                 instance = staticData.instance;
             }
         }

@@ -50,7 +50,7 @@ TrackedMutexBasics::PerThreadData& TrackedMutexBasics::getPerThreadData ()
     // Manually call the constructor with placement new if needed
     if (! thread.id)
     {
-        ::new (&thread) PerThreadData ();
+        new (&thread) PerThreadData ();
         bassert (thread.id != 0);
     }
 
