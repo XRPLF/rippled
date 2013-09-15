@@ -48,7 +48,7 @@ public:
         }
         else
         {
-            journal.error() <<
+            journal.error <<
                 "HTTP GET to " << m_url.full().toStdString() <<
                 " failed: '" << httpResult.error.message () << "'";
         }

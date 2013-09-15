@@ -24,6 +24,12 @@
 class Journal
 {
 public:
+    class Sink;
+
+private:
+    Sink* m_sink;
+
+public:
     /** Severity level of the message. */
     enum Severity
     {
@@ -46,143 +52,110 @@ public:
         /** Write text to the sink at the specified severity. */
         virtual void write (Severity severity, std::string const& text) = 0;
 
-        /** Returns `true` if text at the passed severity produces output. */
-        virtual bool active (Severity)
-        {
-            return true;
-        }
+        /** Returns `true` if text at the passed severity produces output.
+            The default implementation always returns `true`.
+        */
+        virtual bool active (Severity);
     };
 
     /** Returns a Sink which does nothing. */
-    static Sink* getNullSink ();
+    static Sink& getNullSink ();
 
     //--------------------------------------------------------------------------
+    
+    class Stream;
 
-    /** Scoped container for building journal messages. */
-    class Stream
+    /** Scoped ostream-based container for writing messages to a Journal. */
+    class ScopedStream
     {
     public:
-        explicit Stream (Sink* sink, Severity severity)
-            : m_sink (sink)
-            , m_severity (severity)
+        explicit ScopedStream (Stream const& stream);
+        ScopedStream (ScopedStream const& other);
+
+        template <typename T>
+        ScopedStream (Stream const& stream, T const& t)
+            : m_sink (stream.sink())
+            , m_severity (stream.severity())
         {
+            m_ostream << t;
         }
 
-        Stream (Stream const& other)
-            : m_sink (other.m_sink)
-            , m_severity (other.m_severity)
-        {
-        }
+        ScopedStream (Stream const& stream, std::ostream& manip (std::ostream&));
 
-        Stream& operator= (Stream const& other)
-        {
-            m_sink = other.m_sink;
-            m_severity = other.m_severity;
-            return *this;
-        }
+        ~ScopedStream ();
 
-        ~Stream ()
-        {
-            if (m_sink ->active (m_severity))
-                m_sink->write (m_severity, m_stream.str ());
-        }
+        std::ostringstream& ostream () const;
+
+        std::ostream& operator<< (std::ostream& manip (std::ostream&)) const;
 
         template <typename T>
         std::ostream& operator<< (T const& t) const
         {
-            return m_stream << t;
+            return m_ostream << t;
         }
 
-        std::ostringstream& stream () const
+    private:
+        ScopedStream& operator= (ScopedStream const&); // disallowed
+
+        Sink& m_sink;
+        Severity const m_severity;
+        std::ostringstream mutable m_ostream;
+    };
+
+    //--------------------------------------------------------------------------
+
+    class Stream
+    {
+    public:
+        /** Construct a stream which produces no logging output. */
+        Stream ();
+
+        Stream (Sink& sink, Severity severity);
+        Stream (Stream const& other);
+        Stream& operator= (Stream const& other);
+
+        /** Returns `true` if the sink logs messages at the severity of this stream. */
+        bool active() const;
+
+        Sink& sink() const;
+        Severity severity() const;
+
+        ScopedStream operator<< (std::ostream& manip (std::ostream&)) const;
+
+        template <typename T>
+        ScopedStream operator<< (T const& t) const
         {
-            return m_stream;
+            return ScopedStream (*this, t);
         }
 
     private:
         Sink* m_sink;
         Severity m_severity;
-        std::ostringstream mutable m_stream;
     };
 
     //--------------------------------------------------------------------------
 
-    Journal (Sink* sink = getNullSink ())
-        : m_sink (sink)
-    {
-    }
+    Journal ();
+    explicit Journal (Sink& sink);
+    Journal (Journal const& other);
+    ~Journal ();
 
-    bool reportActive (Severity severity) const
-    {
-        return m_sink->active (severity);
-    }
+    /** Returns a stream for this sink, with the specified severity. */
+    Stream stream (Severity severity) const;
 
-    bool traceActive () const
-    {
-        return reportActive (kTrace);
-    }
+    /** Returns `true` if the sink logs messages at that severity. */
+    bool active (Severity severity) const;
 
-    bool debugActive () const
-    {
-        return reportActive (kDebug);
-    }
-
-    bool infoActive () const
-    {
-        return reportActive (kInfo);
-    }
-
-    bool warningActive () const
-    {
-        return reportActive (kWarning);
-    }
-
-    bool errorActive () const
-    {
-        return reportActive (kError);
-    }
-
-    bool fatalActive () const
-    {
-        return reportActive (kFatal);
-    }
-
-    Stream report (Severity severity) const
-    {
-        return Stream (m_sink, severity);
-    }
-
-    Stream trace ()  const
-    {
-        return report (kTrace);
-    }
-
-    Stream debug () const
-    {
-        return report (kDebug);
-    }
-
-    Stream info () const
-    {
-        return report (kInfo);
-    }
-
-    Stream warning () const
-    {
-        return report (kWarning);
-    }
-
-    Stream error () const
-    {
-        return report (kError);
-    }
-
-    Stream fatal () const
-    {
-        return Stream (m_sink, kFatal);
-    }
+    /** Convenience sink streams for each severity level. */
+    Stream const trace;
+    Stream const debug;
+    Stream const info;
+    Stream const warning;
+    Stream const error;
+    Stream const fatal;
 
 private:
-    Sink* m_sink;
+    Journal& operator= (Journal const& other); // disallowed
 };
 
 #endif
