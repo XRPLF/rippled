@@ -38,7 +38,7 @@
 
   @ingroup beast_concurrent
 */
-class BEAST_API FifoFreeStoreWithoutTLS
+class BEAST_API FifoFreeStoreWithoutTLS : LeakChecked <FifoFreeStoreWithoutTLS>
 {
 public:
     explicit FifoFreeStoreWithoutTLS ();
