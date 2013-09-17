@@ -13,6 +13,16 @@
 
 #define RIPPLE_SOPHIA_AVAILABLE 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "../sophia/db/sophia.h"
+
+#ifdef __cplusplus
+}
+#endif
+
 #else
 
 #define RIPPLE_SOPHIA_AVAILABLE 0

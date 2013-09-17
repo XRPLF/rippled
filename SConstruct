@@ -113,6 +113,7 @@ else:
 # These are all relative to the repo dir.
 #
 INCLUDE_PATHS = [
+    '.',
     'src',
     'src/leveldb',
     'src/leveldb/port',
@@ -167,6 +168,7 @@ COMPILED_FILES.extend([
     'src/ripple_leveldb/ripple_leveldb.cpp',
     'src/ripple_mdb/ripple_mdb.c',
     'src/ripple_net/ripple_net.cpp',
+    'src/ripple/sophia/ripple_sophia.c',
     'src/ripple_websocket/ripple_websocket.cpp'
     ])
 

@@ -97,6 +97,7 @@ SOURCES += \
 # New style
 #
 SOURCES += \
+    ../../src/ripple/sophia/ripple_sophia.c \
     ../../src/ripple/testoverlay/ripple_testoverlay.cpp \
     ../../src/ripple/validators/ripple_validators.cpp
 
