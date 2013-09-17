@@ -21,22 +21,33 @@ void OrderBookDB::invalidate ()
 
 void OrderBookDB::setup (Ledger::ref ledger)
 {
-    boost::unordered_set<uint256> mSeen;
+    {
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+        // Do a full update every 256 ledgers
+        if ((mSeq != 0) && (ledger->getLedgerSeq () >= mSeq) && ((ledger->getLedgerSeq() - mSeq) < 256))
+            return;
 
-    if ((mSeq != 0) && (ledger->getLedgerSeq () >= mSeq) && ((ledger->getLedgerSeq() - mSeq) < 10))
-        return;
+        mSeq = ledger->getLedgerSeq ();
+    }
 
-    mSeq = ledger->getLedgerSeq ();
+    if (getConfig().RUN_STANDALONE)
+        update(ledger);
+    else
+        getApp().getJobQueue().addJob(jtUPDATE_PF, "OrderBookDB::update",
+            BIND_TYPE(&OrderBookDB::update, this, ledger));
+}
 
-    LoadEvent::autoptr ev = getApp().getJobQueue ().getLoadEventAP (jtOB_SETUP, "OrderBookDB::setup");
+void OrderBookDB::update (Ledger::pointer ledger)
+{
+    LoadEvent::autoptr ev = getApp().getJobQueue ().getLoadEventAP (jtOB_SETUP, "OrderBookDB::update");
 
-    mDestMap.clear ();
-    mSourceMap.clear ();
-    mXRPBooks.clear ();
+    boost::unordered_set< uint256 > seen;
+    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > destMap;
+    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > sourceMap;
+    boost::unordered_set< currencyIssuer_t > XRPBooks;
 
-    WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB>";
+    WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update>";
 
     // walk through the entire ledger looking for orderbook entries
     int books = 0;
@@ -56,16 +67,16 @@ void OrderBookDB::setup (Ledger::ref ledger)
 
             uint256 index = Ledger::getBookBase (ci, ii, co, io);
 
-            if (mSeen.insert (index).second)
+            if (seen.insert (index).second)
             {
                 // VFALCO TODO Reduce the clunkiness of these parameter wrappers
                 OrderBook::pointer book = boost::make_shared<OrderBook> (boost::cref (index),
                                           boost::cref (ci), boost::cref (co), boost::cref (ii), boost::cref (io));
 
-                mSourceMap[currencyIssuer_ct (ci, ii)].push_back (book);
-                mDestMap[currencyIssuer_ct (co, io)].push_back (book);
+                sourceMap[currencyIssuer_ct (ci, ii)].push_back (book);
+                destMap[currencyIssuer_ct (co, io)].push_back (book);
                 if (co.isZero())
-                    mXRPBooks.insert(currencyIssuer_ct (ci, ii));
+                    XRPBooks.insert(currencyIssuer_ct (ci, ii));
                 ++books;
             }
         }
@@ -73,7 +84,47 @@ void OrderBookDB::setup (Ledger::ref ledger)
         currentIndex = ledger->getNextLedgerIndex (currentIndex);
     }
 
-    WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB< " << books << " books found";
+    WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update< " << books << " books found";
+    {
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+        mXRPBooks.swap(XRPBooks);
+        mSourceMap.swap(sourceMap);
+        mDestMap.swap(destMap);
+    }
+}
+
+void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
+    const uint160& ii, const uint160& io)
+{
+    bool toXRP = co.isZero();
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+    if (toXRP)
+    { // We don't want to search through all the to-XRP or from-XRP order books!
+        BOOST_FOREACH(OrderBook::ref ob, mSourceMap[currencyIssuer_ct(ci, ii)])
+        {
+            if ((ob->getCurrencyOut() == co) && (ob->getIssuerOut() == io))
+                return;
+        }
+    }
+    else
+    {
+        BOOST_FOREACH(OrderBook::ref ob, mDestMap[currencyIssuer_ct(co, io)])
+        {
+            if ((ob->getCurrencyIn() == ci) && (ob->getIssuerIn() == ii))
+                return;
+        }
+    }
+
+    uint256 index = Ledger::getBookBase(ci, ii, co, io);
+    OrderBook::pointer book = boost::make_shared<OrderBook> (boost::cref (index),
+                              boost::cref (ci), boost::cref (co), boost::cref (ii), boost::cref (io));
+
+    mSourceMap[currencyIssuer_ct (ci, ii)].push_back (book);
+    mDestMap[currencyIssuer_ct (co, io)].push_back (book);
+    if (toXRP)
+        mXRPBooks.insert(currencyIssuer_ct (ci, ii));
 }
 
 // return list of all orderbooks that want this issuerID and currencyID

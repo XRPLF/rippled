@@ -42,7 +42,11 @@ class OrderBookDB : LeakChecked <OrderBookDB>
 public:
     OrderBookDB ();
     void setup (Ledger::ref ledger);
+    void update (Ledger::pointer ledger);
     void invalidate ();
+
+    void addOrderBook(const uint160& takerPaysCurrency, const uint160& takerGetsCurrency,
+        const uint160& takerPaysIssuer, const uint160& takerGetsIssuer);
 
     // return list of all orderbooks that want this issuerID and currencyID
     void getBooksByTakerPays (const uint160& issuerID, const uint160& currencyID,

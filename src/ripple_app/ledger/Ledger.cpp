@@ -1878,7 +1878,7 @@ void Ledger::ownerDirDescriber (SLE::ref sle, bool, const uint160& owner)
     sle->setFieldAccount (sfOwner, owner);
 }
 
-void Ledger::qualityDirDescriber (SLE::ref sle, bool,
+void Ledger::qualityDirDescriber (SLE::ref sle, bool isNew,
                                   const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuer,
                                   const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuer,
                                   const uint64& uRate)
@@ -1888,6 +1888,9 @@ void Ledger::qualityDirDescriber (SLE::ref sle, bool,
     sle->setFieldH160 (sfTakerGetsCurrency, uTakerGetsCurrency);
     sle->setFieldH160 (sfTakerGetsIssuer, uTakerGetsIssuer);
     sle->setFieldU64 (sfExchangeRate, uRate);
+    if (isNew)
+        getApp().getOrderBookDB().addOrderBook(uTakerPaysCurrency, uTakerGetsCurrency,
+                                               uTakerPaysIssuer, uTakerGetsIssuer);
 }
 
 void Ledger::initializeFees ()
