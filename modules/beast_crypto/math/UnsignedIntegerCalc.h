@@ -137,8 +137,8 @@ public:
         while (lo < hi)
         {
             std::swap (*lo, *hi);
-            *lo++ = toNetworkByteOrder <UInt> (*lo);
-            *hi-- = toNetworkByteOrder <UInt> (*hi);
+            *lo = toNetworkByteOrder <UInt> (*lo); ++lo;
+            *hi = toNetworkByteOrder <UInt> (*hi); --hi;
         }
         if (lo == hi)
             *lo = toNetworkByteOrder <UInt> (*lo);
