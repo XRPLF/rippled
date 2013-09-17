@@ -119,8 +119,10 @@ public:
                             timer->m_isActive = false;
                         }
 
-                        // Listener will be called later and we will
-                        // go through the loop again without waiting.
+                        timer->m_listener->onDeadlineTimer (*timer);
+
+                        // re-loop
+                        seconds = -1;
                     }
                     else
                     {
@@ -138,11 +140,7 @@ public:
 
             // Note that we have released the lock here.
 
-            if (timer != nullptr)
-            {
-                timer->m_listener->onDeadlineTimer (*timer);
-            }
-            else if (seconds > 0)
+            if (seconds > 0)
             {
                 // Wait until interrupt or next timer.
                 //
