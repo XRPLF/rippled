@@ -625,10 +625,10 @@ TER LedgerEntrySet::dirCount (uint256 const& uRootIndex, uint32& uCount)
 // Only append. This allow for things that watch append only structure to just monitor from the last node on ward.
 // Within a node with no deletions order of elements is sequential.  Otherwise, order of elements is random.
 TER LedgerEntrySet::dirAdd (
-    uint64&                             uNodeDir,
-    uint256 const&                      uRootIndex,
-    uint256 const&                      uLedgerIndex,
-    FUNCTION_TYPE<void (SLE::ref)>      fDescriber)
+    uint64&                                 uNodeDir,
+    uint256 const&                          uRootIndex,
+    uint256 const&                          uLedgerIndex,
+    FUNCTION_TYPE<void (SLE::ref, bool)>    fDescriber)
 {
     WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("dirAdd: uRootIndex=%s uLedgerIndex=%s")
                                        % uRootIndex.ToString ()
@@ -643,7 +643,7 @@ TER LedgerEntrySet::dirAdd (
         // No root, make it.
         sleRoot     = entryCreate (ltDIR_NODE, uRootIndex);
         sleRoot->setFieldH256 (sfRootIndex, uRootIndex);
-        fDescriber (sleRoot);
+        fDescriber (sleRoot, true);
 
         sleNode     = sleRoot;
         uNodeDir    = 0;
@@ -694,7 +694,7 @@ TER LedgerEntrySet::dirAdd (
             if (uNodeDir != 1)
                 sleNode->setFieldU64 (sfIndexPrevious, uNodeDir - 1);
 
-            fDescriber (sleNode);
+            fDescriber (sleNode, false);
 
             svIndexes   = STVector256 ();
         }
@@ -1350,7 +1350,7 @@ TER LedgerEntrySet::trustCreate (
                           uLowNode,
                           Ledger::getOwnerDirIndex (uLowAccountID),
                           sleRippleState->getIndex (),
-                          BIND_TYPE (&Ledger::ownerDirDescriber, P_1, uLowAccountID));
+                          BIND_TYPE (&Ledger::ownerDirDescriber, P_1, P_2, uLowAccountID));
 
     if (tesSUCCESS == terResult)
     {
@@ -1358,7 +1358,7 @@ TER LedgerEntrySet::trustCreate (
                           uHighNode,
                           Ledger::getOwnerDirIndex (uHighAccountID),
                           sleRippleState->getIndex (),
-                          BIND_TYPE (&Ledger::ownerDirDescriber, P_1, uHighAccountID));
+                          BIND_TYPE (&Ledger::ownerDirDescriber, P_1, P_2, uHighAccountID));
     }
 
     if (tesSUCCESS == terResult)

@@ -147,7 +147,7 @@ public:
         uint64 &                             uNodeDir,      // Node of entry.
         uint256 const &                      uRootIndex,
         uint256 const &                      uLedgerIndex,
-        FUNCTION_TYPE<void (SLE::ref)>      fDescriber);
+        FUNCTION_TYPE<void (SLE::ref, bool)> fDescriber);
 
     TER dirDelete (
         const bool                      bKeepRoot,

@@ -1873,12 +1873,12 @@ std::set<uint32> Ledger::getPendingSaves()
    return sPendingSaves;
 }
 
-void Ledger::ownerDirDescriber (SLE::ref sle, const uint160& owner)
+void Ledger::ownerDirDescriber (SLE::ref sle, bool, const uint160& owner)
 {
     sle->setFieldAccount (sfOwner, owner);
 }
 
-void Ledger::qualityDirDescriber (SLE::ref sle,
+void Ledger::qualityDirDescriber (SLE::ref sle, bool,
                                   const uint160& uTakerPaysCurrency, const uint160& uTakerPaysIssuer,
                                   const uint160& uTakerGetsCurrency, const uint160& uTakerGetsIssuer,
                                   const uint64& uRate)

@@ -637,7 +637,7 @@ TER OfferCreateTransactor::doApply ()
 
         // Add offer to owner's directory.
         terResult   = lesActive.dirAdd (uOwnerNode, Ledger::getOwnerDirIndex (mTxnAccountID), uLedgerIndex,
-                                        BIND_TYPE (&Ledger::ownerDirDescriber, P_1, mTxnAccountID));
+                                        BIND_TYPE (&Ledger::ownerDirDescriber, P_1, P_2, mTxnAccountID));
 
 
         if (tesSUCCESS == terResult)
@@ -657,7 +657,8 @@ TER OfferCreateTransactor::doApply ()
 
             // Add offer to order book.
             terResult   = lesActive.dirAdd (uBookNode, uDirectory, uLedgerIndex,
-                                            BIND_TYPE (&Ledger::qualityDirDescriber, P_1, saTakerPays.getCurrency (), uPaysIssuerID,
+                                            BIND_TYPE (&Ledger::qualityDirDescriber, P_1, P_2, 
+                                                    saTakerPays.getCurrency (), uPaysIssuerID,
                                                     saTakerGets.getCurrency (), uGetsIssuerID, uRate));
         }
 

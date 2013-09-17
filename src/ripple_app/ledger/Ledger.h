@@ -364,7 +364,7 @@ public:
 
     // Given a directory root and and index compute the index of a node.
     static uint256 getDirNodeIndex (uint256 const & uDirRoot, const uint64 uNodeIndex = 0);
-    static void ownerDirDescriber (SLE::ref, const uint160 & owner);
+    static void ownerDirDescriber (SLE::ref, bool, const uint160 & owner);
 
     // Return a node: root or normal
     SLE::pointer getDirNode (uint256 const & uNodeIndex);
@@ -376,7 +376,7 @@ public:
     static uint256  getQualityIndex (uint256 const & uBase, const uint64 uNodeDir = 0);
     static uint256  getQualityNext (uint256 const & uBase);
     static uint64   getQuality (uint256 const & uBase);
-    static void     qualityDirDescriber (SLE::ref,
+    static void     qualityDirDescriber (SLE::ref, bool,
                                          const uint160 & uTakerPaysCurrency, const uint160 & uTakerPaysIssuer,
                                          const uint160 & uTakerGetsCurrency, const uint160 & uTakerGetsIssuer,
                                          const uint64 & uRate);
