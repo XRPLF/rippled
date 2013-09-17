@@ -14,7 +14,7 @@
  * This software program is licensed subject to the BSD License, 
  * available at http://www.opensource.org/licenses/bsd-license.html
 */
-#include <sp.h>
+#include "sp.h"
 
 static const uint32_t crc_tableil8_o32[256] =
 {

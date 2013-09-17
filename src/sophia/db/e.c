@@ -7,7 +7,7 @@
  * BSD License
 */
 
-#include <sp.h>
+#include "sp.h"
 
 void sp_ve(spe *e, int type, va_list args)
 {

@@ -7,7 +7,7 @@
  * BSD License
 */
 
-#include <sp.h>
+#include "sp.h"
 
 static inline int sphot
 cmpstd(char *a, size_t asz, char *b, size_t bsz, void *arg spunused) {

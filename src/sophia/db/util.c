@@ -7,7 +7,7 @@
  * BSD License
 */
 
-#include <sp.h>
+#include "sp.h"
 
 char *sp_memdup(sp *s, void *src, size_t size)
 {

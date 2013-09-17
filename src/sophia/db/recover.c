@@ -7,8 +7,8 @@
  * BSD License
 */
 
-#include <sp.h>
-#include <track.h>
+#include "sp.h"
+#include "track.h"
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>

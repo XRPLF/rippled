@@ -7,7 +7,7 @@
  * BSD License
 */
 
-#include <sp.h>
+#include "sp.h"
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>

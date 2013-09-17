@@ -7,7 +7,7 @@
  * BSD License
 */
 
-#include <sp.h>
+#include "sp.h"
 
 static inline void
 sp_pageopen(spc *c, uint32_t page)

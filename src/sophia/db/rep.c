@@ -7,7 +7,7 @@
  * BSD License
 */
 
-#include <sp.h>
+#include "sp.h"
 
 void sp_repinit(sprep *r, spa *a) {
 	sp_listinit(&r->l);

@@ -7,7 +7,7 @@
  * BSD License
 */
 
-#include <sp.h>
+#include "sp.h"
 
 int sp_gc(sp *s, spepoch *x)
 {

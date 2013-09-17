@@ -7,7 +7,7 @@
  * BSD License
 */
 
-#include <sp.h>
+#include "sp.h"
 
 static inline int sp_iensure(spi *i) {
 	if (splikely((i->icount + 1) < i->itop))

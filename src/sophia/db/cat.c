@@ -7,7 +7,7 @@
  * BSD License
 */
 
-#include <sp.h>
+#include "sp.h"
 
 static inline int sp_catensure(spcat *c) {
 	if ((c->count + 1) < c->top)
