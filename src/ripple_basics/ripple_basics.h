@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_RIPPLEHEADER
 #define RIPPLE_BASICS_RIPPLEHEADER
 
-#include "system/ripple_StandardIncludes.h"
+#include "system/StandardIncludes.h"
 
 //------------------------------------------------------------------------------
 
@@ -40,9 +40,9 @@
 //------------------------------------------------------------------------------
 
 #include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
-#include "system/ripple_BoostIncludes.h"
+#include "system/BoostIncludes.h"
 
-#include "system/ripple_OpenSSLIncludes.h"
+#include "system/OpenSSLIncludes.h"
 
 #include "beast/modules/beast_crypto/beast_crypto.h"
 
@@ -92,32 +92,36 @@ namespace ripple
 
 using namespace beast;
 
-#include "types/ripple_BasicTypes.h"
+#include "types/BasicTypes.h"
 
-#include "utility/ripple_LogFile.h"
-#include "utility/ripple_Log.h" // Needed by others
+#  include "log/LogSeverity.h"
+#  include "log/LogFile.h"
+# include "log/LogSink.h"
+# include "log/LogPartition.h"
+# include "log/Log.h"
+#include "log/LogJournal.h"
+#include "log/LoggedTimings.h"
 
-#include "utility/ripple_ByteOrder.h"
-#include "utility/ripple_CountedObject.h"
-#include "utility/ripple_DiffieHellmanUtil.h"
-#include "utility/ripple_IniFile.h"
-#include "utility/ripple_PlatformMacros.h"
-#include "utility/ripple_RandomNumbers.h"
-#include "utility/ripple_StringUtilities.h"
-#include "utility/ripple_Sustain.h"
-#include "utility/ripple_ThreadName.h"
-#include "utility/ripple_Time.h"
-#include "utility/ripple_LoggedTimings.h"
-#include "utility/ripple_UptimeTimer.h"
+#include "utility/ByteOrder.h"
+#include "utility/CountedObject.h"
+#include "utility/DiffieHellmanUtil.h"
+#include "utility/IniFile.h"
+#include "utility/PlatformMacros.h"
+#include "utility/RandomNumbers.h"
+#include "utility/StringUtilities.h"
+#include "utility/Sustain.h"
+#include "utility/ThreadName.h"
+#include "utility/Time.h"
+#include "utility/UptimeTimer.h"
 
-#include "types/ripple_UInt256.h"
-#include "utility/ripple_HashUtilities.h" // requires UInt256
-#include "types/ripple_HashMaps.h"
+#include "types/UInt256.h"
+#include "utility/HashUtilities.h" // requires UInt256
+#include "types/HashMaps.h"
 
-#include "containers/ripple_KeyCache.h"
-#include "containers/ripple_RangeSet.h"
-#include "containers/ripple_SecureAllocator.h"
-#include "containers/ripple_TaggedCache.h"
+#include "containers/KeyCache.h"
+#include "containers/RangeSet.h"
+#include "containers/SecureAllocator.h"
+#include "containers/TaggedCache.h"
 
 #include "json/json_forwards.h"
 #include "json/json_features.h"

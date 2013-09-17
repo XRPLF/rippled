@@ -69,10 +69,12 @@ void UnitTest::shutdown()
 {
 }
 
-ScopedPointer <UnitTest::Suite>& UnitTest::run (UnitTests* const runner)
+ScopedPointer <UnitTest::Suite>& UnitTest::run (
+    UnitTests* const runner)
 {
     bassert (runner != nullptr);
     m_runner = runner;
+    m_random = m_runner->m_random;
 
     m_suite = new Suite (m_className, m_packageName);
 
@@ -189,6 +191,14 @@ void UnitTest::failException ()
     logMessage (s);
 
     m_runner->onFailure ();
+}
+
+Random& UnitTest::random()
+{
+    // This method's only valid while the test is being run!
+    bassert (m_runner != nullptr);
+
+    return m_random;
 }
 
 //------------------------------------------------------------------------------
@@ -339,13 +349,17 @@ UnitTests::TestList UnitTests::selectStartupTests (TestList const& tests) const 
     return list;
 }
 
-void UnitTests::runSelectedTests (String const& match, TestList const& tests)
+void UnitTests::runSelectedTests (String const& match, TestList const& tests, int64 randomSeed)
 {
-    runTests (selectTests (match, tests));
+    runTests (selectTests (match, tests), randomSeed);
 }
 
-void UnitTests::runTests (TestList const& tests)
+void UnitTests::runTests (TestList const& tests, int64 randomSeed)
 {
+    if (randomSeed == 0)
+        randomSeed = Random().nextInt (0x7fffffff);
+    m_random = Random (randomSeed);
+
     m_results = new Results;
     for (int i = 0; i < tests.size (); ++i)
     {

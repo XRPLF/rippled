@@ -451,7 +451,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
 
     ledger->setValidated();
     mLedgerHistory.addLedger(ledger);
-
+    ledger->setFull();
 
     ScopedLockType ml (mLock, __FILE__, __LINE__);
 
@@ -533,6 +533,7 @@ void LedgerMaster::checkAccept (Ledger::ref ledger)
     mLastValidateSeq = ledger->getLedgerSeq();
 
     ledger->setValidated();
+    ledger->setFull();
     mValidLedger = ledger;
     if (!mPubLedger)
     {
@@ -708,62 +709,69 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish(ScopedLockType&
         Ledger::pointer valLedger = mValidLedger;
 
         sl.unlock();
-        for (uint32 seq = pubSeq; seq <= valSeq; ++seq)
+        try
         {
-            WriteLog (lsTRACE, LedgerMaster) << "Trying to fetch/publish valid ledger " << seq;
-
-            Ledger::pointer ledger;
-            uint256 hash = valLedger->getLedgerHash (seq);
-
-            if (seq == valSeq)
-            { // We need to publish the ledger we just fully validated
-                ledger = valLedger;
-            }
-            else
+            for (uint32 seq = pubSeq; seq <= valSeq; ++seq)
             {
-                if (hash.isZero ())
-                {
-                    WriteLog (lsFATAL, LedgerMaster) << "Ledger: " << valSeq << " does not have hash for " << seq;
-                    assert (false);
-                }
+                WriteLog (lsTRACE, LedgerMaster) << "Trying to fetch/publish valid ledger " << seq;
 
-                ledger = mLedgerHistory.getLedgerByHash (hash);
-            }
+                Ledger::pointer ledger;
+                uint256 hash = valLedger->getLedgerHash (seq); // This can throw
 
-            if (!ledger && (++acqCount < 4))
-            { // We can try to acquire the ledger we need
-                InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (hash, seq, false);
-
-                if (!acq->isDone ())
-                {
-                    nothing ();
-                }
-                else if (acq->isComplete () && !acq->isFailed ())
-                {
-                    ledger = acq->getLedger();
+                if (seq == valSeq)
+                { // We need to publish the ledger we just fully validated
+                    ledger = valLedger;
                 }
                 else
                 {
-                    WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
-                    getApp().getInboundLedgers().dropLedger(hash);
-                    acq = getApp().getInboundLedgers().findCreate(hash, seq, false);
-                    if (acq->isComplete())
+                    if (hash.isZero ())
                     {
-                        if (acq->isFailed())
-                            getApp().getInboundLedgers().dropLedger(hash);
-                        else
-                            ledger = acq->getLedger();
+                        WriteLog (lsFATAL, LedgerMaster) << "Ledger: " << valSeq << " does not have hash for " << seq;
+                        assert (false);
+                    }
+
+                    ledger = mLedgerHistory.getLedgerByHash (hash);
+                }
+
+                if (!ledger && (++acqCount < 4))
+                { // We can try to acquire the ledger we need
+                    InboundLedger::pointer acq = getApp().getInboundLedgers ().findCreate (hash, seq, false);
+
+                    if (!acq->isDone ())
+                    {
+                        nothing ();
+                    }
+                    else if (acq->isComplete () && !acq->isFailed ())
+                    {
+                        ledger = acq->getLedger();
+                    }
+                    else
+                    {
+                        WriteLog (lsWARNING, LedgerMaster) << "Failed to acquire a published ledger";
+                        getApp().getInboundLedgers().dropLedger(hash);
+                        acq = getApp().getInboundLedgers().findCreate(hash, seq, false);
+                        if (acq->isComplete())
+                        {
+                            if (acq->isFailed())
+                                getApp().getInboundLedgers().dropLedger(hash);
+                            else
+                                ledger = acq->getLedger();
+                        }
                     }
                 }
-            }
 
-            if (ledger && (ledger->getLedgerSeq() == pubSeq))
-            { // We acquired the next ledger we need to publish
-                ledger->setValidated();
-                ret.push_back (ledger);
-                ++pubSeq;
-            }
+                if (ledger && (ledger->getLedgerSeq() == pubSeq))
+                { // We acquired the next ledger we need to publish
+                    ledger->setValidated();
+                    ret.push_back (ledger);
+                    ++pubSeq;
+                }
 
+            }
+        }
+        catch (...)
+        {
+            WriteLog (lsERROR, LedgerMaster) << "findNewLedgersToPublish catches an exception";
         }
         sl.lock(__FILE__, __LINE__);
     }

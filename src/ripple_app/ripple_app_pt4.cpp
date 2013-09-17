@@ -13,11 +13,11 @@
 namespace ripple
 {
 
-#include "paths/ripple_RippleState.cpp"
+#include "paths/RippleState.cpp"
 
-#include "peers/ripple_UniqueNodeList.cpp"
+#include "peers/UniqueNodeList.cpp"
 
-#include "ledger/ripple_InboundLedger.cpp"
+#include "ledger/InboundLedger.cpp"
 
 #include "tx/PaymentTransactor.cpp"
 #include "tx/RegularKeySetTransactor.cpp"

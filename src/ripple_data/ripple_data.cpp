@@ -44,37 +44,37 @@
 namespace ripple
 {
 
-#include "crypto/ripple_Base58.h" // for RippleAddress
-#include "crypto/ripple_CKey.h" // needs RippleAddress VFALCO TODO remove this dependency cycle
-#include "crypto/ripple_RFC1751.h"
+#include "crypto/Base58.h" // for RippleAddress
+#include "crypto/CKey.h" // needs RippleAddress VFALCO TODO remove this dependency cycle
+#include "crypto/RFC1751.h"
 
-#include "crypto/ripple_CBigNum.cpp"
-#include "crypto/ripple_CKey.cpp"
-#include "crypto/ripple_CKeyDeterministic.cpp"
-#include "crypto/ripple_CKeyECIES.cpp"
-#include "crypto/ripple_Base58.cpp"
-#include "crypto/ripple_Base58Data.cpp"
-#include "crypto/ripple_RFC1751.cpp"
+#include "crypto/CBigNum.cpp"
+#include "crypto/CKey.cpp"
+#include "crypto/CKeyDeterministic.cpp"
+#include "crypto/CKeyECIES.cpp"
+#include "crypto/Base58.cpp"
+#include "crypto/Base58Data.cpp"
+#include "crypto/RFC1751.cpp"
 
 #include "protocol/BuildInfo.cpp"
-#include "protocol/ripple_FieldNames.cpp"
-#include "protocol/ripple_LedgerFormats.cpp"
-#include "protocol/ripple_PackedMessage.cpp"
-#include "protocol/ripple_RippleAddress.cpp"
-#include "protocol/ripple_SerializedTypes.cpp"
-#include "protocol/ripple_Serializer.cpp"
-#include "protocol/ripple_SerializedObjectTemplate.cpp"
-#include "protocol/ripple_SerializedObject.cpp"
-#include "protocol/ripple_TER.cpp"
-#include "protocol/ripple_TxFormats.cpp"
+#include "protocol/FieldNames.cpp"
+#include "protocol/LedgerFormats.cpp"
+#include "protocol/PackedMessage.cpp"
+#include "protocol/RippleAddress.cpp"
+#include "protocol/SerializedTypes.cpp"
+#include "protocol/Serializer.cpp"
+#include "protocol/SerializedObjectTemplate.cpp"
+#include "protocol/SerializedObject.cpp"
+#include "protocol/TER.cpp"
+#include "protocol/TxFormats.cpp"
 
 // These are for STAmount
 static const uint64 tenTo14 = 100000000000000ull;
 static const uint64 tenTo14m1 = tenTo14 - 1;
 static const uint64 tenTo17 = tenTo14 * 1000;
 static const uint64 tenTo17m1 = tenTo17 - 1;
-#include "protocol/ripple_STAmount.cpp"
-#include "protocol/ripple_STAmountRound.cpp"
+#include "protocol/STAmount.cpp"
+#include "protocol/STAmountRound.cpp"
 
 }
 

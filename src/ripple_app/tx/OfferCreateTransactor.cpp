@@ -373,48 +373,48 @@ TER OfferCreateTransactor::takeOffers (
 TER OfferCreateTransactor::doApply ()
 {
     WriteLog (lsTRACE, OfferCreateTransactor) << "OfferCreate> " << mTxn.getJson (0);
-	const uint32			uTxFlags				= mTxn.getFlags ();
-	const bool				bPassive				= isSetBit (uTxFlags, tfPassive);
-	const bool				bImmediateOrCancel		= isSetBit (uTxFlags, tfImmediateOrCancel);
-	const bool				bFillOrKill				= isSetBit (uTxFlags, tfFillOrKill);
-	const bool				bSell					= isSetBit (uTxFlags, tfSell);
-	STAmount				saTakerPays				= mTxn.getFieldAmount (sfTakerPays);
-	STAmount				saTakerGets				= mTxn.getFieldAmount (sfTakerGets);
+    const uint32            uTxFlags                = mTxn.getFlags ();
+    const bool                bPassive                = isSetBit (uTxFlags, tfPassive);
+    const bool                bImmediateOrCancel        = isSetBit (uTxFlags, tfImmediateOrCancel);
+    const bool                bFillOrKill                = isSetBit (uTxFlags, tfFillOrKill);
+    const bool                bSell                    = isSetBit (uTxFlags, tfSell);
+    STAmount                saTakerPays                = mTxn.getFieldAmount (sfTakerPays);
+    STAmount                saTakerGets                = mTxn.getFieldAmount (sfTakerGets);
 
-	if (!saTakerPays.isLegalNet () || !saTakerGets.isLegalNet ())
-		return temBAD_AMOUNT;
+    if (!saTakerPays.isLegalNet () || !saTakerGets.isLegalNet ())
+        return temBAD_AMOUNT;
 
-	WriteLog (lsTRACE, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: saTakerPays=%s saTakerGets=%s")
-			% saTakerPays.getFullText ()
-			% saTakerGets.getFullText ());
+    WriteLog (lsTRACE, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: saTakerPays=%s saTakerGets=%s")
+            % saTakerPays.getFullText ()
+            % saTakerGets.getFullText ());
 
-	const uint160			uPaysIssuerID			= saTakerPays.getIssuer ();
-	const uint160			uGetsIssuerID			= saTakerGets.getIssuer ();
-	const uint32			uExpiration				= mTxn.getFieldU32 (sfExpiration);
-	const bool				bHaveExpiration			= mTxn.isFieldPresent (sfExpiration);
-	const bool				bHaveCancel				= mTxn.isFieldPresent (sfOfferSequence);
-	const uint32			uCancelSequence			= mTxn.getFieldU32 (sfOfferSequence);
-	const uint32			uAccountSequenceNext	= mTxnAccount->getFieldU32 (sfSequence);
-	const uint32			uSequence				= mTxn.getSequence ();
+    const uint160            uPaysIssuerID            = saTakerPays.getIssuer ();
+    const uint160            uGetsIssuerID            = saTakerGets.getIssuer ();
+    const uint32            uExpiration                = mTxn.getFieldU32 (sfExpiration);
+    const bool                bHaveExpiration            = mTxn.isFieldPresent (sfExpiration);
+    const bool                bHaveCancel                = mTxn.isFieldPresent (sfOfferSequence);
+    const uint32            uCancelSequence            = mTxn.getFieldU32 (sfOfferSequence);
+    const uint32            uAccountSequenceNext    = mTxnAccount->getFieldU32 (sfSequence);
+    const uint32            uSequence                = mTxn.getSequence ();
 
-	const uint256			uLedgerIndex			= Ledger::getOfferIndex (mTxnAccountID, uSequence);
+    const uint256            uLedgerIndex            = Ledger::getOfferIndex (mTxnAccountID, uSequence);
 
-	WriteLog (lsTRACE, OfferCreateTransactor) << "OfferCreate: Creating offer node: " << uLedgerIndex.ToString () << " uSequence=" << uSequence;
+    WriteLog (lsTRACE, OfferCreateTransactor) << "OfferCreate: Creating offer node: " << uLedgerIndex.ToString () << " uSequence=" << uSequence;
 
-	const uint160			uPaysCurrency			= saTakerPays.getCurrency ();
-	const uint160			uGetsCurrency			= saTakerGets.getCurrency ();
-	const uint64			uRate					= STAmount::getRate (saTakerGets, saTakerPays);
+    const uint160            uPaysCurrency            = saTakerPays.getCurrency ();
+    const uint160            uGetsCurrency            = saTakerGets.getCurrency ();
+    const uint64            uRate                    = STAmount::getRate (saTakerGets, saTakerPays);
 
-	TER						terResult				= tesSUCCESS;
-	uint256					uDirectory;		// Delete hints.
-	uint64					uOwnerNode;
-	uint64					uBookNode;
+    TER                        terResult                = tesSUCCESS;
+    uint256                    uDirectory;        // Delete hints.
+    uint64                    uOwnerNode;
+    uint64                    uBookNode;
 
-	LedgerEntrySet&			lesActive				= mEngine->getNodes ();
-	LedgerEntrySet			lesCheckpoint			= lesActive;							// Checkpoint with just fees paid.
-	lesActive.bumpSeq ();																	// Begin ledger variance.
+    LedgerEntrySet&            lesActive                = mEngine->getNodes ();
+    LedgerEntrySet            lesCheckpoint            = lesActive;                            // Checkpoint with just fees paid.
+    lesActive.bumpSeq ();                                                                    // Begin ledger variance.
 
-	SLE::pointer			sleCreator				= mEngine->entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (mTxnAccountID));
+    SLE::pointer            sleCreator                = mEngine->entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (mTxnAccountID));
 
     if (uTxFlags & tfOfferCreateMask)
     {
@@ -483,9 +483,9 @@ TER OfferCreateTransactor::doApply ()
         terResult   = temBAD_SEQUENCE;
     }
 
-	// Cancel offer.
+    // Cancel offer.
     if (tesSUCCESS == terResult && bHaveCancel)
-	{
+    {
         const uint256   uCancelIndex = Ledger::getOfferIndex (mTxnAccountID, uCancelSequence);
         SLE::pointer    sleCancel    = mEngine->entryCache (ltOFFER, uCancelIndex);
 
@@ -502,9 +502,9 @@ TER OfferCreateTransactor::doApply ()
                     << " : " << uCancelSequence
                     << " : " << uCancelIndex.ToString ();
         }
-	}
+    }
 
-	// Make sure authorized to hold what taker will pay.
+    // Make sure authorized to hold what taker will pay.
     if (tesSUCCESS == terResult && !saTakerPays.isNative ())
     {
         SLE::pointer        sleTakerPays    = mEngine->entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uPaysIssuerID));
@@ -637,7 +637,7 @@ TER OfferCreateTransactor::doApply ()
 
         // Add offer to owner's directory.
         terResult   = lesActive.dirAdd (uOwnerNode, Ledger::getOwnerDirIndex (mTxnAccountID), uLedgerIndex,
-                                        BIND_TYPE (&Ledger::ownerDirDescriber, P_1, mTxnAccountID));
+                                        BIND_TYPE (&Ledger::ownerDirDescriber, P_1, P_2, mTxnAccountID));
 
 
         if (tesSUCCESS == terResult)
@@ -657,7 +657,8 @@ TER OfferCreateTransactor::doApply ()
 
             // Add offer to order book.
             terResult   = lesActive.dirAdd (uBookNode, uDirectory, uLedgerIndex,
-                                            BIND_TYPE (&Ledger::qualityDirDescriber, P_1, saTakerPays.getCurrency (), uPaysIssuerID,
+                                            BIND_TYPE (&Ledger::qualityDirDescriber, P_1, P_2, 
+                                                    saTakerPays.getCurrency (), uPaysIssuerID,
                                                     saTakerGets.getCurrency (), uGetsIssuerID, uRate));
         }
 

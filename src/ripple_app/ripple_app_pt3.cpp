@@ -12,15 +12,15 @@ namespace ripple
 {
 
 #include "ledger/Ledger.cpp"
-#include "shamap/ripple_SHAMapDelta.cpp"
-#include "shamap/ripple_SHAMapNode.cpp"
-#include "shamap/ripple_SHAMapTreeNode.cpp"
-#include "misc/ripple_AccountItems.cpp"
-#include "misc/ripple_AccountState.cpp"
+#include "shamap/SHAMapDelta.cpp"
+#include "shamap/SHAMapNode.cpp"
+#include "shamap/SHAMapTreeNode.cpp"
+#include "misc/AccountItems.cpp"
+#include "misc/AccountState.cpp"
 #include "tx/ChangeTransactor.cpp"
-#include "contracts/ripple_Contract.cpp"
-#include "contracts/ripple_Operation.cpp"
-#include "contracts/ripple_ScriptData.cpp"
-#include "contracts/ripple_Interpreter.cpp"
+#include "contracts/Contract.cpp"
+#include "contracts/Operation.cpp"
+#include "contracts/ScriptData.cpp"
+#include "contracts/Interpreter.cpp"
 
 }

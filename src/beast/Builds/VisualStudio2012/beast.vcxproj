@@ -154,6 +154,7 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Debug.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Error.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FatalError.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\Journal.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\ProtectedCall.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_FPUFlags.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_LeakChecked.h" />
@@ -322,7 +323,9 @@
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zlib.h" />
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zutil.h" />
     <ClInclude Include="..\..\modules\beast_crypto\beast_crypto.h" />
-    <ClInclude Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.h" />
+    <ClInclude Include="..\..\modules\beast_crypto\math\BinaryEncoding.h" />
+    <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedInteger.h" />
+    <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedIntegerCalc.h" />
     <ClInclude Include="..\..\modules\beast_db\beast_db.h" />
     <ClInclude Include="..\..\modules\beast_db\keyvalue\beast_KeyvaDB.h" />
     <ClInclude Include="..\..\modules\beast_extras\beast_extras.h" />
@@ -578,6 +581,12 @@
     <ClCompile Include="..\..\modules\beast_core\diagnostic\FatalError.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\Journal.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\ProtectedCall.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1258,7 +1267,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_crypto\beast_crypto.cpp" />
-    <ClCompile Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.cpp">
+    <ClCompile Include="..\..\modules\beast_crypto\math\BinaryEncoding.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_crypto\math\UnsignedInteger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

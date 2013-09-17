@@ -3045,11 +3045,16 @@ void NetworkOPsImp::gotFetchPack (bool progress, uint32 seq)
 
 void NetworkOPsImp::missingNodeInLedger (uint32 seq)
 {
-    WriteLog (lsWARNING, NetworkOPs) << "We are missing a node in ledger " << seq;
     uint256 hash = getApp().getLedgerMaster ().getHashBySeq (seq);
-
-    if (hash.isNonZero ())
+    if (hash.isZero())
+    {
+        WriteLog (lsWARNING, NetworkOPs) << "Missing a node in ledger " << seq << " cannot fetch";
+    }
+    else
+    {
+        WriteLog (lsWARNING, NetworkOPs) << "Missing a node in ledger " << seq << " fetching";
         getApp().getInboundLedgers ().findCreate (hash, seq, false);
+    }
 }
 
 //------------------------------------------------------------------------------

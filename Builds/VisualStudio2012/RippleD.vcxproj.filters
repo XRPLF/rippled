@@ -172,136 +172,124 @@
     <Filter Include="[2] Ripple %28New%29\testoverlay\impl">
       <UniqueIdentifier>{e614b68f-21cb-4866-82d1-1ea89ee11906}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\ripple_basics\log">
+      <UniqueIdentifier>{824b1f04-7313-4abb-a3db-6241c7c8a356}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\ripple_basics\containers\ripple_RangeSet.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
       <Filter>[1] Ripple\ripple_basics\containers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\containers\ripple_TaggedCache.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\containers\TaggedCache.cpp">
       <Filter>[1] Ripple\ripple_basics\containers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\types\ripple_UInt256.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\types\UInt256.cpp">
       <Filter>[1] Ripple\ripple_basics\types</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_ByteOrder.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\ByteOrder.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_CountedObject.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\CountedObject.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_DiffieHellmanUtil.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\DiffieHellmanUtil.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_IniFile.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\IniFile.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_Log.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\RandomNumbers.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_RandomNumbers.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\StringUtilities.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_StringUtilities.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\Sustain.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_Sustain.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\ThreadName.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_ThreadName.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\Time.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_Time.cpp">
+    <ClCompile Include="..\..\src\ripple_basics\utility\UptimeTimer.cpp">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_UptimeTimer.cpp">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\ripple_basics.cpp">
-      <Filter>[1] Ripple\ripple_basics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_Job.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\Job.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_JobQueue.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\JobQueue.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_LoadEvent.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\LoadEvent.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_LoadFeeTrack.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\LoadFeeTrack.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\ripple_LoadMonitor.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\LoadMonitor.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_Base58.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\Base58.cpp">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_Base58Data.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\Base58Data.cpp">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_CBigNum.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\CBigNum.cpp">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_CKey.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\CKey.cpp">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_CKeyDeterministic.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\CKeyDeterministic.cpp">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_CKeyECIES.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\CKeyECIES.cpp">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\ripple_RFC1751.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\RFC1751.cpp">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_FieldNames.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\FieldNames.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_PackedMessage.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\PackedMessage.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_RippleAddress.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\RippleAddress.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_SerializedObject.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\SerializedObject.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_SerializedObjectTemplate.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\SerializedObjectTemplate.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_SerializedTypes.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\SerializedTypes.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_Serializer.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\Serializer.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_STAmount.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\STAmount.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_STAmountRound.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\STAmountRound.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_TER.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\TER.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_TxFormats.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\TxFormats.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\ripple_data.cpp">
-      <Filter>[1] Ripple\ripple_data</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_leveldb\ripple_leveldb.cpp">
-      <Filter>[1] Ripple\ripple_leveldb</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_websocket\autosocket\ripple_AutoSocket.cpp">
+    <ClCompile Include="..\..\src\ripple_websocket\autosocket\AutoSocket.cpp">
       <Filter>[1] Ripple\ripple_websocket\autosocket</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_websocket\autosocket\ripple_LogWebsockets.cpp">
+    <ClCompile Include="..\..\src\ripple_websocket\autosocket\LogWebsockets.cpp">
       <Filter>[1] Ripple\ripple_websocket\autosocket</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_websocket\ripple_websocket.cpp">
-      <Filter>[1] Ripple\ripple_websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\base64\base64.cpp">
       <Filter>[0] Libraries\websocket</Filter>
@@ -474,67 +462,31 @@
     <ClCompile Include="..\..\src\leveldb\port\port_win.cc">
       <Filter>[0] Libraries\leveldb\port</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt1.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt2.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt3.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt4.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt5.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt6.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt7.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt8.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ripple_LogFile.cpp">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\ripple_LedgerFormats.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\LedgerFormats.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_net\ripple_net.cpp">
-      <Filter>[1] Ripple\ripple_net</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_mdb\ripple_mdb.c">
-      <Filter>[1] Ripple\ripple_mdb</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.cpp">
-      <Filter>[1] Ripple\ripple_hyperleveldb</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\ripple_Contract.cpp">
+    <ClCompile Include="..\..\src\ripple_app\contracts\Contract.cpp">
       <Filter>[1] Ripple\ripple_app\contracts</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\ripple_Interpreter.cpp">
+    <ClCompile Include="..\..\src\ripple_app\contracts\Interpreter.cpp">
       <Filter>[1] Ripple\ripple_app\contracts</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\ripple_Operation.cpp">
+    <ClCompile Include="..\..\src\ripple_app\contracts\Operation.cpp">
       <Filter>[1] Ripple\ripple_app\contracts</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\ripple_ScriptData.cpp">
+    <ClCompile Include="..\..\src\ripple_app\contracts\ScriptData.cpp">
       <Filter>[1] Ripple\ripple_app\contracts</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\data\ripple_Database.cpp">
+    <ClCompile Include="..\..\src\ripple_app\data\Database.cpp">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\data\ripple_DatabaseCon.cpp">
+    <ClCompile Include="..\..\src\ripple_app\data\DatabaseCon.cpp">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\data\ripple_DBInit.cpp">
+    <ClCompile Include="..\..\src\ripple_app\data\DBInit.cpp">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\data\ripple_SqliteDatabase.cpp">
+    <ClCompile Include="..\..\src\ripple_app\data\SqliteDatabase.cpp">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ledger\Ledger.cpp">
@@ -552,22 +504,22 @@
     <ClCompile Include="..\..\src\ripple_app\ledger\OrderBookDB.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_AcceptedLedger.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\AcceptedLedger.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_AcceptedLedgerTx.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\AcceptedLedgerTx.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_InboundLedger.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\InboundLedger.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_InboundLedgers.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\InboundLedgers.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_LedgerEntrySet.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerEntrySet.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\ripple_LedgerHistory.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerHistory.cpp">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ledger\SerializedValidation.cpp">
@@ -576,85 +528,85 @@
     <ClCompile Include="..\..\src\ripple_app\main\ParameterTable.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\ripple_Application.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\Application.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\ripple_LoadManager.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\LoadManager.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\ripple_LocalCredentials.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\LocalCredentials.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_AccountItem.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\AccountItem.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_AccountItems.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\AccountItems.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_AccountState.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\AccountState.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_CanonicalTXSet.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\CanonicalTXSet.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_Features.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\Features.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_FeeVote.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\FeeVote.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_HashRouter.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\HashRouter.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_NicknameState.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\NicknameState.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_Offer.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\Offer.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_OrderBook.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\OrderBook.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_SerializedLedger.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\SerializedLedger.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_SerializedTransaction.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\SerializedTransaction.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\ripple_Validations.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\Validations.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\misc\NetworkOPs.cpp">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_Pathfinder.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\Pathfinder.cpp">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_PathRequest.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\PathRequest.cpp">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_PathState.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\PathState.cpp">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_RippleCalc.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\RippleCalc.cpp">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_RippleLineCache.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\RippleLineCache.cpp">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\ripple_RippleState.cpp">
+    <ClCompile Include="..\..\src\ripple_app\paths\RippleState.cpp">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\ripple_Peer.cpp">
+    <ClCompile Include="..\..\src\ripple_app\peers\Peer.cpp">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\ripple_Peers.cpp">
+    <ClCompile Include="..\..\src\ripple_app\peers\Peers.cpp">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\ripple_PeerSet.cpp">
+    <ClCompile Include="..\..\src\ripple_app\peers\PeerSet.cpp">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\ripple_UniqueNodeList.cpp">
+    <ClCompile Include="..\..\src\ripple_app\peers\UniqueNodeList.cpp">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\peers\PeerDoor.cpp">
@@ -663,34 +615,34 @@
     <ClCompile Include="..\..\src\ripple_app\rpc\RPCHandler.cpp">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMap.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMap.cpp">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapDelta.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapDelta.cpp">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapItem.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapItem.cpp">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapMissingNode.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapMissingNode.cpp">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapNode.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapNode.cpp">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapSync.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapSync.cpp">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapSyncFilters.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapSyncFilters.cpp">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\ripple_SHAMapTreeNode.cpp">
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapTreeNode.cpp">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\consensus\ripple_LedgerConsensus.cpp">
+    <ClCompile Include="..\..\src\ripple_app\consensus\LedgerConsensus.cpp">
       <Filter>[1] Ripple\ripple_app\consensus</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\consensus\ripple_DisputedTx.cpp">
+    <ClCompile Include="..\..\src\ripple_app\consensus\DisputedTx.cpp">
       <Filter>[1] Ripple\ripple_app\consensus</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\tx\AccountSetTransactor.cpp">
@@ -711,7 +663,7 @@
     <ClCompile Include="..\..\src\ripple_app\tx\RegularKeySetTransactor.cpp">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\ripple_TransactionAcquire.cpp">
+    <ClCompile Include="..\..\src\ripple_app\tx\TransactionAcquire.cpp">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\tx\Transaction.cpp">
@@ -738,7 +690,7 @@
     <ClCompile Include="..\..\src\ripple_app\tx\WalletAddTransactor.cpp">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\ripple_RippleMain.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\RippleMain.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\websocket\WSConnection.cpp">
@@ -752,9 +704,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\protocol\BuildInfo.cpp">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\json\json_reader.cpp">
       <Filter>[1] Ripple\ripple_basics\json</Filter>
@@ -783,7 +732,7 @@
     <ClCompile Include="..\..\src\ripple_net\basics\RPCDoor.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app.cpp">
+    <ClCompile Include="..\..\src\ripple_app\app.cpp">
       <Filter>[1] Ripple\ripple_app</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\rpc\RPCServerHandler.cpp">
@@ -816,7 +765,7 @@
     <ClCompile Include="..\..\src\ripple_app\tx\TxQueueEntry.cpp">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\node\ripple_SqliteBackendFactory.cpp">
+    <ClCompile Include="..\..\src\ripple_app\node\SqliteBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\node\HyperLevelDBBackendFactory.cpp">
@@ -843,9 +792,6 @@
     <ClCompile Include="..\..\src\ripple_core\node\NullBackendFactory.cpp">
       <Filter>[1] Ripple\ripple_core\node</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\build\proto\ripple.pb.cc">
-      <Filter>[1] Ripple</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\protobuf_core.cpp">
       <Filter>[0] Libraries\protobuf</Filter>
     </ClCompile>
@@ -867,211 +813,265 @@
     <ClCompile Include="..\..\src\beast\modules\beast_sqlite\beast_sqlite.c">
       <Filter>[0] Libraries\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\ripple_core.cpp">
-      <Filter>[1] Ripple\ripple_core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.cpp">
+    <ClCompile Include="..\..\src\ripple_core\peerfinder\PeerFinder.cpp">
       <Filter>[1] Ripple\ripple_core\peerfinder</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\functional\Config.cpp">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\testoverlay\ripple_testoverlay.cpp">
-      <Filter>[2] Ripple %28New%29\testoverlay</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\testoverlay\impl\TestOverlay.cpp">
       <Filter>[2] Ripple %28New%29\testoverlay\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\ripple_validators.cpp">
-      <Filter>[2] Ripple %28New%29\validators</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\Validators.cpp">
-      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorSourceFile.cpp">
-      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorSourceStrings.cpp">
-      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorSourceURL.cpp">
-      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\ValidatorsUtilities.cpp">
-      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\main\FatalErrorReporter.cpp">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\Log.cpp">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogFile.cpp">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogJournal.cpp">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogSink.cpp">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogPartition.cpp">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\Manager.cpp">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\Source.cpp">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\SourceFile.cpp">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\SourceStrings.cpp">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\SourceURL.cpp">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\Utilities.cpp">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\Tests.cpp">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\StoreSqdb.cpp">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt1.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt2.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt3.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt4.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt5.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt6.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt7.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt8.cpp">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\build\proto\ripple.pb.cc">
+      <Filter>[1] Ripple\ripple_data\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\ripple_basics.cpp">
+      <Filter>[1] Ripple\ripple_basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\ripple_core.cpp">
+      <Filter>[1] Ripple\ripple_core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_data\ripple_data.cpp">
+      <Filter>[1] Ripple\ripple_data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.cpp">
+      <Filter>[1] Ripple\ripple_hyperleveldb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_mdb\ripple_mdb.c">
+      <Filter>[1] Ripple\ripple_mdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_net\ripple_net.cpp">
+      <Filter>[1] Ripple\ripple_net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_websocket\ripple_websocket.cpp">
+      <Filter>[1] Ripple\ripple_websocket</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\ripple_validators.cpp">
+      <Filter>[2] Ripple %28New%29\validators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\testoverlay\ripple_testoverlay.cpp">
+      <Filter>[2] Ripple %28New%29\testoverlay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_leveldb\ripple_leveldb.cpp">
+      <Filter>[1] Ripple\ripple_leveldb</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\ripple_app\ripple_app.h">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\containers\ripple_KeyCache.h">
+    <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
       <Filter>[1] Ripple\ripple_basics\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\containers\ripple_RangeSet.h">
+    <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">
       <Filter>[1] Ripple\ripple_basics\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\containers\ripple_SecureAllocator.h">
+    <ClInclude Include="..\..\src\ripple_basics\containers\SecureAllocator.h">
       <Filter>[1] Ripple\ripple_basics\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\containers\ripple_TaggedCache.h">
+    <ClInclude Include="..\..\src\ripple_basics\containers\TaggedCache.h">
       <Filter>[1] Ripple\ripple_basics\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\system\ripple_BoostIncludes.h">
+    <ClInclude Include="..\..\src\ripple_basics\system\BoostIncludes.h">
       <Filter>[1] Ripple\ripple_basics\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\system\ripple_OpenSSLIncludes.h">
+    <ClInclude Include="..\..\src\ripple_basics\system\OpenSSLIncludes.h">
       <Filter>[1] Ripple\ripple_basics\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\system\ripple_StandardIncludes.h">
+    <ClInclude Include="..\..\src\ripple_basics\system\StandardIncludes.h">
       <Filter>[1] Ripple\ripple_basics\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\types\ripple_BasicTypes.h">
+    <ClInclude Include="..\..\src\ripple_basics\types\BasicTypes.h">
       <Filter>[1] Ripple\ripple_basics\types</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\types\ripple_HashMaps.h">
+    <ClInclude Include="..\..\src\ripple_basics\types\HashMaps.h">
       <Filter>[1] Ripple\ripple_basics\types</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\types\ripple_UInt256.h">
+    <ClInclude Include="..\..\src\ripple_basics\types\UInt256.h">
       <Filter>[1] Ripple\ripple_basics\types</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_ByteOrder.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\ByteOrder.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_CountedObject.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\CountedObject.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_DiffieHellmanUtil.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\DiffieHellmanUtil.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_HashUtilities.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\HashUtilities.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_IniFile.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\IniFile.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_Log.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\PlatformMacros.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_PlatformMacros.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\RandomNumbers.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_RandomNumbers.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\StringUtilities.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_StringUtilities.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\Sustain.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_Sustain.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\ThreadName.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_ThreadName.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\Time.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_Time.h">
+    <ClInclude Include="..\..\src\ripple_basics\utility\UptimeTimer.h">
       <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_UptimeTimer.h">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\ripple_basics.h">
-      <Filter>[1] Ripple\ripple_basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_ILoadFeeTrack.h">
+    <ClInclude Include="..\..\src\ripple_core\functional\ILoadFeeTrack.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_Job.h">
+    <ClInclude Include="..\..\src\ripple_core\functional\Job.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_JobQueue.h">
+    <ClInclude Include="..\..\src\ripple_core\functional\JobQueue.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_LoadEvent.h">
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadEvent.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_LoadFeeTrack.h">
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_LoadMonitor.h">
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadMonitor.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\ripple_core.h">
-      <Filter>[1] Ripple\ripple_core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\crypto\ripple_Base58.h">
+    <ClInclude Include="..\..\src\ripple_data\crypto\Base58.h">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\crypto\ripple_Base58Data.h">
+    <ClInclude Include="..\..\src\ripple_data\crypto\Base58Data.h">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\crypto\ripple_CBigNum.h">
+    <ClInclude Include="..\..\src\ripple_data\crypto\CBigNum.h">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\crypto\ripple_CKey.h">
+    <ClInclude Include="..\..\src\ripple_data\crypto\CKey.h">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\crypto\ripple_RFC1751.h">
+    <ClInclude Include="..\..\src\ripple_data\crypto\RFC1751.h">
       <Filter>[1] Ripple\ripple_data\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_FieldNames.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\FieldNames.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_HashPrefix.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\HashPrefix.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_PackedMessage.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\PackedMessage.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_Protocol.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\Protocol.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_RippleAddress.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\RippleAddress.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_RippleSystem.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\RippleSystem.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_SerializeDeclarations.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializeDeclarations.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_SerializedObject.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedObject.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_SerializedObjectTemplate.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedObjectTemplate.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_SerializedTypes.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedTypes.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_Serializer.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\Serializer.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_TER.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\TER.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_TxFlags.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\TxFlags.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_TxFormats.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\TxFormats.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\utility\ripple_UptimeTimerAdapter.h">
+    <ClInclude Include="..\..\src\ripple_data\utility\UptimeTimerAdapter.h">
       <Filter>[1] Ripple\ripple_data\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\ripple_data.h">
-      <Filter>[1] Ripple\ripple_data</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_leveldb\ripple_leveldb.h">
-      <Filter>[1] Ripple\ripple_leveldb</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_websocket\autosocket\ripple_AutoSocket.h">
+    <ClInclude Include="..\..\src\ripple_websocket\autosocket\AutoSocket.h">
       <Filter>[1] Ripple\ripple_websocket\autosocket</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_websocket\ripple_websocket.h">
-      <Filter>[1] Ripple\ripple_websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\base64\base64.h">
       <Filter>[0] Libraries\websocket</Filter>
@@ -1280,46 +1280,34 @@
     <ClInclude Include="..\..\src\leveldb\port\port_posix.h">
       <Filter>[0] Libraries\leveldb\port</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_LogFile.h">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_KnownFormats.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\KnownFormats.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\ripple_LedgerFormats.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\LedgerFormats.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_net\ripple_net.h">
-      <Filter>[1] Ripple\ripple_net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_mdb\ripple_mdb.h">
-      <Filter>[1] Ripple\ripple_mdb</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.h">
-      <Filter>[1] Ripple\ripple_hyperleveldb</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\contracts\ripple_Contract.h">
+    <ClInclude Include="..\..\src\ripple_app\contracts\Contract.h">
       <Filter>[1] Ripple\ripple_app\contracts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\contracts\ripple_Interpreter.h">
+    <ClInclude Include="..\..\src\ripple_app\contracts\Interpreter.h">
       <Filter>[1] Ripple\ripple_app\contracts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\contracts\ripple_Operation.h">
+    <ClInclude Include="..\..\src\ripple_app\contracts\Operation.h">
       <Filter>[1] Ripple\ripple_app\contracts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\contracts\ripple_ScriptData.h">
+    <ClInclude Include="..\..\src\ripple_app\contracts\ScriptData.h">
       <Filter>[1] Ripple\ripple_app\contracts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\data\ripple_Database.h">
+    <ClInclude Include="..\..\src\ripple_app\data\Database.h">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\data\ripple_DatabaseCon.h">
+    <ClInclude Include="..\..\src\ripple_app\data\DatabaseCon.h">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\data\ripple_DBInit.h">
+    <ClInclude Include="..\..\src\ripple_app\data\DBInit.h">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\data\ripple_SqliteDatabase.h">
+    <ClInclude Include="..\..\src\ripple_app\data\SqliteDatabase.h">
       <Filter>[1] Ripple\ripple_app\data</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\ledger\Ledger.h">
@@ -1337,142 +1325,142 @@
     <ClInclude Include="..\..\src\ripple_app\ledger\OrderBookDB.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_AcceptedLedger.h">
+    <ClInclude Include="..\..\src\ripple_app\ledger\AcceptedLedger.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_AcceptedLedgerTx.h">
+    <ClInclude Include="..\..\src\ripple_app\ledger\AcceptedLedgerTx.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_InboundLedger.h">
+    <ClInclude Include="..\..\src\ripple_app\ledger\InboundLedger.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_InboundLedgers.h">
+    <ClInclude Include="..\..\src\ripple_app\ledger\InboundLedgers.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_LedgerEntrySet.h">
+    <ClInclude Include="..\..\src\ripple_app\ledger\LedgerEntrySet.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\ledger\ripple_LedgerHistory.h">
+    <ClInclude Include="..\..\src\ripple_app\ledger\LedgerHistory.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\ledger\SerializedValidation.h">
       <Filter>[1] Ripple\ripple_app\ledger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\ripple_ConfigSections.h">
+    <ClInclude Include="..\..\src\ripple_core\functional\ConfigSections.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\ParameterTable.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\main\ripple_Application.h">
+    <ClInclude Include="..\..\src\ripple_app\main\Application.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\main\ripple_LocalCredentials.h">
+    <ClInclude Include="..\..\src\ripple_app\main\LocalCredentials.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\misc\NetworkOPs.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_AccountItem.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\AccountItem.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_AccountItems.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\AccountItems.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_AccountState.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\AccountState.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_CanonicalTXSet.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\CanonicalTXSet.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_IFeatures.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\IFeatures.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_IFeeVote.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\IFeeVote.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_IHashRouter.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\IHashRouter.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_NicknameState.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\NicknameState.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_Offer.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\Offer.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_OrderBook.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\OrderBook.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_SerializedLedger.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\SerializedLedger.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_SerializedTransaction.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\SerializedTransaction.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_Pathfinder.h">
+    <ClInclude Include="..\..\src\ripple_app\paths\Pathfinder.h">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_PathRequest.h">
+    <ClInclude Include="..\..\src\ripple_app\paths\PathRequest.h">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_PathState.h">
+    <ClInclude Include="..\..\src\ripple_app\paths\PathState.h">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_RippleCalc.h">
+    <ClInclude Include="..\..\src\ripple_app\paths\RippleCalc.h">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_RippleLineCache.h">
+    <ClInclude Include="..\..\src\ripple_app\paths\RippleLineCache.h">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\paths\ripple_RippleState.h">
+    <ClInclude Include="..\..\src\ripple_app\paths\RippleState.h">
       <Filter>[1] Ripple\ripple_app\paths</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\peers\PeerDoor.h">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\peers\ripple_Peer.h">
+    <ClInclude Include="..\..\src\ripple_app\peers\Peer.h">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\peers\ripple_PeerSet.h">
+    <ClInclude Include="..\..\src\ripple_app\peers\PeerSet.h">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\peers\ripple_UniqueNodeList.h">
+    <ClInclude Include="..\..\src\ripple_app\peers\UniqueNodeList.h">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\peers\ripple_ClusterNodeStatus.h">
+    <ClInclude Include="..\..\src\ripple_app\peers\ClusterNodeStatus.h">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\rpc\RPCHandler.h">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMap.h">
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMap.h">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapAddNode.h">
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapAddNode.h">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapItem.h">
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapItem.h">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapMissingNode.h">
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapMissingNode.h">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapNode.h">
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapNode.h">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapSyncFilter.h">
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapSyncFilter.h">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapSyncFilters.h">
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapSyncFilters.h">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\shamap\ripple_SHAMapTreeNode.h">
+    <ClInclude Include="..\..\src\ripple_app\shamap\SHAMapTreeNode.h">
       <Filter>[1] Ripple\ripple_app\shamap</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\consensus\ripple_DisputedTx.h">
+    <ClInclude Include="..\..\src\ripple_app\consensus\DisputedTx.h">
       <Filter>[1] Ripple\ripple_app\consensus</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\consensus\ripple_LedgerConsensus.h">
+    <ClInclude Include="..\..\src\ripple_app\consensus\LedgerConsensus.h">
       <Filter>[1] Ripple\ripple_app\consensus</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\tx\AccountSetTransactor.h">
@@ -1493,7 +1481,7 @@
     <ClInclude Include="..\..\src\ripple_app\tx\RegularKeySetTransactor.h">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\ripple_TransactionAcquire.h">
+    <ClInclude Include="..\..\src\ripple_app\tx\TransactionAcquire.h">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\tx\Transaction.h">
@@ -1517,11 +1505,8 @@
     <ClInclude Include="..\..\src\ripple_app\tx\WalletAddTransactor.h">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\main\ripple_RippleMain.h">
+    <ClInclude Include="..\..\src\ripple_app\main\RippleMain.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ripple_LoggedTimings.h">
-      <Filter>[1] Ripple\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\websocket\WSConnection.h">
       <Filter>[1] Ripple\ripple_app\websocket</Filter>
@@ -1532,7 +1517,7 @@
     <ClInclude Include="..\..\src\ripple_app\websocket\WSServerHandler.h">
       <Filter>[1] Ripple\ripple_app\websocket</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\peers\ripple_Peers.h">
+    <ClInclude Include="..\..\src\ripple_app\peers\Peers.h">
       <Filter>[1] Ripple\ripple_app\peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\functional\LoadSource.h">
@@ -1541,7 +1526,7 @@
     <ClInclude Include="..\..\src\ripple_core\functional\LoadType.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\main\ripple_LoadManager.h">
+    <ClInclude Include="..\..\src\ripple_app\main\LoadManager.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_data\protocol\BuildInfo.h">
@@ -1577,7 +1562,7 @@
     <ClInclude Include="..\..\src\ripple_core\functional\LoadType.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\main\ripple_LoadManager.h">
+    <ClInclude Include="..\..\src\ripple_app\main\LoadManager.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\json\json_autolink.h">
@@ -1670,7 +1655,7 @@
     <ClInclude Include="..\..\src\ripple_app\tx\TxQueueEntry.h">
       <Filter>[1] Ripple\ripple_app\tx</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\node\ripple_SqliteBackendFactory.h">
+    <ClInclude Include="..\..\src\ripple_app\node\SqliteBackendFactory.h">
       <Filter>[1] Ripple\ripple_app\node</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\node\HyperLevelDBBackendFactory.h">
@@ -1697,18 +1682,15 @@
     <ClInclude Include="..\..\src\ripple_core\node\NullBackendFactory.h">
       <Filter>[1] Ripple\ripple_core\node</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\ripple_Validations.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\Validations.h">
       <Filter>[1] Ripple\ripple_app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\BeastConfig.h" />
-    <ClInclude Include="..\..\src\ripple_core\peerfinder\ripple_PeerFinder.h">
+    <ClInclude Include="..\..\src\ripple_core\peerfinder\PeerFinder.h">
       <Filter>[1] Ripple\ripple_core\peerfinder</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\functional\Config.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\ripple_testoverlay.h">
-      <Filter>[2] Ripple %28New%29\testoverlay</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\testoverlay\api\ConfigType.h">
       <Filter>[2] Ripple %28New%29\testoverlay\api</Filter>
@@ -1740,26 +1722,101 @@
     <ClInclude Include="..\..\src\ripple\testoverlay\api\StateBase.h">
       <Filter>[2] Ripple %28New%29\testoverlay\api</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\main\FatalErrorReporter.h">
+      <Filter>[1] Ripple\ripple_app\main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\Log.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LogFile.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LoggedTimings.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LogJournal.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LogSink.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LogSeverity.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\log\LogPartition.h">
+      <Filter>[1] Ripple\ripple_basics\log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\api\Source.h">
+      <Filter>[2] Ripple %28New%29\validators\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\api\Types.h">
+      <Filter>[2] Ripple %28New%29\validators\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\api\Manager.h">
+      <Filter>[2] Ripple %28New%29\validators\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceFile.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceStrings.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceURL.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\Store.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\Utilities.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\ChosenList.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceDesc.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\StoreSqdb.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\CancelCallbacks.h">
+      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\ripple_app.h">
+      <Filter>[1] Ripple\ripple_app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\ripple_basics.h">
+      <Filter>[1] Ripple\ripple_basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\ripple_core.h">
+      <Filter>[1] Ripple\ripple_core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\ripple_data.h">
+      <Filter>[1] Ripple\ripple_data</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_leveldb\ripple_leveldb.h">
+      <Filter>[1] Ripple\ripple_leveldb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_mdb\ripple_mdb.h">
+      <Filter>[1] Ripple\ripple_mdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_net\ripple_net.h">
+      <Filter>[1] Ripple\ripple_net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_websocket\ripple_websocket.h">
+      <Filter>[1] Ripple\ripple_websocket</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\ripple_validators.h">
       <Filter>[2] Ripple %28New%29\validators</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\ValidatorSourceFile.h">
-      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
+    <ClInclude Include="..\..\src\ripple\testoverlay\ripple_testoverlay.h">
+      <Filter>[2] Ripple %28New%29\testoverlay</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\ValidatorSourceStrings.h">
-      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\ValidatorSourceURL.h">
-      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\ValidatorsUtilities.h">
-      <Filter>[2] Ripple %28New%29\validators\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\api\Validators.h">
-      <Filter>[2] Ripple %28New%29\validators\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\main\FatalErrorReporter.h">
-      <Filter>[1] Ripple\ripple_app\main</Filter>
+    <ClInclude Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.h">
+      <Filter>[1] Ripple\ripple_hyperleveldb</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

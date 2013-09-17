@@ -11,23 +11,23 @@
 namespace ripple
 {
 
-#include "shamap/ripple_SHAMap.cpp" // Uses theApp
-#include "shamap/ripple_SHAMapItem.cpp"
-#include "shamap/ripple_SHAMapSync.cpp"
-#include "shamap/ripple_SHAMapMissingNode.cpp"
+#include "shamap/SHAMap.cpp" // Uses theApp
+#include "shamap/SHAMapItem.cpp"
+#include "shamap/SHAMapSync.cpp"
+#include "shamap/SHAMapMissingNode.cpp"
 
-#include "misc/ripple_AccountItem.cpp"
+#include "misc/AccountItem.cpp"
 #include "tx/AccountSetTransactor.cpp"
-#include "misc/ripple_CanonicalTXSet.cpp"
+#include "misc/CanonicalTXSet.cpp"
 #include "ledger/LedgerProposal.cpp"
-#include "main/ripple_LoadManager.cpp"
-#include "misc/ripple_NicknameState.cpp"
+#include "main/LoadManager.cpp"
+#include "misc/NicknameState.cpp"
 #include "tx/OfferCancelTransactor.cpp"
 #include "ledger/OrderBookDB.cpp"
 
-#include "data/ripple_Database.cpp"
-#include "data/ripple_DatabaseCon.cpp"
-#include "data/ripple_SqliteDatabase.cpp"
-#include "data/ripple_DBInit.cpp"
+#include "data/Database.cpp"
+#include "data/DatabaseCon.cpp"
+#include "data/SqliteDatabase.cpp"
+#include "data/DBInit.cpp"
 
 }

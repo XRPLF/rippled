@@ -25,7 +25,9 @@ namespace ripple
 
 using namespace beast;
 
-#include "api/Validators.h"
+# include "api/Types.h"
+# include "api/Source.h"
+#include "api/Manager.h"
 
 }
 

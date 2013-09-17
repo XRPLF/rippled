@@ -15,15 +15,15 @@ namespace ripple
 {
 
 #include "ledger/LedgerTiming.cpp"
-#include "ledger/ripple_AcceptedLedgerTx.cpp"
-#include "main/ripple_LocalCredentials.cpp"
-#include "misc/ripple_Validations.cpp"
+#include "ledger/AcceptedLedgerTx.cpp"
+#include "main/LocalCredentials.cpp"
+#include "misc/Validations.cpp"
 #include "tx/OfferCreateTransactor.cpp"
 #include "tx/WalletAddTransactor.cpp"
-#include "misc/ripple_FeeVote.cpp"
+#include "misc/FeeVote.cpp"
 #   include "misc/PowResult.h"
 #  include "misc/ProofOfWork.h"
 # include "misc/ProofOfWorkFactory.h"
-#include "peers/ripple_Peer.cpp"
+#include "peers/Peer.cpp"
 
 }

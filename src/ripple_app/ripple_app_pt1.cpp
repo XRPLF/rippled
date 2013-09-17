@@ -16,18 +16,18 @@
 namespace ripple
 {
 
-#include "peers/ripple_PeerSet.cpp"
-#include "misc/ripple_OrderBook.cpp"
+#include "peers/PeerSet.cpp"
+#include "misc/OrderBook.cpp"
 #   include "misc/PowResult.h"
 #  include "misc/ProofOfWork.h"
 # include "misc/ProofOfWorkFactory.h"
 #include "misc/ProofOfWorkFactory.cpp"
 #include "misc/ProofOfWork.cpp"
-#include "misc/ripple_SerializedTransaction.cpp"
+#include "misc/SerializedTransaction.cpp"
 
-#include "shamap/ripple_SHAMapSyncFilters.cpp" // requires Application
+#include "shamap/SHAMapSyncFilters.cpp" // requires Application
 
-#include "consensus/ripple_LedgerConsensus.cpp"
+#include "consensus/LedgerConsensus.cpp"
 
 #include "ledger/LedgerMaster.cpp"
 

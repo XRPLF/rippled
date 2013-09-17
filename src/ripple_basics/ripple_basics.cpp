@@ -72,28 +72,31 @@
 namespace ripple
 {
 
-#include "containers/ripple_RangeSet.cpp"
-#include "containers/ripple_TaggedCache.cpp"
+#include "containers/RangeSet.cpp"
+#include "containers/TaggedCache.cpp"
 
 #include "json/json_reader.cpp"
 #include "json/json_value.cpp"
 #include "json/json_writer.cpp"
 
-#include "utility/ripple_Log.cpp"
-#include "utility/ripple_LogFile.cpp"
+#include "log/Log.cpp"
+#include "log/LogFile.cpp"
+#include "log/LogJournal.cpp"
+#include "log/LogPartition.cpp"
+#include "log/LogSink.cpp"
 
-#include "utility/ripple_ByteOrder.cpp"
-#include "utility/ripple_CountedObject.cpp"
-#include "utility/ripple_DiffieHellmanUtil.cpp"
-#include "utility/ripple_IniFile.cpp"
-#include "utility/ripple_StringUtilities.cpp"
-#include "utility/ripple_Sustain.cpp"
-#include "utility/ripple_ThreadName.cpp"
-#include "utility/ripple_Time.cpp"
-#include "utility/ripple_UptimeTimer.cpp"
+#include "utility/ByteOrder.cpp"
+#include "utility/CountedObject.cpp"
+#include "utility/DiffieHellmanUtil.cpp"
+#include "utility/IniFile.cpp"
+#include "utility/StringUtilities.cpp"
+#include "utility/Sustain.cpp"
+#include "utility/ThreadName.cpp"
+#include "utility/Time.cpp"
+#include "utility/UptimeTimer.cpp"
 
-#include "utility/ripple_RandomNumbers.cpp" // has Win32/Posix dependencies
+#include "utility/RandomNumbers.cpp" // has Win32/Posix dependencies
 
-#include "types/ripple_UInt256.cpp"
+#include "types/UInt256.cpp"
 
 }
