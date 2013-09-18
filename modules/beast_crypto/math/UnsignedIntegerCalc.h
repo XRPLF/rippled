@@ -115,8 +115,10 @@ public:
             while (lo < hi)
             {
                 std::swap (*lo, *hi);
-                *lo++ = fromNetworkByteOrder <UInt> (*lo);
-                *hi-- = fromNetworkByteOrder <UInt> (*hi);
+                *lo = fromNetworkByteOrder <UInt> (*lo);
+                ++lo;
+                *hi = fromNetworkByteOrder <UInt> (*hi);
+                ++hi;
             }
             if (lo == hi)
                 *lo = fromNetworkByteOrder <UInt> (*lo);
