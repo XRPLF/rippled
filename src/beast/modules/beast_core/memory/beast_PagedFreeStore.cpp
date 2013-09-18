@@ -97,7 +97,7 @@ PagedFreeStore::PagedFreeStore (const size_t pageBytes)
 
 PagedFreeStore::~PagedFreeStore ()
 {
-    m_timer.reset ();
+    m_timer.cancel ();
 
 #if LOG_GC
     bassert (!m_used.isSignaled ());

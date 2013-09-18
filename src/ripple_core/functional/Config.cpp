@@ -773,14 +773,32 @@ Config::Role Config::getAdminRole (Json::Value const& params, std::string const&
     bool    bPasswordSupplied   = params.isMember ("admin_user") || params.isMember ("admin_password");
     bool    bPasswordRequired   = !this->RPC_ADMIN_USER.empty () || !this->RPC_ADMIN_PASSWORD.empty ();
 
-    bool    bPasswordWrong      = bPasswordSupplied
-                                  ? bPasswordRequired
-                                  // Supplied, required, and incorrect.
-                                  ? this->RPC_ADMIN_USER != (params.isMember ("admin_user") ? params["admin_user"].asString () : "")
-                                  || this->RPC_ADMIN_PASSWORD != (params.isMember ("admin_user") ? params["admin_password"].asString () : "")
-                                  // Supplied and not required.
-                                      : true
-                                      : false;
+    bool    bPasswordWrong;
+
+    if (bPasswordSupplied)
+    {
+        if (bPasswordRequired)
+        {
+            // Required, and supplied, check match
+            bPasswordWrong =
+                (this->RPC_ADMIN_USER !=
+                    (params.isMember ("admin_user") ? params["admin_user"].asString () : ""))
+                ||
+                (this->RPC_ADMIN_PASSWORD !=
+                    (params.isMember ("admin_user") ? params["admin_password"].asString () : ""));
+        }
+        else
+        {
+            // Not required, but supplied
+            bPasswordWrong = false;
+        }
+    }
+    else
+    {
+        // Required but not supplied, 
+        bPasswordWrong = bPasswordRequired;
+    }
+
     // Meets IP restriction for admin.
     bool    bAdminIP            = false;
 

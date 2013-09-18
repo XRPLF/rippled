@@ -192,7 +192,7 @@ public:
 
         if (error)
         {
-            m_journal.fatal() <<
+            m_journal.fatal <<
                 "Failed to open '" << file.getFullPathName() << "'";
         }
 

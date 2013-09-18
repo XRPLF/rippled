@@ -618,48 +618,48 @@ public:
 
     iterator push_back (TParam value)
     {
-        ::new (alloc ()) T (value);
+        new (alloc ()) T (value);
         return iterator (this, size () - 1);
     }
 
     iterator emplace_back ()
     {
-        ::new (alloc ()) T ();
+        new (alloc ()) T ();
         return iterator (this, size () - 1);
     }
 
     template <class A1>
     iterator emplace_back (A1 a1)
     {
-        ::new (alloc ()) T (a1);
+        new (alloc ()) T (a1);
         return iterator (this, size () - 1);
     }
 
     template <class A1, class A2>
     iterator emplace_back (A1 a1, A2 a2)
     {
-        ::new (alloc ()) T (a1, a2);
+        new (alloc ()) T (a1, a2);
         return iterator (this, size () - 1);
     }
     
     template <class A1, class A2, class A3>
     iterator emplace_back (A1 a1, A2 a2, A3 a3)
     {
-        ::new (alloc ()) T (a1, a2, a3);
+        new (alloc ()) T (a1, a2, a3);
         return iterator (this, size () - 1);
     }
     
     template <class A1, class A2, class A3, class A4>
     iterator emplace_back (A1 a1, A2 a2, A3 a3, A4 a4)
     {
-        ::new (alloc ()) T (a1, a2, a3, a4);
+        new (alloc ()) T (a1, a2, a3, a4);
         return iterator (this, size () - 1);
     }
 
     template <class A1, class A2, class A3, class A4, class A5>
     iterator emplace_back (A1 a1, A2 a2, A3 a3, A4 a4, A5 a5)
     {
-        ::new (alloc ()) T (a1, a2, a3, a4, a5);
+        new (alloc ()) T (a1, a2, a3, a4, a5);
         return iterator (this, size () - 1);
     }
    
@@ -671,7 +671,7 @@ public:
     void resize (size_type count)
     {
         while (count > size ())
-            ::new (alloc ()) T;
+            new (alloc ()) T;
 
         while (count < size ())
             get (--m_size).~T ();
@@ -680,7 +680,7 @@ public:
     void resize (size_type count, TParam value)
     {
         while (count > size ())
-            ::new (alloc ()) T (value);
+            new (alloc ()) T (value);
 
         while (count < size ())
             get (--m_size).~T ();

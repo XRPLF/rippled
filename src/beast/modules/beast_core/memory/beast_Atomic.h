@@ -131,9 +131,6 @@ public:
     */
     Type compareAndSetValue (Type newValue, Type valueToCompare) noexcept;
 
-    /** Implements a memory read/write barrier. */
-    static void memoryBarrier() noexcept;
-
     //==============================================================================
    #if BEAST_64BIT
     BEAST_ALIGN (8)
@@ -373,8 +370,7 @@ inline Type Atomic<Type>::compareAndSetValue (const Type newValue, const Type va
   #endif
 }
 
-template <typename Type>
-inline void Atomic<Type>::memoryBarrier() noexcept
+inline void memoryBarrier() noexcept
 {
   #if BEAST_ATOMICS_MAC
     OSMemoryBarrier();
@@ -389,4 +385,5 @@ inline void Atomic<Type>::memoryBarrier() noexcept
   #pragma warning (pop)
 #endif
 
-#endif   // BEAST_ATOMIC_H_INCLUDED
+#endif
+

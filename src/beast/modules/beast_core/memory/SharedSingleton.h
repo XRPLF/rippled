@@ -26,7 +26,10 @@
     object that depends on it, the order of destruction of objects is assured
     to be correct.
 
-    class Object must provide the function `Object* Object::createInstance()`
+    Object Requirements:
+        DefaultConstructible
+        TriviallyDestructible (when lifetime == neverDestroyed)
+        Destructible
 
     @class SharedSingleton
     @ingroup beast_core
@@ -88,7 +91,8 @@ public:
             {
                 bassert (lifetime == SingletonLifetime::createOnDemand || ! staticData.destructorCalled);
                 staticData.instance = &staticData.object;
-                ::new (staticData.instance) SharedSingleton (lifetime);
+                new (staticData.instance) SharedSingleton (lifetime);
+                memoryBarrier();
                 instance = staticData.instance;
             }
         }

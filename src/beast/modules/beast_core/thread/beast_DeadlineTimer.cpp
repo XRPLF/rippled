@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
-class DeadlineTimer::Manager : protected Thread
+class DeadlineTimer::Manager
+    : public LeakChecked <Manager>
+    , protected Thread
 {
 private:
     typedef CriticalSection LockType;
@@ -119,8 +121,10 @@ public:
                             timer->m_isActive = false;
                         }
 
-                        // Listener will be called later and we will
-                        // go through the loop again without waiting.
+                        timer->m_listener->onDeadlineTimer (*timer);
+
+                        // re-loop
+                        seconds = -1;
                     }
                     else
                     {
@@ -138,11 +142,7 @@ public:
 
             // Note that we have released the lock here.
 
-            if (timer != nullptr)
-            {
-                timer->m_listener->onDeadlineTimer (*timer);
-            }
-            else if (seconds > 0)
+            if (seconds > 0)
             {
                 // Wait until interrupt or next timer.
                 //
@@ -205,13 +205,17 @@ private:
 
 DeadlineTimer::DeadlineTimer (Listener* listener)
     : m_listener (listener)
-    , m_manager (SharedSingleton <Manager>::getInstance (
-        SingletonLifetime::persistAfterCreation))
+    , m_manager (SharedSingleton <Manager>::getInstance ())
     , m_isActive (false)
 {
 }
 
 DeadlineTimer::~DeadlineTimer ()
+{
+    m_manager->deactivate (*this);
+}
+
+void DeadlineTimer::cancel ()
 {
     m_manager->deactivate (*this);
 }
@@ -239,7 +243,3 @@ void DeadlineTimer::setExpirationTime (Time const& when)
     m_manager->activate (*this, 0, when);
 }
 
-void DeadlineTimer::reset ()
-{
-    m_manager->deactivate (*this);
-}

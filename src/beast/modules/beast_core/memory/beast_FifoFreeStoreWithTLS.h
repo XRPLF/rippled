@@ -39,7 +39,7 @@
 
   @ingroup beast_concurrent
 */
-class BEAST_API FifoFreeStoreWithTLS
+class BEAST_API FifoFreeStoreWithTLS : public LeakChecked <FifoFreeStoreWithTLS>
 {
 public:
     FifoFreeStoreWithTLS ();

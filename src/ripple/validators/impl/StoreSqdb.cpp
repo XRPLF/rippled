@@ -160,7 +160,7 @@ void StoreSqdb::report (Error const& error, char const* fileName, int lineNumber
 {
     if (error)
     {
-        m_journal.error() <<
+        m_journal.error <<
             "Failure: '"<< error.getReasonText() << "' " <<
             " at " << Debug::getSourceLocation (fileName, lineNumber);
     }

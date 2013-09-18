@@ -322,14 +322,14 @@ public:
             test.expect (a.get() == (Type) 10);
             a += (Type) 15;
             test.expect (a.get() == (Type) 25);
-            a.memoryBarrier();
+            memoryBarrier();
             a -= (Type) 5;
             test.expect (a.get() == (Type) 20);
             test.expect (++a == (Type) 21);
             ++a;
             test.expect (--a == (Type) 21);
             test.expect (a.get() == (Type) 21);
-            a.memoryBarrier();
+            memoryBarrier();
 
             testFloat (test);
         }
@@ -338,7 +338,7 @@ public:
         {
             Atomic<Type> a, b;
             a = (Type) 21;
-            a.memoryBarrier();
+            memoryBarrier();
 
             /*  These are some simple test cases to check the atomics - let me know
                 if any of these assertions fail on your system!

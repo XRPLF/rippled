@@ -45,13 +45,18 @@ public:
 
     ~DeadlineTimer ();
 
+    /** Cancel all notifications.
+        It is okay to call this on an inactive timer.
+        @note It is guaranteed that no notifications will occur after this
+              function returns.
+    */
+    void cancel ();
+
+
     /** Set the timer to go off once in the future.
-
         If the timer is already active, this will reset it.
-
         @note If the timer is already active, the old one might go off
               before this function returns.
-
         @param secondsUntilDeadline The number of seconds until the timer
                                     will send a notification. This must be
                                     greater than zero.
@@ -59,12 +64,9 @@ public:
     void setExpiration (double secondsUntilDeadline);
 
     /** Set the timer to go off repeatedly with the specified frequency.
-
         If the timer is already active, this will reset it.
-
         @note If the timer is already active, the old one might go off
               before this function returns.
-
         @param secondsUntilDeadline The number of seconds until the timer
                                     will send a notification. This must be
                                     greater than zero.
@@ -72,28 +74,15 @@ public:
     void setRecurringExpiration (double secondsUntilDeadline);
 
     /** Set the timer to go off at a specific time.
-
         If the timer is already active, this will reset it.
-
         @note If the timer is already active, the old one might go off
               before this function returns.
-
         @note If the time is in the past, the timer will go off
               immediately.
     */
     void setExpirationTime (Time const& when);
 
-    /** Reset the timer so that no more notifications are sent.
-
-        It is okay to call this on an inactive timer.
-
-        @note It is guaranteed that no notifications will occur after this
-              function returns.
-    */
-    void reset ();
-
     /** Equality comparison.
-
         Timers are equal if they have the same address.
     */
     inline bool operator== (DeadlineTimer const& other) const
@@ -101,8 +90,7 @@ public:
         return this == &other;
     }
 
-    /** Inequality comparison.
-    */
+    /** Inequality comparison. */
     inline bool operator!= (DeadlineTimer const& other) const
     {
         return this != &other;

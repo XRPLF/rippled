@@ -69,7 +69,7 @@ public:
     //
     void addStatic (Source* source)
     {
-        m_journal.info() << "Add static Source, " << source->name();
+        m_journal.info << "Add static Source, " << source->name();
 
         ScopedPointer <Source> object (source);
 
@@ -91,7 +91,7 @@ public:
     //
     void add (Source* source)
     {
-        m_journal.info() << "Add Source, " << source->name();
+        m_journal.info << "Add Source, " << source->name();
 
         SourceDesc& desc (*m_sources.emplace_back ());
         desc.source = source;
@@ -159,7 +159,7 @@ public:
         // This is thread safe
         m_chosenList = list;
 
-        m_journal.debug() <<
+        m_journal.debug <<
             "Rebuilt chosen list with " <<
             String::fromNumber (m_chosenList->size()) << " entries";
     }
@@ -196,7 +196,7 @@ public:
     /** Perform a fetch on the source. */
     void fetch (SourceDesc& desc, CancelCallback& callback)
     {
-        m_journal.info() << "fetch ('" << desc.source->name() << "')";
+        m_journal.info << "fetch ('" << desc.source->name() << "')";
 
         Source::Result result (desc.source->fetch (callback, m_journal));
 
