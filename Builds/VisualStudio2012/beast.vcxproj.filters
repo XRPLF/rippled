@@ -701,9 +701,6 @@
     <ClInclude Include="..\..\modules\beast_core\thread\beast_CallQueue.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ConcurrentObject.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\beast_InterruptibleThread.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
@@ -1382,9 +1379,6 @@
       <Filter>beast_core\thread</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\beast_CallQueue.cpp">
-      <Filter>beast_core\thread</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ConcurrentObject.cpp">
       <Filter>beast_core\thread</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\beast_InterruptibleThread.cpp">

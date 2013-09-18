@@ -283,7 +283,6 @@
     <ClInclude Include="..\..\modules\beast_core\threads\beast_TimeSliceThread.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\beast_WaitableEvent.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_CallQueue.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ConcurrentObject.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_DeadlineTimer.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_InterruptibleThread.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_Listeners.h" />
@@ -1074,12 +1073,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\beast_CallQueue.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ConcurrentObject.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
