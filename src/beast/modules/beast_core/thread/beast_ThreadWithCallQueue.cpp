@@ -150,3 +150,116 @@ void ThreadWithCallQueue::threadRun ()
 
     m_entryPoints->threadExit ();
 }
+
+//------------------------------------------------------------------------------
+
+class ThreadWithCallQueueTests : public UnitTest
+{
+public:
+    enum
+    {
+        callsPerThread = 20000
+    };
+
+    struct TestThread : ThreadWithCallQueue, ThreadWithCallQueue::EntryPoints
+    {
+        explicit TestThread (int id)
+            : ThreadWithCallQueue ("#" + String::fromNumber (id))
+        {
+            start (this);
+        }
+
+        void threadInit ()
+        {
+        }
+
+        void threadExit ()
+        {
+        }
+
+        bool threadIdle ()
+        {
+            bool interrupted;
+
+            String s;
+
+            for (;;)
+            {
+                interrupted = interruptionPoint ();
+                if (interrupted)
+                    break;
+
+                s = s + String::fromNumber (m_random.nextInt ());
+
+                if (s.length () > 100)
+                    s = String::empty;
+            }
+
+            return interrupted;
+        }
+
+        Random m_random;
+    };
+    
+    void func1 ()
+    {
+    }
+
+    void func2 ()
+    {
+    }
+
+    void func3 ()
+    {
+    }
+
+    void testThreads (std::size_t nThreads)
+    {
+        beginTestCase (String::fromNumber (nThreads) + " threads");
+
+        OwnedArray <TestThread> threads;
+        threads.ensureStorageAllocated (nThreads);
+
+        for (int i = 0; i < nThreads; ++i)
+            threads.add (new TestThread (i + 1));
+
+        for (int i = 0; i < 100000; ++i)
+        {
+            int const n (random().nextInt (threads.size()));
+            int const f (random().nextInt (3));
+            switch (f)
+            {
+            default:
+                bassertfalse;
+#if 1
+            case 0: threads[n]->call (&ThreadWithCallQueueTests::func1, this); break;
+            case 1: threads[n]->call (&ThreadWithCallQueueTests::func2, this); break;
+            case 2: threads[n]->call (&ThreadWithCallQueueTests::func3, this); break;
+#else
+            case 0: threads[n]->interrupt(); break;
+            case 1: threads[n]->interrupt(); break;
+            case 2: threads[n]->interrupt(); break;
+#endif
+            };
+        }
+
+        for (int i = 0; i < threads.size(); ++i)
+            threads[i]->stop (false);
+        for (int i = 0; i < threads.size(); ++i)
+            threads[i]->stop (true);
+
+        pass ();
+    }
+
+    void runTest ()
+    {
+        testThreads (5);
+        testThreads (50);
+    }
+
+    ThreadWithCallQueueTests () : UnitTest ("ThreadWithCallQueue", "beast")
+    {
+    }
+};
+
+static ThreadWithCallQueueTests threadWithCallQueueTests;
