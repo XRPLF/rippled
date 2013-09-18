@@ -173,8 +173,6 @@
     <ClInclude Include="..\..\modules\beast_core\files\beast_MemoryMappedFile.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_RandomAccessFile.h" />
     <ClInclude Include="..\..\modules\beast_core\files\beast_TemporaryFile.h" />
-    <ClInclude Include="..\..\modules\beast_core\functional\beast_Function.h" />
-    <ClInclude Include="..\..\modules\beast_core\functional\SharedFunction.h" />
     <ClInclude Include="..\..\modules\beast_core\json\beast_JSON.h" />
     <ClInclude Include="..\..\modules\beast_core\logging\beast_FileLogger.h" />
     <ClInclude Include="..\..\modules\beast_core\logging\beast_Logger.h" />
@@ -209,6 +207,7 @@
     <ClInclude Include="..\..\modules\beast_core\memory\beast_OptionalScopedPointer.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_PagedFreeStore.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_RecycledObjectPool.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedFunction.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\SharedObject.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\beast_ScopedPointer.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\SharedSingleton.h" />

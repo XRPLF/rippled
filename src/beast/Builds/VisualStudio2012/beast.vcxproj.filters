@@ -149,9 +149,6 @@
     <Filter Include="beast_core\thread\impl">
       <UniqueIdentifier>{91538dcf-b219-4c80-9861-bb4949089775}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_core\functional">
-      <UniqueIdentifier>{5df65855-1ccd-4997-97c1-f9788924ee2b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast_extras">
       <UniqueIdentifier>{2f5b95a8-1adf-4319-8464-ddc2b2e03f0b}</UniqueIdentifier>
     </Filter>
@@ -737,9 +734,6 @@
     <ClInclude Include="..\..\modules\beast_core\maths\beast_Math.h">
       <Filter>beast_core\maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\functional\beast_Function.h">
-      <Filter>beast_core\functional</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\beast_AllocatedBy.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
@@ -962,9 +956,6 @@
     <ClInclude Include="..\..\modules\beast_asio\protocol\PrefilledReadStream.h">
       <Filter>beast_asio\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\functional\SharedFunction.h">
-      <Filter>beast_core\functional</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.h">
       <Filter>beast_asio\basics</Filter>
     </ClInclude>
@@ -1033,6 +1024,9 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_crypto\math\BinaryEncoding.h">
       <Filter>beast_crypto\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedFunction.h">
+      <Filter>beast_core\memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
