@@ -28,7 +28,6 @@ public:
 
         void write (Journal::Severity severity, std::string const& text)
         {
-            // FIXME!
             LogSink::get()->write (text, convertSeverity (severity), m_partition.getName());
         }
 
@@ -47,7 +46,7 @@ public:
     template <class Key>
     static Journal get ()
     {
-        return Journal (SharedSingleton <PartitionSink <Key> >::get (
+        return Journal (*SharedSingleton <PartitionSink <Key> >::get (
             SingletonLifetime::neverDestroyed));
     }
 };
