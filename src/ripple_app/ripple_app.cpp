@@ -70,10 +70,46 @@ namespace ripple
 
 //------------------------------------------------------------------------------
 
+struct ProtobufLibrary
+{
+    ~ProtobufLibrary ()
+    {
+        google::protobuf::ShutdownProtobufLibrary();
+    }
+};
+
 // Must be outside the namespace for obvious reasons
 //
 int main (int argc, char** argv)
 {
+    //
+    // These debug heap calls do nothing in release or non Visual Studio builds.
+    //
+
+    // Checks the heap at every allocation and deallocation (slow).
+    //
+    //beast::Debug::setAlwaysCheckHeap (false);
+
+    // Keeps freed memory blocks and fills them with a guard value.
+    //
+    //beast::Debug::setHeapDelayedFree (false);
+
+    // At exit, reports all memory blocks which have not been freed.
+    //
+#if RIPPLE_DUMP_LEAKS_ON_EXIT
+    beast::Debug::setHeapReportLeaks (true);
+#else
+    beast::Debug::setHeapReportLeaks (false);
+#endif
+
+    beast::SharedSingleton <ProtobufLibrary>::get ();
+
+    int result (0);
+
     ripple::RippleMain rippled;
-    return rippled.runFromMain (argc, argv);
+
+    result = rippled.runFromMain (argc, argv);
+
+    return result;
 }
+
