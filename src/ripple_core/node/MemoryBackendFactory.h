@@ -20,7 +20,7 @@ private:
     ~MemoryBackendFactory ();
 
 public:
-    static MemoryBackendFactory& getInstance ();
+    static MemoryBackendFactory* getInstance ();
 
     String getName () const;
 

@@ -20,7 +20,7 @@ private:
     ~SqliteBackendFactory ();
 
 public:
-    static SqliteBackendFactory& getInstance ();
+    static SqliteBackendFactory* getInstance ();
 
     String getName () const;
 

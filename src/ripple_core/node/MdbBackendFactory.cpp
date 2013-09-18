@@ -256,11 +256,9 @@ MdbBackendFactory::~MdbBackendFactory ()
 {
 }
 
-MdbBackendFactory& MdbBackendFactory::getInstance ()
+MdbBackendFactory* MdbBackendFactory::getInstance ()
 {
-    static MdbBackendFactory instance;
-
-    return instance;
+    return new MdbBackendFactory;
 }
 
 String MdbBackendFactory::getName () const

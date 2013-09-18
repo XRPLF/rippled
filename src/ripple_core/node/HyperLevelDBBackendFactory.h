@@ -22,7 +22,7 @@ private:
     ~HyperLevelDBBackendFactory ();
 
 public:
-    static HyperLevelDBBackendFactory& getInstance ();
+    static HyperLevelDBBackendFactory* getInstance ();
 
     String getName () const;
 

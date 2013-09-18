@@ -357,13 +357,12 @@ public:
     virtual String getName () const = 0;
 
     /** Add the specified backend factory to the list of available factories.
-
         The names of available factories are compared against the "type"
-        value in the parameter list on construction.
-
+        value in the parameter list on construction. Ownership of the object
+        is transferred. The object must be allocated using new.
         @param factory The factory to add.
     */
-    static void addBackendFactory (BackendFactory& factory);
+    static void addBackendFactory (BackendFactory* factory);
 
     /** Fetch an object.
 

@@ -213,22 +213,25 @@ private:
 //------------------------------------------------------------------------------
 
 LevelDBBackendFactory::LevelDBBackendFactory ()
+    : m_lruCache (nullptr)
 {
     leveldb::Options options;
     options.create_if_missing = true;
-    options.block_cache = leveldb::NewLRUCache (getConfig ().getSize (
-        siHashNodeDBCache) * 1024 * 1024);
+    options.block_cache = leveldb::NewLRUCache (
+        getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
+
+    m_lruCache = options.block_cache;
 }
 
 LevelDBBackendFactory::~LevelDBBackendFactory ()
 {
+    leveldb::Cache* cache (reinterpret_cast <leveldb::Cache*> (m_lruCache));
+    delete cache;
 }
 
-LevelDBBackendFactory& LevelDBBackendFactory::getInstance ()
+LevelDBBackendFactory* LevelDBBackendFactory::getInstance ()
 {
-    static LevelDBBackendFactory instance;
-
-    return instance;
+    return new LevelDBBackendFactory;
 }
 
 String LevelDBBackendFactory::getName () const

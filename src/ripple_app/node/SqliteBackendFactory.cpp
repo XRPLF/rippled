@@ -217,11 +217,9 @@ SqliteBackendFactory::~SqliteBackendFactory ()
 {
 }
 
-SqliteBackendFactory& SqliteBackendFactory::getInstance ()
+SqliteBackendFactory* SqliteBackendFactory::getInstance ()
 {
-    static SqliteBackendFactory instance;
-
-    return instance;
+    return new SqliteBackendFactory;
 }
 
 String SqliteBackendFactory::getName () const

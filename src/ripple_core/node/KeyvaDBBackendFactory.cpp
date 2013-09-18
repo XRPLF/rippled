@@ -155,11 +155,9 @@ KeyvaDBBackendFactory::~KeyvaDBBackendFactory ()
 {
 }
 
-KeyvaDBBackendFactory& KeyvaDBBackendFactory::getInstance ()
+KeyvaDBBackendFactory* KeyvaDBBackendFactory::getInstance ()
 {
-    static KeyvaDBBackendFactory instance;
-
-    return instance;
+    return new KeyvaDBBackendFactory;
 }
 
 String KeyvaDBBackendFactory::getName () const

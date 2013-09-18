@@ -53,11 +53,9 @@ NullBackendFactory::~NullBackendFactory ()
 {
 }
 
-NullBackendFactory& NullBackendFactory::getInstance ()
+NullBackendFactory* NullBackendFactory::getInstance ()
 {
-    static NullBackendFactory instance;
-
-    return instance;
+    return new NullBackendFactory;
 }
 
 String NullBackendFactory::getName () const

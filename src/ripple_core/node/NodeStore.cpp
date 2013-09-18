@@ -4,6 +4,45 @@
 */
 //==============================================================================
 
+// Holds the list of Backend factories
+class Factories
+{
+public:
+    typedef NodeStore::BackendFactory Factory;
+
+    Factories ()
+    {
+    }
+
+    ~Factories ()
+    {
+    }
+
+    void add (Factory* factory)
+    {
+        m_list.add (factory);
+    }
+
+    Factory* find (String name) const
+    {
+        for (int i = 0; i < m_list.size(); ++i)
+            if (m_list [i]->getName ().compareIgnoreCase (name) == 0)
+                return m_list [i];
+        return nullptr;
+    }
+
+    static Factories& get ()
+    {
+        return *SharedSingleton <Factories>::get (
+            SingletonLifetime::persistAfterCreation);
+    }
+
+private:
+    OwnedArray <Factory> m_list;
+};
+
+//------------------------------------------------------------------------------
+
 NodeStore::DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
 {
     /*  Data format:
@@ -461,16 +500,7 @@ public:
 
         if (type.isNotEmpty ())
         {
-            BackendFactory* factory = nullptr;
-
-            for (int i = 0; i < s_factories.size (); ++i)
-            {
-                if (s_factories [i]->getName ().compareIgnoreCase (type) == 0)
-                {
-                    factory = s_factories [i];
-                    break;
-                }
-            }
+            BackendFactory* factory (Factories::get().find (type));
 
             if (factory != nullptr)
             {
@@ -487,11 +517,6 @@ public:
         }
 
         return backend;
-    }
-
-    static void addBackendFactory (BackendFactory& factory)
-    {
-        s_factories.add (&factory);
     }
 
     //------------------------------------------------------------------------------
@@ -516,9 +541,9 @@ Array <NodeStore::BackendFactory*> NodeStoreImp::s_factories;
 
 //------------------------------------------------------------------------------
 
-void NodeStore::addBackendFactory (BackendFactory& factory)
+void NodeStore::addBackendFactory (BackendFactory* factory)
 {
-    NodeStoreImp::addBackendFactory (factory);
+    Factories::get().add (factory);
 }
 
 NodeStore::Scheduler& NodeStore::getSynchronousScheduler ()
@@ -543,6 +568,7 @@ void NodeStore::addAvailableBackends ()
     //NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
 
     NodeStore::addBackendFactory (LevelDBBackendFactory::getInstance ());
+
     NodeStore::addBackendFactory (MemoryBackendFactory::getInstance ());
     NodeStore::addBackendFactory (NullBackendFactory::getInstance ());
 

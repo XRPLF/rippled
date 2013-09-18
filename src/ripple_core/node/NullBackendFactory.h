@@ -22,7 +22,7 @@ private:
     ~NullBackendFactory ();
 
 public:
-    static NullBackendFactory& getInstance ();
+    static NullBackendFactory* getInstance ();
 
     String getName () const;
 

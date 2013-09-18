@@ -20,7 +20,7 @@ private:
     ~KeyvaDBBackendFactory ();
 
 public:
-    static KeyvaDBBackendFactory& getInstance ();
+    static KeyvaDBBackendFactory* getInstance ();
 
     String getName () const;
 

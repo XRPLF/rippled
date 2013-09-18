@@ -20,13 +20,16 @@ private:
     ~LevelDBBackendFactory ();
 
 public:
-    static LevelDBBackendFactory& getInstance ();
+    static LevelDBBackendFactory* getInstance ();
 
     String getName () const;
 
     NodeStore::Backend* createInstance (size_t keyBytes,
                                         StringPairArray const& keyValues,
                                         NodeStore::Scheduler& scheduler);
+
+private:
+    void* m_lruCache;
 };
 
 #endif

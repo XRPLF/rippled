@@ -89,11 +89,9 @@ MemoryBackendFactory::~MemoryBackendFactory ()
 {
 }
 
-MemoryBackendFactory& MemoryBackendFactory::getInstance ()
+MemoryBackendFactory* MemoryBackendFactory::getInstance ()
 {
-    static MemoryBackendFactory instance;
-
-    return instance;
+    return new MemoryBackendFactory;
 }
 
 String MemoryBackendFactory::getName () const

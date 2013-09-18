@@ -220,11 +220,9 @@ HyperLevelDBBackendFactory::~HyperLevelDBBackendFactory ()
 {
 }
 
-HyperLevelDBBackendFactory& HyperLevelDBBackendFactory::getInstance ()
+HyperLevelDBBackendFactory* HyperLevelDBBackendFactory::getInstance ()
 {
-    static HyperLevelDBBackendFactory instance;
-
-    return instance;
+    return new HyperLevelDBBackendFactory;
 }
 
 String HyperLevelDBBackendFactory::getName () const

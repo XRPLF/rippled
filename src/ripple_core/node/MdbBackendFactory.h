@@ -24,7 +24,7 @@ private:
     ~MdbBackendFactory ();
 
 public:
-    static MdbBackendFactory& getInstance ();
+    static MdbBackendFactory* getInstance ();
 
     String getName () const;
 
