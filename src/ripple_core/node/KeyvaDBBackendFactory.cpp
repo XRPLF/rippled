@@ -134,6 +134,11 @@ public:
         return 0;
     }
 
+    void stopAsync ()
+    {
+        m_scheduler.scheduledTasksStopped ();
+    }
+
     //--------------------------------------------------------------------------
 
 private:

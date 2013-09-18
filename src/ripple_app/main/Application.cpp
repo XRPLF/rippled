@@ -5,18 +5,23 @@
 //==============================================================================
 
 // VFALCO TODO Clean this global up
-volatile bool doShutdown = false;
-
-class Application;
-
-SETUP_LOG (Application)
+static bool volatile doShutdown = false;
 
 //------------------------------------------------------------------------------
 //
 // Specializations for LogPartition names
 
+// VFALCO NOTE This is temporary, until I refactor LogPartition
+//            and LogJournal::get() to take a string
+//                  
+class ApplicationLog;
+template <> char const* LogPartition::getPartitionName <ApplicationLog> () { return "Application"; }
 class ValidatorsLog;
 template <> char const* LogPartition::getPartitionName <ValidatorsLog> () { return "Validators"; }
+class JobQueueLog;
+template <> char const* LogPartition::getPartitionName <JobQueueLog> () { return "JobQueue"; }
+class NetworkOPsLog;
+template <> char const* LogPartition::getPartitionName <NetworkOPsLog> () { return "NetworkOPs"; }
 
 //
 //------------------------------------------------------------------------------
@@ -25,6 +30,8 @@ template <> char const* LogPartition::getPartitionName <ValidatorsLog> () { retu
 class ApplicationImp
     : public Application
     , public NodeStore::Scheduler
+    , public Service
+    , public DeadlineTimer::Listener
     , LeakChecked <ApplicationImp>
     , PeerFinder::Callback
 {
@@ -38,152 +45,70 @@ public:
         return *s_instance;
     }
 
-    // RAII container for a boost::asio::io_service run by beast threads
-    class IoServiceThread
-    {
-    public:
-        IoServiceThread (String const& name,
-                         int expectedConcurrency,
-                         int numberOfExtraThreads = 0)
-            : m_name (name)
-            , m_service (expectedConcurrency)
-            , m_work (m_service)
-        {
-            m_threads.ensureStorageAllocated (numberOfExtraThreads);
-
-            for (int i = 0; i < numberOfExtraThreads; ++i)
-                m_threads.add (new ServiceThread (m_name, m_service));
-        }
-
-        ~IoServiceThread ()
-        {
-            m_service.stop ();
-
-            // the dtor of m_threads will block until each thread exits.
-        }
-
-        // TEMPORARY HACK for compatibility with old code
-        void runExtraThreads ()
-        {
-            for (int i = 0; i < m_threads.size (); ++i)
-                m_threads [i]->start ();
-        }
-
-        // Run on the callers thread.
-        // This will block until stop is issued.
-        void run ()
-        {
-            Thread const* const currentThread (Thread::getCurrentThread());
-
-            String previousThreadName;
-
-            if (currentThread != nullptr)
-            {
-                previousThreadName = currentThread->getThreadName ();
-            }
-            else
-            {
-                // we're on the main thread
-                previousThreadName = "main"; // for vanity
-            }
-
-            Thread::setCurrentThreadName (m_name);
-
-            m_service.run ();
-
-            Thread::setCurrentThreadName (previousThreadName);
-        }
-
-        void stop ()
-        {
-            m_service.stop ();
-        }
-
-        boost::asio::io_service& getService ()
-        {
-            return m_service;
-        }
-
-        operator boost::asio::io_service& ()
-        {
-            return m_service;
-        }
-
-    private:
-        class ServiceThread : Thread
-        {
-        public:
-            explicit ServiceThread (String const& name, boost::asio::io_service& service)
-                : Thread (name)
-                , m_service (service)
-            {
-                //startThread ();
-            }
-
-            ~ServiceThread ()
-            {
-                m_service.stop ();
-
-                stopThread (-1); // wait forever
-            }
-
-            void start ()
-            {
-                startThread ();
-            }
-
-            void run ()
-            {
-                m_service.run ();
-            }
-
-        private:
-            boost::asio::io_service& m_service;
-        };
-
-    private:
-        String const m_name;
-        boost::asio::io_service m_service;
-        boost::asio::io_service::work m_work;
-        OwnedArray <ServiceThread> m_threads;
-    };
-
     //--------------------------------------------------------------------------
 
     ApplicationImp ()
-        : m_mainService ("io",
-                         (getConfig ().NODE_SIZE >= 2) ? 2 : 1,
-                         (getConfig ().NODE_SIZE >= 2) ? 1 : 0)
-        , m_auxService ("auxio", 1, 1)
-        , m_networkOPs (NetworkOPs::New (m_ledgerMaster))
-        , m_rpcServerHandler (*m_networkOPs)
-        , mTempNodeCache ("NodeCache", 16384, 90)
-        , mSLECache ("LedgerEntryCache", 4096, 120)
-        , mSNTPClient (m_auxService)
-        // VFALCO New stuff
+        : Service ("Application")
+        , m_journal (LogJournal::get <ApplicationLog> ())
+        , m_tempNodeCache ("NodeCache", 16384, 90)
+        , m_sleCache ("LedgerEntryCache", 4096, 120)
+
+        // The JobQueue has to come pretty early since
+        // almost everything is a Service child of the JobQueue.
+        //
+        , m_jobQueue (JobQueue::New (*this, LogJournal::get <JobQueueLog> ()))
+
+        // The io_service must be a child of the JobQueue since we call addJob
+        // in response to newtwork data from peers and also client requests.
+        //
+        , m_mainIoPool (*m_jobQueue, "io", (getConfig ().NODE_SIZE >= 2) ? 2 : 1)
+
+        //
+        // Anything which calls addJob must be a descendant of the JobQueue
+        //
+
+        , m_orderBookDB (*m_jobQueue)
+
+        , m_ledgerMaster (*m_jobQueue)
+
+        // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
+        , m_networkOPs (NetworkOPs::New (
+            m_ledgerMaster, *m_jobQueue, LogJournal::get <NetworkOPsLog> ()))
+
+        // VFALCO NOTE LocalCredentials starts the deprecated UNL service
+        , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
+
+        , m_rpcServerHandler (*m_networkOPs) // passive object, not a Service
+
+        , m_nodeStore (NodeStore::New ("NodeStore.main", *m_jobQueue,
+            getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase, *this))
+
+        , m_sntpClient (SNTPClient::New (*this))
+
+        , m_inboundLedgers (*m_jobQueue)
+
         , m_txQueue (TxQueue::New ())
-        , m_nodeStore (NodeStore::New (
-            getConfig ().nodeDatabase,
-            getConfig ().ephemeralNodeDatabase,
-            *this))
-        , m_validators (Validators::Manager::New (LogJournal::get <ValidatorsLog> ()))
+
+        , m_validators (Validators::Manager::New (*this, LogJournal::get <ValidatorsLog> ()))
+
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
+
         , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
+
         , mFeeTrack (ILoadFeeTrack::New ())
+
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
+
         , mValidations (Validations::New ())
-        , mUNL (UniqueNodeList::New ())
+
         , mProofOfWorkFactory (ProofOfWorkFactory::New ())
+
         , m_loadManager (LoadManager::New ())
+
         , mPeerFinder (PeerFinder::New (*this))
-        // VFALCO End new stuff
-        // VFALCO TODO replace all NULL with nullptr
-        , mRpcDB (NULL)
-        , mTxnDB (NULL)
-        , mLedgerDB (NULL)
-        , mWalletDB (NULL) // VFALCO NOTE are all these 'NULL' ctor params necessary?
-        , mRPCDoor (NULL)
-        , mSweepTimer (m_auxService)
+
+        , m_sweepTimer (this)
+
         , mShutdown (false)
     {
         bassert (s_instance == nullptr);
@@ -197,27 +122,10 @@ public:
 
     ~ApplicationImp ()
     {
-        stop ();
-        m_networkOPs = nullptr;
+        //stop ();
 
-        // VFALCO TODO Wrap these in ScopedPointer
-        if (mTxnDB != nullptr)
-        {
-            delete mTxnDB;
-            mTxnDB = nullptr;
-        }
-
-        if (mLedgerDB != nullptr)
-        {
-            delete mLedgerDB;
-            mLedgerDB = nullptr;
-        }
-
-        if (mWalletDB != nullptr)
-        {
-            delete mWalletDB;
-            mWalletDB = nullptr;
-        }
+        // Why is this needed here?
+        //m_networkOPs = nullptr;
 
         bassert (s_instance == this);
         s_instance = nullptr;
@@ -249,17 +157,23 @@ public:
 
     //--------------------------------------------------------------------------
 
-    static void callScheduledTask (NodeStore::Scheduler::Task* task, Job&)
+    static void callScheduledTask (NodeStore::Scheduler::Task& task, Job&)
     {
-        task->performScheduledTask ();
+        task.performScheduledTask ();
     }
 
-    void scheduleTask (NodeStore::Scheduler::Task* task)
+    void scheduleTask (NodeStore::Scheduler::Task& task)
     {
         getJobQueue ().addJob (
             jtWRITE,
             "NodeObject::store",
-            BIND_TYPE (&ApplicationImp::callScheduledTask, task, P_1));
+            BIND_TYPE (&ApplicationImp::callScheduledTask, boost::ref(task), P_1));
+    }
+
+    void scheduledTasksStopped ()
+    {
+        // VFALCO NOTE This is a bit of a hack
+        getNodeStore().serviceStopped();
     }
 
     //--------------------------------------------------------------------------
@@ -276,7 +190,7 @@ public:
 
     boost::asio::io_service& getIOService ()
     {
-        return m_mainService;
+        return m_mainIoPool;
     }
 
     LedgerMaster& getLedgerMaster ()
@@ -291,12 +205,12 @@ public:
 
     TransactionMaster& getMasterTransaction ()
     {
-        return mMasterTransaction;
+        return m_txMaster;
     }
 
     NodeCache& getTempNodeCache ()
     {
-        return mTempNodeCache;
+        return m_tempNodeCache;
     }
 
     NodeStore& getNodeStore ()
@@ -306,12 +220,12 @@ public:
 
     JobQueue& getJobQueue ()
     {
-        return mJobQueue;
+        return *m_jobQueue;
     }
 
     Application::LockType& getMasterLock ()
     {
-        return mMasterLock;
+        return m_masterMutex;
     }
 
     LoadManager& getLoadManager ()
@@ -326,12 +240,12 @@ public:
 
     OrderBookDB& getOrderBookDB ()
     {
-        return mOrderBookDB;
+        return m_orderBookDB;
     }
 
     SLECache& getSLECache ()
     {
-        return mSLECache;
+        return m_sleCache;
     }
 
     Validators::Manager& getValidators ()
@@ -366,7 +280,7 @@ public:
 
     UniqueNodeList& getUNL ()
     {
-        return *mUNL;
+        return *m_deprecatedUNL;
     }
 
     ProofOfWorkFactory& getProofOfWorkFactory ()
@@ -391,7 +305,7 @@ public:
     }
     bool getSystemTimeOffset (int& offset)
     {
-        return mSNTPClient.getOffset (offset);
+        return m_sntpClient->getOffset (offset);
     }
 
     DatabaseCon* getRpcDB ()
@@ -460,10 +374,9 @@ public:
     void setup ()
     {
         // VFALCO NOTE: 0 means use heuristics to determine the thread count.
-        mJobQueue.setThreadCount (0, getConfig ().RUN_STANDALONE);
+        m_jobQueue->setThreadCount (0, getConfig ().RUN_STANDALONE);
 
-        mSweepTimer.expires_from_now (boost::posix_time::seconds (10));
-        mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
+        m_sweepTimer.setExpiration (10);
 
         m_loadManager->start ();
 
@@ -493,7 +406,7 @@ public:
         }
 
         if (!getConfig ().RUN_STANDALONE)
-            mSNTPClient.init (getConfig ().SNTP_SERVERS);
+            m_sntpClient->init (getConfig ().SNTP_SERVERS);
 
         initSqliteDbs ();
 
@@ -502,8 +415,8 @@ public:
         getApp().getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                 (getConfig ().getSize (siTxnDBCache) * 1024)));
 
-        mTxnDB->getDB ()->setupCheckpointing (&mJobQueue);
-        mLedgerDB->getDB ()->setupCheckpointing (&mJobQueue);
+        mTxnDB->getDB ()->setupCheckpointing (m_jobQueue);
+        mLedgerDB->getDB ()->setupCheckpointing (m_jobQueue);
 
         if (!getConfig ().RUN_STANDALONE)
             updateTables ();
@@ -513,13 +426,13 @@ public:
 
         if (getConfig ().START_UP == Config::FRESH)
         {
-            WriteLog (lsINFO, Application) << "Starting new Ledger";
+            m_journal.info << "Starting new Ledger";
 
             startNewLedger ();
         }
         else if ((getConfig ().START_UP == Config::LOAD) || (getConfig ().START_UP == Config::REPLAY))
         {
-            WriteLog (lsINFO, Application) << "Loading specified Ledger";
+            m_journal.info << "Loading specified Ledger";
 
             if (!loadOldLedger (getConfig ().START_LEDGER, getConfig ().START_UP == Config::REPLAY))
             {
@@ -538,12 +451,13 @@ public:
         else
             startNewLedger ();
 
-        mOrderBookDB.setup (getApp().getLedgerMaster ().getCurrentLedger ());
+        m_orderBookDB.setup (getApp().getLedgerMaster ().getCurrentLedger ());
 
         //
         // Begin validation and ip maintenance.
         // - LocalCredentials maintains local information: including identity and network connection persistence information.
         //
+        // VFALCO NOTE this starts the UNL
         m_localCredentials.start ();
 
         //
@@ -555,8 +469,8 @@ public:
         mValidations->tune (getConfig ().getSize (siValidationsSize), getConfig ().getSize (siValidationsAge));
         m_nodeStore->tune (getConfig ().getSize (siNodeCacheSize), getConfig ().getSize (siNodeCacheAge));
         m_ledgerMaster.tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
-        mSLECache.setTargetSize (getConfig ().getSize (siSLECacheSize));
-        mSLECache.setTargetAge (getConfig ().getSize (siSLECacheAge));
+        m_sleCache.setTargetSize (getConfig ().getSize (siSLECacheSize));
+        m_sleCache.setTargetAge (getConfig ().getSize (siSLECacheAge));
 
         m_ledgerMaster.setMinValidations (getConfig ().VALIDATION_QUORUM);
 
@@ -579,7 +493,7 @@ public:
         //             the creation of the peer SSL context and Peers object into
         //             the conditional.
         //
-        m_peers = Peers::New (m_mainService, m_peerSSLContext->get ());
+        m_peers = Peers::New (m_mainIoPool, m_mainIoPool, m_peerSSLContext->get ());
 
         // If we're not in standalone mode,
         // prepare ourselves for  networking
@@ -588,27 +502,29 @@ public:
         {
             // Create the listening sockets for peers
             //
-            m_peerDoor = PeerDoor::New (
+            m_peerDoors.add (PeerDoor::New (
+                m_mainIoPool,
                 PeerDoor::sslRequired,
                 getConfig ().PEER_IP,
                 getConfig ().peerListeningPort,
-                m_mainService,
-                m_peerSSLContext->get ());
+                m_mainIoPool,
+                m_peerSSLContext->get ()));
 
             if (getConfig ().peerPROXYListeningPort != 0)
             {
                 // Also listen on a PROXY-only port.
-                m_peerProxyDoor = PeerDoor::New (
+                m_peerDoors.add (PeerDoor::New (
+                    m_mainIoPool,
                     PeerDoor::sslAndPROXYRequired,
                     getConfig ().PEER_IP,
                     getConfig ().peerPROXYListeningPort,
-                    m_mainService,
-                    m_peerSSLContext->get ());
+                    m_mainIoPool,
+                    m_peerSSLContext->get ()));
             }
         }
         else
         {
-            WriteLog (lsINFO, Application) << "Peer interface: disabled";
+            m_journal.info << "Peer interface: disabled";
         }
 
         // SSL context used for WebSocket connections.
@@ -639,7 +555,7 @@ public:
         }
         else
         {
-            WriteLog (lsINFO, Application) << "WebSocket private interface: disabled";
+            m_journal.info << "WebSocket private interface: disabled";
         }
 
         // Create public listening WebSocket socket
@@ -657,7 +573,7 @@ public:
         }
         else
         {
-            WriteLog (lsINFO, Application) << "WebSocket public interface: disabled";
+            m_journal.info << "WebSocket public interface: disabled";
         }
 
         //
@@ -671,12 +587,12 @@ public:
         {
             try
             {
-                mRPCDoor = RPCDoor::New (m_mainService, m_rpcServerHandler);
+                m_rpcDoor = RPCDoor::New (m_mainIoPool, m_rpcServerHandler);
             }
             catch (const std::exception& e)
             {
                 // Must run as directed or exit.
-                WriteLog (lsFATAL, Application) <<
+                m_journal.fatal <<
                     "Can not open RPC service: " << e.what ();
 
                 exit (3);
@@ -684,7 +600,7 @@ public:
         }
         else
         {
-            WriteLog (lsINFO, Application) << "RPC interface: disabled";
+            m_journal.info << "RPC interface: disabled";
         }
 
         //
@@ -695,7 +611,7 @@ public:
 
         if (getConfig ().RUN_STANDALONE)
         {
-            WriteLog (lsWARNING, Application) << "Running in standalone mode";
+            m_journal.warning << "Running in standalone mode";
 
             m_networkOPs->setStandAlone ();
         }
@@ -707,10 +623,168 @@ public:
         }
     }
 
-    void run ();
-    void stop ();
-    void sweep ();
-    void doSweep (Job&);
+    //--------------------------------------------------------------------------
+    //
+    // Service
+
+    // Called to indicate shutdown.
+    void onServiceStop ()
+    {
+        m_sweepTimer.cancel();
+
+        mShutdown = true;
+        
+        // This stalls for a long time
+        //m_nodeStore = nullptr;
+
+        mValidations->flush ();
+        mShutdown = false;
+
+        serviceStopped ();
+    }
+
+    //
+    //------------------------------------------------------------------------------
+
+    void run ()
+    {
+        {
+            // VFALCO TODO The unit tests crash if we try to
+            //             run these threads in the IoService constructor
+            //             so this hack makes them start later.
+            //
+            m_mainIoPool.runAsync ();
+
+            if (!getConfig ().RUN_STANDALONE)
+            {
+                // VFALCO NOTE This seems unnecessary. If we properly refactor the load
+                //             manager then the deadlock detector can just always be "armed"
+                //
+                getApp().getLoadManager ().activateDeadlockDetector ();
+            }
+        }
+
+        // Wait for the stop signal
+#ifdef SIGINT
+        for(;;)
+        {
+            bool const signaled (m_stop.wait (100));
+            if (signaled)
+                break;
+            // VFALCO NOTE It is unfortunate that we have to resort to
+            //             polling but thats what the signal() interface
+            //             forces us to do.
+            //
+            if (doShutdown)
+                break;
+        }
+#else
+        m_stop.wait ();
+#endif
+
+        // Stop the server. When this returns, all
+        // Service objects should be stopped.
+
+        doStop ();
+
+        {
+            // These two asssignment should no longer be necessary
+            // once the WSDoor cancels its pending I/O correctly
+            //m_wsPublicDoor = nullptr;
+            //m_wsPrivateDoor = nullptr;
+
+            // VFALCO TODO Try to not have to do this early, by using observers to
+            //             eliminate LoadManager's dependency inversions.
+            //
+            // This deletes the object and therefore, stops the thread.
+            m_loadManager = nullptr;
+
+            m_journal.info << "Done.";
+
+            // VFALCO NOTE This is a sign that something is wrong somewhere, it
+            //             shouldn't be necessary to sleep until some flag is set.
+            while (mShutdown)
+                boost::this_thread::sleep (boost::posix_time::milliseconds (100));
+        }
+    }
+
+    void doStop ()
+    {
+        m_journal.info << "Received shutdown request";
+        StopSustain ();
+
+        serviceStop (m_journal.warning);
+    }
+
+    void stop ()
+    {
+        // Unblock the main thread (which is sitting in run()).
+        //
+        m_stop.signal();
+    }
+    
+    void onDeadlineTimer (DeadlineTimer& timer)
+    {
+        if (timer == m_sweepTimer)
+        {
+            // VFALCO TODO Move all this into doSweep
+
+            boost::filesystem::space_info space = boost::filesystem::space (getConfig ().DATA_DIR);
+
+            // VFALCO TODO Give this magic constant a name and move it into a well documented header
+            //
+            if (space.available < (512 * 1024 * 1024))
+            {
+                m_journal.fatal << "Remaining free disk space is less than 512MB";
+                getApp().stop ();
+            }
+
+            m_jobQueue->addJob(jtSWEEP, "sweep",
+                BIND_TYPE(&ApplicationImp::doSweep, this, P_1));
+        }
+    }
+
+    void doSweep (Job& j)
+    {
+        // VFALCO NOTE Does the order of calls matter?
+        // VFALCO TODO fix the dependency inversion using an observer,
+        //         have listeners register for "onSweep ()" notification.
+        //
+
+        logTimedCall (m_journal.warning, "TransactionMaster::sweep", __FILE__, __LINE__, boost::bind (
+            &TransactionMaster::sweep, &m_txMaster));
+
+        logTimedCall (m_journal.warning, "NodeStore::sweep", __FILE__, __LINE__, boost::bind (
+            &NodeStore::sweep, m_nodeStore.get ()));
+
+        logTimedCall (m_journal.warning, "LedgerMaster::sweep", __FILE__, __LINE__, boost::bind (
+            &LedgerMaster::sweep, &m_ledgerMaster));
+
+        logTimedCall (m_journal.warning, "TempNodeCache::sweep", __FILE__, __LINE__, boost::bind (
+            &NodeCache::sweep, &m_tempNodeCache));
+
+        logTimedCall (m_journal.warning, "Validations::sweep", __FILE__, __LINE__, boost::bind (
+            &Validations::sweep, mValidations.get ()));
+
+        logTimedCall (m_journal.warning, "InboundLedgers::sweep", __FILE__, __LINE__, boost::bind (
+            &InboundLedgers::sweep, &getInboundLedgers ()));
+
+        logTimedCall (m_journal.warning, "SLECache::sweep", __FILE__, __LINE__, boost::bind (
+            &SLECache::sweep, &m_sleCache));
+
+        logTimedCall (m_journal.warning, "AcceptedLedger::sweep", __FILE__, __LINE__,
+            &AcceptedLedger::sweep);
+
+        logTimedCall (m_journal.warning, "SHAMap::sweep", __FILE__, __LINE__,
+            &SHAMap::sweep);
+
+        logTimedCall (m_journal.warning, "NetworkOPs::sweepFetchPack", __FILE__, __LINE__, boost::bind (
+            &NetworkOPs::sweepFetchPack, m_networkOPs.get ()));
+
+        // VFALCO NOTE does the call to sweep() happen on another thread?
+        m_sweepTimer.setExpiration (getConfig ().getSize (siSweepInterval));
+    }
+
 
 private:
     void updateTables ();
@@ -720,188 +794,56 @@ private:
     void onAnnounceAddress ();
 
 private:
-    Application::LockType mMasterLock;
+    Journal m_journal;
+    Application::LockType m_masterMutex;
 
-    IoServiceThread m_mainService;
-    IoServiceThread m_auxService;
+    // These are not Service-derived
+    NodeCache m_tempNodeCache;
+    SLECache m_sleCache;
+    LocalCredentials m_localCredentials;
+    TransactionMaster m_txMaster;
 
-    LocalCredentials   m_localCredentials;
-    LedgerMaster       m_ledgerMaster;
-    InboundLedgers     m_inboundLedgers;
-    TransactionMaster  mMasterTransaction;
+    // These are Service-related
+    ScopedPointer <JobQueue> m_jobQueue;
+    IoServicePool m_mainIoPool;
+    OrderBookDB m_orderBookDB;
+    LedgerMaster m_ledgerMaster;
     ScopedPointer <NetworkOPs> m_networkOPs;
-    RPCServerHandler   m_rpcServerHandler;
-    NodeCache          mTempNodeCache;
-    SLECache           mSLECache;
-    SNTPClient         mSNTPClient;
-    JobQueue           mJobQueue;
-    OrderBookDB        mOrderBookDB;
-
-    // VFALCO Clean stuff
-    ScopedPointer <SSLContext> m_peerSSLContext;
-    ScopedPointer <SSLContext> m_wsSSLContext;
-    ScopedPointer <TxQueue> m_txQueue;
+    ScopedPointer <UniqueNodeList> m_deprecatedUNL;
+    RPCServerHandler m_rpcServerHandler;
     ScopedPointer <NodeStore> m_nodeStore;
+    ScopedPointer <SNTPClient> m_sntpClient;
+    InboundLedgers m_inboundLedgers;
+    ScopedPointer <TxQueue> m_txQueue;
     ScopedPointer <Validators::Manager> m_validators;
     ScopedPointer <IFeatures> mFeatures;
     ScopedPointer <IFeeVote> mFeeVote;
     ScopedPointer <ILoadFeeTrack> mFeeTrack;
     ScopedPointer <IHashRouter> mHashRouter;
     ScopedPointer <Validations> mValidations;
-    ScopedPointer <UniqueNodeList> mUNL;
     ScopedPointer <ProofOfWorkFactory> mProofOfWorkFactory;
-    ScopedPointer <Peers> m_peers;
     ScopedPointer <LoadManager> m_loadManager;
-    ScopedPointer <PeerDoor> m_peerDoor;
-    ScopedPointer <PeerDoor> m_peerProxyDoor;
-    ScopedPointer <WSDoor>   m_wsPublicDoor;
-    ScopedPointer <WSDoor>   m_wsPrivateDoor;
     ScopedPointer <PeerFinder> mPeerFinder;
-    // VFALCO End Clean stuff
-
-    DatabaseCon* mRpcDB;
-    DatabaseCon* mTxnDB;
-    DatabaseCon* mLedgerDB;
-    DatabaseCon* mWalletDB;
-
-    ScopedPointer <RPCDoor>  mRPCDoor;
-
-    boost::asio::deadline_timer mSweepTimer;
-
+    DeadlineTimer m_sweepTimer;
     bool volatile mShutdown;
+
+    ScopedPointer <DatabaseCon> mRpcDB;
+    ScopedPointer <DatabaseCon> mTxnDB;
+    ScopedPointer <DatabaseCon> mLedgerDB;
+    ScopedPointer <DatabaseCon> mWalletDB;
+
+    ScopedPointer <SSLContext> m_peerSSLContext;
+    ScopedPointer <SSLContext> m_wsSSLContext;
+    ScopedPointer <Peers> m_peers;
+    OwnedArray <PeerDoor>  m_peerDoors;
+    ScopedPointer <RPCDoor>  m_rpcDoor;
+    ScopedPointer <WSDoor> m_wsPublicDoor;
+    ScopedPointer <WSDoor> m_wsPrivateDoor;
+
+    WaitableEvent m_stop;
 };
 
-// VFALCO TODO Why do we even have this function?
-//             It could just be handled in the destructor.
-//
-void ApplicationImp::stop ()
-{
-    WriteLog (lsINFO, Application) << "Received shutdown request";
-
-    StopSustain ();
-    mShutdown = true;
-    m_mainService.stop ();
-    m_nodeStore = nullptr;
-    mValidations->flush ();
-    m_auxService.stop ();
-    mJobQueue.shutdown ();
-
-    //WriteLog (lsINFO, Application) << "Stopped: " << mIOService.stopped 
-
-    mShutdown = false;
-}
-
-void ApplicationImp::run ()
-{
-    {
-        // VFALCO TODO The unit tests crash if we try to
-        //             run these threads in the IoService constructor
-        //             so this hack makes them start later.
-        //
-        m_mainService.runExtraThreads ();
-        m_auxService.runExtraThreads ();
-
-        if (!getConfig ().RUN_STANDALONE)
-        {
-            // VFALCO NOTE This seems unnecessary. If we properly refactor the load
-            //             manager then the deadlock detector can just always be "armed"
-            //
-            getApp().getLoadManager ().activateDeadlockDetector ();
-        }
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    //
-
-    // We use the main thread to call io_service::run.
-    // What else would we have it do? It blocks until the server
-    // eventually gets a stop command.
-    //
-    m_mainService.run ();
-
-    //
-    //
-    //--------------------------------------------------------------------------
-
-    {
-        m_wsPublicDoor = nullptr;
-        m_wsPrivateDoor = nullptr;
-
-        // VFALCO TODO Try to not have to do this early, by using observers to
-        //             eliminate LoadManager's dependency inversions.
-        //
-        // This deletes the object and therefore, stops the thread.
-        m_loadManager = nullptr;
-
-        mSweepTimer.cancel();
-
-        WriteLog (lsINFO, Application) << "Done.";
-
-        // VFALCO NOTE This is a sign that something is wrong somewhere, it
-        //             shouldn't be necessary to sleep until some flag is set.
-        while (mShutdown)
-            boost::this_thread::sleep (boost::posix_time::milliseconds (100));
-    }
-}
-
-void ApplicationImp::sweep ()
-{
-    boost::filesystem::space_info space = boost::filesystem::space (getConfig ().DATA_DIR);
-
-    // VFALCO TODO Give this magic constant a name and move it into a well documented header
-    //
-    if (space.available < (512 * 1024 * 1024))
-    {
-        WriteLog (lsFATAL, Application) << "Remaining free disk space is less than 512MB";
-        getApp().stop ();
-    }
-
-    mJobQueue.addJob(jtSWEEP, "sweep",
-        BIND_TYPE(&ApplicationImp::doSweep, this, P_1));
-}
-
-void ApplicationImp::doSweep(Job& j)
-{
-    // VFALCO NOTE Does the order of calls matter?
-    // VFALCO TODO fix the dependency inversion using an observer,
-    //         have listeners register for "onSweep ()" notification.
-    //
-
-    logTimedCall <Application> ("TransactionMaster::sweep", __FILE__, __LINE__, boost::bind (
-        &TransactionMaster::sweep, &mMasterTransaction));
-
-    logTimedCall <Application> ("NodeStore::sweep", __FILE__, __LINE__, boost::bind (
-        &NodeStore::sweep, m_nodeStore.get ()));
-
-    logTimedCall <Application> ("LedgerMaster::sweep", __FILE__, __LINE__, boost::bind (
-        &LedgerMaster::sweep, &m_ledgerMaster));
-
-    logTimedCall <Application> ("TempNodeCache::sweep", __FILE__, __LINE__, boost::bind (
-        &NodeCache::sweep, &mTempNodeCache));
-
-    logTimedCall <Application> ("Validations::sweep", __FILE__, __LINE__, boost::bind (
-        &Validations::sweep, mValidations.get ()));
-
-    logTimedCall <Application> ("InboundLedgers::sweep", __FILE__, __LINE__, boost::bind (
-        &InboundLedgers::sweep, &getInboundLedgers ()));
-
-    logTimedCall <Application> ("SLECache::sweep", __FILE__, __LINE__, boost::bind (
-        &SLECache::sweep, &mSLECache));
-
-    logTimedCall <Application> ("AcceptedLedger::sweep", __FILE__, __LINE__,
-        &AcceptedLedger::sweep);
-
-    logTimedCall <Application> ("SHAMap::sweep", __FILE__, __LINE__,
-        &SHAMap::sweep);
-
-    logTimedCall <Application> ("NetworkOPs::sweepFetchPack", __FILE__, __LINE__, boost::bind (
-        &NetworkOPs::sweepFetchPack, m_networkOPs.get ()));
-
-    // VFALCO NOTE does the call to sweep() happen on another thread?
-    mSweepTimer.expires_from_now (boost::posix_time::seconds (getConfig ().getSize (siSweepInterval)));
-    mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
-}
+//------------------------------------------------------------------------------
 
 void ApplicationImp::startNewLedger ()
 {
@@ -911,8 +853,8 @@ void ApplicationImp::startNewLedger ()
     RippleAddress   rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
 
     // Print enough information to be able to claim root account.
-    WriteLog (lsINFO, Application) << "Root master seed: " << rootSeedMaster.humanSeed ();
-    WriteLog (lsINFO, Application) << "Root account: " << rootAddress.humanAccountID ();
+    m_journal.info << "Root master seed: " << rootSeedMaster.humanSeed ();
+    m_journal.info << "Root account: " << rootAddress.humanAccountID ();
 
     {
         Ledger::pointer firstLedger = boost::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
@@ -953,7 +895,7 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
 
         if (!loadLedger)
         {
-            WriteLog (lsFATAL, Application) << "No Ledger found?" << std::endl;
+            m_journal.fatal << "No Ledger found?" << std::endl;
             return false;
         }
 
@@ -963,7 +905,7 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
             loadLedger = Ledger::loadByIndex (replayLedger->getLedgerSeq() - 1); // this is the prior ledger
             if (!loadLedger || (replayLedger->getParentHash() != loadLedger->getHash()))
             {
-                WriteLog (lsFATAL, Application) << "Replay ledger missing/damaged";
+                m_journal.fatal << "Replay ledger missing/damaged";
                 assert (false);
                 return false;
             }
@@ -971,24 +913,24 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
 
         loadLedger->setClosed ();
 
-        WriteLog (lsINFO, Application) << "Loading ledger " << loadLedger->getHash () << " seq:" << loadLedger->getLedgerSeq ();
+        m_journal.info << "Loading ledger " << loadLedger->getHash () << " seq:" << loadLedger->getLedgerSeq ();
 
         if (loadLedger->getAccountHash ().isZero ())
         {
-            WriteLog (lsFATAL, Application) << "Ledger is empty.";
+            m_journal.fatal << "Ledger is empty.";
             assert (false);
             return false;
         }
 
         if (!loadLedger->walkLedger ())
         {
-            WriteLog (lsFATAL, Application) << "Ledger is missing nodes.";
+            m_journal.fatal << "Ledger is missing nodes.";
             return false;
         }
 
         if (!loadLedger->assertSane ())
         {
-            WriteLog (lsFATAL, Application) << "Ledger is not sane.";
+            m_journal.fatal << "Ledger is not sane.";
             return false;
         }
 
@@ -1007,24 +949,24 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
             for (SHAMapItem::pointer it = txns->peekFirstItem(); it != nullptr; it = txns->peekNextItem(it->getTag()))
             {
                 Transaction::pointer txn = replayLedger->getTransaction(it->getTag());
-                WriteLog (lsINFO, Application) << txn->getJson(0);
+                m_journal.info << txn->getJson(0);
                 Serializer s;
                 txn->getSTransaction()->add(s);
                 if (!cur->addTransaction(it->getTag(), s))
                 {
-                    WriteLog (lsWARNING, Application) << "Unable to add transaction " << it->getTag();
+                    m_journal.warning << "Unable to add transaction " << it->getTag();
                 }
             }
         }
     }
     catch (SHAMapMissingNode&)
     {
-        WriteLog (lsFATAL, Application) << "Data is missing for selected ledger";
+        m_journal.fatal << "Data is missing for selected ledger";
         return false;
     }
     catch (boost::bad_lexical_cast&)
     {
-        WriteLog (lsFATAL, Application) << "Ledger specified '" << l << "' is not valid";
+        m_journal.fatal << "Ledger specified '" << l << "' is not valid";
         return false;
     }
 
@@ -1201,7 +1143,9 @@ void ApplicationImp::updateTables ()
 
     if (getConfig ().importNodeDatabase.size () > 0)
     {
-        ScopedPointer <NodeStore> source (NodeStore::New (getConfig ().importNodeDatabase));
+        ScopedService service ("import service");
+        ScopedPointer <NodeStore> source (NodeStore::New (
+            "NodeStore.import", service, getConfig ().importNodeDatabase));
 
         WriteLog (lsWARNING, NodeObject) <<
             "Node import from '" << source->getName () << "' to '"
@@ -1233,174 +1177,4 @@ Application& getApp ()
     return ApplicationImp::getInstance ();
 }
 
-#if 0
-#if RIPPLE_APPLICATION_CLEAN_EXIT
-    // Application object will be deleted on exit. If the code doesn't exit
-    // cleanly this could cause hangs or crashes on exit.
-    //
-    SingletonLifetime::Lifetime lifetime (SingletonLifetime::persistAfterCreation);
-
-#else
-    // This will make it so that the Application object is not deleted on exit.
-    //
-    SingletonLifetime::Lifetime lifetime (SingletonLifetime::neverDestroyed);
-
-#endif
-
-    return *SharedSingleton <ApplicationImp>::getInstance (lifetime);
-#endif
-
-//------------------------------------------------------------------------------
-
-// Holds a loaned object. The destructor returns it to the source.
-template <typename Object>
-class LoanedObjectHolder : public SharedObject
-{
-public:
-    class Owner
-    {
-    public:
-        virtual void recoverLoanedObject (Object* object) = 0;
-    };
-
-    // The class that loans out the object uses this constructor
-    LoanedObjectHolder (Owner* owner, Object* object)
-        : m_owner (owner)
-        , m_object (object)
-    {
-    }
-
-    ~LoanedObjectHolder ()
-    {
-        m_owner->recoverLoanedObject (m_object);
-    }
-
-    Object& get ()
-    {
-        return *m_object;
-    }
-
-    Object const& get () const
-    {
-        return *m_object;
-    }
-
-private:
-    Owner* m_owner;
-    Object* m_object;
-};
-
-//------------------------------------------------------------------------------
-
-class LoanedObjectTests : public UnitTest
-{
-public:
-    // Meets the LoaningContainer requirements
-    //
-    class LoanedObject : public List <LoanedObject>::Node
-    {
-    public:
-        void useful ()
-        {
-        }
-    };
-
-    // Requirements:
-    //  Object must be derived from List <Object>::Node
-    //
-    template <class Object>
-    class LoaningContainer : protected LoanedObjectHolder <Object>::Owner
-    {
-    protected:
-        void recoverLoanedObject (Object* object)
-        {
-            m_list.push_front (*object);
-        }
-
-    public:
-        typedef Object                      ValueType;
-        typedef Object&                     Reference;
-        typedef Object*                     Pointer;
-        typedef LoanedObjectHolder <Object> Holder;
-        typedef SharedPtr <Holder >         Ptr;
-
-        LoaningContainer ()
-        {
-        }
-
-        ~LoaningContainer ()
-        {
-            while (! m_list.empty ())
-                delete (&m_list.pop_front ());
-        }
-
-        bool empty () const
-        {
-            return m_list.empty ();
-        }
-
-        std::size_t size () const
-        {
-            return m_list.size ();
-        }
-
-        // Donate an object that can be loaned out later
-        // Ownership is transferred, the object must have been
-        // allocated via operator new.
-        //
-        void donate (Object* object)
-        {
-            m_list.push_front (*object);
-        }
-
-        // Check an object out
-        Ptr borrow ()
-        {
-            if (m_list.empty ())
-                return Ptr ();
-            
-            Object& object (m_list.pop_front ());
-            return Ptr (new Holder (this, &object));
-        }
-
-    private:
-        List <Object> m_list;
-    };
-
-    enum
-    {
-        numberAvailable = 5
-    };
-
-    void runTest ()
-    {
-        beginTestCase ("loan objects");
-
-        typedef LoaningContainer <LoanedObject> Container;
-
-        Container items;
-
-        expect (items.size () == 0);
-
-        for (int i = 0; i < numberAvailable; ++i)
-            items.donate (new LoanedObject);
-
-        expect (items.size () == numberAvailable);
-
-        {
-            Container::Ptr item (items.borrow());
-
-            item->get().useful ();
-
-            expect (items.size () == numberAvailable - 1);
-        }
-
-        expect (items.size () == numberAvailable);
-    }
-
-    LoanedObjectTests () : UnitTest ("LoanedObject", "ripple", runManual)
-    {
-    }
-};
-
-static LoanedObjectTests loanedObjectTests;
+// class LoandObject (5removed, use git history to recover)

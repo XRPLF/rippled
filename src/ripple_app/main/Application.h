@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_IAPPLICATION_H
-#define RIPPLE_IAPPLICATION_H
+#ifndef RIPPLE_APP_APPLICATION_H_INCLUDED
+#define RIPPLE_APP_APPLICATION_H_INCLUDED
 
 namespace Validators { class Manager; }
 
@@ -120,7 +120,6 @@ public:
     virtual void setup () = 0;
     virtual void run () = 0;
     virtual void stop () = 0;
-    virtual void sweep () = 0;
 };
 
 extern Application& getApp ();

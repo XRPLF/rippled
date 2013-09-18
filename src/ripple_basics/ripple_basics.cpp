@@ -89,6 +89,7 @@ namespace ripple
 #include "utility/CountedObject.cpp"
 #include "utility/DiffieHellmanUtil.cpp"
 #include "utility/IniFile.cpp"
+#include "utility/Service.cpp"
 #include "utility/StringUtilities.cpp"
 #include "utility/Sustain.cpp"
 #include "utility/ThreadName.cpp"

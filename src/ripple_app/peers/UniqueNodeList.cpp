@@ -89,13 +89,24 @@ private:
     typedef boost::unordered_map<std::pair< std::string, int>, score>   epScore;
 
 public:
-    UniqueNodeListImp ()
-        : mFetchLock (this, "Fetch", __FILE__, __LINE__)
+    explicit UniqueNodeListImp (Service& parent)
+        : UniqueNodeList (parent)
+        , mFetchLock (this, "Fetch", __FILE__, __LINE__)
         , mUNLLock (this, "UNL", __FILE__, __LINE__)
         , m_scoreTimer (this)
         , mFetchActive (0)
         , m_fetchTimer (this)
     {
+    }
+
+    //--------------------------------------------------------------------------
+
+    void onServiceStop ()
+    {
+        m_fetchTimer.cancel ();
+        m_scoreTimer.cancel ();
+
+        serviceStopped ();
     }
 
     //--------------------------------------------------------------------------
@@ -1150,17 +1161,6 @@ private:
 
     //--------------------------------------------------------------------------
 
-    // Begin scoring if timer was not cancelled.
-    void scoreTimerHandler (const boost::system::error_code& err)
-    {
-        if (!err)
-        {
-            onDeadlineTimer (m_scoreTimer);
-        }
-    }
-
-    //--------------------------------------------------------------------------
-
     // Start a timer to update scores.
     // <-- bNow: true, to force scoring for debugging.
     void scoreNext (bool bNow)
@@ -2052,9 +2052,6 @@ private:
                                                  % getConfig ().VALIDATORS_BASE);
         }
     }
-
-    //--------------------------------------------------------------------------
-
 private:
     typedef RippleMutex FetchLockType;
     typedef FetchLockType::ScopedLockType ScopedFetchLockType;
@@ -2085,7 +2082,16 @@ private:
     std::map<RippleAddress, ClusterNodeStatus> m_clusterNodes;
 };
 
-UniqueNodeList* UniqueNodeList::New ()
+//------------------------------------------------------------------------------
+
+UniqueNodeList::UniqueNodeList (Service& parent)
+    : Service ("UniqueNodeList", parent)
 {
-    return new UniqueNodeListImp ();
+}
+
+//------------------------------------------------------------------------------
+
+UniqueNodeList* UniqueNodeList::New (Service& parent)
+{
+    return new UniqueNodeListImp (parent);
 }

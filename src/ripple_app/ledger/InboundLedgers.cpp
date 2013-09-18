@@ -6,8 +6,9 @@
 
 typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
 
-InboundLedgers::InboundLedgers ()
-    : mLock (this, "InboundLedger", __FILE__, __LINE__)
+InboundLedgers::InboundLedgers (Service& parent)
+    : Service ("InboundLedgers", parent)
+    , mLock (this, "InboundLedger", __FILE__, __LINE__)
     , mRecentFailures ("LedgerAcquireRecentFailures", 0, kReacquireIntervalSeconds)
 {
 }
@@ -20,32 +21,35 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-        boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
-        if (it != mLedgers.end ())
+        if (! isServiceStopping ())
         {
-            ret = it->second;
-            // FIXME: Should set the sequence if it's not set
-        }
-        else
-        {
-            ret = boost::make_shared<InboundLedger> (hash, seq);
-            assert (ret);
-            mLedgers.insert (std::make_pair (hash, ret));
-
-            if (!ret->tryLocal())
+            boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
+            if (it != mLedgers.end ())
             {
-                ret->addPeers ();
-                ret->setTimer (); // Cannot call in constructor
+                ret = it->second;
+                // FIXME: Should set the sequence if it's not set
             }
-            else if (!ret->isFailed ())
+            else
             {
-                WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have locally: " << hash;
-                Ledger::pointer ledger = ret->getLedger ();
-                ledger->setClosed ();
-                ledger->setImmutable ();
-                getApp().getLedgerMaster ().storeLedger (ledger);
-                if (couldBeNew)
-                    getApp().getLedgerMaster().checkAccept(ledger);
+                ret = boost::make_shared<InboundLedger> (hash, seq);
+                assert (ret);
+                mLedgers.insert (std::make_pair (hash, ret));
+
+                if (!ret->tryLocal())
+                {
+                    ret->addPeers ();
+                    ret->setTimer (); // Cannot call in constructor
+                }
+                else if (!ret->isFailed ())
+                {
+                    WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have locally: " << hash;
+                    Ledger::pointer ledger = ret->getLedger ();
+                    ledger->setClosed ();
+                    ledger->setImmutable ();
+                    getApp().getLedgerMaster ().storeLedger (ledger);
+                    if (couldBeNew)
+                        getApp().getLedgerMaster().checkAccept(ledger);
+                }
             }
         }
     }
@@ -348,4 +352,12 @@ Json::Value InboundLedgers::getInfo()
     return ret;
 }
 
-// vim:ts=4
+void InboundLedgers::onServiceStop ()
+{
+    ScopedLockType lock (mLock, __FILE__, __LINE__);
+
+    mLedgers.clear();
+    mRecentFailures.clear();
+
+    serviceStopped();
+}

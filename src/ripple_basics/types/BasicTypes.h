@@ -35,5 +35,7 @@ typedef UnsignedInteger <33> RipplePublicKey;
 /** A container holding the hash of a public key in binary format. */
 typedef UnsignedInteger <20> RipplePublicKeyHash;
 
+/** A callback used to check for canceling an operation. */
+typedef SharedFunction <bool(void)> CancelCallback;
 
 #endif

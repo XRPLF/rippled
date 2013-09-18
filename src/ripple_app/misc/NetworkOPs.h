@@ -36,8 +36,12 @@ class LedgerConsensus;
     instances of rippled will need to be hardened to protect against hostile
     or unreliable servers.
 */
-class NetworkOPs : public InfoSub::Source
+class NetworkOPs
+    : public InfoSub::Source
 {
+protected:
+    explicit NetworkOPs (Service& parent);
+
 public:
     enum Fault
     {
@@ -63,7 +67,8 @@ public:
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
-    static NetworkOPs* New (LedgerMaster& ledgerMaster);
+    static NetworkOPs* New (LedgerMaster& ledgerMaster,
+        Service& parent, Journal journal);
 
     virtual ~NetworkOPs () { }
 

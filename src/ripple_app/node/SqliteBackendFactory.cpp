@@ -33,10 +33,11 @@ static int s_nodeStoreDBCount = NUMBER (s_nodeStoreDBInit);
 class SqliteBackendFactory::Backend : public NodeStore::Backend
 {
 public:
-    Backend (size_t keyBytes, std::string const& path)
+    Backend (size_t keyBytes, std::string const& path, NodeStore::Scheduler& scheduler)
         : m_keyBytes (keyBytes)
         , m_name (path)
         , m_db (new DatabaseCon(path, s_nodeStoreDBInit, s_nodeStoreDBCount))
+        , m_scheduler (scheduler)
     {
         String s;
 
@@ -164,6 +165,11 @@ public:
         return 0;
     }
 
+    void stopAsync ()
+    {
+        m_scheduler.scheduledTasksStopped ();
+    }
+
     //--------------------------------------------------------------------------
 
     void doBind (SqliteStatement& statement, NodeObject::ref object)
@@ -205,6 +211,7 @@ private:
     size_t const m_keyBytes;
     std::string const m_name;
     ScopedPointer <DatabaseCon> m_db;
+    NodeStore::Scheduler& m_scheduler;
 };
 
 //------------------------------------------------------------------------------
@@ -232,5 +239,5 @@ NodeStore::Backend* SqliteBackendFactory::createInstance (
     StringPairArray const& keyValues,
     NodeStore::Scheduler& scheduler)
 {
-    return new Backend (keyBytes, keyValues ["path"].toStdString ());
+    return new Backend (keyBytes, keyValues ["path"].toStdString (), scheduler);
 }

@@ -11,6 +11,7 @@
 #include <boost/bimap/list_of.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
+#include <boost/optional.hpp>
 
 #include "ripple_app.h"
 
@@ -28,6 +29,9 @@ namespace ripple
 //
 // Application
 //
+
+# include "main/IoServicePool.h"
+#include "main/IoServicePool.cpp"
 
 # include "main/FatalErrorReporter.h"
 #include "main/FatalErrorReporter.cpp"

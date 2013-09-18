@@ -523,17 +523,8 @@ void LedgerConsensus::stateAccepted ()
     endConsensus ();
 }
 
-// VFALCO TODO implement shutdown without a naked global
-extern volatile bool doShutdown;
-
 void LedgerConsensus::timerEntry ()
 {
-    if (doShutdown)
-    {
-        WriteLog (lsFATAL, LedgerConsensus) << "Shutdown requested";
-        getApp().stop ();
-    }
-
     if ((mState != lcsFINISHED) && (mState != lcsACCEPTED))
         checkLCL ();
 

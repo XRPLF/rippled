@@ -12,8 +12,9 @@
 class Peers
 {
 public:
-    static Peers* New (boost::asio::io_service& io_service,
-        boost::asio::ssl::context& context);
+    static Peers* New (Service& parent,
+        boost::asio::io_service& io_service,
+            boost::asio::ssl::context& context);
 
     virtual ~Peers () { }
 

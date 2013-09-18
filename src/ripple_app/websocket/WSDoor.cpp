@@ -28,7 +28,8 @@ public:
     WSDoorImp (InfoSub::Source& source,
         std::string const& strIp, int iPort, bool bPublic,
             boost::asio::ssl::context& ssl_context)
-        : Thread ("websocket")
+        : WSDoor (source)
+        , Thread ("websocket")
         , m_source (source)
         , m_ssl_context (ssl_context)
         , m_endpointLock (this, "WSDoor", __FILE__, __LINE__)
@@ -41,15 +42,7 @@ public:
 
     ~WSDoorImp ()
     {
-        {
-            ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
-
-            if (m_endpoint != nullptr)
-                m_endpoint->stop ();
-        }
-
-        signalThreadShouldExit ();
-        waitForThreadToExit ();
+        stopThread ();
     }
 
 private:
@@ -101,6 +94,23 @@ private:
 
             m_endpoint = nullptr;
         }
+
+        serviceStopped ();
+    }
+
+    void onServiceStop ()
+    {
+        {
+            ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
+
+            // VFALCO NOTE we probably dont want to block here
+            //             but websocketpp is deficient and broken.
+            //
+            if (m_endpoint != nullptr)
+                m_endpoint->stop ();
+        }
+
+        signalThreadShouldExit ();
     }
 
 private:
@@ -116,6 +126,13 @@ private:
     std::string                     mIp;
     int                             mPort;
 };
+
+//------------------------------------------------------------------------------
+
+WSDoor::WSDoor (Service& parent)
+    : Service ("WSDoor", parent)
+{
+}
 
 //------------------------------------------------------------------------------
 

@@ -108,6 +108,7 @@ using namespace beast;
 #include "utility/IniFile.h"
 #include "utility/PlatformMacros.h"
 #include "utility/RandomNumbers.h"
+#include "utility/Service.h"
 #include "utility/StringUtilities.h"
 #include "utility/Sustain.h"
 #include "utility/ThreadName.h"

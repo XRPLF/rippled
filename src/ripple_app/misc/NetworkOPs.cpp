@@ -4,8 +4,6 @@
 */
 //==============================================================================
 
-SETUP_LOG (NetworkOPs)
-
 class NetworkOPsImp
     : public NetworkOPs
     , public DeadlineTimer::Listener
@@ -22,8 +20,10 @@ public:
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
-    NetworkOPsImp (LedgerMaster& ledgerMaster)
-        : mLock (this, "NetOPs", __FILE__, __LINE__)
+    NetworkOPsImp (LedgerMaster& ledgerMaster, Service& parent, Journal journal)
+        : NetworkOPs (parent)
+        , m_journal (journal)
+        , mLock (this, "NetOPs", __FILE__, __LINE__)
         , mMode (omDISCONNECTED)
         , mNeedNetworkLedger (false)
         , mProposing (false)
@@ -358,8 +358,17 @@ public:
     InfoSub::pointer    findRpcSub (const std::string& strUrl);
     InfoSub::pointer    addRpcSub (const std::string& strUrl, InfoSub::ref rspEntry);
 
-    //
     //--------------------------------------------------------------------------
+    //
+    // Service
+    
+    void onServiceStop ()
+    {
+        m_heartbeatTimer.cancel();
+        m_clusterTimer.cancel();
+
+        serviceStopped ();
+    }
 
 private:
     void setHeartbeatTimer ();
@@ -389,6 +398,8 @@ private:
     // XXX Split into more locks.
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
+
+    Journal m_journal;
     LockType mLock;
 
     OperatingMode                       mMode;
@@ -484,7 +495,7 @@ void NetworkOPsImp::processHeartbeatTimer ()
             if (mMode != omDISCONNECTED)
             {
                 setMode (omDISCONNECTED);
-                WriteLog (lsWARNING, NetworkOPs)
+                m_journal.warning
                     << "Node count (" << numPeers << ") "
                     << "has fallen below quorum (" << getConfig ().NETWORK_QUORUM << ").";
             }
@@ -495,7 +506,7 @@ void NetworkOPsImp::processHeartbeatTimer ()
         if (mMode == omDISCONNECTED)
         {
             setMode (omCONNECTED);
-            WriteLog (lsINFO, NetworkOPs) << "Node count (" << numPeers << ") is sufficient.";
+            m_journal.info << "Node count (" << numPeers << ") is sufficient.";
         }
 
         // Check if the last validated ledger forces a change between these states
@@ -520,11 +531,11 @@ void NetworkOPsImp::processHeartbeatTimer ()
 
 void NetworkOPsImp::processClusterTimer ()
 {
-    bool synced = (getApp().getLedgerMaster().getValidatedLedgerAge() <= 240);
+    bool synced = (m_ledgerMaster.getValidatedLedgerAge() <= 240);
     ClusterNodeStatus us("", synced ? getApp().getFeeTrack().getLocalFee() : 0, getNetworkTimeNC());
     if (!getApp().getUNL().nodeUpdate(getApp().getLocalCredentials().getNodePublic(), us))
     {
-        WriteLog (lsDEBUG, NetworkOPs) << "To soon to send cluster update";
+        m_journal.debug << "To soon to send cluster update";
         return;
     }
 
@@ -615,7 +626,8 @@ void NetworkOPsImp::closeTimeOffset (int offset)
     else
         mCloseTimeOffset = (mCloseTimeOffset * 3) / 4;
 
-    CondLog (mCloseTimeOffset != 0, lsINFO, NetworkOPs) << "Close time offset now " << mCloseTimeOffset;
+    if (mCloseTimeOffset != 0)
+        m_journal.info << "Close time offset now " << mCloseTimeOffset;
 }
 
 uint32 NetworkOPsImp::getLedgerID (uint256 const& hash)
@@ -678,13 +690,13 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
 
     if (getApp().getHashRouter ().addSuppressionPeer (suppress, 0, flags) && ((flags & SF_RETRY) != 0))
     {
-        WriteLog (lsWARNING, NetworkOPs) << "Redundant transactions submitted";
+        m_journal.warning << "Redundant transactions submitted";
         return;
     }
 
     if ((flags & SF_BAD) != 0)
     {
-        WriteLog (lsWARNING, NetworkOPs) << "Submitted transaction cached bad";
+        m_journal.warning << "Submitted transaction cached bad";
         return;
     }
 
@@ -694,7 +706,7 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
         {
             if (!trans->checkSign ())
             {
-                WriteLog (lsWARNING, NetworkOPs) << "Submitted transaction has bad signature";
+                m_journal.warning << "Submitted transaction has bad signature";
                 getApp().getHashRouter ().setFlag (suppress, SF_BAD);
                 return;
             }
@@ -703,7 +715,7 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
         }
         catch (...)
         {
-            WriteLog (lsWARNING, NetworkOPs) << "Exception checking transaction " << suppress;
+            m_journal.warning << "Exception checking transaction " << suppress;
             return;
         }
     }
@@ -734,9 +746,9 @@ Transaction::pointer NetworkOPsImp::submitTransactionSync (Transaction::ref tpTr
     }
     else
     {
-        WriteLog (lsFATAL, NetworkOPs) << "Transaction reconstruction failure";
-        WriteLog (lsFATAL, NetworkOPs) << tpTransNew->getSTransaction ()->getJson (0);
-        WriteLog (lsFATAL, NetworkOPs) << tpTrans->getSTransaction ()->getJson (0);
+        m_journal.fatal << "Transaction reconstruction failure";
+        m_journal.fatal << tpTransNew->getSTransaction ()->getJson (0);
+        m_journal.fatal << tpTrans->getSTransaction ()->getJson (0);
 
         // assert (false); "1e-95" as amount can trigger this
 
@@ -780,7 +792,7 @@ void NetworkOPsImp::runTransactionQueue ()
                 if (isTerRetry (r))
                 {
                     // transaction should be held
-                    WriteLog (lsDEBUG, NetworkOPs) << "QTransaction should be held: " << r;
+                    m_journal.debug << "QTransaction should be held: " << r;
                     dbtx->setStatus (HELD);
                     getApp().getMasterTransaction ().canonicalize (&dbtx);
                     m_ledgerMaster.addHeldTransaction (dbtx);
@@ -788,18 +800,18 @@ void NetworkOPsImp::runTransactionQueue ()
                 else if (r == tefPAST_SEQ)
                 {
                     // duplicate or conflict
-                    WriteLog (lsINFO, NetworkOPs) << "QTransaction is obsolete";
+                    m_journal.info << "QTransaction is obsolete";
                     dbtx->setStatus (OBSOLETE);
                 }
                 else if (r == tesSUCCESS)
                 {
-                    WriteLog (lsINFO, NetworkOPs) << "QTransaction is now included in open ledger";
+                    m_journal.info << "QTransaction is now included in open ledger";
                     dbtx->setStatus (INCLUDED);
                     getApp().getMasterTransaction ().canonicalize (&dbtx);
                 }
                 else
                 {
-                    WriteLog (lsDEBUG, NetworkOPs) << "QStatus other than success " << r;
+                    m_journal.debug << "QStatus other than success " << r;
                     dbtx->setStatus (INVALID);
                 }
 
@@ -809,7 +821,7 @@ void NetworkOPsImp::runTransactionQueue ()
 
                     if (getApp().getHashRouter ().swapSet (txn->getID (), peers, SF_RELAYED))
                     {
-                        WriteLog (lsDEBUG, NetworkOPs) << "relaying";
+                        m_journal.debug << "relaying";
                         protocol::TMTransaction tx;
                         Serializer s;
                         dbtx->getSTransaction ()->add (s);
@@ -821,7 +833,7 @@ void NetworkOPsImp::runTransactionQueue ()
                         getApp().getPeers ().relayMessageBut (peers, packet);
                     }
                     else
-                        WriteLog(lsDEBUG, NetworkOPs) << "recently relayed";
+                        m_journal.debug << "recently relayed";
                 }
 
                 txn->doCallbacks (r);
@@ -852,7 +864,7 @@ Transaction::pointer NetworkOPsImp::processTransaction (Transaction::pointer tra
         // signature not checked
         if (!trans->checkSign ())
         {
-            WriteLog (lsINFO, NetworkOPs) << "Transaction has bad signature";
+            m_journal.info << "Transaction has bad signature";
             trans->setStatus (INVALID);
             trans->setResult (temBAD_SIGNATURE);
             getApp().getHashRouter ().setFlag (trans->getID (), SF_BAD);
@@ -879,7 +891,8 @@ Transaction::pointer NetworkOPsImp::processTransaction (Transaction::pointer tra
         if (r != tesSUCCESS)
         {
             std::string token, human;
-            CondLog (transResultInfo (r, token, human), lsINFO, NetworkOPs) << "TransactionResult: " << token << ": " << human;
+            if (transResultInfo (r, token, human))
+                m_journal.info << "TransactionResult: " << token << ": " << human;
         }
 
 #endif
@@ -896,7 +909,7 @@ Transaction::pointer NetworkOPsImp::processTransaction (Transaction::pointer tra
 
         if (r == tesSUCCESS)
         {
-            WriteLog (lsINFO, NetworkOPs) << "Transaction is now included in open ledger";
+            m_journal.info << "Transaction is now included in open ledger";
             trans->setStatus (INCLUDED);
 
             // VFALCO NOTE The value of trans can be changed here!!
@@ -905,7 +918,7 @@ Transaction::pointer NetworkOPsImp::processTransaction (Transaction::pointer tra
         else if (r == tefPAST_SEQ)
         {
             // duplicate or conflict
-            WriteLog (lsINFO, NetworkOPs) << "Transaction is obsolete";
+            m_journal.info << "Transaction is obsolete";
             trans->setStatus (OBSOLETE);
         }
         else if (isTerRetry (r))
@@ -913,7 +926,7 @@ Transaction::pointer NetworkOPsImp::processTransaction (Transaction::pointer tra
             if (!bFailHard)
             {
                     // transaction should be held
-                    WriteLog (lsDEBUG, NetworkOPs) << "Transaction should be held: " << r;
+                    m_journal.debug << "Transaction should be held: " << r;
                     trans->setStatus (HELD);
                     getApp().getMasterTransaction ().canonicalize (&trans);
                     m_ledgerMaster.addHeldTransaction (trans);
@@ -921,7 +934,7 @@ Transaction::pointer NetworkOPsImp::processTransaction (Transaction::pointer tra
         }
         else
         {
-            WriteLog (lsDEBUG, NetworkOPs) << "Status other than success " << r;
+            m_journal.debug << "Status other than success " << r;
             trans->setStatus (INVALID);
         }
 
@@ -992,21 +1005,21 @@ STVector256 NetworkOPsImp::getDirNodeInfo (
 
     if (sleNode)
     {
-        WriteLog (lsDEBUG, NetworkOPs) << "getDirNodeInfo: node index: " << uNodeIndex.ToString ();
+        m_journal.debug << "getDirNodeInfo: node index: " << uNodeIndex.ToString ();
 
-        WriteLog (lsTRACE, NetworkOPs) << "getDirNodeInfo: first: " << strHex (sleNode->getFieldU64 (sfIndexPrevious));
-        WriteLog (lsTRACE, NetworkOPs) << "getDirNodeInfo:  last: " << strHex (sleNode->getFieldU64 (sfIndexNext));
+        m_journal.trace << "getDirNodeInfo: first: " << strHex (sleNode->getFieldU64 (sfIndexPrevious));
+        m_journal.trace << "getDirNodeInfo:  last: " << strHex (sleNode->getFieldU64 (sfIndexNext));
 
         uNodePrevious   = sleNode->getFieldU64 (sfIndexPrevious);
         uNodeNext       = sleNode->getFieldU64 (sfIndexNext);
         svIndexes       = sleNode->getFieldV256 (sfIndexes);
 
-        WriteLog (lsTRACE, NetworkOPs) << "getDirNodeInfo: first: " << strHex (uNodePrevious);
-        WriteLog (lsTRACE, NetworkOPs) << "getDirNodeInfo:  last: " << strHex (uNodeNext);
+        m_journal.trace << "getDirNodeInfo: first: " << strHex (uNodePrevious);
+        m_journal.trace << "getDirNodeInfo:  last: " << strHex (uNodeNext);
     }
     else
     {
-        WriteLog (lsINFO, NetworkOPs) << "getDirNodeInfo: node index: NOT FOUND: " << uNodeIndex.ToString ();
+        m_journal.info << "getDirNodeInfo: node index: NOT FOUND: " << uNodeIndex.ToString ();
 
         uNodePrevious   = 0;
         uNodeNext       = 0;
@@ -1176,7 +1189,7 @@ bool NetworkOPsImp::checkLastClosedLedger (const std::vector<Peer::pointer>& pee
     // agree? And do we have no better ledger available?
     // If so, we are either tracking or full.
 
-    WriteLog (lsTRACE, NetworkOPs) << "NetworkOPsImp::checkLastClosedLedger";
+    m_journal.trace << "NetworkOPsImp::checkLastClosedLedger";
 
     Ledger::pointer ourClosed = m_ledgerMaster.getClosedLedger ();
 
@@ -1185,8 +1198,8 @@ bool NetworkOPsImp::checkLastClosedLedger (const std::vector<Peer::pointer>& pee
 
     uint256 closedLedger = ourClosed->getHash ();
     uint256 prevClosedLedger = ourClosed->getParentHash ();
-    WriteLog (lsTRACE, NetworkOPs) << "OurClosed:  " << closedLedger;
-    WriteLog (lsTRACE, NetworkOPs) << "PrevClosed: " << prevClosedLedger;
+    m_journal.trace << "OurClosed:  " << closedLedger;
+    m_journal.trace << "PrevClosed: " << prevClosedLedger;
 
     boost::unordered_map<uint256, ValidationCount> ledgers;
     {
@@ -1240,14 +1253,17 @@ bool NetworkOPsImp::checkLastClosedLedger (const std::vector<Peer::pointer>& pee
     for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin (), end = ledgers.end ();
             it != end; ++it)
     {
-        WriteLog (lsDEBUG, NetworkOPs) << "L: " << it->first << " t=" << it->second.trustedValidations <<
+        m_journal.debug << "L: " << it->first << " t=" << it->second.trustedValidations <<
                                        ", n=" << it->second.nodesUsing;
 
         // Temporary logging to make sure tiebreaking isn't broken
         if (it->second.trustedValidations > 0)
-            WriteLog (lsTRACE, NetworkOPs) << "  TieBreakTV: " << it->second.highValidation;
+            m_journal.trace << "  TieBreakTV: " << it->second.highValidation;
         else
-            CondLog (it->second.nodesUsing > 0, lsTRACE, NetworkOPs) << "  TieBreakNU: " << it->second.highNodeUsing;
+        {
+            if (it->second.nodesUsing > 0)
+                m_journal.trace << "  TieBreakNU: " << it->second.highNodeUsing;
+        }
 
         if (it->second > bestVC)
         {
@@ -1260,7 +1276,7 @@ bool NetworkOPsImp::checkLastClosedLedger (const std::vector<Peer::pointer>& pee
     if (switchLedgers && (closedLedger == prevClosedLedger))
     {
         // don't switch to our own previous ledger
-        WriteLog (lsINFO, NetworkOPs) << "We won't switch to our own previous ledger";
+        m_journal.info << "We won't switch to our own previous ledger";
         networkClosed = ourClosed->getHash ();
         switchLedgers = false;
     }
@@ -1279,9 +1295,9 @@ bool NetworkOPsImp::checkLastClosedLedger (const std::vector<Peer::pointer>& pee
         return false;
     }
 
-    WriteLog (lsWARNING, NetworkOPs) << "We are not running on the consensus ledger";
-    WriteLog (lsINFO, NetworkOPs) << "Our LCL: " << ourClosed->getJson (0);
-    WriteLog (lsINFO, NetworkOPs) << "Net LCL " << closedLedger;
+    m_journal.warning << "We are not running on the consensus ledger";
+    m_journal.info << "Our LCL: " << ourClosed->getJson (0);
+    m_journal.info << "Net LCL " << closedLedger;
 
     if ((mMode == omTRACKING) || (mMode == omFULL))
         setMode (omCONNECTED);
@@ -1290,7 +1306,7 @@ bool NetworkOPsImp::checkLastClosedLedger (const std::vector<Peer::pointer>& pee
 
     if (!consensus)
     {
-        WriteLog (lsINFO, NetworkOPs) << "Acquiring consensus ledger " << closedLedger;
+        m_journal.info << "Acquiring consensus ledger " << closedLedger;
 
         if (!mAcquiringLedger || (mAcquiringLedger->getHash () != closedLedger))
             mAcquiringLedger = getApp().getInboundLedgers ().findCreate (closedLedger, 0, true);
@@ -1298,7 +1314,7 @@ bool NetworkOPsImp::checkLastClosedLedger (const std::vector<Peer::pointer>& pee
         if (!mAcquiringLedger || mAcquiringLedger->isFailed ())
         {
             getApp().getInboundLedgers ().dropLedger (closedLedger);
-            WriteLog (lsERROR, NetworkOPs) << "Network ledger cannot be acquired";
+            m_journal.error << "Network ledger cannot be acquired";
             return true;
         }
 
@@ -1321,9 +1337,9 @@ void NetworkOPsImp::switchLastClosedLedger (Ledger::pointer newLedger, bool duri
     // set the newledger as our last closed ledger -- this is abnormal code
 
     if (duringConsensus)
-        WriteLog (lsERROR, NetworkOPs) << "JUMPdc last closed ledger to " << newLedger->getHash ();
+        m_journal.error << "JUMPdc last closed ledger to " << newLedger->getHash ();
     else
-        WriteLog (lsERROR, NetworkOPs) << "JUMP last closed ledger to " << newLedger->getHash ();
+        m_journal.error << "JUMP last closed ledger to " << newLedger->getHash ();
 
     clearNeedNetworkLedger ();
     newLedger->setClosed ();
@@ -1344,8 +1360,8 @@ void NetworkOPsImp::switchLastClosedLedger (Ledger::pointer newLedger, bool duri
 
 int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer closingLedger)
 {
-    WriteLog (lsINFO, NetworkOPs) << "Consensus time for ledger " << closingLedger->getLedgerSeq ();
-    WriteLog (lsINFO, NetworkOPs) << " LCL is " << closingLedger->getParentHash ();
+    m_journal.info << "Consensus time for ledger " << closingLedger->getLedgerSeq ();
+    m_journal.info << " LCL is " << closingLedger->getParentHash ();
 
     Ledger::pointer prevLedger = m_ledgerMaster.getLedgerByHash (closingLedger->getParentHash ());
 
@@ -1354,7 +1370,7 @@ int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer
         // this shouldn't happen unless we jump ledgers
         if (mMode == omFULL)
         {
-            WriteLog (lsWARNING, NetworkOPs) << "Don't have LCL, going to tracking";
+            m_journal.warning << "Don't have LCL, going to tracking";
             setMode (omTRACKING);
         }
 
@@ -1370,7 +1386,7 @@ int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer
     mConsensus = boost::make_shared<LedgerConsensus> (
                      networkClosed, prevLedger, m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC ());
 
-    WriteLog (lsDEBUG, NetworkOPs) << "Initiating consensus engine";
+    m_journal.debug << "Initiating consensus engine";
     return mConsensus->startup ();
 }
 
@@ -1392,7 +1408,7 @@ bool NetworkOPsImp::haveConsensusObject ()
 
         if (!ledgerChange)
         {
-            WriteLog (lsINFO, NetworkOPs) << "Beginning consensus due to peer action";
+            m_journal.info << "Beginning consensus due to peer action";
             beginConsensus (networkClosed, m_ledgerMaster.getCurrentLedger ());
         }
     }
@@ -1418,7 +1434,7 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
 
         if (!haveConsensusObject ())
         {
-            WriteLog (lsINFO, NetworkOPs) << "Received proposal outside consensus window";
+            m_journal.info << "Received proposal outside consensus window";
 
             if (mMode == omFULL)
                 relay = false;
@@ -1431,7 +1447,7 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
 
             if (!set->has_previousledger () && (checkLedger != consensusLCL))
             {
-                WriteLog (lsWARNING, NetworkOPs) << "Have to re-check proposal signature due to consensus view change";
+                m_journal.warning << "Have to re-check proposal signature due to consensus view change";
                 assert (proposal->hasSignature ());
                 proposal->setPrevLedger (consensusLCL);
 
@@ -1442,7 +1458,7 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
             if (sigGood && (consensusLCL == proposal->getPrevLedger ()))
             {
                 relay = mConsensus->peerPosition (proposal);
-                WriteLog (lsTRACE, NetworkOPs) << "Proposal processing finished, relay=" << relay;
+                m_journal.trace << "Proposal processing finished, relay=" << relay;
             }
         }
 
@@ -1455,7 +1471,7 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
         }
         else
         {
-            WriteLog (lsINFO, NetworkOPs) << "Not relaying trusted proposal";
+            m_journal.info << "Not relaying trusted proposal";
         }
     }
 }
@@ -1508,7 +1524,7 @@ SHAMapAddNode NetworkOPsImp::gotTXData (const boost::shared_ptr<Peer>& peer, uin
 
     if (!consensus)
     {
-        WriteLog (lsWARNING, NetworkOPs) << "Got TX data with no consensus object";
+        m_journal.warning << "Got TX data with no consensus object";
         return SHAMapAddNode ();
     }
 
@@ -1519,7 +1535,7 @@ bool NetworkOPsImp::hasTXSet (const boost::shared_ptr<Peer>& peer, uint256 const
 {
     if (!haveConsensusObject ())
     {
-        WriteLog (lsINFO, NetworkOPs) << "Peer has TX set, not during consensus";
+        m_journal.info << "Peer has TX set, not during consensus";
         return false;
     }
 
@@ -1550,7 +1566,7 @@ void NetworkOPsImp::endConsensus (bool correctLCL)
     {
         if (it && (it->getClosedLedgerHash () == deadLedger))
         {
-            WriteLog (lsTRACE, NetworkOPs) << "Killing obsolete peer status";
+            m_journal.trace << "Killing obsolete peer status";
             it->cycleStatus ();
         }
     }
@@ -1694,7 +1710,7 @@ NetworkOPsImp::transactionsSQL (std::string selection, const RippleAddress& acco
                     % lexicalCastThrow <std::string> (offset)
                     % lexicalCastThrow <std::string> (numberOfResults)
                    );
-    WriteLog (lsTRACE, NetworkOPs) << "txSQL query: " << sql;
+    m_journal.trace << "txSQL query: " << sql;
     return sql;
 }
 
@@ -1731,7 +1747,7 @@ NetworkOPsImp::getAccountTxs (const RippleAddress& account, int32 minLedger, int
             if (rawMeta.getLength() == 0)
             { // Work around a bug that could leave the metadata missing
                 uint32 seq = static_cast<uint32>(db->getBigInt("LedgerSeq"));
-                WriteLog(lsWARNING, NetworkOPs) << "Recovering ledger " << seq << ", txn " << txn->getID();
+                m_journal.warning << "Recovering ledger " << seq << ", txn " << txn->getID();
                 Ledger::pointer ledger = getLedgerBySeq(seq);
                 if (ledger)
                     ledger->pendSaveValidated(false, false);
@@ -1903,7 +1919,7 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int
                 if (rawMeta.getLength() == 0)
                 { // Work around a bug that could leave the metadata missing
                     uint32 seq = static_cast<uint32>(db->getBigInt("LedgerSeq"));
-                    WriteLog(lsWARNING, NetworkOPs) << "Recovering ledger " << seq << ", txn " << txn->getID();
+                    m_journal.warning << "Recovering ledger " << seq << ", txn " << txn->getID();
                     Ledger::pointer ledger = getLedgerBySeq(seq);
                     if (ledger)
                         ledger->pendSaveValidated(false, false);
@@ -2049,7 +2065,7 @@ NetworkOPsImp::getLedgerAffectedAccounts (uint32 ledgerSeq)
 
 bool NetworkOPsImp::recvValidation (SerializedValidation::ref val, const std::string& source)
 {
-    WriteLog (lsDEBUG, NetworkOPs) << "recvValidation " << val->getLedgerHash () << " from " << source;
+    m_journal.debug << "recvValidation " << val->getLedgerHash () << " from " << source;
     return getApp().getValidations ().addValidation (val, source);
 }
 
@@ -2270,7 +2286,7 @@ void NetworkOPsImp::pubProposedTransaction (Ledger::ref lpCurrent, SerializedTra
         }
     }
     AcceptedLedgerTx alt (stTxn, terResult);
-    WriteLog (lsTRACE, NetworkOPs) << "pubProposed: " << alt.getJson ();
+    m_journal.trace << "pubProposed: " << alt.getJson ();
     pubAccountTransaction (lpCurrent, AcceptedLedgerTx (stTxn, terResult), false);
 }
 
@@ -2326,7 +2342,7 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
     {
         BOOST_FOREACH (const AcceptedLedger::value_type & vt, alpAccepted->getMap ())
         {
-            WriteLog (lsTRACE, NetworkOPs) << "pubAccepted: " << vt.second->getJson ();
+            m_journal.trace << "pubAccepted: " << vt.second->getJson ();
             pubValidatedTransaction (lpAccepted, *vt.second);
         }
     }
@@ -2485,7 +2501,7 @@ void NetworkOPsImp::pubAccountTransaction (Ledger::ref lpCurrent, const Accepted
             }
         }
     }
-    WriteLog (lsINFO, NetworkOPs) << boost::str (boost::format ("pubAccountTransaction: iProposed=%d iAccepted=%d") % iProposed % iAccepted);
+    m_journal.info << boost::str (boost::format ("pubAccountTransaction: iProposed=%d iAccepted=%d") % iProposed % iAccepted);
 
     if (!notify.empty ())
     {
@@ -2515,7 +2531,7 @@ void NetworkOPsImp::subAccount (InfoSub::ref isrListener, const boost::unordered
     // For the connection, monitor each account.
     BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
     {
-        WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("subAccount: account: %d") % naAccountID.humanAccountID ());
+        m_journal.trace << boost::str (boost::format ("subAccount: account: %d") % naAccountID.humanAccountID ());
 
         isrListener->insertSubAccountInfo (naAccountID, uLedgerIndex);
     }
@@ -2756,11 +2772,11 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
     const uint256   uBookEnd    = Ledger::getQualityNext (uBookBase);
     uint256         uTipIndex   = uBookBase;
 
-    WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("getBookPage: uTakerPaysCurrencyID=%s uTakerPaysIssuerID=%s") % STAmount::createHumanCurrency (uTakerPaysCurrencyID) % RippleAddress::createHumanAccountID (uTakerPaysIssuerID));
-    WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("getBookPage: uTakerGetsCurrencyID=%s uTakerGetsIssuerID=%s") % STAmount::createHumanCurrency (uTakerGetsCurrencyID) % RippleAddress::createHumanAccountID (uTakerGetsIssuerID));
-    WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("getBookPage: uBookBase=%s") % uBookBase);
-    WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("getBookPage:  uBookEnd=%s") % uBookEnd);
-    WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("getBookPage: uTipIndex=%s") % uTipIndex);
+    m_journal.trace << boost::str (boost::format ("getBookPage: uTakerPaysCurrencyID=%s uTakerPaysIssuerID=%s") % STAmount::createHumanCurrency (uTakerPaysCurrencyID) % RippleAddress::createHumanAccountID (uTakerPaysIssuerID));
+    m_journal.trace << boost::str (boost::format ("getBookPage: uTakerGetsCurrencyID=%s uTakerGetsIssuerID=%s") % STAmount::createHumanCurrency (uTakerGetsCurrencyID) % RippleAddress::createHumanAccountID (uTakerGetsIssuerID));
+    m_journal.trace << boost::str (boost::format ("getBookPage: uBookBase=%s") % uBookBase);
+    m_journal.trace << boost::str (boost::format ("getBookPage:  uBookEnd=%s") % uBookEnd);
+    m_journal.trace << boost::str (boost::format ("getBookPage: uTipIndex=%s") % uTipIndex);
 
     LedgerEntrySet  lesActive (lpLedger, tapNONE, true);
 
@@ -2785,13 +2801,13 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
         {
             bDirectAdvance  = false;
 
-            WriteLog (lsTRACE, NetworkOPs) << "getBookPage: bDirectAdvance";
+            m_journal.trace << "getBookPage: bDirectAdvance";
 
             sleOfferDir     = lesActive.entryCache (ltDIR_NODE, lpLedger->getNextLedgerIndex (uTipIndex, uBookEnd));
 
             if (!sleOfferDir)
             {
-                WriteLog (lsTRACE, NetworkOPs) << "getBookPage: bDone";
+                m_journal.trace << "getBookPage: bDone";
                 bDone           = true;
             }
             else
@@ -2801,8 +2817,8 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
                 lesActive.dirFirst (uTipIndex, sleOfferDir, uBookEntry, uOfferIndex);
 
-                WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("getBookPage:   uTipIndex=%s") % uTipIndex);
-                WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("getBookPage: uOfferIndex=%s") % uOfferIndex);
+                m_journal.trace << boost::str (boost::format ("getBookPage:   uTipIndex=%s") % uTipIndex);
+                m_journal.trace << boost::str (boost::format ("getBookPage: uOfferIndex=%s") % uOfferIndex);
             }
         }
 
@@ -2828,7 +2844,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                     // Found in running balance table.
 
                     saOwnerFunds    = umBalanceEntry->second;
-                    // WriteLog (lsINFO, NetworkOPs) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
+                    // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
                 }
                 else
                 {
@@ -2836,7 +2852,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
                     saOwnerFunds    = lesActive.accountHolds (uOfferOwnerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
 
-                    // WriteLog (lsINFO, NetworkOPs) << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
+                    // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
                     if (saOwnerFunds.isNegative ())
                     {
                         // Treat negative funds as zero.
@@ -2874,12 +2890,12 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
             }
             else
             {
-                // WriteLog (lsINFO, NetworkOPs) << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
-                // WriteLog (lsINFO, NetworkOPs) << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
-                // WriteLog (lsINFO, NetworkOPs) << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
-                // WriteLog (lsINFO, NetworkOPs) << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
-                // WriteLog (lsINFO, NetworkOPs) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
-                // WriteLog (lsINFO, NetworkOPs) << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
+                // m_journal.info << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
+                // m_journal.info << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
+                // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
+                // m_journal.info << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
+                // m_journal.info << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
+                // m_journal.info << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
 
                 // Only provide, if not fully funded.
 
@@ -2909,7 +2925,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
             }
             else
             {
-                WriteLog (lsTRACE, NetworkOPs) << boost::str (boost::format ("getBookPage: uOfferIndex=%s") % uOfferIndex);
+                m_journal.trace << boost::str (boost::format ("getBookPage: uOfferIndex=%s") % uOfferIndex);
             }
         }
     }
@@ -2933,13 +2949,13 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
 {
     if (UptimeTimer::getInstance ().getElapsedSeconds () > (uUptime + 1))
     {
-        WriteLog (lsINFO, NetworkOPs) << "Fetch pack request got stale";
+        m_journal.info << "Fetch pack request got stale";
         return;
     }
 
     if (getApp().getFeeTrack ().isLoadedLocal ())
     {
-        WriteLog (lsINFO, NetworkOPs) << "Too busy to make fetch pack";
+        m_journal.info << "Too busy to make fetch pack";
         return;
     }
 
@@ -2986,13 +3002,13 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
         }
         while (wantLedger && (UptimeTimer::getInstance ().getElapsedSeconds () <= (uUptime + 1)));
 
-        WriteLog (lsINFO, NetworkOPs) << "Built fetch pack with " << reply.objects ().size () << " nodes";
+        m_journal.info << "Built fetch pack with " << reply.objects ().size () << " nodes";
         PackedMessage::pointer msg = boost::make_shared<PackedMessage> (reply, protocol::mtGET_OBJECTS);
         peer->sendPacket (msg, false);
     }
     catch (...)
     {
-        WriteLog (lsWARNING, NetworkOPs) << "Exception building fetch pach";
+        m_journal.warning << "Exception building fetch pach";
     }
 }
 
@@ -3017,7 +3033,7 @@ bool NetworkOPsImp::getFetchPack (uint256 const& hash, Blob& data)
 
     if (hash != Serializer::getSHA512Half (data))
     {
-        WriteLog (lsWARNING, NetworkOPs) << "Bad entry in fetch pack";
+        m_journal.warning << "Bad entry in fetch pack";
         return false;
     }
 
@@ -3048,19 +3064,28 @@ void NetworkOPsImp::missingNodeInLedger (uint32 seq)
     uint256 hash = getApp().getLedgerMaster ().getHashBySeq (seq);
     if (hash.isZero())
     {
-        WriteLog (lsWARNING, NetworkOPs) << "Missing a node in ledger " << seq << " cannot fetch";
+        m_journal.warning << "Missing a node in ledger " << seq << " cannot fetch";
     }
     else
     {
-        WriteLog (lsWARNING, NetworkOPs) << "Missing a node in ledger " << seq << " fetching";
+        m_journal.warning << "Missing a node in ledger " << seq << " fetching";
         getApp().getInboundLedgers ().findCreate (hash, seq, false);
     }
 }
 
 //------------------------------------------------------------------------------
 
-NetworkOPs* NetworkOPs::New (LedgerMaster& ledgerMaster)
+NetworkOPs::NetworkOPs (Service& parent)
+    : InfoSub::Source ("NetworkOPs", parent)
 {
-    ScopedPointer <NetworkOPs> object (new NetworkOPsImp (ledgerMaster));
+}
+
+//------------------------------------------------------------------------------
+
+NetworkOPs* NetworkOPs::New (LedgerMaster& ledgerMaster,
+    Service& parent, Journal journal)
+{
+    ScopedPointer <NetworkOPs> object (new NetworkOPsImp (
+        ledgerMaster, parent, journal));
     return object.release ();
 }

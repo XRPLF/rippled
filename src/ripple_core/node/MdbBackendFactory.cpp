@@ -229,11 +229,21 @@ public:
         return m_batch.getWriteLoad ();
     }
 
+    void stopAsync ()
+    {
+        m_batch.stopAsync();
+    }
+
     //--------------------------------------------------------------------------
 
     void writeBatch (Batch const& batch)
     {
         storeBatch (batch);
+    }
+
+    void writeStopped ()
+    {
+        m_scheduler.scheduledTasksStopped ();
     }
 
 private:

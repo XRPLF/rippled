@@ -426,7 +426,6 @@ int RippleMain::run (int argc, char const* const* argv)
             // No arguments. Run server.
             ScopedPointer <Application> app (Application::New ());
             setupServer ();
-            setCallingThreadName ("io");
             startServer ();
         }
         else

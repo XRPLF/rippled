@@ -15,7 +15,14 @@
 // code assumes this node is synched (and will continue to do so until
 // there's a functional network.
 
-// VFALCO TODO Figure out how to clean up these globals
+//------------------------------------------------------------------------------
+
+InfoSub::Source::Source (char const* name, Service& parent)
+    : Service (name, parent)
+{
+}
+
+//------------------------------------------------------------------------------
 
 InfoSub::InfoSub (Source& source)
     : mLock (this, "InfoSub", __FILE__, __LINE__)

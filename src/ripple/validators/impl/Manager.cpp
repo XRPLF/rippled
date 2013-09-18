@@ -93,13 +93,15 @@ namespace Validators
 
 class ManagerImp
     : public Manager
-    , private ThreadWithCallQueue::EntryPoints
-    , private DeadlineTimer::Listener
-    , private LeakChecked <ManagerImp>
+    , public Service
+    , public ThreadWithCallQueue::EntryPoints
+    , public DeadlineTimer::Listener
+    , public LeakChecked <ManagerImp>
 {
 public:
-    explicit ManagerImp (Journal journal)
-        : m_store (journal)
+    ManagerImp (Service& parent, Journal journal)
+        : Service ("Validators::Manager", parent)
+        , m_store (journal)
         , m_logic (m_store, journal)
         , m_journal (journal)
         , m_thread ("Validators")
@@ -111,7 +113,20 @@ public:
 
     ~ManagerImp ()
     {
+        m_thread.stop (true);
     }
+
+    //--------------------------------------------------------------------------
+    //
+    // Service
+    //
+
+    void onServiceStop ()
+    {
+        m_thread.stop (false);
+    }
+
+    //--------------------------------------------------------------------------
 
     void addStrings (String name, std::vector <std::string> const& strings)
     {
@@ -160,7 +175,7 @@ public:
 
     void receiveValidation (ReceivedValidation const& rv)
     {
-#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
+#if RIPPLE_USE_NEW_VALIDATORS
         m_thread.call (&Logic::receiveValidation, &m_logic, rv);
 #endif
     }
@@ -169,7 +184,7 @@ public:
 
     void onDeadlineTimer (DeadlineTimer& timer)
     {
-#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
+#if RIPPLE_USE_NEW_VALIDATORS
         if (timer == m_checkTimer)
         {
             m_checkSources = true;
@@ -184,7 +199,7 @@ public:
 
     void threadInit ()
     {
-#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
+#if RIPPLE_USE_NEW_VALIDATORS
         File const file (File::getSpecialLocation (
             File::userDocumentsDirectory).getChildFile ("validators.sqlite"));
         
@@ -211,13 +226,15 @@ public:
 
     void threadExit ()
     {
+        // must come last
+        serviceStopped ();
     }
 
     bool threadIdle ()
     {
         bool interrupted = false;
 
-#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
+#if RIPPLE_USE_NEW_VALIDATORS
         if (m_checkSources)
         {
             ThreadCancelCallback cancelCallback (m_thread);
@@ -250,9 +267,9 @@ private:
 
 //------------------------------------------------------------------------------
 
-Manager* Manager::New (Journal journal)
+Manager* Manager::New (Service& parent, Journal journal)
 {
-    return new ManagerImp (journal);
+    return new ManagerImp (parent, journal);
 }
 
 }

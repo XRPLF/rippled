@@ -20,8 +20,11 @@
 
     @see NodeObject
 */
-class NodeStore
+class NodeStore : public Service
 {
+protected:
+    NodeStore (char const* name, Service& parent);
+
 public:
     enum
     {
@@ -114,7 +117,6 @@ public:
             virtual ~Task () { }
 
             /** Performs the task.
-
                 The call may take place on a foreign thread.
             */
             virtual void performScheduledTask () = 0;
@@ -125,7 +127,10 @@ public:
             Depending on the implementation, this could happen
             immediately or get deferred.
         */
-        virtual void scheduleTask (Task* task) = 0;
+        virtual void scheduleTask (Task& task) = 0;
+
+        /** Notifies the scheduler that all tasks are complete. */
+        virtual void scheduledTasksStopped () = 0;
     };
 
     //--------------------------------------------------------------------------
@@ -149,6 +154,9 @@ public:
         struct Callback
         {
             virtual void writeBatch (Batch const& batch) = 0;
+
+            // Called after stopAsync when there is no more pending write
+            virtual void writeStopped () = 0;
         };
 
         /** Create a batch writer. */
@@ -169,6 +177,9 @@ public:
 
         /** Get an estimate of the amount of writing I/O pending. */
         int getWriteLoad ();
+
+        /** Called to notify that the NodeStore wants to stop. */
+        void stopAsync ();
 
     private:
         void performScheduledTask ();
@@ -280,6 +291,9 @@ public:
 
         /** Estimate the number of write operations pending. */
         virtual int getWriteLoad () = 0;
+
+        /** Called to notify the Backend that the NodeStore wants to stop. */
+        virtual void stopAsync () = 0;
     };
 
     //--------------------------------------------------------------------------
@@ -331,7 +345,9 @@ public:
 
         @return The opened database.
     */
-    static NodeStore* New (Parameters const& backendParameters,
+    static NodeStore* New (char const* name,
+                           Service& parent,
+                           Parameters const& backendParameters,
                            Parameters fastBackendParameters = Parameters (),
                            Scheduler& scheduler = getSynchronousScheduler ());
 

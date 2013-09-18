@@ -67,6 +67,8 @@ public:
     //
     Job ();
 
+    Job (Job const& other);
+
     Job (JobType type, uint64 index);
 
     // VFALCO TODO try to remove the dependency on LoadMonitor.
@@ -74,9 +76,17 @@ public:
          std::string const& name,
          uint64 index,
          LoadMonitor& lm,
-         FUNCTION_TYPE <void (Job&)> const& job);
+         FUNCTION_TYPE <void (Job&)> const& job,
+         CancelCallback cancelCallback);
+
+    Job& operator= (Job const& other);
 
     JobType getType () const;
+
+    CancelCallback getCancelCallback () const;
+
+    /** Returns `true` if the running job should make a best-effort cancel. */
+    bool shouldCancel () const;
 
     void doJob ();
 
@@ -93,6 +103,7 @@ public:
     static const char* toString (JobType);
 
 private:
+    CancelCallback m_cancelCallback;
     JobType                     mType;
     uint64                      mJobIndex;
     FUNCTION_TYPE <void (Job&)> mJob;

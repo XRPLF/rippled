@@ -7,7 +7,8 @@
 class NullBackendFactory::Backend : public NodeStore::Backend
 {
 public:
-    Backend ()
+    explicit Backend (NodeStore::Scheduler& scheduler)
+        : m_scheduler (scheduler)
     {
     }
 
@@ -41,6 +42,14 @@ public:
     {
         return 0;
     }
+
+    void stopAsync ()
+    {
+        m_scheduler.scheduledTasksStopped ();
+    }
+
+private:
+    NodeStore::Scheduler& m_scheduler;
 };
 
 //------------------------------------------------------------------------------
@@ -66,9 +75,9 @@ String NullBackendFactory::getName () const
 NodeStore::Backend* NullBackendFactory::createInstance (
     size_t,
     StringPairArray const&,
-    NodeStore::Scheduler&)
+    NodeStore::Scheduler& scheduler)
 {
-    return new NullBackendFactory::Backend;
+    return new NullBackendFactory::Backend (scheduler);
 }
 
 //------------------------------------------------------------------------------

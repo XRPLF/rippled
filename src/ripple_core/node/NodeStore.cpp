@@ -173,7 +173,7 @@ void NodeStore::BatchWriter::store (NodeObject::ref object)
     {
         mWritePending = true;
 
-        m_scheduler.scheduleTask (this);
+        m_scheduler.scheduleTask (*this);
     }
 }
 
@@ -182,6 +182,14 @@ int NodeStore::BatchWriter::getWriteLoad ()
     LockType::scoped_lock sl (mWriteMutex);
 
     return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
+}
+
+void NodeStore::BatchWriter::stopAsync ()
+{
+    LockType::scoped_lock sl (mWriteMutex);
+
+    if (! mWritePending)
+        m_callback.writeStopped ();
 }
 
 void NodeStore::BatchWriter::performScheduledTask ()
@@ -212,6 +220,8 @@ void NodeStore::BatchWriter::writeBatch ()
                 mWritePending = false;
                 mWriteLoad = 0;
 
+                m_callback.writeStopped ();
+
                 // VFALCO NOTE Fix this function to not return from the middle
                 return;
             }
@@ -241,10 +251,13 @@ class NodeStoreImp
     , LeakChecked <NodeStoreImp>
 {
 public:
-    NodeStoreImp (Parameters const& backendParameters,
+    NodeStoreImp (char const* name,
+                  Service& parent,
+                  Parameters const& backendParameters,
                   Parameters const& fastBackendParameters,
                   Scheduler& scheduler)
-        : m_scheduler (scheduler)
+        : NodeStore (name, parent)
+        , m_scheduler (scheduler)
         , m_backend (createBackend (backendParameters, scheduler))
         , m_fastBackend ((fastBackendParameters.size () > 0)
             ? createBackend (fastBackendParameters, scheduler) : nullptr)
@@ -485,6 +498,19 @@ public:
     }
 
     //------------------------------------------------------------------------------
+    //
+    // Service
+
+    void onServiceStop ()
+    {
+        // notify the Backend
+        m_backend->stopAsync();
+
+        if (m_fastBackend)
+            m_fastBackend->stopAsync();
+    }
+
+    //------------------------------------------------------------------------------
 
     static void missing_backend ()
     {
@@ -551,9 +577,13 @@ NodeStore::Scheduler& NodeStore::getSynchronousScheduler ()
     // Simple scheduler that performs the task immediately
     struct SynchronousScheduler : Scheduler
     {
-        void scheduleTask (Task* task)
+        void scheduleTask (Task& task)
         {
-            task->performScheduledTask ();
+            task.performScheduledTask ();
+        }
+
+        void scheduledTasksStopped ()
+        {
         }
     };
 
@@ -583,11 +613,24 @@ void NodeStore::addAvailableBackends ()
     NodeStore::addBackendFactory (KeyvaDBBackendFactory::getInstance ());
 }
 
-NodeStore* NodeStore::New (Parameters const& backendParameters,
+//------------------------------------------------------------------------------
+
+NodeStore::NodeStore (char const* name, Service& parent)
+    : Service (name, parent)
+{
+}
+
+//------------------------------------------------------------------------------
+
+NodeStore* NodeStore::New (char const* name,
+                           Service& parent,
+                           Parameters const& backendParameters,
                            Parameters fastBackendParameters,
                            Scheduler& scheduler)
 {
-    return new NodeStoreImp (backendParameters,
+    return new NodeStoreImp (name,
+                             parent,
+                             backendParameters,
                              fastBackendParameters,
                              scheduler);
 }
@@ -1032,9 +1075,16 @@ static NodeStoreTimingTests nodeStoreTimingTests;
 class NodeStoreTests : public NodeStoreUnitTest
 {
 public:
-    NodeStoreTests () : NodeStoreUnitTest ("NodeStore")
+    NodeStoreTests ()
+        : NodeStoreUnitTest ("NodeStore")
     {
     }
+
+    ~NodeStoreTests ()
+    {
+    }
+
+    //--------------------------------------------------------------------------
 
     void testImport (String destBackendType, String srcBackendType, int64 seedValue)
     {
@@ -1049,7 +1099,8 @@ public:
 
         // Write to source db
         {
-            ScopedPointer <NodeStore> src (NodeStore::New (srcParams));
+            ScopedService service ("test");
+            ScopedPointer <NodeStore> src (NodeStore::New ("test", service, srcParams));
 
             storeBatch (*src, batch);
         }
@@ -1057,8 +1108,10 @@ public:
         NodeStore::Batch copy;
 
         {
+            ScopedService service ("test");
+
             // Re-open the db
-            ScopedPointer <NodeStore> src (NodeStore::New (srcParams));
+            ScopedPointer <NodeStore> src (NodeStore::New ("test", service, srcParams));
 
             // Set up the destination database
             File const dest_db (File::createTempFile ("dest_db"));
@@ -1066,7 +1119,7 @@ public:
             destParams.set ("type", destBackendType);
             destParams.set ("path", dest_db.getFullPathName ());
 
-            ScopedPointer <NodeStore> dest (NodeStore::New (destParams));
+            ScopedPointer <NodeStore> dest (NodeStore::New ("test", service, destParams));
 
             beginTestCase (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
 
@@ -1116,8 +1169,10 @@ public:
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
         {
+            ScopedService service ("test");
+
             // Open the database
-            ScopedPointer <NodeStore> db (NodeStore::New (nodeParams, tempParams));
+            ScopedPointer <NodeStore> db (NodeStore::New ("test", service, nodeParams, tempParams));
 
             // Write the batch
             storeBatch (*db, batch);
@@ -1141,8 +1196,10 @@ public:
         if (testPersistence)
         {
             {
+                ScopedService service ("test");
+
                 // Re-open the database without the ephemeral DB
-                ScopedPointer <NodeStore> db (NodeStore::New (nodeParams));
+                ScopedPointer <NodeStore> db (NodeStore::New ("test", service, nodeParams));
 
                 // Read it back in
                 NodeStore::Batch copy;
@@ -1156,8 +1213,11 @@ public:
 
             if (useEphemeralDatabase)
             {
+                ScopedService service ("test");
+
                 // Verify the ephemeral db
-                ScopedPointer <NodeStore> db (NodeStore::New (tempParams, StringPairArray ()));
+                ScopedPointer <NodeStore> db (NodeStore::New ("test",
+                    service, tempParams, StringPairArray ()));
 
                 // Read it back in
                 NodeStore::Batch copy;

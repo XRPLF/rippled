@@ -10,8 +10,10 @@ private:
     typedef std::map <uint256 const, NodeObject::Ptr> Map;
 
 public:
-    Backend (size_t keyBytes, StringPairArray const& keyValues)
+    Backend (size_t keyBytes, StringPairArray const& keyValues,
+        NodeStore::Scheduler& scheduler)
         : m_keyBytes (keyBytes)
+        , m_scheduler (scheduler)
     {
     }
 
@@ -71,12 +73,18 @@ public:
         return 0;
     }
 
+    void stopAsync ()
+    {
+        m_scheduler.scheduledTasksStopped ();
+    }
+
     //--------------------------------------------------------------------------
 
 private:
     size_t const m_keyBytes;
 
     Map m_map;
+    NodeStore::Scheduler& m_scheduler;
 };
 
 //------------------------------------------------------------------------------
@@ -104,7 +112,7 @@ NodeStore::Backend* MemoryBackendFactory::createInstance (
     StringPairArray const& keyValues,
     NodeStore::Scheduler& scheduler)
 {
-    return new MemoryBackendFactory::Backend (keyBytes, keyValues);
+    return new MemoryBackendFactory::Backend (keyBytes, keyValues, scheduler);
 }
 
 //------------------------------------------------------------------------------
