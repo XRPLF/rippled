@@ -464,7 +464,7 @@ public:
         mSweepTimer.expires_from_now (boost::posix_time::seconds (10));
         mSweepTimer.async_wait (BIND_TYPE (&ApplicationImp::sweep, this));
 
-        m_loadManager->startThread ();
+        m_loadManager->start ();
 
     #if ! BEAST_WIN32
     #ifdef SIGINT

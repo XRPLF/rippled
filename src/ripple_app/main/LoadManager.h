@@ -45,7 +45,7 @@ public:
     */
     // VFALCO TODO Simplify the two stage initialization to one stage (construction).
     //        NOTE In stand-alone mode the load manager thread isn't started
-    virtual void startThread () = 0;
+    virtual void start () = 0;
 
     /** Turn on deadlock detection.
 
