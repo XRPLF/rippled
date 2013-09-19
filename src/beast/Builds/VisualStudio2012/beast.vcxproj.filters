@@ -1038,10 +1038,10 @@
     <ClInclude Include="..\..\beast\CStdInt.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\xmpl.h">
+    <ClInclude Include="..\..\beast\MPL.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\xnet.h">
+    <ClInclude Include="..\..\beast\Net.h">
       <Filter>beast</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1565,7 +1565,7 @@
     <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
       <Filter>beast\net\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\net\xnet.cpp">
+    <ClCompile Include="..\..\beast\net\Net.cpp">
       <Filter>beast\net</Filter>
     </ClCompile>
   </ItemGroup>

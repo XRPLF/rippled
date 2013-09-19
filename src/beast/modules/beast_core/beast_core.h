@@ -254,7 +254,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 
 // New header-only library modeled more closely according to boost
 #include "../../beast/intrusive/ForwardList.h"
-#include "../../beast/net.h"
+#include "../../beast/Net.h"
 
 //------------------------------------------------------------------------------
 
