@@ -259,10 +259,12 @@ public:
         }
 #endif
 
+#if 1
         for (int i = 0; i < threads.size(); ++i)
             threads[i]->stop (false);
         for (int i = 0; i < threads.size(); ++i)
             threads[i]->stop (true);
+#endif
 
         pass ();
     }

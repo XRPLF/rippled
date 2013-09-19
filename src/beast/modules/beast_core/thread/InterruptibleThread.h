@@ -125,6 +125,12 @@ public:
     */
     static InterruptibleThread* getCurrentThread ();
 
+    // private
+    Thread& peekThread ()
+    {
+        return m_thread;
+    }
+
 private:
     class ThreadHelper : public Thread
     {
