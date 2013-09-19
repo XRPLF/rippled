@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\beast\Config.h" />
+    <ClInclude Include="..\..\beast\CStdInt.h" />
     <ClInclude Include="..\..\beast\intrusive\ForwardList.h" />
     <ClInclude Include="..\..\beast\intrusive\PointerTraits.h" />
     <ClInclude Include="..\..\beast\mpl.h" />

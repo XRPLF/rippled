@@ -224,6 +224,8 @@ Some files contain portions of these external projects, licensed separately:
 
 //------------------------------------------------------------------------------
 
+#include "../../beast/CStdInt.h"
+
 namespace beast
 {
 

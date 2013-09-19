@@ -1041,6 +1041,9 @@
     <ClInclude Include="..\..\beast\Config.h">
       <Filter>beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\CStdInt.h">
+      <Filter>beast</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
