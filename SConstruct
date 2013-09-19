@@ -134,18 +134,12 @@ COMPILED_FILES = []
 # -------------------
 # Beast unity sources
 #
-COMPILED_FILES.extend([
-    'src/beast/modules/beast_asio/beast_asio.cpp',
-    'src/beast/modules/beast_crypto/beast_crypto.cpp',
-    'src/beast/modules/beast_db/beast_db.cpp',
-    'src/beast/modules/beast_sqdb/beast_sqdb.cpp',
-    'src/beast/modules/beast_sqlite/beast_sqlite.c'
-    ])
 if OSX:
     # OSX: Use the Objective C++ version of beast_core
-    COMPILED_FILES.extend (['src/beast/modules/beast_core/beast_core.mm'])
+    COMPILED_FILES.extend (['src/ripple/beast/ripple_beastobjc.mm'])
 else:
-    COMPILED_FILES.extend (['src/beast/modules/beast_core/beast_core.cpp'])
+    COMPILED_FILES.extend (['src/ripple/beast/ripple_beast.cpp'])
+COMPILED_FILES.extend (['src/ripple/beast/ripple_beastc.c'])
 
 # ------------------------------
 # Old-style Ripple unity sources

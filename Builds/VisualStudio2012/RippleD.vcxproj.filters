@@ -121,9 +121,6 @@
     <Filter Include="[0] Libraries">
       <UniqueIdentifier>{ddf42dfe-eaad-4275-8cb7-5c02be627366}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[0] Libraries\beast">
-      <UniqueIdentifier>{f669c93c-60da-4674-a693-9eebcddacb6f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[0] Libraries\leveldb">
       <UniqueIdentifier>{3debb18d-0f76-4208-accb-f96cb9ce6dab}</UniqueIdentifier>
     </Filter>
@@ -174,6 +171,9 @@
     </Filter>
     <Filter Include="[1] Ripple\ripple_basics\log">
       <UniqueIdentifier>{824b1f04-7313-4abb-a3db-6241c7c8a356}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[2] Ripple %28New%29\beast">
+      <UniqueIdentifier>{458b9099-fcf6-49fe-b3fb-a27beb2ee070}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -732,9 +732,6 @@
     <ClCompile Include="..\..\src\ripple_net\basics\RPCDoor.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\app.cpp">
-      <Filter>[1] Ripple\ripple_app</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\rpc\RPCServerHandler.cpp">
       <Filter>[1] Ripple\ripple_app\rpc</Filter>
     </ClCompile>
@@ -794,24 +791,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\protobuf_core.cpp">
       <Filter>[0] Libraries\protobuf</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\modules\beast_asio\beast_asio.cpp">
-      <Filter>[0] Libraries\beast</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\modules\beast_core\beast_core.cpp">
-      <Filter>[0] Libraries\beast</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\modules\beast_crypto\beast_crypto.cpp">
-      <Filter>[0] Libraries\beast</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\modules\beast_db\beast_db.cpp">
-      <Filter>[0] Libraries\beast</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\modules\beast_sqdb\beast_sqdb.cpp">
-      <Filter>[0] Libraries\beast</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\modules\beast_sqlite\beast_sqlite.c">
-      <Filter>[0] Libraries\beast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\peerfinder\PeerFinder.cpp">
       <Filter>[1] Ripple\ripple_core\peerfinder</Filter>
@@ -923,6 +902,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_leveldb\ripple_leveldb.cpp">
       <Filter>[1] Ripple\ripple_leveldb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\ripple_beast.cpp">
+      <Filter>[2] Ripple %28New%29\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c">
+      <Filter>[2] Ripple %28New%29\beast</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1855,6 +1840,9 @@
     <None Include="..\..\SConstruct" />
     <None Include="..\QtCreator\rippled.pro" />
     <None Include="..\..\README.md" />
+    <None Include="..\..\src\ripple\beast\ripple_beastobjc.mm">
+      <Filter>[2] Ripple %28New%29\beast</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\doc\todo\NIKB_TODO.txt">

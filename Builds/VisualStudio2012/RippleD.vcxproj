@@ -20,12 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\build\proto\ripple.pb.cc" />
-    <ClCompile Include="..\..\src\beast\modules\beast_asio\beast_asio.cpp" />
-    <ClCompile Include="..\..\src\beast\modules\beast_core\beast_core.cpp" />
-    <ClCompile Include="..\..\src\beast\modules\beast_crypto\beast_crypto.cpp" />
-    <ClCompile Include="..\..\src\beast\modules\beast_db\beast_db.cpp" />
-    <ClCompile Include="..\..\src\beast\modules\beast_sqdb\beast_sqdb.cpp" />
-    <ClCompile Include="..\..\src\beast\modules\beast_sqlite\beast_sqlite.c" />
+    <ClCompile Include="..\..\src\ripple\beast\ripple_beast.cpp" />
+    <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c" />
     <ClCompile Include="..\..\src\ripple\testoverlay\impl\TestOverlay.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1718,6 +1714,12 @@
     </CustomBuild>
     <None Include="..\..\doc\Doxyfile" />
     <None Include="..\..\doc\rippled-example.cfg" />
+    <None Include="..\..\src\ripple\beast\ripple_beastobjc.mm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="..\..\src\ripple_basics\json\json_internalarray.inl" />
     <None Include="..\..\src\ripple_basics\json\json_internalmap.inl" />
     <None Include="..\..\src\ripple_basics\json\json_valueiterator.inl" />

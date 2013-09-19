@@ -63,13 +63,8 @@ UI_HEADERS_DIR += ../../src/ripple_basics
 # Beast
 #
 SOURCES += \
-    ../../src/beast/modules/beast_asio/beast_asio.cpp \
-    ../../src/beast/modules/beast_core/beast_core.cpp \
-    ../../src/beast/modules/beast_crypto/beast_crypto.cpp \
-    ../../src/beast/modules/beast_db/beast_db.cpp \
-    ../../src/beast/modules/beast_extras/beast_extras.cpp \
-    ../../src/beast/modules/beast_sqdb/beast_sqdb.cpp \
-    ../../src/beast/modules/beast_sqlite/beast_sqlite.c
+    ../../src/ripple/beast/ripple_beast.cpp \
+    ../../src/ripple/beast/ripple_beastc.c
 
 # ---------
 # Old style
