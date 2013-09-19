@@ -807,9 +807,6 @@
     <ClInclude Include="..\..\modules\beast_core\system\SystemStats.h">
       <Filter>beast_core\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\system\TargetPlatform.h">
-      <Filter>beast_core\system</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\DynamicList.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
@@ -1040,6 +1037,9 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\net\IPEndpoint.h">
       <Filter>beast\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\Config.h">
+      <Filter>beast</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

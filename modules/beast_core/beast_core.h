@@ -173,7 +173,7 @@ Some files contain portions of these external projects, licensed separately:
 */
 
 // TargetPlatform.h should not use anything from BeastConfig.h
-#include "system/TargetPlatform.h"
+#include "../../beast/Config.h"
 #include "system/BeastConfigCheck.h"
 
 # include "system/BeforeBoost.h"

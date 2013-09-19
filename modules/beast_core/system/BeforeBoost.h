@@ -21,7 +21,7 @@
 #define BEAST_CORE_SYSTEM_BEFOREBOOST_H_INCLUDED
 
 // TargetPlatform.h should not use anything from BeastConfig.h
-#include "TargetPlatform.h"
+#include "../../../beast/Config.h"
 #include "BeastConfigCheck.h"
 
 // This file should be included before including any boost headers.

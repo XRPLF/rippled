@@ -21,8 +21,10 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_TARGETPLATFORM_H_INCLUDED
-#define BEAST_CORE_TARGETPLATFORM_H_INCLUDED
+#ifndef BEAST_CONFIG_H_INCLUDED
+#define BEAST_CONFIG_H_INCLUDED
+
+// VFALCO NOTE this is analogous to <boost/config.hpp>
 
 //==============================================================================
 /*  This file figures out which platform is being built, and defines some macros
