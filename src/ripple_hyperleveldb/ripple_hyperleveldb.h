@@ -7,7 +7,7 @@
 #ifndef RIPPLE_HYPERLEVELDB_RIPPLEHEADER
 #define RIPPLE_HYPERLEVELDB_RIPPLEHEADER
 
-#include "beast/modules/beast_core/system/TargetPlatform.h"
+#include "beast/beast/Config.h"
 
 #if ! BEAST_WIN32
 

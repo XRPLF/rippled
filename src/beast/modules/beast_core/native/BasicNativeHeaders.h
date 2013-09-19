@@ -24,7 +24,8 @@
 #ifndef BEAST_BASICNATIVEHEADERS_H_INCLUDED
 #define BEAST_BASICNATIVEHEADERS_H_INCLUDED
 
-#include "../system/TargetPlatform.h"
+#include "../../../beast/Config.h"
+
 #undef T
 
 //==============================================================================
