@@ -418,13 +418,10 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "memory/beast_GlobalFifoFreeStore.h"
 
 #include "thread/beast_Semaphore.h"
-#include "thread/beast_SerialFor.h"
 #include "thread/beast_InterruptibleThread.h"
-#include "thread/beast_ThreadGroup.h"
 #include "thread/beast_CallQueue.h"
 #include "thread/beast_Listeners.h"
 #include "thread/beast_ManualCallQueue.h"
-#include "thread/beast_ParallelFor.h"
 #include "thread/beast_ThreadWithCallQueue.h"
 #include "thread/beast_Workers.h"
 

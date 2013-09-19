@@ -436,13 +436,14 @@ public:
         };
     }
 
-    // VFALCO TODO Is it really necessary to init the dbs in parallel?
     void initSqliteDbs ()
     {
-        int const count = 4;
-
-        ThreadGroup threadGroup (count);
-        ParallelFor (threadGroup).loop (count, &ApplicationImp::initSqliteDb, this);
+        // VFALCO NOTE DBs are no longer initialized in parallel, since we
+        //             dont want unowned threads and because ParallelFor
+        //             is broken.
+        //
+        for (int i = 0; i < 4; ++i)
+            initSqliteDb (i);
     }
 
 #ifdef SIGINT
