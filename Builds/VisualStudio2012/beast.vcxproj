@@ -287,10 +287,7 @@
     <ClInclude Include="..\..\modules\beast_core\thread\beast_InterruptibleThread.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_Listeners.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_ManualCallQueue.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ParallelFor.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_Semaphore.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_SerialFor.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ThreadGroup.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_ThreadWithCallQueue.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\beast_Workers.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\detail\ScopedLock.h" />
@@ -1102,19 +1099,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ParallelFor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\beast_Semaphore.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ThreadGroup.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

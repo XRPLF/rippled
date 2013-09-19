@@ -710,16 +710,7 @@
     <ClInclude Include="..\..\modules\beast_core\thread\beast_ManualCallQueue.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ParallelFor.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\beast_Semaphore.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_SerialFor.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ThreadGroup.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\beast_ThreadWithCallQueue.h">
@@ -1390,13 +1381,7 @@
     <ClCompile Include="..\..\modules\beast_core\thread\beast_ManualCallQueue.cpp">
       <Filter>beast_core\thread</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ParallelFor.cpp">
-      <Filter>beast_core\thread</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\beast_Semaphore.cpp">
-      <Filter>beast_core\thread</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ThreadGroup.cpp">
       <Filter>beast_core\thread</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\beast_ThreadWithCallQueue.cpp">

@@ -220,8 +220,6 @@ namespace beast
 #include "thread/beast_CallQueue.cpp"
 #include "thread/beast_Listeners.cpp"
 #include "thread/beast_ManualCallQueue.cpp"
-#include "thread/beast_ParallelFor.cpp"
-#include "thread/beast_ThreadGroup.cpp"
 #include "thread/beast_ThreadWithCallQueue.cpp"
 #include "thread/beast_Workers.cpp"
 
