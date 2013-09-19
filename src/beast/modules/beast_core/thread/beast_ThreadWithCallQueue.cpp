@@ -165,9 +165,12 @@ public:
     {
         explicit TestThread (int id)
             : ThreadWithCallQueue ("#" + String::fromNumber (id))
+            , interruptedOnce (false)
         {
             start (this);
         }
+
+        bool interruptedOnce;
 
         void threadInit ()
         {
@@ -187,13 +190,18 @@ public:
             {
                 interrupted = interruptionPoint ();
                 if (interrupted)
+                {
+                    interruptedOnce = true;
                     break;
+                }
 
                 s = s + String::fromNumber (m_random.nextInt ());
 
                 if (s.length () > 100)
                     s = String::empty;
             }
+
+            bassert (interrupted);
 
             return interrupted;
         }
@@ -241,6 +249,11 @@ public:
             case 2: threads[n]->interrupt(); break;
 #endif
             };
+        }
+
+        for (int i = 0; i < threads.size(); ++i)
+        {
+            expect (threads[i]->interruptedOnce);
         }
 
         for (int i = 0; i < threads.size(); ++i)
