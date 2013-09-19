@@ -67,6 +67,9 @@ namespace zlibNamespace
   #undef fdopen
   #undef local
   #undef Code
+  #undef Dad
+  #undef Len
+  #undef Freq
 
   #if BEAST_CLANG
    #pragma clang diagnostic pop
