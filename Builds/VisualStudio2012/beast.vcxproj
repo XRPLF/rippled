@@ -83,6 +83,13 @@
     <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h" />
     <ClInclude Include="..\..\beast\Net.h" />
     <ClInclude Include="..\..\beast\net\IPEndpoint.h" />
+    <ClInclude Include="..\..\beast\StaticAssert.h" />
+    <ClInclude Include="..\..\beast\TypeTraits.h" />
+    <ClInclude Include="..\..\beast\type_traits\IntegralConstant.h" />
+    <ClInclude Include="..\..\beast\type_traits\IsIntegral.h" />
+    <ClInclude Include="..\..\beast\type_traits\IsSigned.h" />
+    <ClInclude Include="..\..\beast\type_traits\RemoveSigned.h" />
+    <ClInclude Include="..\..\beast\utility\EnableIf.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h" />

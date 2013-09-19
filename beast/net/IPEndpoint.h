@@ -21,6 +21,7 @@
 #define BEAST_NET_IPENDPOINT_H_INCLUDED
 
 #include <string>
+#include <istream>
 #include <ostream>
 
 #include "../mpl/IfCond.h"
@@ -130,7 +131,8 @@ public:
             return
                 ((value&0xff000000)==0x0a000000) || // Prefix /8,    10.##.#.#
                 ((value&0xfff00000)==0xac100000) || // Prefix /12   172.16.#.# - 172.31.#.#
-                ((value&0xffff0000)==0xc0a80000) ;  // Prefix /16   192.168.#.#
+                ((value&0xffff0000)==0xc0a80000) || // Prefix /16   192.168.#.#
+                isLoopback();
         }
 
         /** Returns `true` if this is a broadcast address. */
@@ -602,10 +604,19 @@ inline std::ostream& operator<< (std::ostream &os, IPEndpoint::V6 const& addr)
     return os;
 }
 
-inline std::ostream& operator<< (std::ostream &os, IPEndpoint const& endpoint)
+inline std::ostream& operator<< (std::ostream &os, IPEndpoint const& ep)
 {
-    os << endpoint.to_string();
+    os << ep.to_string();
     return os;
+}
+/** @} */
+
+/** Input stream conversions. */
+/** @{ */
+inline std::istream& operator>> (std::istream &is, IPEndpoint::V6&)
+{
+    //is >> addr.to_string();
+    return is;
 }
 /** @} */
 
