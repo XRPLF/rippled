@@ -63,6 +63,9 @@ void InterruptibleThread::start (EntryPoint* const entryPoint)
 
 void InterruptibleThread::join ()
 {
+    m_thread.signalThreadShouldExit();
+    m_thread.notify();
+    interrupt();
     m_thread.stopThread (-1);
 }
 
@@ -200,3 +203,73 @@ bool CurrentInterruptibleThread::interruptionPoint ()
 
     return interrupted;
 }
+
+//------------------------------------------------------------------------------
+
+class InterruptibleThreadTests : public UnitTest
+{
+public:
+    enum
+    {
+        callsPerThread = 100000
+    };
+
+    struct TestThread : InterruptibleThread::EntryPoint
+    {
+        explicit TestThread (int id)
+            : m_thread ("#" + String::fromNumber (id))
+        {
+            m_thread.start (this);
+        }
+
+        void threadRun ()
+        {
+            while (! m_thread.peekThread().threadShouldExit())
+            {
+                String s;
+
+                while (!m_thread.interruptionPoint ())
+                {
+                    s = s + String::fromNumber (m_random.nextInt ());
+
+                    if (s.length () > 100)
+                        s = String::empty;
+                }
+            }
+        }
+
+        Random m_random;
+        InterruptibleThread m_thread;
+    };
+    
+    void testThreads (std::size_t nThreads)
+    {
+        beginTestCase (String::fromNumber (nThreads) + " threads");
+
+        OwnedArray <TestThread> threads;
+        threads.ensureStorageAllocated (nThreads);
+
+        for (std::size_t i = 0; i < nThreads; ++i)
+            threads.add (new TestThread (i + 1));
+
+        for (std::size_t i = 0; i < callsPerThread * nThreads; ++i)
+        {
+            int const n (random().nextInt (threads.size()));
+            threads[n]->m_thread.interrupt();
+        }
+
+        pass ();
+    }
+
+    void runTest ()
+    {
+        testThreads (8);
+        testThreads (64);
+    }
+
+    InterruptibleThreadTests () : UnitTest ("InterruptibleThread", "beast")
+    {
+    }
+};
+
+static InterruptibleThreadTests interruptibleThreadTests;
