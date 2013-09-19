@@ -189,6 +189,12 @@
     <Filter Include="_meta">
       <UniqueIdentifier>{27052a76-e315-4725-9d9a-1233c7d71aba}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\net">
+      <UniqueIdentifier>{5faa76ea-5691-4e63-8833-577f92991356}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\net\impl">
+      <UniqueIdentifier>{93670bc9-a748-42bd-8118-8de30c468b16}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1029,6 +1035,12 @@
     <ClInclude Include="..\..\modules\beast_core\memory\SharedFunction.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\net.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\net\IPEndpoint.h">
+      <Filter>beast\net</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1546,6 +1558,12 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_extras\beast_extras.cpp">
       <Filter>beast_extras</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
+      <Filter>beast\net\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\net.cpp">
+      <Filter>beast\net</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

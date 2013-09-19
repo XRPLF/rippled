@@ -224,11 +224,6 @@ Some files contain portions of these external projects, licensed separately:
 
 //------------------------------------------------------------------------------
 
-// New header-only library modeled more closely according to boost
-#include "../../beast/intrusive/ForwardList.h"
-
-//------------------------------------------------------------------------------
-
 namespace beast
 {
 
@@ -250,6 +245,19 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "memory/ByteOrder.h"
 #include "memory/Atomic.h"
 #include "text/CharacterFunctions.h"
+
+}
+
+//------------------------------------------------------------------------------
+
+// New header-only library modeled more closely according to boost
+#include "../../beast/intrusive/ForwardList.h"
+#include "../../beast/net.h"
+
+//------------------------------------------------------------------------------
+
+namespace beast
+{
 
 #if BEAST_MSVC
 # pragma warning (push)

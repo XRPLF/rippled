@@ -79,6 +79,8 @@
     <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveReference.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h" />
+    <ClInclude Include="..\..\beast\net.h" />
+    <ClInclude Include="..\..\beast\net\IPEndpoint.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h" />
@@ -351,6 +353,16 @@
     <ClInclude Include="BeastConfig.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\net.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\async\SharedHandler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
