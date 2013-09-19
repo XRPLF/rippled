@@ -22,6 +22,357 @@
 namespace beast
 {
 
+IPEndpoint::V4::V4 ()
+    : value (0)
+{
+}
+
+IPEndpoint::V4::V4 (uint32 value_)
+    : value (value_)
+{
+}
+
+IPEndpoint::V4::V4 (uint8 a, uint8 b, uint8 c, uint8 d)
+    : value ((a<<24)|(b<<16)|(c<<8)|d)
+{
+}
+
+IPEndpoint::V4::V4 (V4 const& other)
+    : value (other.value)
+{
+}
+
+IPEndpoint::V4& IPEndpoint::V4::operator= (V4 const& other)
+{
+    value = other.value;
+    return *this;
+}
+
+IPEndpoint::V4 IPEndpoint::V4::localBroadcastAddress ()
+{
+    return V4 (0xffffffff);
+}
+
+IPEndpoint::V4 IPEndpoint::V4::broadcastAddress () const
+{
+    switch (getClass())
+    {
+    case 'A': return V4 ((value&0xff000000)|0x00ffffff);
+    case 'B': return V4 ((value&0xffff0000)|0x0000ffff);
+    case 'C': return V4 ((value&0xffffff00)|0x000000ff);
+    default:
+    case 'D':
+        bassertfalse;
+        break;
+    }
+    return V4();
+}
+
+char IPEndpoint::V4::getClass () const
+{
+    static char const* table = "AAAABBCD";
+    return table[(value&0xE0000000)>>29];
+}
+
+bool IPEndpoint::V4::isPublic () const
+{
+    return !isPrivate() && !isBroadcast() && !isMulticast();
+}
+
+bool IPEndpoint::V4::isPrivate () const
+{
+    return
+        ((value&0xff000000)==0x0a000000) || // Prefix /8,    10.##.#.#
+        ((value&0xfff00000)==0xac100000) || // Prefix /12   172.16.#.# - 172.31.#.#
+        ((value&0xffff0000)==0xc0a80000) || // Prefix /16   192.168.#.#
+        isLoopback();
+}
+
+bool IPEndpoint::V4::isBroadcast () const
+{
+    return (value == broadcastAddress().value);
+}
+
+bool IPEndpoint::V4::isMulticast () const
+{
+    return getClass() == 'D';
+}
+
+bool IPEndpoint::V4::isLoopback () const
+{
+    return (value&0xff000000)==0x7f000000;
+}
+
+IPEndpoint::V4::Proxy <true> IPEndpoint::V4::operator[] (std::size_t index) const
+{
+    switch (index)
+    {
+    default:
+        bassertfalse;
+    case 0: return Proxy <true> (24, &value);
+    case 1: return Proxy <true> (16, &value);
+    case 2: return Proxy <true> ( 8, &value);
+    case 3: return Proxy <true> ( 0, &value);
+    };
+};
+
+IPEndpoint::V4::Proxy <false> IPEndpoint::V4::operator[] (std::size_t index)
+{
+    switch (index)
+    {
+    default:
+        bassertfalse;
+    case 0: return Proxy <false> (24, &value);
+    case 1: return Proxy <false> (16, &value);
+    case 2: return Proxy <false> ( 8, &value);
+    case 3: return Proxy <false> ( 0, &value);
+    };
+};
+
+std::string IPEndpoint::V4::to_string () const
+{
+    std::string s;
+    s.reserve (15);
+    s.append (numberToString ((int)((*this)[0]))); s.push_back ('.');
+    s.append (numberToString ((int)((*this)[1]))); s.push_back ('.');
+    s.append (numberToString ((int)((*this)[2]))); s.push_back ('.');
+    s.append (numberToString ((int)((*this)[3])));
+    return s;
+}
+
+IPEndpoint::V4::operator std::string () const
+{
+    return to_string();
+}
+
+//------------------------------------------------------------------------------
+
+IPEndpoint::IPEndpoint ()
+    : m_type (none)
+{
+}
+
+IPEndpoint::IPEndpoint (V4 const& v4, uint16 port)
+    : m_type (ipv4)
+    , m_port (port)
+    , m_v4 (v4)
+{
+}
+
+IPEndpoint::IPEndpoint (V6 const& v6, uint16 port)
+    : m_type (ipv6)
+    , m_port (port)
+    , m_v6 (v6)
+{
+}
+
+IPEndpoint::IPEndpoint (IPEndpoint const& other)
+    : m_type (other.m_type)
+    , m_port (other.m_port)
+{
+    switch (m_type)
+    {
+    case ipv4: m_v4 = other.m_v4; break;
+    case ipv6: m_v6 = other.m_v6; break;
+    default:
+    case none:
+        break;
+    };
+}
+
+IPEndpoint& IPEndpoint::operator= (IPEndpoint const& other)
+{
+    m_type = other.m_type;
+    m_port = other.m_port;
+    switch (m_type)
+    {
+    case ipv4: m_v4 = other.m_v4; break;
+    case ipv6: m_v6 = other.m_v6; break;
+    default:
+    case none:
+        break;
+    };
+    return *this;
+}
+
+IPEndpoint& IPEndpoint::operator= (V4 const& address)
+{
+    m_type = ipv4;
+    m_port = 0;
+    m_v4 = address;
+    return *this;
+}
+
+IPEndpoint& IPEndpoint::operator= (V6 const& address)
+{
+    m_type = ipv6;
+    m_port = 0;
+    m_v6 = address;
+    return *this;
+}
+
+IPEndpoint IPEndpoint::withPort (uint16 port) const
+{
+    switch (m_type)
+    {
+    case ipv4: return IPEndpoint (m_v4, port);
+    case ipv6: return IPEndpoint (m_v6, port);
+    default:
+    case none:
+        bassertfalse;
+        break;
+    };
+    return IPEndpoint();
+}
+
+bool IPEndpoint::empty () const
+{
+    return m_type == none;
+}
+
+bool IPEndpoint::isNull () const
+{
+    return empty ();
+}
+
+bool IPEndpoint::isNotNull () const
+{
+    return ! empty ();
+}
+
+IPEndpoint::Type IPEndpoint::type () const
+{
+    return m_type;
+}
+
+bool IPEndpoint::isV4 () const
+{
+    return m_type == ipv4;
+}
+
+bool IPEndpoint::isV6 () const
+{
+    return m_type == ipv6;
+}
+
+IPEndpoint::V4 const& IPEndpoint::v4 () const
+{
+    return m_v4;
+}
+
+IPEndpoint::V6 const& IPEndpoint::v6 () const
+{
+    return m_v6;
+}
+
+uint16 IPEndpoint::port () const
+{
+    return m_port;
+}
+
+bool IPEndpoint::isPublic () const
+{
+    switch (m_type)
+    {
+    case ipv4: return m_v4.isPublic();
+    case ipv6: return m_v6.isPublic();
+    default:
+        bassertfalse;
+    case none:
+        break;
+    };
+    return false;
+}
+
+bool IPEndpoint::isPrivate () const
+{
+    switch (m_type)
+    {
+    case ipv4: return m_v4.isPrivate();
+    case ipv6: return m_v6.isPrivate();
+    default:
+        bassertfalse;
+    case none:
+        break;
+    };
+    return false;
+}
+
+bool IPEndpoint::isBroadcast () const
+{
+    switch (m_type)
+    {
+    case ipv4: return m_v4.isBroadcast();
+    case ipv6: return m_v6.isBroadcast();
+    default:
+        bassertfalse;
+    case none:
+        break;
+    };
+    return false;
+}
+
+bool IPEndpoint::isMulticast () const
+{
+    switch (m_type)
+    {
+    case ipv4: return m_v4.isMulticast();
+    case ipv6: return m_v6.isMulticast();
+    default:
+        bassertfalse;
+    case none:
+        break;
+    };
+    return false;
+}
+
+bool IPEndpoint::isLoopback () const
+{
+    switch (m_type)
+    {
+    case ipv4: return m_v4.isLoopback();
+    case ipv6: return m_v6.isLoopback();
+    default:
+        bassertfalse;
+    case none:
+        break;
+    };
+    return false;
+}
+
+std::string IPEndpoint::to_string () const
+{
+    switch (m_type)
+    {
+    case ipv4:
+        {
+            std::string s (m_v4.to_string());
+            if (m_port != 0)
+            {
+                s.append (":");
+                s.append (numberToString (m_port));
+            }
+            return s;
+        }
+
+    case ipv6:
+        return m_v6.to_string();
+
+    default:
+    case none:
+        bassertfalse;
+        break;
+    };
+    return std::string();
+}
+
+IPEndpoint::operator std::string () const
+{
+    return to_string();
+}
+
+//------------------------------------------------------------------------------
+
 namespace parse
 {
 
@@ -104,7 +455,7 @@ std::istream& operator>> (std::istream &is, IPEndpoint::V4& addr)
 /** Parse an IPEndpoint.
     @note Currently only IPv4 addresses are supported.
 */
-inline std::istream& operator>> (std::istream &is, IPEndpoint& ep)
+std::istream& operator>> (std::istream &is, IPEndpoint& ep)
 {
     IPEndpoint::V4 v4;
     is >> v4;
