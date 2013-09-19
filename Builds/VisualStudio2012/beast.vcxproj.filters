@@ -852,9 +852,6 @@
     <ClInclude Include="..\..\beast\mpl\AddConst.h">
       <Filter>beast\mpl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\mpl.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\mpl\PointerToOther.h">
       <Filter>beast\mpl</Filter>
     </ClInclude>
@@ -1032,9 +1029,6 @@
     <ClInclude Include="..\..\modules\beast_core\memory\SharedFunction.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\net.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\net\IPEndpoint.h">
       <Filter>beast\net</Filter>
     </ClInclude>
@@ -1042,6 +1036,12 @@
       <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\CStdInt.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\xmpl.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\xnet.h">
       <Filter>beast</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1565,7 +1565,7 @@
     <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
       <Filter>beast\net\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\net\net.cpp">
+    <ClCompile Include="..\..\beast\net\xnet.cpp">
       <Filter>beast\net</Filter>
     </ClCompile>
   </ItemGroup>
