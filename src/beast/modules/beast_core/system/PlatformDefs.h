@@ -128,21 +128,6 @@
 
 //------------------------------------------------------------------------------
 
-#ifndef DOXYGEN
-namespace beast
-{
-template <bool b> struct BeastStaticAssert;
-template <> struct BeastStaticAssert <true> { static void dummy() {} };
-}
-#endif
-
-/** A compile-time assertion macro.
-    If the expression parameter is false, the macro will cause a compile error. (The actual error
-    message that the compiler generates may be completely bizarre and seem to have no relation to
-    the place where you put the static_assert though!)
-*/
-#define static_bassert(expression)      beast::BeastStaticAssert<expression>::dummy();
-
 /** This macro can be added to class definitions to disable the use of new/delete to
     allocate the object on the heap, forcing it to only be used as a stack or member variable.
 */

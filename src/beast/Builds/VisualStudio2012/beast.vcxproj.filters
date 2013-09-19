@@ -195,6 +195,12 @@
     <Filter Include="beast\net\impl">
       <UniqueIdentifier>{93670bc9-a748-42bd-8118-8de30c468b16}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\type_traits">
+      <UniqueIdentifier>{85158eb2-9340-4b3d-a136-f7631c7f1b7c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\utility">
+      <UniqueIdentifier>{56d34c67-7027-44ba-9f09-4591ce4afb36}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1042,6 +1048,27 @@
       <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Net.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\TypeTraits.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\type_traits\IsSigned.h">
+      <Filter>beast\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\type_traits\IntegralConstant.h">
+      <Filter>beast\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\type_traits\IsIntegral.h">
+      <Filter>beast\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\type_traits\RemoveSigned.h">
+      <Filter>beast\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\utility\EnableIf.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\StaticAssert.h">
       <Filter>beast</Filter>
     </ClInclude>
   </ItemGroup>
