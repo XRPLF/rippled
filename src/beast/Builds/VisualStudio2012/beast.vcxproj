@@ -73,7 +73,7 @@
     <ClInclude Include="..\..\beast\CStdInt.h" />
     <ClInclude Include="..\..\beast\intrusive\ForwardList.h" />
     <ClInclude Include="..\..\beast\intrusive\PointerTraits.h" />
-    <ClInclude Include="..\..\beast\mpl.h" />
+    <ClInclude Include="..\..\beast\xmpl.h" />
     <ClInclude Include="..\..\beast\mpl\AddConst.h" />
     <ClInclude Include="..\..\beast\mpl\IfCond.h" />
     <ClInclude Include="..\..\beast\mpl\PointerToOther.h" />
@@ -81,7 +81,7 @@
     <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveReference.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h" />
-    <ClInclude Include="..\..\beast\net.h" />
+    <ClInclude Include="..\..\beast\xnet.h" />
     <ClInclude Include="..\..\beast\net\IPEndpoint.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandler.h" />
@@ -360,7 +360,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\beast\net\net.cpp">
+    <ClCompile Include="..\..\beast\net\xnet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
