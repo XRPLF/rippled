@@ -70,10 +70,12 @@ public:
         if (threadSafe == 0)
             Throw(Error().fail(__FILE__, __LINE__, Error::assertFailed));
 
+#if 0
         int result = sqlite3_config(SQLITE_CONFIG_MULTITHREAD);
 
         if (result != SQLITE_OK)
             Throw(Error().fail(__FILE__, __LINE__, Error::assertFailed));
+#endif
 
         sqlite3_initialize();
     }
