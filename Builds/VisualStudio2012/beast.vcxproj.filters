@@ -201,6 +201,9 @@
     <Filter Include="beast\utility">
       <UniqueIdentifier>{56d34c67-7027-44ba-9f09-4591ce4afb36}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\utility\impl">
+      <UniqueIdentifier>{775ab0d6-aa5f-43d7-ab3b-3c01652a9ef1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1020,9 +1023,6 @@
     <ClInclude Include="..\..\modules\beast_core\memory\StaticObject.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\Journal.h">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedInteger.h">
       <Filter>beast_crypto\math</Filter>
     </ClInclude>
@@ -1070,6 +1070,15 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\StaticAssert.h">
       <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\utility\Journal.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\Utility.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\IsCallPossible.h">
+      <Filter>beast\mpl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1577,9 +1586,6 @@
     <ClCompile Include="..\..\modules\beast_core\diagnostic\Assert.cpp">
       <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\Journal.cpp">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_crypto\math\UnsignedInteger.cpp">
       <Filter>beast_crypto\math</Filter>
     </ClCompile>
@@ -1594,6 +1600,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\net\Net.cpp">
       <Filter>beast\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\Utility.cpp">
+      <Filter>beast\utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\Journal.cpp">
+      <Filter>beast\utility\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

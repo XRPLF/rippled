@@ -22,6 +22,7 @@
 
 #include "mpl/AddConst.h"
 #include "mpl/IfCond.h"
+#include "mpl/IsCallPossible.h"
 #include "mpl/PointerToOther.h"
 #include "mpl/RemoveConst.h"
 #include "mpl/RemoveConstVolatile.h"

@@ -17,8 +17,13 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_JOURNAL_H_INCLUDED
-#define BEAST_CORE_JOURNAL_H_INCLUDED
+#ifndef BEAST_UTILITY_JOURNAL_H_INCLUDED
+#define BEAST_UTILITY_JOURNAL_H_INCLUDED
+
+#include <sstream>
+
+namespace beast
+{
 
 /** A generic endpoint for log messages. */
 class Journal
@@ -157,5 +162,7 @@ public:
 private:
     Journal& operator= (Journal const& other); // disallowed
 };
+
+}
 
 #endif

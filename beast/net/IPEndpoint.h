@@ -24,6 +24,7 @@
 #include <istream>
 #include <ostream>
 
+#include "../CStdInt.h"
 #include "../mpl/IfCond.h"
 
 namespace beast

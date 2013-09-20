@@ -17,32 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UTILITY_ENABLEIF_H_INCLUDED
-#define BEAST_UTILITY_ENABLEIF_H_INCLUDED
+#include "BeastConfig.h"
 
-#include "../type_traits/IntegralConstant.h"
+#include "../../modules/beast_core/beast_core.h"
 
-namespace beast
-{
-
-template <bool Enable, class T = void>
-struct EnableIfBool : TrueType { typedef T type; };
-
-template <class T>
-struct EnableIfBool <false, T> : FalseType { };
-
-template <class Cond, class T = void>
-struct EnableIf : public EnableIfBool <Cond::value, T> { };
-
-template <bool Enable, class T = void>
-struct DisableIfBool : FalseType { typedef T type; };
-
-template <class T>
-struct DisableIfBool <true, T> { };
-
-template <class Cond, class T = void>
-struct DisableIf : public DisableIfBool <Cond::value, T> { };
-
-}
-
-#endif
+#include "impl/Journal.cpp"

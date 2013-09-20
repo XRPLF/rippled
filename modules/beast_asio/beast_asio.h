@@ -53,6 +53,9 @@
 # define BEAST_SOCKET_VIRTUAL
 #endif
 
+#include "../../beast/MPL.h"
+#include "../../beast/Utility.h"
+
 namespace beast
 {
 
