@@ -1095,6 +1095,9 @@
     <ClInclude Include="..\..\beast\Uncopyable.h">
       <Filter>beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPRequest.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1621,6 +1624,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\impl\Journal.cpp">
       <Filter>beast\utility\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPRequest.cpp">
+      <Filter>beast_asio\http</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

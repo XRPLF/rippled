@@ -82,6 +82,7 @@ namespace beast
 #   include "http/HTTPField.h"
 #   include "http/HTTPHeaders.h"
 #  include "http/HTTPMessage.h"
+# include "http/HTTPRequest.h"
 # include "http/HTTPResponse.h"
 # include "http/HTTPParser.h"
 # include "http/UniformResourceLocator.h"
