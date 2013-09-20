@@ -8,7 +8,7 @@
 
 #include "ripple_sophia.h"
 
-//#if RIPPLE_SOPHIA_AVAILBLE
+#if RIPPLE_SOPHIA_AVAILABLE
 
 #include "../sophia/db/cat.c"
 #include "../sophia/db/crc.c"
@@ -23,4 +23,4 @@
 #include "../sophia/db/sp.c"
 #include "../sophia/db/util.c"
 
-//#endif
+#endif

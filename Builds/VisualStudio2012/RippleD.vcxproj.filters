@@ -921,7 +921,10 @@
     <ClCompile Include="..\..\src\ripple_net\basics\AsyncService.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sophia\ripple_sophia.cpp">
+    <ClCompile Include="..\..\src\ripple_core\node\SophiaBackendFactory.cpp">
+      <Filter>[1] Ripple\ripple_core\node</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sophia\ripple_sophia.c">
       <Filter>[2] Ripple %28New%29\sophia</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1829,6 +1832,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\sophia\ripple_sophia.h">
       <Filter>[2] Ripple %28New%29\sophia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\node\SophiaBackendFactory.h">
+      <Filter>[1] Ripple\ripple_core\node</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

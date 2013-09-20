@@ -4,9 +4,12 @@
 */
 //==============================================================================
 
+#if RIPPLE_SOPHIA_AVAILABLE
+
 class SophiaBackendFactory::Backend
     : public NodeStore::Backend
-    , LeakChecked <SophiaBackendFactory::Backend>
+    , public NodeStore::BatchWriter::Callback
+    , public LeakChecked <SophiaBackendFactory::Backend>
 {
 public:
     typedef RecycledObjectPool <std::string> StringPool;
@@ -21,6 +24,7 @@ public:
              NodeStore::Scheduler& scheduler)
         : m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
+        , m_batch (*this, scheduler)
         , m_name (keyValues ["path"].toStdString ())
         , m_env (nullptr)
         , m_db (nullptr)
@@ -97,28 +101,29 @@ public:
 
     void store (NodeObject::ref object)
     {
-        EncodedBlob::Pool::ScopedItem item (m_blobPool);
-        EncodedBlob& encoded (item.getObject ());
-        encoded.prepare (object);
-
-        int rv (sp_set (m_db,
-            encoded.getKey(), m_keyBytes,
-                encoded.getData(), encoded.getSize()));
-
-        if (rv != 0)
-        {
-            String s;
-            s << "Sophia failed with error code " << rv;
-            Throw (std::runtime_error (s.toStdString()), __FILE__, __LINE__);
-        }
+        m_batch.store (object);;
     }
 
     void storeBatch (Batch const& batch)
     {
+        EncodedBlob::Pool::ScopedItem item (m_blobPool);
+
         for (NodeStore::Batch::const_iterator iter (batch.begin());
             iter != batch.end(); ++iter)
         {
-            store (*iter);
+            EncodedBlob& encoded (item.getObject ());
+            encoded.prepare (*iter);
+
+            int rv (sp_set (m_db,
+                encoded.getKey(), m_keyBytes,
+                    encoded.getData(), encoded.getSize()));
+
+            if (rv != 0)
+            {
+                String s;
+                s << "Sophia failed with error code " << rv;
+                Throw (std::runtime_error (s.toStdString()), __FILE__, __LINE__);
+            }
         }
     }
 
@@ -128,10 +133,22 @@ public:
 
     int getWriteLoad ()
     {
-        return 0;
+        return m_batch.getWriteLoad ();
     }
 
     void stopAsync ()
+    {
+        m_batch.stopAsync ();
+    }
+
+    //--------------------------------------------------------------------------
+
+    void writeBatch (NodeStore::Batch const& batch)
+    {
+        storeBatch (batch);
+    }
+
+    void writeStopped ()
     {
         m_scheduler.scheduledTasksStopped ();
     }
@@ -139,6 +156,7 @@ public:
 private:
     size_t const m_keyBytes;
     NodeStore::Scheduler& m_scheduler;
+    NodeStore::BatchWriter m_batch;
     StringPool m_stringPool;
     NodeStore::EncodedBlob::Pool m_blobPool;
     std::string m_name;
@@ -180,3 +198,4 @@ NodeStore::Backend* SophiaBackendFactory::createInstance (
 
 //------------------------------------------------------------------------------
 
+#endif
