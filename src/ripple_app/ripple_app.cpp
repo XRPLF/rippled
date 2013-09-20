@@ -30,6 +30,9 @@ namespace ripple
 // Application
 //
 
+# include "main/NodeStoreSchedulerService.h"
+#include "main/NodeStoreSchedulerService.cpp"
+
 # include "main/IoServicePool.h"
 #include "main/IoServicePool.cpp"
 
@@ -66,8 +69,8 @@ namespace ripple
 // RippleMain
 //
 # include "main/RippleMain.h"
-# include "node/SqliteBackendFactory.h"
-#include "node/SqliteBackendFactory.cpp"
+# include "node/SqliteFactory.h"
+#include "node/SqliteFactory.cpp"
 #include "main/RippleMain.cpp"
 
 }

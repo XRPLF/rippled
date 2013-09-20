@@ -269,12 +269,12 @@ int RippleMain::run (int argc, char const* const* argv)
     // NOTE: These must be added before the
     //       Application object is created.
     //
-    NodeStore::addAvailableBackends ();
+    NodeStore::Database::addAvailableBackends ();
 
-    // VFALCO NOTE SqliteBackendFactory is here because it has
+    // VFALCO NOTE SqliteFactory is here because it has
     //             dependencies like SqliteDatabase and DatabaseCon
     //
-    NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
+    NodeStore::Database::addFactory (SqliteFactory::getInstance ());
 
     if (! RandomNumbers::getInstance ().initialize ())
     {

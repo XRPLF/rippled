@@ -263,22 +263,6 @@ private:
     WaitableEvent m_stoppedEvent;
 };
 
-//------------------------------------------------------------------------------
-
-/** A root Service with a short scope.
-    This Service takes care of stopping automatically, no additional
-    action is required.
-*/
-class ScopedService : public Service
-{
-public:
-    explicit ScopedService (char const* name);
-    ~ScopedService ();
-
-    void onServiceStop ();
-    void onServiceChildrenStopped ();
-};
-
 }
 
 #endif

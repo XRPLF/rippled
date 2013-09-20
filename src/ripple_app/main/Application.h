@@ -8,6 +8,7 @@
 #define RIPPLE_APP_APPLICATION_H_INCLUDED
 
 namespace Validators { class Manager; }
+namespace NodeStore { class Database; }
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class IFeatures;
@@ -16,8 +17,6 @@ class IHashRouter;
 class ILoadFeeTrack;
 class Peers;
 class UniqueNodeList;
-
-class NodeStore;
 class JobQueue;
 class InboundLedgers;
 class LedgerMaster;
@@ -90,7 +89,7 @@ public:
     virtual ProofOfWorkFactory&     getProofOfWorkFactory () = 0;
     virtual UniqueNodeList&         getUNL () = 0;
     virtual Validations&            getValidations () = 0;
-    virtual NodeStore&              getNodeStore () = 0;
+    virtual NodeStore::Database&    getNodeStore () = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual InboundLedgers&         getInboundLedgers () = 0;
     virtual LedgerMaster&           getLedgerMaster () = 0;

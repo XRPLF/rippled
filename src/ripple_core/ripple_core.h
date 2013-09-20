@@ -14,6 +14,10 @@
 #include "../ripple_basics/ripple_basics.h"
 #include "../ripple_data/ripple_data.h"
 
+
+
+#include "nodestore/NodeStore.h"
+
 namespace ripple
 {
 
@@ -28,9 +32,6 @@ namespace ripple
 #include "functional/JobQueue.h"
 # include "functional/LoadType.h"
 #include "functional/LoadSource.h"
-
-#include "node/NodeObject.h"
-#include "node/NodeStore.h"
 
 #include "peerfinder/PeerFinder.h"
 

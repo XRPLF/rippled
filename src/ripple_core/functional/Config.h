@@ -288,7 +288,7 @@ public:
         This is 1 or more strings of the form <key>=<value>
         The 'type' and 'path' keys are required, see rippled-example.cfg
 
-        @see NodeStore
+        @see Database
     */
     StringPairArray nodeDatabase;
 
@@ -300,7 +300,7 @@ public:
 
         The format is the same as that for @ref nodeDatabase
 
-        @see NodeStore
+        @see Database
     */
     StringPairArray ephemeralNodeDatabase;
 

@@ -181,25 +181,4 @@ void Service::stopRecursive (Journal::Stream stream)
     m_stopped = true;
 }
 
-//------------------------------------------------------------------------------
-
-ScopedService::ScopedService (char const* name)
-    : Service (name)
-{
-}
-
-ScopedService::~ScopedService ()
-{
-    serviceStop();
-}
-
-void ScopedService::onServiceStop ()
-{
-    serviceStopped();
-}
-
-void ScopedService::onServiceChildrenStopped ()
-{
-}
-
 }

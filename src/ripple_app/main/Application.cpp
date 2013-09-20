@@ -29,7 +29,6 @@ template <> char const* LogPartition::getPartitionName <NetworkOPsLog> () { retu
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp
     : public Application
-    , public NodeStore::Scheduler
     , public Service
     , public DeadlineTimer::Listener
     , LeakChecked <ApplicationImp>
@@ -80,8 +79,10 @@ public:
 
         , m_rpcServerHandler (*m_networkOPs) // passive object, not a Service
 
-        , m_nodeStore (NodeStore::New ("NodeStore.main", *m_jobQueue,
-            getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase, *this))
+        , m_nodeStoreScheduler (*m_jobQueue, *m_jobQueue)
+
+        , m_nodeStore (NodeStore::Database::New ("NodeStore.main", m_nodeStoreScheduler,
+            getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
 
         , m_sntpClient (SNTPClient::New (*this))
 
@@ -158,27 +159,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    static void callScheduledTask (NodeStore::Scheduler::Task& task, Job&)
-    {
-        task.performScheduledTask ();
-    }
-
-    void scheduleTask (NodeStore::Scheduler::Task& task)
-    {
-        getJobQueue ().addJob (
-            jtWRITE,
-            "NodeObject::store",
-            BIND_TYPE (&ApplicationImp::callScheduledTask, boost::ref(task), P_1));
-    }
-
-    void scheduledTasksStopped ()
-    {
-        // VFALCO NOTE This is a bit of a hack
-        getNodeStore().serviceStopped();
-    }
-
-    //--------------------------------------------------------------------------
-
     LocalCredentials& getLocalCredentials ()
     {
         return m_localCredentials ;
@@ -214,7 +194,7 @@ public:
         return m_tempNodeCache;
     }
 
-    NodeStore& getNodeStore ()
+    NodeStore::Database& getNodeStore ()
     {
         return *m_nodeStore;
     }
@@ -635,9 +615,6 @@ public:
 
         mShutdown = true;
 
-        // This stalls for a long time
-        //m_nodeStore = nullptr;
-
         mValidations->flush ();
         mShutdown = false;
 
@@ -750,7 +727,7 @@ public:
             &TransactionMaster::sweep, &m_txMaster));
 
         logTimedCall (m_journal.warning, "NodeStore::sweep", __FILE__, __LINE__, boost::bind (
-            &NodeStore::sweep, m_nodeStore.get ()));
+            &NodeStore::Database::sweep, m_nodeStore.get ()));
 
         logTimedCall (m_journal.warning, "LedgerMaster::sweep", __FILE__, __LINE__, boost::bind (
             &LedgerMaster::sweep, &m_ledgerMaster));
@@ -806,7 +783,8 @@ private:
     ScopedPointer <NetworkOPs> m_networkOPs;
     ScopedPointer <UniqueNodeList> m_deprecatedUNL;
     RPCServerHandler m_rpcServerHandler;
-    ScopedPointer <NodeStore> m_nodeStore;
+    NodeStoreSchedulerService m_nodeStoreScheduler;
+    ScopedPointer <NodeStore::Database> m_nodeStore;
     ScopedPointer <SNTPClient> m_sntpClient;
     InboundLedgers m_inboundLedgers;
     ScopedPointer <TxQueue> m_txQueue;
@@ -1138,9 +1116,9 @@ void ApplicationImp::updateTables ()
 
     if (getConfig ().importNodeDatabase.size () > 0)
     {
-        ScopedService service ("import service");
-        ScopedPointer <NodeStore> source (NodeStore::New (
-            "NodeStore.import", service, getConfig ().importNodeDatabase));
+        NodeStore::DummyScheduler scheduler;
+        ScopedPointer <NodeStore::Database> source (NodeStore::Database::New (
+            "NodeStore.import", scheduler, getConfig ().importNodeDatabase));
 
         WriteLog (lsWARNING, NodeObject) <<
             "Node import from '" << source->getName () << "' to '"
