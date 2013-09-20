@@ -610,6 +610,10 @@ void NodeStore::addAvailableBackends ()
     NodeStore::addBackendFactory (MdbBackendFactory::getInstance ());
 #endif
 
+#if RIPPLE_SOPHIA_AVAILABLE
+    NodeStore::addBackendFactory (SophiaBackendFactory::getInstance ());
+#endif
+
     NodeStore::addBackendFactory (KeyvaDBBackendFactory::getInstance ());
 }
 
@@ -957,6 +961,10 @@ public:
         #if RIPPLE_MDB_AVAILABLE
         testBackend ("mdb", seedValue);
         #endif
+
+        #if RIPPLE_SOPHIA_AVAILABLE
+        testBackend ("sophia", seedValue);
+        #endif
     }
 };
 
@@ -1062,6 +1070,10 @@ public:
 
     #if RIPPLE_MDB_AVAILABLE
         testBackend ("mdb", seedValue);
+    #endif
+
+    #if RIPPLE_SOPHIA_AVAILABLE
+        testBackend ("sophia", seedValue);
     #endif
 
         testBackend ("sqlite", seedValue);
@@ -1246,6 +1258,10 @@ public:
     #if RIPPLE_MDB_AVAILABLE
         testNodeStore ("mdb", useEphemeralDatabase, true, seedValue);
     #endif
+
+    #if RIPPLE_SOPHIA_AVAILABLE
+        testNodeStore ("sophia", useEphemeralDatabase, true, seedValue);
+    #endif
     }
 
     //--------------------------------------------------------------------------
@@ -1260,6 +1276,10 @@ public:
 
     #if RIPPLE_MDB_AVAILABLE
         //testImport ("mdb", "mdb", seedValue);
+    #endif
+
+    #if RIPPLE_SOPHIA_AVAILABLE
+        //testImport ("sophia", "sophia", seedValue);
     #endif
 
         testImport ("sqlite", "sqlite", seedValue);

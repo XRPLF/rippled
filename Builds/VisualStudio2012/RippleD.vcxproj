@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\build\proto\ripple.pb.cc" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beast.cpp" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c" />
+    <ClCompile Include="..\..\src\ripple\sophia\ripple_sophia.cpp" />
     <ClCompile Include="..\..\src\ripple\testoverlay\impl\TestOverlay.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1430,6 +1431,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\ripple\sophia\ripple_sophia.h" />
     <ClInclude Include="..\..\src\ripple\testoverlay\api\ConfigType.h" />
     <ClInclude Include="..\..\src\ripple\testoverlay\api\ConnectionType.h" />
     <ClInclude Include="..\..\src\ripple\testoverlay\api\InitPolicy.h" />

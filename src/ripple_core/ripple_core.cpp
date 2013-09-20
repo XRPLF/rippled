@@ -24,6 +24,7 @@
 #include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
 #include "../ripple_leveldb/ripple_leveldb.h"
 #include "../ripple_mdb/ripple_mdb.h"
+#include "../ripple/sophia/ripple_sophia.h"
 
 namespace ripple
 {
@@ -48,6 +49,8 @@ namespace ripple
 # include "node/NullBackendFactory.cpp"
 #  include "node/MdbBackendFactory.h"
 # include "node/MdbBackendFactory.cpp"
+#  include "node/SophiaBackendFactory.h"
+# include "node/SophiaBackendFactory.cpp"
 #include "node/NodeStore.cpp"
 #include "node/NodeObject.cpp"
 

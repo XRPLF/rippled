@@ -175,6 +175,9 @@
     <Filter Include="[1] Ripple\ripple_websocket\autosocket">
       <UniqueIdentifier>{99ac4d07-04a7-4ce3-96c7-b8ea578f1a61}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[2] Ripple %28New%29\sophia">
+      <UniqueIdentifier>{29b20c8e-267a-487a-9086-fb0c85a922f6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -917,6 +920,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\basics\AsyncService.cpp">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sophia\ripple_sophia.cpp">
+      <Filter>[2] Ripple %28New%29\sophia</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1820,6 +1826,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\AsyncService.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sophia\ripple_sophia.h">
+      <Filter>[2] Ripple %28New%29\sophia</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
