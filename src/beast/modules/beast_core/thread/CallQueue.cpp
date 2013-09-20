@@ -297,7 +297,7 @@ public:
         testThreads (64);
     }
 
-    CallQueueTests () : UnitTest ("CallQueue", "beast")
+    CallQueueTests () : UnitTest ("CallQueue", "beast", runManual)
     {
     }
 };
