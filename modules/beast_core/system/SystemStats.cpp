@@ -40,22 +40,6 @@ String SystemStats::getBeastVersion()
                 "." BEAST_STRINGIFY(BEAST_BUILDNUMBER);
 }
 
-#if BEAST_ANDROID && ! defined (BEAST_DISABLE_BEAST_VERSION_PRINTING)
- #define BEAST_DISABLE_BEAST_VERSION_PRINTING 1
-#endif
-
-#if BEAST_DEBUG && ! BEAST_DISABLE_BEAST_VERSION_PRINTING
- struct BeastVersionPrinter
- {
-     BeastVersionPrinter()
-     {
-         DBG (SystemStats::getBeastVersion());
-     }
- };
-
- static BeastVersionPrinter beastVersionPrinter;
-#endif
-
 //==============================================================================
 struct CPUInformation
 {

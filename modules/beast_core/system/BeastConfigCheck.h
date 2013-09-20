@@ -73,10 +73,6 @@
 
 //------------------------------------------------------------------------------
 
-#ifndef BEAST_DISABLE_BEAST_VERSION_PRINTING
-#define BEAST_DISABLE_BEAST_VERSION_PRINTING 0
-#endif
-
 #ifndef BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES
 #define BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES 0
 #endif
