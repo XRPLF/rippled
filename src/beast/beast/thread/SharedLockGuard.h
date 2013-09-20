@@ -17,54 +17,36 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UNCOPYABLE_H_INCLUDED
-#define BEAST_UNCOPYABLE_H_INCLUDED
+#ifndef BEAST_THREAD_SHAREDLOCKGUARD_H_INCLUDED
+#define BEAST_THREAD_SHAREDLOCKGUARD_H_INCLUDED
 
-/** Prevent copy construction and assignment.
+#include "../Uncopyable.h"
 
-    This is used to suppress warnings and prevent unsafe operations on
-    objects which cannot be passed by value. Ideas based on Boost.
-
-    For example, instead of
-
-    @code
-
-    class MyClass
-    {
-    public:
-        //...
-
-    private:
-        MyClass (const MyClass&);
-        MyClass& operator= (const MyClass&);
-    };
-    
-    @endcode
-
-    ..you can just write:
-
-    @code
-
-    class MyClass : public Uncopyable
-    {
-    public:
-        //...
-    };
-    
-    @endcode
-
-    @note The derivation should be public or else child classes which
-          also derive from Uncopyable may not compile.
-*/
-class Uncopyable
+namespace beast
 {
-protected:
-    inline Uncopyable () { }
-    inline ~Uncopyable () { }
+
+/** A scoped container that acquires a shared lock. */   
+template <typename Mutex>
+class SharedLockGuard : public Uncopyable
+{
+public:
+    typedef Mutex MutexType;
+
+    explicit SharedLockGuard (Mutex const& mutex)
+        : m_mutex (mutex)
+    {
+        m_mutex.lock_shared();
+    }
+
+    ~SharedLockGuard ()
+    {
+        m_mutex.unlock_shared();
+    }
 
 private:
-    Uncopyable (Uncopyable const&);
-    Uncopyable const& operator= (Uncopyable const&);
+    Mutex const& m_mutex;
 };
+
+}
 
 #endif

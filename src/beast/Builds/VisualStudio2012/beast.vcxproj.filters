@@ -204,6 +204,9 @@
     <Filter Include="beast\utility\impl">
       <UniqueIdentifier>{775ab0d6-aa5f-43d7-ab3b-3c01652a9ef1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\thread">
+      <UniqueIdentifier>{da8084c0-491b-4eb0-b750-97182a9deed4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -576,9 +579,6 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\Throw.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\Uncopyable.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\maths\Interval.h">
       <Filter>beast_core\maths</Filter>
     </ClInclude>
@@ -697,9 +697,6 @@
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\ReadWriteMutex.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\SharedData.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\MutexTraits.h">
@@ -1079,6 +1076,24 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\IsCallPossible.h">
       <Filter>beast\mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\Thread.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\thread\LockGuard.h">
+      <Filter>beast\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\thread\SharedLockGuard.h">
+      <Filter>beast\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\thread\SharedData.h">
+      <Filter>beast\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\thread\SharedMutexAdapter.h">
+      <Filter>beast\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\Uncopyable.h">
+      <Filter>beast</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

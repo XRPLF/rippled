@@ -53,7 +53,7 @@ public:
 
         R operator() ()
         {
-            return m_f ();
+            return (m_f)();
         }
 
     private:
@@ -136,7 +136,7 @@ public:
 
         R operator() (P1 p1)
         {
-            return m_f (p1);
+            return (m_f)(p1);
         }
 
     private:
