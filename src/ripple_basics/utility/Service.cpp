@@ -18,7 +18,7 @@ Service::Service (char const* name, Service* parent)
     : m_name (name)
     , m_root (parent != nullptr)
     , m_child (this)
-     , m_calledServiceStop (false)
+    , m_calledServiceStop (false)
     , m_stopped (false)
     , m_childrenStopped (false)
 {

@@ -14,8 +14,6 @@ public:
     IoServicePool (Service& parent, String const& name, int numberOfThreads);
     ~IoServicePool ();
 
-    void runAsync ();
-
     boost::asio::io_service& getService ();
     operator boost::asio::io_service& ();
 
@@ -32,7 +30,6 @@ private:
     boost::optional <boost::asio::io_service::work> m_work;
     OwnedArray <ServiceThread> m_threads;
     Atomic <int> m_threadsRunning;
-    bool m_running;
 };
 
 #endif

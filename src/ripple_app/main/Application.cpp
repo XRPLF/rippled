@@ -13,7 +13,7 @@ static bool volatile doShutdown = false;
 
 // VFALCO NOTE This is temporary, until I refactor LogPartition
 //            and LogJournal::get() to take a string
-//                  
+//
 class ApplicationLog;
 template <> char const* LogPartition::getPartitionName <ApplicationLog> () { return "Application"; }
 class ValidatorsLog;
@@ -122,6 +122,7 @@ public:
 
     ~ApplicationImp ()
     {
+        serviceStop();
         //stop ();
 
         // Why is this needed here?
@@ -633,7 +634,7 @@ public:
         m_sweepTimer.cancel();
 
         mShutdown = true;
-        
+
         // This stalls for a long time
         //m_nodeStore = nullptr;
 
@@ -649,12 +650,6 @@ public:
     void run ()
     {
         {
-            // VFALCO TODO The unit tests crash if we try to
-            //             run these threads in the IoService constructor
-            //             so this hack makes them start later.
-            //
-            m_mainIoPool.runAsync ();
-
             if (!getConfig ().RUN_STANDALONE)
             {
                 // VFALCO NOTE This seems unnecessary. If we properly refactor the load
@@ -722,7 +717,7 @@ public:
         //
         m_stop.signal();
     }
-    
+
     void onDeadlineTimer (DeadlineTimer& timer)
     {
         if (timer == m_sweepTimer)

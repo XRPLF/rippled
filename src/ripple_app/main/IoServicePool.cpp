@@ -15,13 +15,11 @@ public:
         , m_owner (owner)
         , m_service (service)
     {
-        //startThread ();
+        startThread ();
     }
 
     ~ServiceThread ()
     {
-        m_service.stop ();
-
         // block until thread exits
         stopThread ();
     }
@@ -50,7 +48,6 @@ IoServicePool::IoServicePool (Service& parent, String const& name, int numberOfT
     , m_name (name)
     , m_service (numberOfThreads)
     , m_work (boost::ref (m_service))
-    , m_running (false)
 {
     bassert (numberOfThreads > 0);
 
@@ -60,25 +57,13 @@ IoServicePool::IoServicePool (Service& parent, String const& name, int numberOfT
     {
         ++m_threadsRunning;
         m_threads.add (new ServiceThread (m_name, *this, m_service));
+        m_threads[i]->start ();
     }
 }
 
 IoServicePool::~IoServicePool ()
 {
-    // must have called runAsync()
-    bassert (m_running);
-
     // the dtor of m_threads will block until each thread exits.
-}
-
-void IoServicePool::runAsync ()
-{
-    // must not call twice
-    bassert (!m_running);
-    m_running = true;
-
-    for (int i = 0; i < m_threads.size (); ++i)
-        m_threads [i]->start ();
 }
 
 boost::asio::io_service& IoServicePool::getService ()

@@ -1077,7 +1077,9 @@ public:
         testBackend ("sophia", seedValue);
     #endif
 
+    /*
         testBackend ("sqlite", seedValue);
+    */
     }
 };
 
@@ -1114,8 +1116,8 @@ public:
         {
             ScopedService service ("test");
             ScopedPointer <NodeStore> src (NodeStore::New ("test", service, srcParams));
-
             storeBatch (*src, batch);
+            service.serviceStop();
         }
 
         NodeStore::Batch copy;
@@ -1141,6 +1143,8 @@ public:
 
             // Get the results of the import
             fetchCopyOfBatch (*dest, &copy, batch);
+
+            service.serviceStop();
         }
 
         // Canonicalize the source and destination batches
@@ -1204,6 +1208,8 @@ public:
                 fetchCopyOfBatch (*db, &copy, batch);
                 expect (areBatchesEqual (batch, copy), "Should be equal");
             }
+
+            service.serviceStop();
         }
 
         if (testPersistence)
@@ -1222,6 +1228,8 @@ public:
                 std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
                 std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
                 expect (areBatchesEqual (batch, copy), "Should be equal");
+
+                service.serviceStop();
             }
 
             if (useEphemeralDatabase)
@@ -1240,6 +1248,8 @@ public:
                 std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
                 std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
                 expect (areBatchesEqual (batch, copy), "Should be equal");
+
+                service.serviceStop();
             }
         }
     }
