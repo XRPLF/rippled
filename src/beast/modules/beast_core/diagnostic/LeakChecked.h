@@ -29,12 +29,12 @@ public:
     static void checkForLeaks ();
 
 protected:
-    class CounterBase : public LockFreeStack <CounterBase>::Node
+    class LeakCounterBase : public LockFreeStack <LeakCounterBase>::Node
     {
     public:
-        CounterBase ();
+        LeakCounterBase ();
 
-        virtual ~CounterBase ()
+        virtual ~LeakCounterBase ()
         {
         }
 
@@ -95,10 +95,10 @@ protected:
 private:
     // Singleton that maintains the count of this object
     //
-    class Counter : public CounterBase
+    class LeakCounter : public LeakCounterBase
     {
     public:
-        Counter () noexcept
+        LeakCounter () noexcept
         {
         }
 
@@ -123,9 +123,9 @@ private:
 
     // Retrieve the singleton for this object
     //
-    static Counter& getCounter () noexcept
+    static LeakCounter& getCounter () noexcept
     {
-        return StaticObject <Counter>::get();
+        return StaticObject <LeakCounter>::get();
     }
 };
 

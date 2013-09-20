@@ -20,10 +20,10 @@
 namespace detail
 {
 
-class LeakCheckedBase::CounterBase::Singleton
+class LeakCheckedBase::LeakCounterBase::Singleton
 {
 public:
-    void push_back (CounterBase* counter)
+    void push_back (LeakCounterBase* counter)
     {
         m_list.push_front (counter);
     }
@@ -32,7 +32,7 @@ public:
     {
         for (;;)
         {
-            CounterBase* const counter = m_list.pop_front ();
+            LeakCounterBase* const counter = m_list.pop_front ();
 
             if (!counter)
                 break;
@@ -51,17 +51,17 @@ public:
 private:
     friend class LeakCheckedBase;
 
-    LockFreeStack <CounterBase> m_list;
+    LockFreeStack <LeakCounterBase> m_list;
 };
 
 //------------------------------------------------------------------------------
 
-LeakCheckedBase::CounterBase::CounterBase ()
+LeakCheckedBase::LeakCounterBase::LeakCounterBase ()
 {
     Singleton::getInstance ().push_back (this);
 }
 
-void LeakCheckedBase::CounterBase::checkForLeaks ()
+void LeakCheckedBase::LeakCounterBase::checkForLeaks ()
 {
     // If there's a runtime error from this line, it means there's
     // an order of destruction problem between different translation units!
@@ -120,7 +120,7 @@ void LeakCheckedBase::reportDanglingPointer (char const*)
 
 void LeakCheckedBase::checkForLeaks ()
 {
-    CounterBase::Singleton::getInstance ().checkForLeaks ();
+    LeakCounterBase::Singleton::getInstance ().checkForLeaks ();
 }
 
 }
