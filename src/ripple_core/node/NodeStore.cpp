@@ -650,8 +650,8 @@ public:
     //
     enum
     {
-        maxPayloadBytes = 1000,
-        numObjectsToTest = 1000
+        maxPayloadBytes = 2000,
+        numObjectsToTest = 10000
     };
 
     // Shorthand type names
@@ -1068,10 +1068,11 @@ public:
         testBackend ("hyperleveldb", seedValue);
     #endif
 
+    /*
     #if RIPPLE_MDB_AVAILABLE
         testBackend ("mdb", seedValue);
     #endif
-
+    */
     #if RIPPLE_SOPHIA_AVAILABLE
         testBackend ("sophia", seedValue);
     #endif
