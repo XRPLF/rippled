@@ -3,12 +3,9 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's List: Changes day to day, descending priority
-- Finish up IPEndpoint
 - Fix and tidy up broken beast classes
 - Parse Validator line using cribbed code
 - Parse ContentBodyBuffer from HTTPResponse
-- General cleanup of the repository and projcet files
-
 - Look into using CMake
 - Validators should delay the application of newly downloaded lists from
   sources, to mitigate the effects of attacks. Unless there's no validators
@@ -17,19 +14,19 @@ Vinnie's List: Changes day to day, descending priority
   manually revisit sources, etc...
 - Clean up calculation of COnfig file location.
 - Remove TESTNET and all related code and settings.
-- Full review of config docs / settings for RPC/WS
 - Fix RPCDoor to respect config setting for [rpc_secure]
 - Remove addRpcSub, findRpcSub, and notify the appropriate partner(s)
 - Make RPCHandler/Server asynchronous
-- PeerFinder collaboration with Nikolaos
-- beast::Socket integration in Ripple
-- Configuration list for Jenkins
 
 David Features:
 - override config items from command line
 - change config via RPC, this is for debugging
 
 --------------------------------------------------------------------------------
+
+- IPv6 support in IPEndpoint
+
+- Configuration list for Jenkins
 
 - Fix all crash and leaks on exit
     Say there's a leak, a ledger that can never be accessed is locked in some
@@ -64,17 +61,11 @@ David Features:
   - Add UnhandledExceptionCatcher to beast
   - Return EXIT_FAILURE on unhandled exception
 
-- class TCPEndpoint and refactoring of IPv4/IPv6 endpoint treatment
-
 - Consolidate JSON code maybe use Beast
 
 - Deeply create directories specified in config settings
 
-- Finish unit tests and code for Validators
-
 - Refactor Section code into ConfigFile
-
-- Work on KeyvaDB
 
 - Supress useless gcc warnings
   http://stackoverflow.com/questions/3378560/how-to-disable-gcc-warnings-for-a-few-lines-of-code
@@ -94,8 +85,6 @@ David Features:
 
 - use beast DeadlineTimer for sweep in Application
 
-- Make SNTP Client have its own io_service
-
 - Get rid of 'ref' typedefs that really mean const&
 
 - Use secp256k1 from beast
@@ -106,11 +95,7 @@ David Features:
   message directly to the UnitTest object. Then update the JUnit XML output
   routines to also write the auxiliary messages.
 
-* Take away the "I" prefix from abstract interface classes, in both the class
-  name and the file name. It is messing up sorting in the IDE. Use "Imp" or
-  suffix for implementations.
-
-* Restyle all the macros in ripple_ConfigSection.h
+* Restyle all the macros in ConfigSection.h
 
 - Move src/protobuf to Subtrees and deal with protobuf_core.cpp
 
@@ -133,10 +118,6 @@ David Features:
 
 - Rename RPCHandler to CallHandler
 
-- See if UniqueNodeList is really used, and if its not used remove it. If
-  only some small part of it is used, then delete the rest. David says
-  that it is broken anyway.
-
 - Profile/VTune the application to identify hot spots
   * Determine why rippled has a slow startup on Windows
   * Improve the performance when running all unit tests on Windows
@@ -150,11 +131,6 @@ David Features:
 - Rewrite Sustain to use Beast and work on Windows as well
   * Do not enable watchdog process if a debugger is attached
 
-- Make separate LevelDB VS2012 project for source browsing, leave ony the unity
-  .cpp in the main RippleD project
-
-- Add LevelDB unity .cpp to the LevelDB fork
-
 - Make sure the leak detector output appears on Linux and FreeBSD debug builds.
 
 - Create SharedData <LoadState>, move all load related state variables currently
@@ -166,18 +142,10 @@ David Features:
 
 - Rename LedgerMaster to Ledgers, create ILedgers interface.
 
-- Restructure the ripple sources to have this directory structure:
-  /Source/ripple/ripple_core/ripple_core.h
-  /...
-  /Source/Subtrees/... ?
-  PROBLEM: Where to put BeastConfig.h ?
-
 - Figure out where previous ledgers go after a call to LedgerMaster::pushLedger()
   and see if it is possible to clean up the leaks on exit.
 
 - Replace all NULL with nullptr
-
-- Add ICore interface (incremental replacement for Application)
 
 - Make TxFormats a member of ICore instead of a singleton.
   PROBLEM: STObject derived classes like STInt16 make direct use of the
