@@ -205,7 +205,7 @@ bool TrackedMutex::Agent::getLockedList (Array <Record>& output)
         {
             TrackedMutex const& mutex = *iter;
             {
-                TrackedMutex::SharedState::ReadAccess state (mutex.m_state);
+                TrackedMutex::SharedState::ConstAccess state (mutex.m_state);
                 output.add (state->owner);
             }
         }
@@ -237,7 +237,7 @@ String TrackedMutex::getName () const noexcept
 TrackedMutex::Record TrackedMutex::getOwnerRecord () const noexcept
 {
     {
-        SharedState::ReadAccess state (m_state);
+        SharedState::ConstAccess state (m_state);
         return state->owner;
     }
 }
@@ -245,7 +245,7 @@ TrackedMutex::Record TrackedMutex::getOwnerRecord () const noexcept
 TrackedMutex::Agent TrackedMutex::getOwnerAgent () const noexcept
 {
     {
-        SharedState::ReadAccess state (m_state);
+        SharedState::ConstAccess state (m_state);
         if (state->thread != nullptr)
             return Agent (state->thread);
     }
@@ -298,7 +298,7 @@ void TrackedMutex::generateGlobalBlockedReport (StringArray& report)
                 {
                     String s;
                     TrackedMutex const& mutex (*iter);
-                    TrackedMutex::SharedState::ReadAccess state (mutex.m_state);
+                    TrackedMutex::SharedState::ConstAccess state (mutex.m_state);
                     s << "      " << mutex.getName () <<
                          " from " << state->owner.getSourceLocation ();
                     report.add (s);
@@ -372,7 +372,7 @@ void TrackedMutex::acquired (char const* fileName, int lineNumber) const noexcep
 
             {
                 // Take a state lock.
-                SharedState::WriteAccess state (m_state);
+                SharedState::Access state (m_state);
 
                 // Set the mutex ownership record
                 state->owner = Record (getName (), threadName, sourceLocation);
@@ -428,7 +428,7 @@ void TrackedMutex::release () const noexcept
 
         {
             // Take the mutex' state lock
-            SharedState::WriteAccess state (m_state);
+            SharedState::Access state (m_state);
 
             // Clear the mutex ownership record
             state->owner = Record ();

@@ -85,11 +85,17 @@
     <ClInclude Include="..\..\beast\Net.h" />
     <ClInclude Include="..\..\beast\net\IPEndpoint.h" />
     <ClInclude Include="..\..\beast\StaticAssert.h" />
+    <ClInclude Include="..\..\beast\Thread.h" />
+    <ClInclude Include="..\..\beast\thread\LockGuard.h" />
+    <ClInclude Include="..\..\beast\thread\SharedData.h" />
+    <ClInclude Include="..\..\beast\thread\SharedLockGuard.h" />
+    <ClInclude Include="..\..\beast\thread\SharedMutexAdapter.h" />
     <ClInclude Include="..\..\beast\TypeTraits.h" />
     <ClInclude Include="..\..\beast\type_traits\IntegralConstant.h" />
     <ClInclude Include="..\..\beast\type_traits\IsIntegral.h" />
     <ClInclude Include="..\..\beast\type_traits\IsSigned.h" />
     <ClInclude Include="..\..\beast\type_traits\RemoveSigned.h" />
+    <ClInclude Include="..\..\beast\Uncopyable.h" />
     <ClInclude Include="..\..\beast\Utility.h" />
     <ClInclude Include="..\..\beast\utility\EnableIf.h" />
     <ClInclude Include="..\..\beast\utility\Journal.h" />
@@ -224,7 +230,6 @@
     <ClInclude Include="..\..\modules\beast_core\memory\SharedObject.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\ScopedPointer.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\SharedSingleton.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\Uncopyable.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\WeakReference.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\SharedPtr.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\StaticObject.h" />
@@ -286,7 +291,6 @@
     <ClInclude Include="..\..\modules\beast_core\threads\ScopedLock.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\ScopedReadLock.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\ScopedWriteLock.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\SharedData.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\SpinDelay.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\SpinLock.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\Thread.h" />

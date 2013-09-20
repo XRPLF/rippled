@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_H_INCLUDED
-#define BEAST_THREAD_H_INCLUDED
+#ifndef BEAST_JUCE_THREAD_H_INCLUDED
+#define BEAST_JUCE_THREAD_H_INCLUDED
 
 //==============================================================================
 /**

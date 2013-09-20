@@ -78,6 +78,7 @@
 
 #include "../../beast/CStdInt.h"
 #include "../../beast/StaticAssert.h"
+#include "../../beast/Uncopyable.h"
 
 namespace beast
 {
@@ -94,7 +95,6 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 // Add new includes to the bottom.
 
 #include "diagnostic/ContractChecks.h"
-#include "memory/Uncopyable.h"
 #include "memory/Memory.h"
 #include "maths/MathsFunctions.h"
 #include "memory/ByteOrder.h"
@@ -108,6 +108,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 // New header-only library modeled more closely according to boost
 #include "../../beast/intrusive/ForwardList.h"
 #include "../../beast/Net.h"
+#include "../../beast/Thread.h"
 
 //------------------------------------------------------------------------------
 
@@ -161,7 +162,6 @@ namespace beast
 #include "memory/MemoryAlignment.h"
 #include "memory/CacheLine.h"
 #include "threads/ReadWriteMutex.h"
-#include "threads/SharedData.h"
 #include "diagnostic/SafeBool.h"
 #include "threads/WaitableEvent.h"
 #include "threads/Thread.h"

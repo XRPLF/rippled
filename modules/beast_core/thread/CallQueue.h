@@ -299,7 +299,7 @@ public:
 
         void stateChanged ()
         {
-          SharedData <SharedState>::ReadAccess state (sharedState);
+          SharedData <SharedState>::ConstAccess state (sharedState);
 
           // (read state)
         }
@@ -308,7 +308,7 @@ public:
 
         void changeState ()
         {
-          SharedData <State>::WriteAccess state (sharedState);
+          SharedData <State>::Access state (sharedState);
 
           // (read and write state)
 

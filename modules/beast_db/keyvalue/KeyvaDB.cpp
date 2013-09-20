@@ -255,7 +255,7 @@ public:
         , m_keyBlockDepth (keyBlockDepth)
         , m_keyStorage (keyBytes)
     {
-        SharedState::WriteAccess state (m_state);
+        SharedState::Access state (m_state);
 
         openFile (&state->keyFile, keyPath);
 
@@ -289,7 +289,7 @@ public:
 
     ~KeyvaDBImp ()
     {
-        SharedState::WriteAccess state (m_state);
+        SharedState::Access state (m_state);
 
         flushInternal (state);
     }
@@ -310,7 +310,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    Result createMasterRecord (SharedState::WriteAccess& state)
+    Result createMasterRecord (SharedState::Access& state)
     {
         MemoryBlock buffer (masterHeaderBytes, true);
 
@@ -344,7 +344,7 @@ public:
     //
     void readKeyRecord (KeyRecord* const keyRecord,
                         KeyIndex const keyIndex,
-                        SharedState::WriteAccess& state)
+                        SharedState::Access& state)
     {
         FileOffset const byteOffset = calcKeyRecordOffset (keyIndex);
 
@@ -391,7 +391,7 @@ public:
     // Write a key record from memory
     void writeKeyRecord (KeyRecord const& keyRecord,
                          KeyIndex const keyIndex,
-                         SharedState::WriteAccess& state,
+                         SharedState::Access& state,
                          bool includingKey)
     {
         FileOffset const byteOffset = calcKeyRecordOffset (keyIndex);
@@ -442,7 +442,7 @@ public:
 
     // Append a value to the value file.
     // VFALCO TODO return a Result
-    void writeValue (void const* const value, ByteSize valueBytes, SharedState::WriteAccess& state)
+    void writeValue (void const* const value, ByteSize valueBytes, SharedState::Access& state)
     {
         Result result = state->valFile.setPosition (state->valFileSize);
 
@@ -493,7 +493,7 @@ public:
     //
     // Returns true if the key was found.
     //
-    bool find (FindResult* findResult, void const* key, SharedState::WriteAccess& state)
+    bool find (FindResult* findResult, void const* key, SharedState::Access& state)
     {
         // Not okay to call this with an empty key file!
         bassert (state->hasKeys ());
@@ -546,7 +546,7 @@ public:
     {
         FindResult findResult (m_keyStorage.getData ());
 
-        SharedState::WriteAccess state (m_state);
+        SharedState::Access state (m_state);
 
         bool found = false;
 
@@ -594,7 +594,7 @@ public:
     {
         bassert (valueBytes > 0);
 
-        SharedState::WriteAccess state (m_state);
+        SharedState::Access state (m_state);
 
         if (state->hasKeys ())
         {
@@ -681,12 +681,12 @@ public:
 
     void flush ()
     {
-        SharedState::WriteAccess state (m_state);
+        SharedState::Access state (m_state);
 
         flushInternal (state);
     }
 
-    void flushInternal (SharedState::WriteAccess& state)
+    void flushInternal (SharedState::Access& state)
     {
         state->keyFile.flush ();
         state->valFile.flush ();
