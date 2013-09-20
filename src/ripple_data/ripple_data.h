@@ -27,6 +27,8 @@
 //         additional hierarchy via directories.
 #include "ripple.pb.h"
 
+#include "../ripple/json/ripple_json.h"
+
 namespace ripple
 {
 

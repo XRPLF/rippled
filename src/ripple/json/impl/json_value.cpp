@@ -378,6 +378,7 @@ Value::Value ( const std::string& value )
                      (unsigned int)value.length () );
 
 }
+
 Value::Value (beast::String const& beastString)
     : type_ ( stringValue )
     , allocated_ ( true )
@@ -750,7 +751,7 @@ Value::asString () const
         return value_.bool_ ? "true" : "false";
 
     case intValue:
-        return lexicalCastThrow <std::string> (value_.int_);
+        return beast::lexicalCastThrow <std::string> (value_.int_);
 
     case uintValue:
     case realValue:
@@ -796,7 +797,7 @@ Value::asInt () const
         return value_.bool_ ? 1 : 0;
 
     case stringValue:
-        return lexicalCastThrow <int> (value_.string_);
+        return beast::lexicalCastThrow <int> (value_.string_);
 
     case arrayValue:
     case objectValue:
@@ -832,7 +833,7 @@ Value::asUInt () const
         return value_.bool_ ? 1 : 0;
 
     case stringValue:
-        return lexicalCastThrow <unsigned int> (value_.string_);
+        return beast::lexicalCastThrow <unsigned int> (value_.string_);
 
     case arrayValue:
     case objectValue:

@@ -59,12 +59,16 @@ OTHER_FILES += \
 
 UI_HEADERS_DIR += ../../src/ripple_basics
 
-# -----
-# Beast
+# ---------
+# New style
 #
 SOURCES += \
     ../../src/ripple/beast/ripple_beast.cpp \
-    ../../src/ripple/beast/ripple_beastc.c
+    ../../src/ripple/beast/ripple_beastc.c \
+    ../../src/ripple/json/ripple_json.cpp \
+    ../../src/ripple/sophia/ripple_sophia.c \
+    ../../src/ripple/testoverlay/ripple_testoverlay.cpp \
+    ../../src/ripple/validators/ripple_validators.cpp
 
 # ---------
 # Old style
@@ -87,14 +91,6 @@ SOURCES += \
     ../../src/ripple_mdb/ripple_mdb.c \
     ../../src/ripple_net/ripple_net.cpp \
     ../../src/ripple_websocket/ripple_websocket.cpp
-
-# ---------
-# New style
-#
-SOURCES += \
-    ../../src/ripple/sophia/ripple_sophia.c \
-    ../../src/ripple/testoverlay/ripple_testoverlay.cpp \
-    ../../src/ripple/validators/ripple_validators.cpp
 
 LIBS += \
     -lboost_date_time-mt\

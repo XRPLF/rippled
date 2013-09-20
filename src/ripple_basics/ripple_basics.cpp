@@ -31,21 +31,6 @@
 
 //------------------------------------------------------------------------------
 
-// For json/
-//
-#ifdef JSON_USE_CPPTL
-# include <cpptl/conststring.h>
-#endif
-#ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
-#include "json/json_batchallocator.h"
-#endif
-
-#define JSON_ASSERT_UNREACHABLE assert( false )
-#define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw
-#define JSON_ASSERT_MESSAGE( condition, message ) if (!( condition )) throw std::runtime_error( message );
-
-//------------------------------------------------------------------------------
-
 // For random numbers
 //
 // VFALCO TODO Replace OpenSSL randomness with a dependency-free implementation
@@ -74,10 +59,6 @@ namespace ripple
 
 #include "containers/RangeSet.cpp"
 #include "containers/TaggedCache.cpp"
-
-#include "json/json_reader.cpp"
-#include "json/json_value.cpp"
-#include "json/json_writer.cpp"
 
 #include "log/Log.cpp"
 #include "log/LogFile.cpp"

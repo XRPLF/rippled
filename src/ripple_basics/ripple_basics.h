@@ -24,21 +24,6 @@
 
 //------------------------------------------------------------------------------
 
-// For json/
-//
-// VFALCO TODO Clean up these one-offs
-#include "json/json_config.h" // Needed before these cpptl includes
-#ifndef JSON_USE_CPPTL_SMALLMAP
-# include <map>
-#else
-# include <cpptl/smallmap.h>
-#endif
-#ifdef JSON_USE_CPPTL
-# include <cpptl/forwards.h>
-#endif
-
-//------------------------------------------------------------------------------
-
 #include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
 #include "system/BoostIncludes.h"
 
@@ -123,12 +108,6 @@ using namespace beast;
 #include "containers/RangeSet.h"
 #include "containers/SecureAllocator.h"
 #include "containers/TaggedCache.h"
-
-#include "json/json_forwards.h"
-#include "json/json_features.h"
-#include "json/json_value.h"
-#include "json/json_reader.h"
-#include "json/json_writer.h"
 
 }
 
