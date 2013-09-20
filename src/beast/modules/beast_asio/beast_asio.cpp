@@ -45,6 +45,7 @@ namespace beast
 #include "http/HTTPField.cpp"
 #include "http/HTTPHeaders.cpp"
 #include "http/HTTPMessage.cpp"
+#include "http/HTTPRequest.cpp"
 #include "http/HTTPResponse.cpp"
 #include "http/HTTPVersion.cpp"
 

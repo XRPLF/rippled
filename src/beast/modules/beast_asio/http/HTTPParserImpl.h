@@ -31,6 +31,7 @@ public:
     explicit HTTPParserImpl (enum http_parser_type type)
         : m_finished (false)
         , m_was_value (false)
+        , m_headersComplete (false)
     {
         m_settings.on_message_begin     = &HTTPParserImpl::on_message_begin;
         m_settings.on_url               = &HTTPParserImpl::on_url;
@@ -119,6 +120,11 @@ public:
         return m_fields;
     }
 
+    bool headers_complete () const
+    {
+        return m_headersComplete;
+    }
+
     ContentBodyBuffer& body ()
     {
         return m_body;
@@ -174,6 +180,7 @@ private:
 
     int onHeadersComplete ()
     {
+        m_headersComplete = true;
         int ec (0);
         addFieldValue ();
         return ec;
@@ -250,6 +257,7 @@ private:
     bool m_was_value;
     std::string m_field;
     std::string m_value;
+    bool m_headersComplete;
     ContentBodyBuffer m_body;
 };
 

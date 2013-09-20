@@ -57,18 +57,29 @@ public:
     /** Returns `true` when parsing is successful and complete. */
     bool finished () const;
 
-    /** Return the HTTPResponse object produce from the parsing.
+    /** Peek at the header fields as they are being built.
+        Only complete pairs will show up, never partial strings.
+    */
+    StringPairArray const& fields () const;
+
+    /** Returns `true` if all the HTTP headers have been received. */
+    bool headersComplete () const;
+
+    /** Return the HTTPRequest object produced from the parsiing.
+        Only valid after finished returns `true`.
+    */
+    SharedPtr <HTTPRequest> const& request ();
+
+    /** Return the HTTPResponse object produced from the parsing.
         Only valid after finished returns `true`.
     */
     SharedPtr <HTTPResponse> const& response ();
 
-    //SharedPtr <HTTPRequest> const& request ();
-
 private:
     Type m_type;
     ScopedPointer <HTTPParserImpl> m_impl;
+    SharedPtr <HTTPRequest> m_request;
     SharedPtr <HTTPResponse> m_response;
-    //SharedPtr <HTTPRequest> m_request;
 };
 
 #endif
