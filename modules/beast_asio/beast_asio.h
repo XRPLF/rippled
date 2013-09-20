@@ -65,6 +65,7 @@ namespace beast
 # include "async/SharedHandlerPtr.h"
 # include "async/ComposedAsyncOperation.h"
 #include "async/SharedHandlerAllocator.h"
+#include "async/AsyncObject.h"
 
 #  include "basics/BufferType.h"
 # include "basics/BuffersType.h"
@@ -72,6 +73,7 @@ namespace beast
 #include "basics/FixedInputBuffer.h"
 #include "basics/PeerRole.h"
 #include "basics/SSLContext.h"
+#include "basics/SharedArg.h"
 
 #   include "sockets/SocketBase.h"
 #  include "sockets/Socket.h"

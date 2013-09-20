@@ -99,6 +99,7 @@
     <ClInclude Include="..\..\beast\Utility.h" />
     <ClInclude Include="..\..\beast\utility\EnableIf.h" />
     <ClInclude Include="..\..\beast\utility\Journal.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\AsyncObject.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h" />
@@ -109,6 +110,7 @@
     <ClInclude Include="..\..\modules\beast_asio\basics\BuffersType.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\PeerRole.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\SharedArg.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\SSLContext.h" />
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPClientType.h" />

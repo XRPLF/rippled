@@ -1098,6 +1098,12 @@
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPRequest.h">
       <Filter>beast_asio\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\async\AsyncObject.h">
+      <Filter>beast_asio\async</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\basics\SharedArg.h">
+      <Filter>beast_asio\basics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
