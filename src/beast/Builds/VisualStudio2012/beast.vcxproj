@@ -76,6 +76,7 @@
     <ClInclude Include="..\..\beast\MPL.h" />
     <ClInclude Include="..\..\beast\mpl\AddConst.h" />
     <ClInclude Include="..\..\beast\mpl\IfCond.h" />
+    <ClInclude Include="..\..\beast\mpl\IsCallPossible.h" />
     <ClInclude Include="..\..\beast\mpl\PointerToOther.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveConst.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h" />
@@ -89,7 +90,9 @@
     <ClInclude Include="..\..\beast\type_traits\IsIntegral.h" />
     <ClInclude Include="..\..\beast\type_traits\IsSigned.h" />
     <ClInclude Include="..\..\beast\type_traits\RemoveSigned.h" />
+    <ClInclude Include="..\..\beast\Utility.h" />
     <ClInclude Include="..\..\beast\utility\EnableIf.h" />
+    <ClInclude Include="..\..\beast\utility\Journal.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h" />
@@ -165,7 +168,6 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\Debug.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\Error.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FatalError.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\Journal.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\ProtectedCall.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FPUFlags.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\LeakChecked.h" />
@@ -367,10 +369,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\beast\net\Net.cpp">
+    <ClCompile Include="..\..\beast\net\Net.cpp" />
+    <ClCompile Include="..\..\beast\utility\impl\Journal.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\beast\utility\Utility.cpp" />
     <ClCompile Include="..\..\modules\beast_asio\async\SharedHandler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -596,12 +602,6 @@
     <ClCompile Include="..\..\modules\beast_core\diagnostic\FatalError.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\Journal.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\ProtectedCall.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

@@ -144,7 +144,6 @@ namespace beast
 #include "text/String.h"
 #include "time/AtExitHook.h"
 #include "diagnostic/LeakChecked.h"
-#include "diagnostic/Journal.h"
 #include "time/RelativeTime.h"
 #include "time/Time.h"
 #include "memory/HeapBlock.h"

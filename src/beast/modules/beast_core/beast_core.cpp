@@ -147,7 +147,6 @@ namespace beast
 #include "diagnostic/SemanticVersion.cpp"
 #include "diagnostic/UnitTest.cpp"
 #include "diagnostic/UnitTestUtilities.cpp"
-#include "diagnostic/Journal.cpp"
 
 #include "files/DirectoryIterator.cpp"
 #include "files/File.cpp"

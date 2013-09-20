@@ -19,6 +19,8 @@
 
 #include "BeastConfig.h"
 
-#include "../../modules/beast_core/beast_core.h"
+#include "../../modules/beast_core/beast_core.h" // for UnitTest
+
+#include "../Config.h"
 
 #include "impl/IPEndpoint.cpp"

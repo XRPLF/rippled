@@ -17,6 +17,11 @@
 */
 //==============================================================================
 
+#include "../Journal.h"
+
+namespace beast
+{
+
 bool Journal::Sink::active (Severity)
 {
     return true;
@@ -181,3 +186,4 @@ bool Journal::active (Severity severity) const
     return m_sink->active (severity);
 }
 
+}
