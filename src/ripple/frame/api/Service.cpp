@@ -4,6 +4,9 @@
 */
 //==============================================================================
 
+namespace ripple
+{
+
 Service::Service (char const* name)
     : m_name (name)
     , m_root (true)
@@ -197,4 +200,6 @@ void ScopedService::onServiceStop ()
 
 void ScopedService::onServiceChildrenStopped ()
 {
+}
+
 }

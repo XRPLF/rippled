@@ -31,6 +31,8 @@
 
 #include "beast/modules/beast_crypto/beast_crypto.h"
 
+#include "../../beast/beast/Utility.h"
+
 #ifndef RIPPLE_TRACK_MUTEXES
 # define RIPPLE_TRACK_MUTEXES 0
 #endif
@@ -93,7 +95,6 @@ using namespace beast;
 #include "utility/IniFile.h"
 #include "utility/PlatformMacros.h"
 #include "utility/RandomNumbers.h"
-#include "utility/Service.h"
 #include "utility/StringUtilities.h"
 #include "utility/Sustain.h"
 #include "utility/ThreadName.h"

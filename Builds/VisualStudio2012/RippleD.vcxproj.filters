@@ -184,6 +184,12 @@
     <Filter Include="[1] Ripple\json\impl">
       <UniqueIdentifier>{a56f8183-6f95-4455-a6f7-097eb930abaa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\frame">
+      <UniqueIdentifier>{e8545fbd-90eb-4586-9ee2-8a5956808b1a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\frame\api">
+      <UniqueIdentifier>{a4dd852c-651b-4ea9-a051-252dc0eaea24}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -909,9 +915,6 @@
     <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c">
       <Filter>[1] Ripple\beast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\Service.cpp">
-      <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\main\IoServicePool.cpp">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
@@ -935,6 +938,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\ripple_json.cpp">
       <Filter>[1] Ripple\json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\frame\ripple_frame.cpp">
+      <Filter>[1] Ripple\frame</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\frame\api\Service.cpp">
+      <Filter>[1] Ripple\frame\api</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1806,9 +1815,6 @@
     <ClInclude Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.h">
       <Filter>[2] Old Ripple\ripple_hyperleveldb</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\Service.h">
-      <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\IoServicePool.h">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClInclude>
@@ -1847,6 +1853,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\api\json_config.h">
       <Filter>[1] Ripple\json\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\frame\ripple_frame.h">
+      <Filter>[1] Ripple\frame</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\frame\api\Service.h">
+      <Filter>[1] Ripple\frame\api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -26,3 +26,4 @@
 #include "../beast/modules/beast_sqdb/beast_sqdb.cpp"
 
 #include "../beast/beast/net/Net.cpp"
+#include "../beast/beast/utility/Utility.cpp"

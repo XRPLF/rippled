@@ -4,8 +4,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_SERVICE_H_INCLUDED
-#define RIPPLE_BASICS_SERVICE_H_INCLUDED
+#ifndef RIPPLE_FRAME_SERVICE_H_INCLUDED
+#define RIPPLE_FRAME_SERVICE_H_INCLUDED
+
+#include "../../../beast/beast/utility/Journal.h"
+
+namespace ripple
+{
+
+using namespace beast;
 
 /** Abstraction for organizing partitioned support code.
 
@@ -271,5 +278,7 @@ public:
     void onServiceStop ();
     void onServiceChildrenStopped ();
 };
+
+}
 
 #endif
