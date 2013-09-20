@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "BeastConfig.h"
+
 #include "../../modules/beast_core/beast_core.h"
 
 #include "impl/IPEndpoint.cpp"
