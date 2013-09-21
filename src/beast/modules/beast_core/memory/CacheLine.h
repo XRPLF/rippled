@@ -30,10 +30,7 @@ namespace CacheLine
 
 #if GLOBAL_PADDING_ENABLED
 
-// Pads an object so that it starts on a cache line boundary.
-//
 /** Pad an object to start on a cache line boundary.
-
     Up to 8 constructor parameters are passed through.
 */
 template <typename T>
@@ -42,83 +39,83 @@ class Aligned
 public:
     Aligned ()
     {
-        new (ptr ()) T;
+        new (&get()) T;
     }
 
     template <class T1>
     Aligned (T1 t1)
     {
-        new (ptr ()) T (t1);
+        new (&get()) T (t1);
     }
 
     template <class T1, class T2>
     Aligned (T1 t1, T2 t2)
     {
-        new (ptr ()) T (t1, t2);
+        new (&get()) T (t1, t2);
     }
 
     template <class T1, class T2, class T3>
     Aligned (T1 t1, T2 t2, T3 t3)
     {
-        new (ptr ()) T (t1, t2, t3);
+        new (&get()) T (t1, t2, t3);
     }
 
     template <class T1, class T2, class T3, class T4>
     Aligned (T1 t1, T2 t2, T3 t3, T4 t4)
     {
-        new (ptr ()) T (t1, t2, t3, t4);
+        new (&get()) T (t1, t2, t3, t4);
     }
 
     template <class T1, class T2, class T3, class T4, class T5>
     Aligned (T1 t1, T2 t2, T3 t3, T4 t4, T5 t5)
     {
-        new (ptr ()) T (t1, t2, t3, t4, t5);
+        new (&get()) T (t1, t2, t3, t4, t5);
     }
 
     template <class T1, class T2, class T3, class T4, class T5, class T6>
     Aligned (T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6)
     {
-        new (ptr ()) T (t1, t2, t3, t4, t5, t6);
+        new (&get()) T (t1, t2, t3, t4, t5, t6);
     }
 
     template <class T1, class T2, class T3, class T4, class T5, class T6, class T7>
     Aligned (T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7)
     {
-        new (ptr ()) T (t1, t2, t3, t4, t5, t6, t7);
+        new (&get()) T (t1, t2, t3, t4, t5, t6, t7);
     }
 
     template <class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
     Aligned (T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8)
     {
-        new (ptr ()) T (t1, t2, t3, t4, t5, t6, t7, t8);
+        new (&get()) T (t1, t2, t3, t4, t5, t6, t7, t8);
     }
 
     ~Aligned ()
     {
-        ptr ()->~T ();
+        get().~T ();
     }
 
     T& operator= (T const& other)
     {
-        *ptr () = other;
-        return *ptr ();
+        return (get() = other);
     }
 
-    inline T& operator*  () noexcept { return *ptr (); }
-    inline T* operator-> () noexcept { return  ptr (); }
-    inline operator T&   () noexcept { return *ptr (); }
-    inline operator T*   () noexcept { return  ptr (); }
-
-    inline const T& operator*  () const noexcept { return *ptr (); }
-    inline const T* operator-> () const noexcept { return  ptr (); }
-    inline operator T const&   () const noexcept { return *ptr (); }
-    inline operator T const*   () const noexcept { return  ptr (); }
+    T& get () noexcept { return *ptr(); }
+    T& operator*  () noexcept { return  get(); }
+    T* operator-> () noexcept { return &get(); }
+    operator T&   () noexcept { return  get(); }
+    operator T*   () noexcept { return &get(); }
+    T const& get () const noexcept { return *ptr(); }
+    const T& operator*  () const noexcept { return  get(); }
+    const T* operator-> () const noexcept { return &get(); }
+    operator T const&   () const noexcept { return  get(); }
+    operator T const*   () const noexcept { return &get(); }
 
 private:
-    inline T* ptr () noexcept
+    T* ptr () const noexcept
     {
         return (T*) ((uintptr_t (m_storage) + Memory::cacheLineAlignMask)
-        & ~Memory::cacheLineAlignMask);
+            & ~Memory::cacheLineAlignMask);
         /*
         return reinterpret_cast <T*> (Memory::pointerAdjustedForAlignment (
                                       m_storage, Memory::cacheLineBytes));
@@ -128,8 +125,9 @@ private:
     char m_storage [ (sizeof (T) + Memory::cacheLineAlignMask) & ~Memory::cacheLineAlignMask];
 };
 
-/** End-pads an object to completely fill straddling CPU cache lines.
+//------------------------------------------------------------------------------
 
+/** End-pads an object to completely fill straddling CPU cache lines.
     The caller must ensure that this object starts at the beginning
     of a cache line.
 */
@@ -195,15 +193,16 @@ public:
         return m_t;
     }
 
-    T& operator*  () noexcept { return m_t; }
-    T* operator-> () noexcept { return &m_t; }
-    operator T&   () noexcept { return m_t; }
-    operator T*   () noexcept { return &m_t; }
-
-    const T& operator*  () const noexcept { return  m_t; }
-    const T* operator-> () const noexcept { return &m_t; }
-    operator T const&   () const noexcept { return  m_t; }
-    operator T const*   () const noexcept { return &m_t; }
+    T& get() noexcept { return m_t;}
+    T& operator*  () noexcept { return  get(); }
+    T* operator-> () noexcept { return &get(); }
+    operator T&   () noexcept { return  get(); }
+    operator T*   () noexcept { return &get(); }
+    T const& get () const noexcept { return m_t; }
+    const T& operator*  () const noexcept { return  get(); }
+    const T* operator-> () const noexcept { return &get(); }
+    operator T const&   () const noexcept { return  get(); }
+    operator T const*   () const noexcept { return &get(); }
 
 private:
     T m_t;
@@ -257,32 +256,21 @@ public:
               const T5& t5, const T6& t6, const T7& t7, const T8& t8)
         : m_t (t1, t2, t3, t4, t5, t6, t7, t8) { }
 
-    void operator= (const T& other)
+    T& operator= (const T& other)
     {
-        m_t = other;
+        reutrn (m_t = other);
     }
 
-    T& operator*  () noexcept { return  m_t; }
-    T* operator-> () noexcept { return &m_t; }
-    operator T&   () noexcept { return  m_t; }
-    operator T*   () noexcept { return &m_t; }
-
-    const T& operator*  () const noexcept
-    {
-        return  m_t;
-    }
-    const T* operator-> () const noexcept
-    {
-        return &m_t;
-    }
-    operator const T&   () const noexcept
-    {
-        return  m_t;
-    }
-    operator const T*   () const noexcept
-    {
-        return &m_t;
-    }
+    T& get () noexcept { return m_t; }
+    T& operator*  () noexcept { return  get(); }
+    T* operator-> () noexcept { return &get(); }
+    operator T&   () noexcept { return  get(); }
+    operator T*   () noexcept { return &get(); }
+    T const& get () const noexcept { return m_t; }
+    const T& operator*  () const noexcept { return  get(); }
+    const T* operator-> () const noexcept { return &get(); }
+    operator T const&   () const noexcept { return  get(); }
+    operator T const*   () const noexcept { return &get(); }
 
 private:
     T m_t;
@@ -338,27 +326,16 @@ public:
         m_t = other;
     }
 
-    T& operator*  () noexcept { return  m_t; }
-    T* operator-> () noexcept { return &m_t; }
-    operator T&   () noexcept { return  m_t; }
-    operator T*   () noexcept { return &m_t; }
-
-    const T& operator*  () const noexcept
-    {
-        return  m_t;
-    }
-    const T* operator-> () const noexcept
-    {
-        return &m_t;
-    }
-    operator const T&   () const noexcept
-    {
-        return  m_t;
-    }
-    operator const T*   () const noexcept
-    {
-        return &m_t;
-    }
+    T& get () noexcept { return m_t; }
+    T& operator*  () noexcept { return  get(); }
+    T* operator-> () noexcept { return &get(); }
+    operator T&   () noexcept { return  get(); }
+    operator T*   () noexcept { return &get(); }
+    T const& get () const noexcept { return m_t; }
+    const T& operator*  () const noexcept { return  get(); }
+    const T* operator-> () const noexcept { return &get(); }
+    operator T const&   () const noexcept { return  get(); }
+    operator T const*   () const noexcept { return &get(); }
 
 private:
     T m_t;
@@ -415,44 +392,21 @@ public:
               const T5& t5, const T6& t6, const T7& t7, const T8& t8)
         : m_t (t1, t2, t3, t4, t5, t6, t7, t8) { }
 
-    void operator= (const T& other)
+    T* operator= (const T& other)
     {
-        m_t = other;
+        return (m_t = other);
     }
 
-    T& operator*  ()
-    {
-        return  m_t;
-    }
-    T* operator-> ()
-    {
-        return &m_t;
-    }
-    operator T&   ()
-    {
-        return  m_t;
-    }
-    operator T*   ()
-    {
-        return &m_t;
-    }
-
-    const T& operator*  () const
-    {
-        return  m_t;
-    }
-    const T* operator-> () const
-    {
-        return &m_t;
-    }
-    operator const T&   () const
-    {
-        return  m_t;
-    }
-    operator const T*   () const
-    {
-        return &m_t;
-    }
+    T& get () noexcept { return m_t; }
+    T& operator*  () noexcept { return  get(); }
+    T* operator-> () noexcept { return &get(); }
+    operator T&   () noexcept { return  get(); }
+    operator T*   () noexcept { return &get(); }
+    T const& get () const noexcept { return m_t; }
+    const T& operator*  () const noexcept { return  get(); }
+    const T* operator-> () const noexcept { return &get(); }
+    operator T const&   () const noexcept { return  get(); }
+    operator T const*   () const noexcept { return &get(); }
 
 private:
     T m_t;

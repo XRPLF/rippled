@@ -120,8 +120,6 @@ public:
             template <typename IntegralType>
             Proxy& operator= (IntegralType v)
             {
-                bassert (v >= 0 && v <= 255);
-
                 (*m_value)=
                     (*m_value)&(!((0xff)<<m_shift)) |
                     ((v&0xff)<<m_shift);

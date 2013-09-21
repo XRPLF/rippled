@@ -69,12 +69,17 @@
     <None Include="..\..\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\beast\Atomic.h" />
     <ClInclude Include="..\..\beast\Config.h" />
     <ClInclude Include="..\..\beast\CStdInt.h" />
+    <ClInclude Include="..\..\beast\Intrusive.h" />
     <ClInclude Include="..\..\beast\intrusive\ForwardList.h" />
+    <ClInclude Include="..\..\beast\intrusive\List.h" />
+    <ClInclude Include="..\..\beast\intrusive\LockFreeStack.h" />
     <ClInclude Include="..\..\beast\intrusive\PointerTraits.h" />
     <ClInclude Include="..\..\beast\MPL.h" />
     <ClInclude Include="..\..\beast\mpl\AddConst.h" />
+    <ClInclude Include="..\..\beast\mpl\CopyConst.h" />
     <ClInclude Include="..\..\beast\mpl\IfCond.h" />
     <ClInclude Include="..\..\beast\mpl\IsCallPossible.h" />
     <ClInclude Include="..\..\beast\mpl\PointerToOther.h" />
@@ -155,14 +160,10 @@
     <ClInclude Include="..\..\modules\beast_core\containers\ArrayAllocationBase.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\DynamicObject.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\ElementComparator.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\detail\copyconst.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\detail\removecv.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\DynamicArray.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\HashMap.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\LinkedListPointer.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\List.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\LockFreeQueue.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\LockFreeStack.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\NamedValueSet.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\OwnedArray.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\PropertySet.h" />
@@ -208,7 +209,6 @@
     <ClInclude Include="..\..\modules\beast_core\maths\Range.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\uint24.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\AllocatedBy.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\Atomic.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\AtomicCounter.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\AtomicFlag.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\AtomicPointer.h" />

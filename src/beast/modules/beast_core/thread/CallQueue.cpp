@@ -275,10 +275,10 @@ public:
             };
         }
 
-        for (std::size_t i = 0; i < threads.size(); ++i)
+        for (int i = 0; i < threads.size(); ++i)
             threads[i]->stop ();
         
-        for (std::size_t i = 0; i < threads.size(); ++i)
+        for (int i = 0; i < threads.size(); ++i)
             threads[i]->waitForThreadToExit();
 
         double const secondsElapsed ((Time::getCurrentTime() - startTime).inSeconds ());

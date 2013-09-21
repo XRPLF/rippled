@@ -76,20 +76,27 @@
 
 //------------------------------------------------------------------------------
 
+namespace beast {
+extern BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger();
+extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) noexcept;
+}
+
+// New header-only library modeled more closely according to boost
 #include "../../beast/CStdInt.h"
 #include "../../beast/StaticAssert.h"
 #include "../../beast/Uncopyable.h"
+#include "../../beast/Atomic.h"
+#include "../../beast/Intrusive.h"
+#include "../../beast/Net.h"
+#include "../../beast/TypeTraits.h"
+#include "../../beast/Thread.h"
 
-namespace beast
-{
+namespace beast {
 
 class InputStream;
 class OutputStream;
 class FileInputStream;
 class FileOutputStream;
-
-extern BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger();
-extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) noexcept;
 
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
@@ -98,22 +105,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "memory/Memory.h"
 #include "maths/MathsFunctions.h"
 #include "memory/ByteOrder.h"
-#include "memory/Atomic.h"
 #include "text/CharacterFunctions.h"
-
-}
-
-//------------------------------------------------------------------------------
-
-// New header-only library modeled more closely according to boost
-#include "../../beast/intrusive/ForwardList.h"
-#include "../../beast/Net.h"
-#include "../../beast/Thread.h"
-
-//------------------------------------------------------------------------------
-
-namespace beast
-{
 
 #if BEAST_MSVC
 # pragma warning (push)
@@ -127,16 +119,12 @@ namespace beast
 # pragma warning (pop)
 #endif
 
-# include "containers/detail/removecv.h"
-#include "containers/detail/copyconst.h"
 #include "diagnostic/Throw.h"
 #include "system/Functional.h"
 #include "memory/AtomicCounter.h"
 #include "memory/AtomicFlag.h"
 #include "memory/AtomicPointer.h"
 #include "memory/AtomicState.h"
-#include "containers/List.h"
-#include "containers/LockFreeStack.h"
 #include "threads/SpinDelay.h"
 #include "memory/StaticObject.h"
 

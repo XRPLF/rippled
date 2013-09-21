@@ -22,8 +22,7 @@
 
 #include "IntegralConstant.h"
 
-namespace beast
-{
+namespace beast {
 
 /** Returns an equally sized, unsigned type.
     Requires:
@@ -33,12 +32,12 @@ template <typename T>
 struct RemoveSigned
 {
     typedef T type;
-}
+};
 
-template <> struct RemoveSigned <int8>   { typedef uint8  type; }
-template <> struct RemoveSigned <int16>  { typedef uint16 type; }
-template <> struct RemoveSigned <int32>  { typedef uint32 type; }
-template <> struct RemoveSigned <int64>  { typedef uint64 type; }
+template <> struct RemoveSigned <int8>   { typedef uint8  type; };
+template <> struct RemoveSigned <int16>  { typedef uint16 type; };
+template <> struct RemoveSigned <int32>  { typedef uint32 type; };
+template <> struct RemoveSigned <int64>  { typedef uint64 type; };
 
 }
 

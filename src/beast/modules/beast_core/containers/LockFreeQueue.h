@@ -17,14 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LOCKFREEQUEUE_H_INCLUDED
-#define BEAST_LOCKFREEQUEUE_H_INCLUDED
-
-/** Default tag for LockFreeQueue
-
-    @ingroup beast_core intrusive
-*/
-struct LockFreeQueueDefaultTag { };
+#ifndef BEAST_INTRUSIVE_LOCKFREEQUEUE_H_INCLUDED
+#define BEAST_INTRUSIVE_LOCKFREEQUEUE_H_INCLUDED
 
 /** Multiple Producer, Single Consumer (MPSC) intrusive FIFO.
 
@@ -46,7 +40,7 @@ struct LockFreeQueueDefaultTag { };
 
     @ingroup beast_core intrusive
 */
-template <class Element, class Tag = LockFreeQueueDefaultTag>
+template <class Element, class Tag = void>
 class LockFreeQueue
 {
 public:

@@ -17,57 +17,11 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_CONTAINERS_DETAIL_REMOVECV_H_INCLUDED
-#define BEAST_CORE_CONTAINERS_DETAIL_REMOVECV_H_INCLUDED
+#ifndef BEAST_INTRUSIVE_H_INCLUDED
+#define BEAST_INTRUSIVE_H_INCLUDED
 
-namespace detail
-{
-
-// Strip all cv qualifiers from T
-template <typename T>
-struct removecv
-{
-	typedef T type;
-};
-
-template <typename T>
-struct removecv <const T>
-{
-	typedef typename removecv <T>::type type;
-};
-
-template <typename T>
-struct removecv <volatile T>
-{
-	typedef typename removecv <T>::type type;
-};
-
-template <typename T>
-struct removecv <const volatile T>
-{
-	typedef typename removecv <T>::type type;
-};
-
-template <typename T>
-struct removecv <T*>
-{
-	typedef typename removecv <T>::type type;
-};
-
-template <typename T>
-struct removecv <T&>
-{
-	typedef typename removecv <T>::type type;
-};
-
-#if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
-template <typename T>
-struct removecv <T&&>
-{
-	typedef typename removecv <T>::type type;
-};
-#endif
-
-}
+#include "intrusive/ForwardList.h"
+#include "intrusive/List.h"
+#include "intrusive/LockFreeStack.h"
 
 #endif

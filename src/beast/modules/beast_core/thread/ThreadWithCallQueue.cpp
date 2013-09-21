@@ -222,7 +222,7 @@ public:
     {
     }
 
-    void testThreads (std::size_t nThreads)
+    void testThreads (int nThreads)
     {
         beginTestCase (String::fromNumber (nThreads) + " threads");
 

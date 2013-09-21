@@ -21,6 +21,7 @@
 #define BEAST_MPL_H_INCLUDED
 
 #include "mpl/AddConst.h"
+#include "mpl/CopyConst.h"
 #include "mpl/IfCond.h"
 #include "mpl/IsCallPossible.h"
 #include "mpl/PointerToOther.h"

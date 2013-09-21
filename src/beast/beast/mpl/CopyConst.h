@@ -17,25 +17,30 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_CONTAINERS_DETAIL_COPYCONST_H_INCLUDED
-#define BEAST_CORE_CONTAINERS_DETAIL_COPYCONST_H_INCLUDED
+#ifndef BEAST_MPL_COPYCONST_H_INCLUDED
+#define BEAST_MPL_COPYCONST_H_INCLUDED
 
-namespace detail
-{
+#include "RemoveConst.h"
 
-// Copy const attribute from T to U if present
+namespace beast {
+namespace mpl {
+
+/** Copy `const` attribute from T to U if present. */
+/** @{ */
 template <typename T, typename U>
-struct copyconst
+struct CopyConst
 {
-    typedef typename removecv <U>::type type;
+    typedef typename RemoveConst<U>::type type;
 };
 
 template <typename T, typename U>
-struct copyconst <T const, U>
+struct CopyConst <T const, U>
 {
-    typedef typename removecv <U>::type const type;
+    typedef typename RemoveConst<U>::type const type;
 };
+/** @} */
 
+}
 }
 
 #endif
