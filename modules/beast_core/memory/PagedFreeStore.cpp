@@ -181,7 +181,7 @@ void PagedFreeStore::onDeadlineTimer (DeadlineTimer&)
         }
     }
 
-    m_cold->fresh->swap (m_cold->garbage);
+    std::swap (m_cold->fresh, m_cold->garbage);
 
     // Swap atomically with respect to m_hot
     Pool* temp = m_hot;
@@ -224,6 +224,6 @@ void PagedFreeStore::dispose (Pages& pages)
 
 void PagedFreeStore::dispose (Pool& pool)
 {
-    dispose (pool.fresh);
-    dispose (pool.garbage);
+    dispose (pool.fresh_c);
+    dispose (pool.garbage_c);
 }

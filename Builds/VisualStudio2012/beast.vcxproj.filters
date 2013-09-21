@@ -165,9 +165,6 @@
     <Filter Include="beast_extras\traits">
       <UniqueIdentifier>{bf498396-2e1f-4903-be68-3053ba439af5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_core\containers\detail">
-      <UniqueIdentifier>{08ec13ba-4058-4ad7-afbb-cbb1c6e2fc4a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast">
       <UniqueIdentifier>{92d1bb42-289a-4444-85c7-cb87540f2fff}</UniqueIdentifier>
     </Filter>
@@ -295,9 +292,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\maths\Range.h">
       <Filter>beast_core\maths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\Atomic.h">
-      <Filter>beast_core\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\ByteOrder.h">
       <Filter>beast_core\memory</Filter>
@@ -547,9 +541,6 @@
       <Filter>beast_core\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\LockFreeQueue.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\LockFreeStack.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\SpinDelay.h">
@@ -821,15 +812,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\HashMap.h">
       <Filter>beast_core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\List.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\detail\copyconst.h">
-      <Filter>beast_core\containers\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\detail\removecv.h">
-      <Filter>beast_core\containers\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\text\StringCharPointerType.h">
       <Filter>beast_core\text</Filter>
@@ -1103,6 +1085,21 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\basics\SharedArg.h">
       <Filter>beast_asio\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\Intrusive.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\Atomic.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\intrusive\LockFreeStack.h">
+      <Filter>beast\intrusive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\intrusive\List.h">
+      <Filter>beast\intrusive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\mpl\CopyConst.h">
+      <Filter>beast\mpl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

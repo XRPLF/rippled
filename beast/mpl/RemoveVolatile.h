@@ -25,8 +25,8 @@
 namespace beast {
 namespace mpl {
 
-/// Remove the `volatile` qualifier from a type.
-/// @{
+/** Remove the `volatile` qualifier from a type. */
+/** @{ */
 template <typename T>
 struct RemoveVolatile
 {
@@ -38,7 +38,7 @@ struct RemoveVolatile <T volatile>
 {
     typedef T type;
 };
-/// @}
+/** @} */
 
 }
 }

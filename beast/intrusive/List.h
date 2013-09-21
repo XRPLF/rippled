@@ -17,8 +17,14 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_CONTAINERS_LIST_H_INCLUDED
-#define BEAST_CORE_CONTAINERS_LIST_H_INCLUDED
+#ifndef BEAST_INTRUSIVE_LIST_H_INCLUDED
+#define BEAST_INTRUSIVE_LIST_H_INCLUDED
+
+#include <iterator>
+#include "../mpl/CopyConst.h"
+#include "../Uncopyable.h"
+
+namespace beast {
 
 /** Intrusive Containers
 
@@ -225,8 +231,7 @@ class ListIterator : public std::iterator <
     std::bidirectional_iterator_tag, std::size_t>
 {
 public:
-    typedef typename copyconst <N, typename N::value_type>::type
-    
+    typedef typename mpl::CopyConst<N, typename N::value_type>::type
                                    value_type;
     typedef value_type*            pointer;
     typedef value_type&            reference;
@@ -243,14 +248,6 @@ public:
     {
     }
 
-#if 0
-    template <typename M>
-    ListIterator& operator= (ListIterator <M> const& other) noexcept
-    {
-        m_node = other.m_node;
-        return *this;
-    }
-#endif
     template <typename M>
     bool operator== (ListIterator <M> const& other) const noexcept
     {
@@ -307,14 +304,11 @@ private:
 
     void increment () noexcept
     {
-        bassert (m_node->m_next);
         m_node = m_node->m_next;
     }
 
     void decrement () noexcept
     {
-        bassert (m_node->m_prev &&
-                 m_node->m_prev->m_prev != nullptr);
         m_node = m_node->m_prev;
     }
 
@@ -323,8 +317,7 @@ private:
 
 }
 
-/**
-    Intrusive doubly linked list.
+/** Intrusive doubly linked list.
   
     This intrusive List is a container similar in operation to std::list in the
     Standard Template Library (STL). Like all @ref intrusive containers, List
@@ -583,7 +576,6 @@ public:
         @param pos The location to insert after.
         @param other The list to insert.
     */
-
     void insert (iterator pos, List& other) noexcept
     {
         if (!other.empty ())
@@ -716,5 +708,7 @@ private:
     Node m_head;
     Node m_tail;
 };
+
+}
 
 #endif

@@ -22,8 +22,7 @@
 
 #include "IntegralConstant.h"
 
-namespace beast
-{
+namespace beast {
 
 template <typename T> struct IsSigned : FalseType { };
 

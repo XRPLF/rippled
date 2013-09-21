@@ -17,12 +17,17 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LOCKFREESTACK_H_INCLUDED
-#define BEAST_LOCKFREESTACK_H_INCLUDED
+#ifndef BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
+#define BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
 
-struct LockFreeStackDefaultTag;
+#include <iterator>
+#include "../mpl/IfCond.h"
+#include "../Atomic.h"
+#include "../Uncopyable.h"
 
-/*============================================================================*/
+namespace beast {
+
+//------------------------------------------------------------------------------
 
 template <class Container, bool IsConst>
 class LockFreeStackIterator
@@ -74,7 +79,7 @@ public:
 
     LockFreeStackIterator& operator++ ()
     {
-        m_node = m_node->m_next;
+        m_node = m_node->m_next.get();
         return static_cast <LockFreeStackIterator&> (*this);
     }
 
@@ -85,16 +90,9 @@ public:
         return result;
     }
 
-    template <bool OtherIsConst>
-    bool operator== (LockFreeStackIterator <Container, OtherIsConst> const& other)
+    NodePtr node() const
     {
-        return m_node == other.m_node;
-    }
-
-    template <bool OtherIsConst>
-    bool operator!= (LockFreeStackIterator <Container, OtherIsConst> const& other)
-    {
-        return m_node != other.m_node;
+        return m_node;
     }
 
     reference operator* () const
@@ -111,20 +109,35 @@ private:
     NodePtr m_node;
 };
 
-/**
-  Multiple Producer, Multiple Consumer (MPMC) intrusive stack.
+//------------------------------------------------------------------------------
 
-  This stack is implemented using the same intrusive interface as List. All
-  operations are lock-free.
+template <class Container, bool LhsIsConst, bool RhsIsConst>
+bool operator== (LockFreeStackIterator <Container, LhsIsConst> const& lhs,
+                 LockFreeStackIterator <Container, RhsIsConst> const& rhs)
+{
+    return lhs.node() == rhs.node();
+}
 
-  The caller is responsible for preventing the "ABA" problem
-  (http://en.wikipedia.org/wiki/ABA_problem)
+template <class Container, bool LhsIsConst, bool RhsIsConst>
+bool operator!= (LockFreeStackIterator <Container, LhsIsConst> const& lhs,
+                 LockFreeStackIterator <Container, RhsIsConst> const& rhs)
+{
+    return lhs.node() != rhs.node();
+}
 
-  @param Tag  A type name used to distinguish lists and nodes, for
-  putting objects in multiple lists. If this parameter is
-  omitted, the default tag is used.
+//------------------------------------------------------------------------------
 
-  @ingroup beast_core intrusive
+/** Multiple Producer, Multiple Consumer (MPMC) intrusive stack.
+
+    This stack is implemented using the same intrusive interface as List.
+    All mutations are lock-free.
+
+    The caller is responsible for preventing the "ABA" problem:
+        http://en.wikipedia.org/wiki/ABA_problem
+
+    @param Tag  A type name used to distinguish lists and nodes, for
+                putting objects in multiple lists. If this parameter is
+                omitted, the default tag is used.
 */
 template <class Element, class Tag = void>
 class LockFreeStack : public Uncopyable
@@ -147,8 +160,7 @@ public:
         template <class Container, bool IsConst>
         friend class LockFreeStackIterator;
 
-        // VFALCO TODO Use regular Atomic<>
-        AtomicPointer <Node> m_next;
+        Atomic <Node*> m_next;
     };
 
 public:
@@ -164,36 +176,15 @@ public:
     typedef LockFreeStackIterator <
         LockFreeStack <Element, Tag>, true>     const_iterator;
 
-    LockFreeStack () : m_head (nullptr)
+    LockFreeStack ()
+        : m_end (nullptr)
+        , m_head (&m_end)
     {
     }
-
-#if 0
-    /** Create a LockFreeStack from another stack.
-
-        The contents of the other stack are atomically acquired.
-        The other stack is cleared.
-
-        @param other  The other stack to acquire.
-    */
-    explicit LockFreeStack (LockFreeStack& other)
-    {
-        Node* head;
-
-        do
-        {
-            head = other.m_head.get ();
-        }
-        while (!other.m_head.compareAndSet (0, head));
-
-        m_head = head;
-    }
-#endif
 
     /** Return the number of elements in the stack.
-        
         Thread safety:
-            Safe to call from any thread but the value may be inaccurate.
+            Safe to call from any thread.
     */
     size_type size () const
     {
@@ -201,77 +192,63 @@ public:
     }
 
     /** Push a node onto the stack.
-
-        The caller is responsible for preventing the ABA problem. This operation
-        is lock-free.
+        The caller is responsible for preventing the ABA problem.
+        This operation is lock-free.
+        Thread safety:
+            Safe to call from any thread.
 
         @param node The node to push.
 
-        @return     True if the stack was previously empty. If multiple threads
-                    are attempting to push, only one will receive true.
+        @return `true` if the stack was previously empty. If multiple threads
+                are attempting to push, only one will receive `true`.
     */
     bool push_front (Node* node)
     {
         bool first;
         Node* head;
-
         do
         {
             head = m_head.get ();
-            first = head == 0;
+            first = head == &m_end;
             node->m_next = head;
         }
-        while (!m_head.compareAndSet (node, head));
-
+        while (!m_head.compareAndSetBool (node, head));
         ++m_size;
-
         return first;
     }
 
     /** Pop an element off the stack.
+        The caller is responsible for preventing the ABA problem.
+        This operation is lock-free.
+        Thread safety:
+            Safe to call from any thread.
 
-        The caller is responsible for preventing the ABA problem. This operation
-        is lock-free.
-
-        @return   The element that was popped, or nullptr if the stack was empty.
+        @return The element that was popped, or `nullptr` if the stack
+                was empty.
     */
     Element* pop_front ()
     {
         Node* node;
         Node* head;
-
         do
         {
             node = m_head.get ();
-
-            if (node == 0)
-                break;
-
+            if (node == &m_end)
+                return nullptr;
             head = node->m_next.get ();
         }
-        while (!m_head.compareAndSet (head, node));
-
+        while (!m_head.compareAndSetBool (head, node));
         --m_size;
-
-        return node ? static_cast <Element*> (node) : nullptr;
+        return static_cast <Element*> (node);
     }
 
-    /** Swap the contents of this stack with another stack.
-
-        This call is not thread safe or atomic. The caller is responsible for
-        synchronizing access.
-
-        @param other  The other stack to swap contents with.
+    /** Return a forward iterator to the beginning or end of the stack.
+        Undefined behavior results if push_front or pop_front is called
+        while an iteration is in progress.
+        Thread safety:
+            Caller is responsible for synchronization.
     */
-    void swap (LockFreeStack& other)
-    {
-        Node* temp = other.m_head.get ();
-        other.m_head.set (m_head.get ());
-        m_head.set (temp);
-
-        std::swap (m_size.value, other.m_size.value);
-    }
-
+    /** @{ */
     iterator begin ()
     {
         return iterator (m_head.get ());
@@ -279,7 +256,7 @@ public:
 
     iterator end ()
     {
-        return iterator ();
+        return iterator (&m_end);
     }
     
     const_iterator begin () const
@@ -289,7 +266,7 @@ public:
 
     const_iterator end () const
     {
-        return const_iterator ();
+        return const_iterator (&m_end);
     }
     
     const_iterator cbegin () const
@@ -299,12 +276,16 @@ public:
 
     const_iterator cend () const
     {
-        return const_iterator ();
+        return const_iterator (&m_end);
     }
-    
+    /** @} */
+
 private:
+    Node m_end;
     Atomic <size_type> m_size;
-    AtomicPointer <Node> m_head;
+    Atomic <Node*> m_head;
 };
+
+}
 
 #endif

@@ -24,6 +24,7 @@
 #ifndef BEAST_ATOMIC_H_INCLUDED
 #define BEAST_ATOMIC_H_INCLUDED
 
+namespace beast {
 
 //==============================================================================
 /**
@@ -385,5 +386,6 @@ inline void memoryBarrier() noexcept
   #pragma warning (pop)
 #endif
 
-#endif
+}
 
+#endif

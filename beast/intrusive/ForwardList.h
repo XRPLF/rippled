@@ -21,7 +21,6 @@
 #define BEAST_INTRUSIVE_FORWARDLIST_H_INCLUDED
 
 #include <iterator>
-
 #include "PointerTraits.h"
 #include "../MPL.h"
 

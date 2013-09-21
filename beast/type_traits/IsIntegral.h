@@ -22,10 +22,7 @@
 
 #include "IntegralConstant.h"
 
-namespace beast
-{
-
-namespace detail
+namespace beast {
 
 template <typename T> struct IsIntegral : FalseType { };
 

@@ -193,9 +193,9 @@ class HashMapIterator
 private:
     typedef typename M::Item Item;
     typedef typename M::Bucket Bucket;
-    typedef detail::ListIterator <typename detail::copyconst <M,
+    typedef detail::ListIterator <typename mpl::CopyConst <M,
         typename List <Bucket>::Node>::type> bucket_iterator;
-    typedef detail::ListIterator <typename detail::copyconst <M,
+    typedef detail::ListIterator <typename mpl::CopyConst <M,
         typename List <Item, detail::BucketTag>::Node>::type> item_iterator;
 
 public:

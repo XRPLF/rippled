@@ -64,8 +64,16 @@ private:
 
     struct Pool
     {
-        CacheLine::Padded <Pages> fresh;
-        CacheLine::Padded <Pages> garbage;
+        Pool()
+            : fresh (&fresh_c.get())
+            , garbage (&garbage_c.get())
+        {
+        }
+
+        Pages* fresh;
+        Pages* garbage;
+        CacheLine::Padded <Pages> fresh_c;
+        CacheLine::Padded <Pages> garbage_c;
     };
 
     static inline void* fromPage (Page* const p);

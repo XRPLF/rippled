@@ -20,8 +20,7 @@
 #ifndef BEAST_TYPE_TRAITS_INTEGRALCONSTANT_H_INCLUDED
 #define BEAST_TYPE_TRAITS_INTEGRALCONSTANT_H_INCLUDED
 
-namespace beast
-{
+namespace beast {
 
 // ideas from boost
 
