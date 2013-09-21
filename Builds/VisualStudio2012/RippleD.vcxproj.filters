@@ -984,6 +984,9 @@
     <ClCompile Include="..\..\src\ripple_app\node\SqliteFactory.cpp">
       <Filter>[2] Old Ripple\ripple_app\node</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\frame\api\RPCService.cpp">
+      <Filter>[1] Ripple\frame\api</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -1943,6 +1946,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\node\SqliteFactory.h">
       <Filter>[2] Old Ripple\ripple_app\node</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\frame\api\RPCService.h">
+      <Filter>[1] Ripple\frame\api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

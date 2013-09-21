@@ -30,6 +30,11 @@ public:
         //m_map.reserve (expectedSize);
     }
 
+    MapType const& map() const
+    {
+        return m_map;
+    }
+
     std::size_t size () const noexcept
     {
         return m_map.size ();

@@ -108,6 +108,7 @@ public:
         , m_checkTimer (this)
         , m_checkSources (true) // true to cause a full scan on start
     {
+        addRPCHandlers();
         m_thread.start (this);
     }
 
@@ -124,6 +125,41 @@ public:
     void onServiceStop ()
     {
         m_thread.stop (false);
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // RPCService
+    //
+
+    Json::Value rpcPrint (Json::Value const& args)
+    {
+        return m_logic.rpcPrint (args);
+    }
+
+    Json::Value rpcRebuild (Json::Value const& args)
+    {
+        m_thread.call (&Logic::dirtyChosen, &m_logic);
+        Json::Value result;
+        result ["chosen_list"] = "rebuilding";
+        return result;
+    }
+
+    Json::Value rpcSources (Json::Value const& args)
+    {
+        return m_logic.rpcSources(args);
+    }
+
+    void addRPCHandlers()
+    {
+        addRPCHandler ("validators_print", beast::bind (
+            &ManagerImp::rpcPrint, this, beast::_1));
+
+        addRPCHandler ("validators_rebuild", beast::bind (
+            &ManagerImp::rpcRebuild, this, beast::_1));
+
+        addRPCHandler ("validators_sources", beast::bind (
+            &ManagerImp::rpcSources, this, beast::_1));
     }
 
     //--------------------------------------------------------------------------
@@ -267,9 +303,9 @@ private:
 
 //------------------------------------------------------------------------------
 
-Manager* Manager::New (Service& parent, Journal journal)
+Validators::Manager* Validators::Manager::New (Service& parent, Journal journal)
 {
-    return new ManagerImp (parent, journal);
+    return new Validators::ManagerImp (parent, journal);
 }
 
 }

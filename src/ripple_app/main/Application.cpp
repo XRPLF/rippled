@@ -22,6 +22,8 @@ class JobQueueLog;
 template <> char const* LogPartition::getPartitionName <JobQueueLog> () { return "JobQueue"; }
 class NetworkOPsLog;
 template <> char const* LogPartition::getPartitionName <NetworkOPsLog> () { return "NetworkOPs"; }
+class RPCServiceManagerLog;
+template <> char const* LogPartition::getPartitionName <RPCServiceManagerLog> () { return "RPCServiceManager"; }
 
 //
 //------------------------------------------------------------------------------
@@ -51,6 +53,9 @@ public:
         , m_journal (LogJournal::get <ApplicationLog> ())
         , m_tempNodeCache ("NodeCache", 16384, 90)
         , m_sleCache ("LedgerEntryCache", 4096, 120)
+        
+        , m_rpcServiceManager (RPCService::Manager::New (
+            LogJournal::get <RPCServiceManagerLog> ()))
 
         // The JobQueue has to come pretty early since
         // almost everything is a Service child of the JobQueue.
@@ -90,7 +95,9 @@ public:
 
         , m_txQueue (TxQueue::New ())
 
-        , m_validators (Validators::Manager::New (*this, LogJournal::get <ValidatorsLog> ()))
+        , m_validators (m_rpcServiceManager->add (
+            Validators::Manager::New (*this, LogJournal::get <ValidatorsLog> ())
+            ))
 
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
 
@@ -158,6 +165,11 @@ public:
     }
 
     //--------------------------------------------------------------------------
+
+    RPCService::Manager& getRPCServiceManager()
+    {
+        return *m_rpcServiceManager;
+    }
 
     LocalCredentials& getLocalCredentials ()
     {
@@ -774,6 +786,8 @@ private:
     SLECache m_sleCache;
     LocalCredentials m_localCredentials;
     TransactionMaster m_txMaster;
+    
+    ScopedPointer <RPCService::Manager> m_rpcServiceManager;
 
     // These are Service-related
     ScopedPointer <JobQueue> m_jobQueue;

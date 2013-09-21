@@ -169,9 +169,15 @@
 // This is only here temporarily. Use it to turn off the sending of
 // "ANNOUNCE" messages if you suspect that you're having problems
 // because of it.
-
 #ifndef RIPPLE_USE_MT_ANNOUNCE
 #define RIPPLE_USE_MT_ANNOUNCE 0
+#endif
+
+// Here temporarily
+// Controls whether or not the new RPCService::Manager logic will be
+// used to invoke RPC commands before they pass to the original code.
+#ifndef  RIPPLE_USE_RPC_SERVICE_MANAGER
+#define  RIPPLE_USE_RPC_SERVICE_MANAGER 0
 #endif
 
 #endif

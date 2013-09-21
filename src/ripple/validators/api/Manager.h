@@ -17,7 +17,7 @@ namespace Validators
 
     All operations are performed asynchronously on an internal thread.
 */
-class Manager : public Uncopyable
+class Manager : public RPCService
 {
 public:
     /** Create a new Manager object.

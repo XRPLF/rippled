@@ -57,7 +57,7 @@ public:
 public:
     struct State
     {
-        // Stuff in here is accessed concurrently and requires a WriteAccess
+        // Stuff in here is accessed concurrently and requires a Access
     };
     
     typedef SharedData <State> SharedState;
@@ -76,9 +76,9 @@ public:
 
     virtual boost::asio::io_service& getIOService () = 0;
 
+    virtual RPCService::Manager&    getRPCServiceManager() = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual SLECache&               getSLECache () = 0;
-
     virtual Validators::Manager&    getValidators () = 0;
     virtual IFeatures&              getFeatureTable () = 0;
     virtual IFeeVote&               getFeeVote () = 0;

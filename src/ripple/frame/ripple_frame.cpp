@@ -8,6 +8,10 @@
 
 #include "beast/modules/beast_core/beast_core.h"
 
+#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
+#include <boost/unordered_map.hpp>
+
 #include "ripple_frame.h"
 
+#include "api/RPCService.cpp"
 #include "api/Service.cpp"
