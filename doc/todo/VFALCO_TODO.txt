@@ -3,6 +3,7 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's List: Changes day to day, descending priority
+- Finish RPCAsyncServer, RPCService and RPCService::Manager
 - Fix and tidy up broken beast classes
 - Parse Validator line using cribbed code
 - Parse ContentBodyBuffer from HTTPResponse

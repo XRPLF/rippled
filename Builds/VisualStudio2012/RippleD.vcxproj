@@ -22,6 +22,12 @@
     <ClCompile Include="..\..\build\proto\ripple.pb.cc" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beast.cpp" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c" />
+    <ClCompile Include="..\..\src\ripple\frame\api\HTTPServer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\frame\api\RPCService.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -284,6 +290,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\main\RPCHTTPServer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\misc\NetworkOPs.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1493,6 +1505,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\ripple\frame\api\HTTPServer.h" />
     <ClInclude Include="..\..\src\ripple\frame\api\RPCService.h" />
     <ClInclude Include="..\..\src\ripple\frame\ripple_frame.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_config.h" />
@@ -1560,6 +1573,7 @@
     <ClInclude Include="..\..\src\ripple_app\main\LoadManager.h" />
     <ClInclude Include="..\..\src\ripple_app\main\LocalCredentials.h" />
     <ClInclude Include="..\..\src\ripple_app\main\RippleMain.h" />
+    <ClInclude Include="..\..\src\ripple_app\main\RPCHTTPServer.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\NetworkOPs.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\PowResult.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\AccountItem.h" />

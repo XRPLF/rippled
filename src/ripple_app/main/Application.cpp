@@ -24,6 +24,8 @@ class NetworkOPsLog;
 template <> char const* LogPartition::getPartitionName <NetworkOPsLog> () { return "NetworkOPs"; }
 class RPCServiceManagerLog;
 template <> char const* LogPartition::getPartitionName <RPCServiceManagerLog> () { return "RPCServiceManager"; }
+class HTTPServerLog;
+template <> char const* LogPartition::getPartitionName <HTTPServerLog> () { return "RPCServer"; }
 
 //
 //------------------------------------------------------------------------------
@@ -81,6 +83,9 @@ public:
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
+
+        , m_rpcHTTPServer (RPCHTTPServer::New (*m_jobQueue,
+            LogJournal::get <HTTPServerLog> (), *m_networkOPs))
 
         , m_rpcServerHandler (*m_networkOPs) // passive object, not a Service
 
@@ -577,6 +582,10 @@ public:
         //
         // Allow RPC connections.
         //
+#if RIPPLE_USE_RPC_SERVICE_MANAGER
+        m_rpcHTTPServer->setup (m_journal);
+
+#else
         if (! getConfig ().getRpcIP().empty () && getConfig ().getRpcPort() != 0)
         {
             try
@@ -596,6 +605,7 @@ public:
         {
             m_journal.info << "RPC interface: disabled";
         }
+#endif
 
         //
         // Begin connecting to network.
@@ -797,6 +807,7 @@ private:
     LedgerMaster m_ledgerMaster;
     ScopedPointer <NetworkOPs> m_networkOPs;
     ScopedPointer <UniqueNodeList> m_deprecatedUNL;
+    ScopedPointer <RPCHTTPServer> m_rpcHTTPServer;
     RPCServerHandler m_rpcServerHandler;
     NodeStoreScheduler m_nodeStoreScheduler;
     ScopedPointer <NodeStore::Database> m_nodeStore;

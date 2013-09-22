@@ -49,6 +49,8 @@ namespace ripple
 #include "rpc/RPCHandler.cpp"
 
 # include "rpc/RPCServerHandler.h"
+# include "main/RPCHTTPServer.h"
+#include "main/RPCHTTPServer.cpp"
 #include "rpc/RPCServerHandler.cpp"
 #include "websocket/WSConnection.h"
 
