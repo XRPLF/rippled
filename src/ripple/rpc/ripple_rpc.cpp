@@ -11,4 +11,7 @@
 #include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
 #include <boost/unordered_map.hpp>
 
-#include "api/RPCService.cpp"
+# include "impl/ManagerImpl.h"
+#include "impl/Manager.cpp"
+#include "impl/Handler.cpp"
+#include "impl/Service.cpp"

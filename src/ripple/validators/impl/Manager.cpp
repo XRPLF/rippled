@@ -125,7 +125,7 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // RPCService
+    // RPC::Service
     //
 
     Json::Value rpcPrint (Json::Value const& args)

@@ -76,7 +76,7 @@ public:
 
     virtual boost::asio::io_service& getIOService () = 0;
 
-    virtual RPCService::Manager&    getRPCServiceManager() = 0;
+    virtual RPC::Manager&           getRPCServiceManager() = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual SLECache&               getSLECache () = 0;
     virtual Validators::Manager&    getValidators () = 0;

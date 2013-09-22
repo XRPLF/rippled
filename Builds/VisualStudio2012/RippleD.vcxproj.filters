@@ -211,6 +211,9 @@
     <Filter Include="[1] Ripple\http\impl">
       <UniqueIdentifier>{386ebc1c-0cbe-43a6-b48e-ac3c503da0ee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\rpc\impl">
+      <UniqueIdentifier>{95c93134-7e8d-47ec-9649-4a8d5d97ce12}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -993,9 +996,6 @@
     <ClCompile Include="..\..\src\ripple\rpc\ripple_rpc.cpp">
       <Filter>[1] Ripple\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\api\RPCService.cpp">
-      <Filter>[1] Ripple\rpc\api</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\ripple_http.cpp">
       <Filter>[1] Ripple\http</Filter>
     </ClCompile>
@@ -1019,6 +1019,15 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\impl\Peer.cpp">
       <Filter>[1] Ripple\http\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Handler.cpp">
+      <Filter>[1] Ripple\rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Service.cpp">
+      <Filter>[1] Ripple\rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Manager.cpp">
+      <Filter>[1] Ripple\rpc\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1980,9 +1989,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\ripple_rpc.h">
       <Filter>[1] Ripple\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\api\RPCService.h">
-      <Filter>[1] Ripple\rpc\api</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\ripple_http.h">
       <Filter>[1] Ripple\http</Filter>
     </ClInclude>
@@ -2015,6 +2021,18 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\Door.h">
       <Filter>[1] Ripple\http\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\api\Handler.h">
+      <Filter>[1] Ripple\rpc\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\api\Manager.h">
+      <Filter>[1] Ripple\rpc\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\api\Service.h">
+      <Filter>[1] Ripple\rpc\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\ManagerImpl.h">
+      <Filter>[1] Ripple\rpc\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -17,7 +17,7 @@ namespace Validators
 
     All operations are performed asynchronously on an internal thread.
 */
-class Manager : public RPCService
+class Manager : public RPC::Service
 {
 public:
     /** Create a new Manager object.

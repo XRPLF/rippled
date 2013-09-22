@@ -4,10 +4,13 @@
 */
 //==============================================================================
 
-namespace ripple
-{
+#ifndef RIPPLE_RPC_MANAGERIMPL_H_INCLUDED
+#define RIPPLE_RPC_MANAGERIMPL_H_INCLUDED
 
-class RPCService::ManagerImp : public RPCService::Manager
+namespace ripple {
+namespace RPC {
+
+class ManagerImpl : public Manager
 {
 public:
     // The type of map we use to look up by function name.
@@ -16,18 +19,18 @@ public:
 
     //--------------------------------------------------------------------------
 
-    explicit ManagerImp (Journal journal)
+    explicit ManagerImpl (Journal journal)
         : m_journal (journal)
     {
     }
 
-    ~ManagerImp()
+    ~ManagerImpl()
     {
     }
 
-    void add (RPCService& service)
+    void add (Service& service)
     {
-        Handlers const& handlers (service.m_handlers);
+        Handlers const& handlers (service.handlers());
 
         SharedState::Access state (m_state);
 
@@ -76,21 +79,7 @@ private:
     SharedState m_state;
 };
 
-//------------------------------------------------------------------------------
-
-RPCService::Manager* RPCService::Manager::New (Journal journal)
-{
-    return new RPCService::ManagerImp (journal);
+}
 }
 
-//------------------------------------------------------------------------------
-
-RPCService::RPCService ()
-{
-}
-
-RPCService::~RPCService ()
-{
-}
-
-}
+#endif

@@ -11,6 +11,8 @@
 
 #include "../json/ripple_json.h"
 
-#include "api/RPCService.h"
+#  include "api/Handler.h"
+# include "api/Service.h"
+#include "api/Manager.h"
 
 #endif

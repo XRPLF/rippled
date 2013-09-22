@@ -56,7 +56,7 @@ public:
         , m_tempNodeCache ("NodeCache", 16384, 90)
         , m_sleCache ("LedgerEntryCache", 4096, 120)
         
-        , m_rpcServiceManager (RPCService::Manager::New (
+        , m_rpcServiceManager (RPC::Manager::New (
             LogJournal::get <RPCServiceManagerLog> ()))
 
         // The JobQueue has to come pretty early since
@@ -173,7 +173,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    RPCService::Manager& getRPCServiceManager()
+    RPC::Manager& getRPCServiceManager()
     {
         return *m_rpcServiceManager;
     }
@@ -800,7 +800,7 @@ private:
     LocalCredentials m_localCredentials;
     TransactionMaster m_txMaster;
     
-    ScopedPointer <RPCService::Manager> m_rpcServiceManager;
+    ScopedPointer <RPC::Manager> m_rpcServiceManager;
 
     // These are Stoppable-related
     ScopedPointer <JobQueue> m_jobQueue;
