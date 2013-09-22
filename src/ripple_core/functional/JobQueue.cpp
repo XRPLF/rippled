@@ -508,7 +508,7 @@ private:
         }
         else
         {
-            m_journal.error << "Skipping processTask ('" << name << "')";
+            m_journal.trace << "Skipping processTask ('" << name << "')";
         }
 
         {
@@ -671,7 +671,7 @@ private:
 
             if (report)
             {
-                Journal::Stream s (m_journal.debug);
+                Journal::ScopedStream s (m_journal.debug);
 
                 for (MapType::const_iterator iter (counts.begin());
                     iter != counts.end(); ++iter)
