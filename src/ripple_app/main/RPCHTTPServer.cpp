@@ -96,7 +96,7 @@ public:
     {
         // Reject non-loopback connections if RPC_ALLOW_REMOTE is not set
         if (! getConfig().RPC_ALLOW_REMOTE &&
-            ! session.remoteAddress.isLoopback())
+            ! session.remoteAddress().isLoopback())
         {
             session.close();
         }
@@ -119,7 +119,7 @@ public:
 #endif
     }
 
-    void onClose (HTTP::Session& session)
+    void onClose (HTTP::Session& session, int errorCode)
     {
     }
 
@@ -133,7 +133,7 @@ public:
     void processSession (Job& job, HTTP::Session& session)
     {
         session.write (m_deprecatedHandler.processRequest (
-            session.content, session.remoteAddress.to_string()));
+            session.content(), session.remoteAddress().withPort(0).to_string()));
 
         session.close();
     }

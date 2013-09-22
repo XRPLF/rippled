@@ -22,33 +22,29 @@ namespace HTTP {
 class Session : public Uncopyable
 {
 public:
-    Session ();
-
-    /** Input: The Journal the server is using. */
-    Journal journal;
-
-    /** Input: The remote address of the connection. */
-    IPEndpoint remoteAddress;
-
-    /** Input: `true` if all the headers have been received. */
-    bool headersComplete;
-
-    /** Input: The currently known set of HTTP headers. */
-    HTTPHeaders headers;
-
-    /** Input: The full HTTPRequest when it is known. */
-    SharedPtr <HTTPRequest> request;
-
-    /** Input: The Content-Body as a linear buffer if we have the HTTPRequest. */
-    std::string content;
-
     /** A user-definable pointer.
         The initial value is always zero.
         Changes to the value are persisted between calls.
     */
     void* tag;
 
+    /** Returns the Journal to use for logging. */
+    virtual Journal journal() = 0;
 
+    /** Returns the remote address of the connection. */
+    virtual IPEndpoint remoteAddress() = 0;
+
+    /** Returns `true` if the full HTTP headers have been received. */
+    virtual bool headersComplete() = 0;
+
+    /** Returns the currently known set of headers. */
+    virtual HTTPHeaders headers() = 0;
+
+    /** Returns the complete HTTP request when it is known. */
+    virtual SharedPtr <beast::HTTPRequest> const& request() = 0;
+
+    /** Returns the entire Content-Body, if the request is complete. */
+    virtual std::string content() = 0;
 
     /** Send a copy of data asynchronously. */
     /** @{ */
@@ -76,7 +72,10 @@ public:
 
     /** Output support using ostream. */
     /** @{ */
-    ScopedStream operator<< (std::ostream& manip (std::ostream&));
+    ScopedStream operator<< (std::ostream& manip (std::ostream&))
+    {
+        return ScopedStream (*this, manip);
+    }
         
     template <typename T>
     ScopedStream operator<< (T const& t)

@@ -34,8 +34,9 @@ struct Handler
 
     /** Called when the session ends.
         Guaranteed to be called once.
+        @param errorCode Non zero for a failed connection.
     */
-    virtual void onClose (Session& session) = 0;
+    virtual void onClose (Session& session, int errorCode) = 0;
 
     /** Called when the server has finished its stop. */
     virtual void onStopped (Server& server) = 0;
