@@ -214,6 +214,11 @@ public:
     /** Copy assign another IPEndpoint. */
     IPEndpoint& operator= (IPEndpoint const& other);
 
+    /** Create an IPEndpoint from a string.
+        If a parsing error occurs, the endpoint will be empty.
+    */
+    static IPEndpoint from_string (std::string const& s);
+
     /** Copy assign an IPv4 address.
         The port is set to zero.
     */
@@ -289,59 +294,28 @@ private:
 };
 
 /** Comparison. */
-inline bool operator== (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return lhs.value == rhs.value; }
-inline bool operator!= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return lhs.value != rhs.value; }
-inline bool operator<  (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return lhs.value <  rhs.value; }
-inline bool operator<= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return lhs.value <= rhs.value; }
-inline bool operator>  (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return lhs.value >  rhs.value; }
-inline bool operator>= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return lhs.value >= rhs.value; }
-//inline bool operator== (IPEndpoint::V6 const& lhs, IPEndpoint::V6 const& rhs) { return lhs.value == rhs.value; }
-//inline bool operator!= (IPEndpoint::V6 const& lhs, IPEndpoint::V6 const& rhs) { return lhs.value != rhs.value; }
-//inline bool operator<  (IPEndpoint::V6 const& lhs, IPEndpoint::V6 const& rhs) { return lhs.value <  rhs.value; }
-//inline bool operator<= (IPEndpoint::V6 const& lhs, IPEndpoint::V6 const& rhs) { return lhs.value <= rhs.value; }
-//inline bool operator>  (IPEndpoint::V6 const& lhs, IPEndpoint::V6 const& rhs) { return lhs.value >  rhs.value; }
-//inline bool operator>= (IPEndpoint::V6 const& lhs, IPEndpoint::V6 const& rhs) { return lhs.value >= rhs.value; }
+/** @{ */
+int  compare    (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
+bool operator== (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
+bool operator!= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
+bool operator<  (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
+bool operator<= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
+bool operator>  (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
+bool operator>= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
 
-inline bool operator== (IPEndpoint const& lhs, IPEndpoint const& rhs)
-{ 
-    if (lhs.type() != rhs.type())
-        return false;
-    switch (lhs.type())
-    {
-    case IPEndpoint::none: return true;
-    case IPEndpoint::ipv4: return lhs.v4() == rhs.v4();
-    case IPEndpoint::ipv6: return lhs.v6() == rhs.v6();
-    default:
-        bassertfalse;
-        break;
-    }
-    return false;
-}
-
-inline bool operator!= (IPEndpoint const& lhs, IPEndpoint const& rhs)
-{
-    return ! (lhs == rhs);
-}
+int  compare    (IPEndpoint const& lhs, IPEndpoint const& rhs);
+bool operator== (IPEndpoint const& lhs, IPEndpoint const& rhs);
+bool operator!= (IPEndpoint const& lhs, IPEndpoint const& rhs);
+bool operator<  (IPEndpoint const& lhs, IPEndpoint const& rhs);
+bool operator<= (IPEndpoint const& lhs, IPEndpoint const& rhs);
+bool operator>  (IPEndpoint const& lhs, IPEndpoint const& rhs);
+bool operator>= (IPEndpoint const& lhs, IPEndpoint const& rhs);
 
 /** Output stream conversions. */
 /** @{ */
-inline std::ostream& operator<< (std::ostream &os, IPEndpoint::V4 const& addr)
-{
-    os << addr.to_string();
-    return os;
-}
-
-inline std::ostream& operator<< (std::ostream &os, IPEndpoint::V6 const& addr)
-{
-    os << addr.to_string();
-    return os;
-}
-
-inline std::ostream& operator<< (std::ostream &os, IPEndpoint const& ep)
-{
-    os << ep.to_string();
-    return os;
-}
+std::ostream& operator<< (std::ostream &os, IPEndpoint::V4 const& addr);
+std::ostream& operator<< (std::ostream &os, IPEndpoint::V6 const& addr);
+std::ostream& operator<< (std::ostream &os, IPEndpoint const& ep);
 /** @} */
 
 /** Input stream conversions. */
