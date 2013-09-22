@@ -28,7 +28,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\frame\api\Service.cpp">
+    <ClCompile Include="..\..\src\ripple\frame\api\Stoppable.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -249,7 +249,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\NodeStoreSchedulerService.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\NodeStoreScheduler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1500,7 +1500,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple\frame\api\RPCService.h" />
-    <ClInclude Include="..\..\src\ripple\frame\api\Service.h" />
+    <ClInclude Include="..\..\src\ripple\frame\api\Stoppable.h" />
     <ClInclude Include="..\..\src\ripple\frame\ripple_frame.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_config.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_features.h" />
@@ -1560,7 +1560,7 @@
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerHistory.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\SerializedValidation.h" />
     <ClInclude Include="..\..\src\ripple_app\main\IoServicePool.h" />
-    <ClInclude Include="..\..\src\ripple_app\main\NodeStoreSchedulerService.h" />
+    <ClInclude Include="..\..\src\ripple_app\main\NodeStoreScheduler.h" />
     <ClInclude Include="..\..\src\ripple_app\main\ParameterTable.h" />
     <ClInclude Include="..\..\src\ripple_app\main\Application.h" />
     <ClInclude Include="..\..\src\ripple_app\main\FatalErrorReporter.h" />

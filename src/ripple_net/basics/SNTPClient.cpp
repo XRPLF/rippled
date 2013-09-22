@@ -61,7 +61,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    explicit SNTPClientImp (Service& parent)
+    explicit SNTPClientImp (Stoppable& parent)
         : SNTPClient (parent)
         , Thread ("SNTPClient")
         , mLock (this, "SNTPClient", __FILE__, __LINE__)
@@ -97,10 +97,10 @@ public:
     {
         m_io_service.run ();
 
-        serviceStopped ();
+        stopped ();
     }
 
-    void onServiceStop ()
+    void onStop ()
     {
         // HACK!
         m_io_service.stop ();
@@ -345,14 +345,14 @@ private:
 
 //------------------------------------------------------------------------------
 
-SNTPClient::SNTPClient (Service& parent)
+SNTPClient::SNTPClient (Stoppable& parent)
     : AsyncService ("SNTPClient", parent)
 {
 }
 
 //------------------------------------------------------------------------------
 
-SNTPClient* SNTPClient::New (Service& parent)
+SNTPClient* SNTPClient::New (Stoppable& parent)
 {
     return new SNTPClientImp (parent);
 }

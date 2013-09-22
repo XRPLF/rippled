@@ -46,11 +46,11 @@ private:
 //------------------------------------------------------------------------------
 
 class OrderBookDB
-    : public Service
+    : public Stoppable
     , public LeakChecked <OrderBookDB>
 {
 public:
-    explicit OrderBookDB (Service& parent);
+    explicit OrderBookDB (Stoppable& parent);
 
     void setup (Ledger::ref ledger);
     void update (Ledger::pointer ledger);

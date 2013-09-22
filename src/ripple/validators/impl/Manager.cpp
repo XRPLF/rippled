@@ -89,14 +89,14 @@ namespace Validators
 
 class ManagerImp
     : public Manager
-    , public Service
+    , public Stoppable
     , public ThreadWithCallQueue::EntryPoints
     , public DeadlineTimer::Listener
     , public LeakChecked <ManagerImp>
 {
 public:
-    ManagerImp (Service& parent, Journal journal)
-        : Service ("Validators::Manager", parent)
+    ManagerImp (Stoppable& parent, Journal journal)
+        : Stoppable ("Validators::Manager", parent)
         , m_store (journal)
         , m_logic (m_store, journal)
         , m_journal (journal)
@@ -115,10 +115,10 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // Service
+    // Stoppable
     //
 
-    void onServiceStop ()
+    void onStop ()
     {
         m_thread.stop (false);
     }
@@ -262,7 +262,7 @@ public:
     void threadExit ()
     {
         // must come last
-        serviceStopped ();
+        stopped ();
     }
 
     bool threadIdle ()
@@ -302,7 +302,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-Validators::Manager* Validators::Manager::New (Service& parent, Journal journal)
+Validators::Manager* Validators::Manager::New (Stoppable& parent, Journal journal)
 {
     return new Validators::ManagerImp (parent, journal);
 }

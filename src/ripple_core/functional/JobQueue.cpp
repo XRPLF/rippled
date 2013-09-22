@@ -54,13 +54,13 @@ public:
 
     //--------------------------------------------------------------------------
 
-    JobQueueImp (Service& parent, Journal journal)
+    JobQueueImp (Stoppable& parent, Journal journal)
         : JobQueue ("JobQueue", parent)
         , m_journal (journal)
         , m_lastJob (0)
         , m_processCount (0)
         , m_workers (*this, "JobQueue", 0)
-        , m_cancelCallback (boost::bind (&Service::isServiceStopping, this))
+        , m_cancelCallback (boost::bind (&Stoppable::isStopping, this))
     {
         {
             ScopedLock lock (m_mutex);
@@ -107,13 +107,13 @@ public:
         // do not add jobs to a queue with no threads
         bassert (type == jtCLIENT || m_workers.getNumberOfThreads () > 0);
 
-        // If this goes off it means that a child didn't follow the Service API rules.
-        bassert (! isServiceStopped() && ! areServiceChildrenStopped());
+        // If this goes off it means that a child didn't follow the Stoppable API rules.
+        bassert (! isStopped() && ! areChildrenStopped());
 
         // Don't even add it to the queue if we're stopping
         // and the job type is marked for skipOnStop.
         //
-        if (isServiceStopping() && skipOnStop (type))
+        if (isStopping() && skipOnStop (type))
         {
             m_journal.debug <<
                 "Skipping addJob ('" << name << "')";
@@ -331,16 +331,16 @@ private:
         // We are stopped when all of the following are true:
         //
         //  1. A stop notification was received
-        //  2. All Service children have stopped
+        //  2. All Stoppable children have stopped
         //  3. There are no executing calls to processTask
         //  4. There are no remaining Jobs in the job set
         //
-        if (isServiceStopping() &&
-            areServiceChildrenStopped() &&
+        if (isStopping() &&
+            areChildrenStopped() &&
             (m_processCount == 0) &&
             m_jobSet.empty())
         {
-            serviceStopped();
+            stopped();
         }
     }
 
@@ -500,7 +500,7 @@ private:
         // Skip the job if we are stopping and the
         // skipOnStop flag is set for the job type
         //
-        if (!isServiceStopping() || !skipOnStop (type))
+        if (!isStopping() || !skipOnStop (type))
         {
             Thread::setCurrentThreadName (name);
             m_journal.trace << "Doing " << name << " job";
@@ -633,7 +633,7 @@ private:
 
     //--------------------------------------------------------------------------
 
-    void onServiceStop ()
+    void onStop ()
     {
         // VFALCO NOTE I wanted to remove all the jobs that are skippable
         //             but then the Workers count of tasks to process
@@ -685,7 +685,7 @@ private:
         */
     }
 
-    void onServiceChildrenStopped ()
+    void onChildrenStopped ()
     {
         ScopedLock lock (m_mutex);
 
@@ -695,14 +695,14 @@ private:
 
 //------------------------------------------------------------------------------
 
-JobQueue::JobQueue (char const* name, Service& parent)
-    : Service (name, parent)
+JobQueue::JobQueue (char const* name, Stoppable& parent)
+    : Stoppable (name, parent)
 {
 }
 
 //------------------------------------------------------------------------------
 
-JobQueue* JobQueue::New (Service& parent, Journal journal)
+JobQueue* JobQueue::New (Stoppable& parent, Journal journal)
 {
     return new JobQueueImp (parent, journal);
 }

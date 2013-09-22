@@ -6,8 +6,8 @@
 
 SETUP_LOG (OrderBookDB)
 
-OrderBookDB::OrderBookDB (Service& parent)
-    : Service ("OrderBookDB", parent)
+OrderBookDB::OrderBookDB (Stoppable& parent)
+    : Stoppable ("OrderBookDB", parent)
     , mLock (this, "OrderBookDB", __FILE__, __LINE__)
     , mSeq (0)
 {

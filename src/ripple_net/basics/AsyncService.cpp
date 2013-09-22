@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-AsyncService::AsyncService (char const* name, Service& parent)
-    : Service (name, parent)
+AsyncService::AsyncService (char const* name, Stoppable& parent)
+    : Stoppable (name, parent)
 {
 }
 
@@ -37,5 +37,5 @@ bool AsyncService::serviceCountIoComplete (boost::system::error_code const& ec)
 
 void AsyncService::onServiceIoComplete ()
 {
-    //serviceStopped();
+    //stopped();
 }

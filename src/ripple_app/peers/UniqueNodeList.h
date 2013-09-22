@@ -7,10 +7,10 @@
 #ifndef RIPPLE_UNIQUENODELIST_H_INCLUDED
 #define RIPPLE_UNIQUENODELIST_H_INCLUDED
 
-class UniqueNodeList : public Service
+class UniqueNodeList : public Stoppable
 {
 protected:
-    explicit UniqueNodeList (Service& parent);
+    explicit UniqueNodeList (Stoppable& parent);
 
 public:
     enum ValidatorSource
@@ -29,7 +29,7 @@ public:
 
 public:
     // VFALCO TODO make this not use boost::asio...
-    static UniqueNodeList* New (Service& parent);
+    static UniqueNodeList* New (Stoppable& parent);
 
     virtual ~UniqueNodeList () { }
 

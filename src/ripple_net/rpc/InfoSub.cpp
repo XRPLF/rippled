@@ -17,8 +17,8 @@
 
 //------------------------------------------------------------------------------
 
-InfoSub::Source::Source (char const* name, Service& parent)
-    : Service (name, parent)
+InfoSub::Source::Source (char const* name, Stoppable& parent)
+    : Stoppable (name, parent)
 {
 }
 

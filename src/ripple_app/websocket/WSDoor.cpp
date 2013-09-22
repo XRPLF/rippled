@@ -95,10 +95,10 @@ private:
             m_endpoint = nullptr;
         }
 
-        serviceStopped ();
+        stopped ();
     }
 
-    void onServiceStop ()
+    void onStop ()
     {
         {
             ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
@@ -129,8 +129,8 @@ private:
 
 //------------------------------------------------------------------------------
 
-WSDoor::WSDoor (Service& parent)
-    : Service ("WSDoor", parent)
+WSDoor::WSDoor (Stoppable& parent)
+    : Stoppable ("WSDoor", parent)
 {
 }
 

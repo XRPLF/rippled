@@ -8,17 +8,17 @@
 #define RIPPLE_APP_IOSERVICEPOOL_H_INCLUDED
 
 /** An io_service with an associated group of threads. */
-class IoServicePool : public Service
+class IoServicePool : public Stoppable
 {
 public:
-    IoServicePool (Service& parent, String const& name, int numberOfThreads);
+    IoServicePool (Stoppable& parent, String const& name, int numberOfThreads);
     ~IoServicePool ();
 
     boost::asio::io_service& getService ();
     operator boost::asio::io_service& ();
 
-    void onServiceStop ();
-    void onServiceChildrenStopped ();
+    void onStop ();
+    void onChildrenStopped ();
 
 private:
     class ServiceThread;

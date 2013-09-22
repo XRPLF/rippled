@@ -20,7 +20,7 @@ public:
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
-    NetworkOPsImp (LedgerMaster& ledgerMaster, Service& parent, Journal journal)
+    NetworkOPsImp (LedgerMaster& ledgerMaster, Stoppable& parent, Journal journal)
         : NetworkOPs (parent)
         , m_journal (journal)
         , mLock (this, "NetOPs", __FILE__, __LINE__)
@@ -360,14 +360,14 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // Service
+    // Stoppable
     
-    void onServiceStop ()
+    void onStop ()
     {
         m_heartbeatTimer.cancel();
         m_clusterTimer.cancel();
 
-        serviceStopped ();
+        stopped ();
     }
 
 private:
@@ -3075,7 +3075,7 @@ void NetworkOPsImp::missingNodeInLedger (uint32 seq)
 
 //------------------------------------------------------------------------------
 
-NetworkOPs::NetworkOPs (Service& parent)
+NetworkOPs::NetworkOPs (Stoppable& parent)
     : InfoSub::Source ("NetworkOPs", parent)
 {
 }
@@ -3083,7 +3083,7 @@ NetworkOPs::NetworkOPs (Service& parent)
 //------------------------------------------------------------------------------
 
 NetworkOPs* NetworkOPs::New (LedgerMaster& ledgerMaster,
-    Service& parent, Journal journal)
+    Stoppable& parent, Journal journal)
 {
     ScopedPointer <NetworkOPs> object (new NetworkOPsImp (
         ledgerMaster, parent, journal));

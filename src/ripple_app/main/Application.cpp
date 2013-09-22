@@ -31,7 +31,7 @@ template <> char const* LogPartition::getPartitionName <RPCServiceManagerLog> ()
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp
     : public Application
-    , public Service
+    , public Stoppable
     , public DeadlineTimer::Listener
     , LeakChecked <ApplicationImp>
     , PeerFinder::Callback
@@ -49,7 +49,7 @@ public:
     //--------------------------------------------------------------------------
 
     ApplicationImp ()
-        : Service ("Application")
+        : Stoppable ("Application")
         , m_journal (LogJournal::get <ApplicationLog> ())
         , m_tempNodeCache ("NodeCache", 16384, 90)
         , m_sleCache ("LedgerEntryCache", 4096, 120)
@@ -58,7 +58,7 @@ public:
             LogJournal::get <RPCServiceManagerLog> ()))
 
         // The JobQueue has to come pretty early since
-        // almost everything is a Service child of the JobQueue.
+        // almost everything is a Stoppable child of the JobQueue.
         //
         , m_jobQueue (JobQueue::New (*this, LogJournal::get <JobQueueLog> ()))
 
@@ -130,7 +130,7 @@ public:
 
     ~ApplicationImp ()
     {
-        serviceStop();
+        stop();
         //stop ();
 
         // Why is this needed here?
@@ -429,7 +429,8 @@ public:
 
             if (!loadOldLedger (getConfig ().START_LEDGER, getConfig ().START_UP == Config::REPLAY))
             {
-                getApp().stop ();
+                // wtf?
+                getApp().signalStop ();
                 exit (-1);
             }
         }
@@ -618,10 +619,10 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // Service
+    // Stoppable
 
     // Called to indicate shutdown.
-    void onServiceStop ()
+    void onStop ()
     {
         m_sweepTimer.cancel();
 
@@ -630,7 +631,7 @@ public:
         mValidations->flush ();
         mShutdown = false;
 
-        serviceStopped ();
+        stopped ();
     }
 
     //
@@ -667,7 +668,7 @@ public:
 #endif
 
         // Stop the server. When this returns, all
-        // Service objects should be stopped.
+        // Stoppable objects should be stopped.
 
         doStop ();
 
@@ -697,10 +698,10 @@ public:
         m_journal.info << "Received shutdown request";
         StopSustain ();
 
-        serviceStop (m_journal.warning);
+        stop (m_journal.warning);
     }
 
-    void stop ()
+    void signalStop ()
     {
         // Unblock the main thread (which is sitting in run()).
         //
@@ -720,7 +721,7 @@ public:
             if (space.available < (512 * 1024 * 1024))
             {
                 m_journal.fatal << "Remaining free disk space is less than 512MB";
-                getApp().stop ();
+                getApp().signalStop ();
             }
 
             m_jobQueue->addJob(jtSWEEP, "sweep",
@@ -781,7 +782,7 @@ private:
     Journal m_journal;
     Application::LockType m_masterMutex;
 
-    // These are not Service-derived
+    // These are not Stoppable-derived
     NodeCache m_tempNodeCache;
     SLECache m_sleCache;
     LocalCredentials m_localCredentials;
@@ -789,7 +790,7 @@ private:
     
     ScopedPointer <RPCService::Manager> m_rpcServiceManager;
 
-    // These are Service-related
+    // These are Stoppable-related
     ScopedPointer <JobQueue> m_jobQueue;
     IoServicePool m_mainIoPool;
     OrderBookDB m_orderBookDB;
@@ -797,7 +798,7 @@ private:
     ScopedPointer <NetworkOPs> m_networkOPs;
     ScopedPointer <UniqueNodeList> m_deprecatedUNL;
     RPCServerHandler m_rpcServerHandler;
-    NodeStoreSchedulerService m_nodeStoreScheduler;
+    NodeStoreScheduler m_nodeStoreScheduler;
     ScopedPointer <NodeStore::Database> m_nodeStore;
     ScopedPointer <SNTPClient> m_sntpClient;
     InboundLedgers m_inboundLedgers;

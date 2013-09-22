@@ -11,7 +11,7 @@ class PeerDoorImp
     , public LeakChecked <PeerDoorImp>
 {
 public:
-    PeerDoorImp (Service& parent, Kind kind, std::string const& ip, int port,
+    PeerDoorImp (Stoppable& parent, Kind kind, std::string const& ip, int port,
         boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
         : PeerDoor (parent)
         , m_kind (kind)
@@ -93,7 +93,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void onServiceStop ()
+    void onStop ()
     {
         {
             boost::system::error_code ec;
@@ -105,7 +105,7 @@ public:
             mAcceptor.cancel (ec);
         }
 
-        serviceStopped ();
+        stopped ();
     }
 
 private:
@@ -117,14 +117,14 @@ private:
 
 //------------------------------------------------------------------------------
 
-PeerDoor::PeerDoor (Service& parent)
+PeerDoor::PeerDoor (Stoppable& parent)
     : AsyncService ("PeerDoor", parent)
 {
 }
 
 //------------------------------------------------------------------------------
 
-PeerDoor* PeerDoor::New (Service& parent, Kind kind, std::string const& ip, int port,
+PeerDoor* PeerDoor::New (Stoppable& parent, Kind kind, std::string const& ip, int port,
     boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
 {
     return new PeerDoorImp (parent, kind, ip, port, io_service, ssl_context);

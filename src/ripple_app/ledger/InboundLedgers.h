@@ -14,14 +14,14 @@
 // VFALCO TODO Rename to InboundLedgers
 // VFALCO TODO Create abstract interface
 class InboundLedgers
-    : public Service
+    : public Stoppable
     , public LeakChecked <InboundLedger>
 {
 public:
     // How long before we try again to acquire the same ledger
     static const int kReacquireIntervalSeconds = 300;
 
-    explicit InboundLedgers (Service& parent);
+    explicit InboundLedgers (Stoppable& parent);
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
@@ -62,7 +62,7 @@ public:
     void gotFetchPack (Job&);
     void sweep ();
 
-    void onServiceStop ();
+    void onStop ();
 
 private:
     typedef boost::unordered_map <uint256, InboundLedger::pointer> MapType;

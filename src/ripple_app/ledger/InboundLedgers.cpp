@@ -6,8 +6,8 @@
 
 typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
 
-InboundLedgers::InboundLedgers (Service& parent)
-    : Service ("InboundLedgers", parent)
+InboundLedgers::InboundLedgers (Stoppable& parent)
+    : Stoppable ("InboundLedgers", parent)
     , mLock (this, "InboundLedger", __FILE__, __LINE__)
     , mRecentFailures ("LedgerAcquireRecentFailures", 0, kReacquireIntervalSeconds)
 {
@@ -21,7 +21,7 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-        if (! isServiceStopping ())
+        if (! isStopping ())
         {
             boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
             if (it != mLedgers.end ())
@@ -352,12 +352,12 @@ Json::Value InboundLedgers::getInfo()
     return ret;
 }
 
-void InboundLedgers::onServiceStop ()
+void InboundLedgers::onStop ()
 {
     ScopedLockType lock (mLock, __FILE__, __LINE__);
 
     mLedgers.clear();
     mRecentFailures.clear();
 
-    serviceStopped();
+    stopped();
 }

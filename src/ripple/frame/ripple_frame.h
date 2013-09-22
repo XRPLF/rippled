@@ -11,7 +11,7 @@
 
 #include "../json/ripple_json.h"
 
+#include "api/Stoppable.h"
 #include "api/RPCService.h"
-#include "api/Service.h"
 
 #endif

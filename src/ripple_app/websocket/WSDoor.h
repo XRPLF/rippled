@@ -8,10 +8,10 @@
 #define RIPPLE_WSDOOR_RIPPLEHEADER
 
 /** Handles accepting incoming WebSocket connections. */
-class WSDoor : public Service
+class WSDoor : public Stoppable
 {
 protected:
-    explicit WSDoor (Service& parent);
+    explicit WSDoor (Stoppable& parent);
 
 public:
     virtual ~WSDoor () { }

@@ -30,10 +30,10 @@ public:
 public:
     /** Abstracts the source of subscription data.
     */
-    class Source : public Service
+    class Source : public Stoppable
     {
     protected:
-        Source (char const* name, Service& parent);
+        Source (char const* name, Stoppable& parent);
 
     public:
         // VFALCO TODO Rename the 'rt' parameters to something meaningful.

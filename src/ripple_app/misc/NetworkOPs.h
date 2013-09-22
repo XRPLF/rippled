@@ -40,7 +40,7 @@ class NetworkOPs
     : public InfoSub::Source
 {
 protected:
-    explicit NetworkOPs (Service& parent);
+    explicit NetworkOPs (Stoppable& parent);
 
 public:
     enum Fault
@@ -68,7 +68,7 @@ public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
     static NetworkOPs* New (LedgerMaster& ledgerMaster,
-        Service& parent, Journal journal);
+        Stoppable& parent, Journal journal);
 
     virtual ~NetworkOPs () { }
 

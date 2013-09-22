@@ -2739,7 +2739,7 @@ Json::Value RPCHandler::doSMS (Json::Value params, LoadType* loadType, Applicati
 }
 Json::Value RPCHandler::doStop (Json::Value, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
-    getApp().stop ();
+    getApp().signalStop ();
 
     return SYSTEM_NAME " server stopping";
 }

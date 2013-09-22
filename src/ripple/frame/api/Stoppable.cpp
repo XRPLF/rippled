@@ -7,48 +7,38 @@
 namespace ripple
 {
 
-Service::Service (char const* name)
+Stoppable::Stoppable (char const* name, Stoppable& parent)
     : m_name (name)
-    , m_root (true)
+    , m_root (false)
     , m_child (this)
-    , m_calledServiceStop (false)
+    , m_calledStop (false)
     , m_stopped (false)
     , m_childrenStopped (false)
 {
+    // must not have had stop called
+    bassert (! parent.isStopping());
+
+    parent.m_children.push_front (&m_child);
 }
 
-Service::Service (char const* name, Service* parent)
+Stoppable::Stoppable (char const* name, Stoppable* parent)
     : m_name (name)
-    , m_root (parent != nullptr)
+    , m_root (parent == nullptr)
     , m_child (this)
-    , m_calledServiceStop (false)
+    , m_calledStop (false)
     , m_stopped (false)
     , m_childrenStopped (false)
 {
     if (parent != nullptr)
     {
         // must not have had stop called
-        bassert (! parent->isServiceStopping());
+        bassert (! parent->isStopping());
 
         parent->m_children.push_front (&m_child);
     }
 }
 
-Service::Service (char const* name, Service& parent)
-    : m_name (name)
-    , m_root (false)
-    , m_child (this)
-    , m_calledServiceStop (false)
-    , m_stopped (false)
-    , m_childrenStopped (false)
-{
-    // must not have had stop called
-    bassert (! parent.isServiceStopping());
-
-    parent.m_children.push_front (&m_child);
-}
-
-Service::~Service ()
+Stoppable::~Stoppable ()
 {
     // must be stopped
     bassert (m_stopped);
@@ -57,69 +47,64 @@ Service::~Service ()
     bassert (m_childrenStopped);
 }
 
-char const* Service::serviceName () const
-{
-    return m_name;
-}
-
-void Service::serviceStop (Journal::Stream stream)
+void Stoppable::stop (Journal::Stream stream)
 {
     // may only be called once
-    if (m_calledServiceStop)
+    if (m_calledStop)
         return;
 
-    m_calledServiceStop = true;
+    m_calledStop = true;
 
-    // must be called from a root service
+    // must be called from a root stoppable
     bassert (m_root);
 
     // send the notification
-    serviceStopAsync ();
+    stopAsync ();
 
-    // now block on the tree of Service objects from the leaves up.
+    // now block on the tree of Stoppable objects from the leaves up.
     stopRecursive (stream);
 }
 
-void Service::serviceStopAsync ()
+void Stoppable::stopAsync ()
 {
-    // must be called from a root service
+    // must be called from a root stoppable
     bassert (m_root);
 
     stopAsyncRecursive ();
 }
 
-bool Service::isServiceStopping ()
+bool Stoppable::isStopping ()
 {
     return m_calledStopAsync.get() != 0;
 }
 
-bool Service::isServiceStopped ()
+bool Stoppable::isStopped ()
 {
     return m_stopped;
 }
 
-bool Service::areServiceChildrenStopped ()
+bool Stoppable::areChildrenStopped ()
 {
     return m_childrenStopped;
 }
 
-void Service::serviceStopped ()
+void Stoppable::stopped ()
 {
     m_stoppedEvent.signal();
 }
 
-void Service::onServiceStop()
+void Stoppable::onStop()
 {
-    serviceStopped();
+    stopped();
 }
 
-void Service::onServiceChildrenStopped ()
+void Stoppable::onChildrenStopped ()
 {
 }
 
 //------------------------------------------------------------------------------
 
-void Service::stopAsyncRecursive ()
+void Stoppable::stopAsyncRecursive ()
 {
     // make sure we only do this once
     if (m_root)
@@ -136,27 +121,27 @@ void Service::stopAsyncRecursive ()
         m_calledStopAsync.set (1);
     }
 
-    // notify this service
-    onServiceStop ();
+    // notify this stoppable
+    onStop ();
 
     // notify children
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
     {
-        iter->service->stopAsyncRecursive();
+        iter->stoppable->stopAsyncRecursive();
     }
 }
 
-void Service::stopRecursive (Journal::Stream stream)
+void Stoppable::stopRecursive (Journal::Stream stream)
 {
-    // Block on each child recursively. Thinking of the Service
+    // Block on each child recursively. Thinking of the Stoppable
     // hierarchy as a tree with the root at the top, we will block
     // first on leaves, and then at each successivly higher level.
     //
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
     {
-        iter->service->stopRecursive (stream);
+        iter->stoppable->stopRecursive (stream);
     }
 
     // Once we get here, we either have no children, or all of
@@ -165,19 +150,19 @@ void Service::stopRecursive (Journal::Stream stream)
     m_childrenStopped = true;
 
     // Notify derived class that children have stopped.
-    onServiceChildrenStopped ();
+    onChildrenStopped ();
 
-    // Block until this service stops. First we do a timed wait of 1 second, and
+    // Block until this stoppable stops. First we do a timed wait of 1 second, and
     // if that times out we report to the Journal and then do an infinite wait.
     //
     bool const timedOut (! m_stoppedEvent.wait (1 * 1000)); // milliseconds
     if (timedOut)
     {
-        stream << "Service: Waiting for '" << serviceName() << "' to stop";
+        stream << "Waiting for '" << m_name << "' to stop";
         m_stoppedEvent.wait ();
     }
 
-    // once we get here, we know the service has stopped.
+    // once we get here, we know the stoppable has stopped.
     m_stopped = true;
 }
 

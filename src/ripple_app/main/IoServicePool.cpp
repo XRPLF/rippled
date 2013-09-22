@@ -43,8 +43,8 @@ private:
 
 //------------------------------------------------------------------------------
 
-IoServicePool::IoServicePool (Service& parent, String const& name, int numberOfThreads)
-    : Service (name.toStdString().c_str(), parent)
+IoServicePool::IoServicePool (Stoppable& parent, String const& name, int numberOfThreads)
+    : Stoppable (name.toStdString().c_str(), parent)
     , m_name (name)
     , m_service (numberOfThreads)
     , m_work (boost::ref (m_service))
@@ -76,7 +76,7 @@ IoServicePool::operator boost::asio::io_service& ()
     return m_service;
 }
 
-void IoServicePool::onServiceStop ()
+void IoServicePool::onStop ()
 {
     // VFALCO NOTE This is a hack! We should gracefully
     //             cancel all pending I/O, and delete the work
@@ -86,7 +86,7 @@ void IoServicePool::onServiceStop ()
     m_service.stop ();
 }
 
-void IoServicePool::onServiceChildrenStopped ()
+void IoServicePool::onChildrenStopped ()
 {
 }
 
@@ -95,7 +95,7 @@ void IoServicePool::onServiceChildrenStopped ()
 void IoServicePool::onThreadExit()
 {
     // service must be stopping for threads to exit.
-    bassert (isServiceStopping());
+    bassert (isStopping());
 
     // must have at least count 1
     bassert (m_threadsRunning.get() > 0);
@@ -103,6 +103,6 @@ void IoServicePool::onThreadExit()
     if (--m_threadsRunning == 0)
     {
         // last thread just exited
-        serviceStopped ();
+        stopped ();
     }
 }

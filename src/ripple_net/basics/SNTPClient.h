@@ -10,10 +10,10 @@
 class SNTPClient : public AsyncService
 {
 protected:
-    explicit SNTPClient (Service& parent);
+    explicit SNTPClient (Stoppable& parent);
 
 public:
-    static SNTPClient* New (Service& parent);
+    static SNTPClient* New (Stoppable& parent);
     virtual ~SNTPClient() { }
     virtual void init (std::vector <std::string> const& servers) = 0;
     virtual void addServer (std::string const& mServer) = 0;

@@ -7,12 +7,12 @@
 #ifndef RIPPLE_NET_ASYNCSERVICE_H_INCLUDED
 #define RIPPLE_NET_ASYNCSERVICE_H_INCLUDED
 
-/** Service subclass that helps with managing asynchronous stopping. */
-class AsyncService : public Service
+/** Stoppable subclass that helps with managing asynchronous stopping. */
+class AsyncService : public Stoppable
 {
 public:
     /** Create the service with the specified name and parent. */
-    AsyncService (char const* name, Service& parent);
+    AsyncService (char const* name, Stoppable& parent);
 
     ~AsyncService ();
 
@@ -40,8 +40,8 @@ public:
     bool serviceCountIoComplete (boost::system::error_code const& ec);
 
     /** Called after a stop notification when all pending I/O is complete.
-        The default implementation calls serviceStopped.
-        @see serviceStopped
+        The default implementation calls stopped.
+        @see stopped
     */
     virtual void onServiceIoComplete ();
 

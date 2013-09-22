@@ -7,13 +7,13 @@
 #ifndef RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 #define RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 
-class JobQueue : public Service
+class JobQueue : public Stoppable
 {
 protected:
-    JobQueue (char const* name, Service& parent);
+    JobQueue (char const* name, Stoppable& parent);
 
 public:
-    static JobQueue* New (Service& parent, Journal journal);
+    static JobQueue* New (Stoppable& parent, Journal journal);
 
     virtual ~JobQueue () { }
 

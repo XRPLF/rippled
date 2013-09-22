@@ -89,7 +89,7 @@ private:
     typedef boost::unordered_map<std::pair< std::string, int>, score>   epScore;
 
 public:
-    explicit UniqueNodeListImp (Service& parent)
+    explicit UniqueNodeListImp (Stoppable& parent)
         : UniqueNodeList (parent)
         , mFetchLock (this, "Fetch", __FILE__, __LINE__)
         , mUNLLock (this, "UNL", __FILE__, __LINE__)
@@ -101,12 +101,12 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void onServiceStop ()
+    void onStop ()
     {
         m_fetchTimer.cancel ();
         m_scoreTimer.cancel ();
 
-        serviceStopped ();
+        stopped ();
     }
 
     //--------------------------------------------------------------------------
@@ -2084,14 +2084,14 @@ private:
 
 //------------------------------------------------------------------------------
 
-UniqueNodeList::UniqueNodeList (Service& parent)
-    : Service ("UniqueNodeList", parent)
+UniqueNodeList::UniqueNodeList (Stoppable& parent)
+    : Stoppable ("UniqueNodeList", parent)
 {
 }
 
 //------------------------------------------------------------------------------
 
-UniqueNodeList* UniqueNodeList::New (Service& parent)
+UniqueNodeList* UniqueNodeList::New (Stoppable& parent)
 {
     return new UniqueNodeListImp (parent);
 }

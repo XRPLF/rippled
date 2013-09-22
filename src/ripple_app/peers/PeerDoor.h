@@ -11,7 +11,7 @@
 class PeerDoor : public AsyncService
 {
 protected:
-    explicit PeerDoor (Service& parent);
+    explicit PeerDoor (Stoppable& parent);
 
 public:
     virtual ~PeerDoor () { }
@@ -22,7 +22,7 @@ public:
         sslAndPROXYRequired
     };
 
-    static PeerDoor* New (Service& parent, Kind kind, std::string const& ip, int port,
+    static PeerDoor* New (Stoppable& parent, Kind kind, std::string const& ip, int port,
         boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context);
 
     //virtual boost::asio::ssl::context& getSSLContext () = 0;

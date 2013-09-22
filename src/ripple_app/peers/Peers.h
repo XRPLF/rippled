@@ -12,7 +12,7 @@
 class Peers
 {
 public:
-    static Peers* New (Service& parent,
+    static Peers* New (Stoppable& parent,
         boost::asio::io_service& io_service,
             boost::asio::ssl::context& context);
 

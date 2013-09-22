@@ -4,19 +4,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_NODESTORESCHEDULERSERVICE_H_INCLUDED
-#define RIPPLE_APP_NODESTORESCHEDULERSERVICE_H_INCLUDED
+#ifndef RIPPLE_APP_NODESTORESCHEDULER_H_INCLUDED
+#define RIPPLE_APP_NODESTORESCHEDULER_H_INCLUDED
 
-/** A NodeStore::Scheduler which uses the JobQueue and implements the Service API. */
-class NodeStoreSchedulerService
+/** A NodeStore::Scheduler which uses the JobQueue and implements the Stoppable API. */
+class NodeStoreScheduler
     : public NodeStore::Scheduler
-    , public Service
+    , public Stoppable
 {
 public:
-    NodeStoreSchedulerService (Service& parent, JobQueue& jobQueue);
+    NodeStoreScheduler (Stoppable& parent, JobQueue& jobQueue);
 
-    void onServiceStop ();
-    void onServiceChildrenStopped ();
+    void onStop ();
+    void onChildrenStopped ();
     void scheduleTask (NodeStore::Task& task);
 
 private:

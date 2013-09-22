@@ -8,7 +8,7 @@ SETUP_LOG (Peers)
 
 class PeersImp
     : public Peers
-    , public Service
+    , public Stoppable
     , public LeakChecked <PeersImp>
 {
 public:
@@ -19,10 +19,10 @@ public:
         policyIntervalSeconds = 5
     };
 
-    PeersImp (Service& parent,
+    PeersImp (Stoppable& parent,
         boost::asio::io_service& io_service,
             boost::asio::ssl::context& ssl_context)
-        : Service ("Peers", parent)
+        : Stoppable ("Peers", parent)
         , m_io_service (io_service)
         , m_ssl_context (ssl_context)
         , mPeerLock (this, "PeersImp", __FILE__, __LINE__)
@@ -911,7 +911,7 @@ void PeersImp::scanRefresh ()
 
 //------------------------------------------------------------------------------
 
-Peers* Peers::New (Service& parent,
+Peers* Peers::New (Stoppable& parent,
     boost::asio::io_service& io_service,
         boost::asio::ssl::context& ssl_context)
 {

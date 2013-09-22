@@ -30,8 +30,8 @@ namespace ripple
 // Application
 //
 
-# include "main/NodeStoreSchedulerService.h"
-#include "main/NodeStoreSchedulerService.cpp"
+# include "main/NodeStoreScheduler.h"
+#include "main/NodeStoreScheduler.cpp"
 
 # include "main/IoServicePool.h"
 #include "main/IoServicePool.cpp"

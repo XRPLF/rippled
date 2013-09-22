@@ -22,7 +22,7 @@ class Manager : public RPCService
 public:
     /** Create a new Manager object.
     */
-    static Manager* New (Service& parent, Journal journal);
+    static Manager* New (Stoppable& parent, Journal journal);
 
     /** Destroy the object.
 

@@ -15,7 +15,7 @@
 //        It sounds like this holds all the ledgers...
 //
 class LedgerMaster
-    : public Service
+    : public Stoppable
     , public LeakChecked <LedgerMaster>
 {
 public:
@@ -25,8 +25,8 @@ public:
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
 
-    explicit LedgerMaster (Service& parent)
-        : Service ("LedgerMaster", parent)
+    explicit LedgerMaster (Stoppable& parent)
+        : Stoppable ("LedgerMaster", parent)
         , mLock (this, "LedgerMaster", __FILE__, __LINE__)
         , mHeldTransactions (uint256 ())
         , mMinValidations (0)
