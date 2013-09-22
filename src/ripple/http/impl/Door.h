@@ -10,8 +10,6 @@
 namespace ripple {
 namespace HTTP {
 
-using namespace beast;
-
 /** A listening socket. */
 class Door
     : public SharedObject

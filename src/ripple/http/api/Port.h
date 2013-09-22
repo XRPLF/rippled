@@ -8,9 +8,9 @@
 #define RIPPLE_HTTP_PORT_H_INCLUDED
 
 namespace ripple {
-namespace HTTP {
-
 using namespace beast;
+
+namespace HTTP {
 
 /** Configuration information for a server listening port. */
 struct Port

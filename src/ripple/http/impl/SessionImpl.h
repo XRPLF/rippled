@@ -10,8 +10,6 @@
 namespace ripple {
 namespace HTTP {
 
-using namespace beast;
-
 // Holds the copy of buffers being sent
 typedef SharedArg <std::string> SharedBuffer;
 

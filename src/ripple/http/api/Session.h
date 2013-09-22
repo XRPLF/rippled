@@ -10,9 +10,9 @@
 #include <ostream>
 
 namespace ripple {
-namespace HTTP {
-
 using namespace beast;
+
+namespace HTTP {
 
 /** Persistent state information for a connection session.
     These values are preserved between calls for efficiency.

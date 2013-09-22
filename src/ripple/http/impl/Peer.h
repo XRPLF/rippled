@@ -10,8 +10,6 @@
 namespace ripple {
 namespace HTTP {
 
-using namespace beast;
-
 /** Represents an active connection. */
 class Peer
     : public SharedObject

@@ -10,9 +10,9 @@
 #include <ostream>
 
 namespace ripple {
-namespace HTTP {
-
 using namespace beast;
+
+namespace HTTP {
 
 class ServerImpl;
 

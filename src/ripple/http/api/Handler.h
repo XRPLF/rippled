@@ -8,9 +8,9 @@
 #define RIPPLE_HTTP_HANDLER_H_INCLUDED
 
 namespace ripple {
-namespace HTTP {
-
 using namespace beast;
+
+namespace HTTP {
 
 class Server;
 class Session;
