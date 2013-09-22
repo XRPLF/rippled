@@ -4,10 +4,6 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_DISABLE_MANAGER
-#define RIPPLE_VALIDATORS_DISABLE_MANAGER 1
-#endif
-
 /*
 
 Information to track:
@@ -193,26 +189,29 @@ public:
 
     void addSource (Source* source)
     {
-#if RIPPLE_VALIDATORS_DISABLE_MANAGER
-        delete source;
-#else
+#if RIPPLE_USE_NEW_VALIDATORS
+        bassert (! isStopping());
         m_thread.call (&Logic::add, &m_logic, source);
+#else
+        delete source;
 #endif
     }
 
     void addStaticSource (Source* source)
     {
-#if RIPPLE_VALIDATORS_DISABLE_MANAGER
-        delete source;
-#else
+#if RIPPLE_USE_NEW_VALIDATORS
+        bassert (! isStopping());
         m_thread.call (&Logic::addStatic, &m_logic, source);
+#else
+        delete source;
 #endif
     }
 
     void receiveValidation (ReceivedValidation const& rv)
     {
 #if RIPPLE_USE_NEW_VALIDATORS
-        m_thread.call (&Logic::receiveValidation, &m_logic, rv);
+        if (! isStopping())
+            m_thread.call (&Logic::receiveValidation, &m_logic, rv);
 #endif
     }
 

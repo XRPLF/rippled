@@ -308,26 +308,23 @@ public:
     // Return the current ChosenList as JSON
     Json::Value rpcPrint (Json::Value const& args)
     {
-        Json::Value result;
-        ChosenList::Ptr list (m_chosenList);
+        Json::Value result (Json::objectValue);
 
-        if (! list.empty())
+        Json::Value entries (Json::arrayValue);
+        ChosenList::Ptr list (m_chosenList);
+        for (ChosenList::MapType::const_iterator iter (list->map().begin());
+            iter != list->map().end(); ++iter)
         {
-            Json::Value entries (result["chosen_list"]);
-            std::size_t i (1);
-            for (ChosenList::MapType::const_iterator iter (list->map().begin());
-                iter != list->map().end(); ++iter)
-            {
-                ChosenList::MapType::key_type const& key (iter->first);
-                ChosenList::MapType::mapped_type const& value (iter->second);
-                entries[i] = i;
-                ++i;
-            }
+            Json::Value entry (Json::objectValue);
+            /*
+            ChosenList::MapType::key_type const& key (iter->first);
+            ChosenList::MapType::mapped_type const& value (iter->second);
+            entry ["key"] = key;
+            entry ["value"] = value;
+            */
+            entries.append (entry);
         }
-        else
-        {
-            result ["chosen_list"] = "empty";
-        }
+        result ["chosen_list"] = entries;
 
         return result;
     }
@@ -335,8 +332,20 @@ public:
     // Returns the list of sources
     Json::Value rpcSources (Json::Value const& arg)
     {
-        Json::Value result;
-        Json::Value sources (result ["validators_sources"]);
+        Json::Value result (Json::objectValue);
+
+        Json::Value entries (Json::arrayValue);
+        SharedState::ConstAccess state (m_state);
+        for (SourcesType::const_iterator iter (state->sources.begin());
+            iter != state->sources.end(); ++iter)
+        {
+            Json::Value entry (Json::objectValue);
+            SourceDesc const& desc (*iter);
+            entry ["name"] = desc.source->name();
+            entry ["param"] = desc.source->createParam();
+            entries.append (entry);
+        }
+        result ["sources"] = entries;
 
         return result;
     }
