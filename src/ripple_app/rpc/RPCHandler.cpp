@@ -1109,6 +1109,10 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, LoadType* loadType, 
                     jPeer["authorized"] = true;
                 if (line->getAuthPeer())
                     jPeer["peer_authorized"] = true;
+                if (line->getNoRipple())
+                    jPeer["no_ripple"]  = true;
+                if (line->getNoRipplePeer())
+                    jPeer["no_ripple_peer"] = true;
             }
         }
 

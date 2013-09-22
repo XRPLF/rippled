@@ -58,6 +58,8 @@ const uint32 tfPaymentMask          = ~ (tfPartialPayment | tfLimitQuality | tfN
 
 // TrustSet flags:
 const uint32 tfSetfAuth             = 0x00010000;
-const uint32 tfTrustSetMask         = ~ (tfSetfAuth);
+const uint32 tfSetNoRipple          = 0x00020000;
+const uint32 tfClearNoRipple        = 0x00040000;
+const uint32 tfTrustSetMask         = ~ (tfSetfAuth | tfSetNoRipple | tfClearNoRipple);
 
 #endif
