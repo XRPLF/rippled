@@ -47,12 +47,14 @@ public:
     HTTPParser m_parser;
     SessionImpl m_session;
     int m_writesPending;
+    bool m_closed;
     bool m_callClose;
 
     Peer (ServerImpl& impl, Port const& port);
     ~Peer ();
     socket& get_socket();
     SessionImpl& session ();
+    void close ();
     void cancel ();
     void failed (error_code ec);
     void asyncHandlersComplete ();
@@ -79,11 +81,12 @@ public:
     }
 
     void async_read_some ();
-    void maybe_send_reply ();
+
     void handle_accept ();
     void handle_handshake (error_code ec, CompletionCounter);
     void handle_data_timer (error_code ec, CompletionCounter);
     void handle_request_timer (error_code ec, CompletionCounter);
+    void handle_close (CompletionCounter);
 
     void handle_write (error_code ec, std::size_t bytes_transferred,
         SharedBuffer buf, CompletionCounter);

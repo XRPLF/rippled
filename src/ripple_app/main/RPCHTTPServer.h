@@ -14,12 +14,12 @@ protected:
 
 public:
     static RPCHTTPServer* New (Stoppable& parent,
-        Journal journal, NetworkOPs& networkOPs);
+        Journal journal, JobQueue& jobQueue, NetworkOPs& networkOPs);
 
     virtual ~RPCHTTPServer () { }
 
     /** Opens listening ports based on the Config settings. */
-    virtual void setup(Journal journal) = 0;
+    virtual void setup (Journal journal) = 0;
 };
 
 #endif

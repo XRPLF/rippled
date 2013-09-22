@@ -12,7 +12,6 @@ Session::Session ()
     , tag (nullptr)
 {
     content.reserve (1000);
-    reply.reserve (1000);
 }
 
 ScopedStream Session::operator<< (

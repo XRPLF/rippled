@@ -21,14 +21,15 @@ class SessionImpl : public Session
 {
 public:
     Peer& m_peer;
-    bool m_closed;
+    Atomic <int> m_detached;
+    SharedPtr <Peer> m_peer_ref;
     boost::optional <boost::asio::io_service::work> m_work;
 
     explicit SessionImpl (Peer& peer);
     ~SessionImpl ();
-    bool closed() const;
     void write (void const* buffer, std::size_t bytes);
     void close();
+    void handle_close();
     void detach();
 };
 

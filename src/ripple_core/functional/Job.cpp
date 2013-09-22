@@ -101,6 +101,7 @@ const char* Job::toString (JobType t)
     case jtLEDGER_DATA:     return "ledgerData";
     case jtUPDATE_PF:       return "updatePaths";
     case jtCLIENT:          return "clientCommand";
+    case jtRPC:             return "RPC";
     case jtTRANSACTION:     return "transaction";
     case jtUNL:             return "unl";
     case jtADVANCE:         return "advanceLedger";

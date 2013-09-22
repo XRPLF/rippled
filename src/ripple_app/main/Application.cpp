@@ -84,10 +84,12 @@ public:
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
 
-        , m_rpcHTTPServer (RPCHTTPServer::New (*m_jobQueue,
-            LogJournal::get <HTTPServerLog> (), *m_networkOPs))
+        , m_rpcHTTPServer (RPCHTTPServer::New (*m_networkOPs,
+            LogJournal::get <HTTPServerLog> (), *m_jobQueue, *m_networkOPs))
 
+#if ! RIPPLE_USE_RPC_SERVICE_MANAGER
         , m_rpcServerHandler (*m_networkOPs) // passive object, not a Service
+#endif
 
         , m_nodeStoreScheduler (*m_jobQueue, *m_jobQueue)
 
@@ -808,7 +810,9 @@ private:
     ScopedPointer <NetworkOPs> m_networkOPs;
     ScopedPointer <UniqueNodeList> m_deprecatedUNL;
     ScopedPointer <RPCHTTPServer> m_rpcHTTPServer;
+#if ! RIPPLE_USE_RPC_SERVICE_MANAGER
     RPCServerHandler m_rpcServerHandler;
+#endif
     NodeStoreScheduler m_nodeStoreScheduler;
     ScopedPointer <NodeStore::Database> m_nodeStore;
     ScopedPointer <SNTPClient> m_sntpClient;

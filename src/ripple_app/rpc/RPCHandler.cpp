@@ -3736,6 +3736,8 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
 {
     if (iRole != Config::ADMIN)
     {
+        // VFALCO NOTE Should we also add up the jtRPC jobs?
+        //
         int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
 
         if (jc > 500)

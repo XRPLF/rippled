@@ -42,13 +42,6 @@ public:
     /** Input: The Content-Body as a linear buffer if we have the HTTPRequest. */
     std::string content;
 
-    /** Output: The buffer to send back as a reply.
-        Upon each entry into the callback, reply.size() will be zero.
-        If reply.size() is zero when the callback returns, no data is
-        sent.
-    */
-    std::string reply;
-
     /** A user-definable pointer.
         The initial value is always zero.
         Changes to the value are persisted between calls.

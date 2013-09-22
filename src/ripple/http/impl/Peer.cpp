@@ -16,6 +16,7 @@ Peer::Peer (ServerImpl& impl, Port const& port)
     , m_parser (HTTPParser::typeRequest)
     , m_session (*this)
     , m_writesPending (0)
+    , m_closed (false)
     , m_callClose (false)
 {
     int flags;
@@ -53,6 +54,16 @@ socket& Peer::get_socket()
 SessionImpl& Peer::session ()
 {
     return m_session;
+}
+
+// Indicates that the Handler closed the Session
+//
+void Peer::close ()
+{
+    // Make sure this happens on an i/o service thread.
+    m_impl.get_io_service().dispatch (m_strand.wrap (
+        boost::bind (&Peer::handle_close, Ptr (this),
+            CompletionCounter (this))));
 }
 
 // Cancels all pending i/o and timers and sends tcp shutdown.
@@ -146,25 +157,22 @@ void Peer::async_read_some ()
                     CompletionCounter (this))));
 }
 
-// Sends a copy of the reply in the session if it is not empty.
-// Returns `true` if m_session.closed is `true`
-// On return, reply.empty() will return `true`.
-//
-void Peer::maybe_send_reply ()
-{
-    if (! m_session.reply.empty())
-    {
-        async_write (boost::asio::const_buffers_1 (
-            &m_session.reply.front(), m_session.reply.size()));
-        m_session.reply.clear();
-    }
-}
-
 // Called when the acceptor gives us the connection.
 //
 void Peer::handle_accept ()
 {
     m_callClose = true;
+
+    // save remote addr
+    m_session.remoteAddress = from_asio (
+        get_socket().remote_endpoint()).withPort (0);
+    m_impl.handler().onAccept (m_session);
+
+    if (m_closed)
+    {
+        cancel();
+        return;
+    }
 
     m_request_timer.expires_from_now (
         boost::posix_time::seconds (
@@ -238,6 +246,14 @@ void Peer::handle_request_timer (error_code ec, CompletionCounter)
     cancel();
 }
 
+// Called when the Session is closed by the Handler.
+//
+void Peer::handle_close (CompletionCounter)
+{
+    m_closed = true;
+    m_session.handle_close();
+}
+
 // Called when async_write completes.
 //
 void Peer::handle_write (error_code ec, std::size_t bytes_transferred,
@@ -253,7 +269,7 @@ void Peer::handle_write (error_code ec, std::size_t bytes_transferred,
     }
 
     bassert (m_writesPending > 0);
-    if (--m_writesPending == 0 && m_session.closed())
+    if (--m_writesPending == 0 && m_closed)
     {
         m_socket->shutdown (socket::shutdown_send);
     }
@@ -300,7 +316,7 @@ void Peer::handle_read (error_code ec, std::size_t bytes_transferred, Completion
         if (m_parser.fields().size() > 0)
         {
             handle_headers ();
-            if (m_session.closed())
+            if (m_closed)
                 return;
         }
     }
@@ -329,8 +345,6 @@ void Peer::handle_headers ()
     m_session.headersComplete = m_parser.headersComplete();
     m_session.headers = HTTPHeaders (m_parser.fields());
     m_impl.handler().onHeaders (m_session);
-
-    maybe_send_reply ();
 }
 
 // Called when we have a complete http request.
@@ -340,7 +354,7 @@ void Peer::handle_request ()
     // This is to guarantee onHeaders is called at least once.
     handle_headers();
 
-    if (m_session.closed())
+    if (m_closed)
         return;
 
     m_session.request = m_parser.request();
@@ -354,8 +368,6 @@ void Peer::handle_request ()
 
     // Process the HTTPRequest
     m_impl.handler().onRequest (m_session);
-
-    maybe_send_reply ();
 }
 
 }

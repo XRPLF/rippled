@@ -590,7 +590,7 @@ private:
 
         default:
             // Someone added a JobType but forgot to set a limit.
-            // Did they also forget to add it to ripple_Job.cpp?
+            // Did they also forget to add it to Job.cpp?
             bassertfalse;
             break;
 
@@ -600,6 +600,7 @@ private:
         case jtPROPOSAL_ut:
         case jtUPDATE_PF:
         case jtCLIENT:
+        case jtRPC:
         case jtTRANSACTION:
         case jtPUBLEDGER:
         case jtADVANCE:

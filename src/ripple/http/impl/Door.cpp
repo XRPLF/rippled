@@ -83,17 +83,6 @@ void Door::handle_accept (error_code ec, Peer::Ptr peer, CompletionCounter)
 
     async_accept();
 
-    // Save remote address in session
-    peer->session().remoteAddress = from_asio (
-        peer->get_socket().remote_endpoint()).withPort (0);
-    m_impl.handler().onAccept (peer->session());
-
-    if (peer->session().closed())
-    {
-        peer->cancel();
-        return;
-    }
-
     peer->handle_accept();
 }
 
