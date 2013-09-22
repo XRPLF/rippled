@@ -21,6 +21,8 @@
 // This .cpp will end up including all of the public header
 // material in Ripple since it holds the Application object.
 
+#include "../ripple/http/ripple_http.h"
+#include "../ripple/rpc/ripple_rpc.h"
 #include "../ripple/validators/ripple_validators.h"
 
 namespace ripple

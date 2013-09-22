@@ -102,42 +102,6 @@ public:
         virtual std::pair <bool, Json::Value> call (
             std::string const& method, Json::Value const& args) = 0;
 
-        /** Execute an RPC command asynchronously.
-
-            If the method exists, the dispatcher is invoked to provide the
-            context for calling the handler with the argument list and this
-            function returns `true` immediately. The dispatcher calls the
-            CompletionHandler when the operation is complete. If the method
-            does not exist, `false` is returned.
-
-            Copies of the Dispatcher and CompletionHandler are made as needed.
-
-            CompletionHandler must be compatible with this signature:
-                void (Json::Value const&)
-
-            Dispatcher is a functor compatible with this signature:
-                void (Handler const& handler,
-                    Json::Value const& args,
-                        CompletionHandler completionHandler);
-
-            Thread safety:
-                Safe to call from any thread.
-
-            @return `true` if a handler was found.
-        */
-        template <class CompletionHandler, class Dispatcher>
-        bool call_async (std::string const& method,
-                         Json::Value const& args,
-                         CompletionHandler completionHandler,
-                         Dispatcher dispatcher)
-        {
-            Handler const* handler (find (method));
-            if (! handler)
-               return false;
-            dispatcher (*handler, args, completionHandler);
-            return true;
-        }
-
         /** Returns the Handler for the specified method, or nullptr.
             Thread safety:
                 Safe to call from any threads.

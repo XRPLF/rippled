@@ -7,12 +7,12 @@
 class RPCHTTPServerImp
     : public RPCHTTPServer
     , public LeakChecked <RPCHTTPServerImp>
-    , public HTTPServer::Handler
+    , public HTTP::Handler
 {
 public:
     NetworkOPs& m_networkOPs;
     RPCServerHandler m_deprecatedHandler;
-    HTTPServer m_server;
+    HTTP::Server m_server;
     ScopedPointer <RippleSSLContext> m_context;
 
     RPCHTTPServerImp (Stoppable& parent,
@@ -49,7 +49,7 @@ public:
             IPEndpoint ep (IPEndpoint::from_string (getConfig().getRpcIP()));
             if (! ep.empty())
             {
-                HTTPServer::Port port;
+                HTTP::Port port;
                 port.addr = ep.withPort(0);
                 if (getConfig ().getRpcPort() != 0)
                     port.port = getConfig ().getRpcPort();
@@ -57,7 +57,7 @@ public:
                     port.port = ep.port();
                 port.context = m_context;
 
-                HTTPServer::Ports ports;
+                HTTP::Ports ports;
                 ports.push_back (port);
                 m_server.setPorts (ports);
             }
@@ -84,10 +84,10 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // HTTPServer::Handler
+    // HTTP::Handler
     //
 
-    void onAccept (HTTPServer::Session& session)
+    void onAccept (HTTP::Session& session)
     {
         // Reject non-loopback connections if RPC_ALLOW_REMOTE is not set
         if (! getConfig().RPC_ALLOW_REMOTE &&
@@ -97,11 +97,11 @@ public:
         }
     }
 
-    void onHeaders (HTTPServer::Session& session)
+    void onHeaders (HTTP::Session& session)
     {
     }
 
-    void onRequest (HTTPServer::Session& session)
+    void onRequest (HTTP::Session& session)
     {
         session.write (m_deprecatedHandler.processRequest (
             session.content, session.remoteAddress.to_string()));
@@ -109,11 +109,11 @@ public:
         session.close();
     }
 
-    void onClose (HTTPServer::Session& session)
+    void onClose (HTTP::Session& session)
     {
     }
 
-    void onStopped (HTTPServer&)
+    void onStopped (HTTP::Server&)
     {
         stopped();
     }

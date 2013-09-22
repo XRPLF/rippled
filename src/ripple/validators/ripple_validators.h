@@ -17,8 +17,7 @@
 //
 #include "beast/modules/beast_asio/beast_asio.h"
 
-#include "../ripple/frame/ripple_frame.h"
-//#include "../ripple_basics/ripple_basics.h"
+#include "../ripple/rpc/ripple_rpc.h"
 #include "../ripple_data/ripple_data.h"
 
 namespace ripple

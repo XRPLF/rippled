@@ -22,19 +22,49 @@
     <ClCompile Include="..\..\build\proto\ripple.pb.cc" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beast.cpp" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c" />
-    <ClCompile Include="..\..\src\ripple\frame\api\HTTPServer.cpp">
+    <ClCompile Include="..\..\src\ripple\http\impl\Door.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\frame\api\RPCService.cpp">
+    <ClCompile Include="..\..\src\ripple\http\impl\Peer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\frame\ripple_frame.cpp" />
+    <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\http\impl\ScopedStream.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\http\impl\Server.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\http\impl\Session.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\http\impl\SessionImpl.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\http\ripple_http.cpp" />
     <ClCompile Include="..\..\src\ripple\json\impl\json_reader.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -54,6 +84,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\ripple_json.cpp" />
+    <ClCompile Include="..\..\src\ripple\rpc\api\RPCService.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\ripple_rpc.cpp" />
     <ClCompile Include="..\..\src\ripple\sophia\ripple_sophia.c" />
     <ClCompile Include="..\..\src\ripple\testoverlay\impl\TestOverlay.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1505,9 +1542,17 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\ripple\frame\api\HTTPServer.h" />
-    <ClInclude Include="..\..\src\ripple\frame\api\RPCService.h" />
-    <ClInclude Include="..\..\src\ripple\frame\ripple_frame.h" />
+    <ClInclude Include="..\..\src\ripple\http\api\Handler.h" />
+    <ClInclude Include="..\..\src\ripple\http\api\Server.h" />
+    <ClInclude Include="..\..\src\ripple\http\api\Port.h" />
+    <ClInclude Include="..\..\src\ripple\http\api\ScopedStream.h" />
+    <ClInclude Include="..\..\src\ripple\http\api\Session.h" />
+    <ClInclude Include="..\..\src\ripple\http\impl\Door.h" />
+    <ClInclude Include="..\..\src\ripple\http\impl\Peer.h" />
+    <ClInclude Include="..\..\src\ripple\http\impl\ServerImpl.h" />
+    <ClInclude Include="..\..\src\ripple\http\impl\SessionImpl.h" />
+    <ClInclude Include="..\..\src\ripple\http\impl\Types.h" />
+    <ClInclude Include="..\..\src\ripple\http\ripple_http.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_config.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_features.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_forwards.h" />
@@ -1517,6 +1562,8 @@
     <ClInclude Include="..\..\src\ripple\json\impl\json_autolink.h" />
     <ClInclude Include="..\..\src\ripple\json\impl\json_batchallocator.h" />
     <ClInclude Include="..\..\src\ripple\json\ripple_json.h" />
+    <ClInclude Include="..\..\src\ripple\rpc\api\RPCService.h" />
+    <ClInclude Include="..\..\src\ripple\rpc\ripple_rpc.h" />
     <ClInclude Include="..\..\src\ripple\sophia\ripple_sophia.h" />
     <ClInclude Include="..\..\src\ripple\testoverlay\api\ConfigType.h" />
     <ClInclude Include="..\..\src\ripple\testoverlay\api\ConnectionType.h" />

@@ -146,8 +146,9 @@ COMPILED_FILES.extend (['src/ripple/beast/ripple_beastc.c'])
 # New-style Ripple unity sources
 #
 COMPILED_FILES.extend([
-    'src/ripple/frame/ripple_frame.cpp',
+    'src/ripple/http/ripple_http.cpp',
     'src/ripple/json/ripple_json.cpp',
+    'src/ripple/rpc/ripple_rpc.cpp',
     'src/ripple/sophia/ripple_sophia.c',
     'src/ripple/testoverlay/ripple_testoverlay.cpp',
     'src/ripple/validators/ripple_validators.cpp'

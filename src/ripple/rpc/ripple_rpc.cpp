@@ -6,12 +6,9 @@
 
 #include "BeastConfig.h"
 
-#include "ripple_frame.h"
+#include "ripple_rpc.h"
 
 #include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
-#include <boost/asio.hpp>
-#include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
 
-#include "api/HTTPServer.cpp"
 #include "api/RPCService.cpp"

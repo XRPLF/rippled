@@ -34,7 +34,6 @@
 
 //------------------------------------------------------------------------------
 
-#include "../ripple/frame/ripple_frame.h"
 #include "../ripple_basics/ripple_basics.h"
 #include "../ripple_core/ripple_core.h"
 #include "../ripple_data/ripple_data.h"
