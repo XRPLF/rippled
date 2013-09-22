@@ -984,9 +984,6 @@
     <ClCompile Include="..\..\src\ripple_app\main\NodeStoreScheduler.cpp">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\frame\api\Stoppable.cpp">
-      <Filter>[1] Ripple\frame\api</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -1946,9 +1943,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\NodeStoreScheduler.h">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\frame\api\Stoppable.h">
-      <Filter>[1] Ripple\frame\api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

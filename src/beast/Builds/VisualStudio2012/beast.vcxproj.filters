@@ -1101,6 +1101,9 @@
     <ClInclude Include="..\..\beast\mpl\CopyConst.h">
       <Filter>beast\mpl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\thread\Stoppable.h">
+      <Filter>beast_core\thread</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1630,6 +1633,9 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPRequest.cpp">
       <Filter>beast_asio\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\thread\Stoppable.cpp">
+      <Filter>beast_core\thread</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

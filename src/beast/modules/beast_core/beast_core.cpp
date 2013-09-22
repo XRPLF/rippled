@@ -206,6 +206,7 @@ namespace beast
 #include "thread/impl/TrackedMutex.cpp"
 #include "thread/DeadlineTimer.cpp"
 #include "thread/InterruptibleThread.cpp"
+#include "thread/Stoppable.cpp"
 #include "thread/Semaphore.cpp"
 #include "thread/CallQueue.cpp"
 #include "thread/Listeners.cpp"

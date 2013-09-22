@@ -14,4 +14,3 @@
 #include "ripple_frame.h"
 
 #include "api/RPCService.cpp"
-#include "api/Stoppable.cpp"

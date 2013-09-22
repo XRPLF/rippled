@@ -4,9 +4,6 @@
 */
 //==============================================================================
 
-namespace ripple
-{
-
 Stoppable::Stoppable (char const* name, Stoppable& parent)
     : m_name (name)
     , m_root (false)
@@ -164,6 +161,4 @@ void Stoppable::stopRecursive (Journal::Stream stream)
 
     // once we get here, we know the stoppable has stopped.
     m_stopped = true;
-}
-
 }

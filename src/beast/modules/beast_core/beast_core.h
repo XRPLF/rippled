@@ -90,6 +90,7 @@ extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) n
 #include "../../beast/Net.h"
 #include "../../beast/TypeTraits.h"
 #include "../../beast/Thread.h"
+#include "../../beast/Utility.h"
 
 namespace beast {
 
@@ -269,6 +270,7 @@ class FileOutputStream;
 
 #include "thread/Semaphore.h"
 #include "thread/InterruptibleThread.h"
+#include "thread/Stoppable.h"
 #include "thread/CallQueue.h"
 #include "thread/Listeners.h"
 #include "thread/ManualCallQueue.h"
