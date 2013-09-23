@@ -313,15 +313,15 @@ bool operator>= (IPEndpoint const& lhs, IPEndpoint const& rhs);
 
 /** Output stream conversions. */
 /** @{ */
-std::ostream& operator<< (std::ostream &os, IPEndpoint::V4 const& addr);
-std::ostream& operator<< (std::ostream &os, IPEndpoint::V6 const& addr);
-std::ostream& operator<< (std::ostream &os, IPEndpoint const& ep);
+std::ostream& operator<< (std::ostream& os, IPEndpoint::V4 const& addr);
+std::ostream& operator<< (std::ostream& os, IPEndpoint::V6 const& addr);
+std::ostream& operator<< (std::ostream& os, IPEndpoint const& ep);
 /** @} */
 
 /** Input stream conversions. */
 /** @{ */
-std::istream& operator>> (std::istream &is, IPEndpoint::V4& addr);
-std::istream& operator>> (std::istream &is, IPEndpoint& ep);
+std::istream& operator>> (std::istream& is, IPEndpoint::V4& addr);
+std::istream& operator>> (std::istream& is, IPEndpoint& ep);
 //std::istream& operator>> (std::istream &is, IPEndpoint::V6&);
 /** @} */
 

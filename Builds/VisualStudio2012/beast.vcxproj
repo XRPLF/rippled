@@ -21,6 +21,8 @@
   <ItemGroup>
     <None Include="..\..\.gitattributes" />
     <None Include="..\..\.gitignore" />
+    <None Include="..\..\beast\crypto\impl\sha2\README" />
+    <None Include="..\..\beast\crypto\impl\sha2\sha2test.pl" />
     <None Include="..\..\beast\http\impl\http-parser\.gitignore" />
     <None Include="..\..\beast\http\impl\http-parser\.mailmap" />
     <None Include="..\..\beast\http\impl\http-parser\.travis.yml" />
@@ -87,7 +89,11 @@
     <ClInclude Include="..\..\beast\config\ContractChecks.h" />
     <ClInclude Include="..\..\beast\config\PlatformConfig.h" />
     <ClInclude Include="..\..\beast\config\StandardConfig.h" />
+    <ClInclude Include="..\..\beast\Crypto.h" />
+    <ClInclude Include="..\..\beast\crypto\impl\sha2\sha2.h" />
+    <ClInclude Include="..\..\beast\crypto\Sha256.h" />
     <ClInclude Include="..\..\beast\CStdInt.h" />
+    <ClInclude Include="..\..\beast\FixedArray.h" />
     <ClInclude Include="..\..\beast\HeapBlock.h" />
     <ClInclude Include="..\..\beast\HTTP.h" />
     <ClInclude Include="..\..\beast\http\impl\http-parser\http_parser.h" />
@@ -95,6 +101,7 @@
     <ClInclude Include="..\..\beast\http\URL.h" />
     <ClInclude Include="..\..\beast\Intrusive.h" />
     <ClInclude Include="..\..\beast\intrusive\ForwardList.h" />
+    <ClInclude Include="..\..\beast\intrusive\IntrusiveArray.h" />
     <ClInclude Include="..\..\beast\intrusive\List.h" />
     <ClInclude Include="..\..\beast\intrusive\LockFreeStack.h" />
     <ClInclude Include="..\..\beast\intrusive\PointerTraits.h" />
@@ -384,6 +391,31 @@
     <ClInclude Include="BeastConfig.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\beast\crypto\Crypto.cpp" />
+    <ClCompile Include="..\..\beast\crypto\impl\Sha256.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2prog.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2speed.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\beast\http\HTTP.cpp" />
     <ClCompile Include="..\..\beast\http\impl\http_parser.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

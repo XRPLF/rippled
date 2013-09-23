@@ -32,12 +32,8 @@ template <std::size_t Bytes>
 class UnsignedInteger : public SafeBool <UnsignedInteger <Bytes> > 
 {
 public:
-    enum
-    {
-        /** Constant for determining the number of bytes.
-        */
-        sizeInBytes = Bytes
-    };
+    /** Constant for determining the number of bytes. */
+    static std::size_t const size = Bytes;
 
     // The underlying integer type we use when converting to calculation format.
     typedef uint32             IntCalcType;
@@ -46,17 +42,16 @@ public:
     typedef UnsignedIntegerCalc <IntCalcType> CalcType;
 
     // Standard container compatibility
-    typedef uint8              ValueType;
-    typedef ValueType*         iterator;
-    typedef ValueType const*   const_iterator;
+    typedef uint8              value_type;
+    typedef value_type*        iterator;
+    typedef value_type const*  const_iterator;
 
     /** Hardened hash function for use with HashMap.
         The seed is used to make the hash unpredictable. This prevents
         attackers from exploiting crafted inputs to produce degenerate
         containers.
-        @see HashMap
     */
-    class HashFunction
+    class hasher
     {
     public:
         /** Construct a hash function
@@ -64,28 +59,31 @@ public:
             will be generated from the system
             @param seedToUse An optional seed to use.
         */
-        explicit HashFunction (HashValue seedToUse = Random::getSystemRandom ().nextInt ())
+        explicit hasher (HashValue seedToUse = Random::getSystemRandom ().nextInt ())
             : m_seed (seedToUse)
         {
         }
 
         /** Generates a simple hash from an UnsignedInteger. */
-        HashValue generateHash (UnsignedInteger const& key) const
-        {
-            HashValue hash;
-            Murmur::Hash (key.cbegin (), key.sizeInBytes, m_seed, &hash);
-            return hash;
-        }
-
         HashValue operator() (UnsignedInteger const& key) const
         {
             HashValue hash;
-            Murmur::Hash (key.cbegin (), key.sizeInBytes, m_seed, &hash);
+            Murmur::Hash (key.cbegin (), key.size, m_seed, &hash);
             return hash;
         }
 
     private:
         HashValue m_seed;
+    };
+
+    /** Determins if two UnsignedInteger objects are equal. */
+    class equal
+    {
+    public:
+        bool operator() (UnsignedInteger const& lhs, UnsignedInteger const& rhs) const
+        {
+            return lhs.compare (rhs) == 0;
+        }
     };
 
     //--------------------------------------------------------------------------
@@ -114,11 +112,12 @@ public:
         std::memcpy (begin(), buf, Bytes);
     }
 
-    template <typename T>
-    explicit UnsignedInteger (T const* buf)
+    template <typename InputIt>
+    UnsignedInteger (InputIt first, InputIt last)
     {
         m_values [0] = 0; // clear any pad bytes
-        std::memcpy (begin(), buf, Bytes);
+        check_precondition (std::distance (first, last) == size);
+        std::copy (first, last, begin());
     }
     /** @} */
 
@@ -133,20 +132,19 @@ public:
     /** Create from an integer type.
         @invariant IntegerType must be an unsigned integer type.
     */
-    template <class IntegerType>
-    static UnsignedInteger createFromInteger (IntegerType value)
+    template <class UnsignedIntegralType>
+    static UnsignedInteger createFromInteger (UnsignedIntegralType value)
     {
-        static_bassert (Bytes >= sizeof (IntegerType));
+        static_bassert (Bytes >= sizeof (UnsignedIntegralType));
         UnsignedInteger <Bytes> result;
-        value = toNetworkByteOrder <IntegerType> (value);
+        value = toNetworkByteOrder <UnsignedIntegralType> (value);
         result.clear ();
         std::memcpy (result.end () - sizeof (value), &value, bmin (Bytes, sizeof (value)));
         return result;
     }
 
-    /** Construct with a filled value.
-    */
-    static UnsignedInteger createFilled (ValueType value)
+    /** Construct with a filled value. */
+    static UnsignedInteger createFilled (value_type value)
     {
         UnsignedInteger result;
         result.fill (value);
@@ -154,7 +152,7 @@ public:
     }
 
     /** Fill with a particular byte value. */
-    void fill (ValueType value)
+    void fill (value_type value)
     {
         IntCalcType c;
         memset (&c, value, sizeof (c));
@@ -283,15 +281,15 @@ public:
 private:
     static std::size_t const CalcCount = (Bytes + sizeof (IntCalcType) - 1) / sizeof (IntCalcType);
 
-    ValueType* get ()
+    value_type* get ()
     {
-        return (reinterpret_cast <ValueType*> (&m_values [0])) +
+        return (reinterpret_cast <value_type*> (&m_values [0])) +
             ((sizeof(IntCalcType)-(Bytes&(sizeof(IntCalcType)-1)))&(sizeof(IntCalcType)-1));
     }
 
-    ValueType const* get () const
+    value_type const* get () const
     {
-        return (reinterpret_cast <ValueType const*> (&m_values [0])) +
+        return (reinterpret_cast <value_type const*> (&m_values [0])) +
             ((sizeof(IntCalcType)-(Bytes&(sizeof(IntCalcType)-1)))&(sizeof(IntCalcType)-1));
     }
 
