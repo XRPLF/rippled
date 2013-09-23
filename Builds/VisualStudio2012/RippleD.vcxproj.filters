@@ -1056,6 +1056,9 @@
     <ClCompile Include="..\..\src\ripple_app\peers\PackedMessage.cpp">
       <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\RippleCryptoIdentifierTests.cpp">
+      <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -2022,12 +2025,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\impl\ManagerImpl.h">
       <Filter>[1] Ripple\rpc\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\types\RipplePublicKey.h">
-      <Filter>[2] Old Ripple\ripple_basics\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\types\RipplePublicKeyHash.h">
-      <Filter>[2] Old Ripple\ripple_basics\types</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\ripple_types.h">
       <Filter>[1] Ripple\types</Filter>
     </ClInclude>
@@ -2081,6 +2078,33 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\peers\PackedMessage.h">
       <Filter>[2] Old Ripple\ripple_app\peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\RipplePublicKey.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\RipplePublicKeyHash.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifierType.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\RippleCryptoIdentifier.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifierStorage.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\RippleAccountID.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\RipplePrivateKey.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPrivateKey.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPublicKey.h">
+      <Filter>[1] Ripple\types\api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

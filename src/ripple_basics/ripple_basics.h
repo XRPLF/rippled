@@ -49,8 +49,6 @@ namespace ripple
 using namespace beast;
 
 #include "types/BasicTypes.h"
-#include "types/RipplePublicKey.h"
-#include "types/RipplePublicKeyHash.h"
 
 #  include "log/LogSeverity.h"
 #  include "log/LogFile.h"

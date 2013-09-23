@@ -22,7 +22,7 @@ public:
         }
     };
 
-    typedef boost::unordered_map <PublicKey, Info, PublicKey::HashFunction> MapType;
+    typedef boost::unordered_map <PublicKey, Info, PublicKey::hasher> MapType;
 
     ChosenList (std::size_t expectedSize = 0)
     {

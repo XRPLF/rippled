@@ -31,11 +31,6 @@ private:
 public:
     RippleAddress ();
 
-    // Convert to a binary public key. If the underlying data
-    // is not appropriate, this will cause a fatal error.
-    //
-    RipplePublicKey toRipplePublicKey () const;
-
     // For public and private key, checks if they are legal.
     bool isValid () const
     {
@@ -207,6 +202,58 @@ public:
 
     static RippleAddress createSeedRandom ();
     static RippleAddress createSeedGeneric (const std::string& strText);
+};
+
+//------------------------------------------------------------------------------
+
+template <>
+struct RipplePublicKeyTraits::assign <RippleAddress>
+{
+    void operator() (value_type& value, RippleAddress const& v) const
+    {
+        Blob const& b (v.getNodePublic ());
+        construct (&b.front(), &b.back()+1, value);
+    }
+};
+
+template <>
+struct RipplePrivateKeyTraits::assign <RippleAddress>
+{
+    void operator() (value_type& value, RippleAddress const& v) const
+    {
+        uint256 const ui (v.getNodePrivate ());
+        construct (ui.begin(), ui.end(), value);
+    }
+};
+
+template <>
+struct RippleAccountIDTraits::assign <RippleAddress>
+{
+    void operator() (value_type& value, RippleAddress const& v) const
+    {
+        uint160 const ui (v.getAccountID ());
+        construct (ui.begin(), ui.end(), value);
+    }
+};
+
+template <>
+struct RippleAccountPublicKeyTraits::assign <RippleAddress>
+{
+    void operator() (value_type& value, RippleAddress const& v) const
+    {
+        Blob const& b (v.getAccountPublic ());
+        construct (&b.front(), &b.back()+1, value);
+    }
+};
+
+template <>
+struct RippleAccountPrivateKeyTraits::assign <RippleAddress>
+{
+    void operator() (value_type& value, RippleAddress const& v) const
+    {
+        uint256 const ui (v.getAccountPrivate ());
+        construct (ui.begin(), ui.end(), value);
+    }
 };
 
 #endif

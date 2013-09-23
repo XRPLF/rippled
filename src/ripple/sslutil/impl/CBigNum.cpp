@@ -102,7 +102,13 @@ CBigNum::CBigNum (uint256 n)
 CBigNum::CBigNum (Blob const& vch)
 {
     BN_init (this);
-    setvch (vch);
+    setvch (&vch.front(), &vch.back()+1);
+}
+
+CBigNum::CBigNum (unsigned char const* begin, unsigned char const* end)
+{
+    BN_init (this);
+    setvch (begin, end);
 }
 
 void CBigNum::setuint (unsigned int n)
@@ -224,10 +230,11 @@ uint256 CBigNum::getuint256 ()
     return ret;
 }
 
-void CBigNum::setvch (Blob const& vch)
+void CBigNum::setvch (unsigned char const* begin, unsigned char const* end)
 {
-    Blob vch2 (vch.size () + 4);
-    unsigned int nSize = vch.size ();
+    std::size_t const size (std::distance (begin, end));
+    Blob vch2 (size + 4);
+    unsigned int nSize (size);
     // BIGNUM's byte stream format expects 4 bytes of
     // big endian size data info at the front
     vch2[0] = (nSize >> 24) & 0xff;
@@ -235,8 +242,13 @@ void CBigNum::setvch (Blob const& vch)
     vch2[2] = (nSize >> 8) & 0xff;
     vch2[3] = (nSize >> 0) & 0xff;
     // swap data to big endian
-    std::reverse_copy (vch.begin (), vch.end (), vch2.begin () + 4);
+    std::reverse_copy (begin, end, vch2.begin() + 4);
     BN_mpi2bn (&vch2[0], vch2.size (), this);
+}
+
+void CBigNum::setvch (Blob const& vch)
+{
+    setvch (&vch.front(), &vch.back()+1);
 }
 
 Blob CBigNum::getvch () const

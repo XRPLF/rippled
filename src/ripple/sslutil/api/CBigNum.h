@@ -36,6 +36,7 @@ public:
     CBigNum (uint64 n);
     explicit CBigNum (uint256 n);
     explicit CBigNum (Blob const& vch);
+    CBigNum (unsigned char const* begin, unsigned char const* end);
     ~CBigNum ();
 
     void setuint (unsigned int n);
@@ -46,6 +47,7 @@ public:
     void setuint64 (uint64 n);
     void setuint256 (uint256 const& n);
     uint256 getuint256 ();
+    void setvch (unsigned char const* begin, unsigned char const* end);
     void setvch (Blob const& vch);
     Blob getvch () const;
     CBigNum& SetCompact (unsigned int nCompact);

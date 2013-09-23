@@ -46,7 +46,7 @@ public:
     };
 
     typedef boost::unordered_map <
-        PublicKey, ValidatorInfo, PublicKey::HashFunction> MapType;
+        PublicKey, ValidatorInfo, PublicKey::hasher> MapType;
 
     struct State
     {
@@ -318,12 +318,10 @@ public:
                 iter != list->map().end(); ++iter)
             {
                 Json::Value entry (Json::objectValue);
-                /*
                 ChosenList::MapType::key_type const& key (iter->first);
-                ChosenList::MapType::mapped_type const& value (iter->second);
-                entry ["key"] = key;
-                entry ["value"] = value;
-                */
+                entry ["key"] = key.to_string();
+                //ChosenList::MapType::mapped_type const& value (iter->second);
+                //entry ["value"] = value.to_string();
                 entries.append (entry);
             }
         }

@@ -84,7 +84,7 @@ bool Utilities::parseInfoLine (
         else if (deprecatedPublicKey.setNodePublic (encodedKey))
         {
             // We got a public key.
-            RipplePublicKey publicKey (deprecatedPublicKey.toRipplePublicKey ());
+            RipplePublicKey publicKey (deprecatedPublicKey);
             success = true;
         }
         else
@@ -238,15 +238,15 @@ Time Utilities::stringToTime (String s)
 
 std::string Utilities::publicKeyToString (PublicKey const& publicKey)
 {
-    std::string s (PublicKey::sizeInBytes, ' ');
+    std::string s (PublicKey::size, ' ');
     std::copy (publicKey.cbegin(), publicKey.cend(), s.begin());
     return s;
 }
 
 PublicKey Utilities::stringToPublicKey (std::string const& s)
 {
-    bassert (s.size() == PublicKey::sizeInBytes);
-    return PublicKey (&s.front());
+    bassert (s.size() == PublicKey::size);
+    return PublicKey ();
 }
 
 //------------------------------------------------------------------------------

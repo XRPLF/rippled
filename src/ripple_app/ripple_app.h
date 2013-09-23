@@ -22,7 +22,7 @@
 #include <boost/array.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/iostreams/concepts.hpp>
+//#include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/mem_fn.hpp>
 #include <boost/pointer_cast.hpp>

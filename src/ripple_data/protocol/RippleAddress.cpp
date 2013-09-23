@@ -12,15 +12,6 @@ RippleAddress::RippleAddress ()
     nVersion = VER_NONE;
 }
 
-RipplePublicKey RippleAddress::toRipplePublicKey () const
-{
-    Blob const& b (getNodePublic ());
-
-    check_precondition (b.size () == RipplePublicKey::sizeInBytes);
-
-    return RipplePublicKey (&b [0]);
-}
-
 void RippleAddress::clear ()
 {
     nVersion = VER_NONE;
@@ -318,6 +309,10 @@ std::string RippleAddress::humanAccountID () const
         if (it != rncMap.end ())
             return it->second;
 
+        // VFALCO NOTE Why do we throw everything out? We could keep two maps
+        //             here, switch back and forth keep one of them full and clear the
+        //             other on a swap - but always check both maps for cache hits.
+        //
         if (rncMap.size () > 10000)
             rncMap.clear ();
 
@@ -953,3 +948,74 @@ public:
 };
 
 static RippleAddressTests rippleAddressTests;
+
+//------------------------------------------------------------------------------
+
+class RippleCryptoIdentifierTests : public UnitTest
+{
+public:
+    void runTest ()
+    {
+        beginTestCase ("Seed");
+        RippleAddress seed;
+        expect (seed.setSeedGeneric ("masterpassphrase"));
+        expect (seed.humanSeed () == "snoPBrXtMeMyMHUVTgbuqAfg1SUTb", seed.humanSeed ());
+
+        beginTestCase ("RipplePublicKey");
+        RippleAddress deprecatedPublicKey (RippleAddress::createNodePublic (seed));
+        expect (deprecatedPublicKey.humanNodePublic () ==
+            "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9",
+                deprecatedPublicKey.humanNodePublic ());
+        RipplePublicKey publicKey (deprecatedPublicKey);
+        expect (publicKey.to_string() == deprecatedPublicKey.humanNodePublic(),
+            publicKey.to_string());
+
+        beginTestCase ("RipplePrivateKey");
+        RippleAddress deprecatedPrivateKey (RippleAddress::createNodePrivate (seed));
+        expect (deprecatedPrivateKey.humanNodePrivate () ==
+            "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe",
+                deprecatedPrivateKey.humanNodePrivate ());
+        RipplePrivateKey privateKey (deprecatedPrivateKey);
+        expect (privateKey.to_string() == deprecatedPrivateKey.humanNodePrivate(),
+            privateKey.to_string());
+
+        beginTestCase ("Generator");
+        RippleAddress generator (RippleAddress::createGeneratorPublic (seed));
+        expect (generator.humanGenerator () ==
+            "fhuJKrhSDzV2SkjLn9qbwm5AaRmrxDPfFsHDCP6yfDZWcxDFz4mt",
+                generator.humanGenerator ());
+
+        beginTestCase ("RippleAccountID");
+        RippleAddress deprecatedAccountPublicKey (
+            RippleAddress::createAccountPublic (generator, 0));
+        expect (deprecatedAccountPublicKey.humanAccountID () ==
+            "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                deprecatedAccountPublicKey.humanAccountID ());
+        RippleAccountID accountID (deprecatedAccountPublicKey);
+        expect (accountID.to_string() ==
+            deprecatedAccountPublicKey.humanAccountID(),
+                accountID.to_string());
+
+        beginTestCase ("RippleAccountPublicKey");
+        expect (deprecatedAccountPublicKey.humanAccountPublic () ==
+            "aBQG8RQAzjs1eTKFEAQXr2gS4utcDiEC9wmi7pfUPTi27VCahwgw",
+                deprecatedAccountPublicKey.humanAccountPublic ());
+
+        beginTestCase ("RippleAccountPrivateKey");
+        RippleAddress deprecatedAccountPrivateKey (
+            RippleAddress::createAccountPrivate (generator, seed, 0));
+        expect (deprecatedAccountPrivateKey.humanAccountPrivate () ==
+            "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh",
+                deprecatedAccountPrivateKey.humanAccountPrivate ());
+        RippleAccountPrivateKey accountPrivateKey (deprecatedAccountPrivateKey);
+        expect (accountPrivateKey.to_string() ==
+            deprecatedAccountPrivateKey.humanAccountPrivate(),
+                privateKey.to_string());
+    }
+
+    RippleCryptoIdentifierTests () : UnitTest ("RippleCryptoIdentifier", "ripple")
+    {
+    }
+};
+
+static RippleCryptoIdentifierTests rippleCryptoIdentifierTests;

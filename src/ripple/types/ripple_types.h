@@ -8,6 +8,7 @@
 #define RIPPLE_TYPES_H_INCLUDED
 
 #include "beast/modules/beast_core/beast_core.h"
+#include "beast/modules/beast_crypto/beast_crypto.h" // for UnsignedInteger, Remove ASAP!
 
 #include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/functional/hash.hpp>
@@ -36,5 +37,15 @@ using namespace beast;
 # include "api/UInt256.h"
 # include "api/RandomNumbers.h"
 #include "api/HashMaps.h"
+#include "api/CryptoIdentifierType.h"
+# include "api/CryptoIdentifierStorage.h"
+
+#include "api/RippleAccountID.h"
+#include "api/RippleAccountPublicKey.h"
+#include "api/RippleAccountPrivateKey.h"
+#include "api/RipplePublicKey.h"
+#include "api/RipplePrivateKey.h"
+
+#include "api/RipplePublicKeyHash.h"
 
 #endif

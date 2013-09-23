@@ -13,14 +13,12 @@ namespace ripple {
 
 char const* Base58::s_currentAlphabet = Base58::getRippleAlphabet ();
 
-char const* Base58::getCurrentAlphabet ()
+void Base58::fourbyte_hash256 (void* out, void const* in, std::size_t bytes)
 {
-    return s_currentAlphabet;
-}
-
-void Base58::setCurrentAlphabet (char const* alphabet)
-{
-    s_currentAlphabet = alphabet;
+    unsigned char const* const p (
+        static_cast <unsigned char const*>(in));
+    uint256 hash (SHA256Hash (p, p + bytes));
+    memcpy (out, hash.begin(), 4);
 }
 
 char const* Base58::getBitcoinAlphabet ()
@@ -38,27 +36,23 @@ char const* Base58::getTestnetAlphabet ()
     return "RPShNAF39wBUDnEGHJKLM4pQrsT7VWXYZ2bcdeCg65jkm8ofqi1tuvaxyz";
 }
 
-std::string Base58::encode (const unsigned char* pbegin, const unsigned char* pend)
+std::string Base58::raw_encode (
+    unsigned char const* begin, unsigned char const* end,
+        char const* alphabet, bool withCheck)
 {
-    char const* alphabet = getCurrentAlphabet ();
-
     CAutoBN_CTX pctx;
     CBigNum bn58 = 58;
     CBigNum bn0 = 0;
 
-    // Convert big endian data to little endian
-    // Extra zero at the end make sure bignum will interpret as a positive number
-    Blob vchTmp (pend - pbegin + 1, 0);
-    std::reverse_copy (pbegin, pend, vchTmp.begin ());
-
     // Convert little endian data to bignum
-    CBigNum bn (vchTmp);
+    CBigNum bn (begin, end);
+    std::size_t const size (std::distance (begin, end));
 
     // Convert bignum to std::string
     std::string str;
     // Expected size increase from base58 conversion is approximately 137%
     // use 138% to be safe
-    str.reserve ((pend - pbegin) * 138 / 100 + 1);
+    str.reserve (size * 138 / 100 + 1);
     CBigNum dv;
     CBigNum rem;
 
@@ -71,9 +65,8 @@ std::string Base58::encode (const unsigned char* pbegin, const unsigned char* pe
         unsigned int c = rem.getuint ();
         str += alphabet [c];
     }
-
-    // Leading zeroes encoded as base58 zeros
-    for (const unsigned char* p = pbegin; p < pend && *p == 0; p++)
+    
+    for (const unsigned char* p = end-2; p >= begin && *p == 0; p--)
         str += alphabet [0];
 
     // Convert little endian std::string to big endian
@@ -81,19 +74,17 @@ std::string Base58::encode (const unsigned char* pbegin, const unsigned char* pe
     return str;
 }
 
-std::string Base58::encode (Blob const& vch)
+char const* Base58::getCurrentAlphabet ()
 {
-    return encode (&vch[0], &vch[0] + vch.size ());
+    return s_currentAlphabet;
 }
 
-std::string Base58::encodeWithCheck (Blob const& vchIn)
+void Base58::setCurrentAlphabet (char const* alphabet)
 {
-    // add 4-byte hash check to the end
-    Blob vch (vchIn);
-    uint256 hash = SHA256Hash (vch.begin (), vch.end ());
-    vch.insert (vch.end (), (unsigned char*)&hash, (unsigned char*)&hash + 4);
-    return encode (vch);
+    s_currentAlphabet = alphabet;
 }
+
+//------------------------------------------------------------------------------
 
 bool Base58::decode (const char* psz, Blob& vchRet, const char* pAlpha)
 {

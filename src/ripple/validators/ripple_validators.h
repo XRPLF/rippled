@@ -8,7 +8,6 @@
 #define RIPPLE_VALIDATORS_H_INCLUDED
 
 #include "beast/modules/beast_core/beast_core.h"
-#include "../ripple_basics/ripple_basics.h" // for RipplePublicKey, remove asap
 
 #include "beast/beast/http/URL.h"
 
