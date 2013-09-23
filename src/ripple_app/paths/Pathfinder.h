@@ -63,7 +63,7 @@ private:
 
     enum NodeType
     {
-        nt_SOURCE,  // The source account with an issuer account, if required
+        nt_SOURCE,       // The source account with an issuer account, if required
         nt_ACCOUNTS,     // Accounts that connect from this source/currency
         nt_BOOKS,        // Order books that connect to this currency
         nt_XRP_BOOK,     // The order book from this currency to XRP
@@ -118,6 +118,7 @@ private:
     static const uint32 afOB_XRP       = 0x010;  // Add order book to XRP only
     static const uint32 afOB_LAST      = 0x040;  // Must link to destination currency
     static const uint32 afAC_LAST      = 0x080;  // Destination account only
+    static const uint32 afALL_ACCOUNTS = 0x100;  // Include no ripple paths
 };
 
 boost::unordered_set<uint160> usAccountDestCurrencies (const RippleAddress& raAccountID, Ledger::ref lrLedger,

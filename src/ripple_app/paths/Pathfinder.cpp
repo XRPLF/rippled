@@ -454,6 +454,8 @@ int Pathfinder::getPathsOut (const uint160& currencyID, const uint160& accountID
             nothing ();
         else if (isDstCurrency && (dstAccount == rspEntry->getAccountIDPeer ()))
             count += 10000; // count a path to the destination extra
+        else if (rspEntry->getNoRipple())
+            nothing (); // This isn't a useful path out
         else
             ++count;
     }
@@ -511,7 +513,10 @@ STPathSet& Pathfinder::getPaths(PathType_t const& type, bool addComplete)
         break;
 
         case nt_ACCOUNTS:
-            addLink(pathsIn, pathsOut, afADD_ACCOUNTS);
+            if (type.size() == 2) // "sa", so can use noRipple paths
+                addLink(pathsIn, pathsOut, afADD_ACCOUNTS | afALL_ACCOUNTS);
+            else
+                addLink(pathsIn, pathsOut, afADD_ACCOUNTS);
             break;
 
         case nt_BOOKS:
@@ -566,6 +571,7 @@ void Pathfinder::addLink(
         }
         else
         { // search for accounts to add
+            bool bAllAccounts = (addFlags & afALL_ACCOUNTS) != 0;
             SLE::pointer sleEnd = mLedger->getSLEi(Ledger::getAccountRootIndex(uEndAccount));
             if (sleEnd)
             {
@@ -606,6 +612,10 @@ void Pathfinder::addLink(
                             { // this is a high-priority candidate
                                 candidates.push_back(std::make_pair(100000, acctID));
                             }
+                        }
+                        else if (!bAllAccounts && rspEntry.getNoRipple())
+                        {
+                            // Can't leave on this path
                         }
                         else if (acctID == mSrcAccountID)
                         {
