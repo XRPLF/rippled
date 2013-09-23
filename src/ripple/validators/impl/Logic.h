@@ -312,17 +312,20 @@ public:
 
         Json::Value entries (Json::arrayValue);
         ChosenList::Ptr list (m_chosenList);
-        for (ChosenList::MapType::const_iterator iter (list->map().begin());
-            iter != list->map().end(); ++iter)
+        if (list != nullptr)
         {
-            Json::Value entry (Json::objectValue);
-            /*
-            ChosenList::MapType::key_type const& key (iter->first);
-            ChosenList::MapType::mapped_type const& value (iter->second);
-            entry ["key"] = key;
-            entry ["value"] = value;
-            */
-            entries.append (entry);
+            for (ChosenList::MapType::const_iterator iter (list->map().begin());
+                iter != list->map().end(); ++iter)
+            {
+                Json::Value entry (Json::objectValue);
+                /*
+                ChosenList::MapType::key_type const& key (iter->first);
+                ChosenList::MapType::mapped_type const& value (iter->second);
+                entry ["key"] = key;
+                entry ["value"] = value;
+                */
+                entries.append (entry);
+            }
         }
         result ["chosen_list"] = entries;
 
@@ -343,6 +346,17 @@ public:
             SourceDesc const& desc (*iter);
             entry ["name"] = desc.source->name();
             entry ["param"] = desc.source->createParam();
+
+            Json::Value results (Json::arrayValue);
+            for (int i = 0; i < desc.result.list.size(); ++i)
+            {
+                Json::Value info (Json::objectValue);
+                info ["key"] = "publicKey";
+                info ["label"] = desc.result.list[i].label;
+                results.append (info);
+            }
+            entry ["result"] = results;
+
             entries.append (entry);
         }
         result ["sources"] = entries;

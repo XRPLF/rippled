@@ -9,6 +9,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
+namespace ripple {
+
 char const* Base58::s_currentAlphabet = Base58::getRippleAlphabet ();
 
 char const* Base58::getCurrentAlphabet ()
@@ -185,4 +187,5 @@ bool Base58::decodeWithCheck (const std::string& str, Blob& vchRet, const char* 
     return decodeWithCheck (str.c_str (), vchRet, pAlphabet);
 }
 
-// vim:ts=4
+}
+

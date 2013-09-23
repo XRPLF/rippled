@@ -214,6 +214,24 @@
     <Filter Include="[1] Ripple\rpc\impl">
       <UniqueIdentifier>{95c93134-7e8d-47ec-9649-4a8d5d97ce12}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\types">
+      <UniqueIdentifier>{a3a2d1ec-d731-42df-9397-40a561c6809a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\types\api">
+      <UniqueIdentifier>{1bfc2af7-9750-4f5b-b2a2-15d7997c4d59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\types\impl">
+      <UniqueIdentifier>{e7342119-7a16-49cd-80b5-fdb21c154f0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\sslutil">
+      <UniqueIdentifier>{7d0d63f0-edc6-4f86-a6ba-f33c32615457}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\sslutil\api">
+      <UniqueIdentifier>{96a1206f-7ad0-4829-a09d-64660c2ede0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\sslutil\impl">
+      <UniqueIdentifier>{794194cf-e641-4838-ba78-82482c6e87c0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -222,22 +240,10 @@
     <ClCompile Include="..\..\src\ripple_basics\containers\TaggedCache.cpp">
       <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\types\UInt256.cpp">
-      <Filter>[2] Old Ripple\ripple_basics\types</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ByteOrder.cpp">
-      <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\utility\CountedObject.cpp">
       <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\DiffieHellmanUtil.cpp">
-      <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\utility\IniFile.cpp">
-      <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\RandomNumbers.cpp">
       <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\utility\StringUtilities.cpp">
@@ -270,13 +276,7 @@
     <ClCompile Include="..\..\src\ripple_core\functional\LoadMonitor.cpp">
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\Base58.cpp">
-      <Filter>[2] Old Ripple\ripple_data\crypto</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\crypto\Base58Data.cpp">
-      <Filter>[2] Old Ripple\ripple_data\crypto</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\CBigNum.cpp">
       <Filter>[2] Old Ripple\ripple_data\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\crypto\CKey.cpp">
@@ -292,9 +292,6 @@
       <Filter>[2] Old Ripple\ripple_data\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\protocol\FieldNames.cpp">
-      <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\PackedMessage.cpp">
       <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\protocol\RippleAddress.cpp">
@@ -1020,6 +1017,45 @@
     <ClCompile Include="..\..\src\ripple\http\impl\ServerImpl.cpp">
       <Filter>[1] Ripple\http\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\ripple_types.cpp">
+      <Filter>[1] Ripple\types</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\Base58.cpp">
+      <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sslutil\ripple_sslutil.cpp">
+      <Filter>[1] Ripple\sslutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sslutil\impl\CBigNum.cpp">
+      <Filter>[1] Ripple\sslutil\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\UInt256.cpp">
+      <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\UInt128.cpp">
+      <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\ByteOrder.cpp">
+      <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\UInt160.cpp">
+      <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\RandomNumbers.cpp">
+      <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\strHex.cpp">
+      <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sslutil\impl\HashUtilities.cpp">
+      <Filter>[1] Ripple\sslutil\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sslutil\impl\DHUtil.cpp">
+      <Filter>[1] Ripple\sslutil\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\peers\PackedMessage.cpp">
+      <Filter>[2] Old Ripple\ripple_app\peers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -1028,49 +1064,22 @@
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">
       <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\containers\SecureAllocator.h">
-      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\containers\TaggedCache.h">
       <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\system\BoostIncludes.h">
       <Filter>[2] Old Ripple\ripple_basics\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\system\OpenSSLIncludes.h">
-      <Filter>[2] Old Ripple\ripple_basics\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\system\StandardIncludes.h">
-      <Filter>[2] Old Ripple\ripple_basics\system</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\types\BasicTypes.h">
       <Filter>[2] Old Ripple\ripple_basics\types</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\types\HashMaps.h">
-      <Filter>[2] Old Ripple\ripple_basics\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\types\UInt256.h">
-      <Filter>[2] Old Ripple\ripple_basics\types</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\ByteOrder.h">
-      <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\utility\CountedObject.h">
-      <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\DiffieHellmanUtil.h">
-      <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\HashUtilities.h">
       <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\utility\IniFile.h">
       <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\utility\PlatformMacros.h">
-      <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\utility\RandomNumbers.h">
       <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\utility\StringUtilities.h">
@@ -1106,13 +1115,7 @@
     <ClInclude Include="..\..\src\ripple_core\functional\LoadMonitor.h">
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\crypto\Base58.h">
-      <Filter>[2] Old Ripple\ripple_data\crypto</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_data\crypto\Base58Data.h">
-      <Filter>[2] Old Ripple\ripple_data\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\crypto\CBigNum.h">
       <Filter>[2] Old Ripple\ripple_data\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_data\crypto\CKey.h">
@@ -1125,9 +1128,6 @@
       <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_data\protocol\HashPrefix.h">
-      <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\PackedMessage.h">
       <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_data\protocol\Protocol.h">
@@ -2021,6 +2021,66 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\impl\ManagerImpl.h">
       <Filter>[1] Ripple\rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\types\RipplePublicKey.h">
+      <Filter>[2] Old Ripple\ripple_basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\types\RipplePublicKeyHash.h">
+      <Filter>[2] Old Ripple\ripple_basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\ripple_types.h">
+      <Filter>[1] Ripple\types</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\Base58.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\Blob.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sslutil\ripple_sslutil.h">
+      <Filter>[1] Ripple\sslutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sslutil\api\CBigNum.h">
+      <Filter>[1] Ripple\sslutil\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sslutil\api\CAutoBN_CTX.h">
+      <Filter>[1] Ripple\sslutil\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sslutil\api\bignum_error.h">
+      <Filter>[1] Ripple\sslutil\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\UInt256.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\base_uint.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\UInt128.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\UInt160.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\ByteOrder.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\RandomNumbers.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\HashMaps.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\strHex.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sslutil\api\HashUtilities.h">
+      <Filter>[1] Ripple\sslutil\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sslutil\api\DHUtil.h">
+      <Filter>[1] Ripple\sslutil\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\peers\PackedMessage.h">
+      <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

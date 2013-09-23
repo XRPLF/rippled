@@ -8,9 +8,7 @@
 #define RIPPLE_KEYCACHE_H_INCLUDED
 
 // This tag is for helping track the locks
-struct KeyCacheBase
-{
-};
+struct KeyCacheBase { };
 
 /** Maintains a cache of keys with no associated data.
 
@@ -23,8 +21,6 @@ struct KeyCacheBase
         @code
         static int getElapsedSeconds ();
         @endcode
-
-    @ingroup ripple_basics
 */
 template <class Key, class Timer>
 class KeyCache : public KeyCacheBase

@@ -4,12 +4,14 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEVELDB_H_INCLUDED
-#define RIPPLE_LEVELDB_H_INCLUDED
+#ifndef RIPPLE_SSLUTIL_DHUTIL_H_INCLUDED
+#define RIPPLE_SSLUTIL_DHUTIL_H_INCLUDED
 
-#include "leveldb/cache.h"
-#include "leveldb/filter_policy.h"
-#include "leveldb/db.h"
-#include "leveldb/write_batch.h"
+namespace ripple {
+
+DH* DH_der_load (const std::string& strDer);
+std::string DH_der_gen (int iKeyLength);
+
+}
 
 #endif

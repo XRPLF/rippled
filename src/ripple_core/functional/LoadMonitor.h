@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOADMONITOR_RIPPLEHEADER
-#define RIPPLE_LOADMONITOR_RIPPLEHEADER
+#ifndef RIPPLE_LOADMONITOR_H_INCLUDED
+#define RIPPLE_LOADMONITOR_H_INCLUDED
 
 // Monitors load levels and response times
 

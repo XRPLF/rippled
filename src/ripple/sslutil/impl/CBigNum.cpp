@@ -9,6 +9,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
+namespace ripple {
+
 CBigNum::CBigNum ()
 {
     BN_init (this);
@@ -641,3 +643,5 @@ uint64 BN_div_word64 (BIGNUM* a, uint64 w)
 }
 
 #endif
+
+}

@@ -4,8 +4,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RANDOMNUMBERS_H
-#define RIPPLE_RANDOMNUMBERS_H
+#ifndef RIPPLE_TYPES_RANDOMNUMBERS_H
+#define RIPPLE_TYPES_RANDOMNUMBERS_H
+
+namespace ripple {
 
 /** Cryptographically secure random number source.
 */
@@ -24,7 +26,7 @@ public:
 
         @return `true` if enough entropy could be retrieved.
     */
-    bool initialize ();
+    bool initialize (Journal::Stream stream = Journal::Stream());
 
     /** Generate secure random numbers.
 
@@ -62,12 +64,14 @@ private:
 
     ~RandomNumbers ();
 
-    bool platformAddEntropy ();
+    bool platformAddEntropy (Journal::Stream stream);
 
     void platformAddPerformanceMonitorEntropy ();
 
 private:
     bool m_initialized;
 };
+
+}
 
 #endif

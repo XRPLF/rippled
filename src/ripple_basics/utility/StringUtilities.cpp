@@ -45,11 +45,6 @@ std::string strprintf (const char* format, ...)
     return str;
 }
 
-char charHex (int iDigit)
-{
-    return iDigit < 10 ? '0' + iDigit : 'A' - 10 + iDigit;
-}
-
 int charUnHex (char cDigit)
 {
     return cDigit >= '0' && cDigit <= '9'

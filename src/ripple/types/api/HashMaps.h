@@ -4,8 +4,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HASHMAPS_H
-#define RIPPLE_HASHMAPS_H
+#ifndef RIPPLE_TYPES_HASHMAPS_H_INCLUDED
+#define RIPPLE_TYPES_HASHMAPS_H_INCLUDED
+
+namespace ripple {
 
 /** Management helper of hash functions used in hash map containers.
 
@@ -115,5 +117,7 @@ private:
         return nonceHolder;
     }
 };
+
+}
 
 #endif

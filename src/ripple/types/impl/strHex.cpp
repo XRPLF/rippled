@@ -4,12 +4,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_DIFFIEHELLMANUTIL_H
-#define RIPPLE_DIFFIEHELLMANUTIL_H
+namespace ripple {
 
-extern DH* DH_der_load (const std::string& strDer);
-extern std::string DH_der_gen (int iKeyLength);
+char charHex (int iDigit)
+{
+    return iDigit < 10 ? '0' + iDigit : 'A' - 10 + iDigit;
+}
 
-#endif
-
-// vim:ts=4
+}

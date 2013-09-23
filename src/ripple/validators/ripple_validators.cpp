@@ -8,7 +8,7 @@
 
 #include "ripple_validators.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
+#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/regex.hpp>
 #include <boost/unordered_set.hpp>
 

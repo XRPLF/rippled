@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SQLITEDATABASE_RIPPLEHEADER
-#define RIPPLE_SQLITEDATABASE_RIPPLEHEADER
+#ifndef RIPPLE_SQLITEDATABASE_H_INCLUDED
+#define RIPPLE_SQLITEDATABASE_H_INCLUDED
 
 class SqliteDatabase
     : public Database

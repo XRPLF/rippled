@@ -4,8 +4,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BYTEORDER_H
-#define RIPPLE_BYTEORDER_H
+#ifndef RIPPLE_TYPES_BYTEORDER_H
+#define RIPPLE_TYPES_BYTEORDER_H
+
+namespace ripple {
 
 // Routines for converting endianness
 
@@ -41,5 +43,7 @@ extern uint32_t be32toh (uint32_t value);
 #define be64toh(x) betoh64(x)
 
 #endif
+
+}
 
 #endif

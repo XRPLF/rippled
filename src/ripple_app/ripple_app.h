@@ -17,7 +17,7 @@
 //             purely abstract and move implementation into .cpp files.
 //
 
-#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
+#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/array.hpp>
 #include <boost/asio/read_until.hpp>
@@ -41,6 +41,12 @@
 
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
 #include "beast/modules/beast_sqlite/beast_sqlite.h"
+
+// VFALCO NOTE If we forward declare PackedMessage and write out shared_ptr
+//             instead of using the in-class typedef, we can remove the entire
+//             ripple.pb.h from the main headers.
+//
+#include "peers/PackedMessage.h"
 
 namespace ripple
 {

@@ -16,11 +16,14 @@
 // - E-mail usually won't line-break if there's no punctuation to break at.
 // - Doubleclicking selects the whole number as one word if it's all alphanumeric.
 //
-#ifndef RIPPLE_BASE58_H
-#define RIPPLE_BASE58_H
+#ifndef RIPPLE_TYPES_BASE58_H
+#define RIPPLE_TYPES_BASE58_H
 
-/** Performs Base 58 encoding and decoding.
-*/
+#include "Blob.h"
+
+namespace ripple {
+
+/** Performs Base 58 encoding and decoding. */
 class Base58
 {
 public:
@@ -31,6 +34,12 @@ public:
     static char const* getBitcoinAlphabet ();
     static char const* getRippleAlphabet ();
     static char const* getTestnetAlphabet ();
+
+    static std::string encode (
+        const unsigned char* pbegin,
+        const unsigned char* pend,
+        char const* alphabet,
+        bool withCheck);
 
     static std::string encode (const unsigned char* pbegin, const unsigned char* pend);
     static std::string encode (Blob const& vch);
@@ -45,5 +54,6 @@ private:
     static char const* s_currentAlphabet;
 };
 
+}
+
 #endif
-// vim:ts=4

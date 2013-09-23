@@ -4,6 +4,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 #if BEAST_WIN32
 
 // from: http://stackoverflow.com/questions/3022552/is-there-any-standard-htonl-like-function-for-64-bits-integers-in-c
@@ -42,3 +44,5 @@ uint32_t be32toh (uint32_t value)
 }
 
 #endif
+
+}

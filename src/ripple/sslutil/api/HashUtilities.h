@@ -4,8 +4,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HASHUTILITIES_H
-#define RIPPLE_HASHUTILITIES_H
+#ifndef RIPPLE_SSLUTIL_HASHUTILITIES_H_INCLUDED
+#define RIPPLE_SSLUTIL_HASHUTILITIES_H_INCLUDED
+
+namespace ripple {
 
 // VFALCO NOTE these came from BitcoinUtil.h
 
@@ -13,7 +15,7 @@
 //         then define these in a .cpp so they are no longer inline.
 //
 template<typename T1>
-inline uint256 SHA256Hash (const T1 pbegin, const T1 pend)
+uint256 SHA256Hash (const T1 pbegin, const T1 pend)
 {
     static unsigned char pblank[1];
     uint256 hash1;
@@ -24,7 +26,7 @@ inline uint256 SHA256Hash (const T1 pbegin, const T1 pend)
 }
 
 template<typename T1, typename T2>
-inline uint256 SHA256Hash (const T1 p1begin, const T1 p1end,
+uint256 SHA256Hash (const T1 p1begin, const T1 p1end,
                            const T2 p2begin, const T2 p2end)
 {
     static unsigned char pblank[1];
@@ -40,9 +42,9 @@ inline uint256 SHA256Hash (const T1 p1begin, const T1 p1end,
 }
 
 template<typename T1, typename T2, typename T3>
-inline uint256 SHA256Hash (const T1 p1begin, const T1 p1end,
-                           const T2 p2begin, const T2 p2end,
-                           const T3 p3begin, const T3 p3end)
+uint256 SHA256Hash (const T1 p1begin, const T1 p1end,
+                    const T2 p2begin, const T2 p2end,
+                    const T3 p3begin, const T3 p3end)
 {
     static unsigned char pblank[1];
     uint256 hash1;
@@ -57,39 +59,8 @@ inline uint256 SHA256Hash (const T1 p1begin, const T1 p1end,
     return hash2;
 }
 
-inline uint160 Hash160 (Blob const& vch)
-{
-    uint256 hash1;
-    SHA256 (&vch[0], vch.size (), (unsigned char*)&hash1);
-    uint160 hash2;
-    RIPEMD160 ((unsigned char*)&hash1, sizeof (hash1), (unsigned char*)&hash2);
-    return hash2;
-}
+uint160 Hash160 (Blob const& vch);
 
-/*
-#if BEAST_WIN32
-// This is used to attempt to keep keying material out of swap
-// Note that VirtualLock does not provide this as a guarantee on Windows,
-// but, in practice, memory that has been VirtualLock'd almost never gets written to
-// the pagefile except in rare circumstances where memory is extremely low.
-#include <windows.h>
-#define mlock(p, n) VirtualLock((p), (n));
-#define munlock(p, n) VirtualUnlock((p), (n));
-#else
-#include <sys/mman.h>
-#include <limits.h>
-// This comes from limits.h if it's not defined there set a sane default
-#ifndef PAGESIZE
-#include <unistd.h>
-#define PAGESIZE sysconf(_SC_PAGESIZE)
-#endif
-#define mlock(a,b) \
-    mlock(((void *)(((size_t)(a)) & (~((PAGESIZE)-1)))),\
-    (((((size_t)(a)) + (b) - 1) | ((PAGESIZE) - 1)) + 1) - (((size_t)(a)) & (~((PAGESIZE) - 1))))
-#define munlock(a,b) \
-    munlock(((void *)(((size_t)(a)) & (~((PAGESIZE)-1)))),\
-    (((((size_t)(a)) + (b) - 1) | ((PAGESIZE) - 1)) + 1) - (((size_t)(a)) & (~((PAGESIZE) - 1))))
-#endif
-*/
+}
 
 #endif

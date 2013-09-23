@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_WSDOOR_RIPPLEHEADER
-#define RIPPLE_WSDOOR_RIPPLEHEADER
+#ifndef RIPPLE_WSDOOR_H_INCLUDED
+#define RIPPLE_WSDOOR_H_INCLUDED
 
 /** Handles accepting incoming WebSocket connections. */
 class WSDoor : public Stoppable

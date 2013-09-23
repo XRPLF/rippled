@@ -4,32 +4,14 @@
 */
 //==============================================================================
 
-/** Include this to get the @ref ripple_basics module.
+#ifndef RIPPLE_BASICS_H_INCLUDED
+#define RIPPLE_BASICS_H_INCLUDED
 
-    @file ripple_basics.h
-    @ingroup ripple_basics
-*/
-
-/** Basic classes.
-
-    This module provides utility classes and types used in the Ripple system.
-
-    @defgroup ripple_basics
-*/
-
-#ifndef RIPPLE_BASICS_RIPPLEHEADER
-#define RIPPLE_BASICS_RIPPLEHEADER
-
-#include "system/StandardIncludes.h"
-
-//------------------------------------------------------------------------------
-
-#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
-#include "system/BoostIncludes.h"
-
-#include "system/OpenSSLIncludes.h"
-
+#include "beast/modules/beast_core/beast_core.h"
 #include "beast/modules/beast_crypto/beast_crypto.h"
+
+#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "system/BoostIncludes.h"
 
 #include "../../beast/beast/Utility.h"
 
@@ -59,20 +41,7 @@ namespace boost
 }
 #endif
 
-//------------------------------------------------------------------------------
-
-// ByteOrder
-#if BEAST_WIN32
-// (nothing)
-#elif __APPLE__
-# include <libkern/OSByteOrder.h>
-#elif defined(__FreeBSD__) || defined(__NetBSD__)
-# include <sys/endian.h>
-#elif defined(__OpenBSD__)
-# include <sys/types.h>
-#endif
-
-#include "beast/modules/beast_core/beast_core.h"
+#include "../ripple/types/ripple_types.h"
 
 namespace ripple
 {
@@ -80,6 +49,8 @@ namespace ripple
 using namespace beast;
 
 #include "types/BasicTypes.h"
+#include "types/RipplePublicKey.h"
+#include "types/RipplePublicKeyHash.h"
 
 #  include "log/LogSeverity.h"
 #  include "log/LogFile.h"
@@ -89,25 +60,17 @@ using namespace beast;
 #include "log/LogJournal.h"
 #include "log/LoggedTimings.h"
 
-#include "utility/ByteOrder.h"
 #include "utility/CountedObject.h"
-#include "utility/DiffieHellmanUtil.h"
 #include "utility/IniFile.h"
 #include "utility/PlatformMacros.h"
-#include "utility/RandomNumbers.h"
 #include "utility/StringUtilities.h"
 #include "utility/Sustain.h"
 #include "utility/ThreadName.h"
 #include "utility/Time.h"
 #include "utility/UptimeTimer.h"
 
-#include "types/UInt256.h"
-#include "utility/HashUtilities.h" // requires UInt256
-#include "types/HashMaps.h"
-
 #include "containers/KeyCache.h"
 #include "containers/RangeSet.h"
-#include "containers/SecureAllocator.h"
 #include "containers/TaggedCache.h"
 
 }

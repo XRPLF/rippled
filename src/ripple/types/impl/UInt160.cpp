@@ -4,12 +4,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEVELDB_H_INCLUDED
-#define RIPPLE_LEVELDB_H_INCLUDED
+namespace ripple {
 
-#include "leveldb/cache.h"
-#include "leveldb/filter_policy.h"
-#include "leveldb/db.h"
-#include "leveldb/write_batch.h"
+base_uint256 uint160::to256 () const
+{
+    uint256 m;
+    memcpy (m.begin (), begin (), size ());
+    return m;
+}
 
-#endif
+}

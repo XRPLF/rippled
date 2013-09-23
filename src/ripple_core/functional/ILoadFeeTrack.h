@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ILOADFEETRACK_RIPPLEHEADER
-#define RIPPLE_ILOADFEETRACK_RIPPLEHEADER
+#ifndef RIPPLE_ILOADFEETRACK_H_INCLUDED
+#define RIPPLE_ILOADFEETRACK_H_INCLUDED
 
 /** Manages the current fee schedule.
 

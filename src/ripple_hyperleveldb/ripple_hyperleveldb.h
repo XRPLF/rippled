@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HYPERLEVELDB_RIPPLEHEADER
-#define RIPPLE_HYPERLEVELDB_RIPPLEHEADER
+#ifndef RIPPLE_HYPERLEVELDB_H_INCLUDED
+#define RIPPLE_HYPERLEVELDB_H_INCLUDED
 
 #include "beast/beast/Config.h"
 

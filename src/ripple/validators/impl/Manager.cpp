@@ -135,7 +135,7 @@ public:
 
     Json::Value rpcRebuild (Json::Value const& args)
     {
-        m_thread.call (&Logic::dirtyChosen, &m_logic);
+        m_thread.call (&Logic::buildChosen, &m_logic);
         Json::Value result;
         result ["chosen_list"] = "rebuilding";
         return result;

@@ -4,12 +4,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEVELDB_H_INCLUDED
-#define RIPPLE_LEVELDB_H_INCLUDED
+namespace ripple {
 
-#include "leveldb/cache.h"
-#include "leveldb/filter_policy.h"
-#include "leveldb/db.h"
-#include "leveldb/write_batch.h"
+std::size_t hash_value (uint256 const& u)
+{
+    std::size_t seed = HashMaps::getInstance ().getNonce <size_t> ();
 
-#endif
+    return u.hash_combine (seed);
+}
+
+}

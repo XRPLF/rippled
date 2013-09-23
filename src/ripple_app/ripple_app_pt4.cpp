@@ -10,6 +10,8 @@
 
 #include "../ripple_net/ripple_net.h"
 
+#include <fstream> // for UniqueNodeList.cpp
+
 namespace ripple
 {
 

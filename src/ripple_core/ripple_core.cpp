@@ -8,18 +8,15 @@
 
 #include "ripple_core.h"
 
-// Needed for InputParser
-#include "beast/modules/beast_asio/beast_asio.h"
-
 #include <fstream>
+#include <map>
+#include <set>
 
-#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
+#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
-
-
 
 #include "nodestore/NodeStore.cpp"
 

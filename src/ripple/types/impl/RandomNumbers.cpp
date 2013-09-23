@@ -4,6 +4,27 @@
 */
 //==============================================================================
 
+// VFALCO TODO Replace OpenSSL randomness with a dependency-free implementation
+//         Perhaps Schneier's Fortuna or a variant. Abstract the collection of
+//         entropy and provide OS-specific implementation. We can re-use the
+//         BearShare source code for this.
+//
+//         Add Random number generation to beast
+//
+#include <openssl/rand.h>
+#if BEAST_WIN32
+# include <windows.h>
+# include <wincrypt.h>
+#endif
+#if BEAST_LINUX
+# include <sys/time.h>
+#else
+# include <time.h>
+#endif
+#include <fstream>
+
+namespace ripple {
+
 RandomNumbers::RandomNumbers ()
     : m_initialized (false)
 {
@@ -13,11 +34,11 @@ RandomNumbers::~RandomNumbers ()
 {
 }
 
-bool RandomNumbers::initialize ()
+bool RandomNumbers::initialize (Journal::Stream stream)
 {
     assert (!m_initialized);
 
-    bool success = platformAddEntropy ();
+    bool success = platformAddEntropy (stream);
 
     if (success)
         m_initialized = true;
@@ -37,7 +58,6 @@ void RandomNumbers::fillBytes (void* destinationBuffer, int numberOfBytes)
         if (! initialize ())
         {
             char const* message = "Unable to add system entropy";
-            Log::out() << message;
             throw std::runtime_error (message);
         }
     }
@@ -66,7 +86,7 @@ RandomNumbers& RandomNumbers::getInstance ()
 #if BEAST_WIN32
 
 // Get entropy from the Windows crypto provider
-bool RandomNumbers::platformAddEntropy ()
+bool RandomNumbers::platformAddEntropy (Journal::Stream stream)
 {
     char name[512], rand[128];
     DWORD count = 500;
@@ -74,25 +94,19 @@ bool RandomNumbers::platformAddEntropy ()
 
     if (!CryptGetDefaultProviderA (PROV_RSA_FULL, NULL, CRYPT_MACHINE_DEFAULT, name, &count))
     {
-#ifdef BEAST_DEBUG
-        Log::out() << "Unable to get default crypto provider";
-#endif
+        stream << "Unable to get default crypto provider";
         return false;
     }
 
     if (!CryptAcquireContextA (&cryptoHandle, NULL, name, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
     {
-#ifdef BEAST_DEBUG
-        Log::out() << "Unable to acquire crypto provider";
-#endif
+        stream << "Unable to acquire crypto provider";
         return false;
     }
 
     if (!CryptGenRandom (cryptoHandle, 128, reinterpret_cast<BYTE*> (rand)))
     {
-#ifdef BEAST_DEBUG
-        Log::out() << "Unable to get entropy from crypto provider";
-#endif
+        stream << "Unable to get entropy from crypto provider";
         CryptReleaseContext (cryptoHandle, 0);
         return false;
     }
@@ -105,7 +119,7 @@ bool RandomNumbers::platformAddEntropy ()
 
 #else
 
-bool RandomNumbers::platformAddEntropy ()
+bool RandomNumbers::platformAddEntropy (Journal::Stream stream)
 {
     char rand[128];
     std::ifstream reader;
@@ -115,7 +129,7 @@ bool RandomNumbers::platformAddEntropy ()
     if (!reader.is_open ())
     {
 #ifdef BEAST_DEBUG
-        Log::out() << "Unable to open random source";
+        stream << "Unable to open random source";
 #endif
         return false;
     }
@@ -127,7 +141,7 @@ bool RandomNumbers::platformAddEntropy ()
     if (bytesRead == 0)
     {
 #ifdef BEAST_DEBUG
-        Log::out() << "Unable to read from random source";
+        stream << "Unable to read from random source";
 #endif
         return false;
     }
@@ -214,4 +228,6 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
     }
 
 #endif
+}
+
 }

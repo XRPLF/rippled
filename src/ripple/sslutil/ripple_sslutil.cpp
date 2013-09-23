@@ -6,12 +6,8 @@
 
 #include "BeastConfig.h"
 
-#include "ripple_rpc.h"
+#include "ripple_sslutil.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
-#include <boost/unordered_map.hpp>
-
-# include "impl/ManagerImpl.h"
-#include "impl/Manager.cpp"
-#include "impl/Handler.cpp"
-#include "impl/Service.cpp"
+#include "impl/CBigNum.cpp"
+#include "impl/DHUtil.cpp"
+#include "impl/HashUtilities.cpp"

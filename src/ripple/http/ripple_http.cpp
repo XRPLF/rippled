@@ -10,7 +10,7 @@
 
 #include "../ripple_net/ripple_net.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
+#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 

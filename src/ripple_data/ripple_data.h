@@ -4,43 +4,23 @@
 */
 //==============================================================================
 
-/** Include this to get the @ref ripple_data module.
+#ifndef RIPPLE_DATA_H_INCLUDED
+#define RIPPLE_DATA_H_INCLUDED
 
-    @file ripple_data.h
-    @ingroup ripple_data
-*/
-
-/** Ripple specific data representation and manipulation.
-
-    These form the building blocks of Ripple data.
-
-    @defgroup ripple_data
-*/
-
-#ifndef RIPPLE_DATA_RIPPLEHEADER
-#define RIPPLE_DATA_RIPPLEHEADER
-
-// VFALCO TODO try to reduce these dependencies
 #include "../ripple_basics/ripple_basics.h"
-
-// VFALCO TODO figure out a good place for this file, perhaps give it some
-//         additional hierarchy via directories.
-#include "ripple.pb.h"
-
 #include "../ripple/json/ripple_json.h"
 
-namespace ripple
-{
+struct bignum_st;
+typedef struct bignum_st BIGNUM;
 
-#include "crypto/CBigNum.h"
-#include "crypto/Base58.h" // VFALCO TODO Can be moved to .cpp if we clean up setAlphabet stuff
+namespace ripple {
+
 #include "crypto/Base58Data.h"
 #include "crypto/RFC1751.h"
 
 #include "protocol/BuildInfo.h"
 #include "protocol/FieldNames.h"
 #include "protocol/HashPrefix.h"
-#include "protocol/PackedMessage.h"
 #include "protocol/Protocol.h"
 #include "protocol/RippleAddress.h"
 #include "protocol/RippleSystem.h"

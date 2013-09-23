@@ -9,67 +9,12 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef RIPPLE_CBIGNUM_H
-#define RIPPLE_CBIGNUM_H
+#ifndef RIPPLE_SSLUTIL_CBIGNUM_H_INCLUDED
+#define RIPPLE_SSLUTIL_CBIGNUM_H_INCLUDED
 
-//------------------------------------------------------------------------------
+namespace ripple {
 
-class bignum_error : public std::runtime_error
-{
-public:
-    explicit bignum_error (const std::string& str) : std::runtime_error (str) {}
-};
-
-//------------------------------------------------------------------------------
-
-class CAutoBN_CTX
-{
-private:
-    CAutoBN_CTX (const CAutoBN_CTX&); // no implementation
-    CAutoBN_CTX& operator= (const CAutoBN_CTX&); // no implementation
-
-protected:
-    BN_CTX* pctx;
-    CAutoBN_CTX& operator= (BN_CTX* pnew)
-    {
-        pctx = pnew;
-        return *this;
-    }
-
-public:
-    CAutoBN_CTX ()
-    {
-        pctx = BN_CTX_new ();
-
-        if (pctx == NULL)
-            throw bignum_error ("CAutoBN_CTX : BN_CTX_new() returned NULL");
-    }
-
-    ~CAutoBN_CTX ()
-    {
-        if (pctx != NULL)
-            BN_CTX_free (pctx);
-    }
-
-    operator BN_CTX* ()
-    {
-        return pctx;
-    }
-    BN_CTX& operator* ()
-    {
-        return *pctx;
-    }
-    BN_CTX** operator& ()
-    {
-        return &pctx;
-    }
-    bool operator! ()
-    {
-        return (pctx == NULL);
-    }
-};
-
-//------------------------------------------------------------------------------
+class uint256;
 
 // VFALCO TODO figure out a way to remove the dependency on openssl in the
 //         header. Maybe rewrite this to use cryptopp.
@@ -150,22 +95,12 @@ bool operator> (const CBigNum& a, const CBigNum& b);
 
 //------------------------------------------------------------------------------
 
-// VFALCO NOTE this seems as good a place as any for this.
-
-// Here's the old implementation using macros, in case something broke
-//#if (ULONG_MAX > UINT_MAX)
-//#define BN_add_word64(bn, word) BN_add_word(bn, word)
-//#define BN_sub_word64(bn, word) BN_sub_word(bn, word)
-//#define BN_mul_word64(bn, word) BN_mul_word(bn, word)
-//#define BN_div_word64(bn, word) BN_div_word(bn, word)
-//#endif
-
 // VFALCO I believe only STAmount uses these
-extern int BN_add_word64 (BIGNUM* a, uint64 w);
-extern int BN_sub_word64 (BIGNUM* a, uint64 w);
-extern int BN_mul_word64 (BIGNUM* a, uint64 w);
-extern uint64 BN_div_word64 (BIGNUM* a, uint64 w);
+int BN_add_word64 (BIGNUM* a, uint64 w);
+int BN_sub_word64 (BIGNUM* a, uint64 w);
+int BN_mul_word64 (BIGNUM* a, uint64 w);
+uint64 BN_div_word64 (BIGNUM* a, uint64 w);
+
+}
 
 #endif
-
-// vim:ts=4

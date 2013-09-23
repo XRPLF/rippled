@@ -7,7 +7,7 @@
 #ifndef RIPPLE_TESTOVERLAY_H_INCLUDED
 #define RIPPLE_TESTOVERLAY_H_INCLUDED
 
-#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
+#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/unordered_set.hpp>
 
 #include "beast/modules/beast_core/beast_core.h"
