@@ -598,6 +598,10 @@ void Pathfinder::addLink(
                         {
                             // path has no credit
                         }
+                        else if (!bAllAccounts && rspEntry.getNoRipple())
+                        {
+                            // Can't leave on this path
+                        }
                         else if (acctID == mDstAccountID)
                         { // destination is always worth trying
                             if (uEndCurrency == mDstAmount.getCurrency())
@@ -612,10 +616,6 @@ void Pathfinder::addLink(
                             { // this is a high-priority candidate
                                 candidates.push_back(std::make_pair(100000, acctID));
                             }
-                        }
-                        else if (!bAllAccounts && rspEntry.getNoRipple())
-                        {
-                            // Can't leave on this path
                         }
                         else if (acctID == mSrcAccountID)
                         {
