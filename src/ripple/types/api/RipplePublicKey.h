@@ -7,12 +7,10 @@
 #ifndef RIPPLE_TYPES_RIPPLEPUBLICKEY_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEPUBLICKEY_H_INCLUDED
 
-#include "RippleCryptoIdentifier.h"
-
 namespace ripple {
 
 class RipplePublicKeyTraits
-    : public RippleCryptoIdentifier <33, 28, true>
+    : public CryptoIdentifier <33, 28, true>
 {
 public:
     template <typename Other>
@@ -25,7 +23,7 @@ public:
     };
 };
 
-typedef CryptoIdentifierType <RipplePublicKeyTraits> RipplePublicKey;
+typedef IdentifierType <RipplePublicKeyTraits> RipplePublicKey;
 
 }
 

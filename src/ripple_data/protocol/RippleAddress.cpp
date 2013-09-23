@@ -951,7 +951,7 @@ static RippleAddressTests rippleAddressTests;
 
 //------------------------------------------------------------------------------
 
-class RippleCryptoIdentifierTests : public UnitTest
+class RippleIdentifierTests : public UnitTest
 {
 public:
     void runTest ()
@@ -1013,9 +1013,9 @@ public:
                 privateKey.to_string());
     }
 
-    RippleCryptoIdentifierTests () : UnitTest ("RippleCryptoIdentifier", "ripple")
+    RippleIdentifierTests () : UnitTest ("RippleIdentifier", "ripple")
     {
     }
 };
 
-static RippleCryptoIdentifierTests rippleCryptoIdentifierTests;
+static RippleIdentifierTests rippleIdentifierTests;

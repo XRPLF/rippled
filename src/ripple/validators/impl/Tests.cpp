@@ -119,7 +119,7 @@ public:
             for (uint32 i = m_start ; i < m_end; ++i)
             {
                 Info info;
-                info.publicKey = Validators::PublicKey::createFromInteger (i);
+                info.publicKey = RipplePublicKey::createFromInteger (i);
                 info.label = String::fromNumber (i);
                 result.list.add (info);
             }

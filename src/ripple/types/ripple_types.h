@@ -37,15 +37,17 @@ using namespace beast;
 # include "api/UInt256.h"
 # include "api/RandomNumbers.h"
 #include "api/HashMaps.h"
-#include "api/CryptoIdentifierType.h"
-# include "api/CryptoIdentifierStorage.h"
 
+# include "api/IdentifierType.h"
+# include "api/IdentifierStorage.h"
+# include "api/CryptoIdentifier.h"
 #include "api/RippleAccountID.h"
 #include "api/RippleAccountPublicKey.h"
 #include "api/RippleAccountPrivateKey.h"
 #include "api/RipplePublicKey.h"
 #include "api/RipplePrivateKey.h"
-
+# include "api/SimpleIdentifier.h"
+#include "api/RippleLedgerHash.h"
 #include "api/RipplePublicKeyHash.h"
 
 #endif

@@ -22,7 +22,7 @@ public:
         }
     };
 
-    typedef boost::unordered_map <PublicKey, Info, PublicKey::hasher> MapType;
+    typedef boost::unordered_map <RipplePublicKey, Info, RipplePublicKey::hasher> MapType;
 
     ChosenList (std::size_t expectedSize = 0)
     {
@@ -40,17 +40,17 @@ public:
         return m_map.size ();
     }
 
-    void insert (PublicKey const& key, Info const& info) noexcept
+    void insert (RipplePublicKey const& key, Info const& info) noexcept
     {
         m_map [key] = info;
     }
 
-    bool containsPublicKey (PublicKey const& publicKey) const noexcept
+    bool containsPublicKey (RipplePublicKey const& publicKey) const noexcept
     {
         return m_map.find (publicKey) != m_map.cend ();
     }
 
-    bool containsPublicKeyHash (PublicKeyHash const& publicKeyHash) const noexcept
+    bool containsPublicKeyHash (RipplePublicKeyHash const& publicKeyHash) const noexcept
     {
         return false;
     }

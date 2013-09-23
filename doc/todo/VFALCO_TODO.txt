@@ -3,11 +3,14 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's List: Changes day to day, descending priority
-- Finish RPCAsyncServer, RPCService and RPCService::Manager
-- Fix and tidy up broken beast classes
 - Parse Validator line using cribbed code
 - Parse ContentBodyBuffer from HTTPResponse
-- Look into using CMake
+- HTTPMessage improvements
+- HTTPClient improvements based on HTTPServer
+- Ditch old HTTPClient so I can take the name
+- Finish RPCAsyncServer, RPCService and RPCService::Manager
+- Fix and tidy up broken beast classes
+- Fix RPCDoor to respect config setting for [rpc_secure]
 - Validators should delay the application of newly downloaded lists from
   sources, to mitigate the effects of attacks. Unless there's no validators
   in the list.
@@ -15,15 +18,15 @@ Vinnie's List: Changes day to day, descending priority
   manually revisit sources, etc...
 - Clean up calculation of COnfig file location.
 - Remove TESTNET and all related code and settings.
-- Fix RPCDoor to respect config setting for [rpc_secure]
 - Remove addRpcSub, findRpcSub, and notify the appropriate partner(s)
-- Make RPCHandler/Server asynchronous
 
 David Features:
 - override config items from command line
 - change config via RPC, this is for debugging
 
 --------------------------------------------------------------------------------
+
+- Look into using CMake
 
 - IPv6 support in IPEndpoint
 

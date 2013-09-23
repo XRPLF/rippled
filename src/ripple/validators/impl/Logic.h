@@ -46,7 +46,7 @@ public:
     };
 
     typedef boost::unordered_map <
-        PublicKey, ValidatorInfo, PublicKey::hasher> MapType;
+        RipplePublicKey, ValidatorInfo, RipplePublicKey::hasher> MapType;
 
     struct State
     {
@@ -388,7 +388,7 @@ public:
 
     // Returns `true` if the public key hash is contained in the Chosen List.
     //
-    bool isTrustedPublicKeyHash (PublicKeyHash const& publicKeyHash)
+    bool isTrustedPublicKeyHash (RipplePublicKeyHash const& publicKeyHash)
     {
         return m_chosenList->containsPublicKeyHash (publicKeyHash);
     }

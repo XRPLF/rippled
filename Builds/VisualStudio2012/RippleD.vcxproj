@@ -130,7 +130,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\RippleCryptoIdentifierTests.cpp">
+    <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1614,17 +1614,19 @@
     <ClInclude Include="..\..\src\ripple\types\api\base_uint.h" />
     <ClInclude Include="..\..\src\ripple\types\api\Blob.h" />
     <ClInclude Include="..\..\src\ripple\types\api\ByteOrder.h" />
-    <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifierStorage.h" />
-    <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifierType.h" />
+    <ClInclude Include="..\..\src\ripple\types\api\IdentifierStorage.h" />
+    <ClInclude Include="..\..\src\ripple\types\api\IdentifierType.h" />
     <ClInclude Include="..\..\src\ripple\types\api\HashMaps.h" />
     <ClInclude Include="..\..\src\ripple\types\api\RandomNumbers.h" />
     <ClInclude Include="..\..\src\ripple\types\api\RippleAccountID.h" />
     <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPrivateKey.h" />
     <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPublicKey.h" />
-    <ClInclude Include="..\..\src\ripple\types\api\RippleCryptoIdentifier.h" />
+    <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifier.h" />
+    <ClInclude Include="..\..\src\ripple\types\api\RippleLedgerHash.h" />
     <ClInclude Include="..\..\src\ripple\types\api\RipplePrivateKey.h" />
     <ClInclude Include="..\..\src\ripple\types\api\RipplePublicKey.h" />
     <ClInclude Include="..\..\src\ripple\types\api\RipplePublicKeyHash.h" />
+    <ClInclude Include="..\..\src\ripple\types\api\SimpleIdentifier.h" />
     <ClInclude Include="..\..\src\ripple\types\api\strHex.h" />
     <ClInclude Include="..\..\src\ripple\types\api\UInt128.h" />
     <ClInclude Include="..\..\src\ripple\types\api\UInt160.h" />

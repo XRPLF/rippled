@@ -10,13 +10,11 @@
 namespace ripple {
 namespace Validators {
 
-typedef RipplePublicKey     PublicKey;
-typedef RipplePublicKeyHash PublicKeyHash;
-
 struct ReceivedValidation
 {
-    uint256 ledgerHash;
-    PublicKeyHash signerPublicKeyHash;
+    RippleLedgerHash        ledgerHash;
+    RipplePublicKey         publicKey;
+    RipplePublicKeyHash     publicKeyHash;
 };
 
 /** Callback used to optionally cancel long running fetch operations. */

@@ -9,8 +9,22 @@
 
 namespace ripple {
 
-/** A container holding the hash of a public key in binary format. */
-typedef UnsignedInteger <20> RipplePublicKeyHash;
+/** Traits for the public key hash. */
+class RipplePublicKeyHashTraits : public SimpleIdentifier <20>
+{
+public:
+    template <typename Other>
+    struct assign
+    {
+        void operator() (value_type& value, Other const& other)
+        {
+            value = other;
+        }
+    };
+};
+
+/** A container holding the 160-bit hash of the 257-bit public key. */
+typedef IdentifierType <RipplePublicKeyHashTraits> RipplePublicKeyHash;
 
 }
 

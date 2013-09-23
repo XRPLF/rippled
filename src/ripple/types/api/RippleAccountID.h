@@ -7,12 +7,12 @@
 #ifndef RIPPLE_TYPES_RIPPLEACCOUNTID_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEACCOUNTID_H_INCLUDED
 
-#include "RippleCryptoIdentifier.h"
+#include "CryptoIdentifier.h"
 
 namespace ripple {
 
 class RippleAccountIDTraits
-    : public RippleCryptoIdentifier <20, 0, true>
+    : public CryptoIdentifier <20, 0, true>
 {
 public:
     template <typename Other>
@@ -42,7 +42,7 @@ public:
     }
 };
 
-typedef CryptoIdentifierType <RippleAccountIDTraits> RippleAccountID;
+typedef IdentifierType <RippleAccountIDTraits> RippleAccountID;
 
 }
 

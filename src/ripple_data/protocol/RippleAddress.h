@@ -206,6 +206,7 @@ public:
 
 //------------------------------------------------------------------------------
 
+/** RipplePublicKey */
 template <>
 struct RipplePublicKeyTraits::assign <RippleAddress>
 {
@@ -216,6 +217,18 @@ struct RipplePublicKeyTraits::assign <RippleAddress>
     }
 };
 
+/** RipplePublicKeyHash */
+template <>
+struct RipplePublicKeyHashTraits::assign <RippleAddress>
+{
+    void operator() (value_type& value, RippleAddress const& v) const
+    {
+        uint160 const ui (v.getNodeID ());
+        construct (ui.begin(), ui.end(), value);
+    }
+};
+
+/** RipplePrivateKey */
 template <>
 struct RipplePrivateKeyTraits::assign <RippleAddress>
 {
@@ -226,6 +239,7 @@ struct RipplePrivateKeyTraits::assign <RippleAddress>
     }
 };
 
+/** RippleAccountID */
 template <>
 struct RippleAccountIDTraits::assign <RippleAddress>
 {
@@ -236,6 +250,7 @@ struct RippleAccountIDTraits::assign <RippleAddress>
     }
 };
 
+/** RippleAccountPublicKey */
 template <>
 struct RippleAccountPublicKeyTraits::assign <RippleAddress>
 {
@@ -246,6 +261,7 @@ struct RippleAccountPublicKeyTraits::assign <RippleAddress>
     }
 };
 
+/** RippleAccountPrivateKey */
 template <>
 struct RippleAccountPrivateKeyTraits::assign <RippleAddress>
 {

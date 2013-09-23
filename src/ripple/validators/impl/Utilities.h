@@ -54,9 +54,9 @@ public:
     static String timeToString (Time const& t);
     static Time stringToTime (String s);
 
-    // conversion between PublicKey and String
-    static std::string publicKeyToString (PublicKey const& publicKey);
-    static PublicKey stringToPublicKey (std::string const& s);
+    // conversion between RipplePublicKey and String
+    static std::string publicKeyToString (RipplePublicKey const& publicKey);
+    static RipplePublicKey stringToPublicKey (std::string const& s);
 
     struct Helpers;
 

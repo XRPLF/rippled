@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_RIPPLECRYPTOIDENTIFIER_H_INCLUDED
-#define RIPPLE_TYPES_RIPPLECRYPTOIDENTIFIER_H_INCLUDED
+#ifndef RIPPLE_TYPES_CRYPTOIDENTIFIER_H_INCLUDED
+#define RIPPLE_TYPES_CRYPTOIDENTIFIER_H_INCLUDED
 
 #include "beast/beast/FixedArray.h"
 #include "beast/beast/intrusive/IntrusiveArray.h"
@@ -13,11 +13,11 @@
 
 #include "Base58.h"
 
-#include "CryptoIdentifierStorage.h"
+#include "IdentifierStorage.h"
 
 namespace ripple {
 
-/** Shared CryptoIdentifierType traits for Ripple crypto identifiers.
+/** Shared IdentifierType traits for Ripple crypto identifiers.
 
     @tparam Size The number of bytes in the identifier, exclusive of version,
                  checksum, or padding.
@@ -30,7 +30,7 @@ namespace ripple {
                     the data including the Token.
 */
 template <std::size_t Size, uint8 Token, bool Checked>
-class RippleCryptoIdentifier
+class CryptoIdentifier
 {
 public:
     typedef std::size_t         size_type;
@@ -44,7 +44,7 @@ public:
     static bool const           checked = Checked;
 
     // This is what the wrapper creates, it includes the padding.
-    typedef CryptoIdentifierStorage <
+    typedef IdentifierStorage <
         pre_size, size, post_size>          value_type;
 
     typedef typename value_type::hasher     hasher;
@@ -69,7 +69,7 @@ public:
         }
     }
 
-    /** Base class for CryptoIdentifierType. */
+    /** Base class for IdentifierType. */
     class base
     {
     public:

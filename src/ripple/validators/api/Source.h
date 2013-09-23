@@ -18,7 +18,7 @@ public:
     struct Info
     {
         /** The unique key for this validator. */
-        PublicKey publicKey;
+        RipplePublicKey publicKey;
 
         /** Optional human readable comment describing the validator. */
         String label;

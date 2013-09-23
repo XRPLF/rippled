@@ -38,9 +38,83 @@ protected:
     unsigned int pn[WIDTH];
 
 public:
-    base_uint ()
+    /** Construct uninitialized.
+        Requirements:
+            std::is_trivially_constructible<base_uint>::value == true
+    */
+    base_uint () { }
+
+    //--------------------------------------------------------------------------
+    //
+    // STL Container Interface
+    //
+
+    static std::size_t const        bytes = (BITS/8);
+
+    typedef std::size_t             size_type;
+    typedef std::ptrdiff_t          difference_type;
+    typedef unsigned char           value_type;
+    typedef value_type*             pointer;
+    typedef value_type&             reference;
+    typedef value_type const*       const_pointer;
+    typedef value_type const&       const_reference;
+    typedef pointer                 iterator;
+    typedef const_pointer           const_iterator;
+    typedef std::reverse_iterator
+        <iterator>                  reverse_iterator;
+    typedef std::reverse_iterator
+        <const_iterator>            const_reverse_iterator;
+
+    pointer data() { return reinterpret_cast<pointer>(pn); }
+    const_pointer data() const { return reinterpret_cast<const_pointer>(pn); }
+
+    iterator begin() { return data(); }
+    iterator end()   { return data()+bytes; }
+    const_iterator begin()  const { return data(); }
+    const_iterator end()    const { return data()+bytes; }
+    const_iterator cbegin() const { return data(); }
+    const_iterator cend()   const { return data()+bytes; }
+
+    reverse_iterator rbegin() { return end(); }
+    reverse_iterator rend()   { return begin(); }
+    const_reverse_iterator rbegin()  const { return end(); }
+    const_reverse_iterator rend()    const { return begin(); }
+    const_reverse_iterator crbegin() const { return cend(); }
+    const_reverse_iterator crend()   const { return cbegin(); }
+
+    /** Value hashing function.
+        The seed prevents crafted inputs from causing degenarate parent containers.
+    */
+    class hasher
     {
-    }
+    public:
+        explicit hasher (HashValue seedToUse = Random::getSystemRandom ().nextInt ())
+            : m_seed (seedToUse)
+        {
+        }
+
+        std::size_t operator() (base_uint const& value) const
+        {
+            std::size_t hash;
+            Murmur::Hash (value.cbegin (), (BITS / 8), m_seed, &hash);
+            return hash;
+        }
+
+    private:
+        std::size_t m_seed;
+    };
+
+    /** Container equality testing function. */
+    class equal
+    {
+    public:
+        bool operator() (base_uint const& lhs, base_uint const& rhs) const
+        {
+            return lhs == rhs;
+        }
+    };        
+
+    //--------------------------------------------------------------------------
 
 protected:
     // This is to disambiguate from other 1 parameter ctors
@@ -58,7 +132,6 @@ protected:
         memcpy (&pn [0], data, BITS / 8);
     }
 public:
-
     bool isZero () const
     {
         for (int i = 0; i < WIDTH; i++)
@@ -364,36 +437,6 @@ public:
         return GetHex ();
     }
 
-    unsigned char* begin ()
-    {
-        return reinterpret_cast<unsigned char*> (pn);
-    }
-
-    unsigned char* end ()
-    {
-        return reinterpret_cast<unsigned char*> (pn + WIDTH);
-    }
-
-    unsigned char const* cbegin () const noexcept
-    {
-        return reinterpret_cast <unsigned char const*> (pn);
-    }
-
-    unsigned char const* cend () const noexcept
-    {
-        return reinterpret_cast<unsigned char const*> (pn + WIDTH);
-    }
-
-    const unsigned char* begin () const noexcept
-    {
-        return cbegin ();
-    }
-
-    const unsigned char* end () const noexcept
-    {
-        return cend ();
-    }
-
     unsigned int size () const
     {
         return sizeof (pn);
@@ -436,6 +479,72 @@ std::ostream& operator<< (std::ostream& out, const base_uint<BITS>& u)
 {
     return out << u.GetHex ();
 }
+
+}
+
+//------------------------------------------------------------------------------
+
+namespace std {
+
+/** Specialization for hash. */
+template<unsigned int BITS>
+struct hash <ripple::base_uint <BITS> >
+{
+public:
+    typedef ripple::base_uint <BITS> argument_type;
+    typedef std::size_t              result_type;
+
+    hash ()
+    {
+        static typename argument_type::hasher s_hash;
+        m_hash = s_hash;
+    }
+
+    template <typename Arg>
+    explicit hash (Arg arg) : m_hash (arg)
+    {
+    }
+
+    result_type operator() (argument_type const& key) const
+    {
+        return m_hash (key);
+    }
+
+private:
+    typename argument_type::hasher m_hash;
+};
+
+//------------------------------------------------------------------------------
+
+/** Specialization for equal_to. */
+template <unsigned int BITS>
+struct equal_to <ripple::base_uint <BITS> >
+{
+public:
+    typedef bool                    result_type;
+    typedef ripple::base_uint<BITS> argument_type;
+    typedef argument_type           first_argument_type;
+    typedef argument_type           second_argument_type;
+
+    equal_to ()
+    {
+    }
+
+    template <typename Arg>
+    explicit equal_to (Arg arg)
+        : m_equal (arg)
+    {
+    }
+
+    result_type operator() (argument_type const& lhs,
+                            argument_type const& rhs) const
+    {
+        return m_equal (lhs, rhs);
+    }
+
+private:
+    typename argument_type::equal m_equal;
+};
 
 }
 

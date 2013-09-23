@@ -24,4 +24,4 @@
 #include "impl/UInt128.cpp"
 #include "impl/UInt160.cpp"
 #include "impl/UInt256.cpp"
-#include "impl/RippleCryptoIdentifierTests.cpp"
+#include "impl/RippleIdentifierTests.cpp"

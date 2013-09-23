@@ -236,17 +236,17 @@ Time Utilities::stringToTime (String s)
     return Time (0);
 }
 
-std::string Utilities::publicKeyToString (PublicKey const& publicKey)
+std::string Utilities::publicKeyToString (RipplePublicKey const& publicKey)
 {
-    std::string s (PublicKey::size, ' ');
+    std::string s (RipplePublicKey::size, ' ');
     std::copy (publicKey.cbegin(), publicKey.cend(), s.begin());
     return s;
 }
 
-PublicKey Utilities::stringToPublicKey (std::string const& s)
+RipplePublicKey Utilities::stringToPublicKey (std::string const& s)
 {
-    bassert (s.size() == PublicKey::size);
-    return PublicKey ();
+    bassert (s.size() == RipplePublicKey::size);
+    return RipplePublicKey ();
 }
 
 //------------------------------------------------------------------------------

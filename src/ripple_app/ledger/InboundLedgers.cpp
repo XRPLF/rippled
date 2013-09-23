@@ -76,7 +76,7 @@ InboundLedger::pointer InboundLedgers::find (uint256 const& hash)
     return ret;
 }
 
-bool InboundLedgers::hasLedger (uint256 const& hash)
+bool InboundLedgers::hasLedger (LedgerHash const& hash)
 {
     assert (hash.isNonZero ());
 
@@ -84,7 +84,7 @@ bool InboundLedgers::hasLedger (uint256 const& hash)
     return mLedgers.find (hash) != mLedgers.end ();
 }
 
-void InboundLedgers::dropLedger (uint256 const& hash)
+void InboundLedgers::dropLedger (LedgerHash const& hash)
 {
     assert (hash.isNonZero ());
 
@@ -93,7 +93,7 @@ void InboundLedgers::dropLedger (uint256 const& hash)
 
 }
 
-bool InboundLedgers::awaitLedgerData (uint256 const& ledgerHash)
+bool InboundLedgers::awaitLedgerData (LedgerHash const& ledgerHash)
 {
     InboundLedger::pointer ledger = find (ledgerHash);
 
@@ -114,7 +114,7 @@ inboundLedgerTrigger:
 
 */
 // means "We got some data from an inbound ledger"
-void InboundLedgers::gotLedgerData (Job&, uint256 hash,
+void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
         boost::shared_ptr<protocol::TMLedgerData> packet_ptr, boost::weak_ptr<Peer> wPeer)
 {
     protocol::TMLedgerData& packet = *packet_ptr;

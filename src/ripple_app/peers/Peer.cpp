@@ -1450,8 +1450,8 @@ static void checkValidation (Job&, SerializedValidation::pointer val, bool isTru
             SerializedValidation const& sv (*val);
             Validators::ReceivedValidation rv;
             rv.ledgerHash = sv.getLedgerHash ();
-            uint160 const publicKeyHash (sv.getSignerPublic ().getNodeID ());
-            rv.signerPublicKeyHash = RipplePublicKeyHash (publicKeyHash.begin ());
+            rv.publicKey = sv.getSignerPublic();
+            rv.publicKeyHash = sv.getSignerPublic();
             getApp ().getValidators ().receiveValidation (rv);
 #endif
         }

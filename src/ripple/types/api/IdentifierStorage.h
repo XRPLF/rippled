@@ -4,16 +4,16 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_CRYPTOIDENTIFIERSTORAGE_H_INCLUDED
-#define RIPPLE_TYPES_CRYPTOIDENTIFIERSTORAGE_H_INCLUDED
+#ifndef RIPPLE_TYPES_IDENTIFIERSTORAGE_H_INCLUDED
+#define RIPPLE_TYPES_IDENTIFIERSTORAGE_H_INCLUDED
 
 #include "beast/beast/FixedArray.h"
 
 namespace ripple {
 
-/** A padded FixedArray used with CryptoIdentifierType traits. */
+/** A padded FixedArray used with IdentifierType traits. */
 template <std::size_t PreSize, std::size_t Size, std::size_t PostSize>
-class CryptoIdentifierStorage
+class IdentifierStorage
 {
 public:
     typedef std::size_t         size_type;
@@ -43,7 +43,7 @@ public:
         {
         }
 
-        std::size_t operator() (CryptoIdentifierStorage const& storage) const
+        std::size_t operator() (IdentifierStorage const& storage) const
         {
             std::size_t hash;
             Murmur::Hash (storage.cbegin (), storage.size, m_seed, &hash);
@@ -58,8 +58,8 @@ public:
     class equal
     {
     public:
-        bool operator() (CryptoIdentifierStorage const& lhs,
-                         CryptoIdentifierStorage const& rhs) const
+        bool operator() (IdentifierStorage const& lhs,
+                         IdentifierStorage const& rhs) const
         {
             return lhs == rhs;
         }
@@ -115,7 +115,20 @@ public:
     void rangecheck (size_type i)
     {
         if (i >= size)
-            throw std::out_of_range ("CryptoIdentifierStorage<>: index out of range");
+            throw std::out_of_range ("IdentifierStorage<>: index out of range");
+    }
+
+    bool isZero() const
+    {
+        for (const_iterator iter(begin()); iter != end(); ++iter)
+            if ((*iter)!=0)
+                return false;
+        return true;
+    }
+
+    bool isNotZero() const
+    {
+        return !isZero();
     }
 
 private:
@@ -125,43 +138,43 @@ private:
 //------------------------------------------------------------------------------
 
 template <std::size_t PrePadSize, std::size_t Size, std::size_t PostPadSize>
-bool operator== (CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
-                 CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
+bool operator== (IdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
+                 IdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
 {
     return std::equal (lhs.begin(), lhs.end(), rhs.begin());
 }
 
 template <std::size_t PrePadSize, std::size_t Size, std::size_t PostPadSize>
-bool operator!= (CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
-                 CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
+bool operator!= (IdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
+                 IdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
 {
     return !(lhs==rhs);
 }
 
 template <std::size_t PrePadSize, std::size_t Size, std::size_t PostPadSize>
-bool operator< (CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
-    CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
+bool operator< (IdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
+    IdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
 {
     return std::lexicographical_compare (lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
 
 template <std::size_t PrePadSize, std::size_t Size, std::size_t PostPadSize>
-bool operator> (CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
-                CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
+bool operator> (IdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
+                IdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
 {
     return rhs<lhs;
 }
 
 template <std::size_t PrePadSize, std::size_t Size, std::size_t PostPadSize>
-bool operator<= (CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
-                 CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
+bool operator<= (IdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
+                 IdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
 {
     return !(rhs<lhs);
 }
 
 template <std::size_t PrePadSize, std::size_t Size, std::size_t PostPadSize>
-bool operator>= (CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
-                 CryptoIdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
+bool operator>= (IdentifierStorage <PrePadSize, Size, PostPadSize> const& lhs,
+                 IdentifierStorage <PrePadSize, Size, PostPadSize> const& rhs)
 {
     return !(lhs<rhs);
 }

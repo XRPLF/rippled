@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_CRYPTOIDENTIFIERTYPE_H_INCLUDED
-#define RIPPLE_TYPES_CRYPTOIDENTIFIERTYPE_H_INCLUDED
+#ifndef RIPPLE_TYPES_IDENTIFIERTYPE_H_INCLUDED
+#define RIPPLE_TYPES_IDENTIFIERTYPE_H_INCLUDED
 
 #include <functional>
 #include <iterator>
@@ -19,7 +19,7 @@ namespace ripple {
 
 /** Template for generalizing the cryptographic primitives used. */
 template <class Traits>
-class CryptoIdentifierType : public Traits::base
+class IdentifierType : public Traits::base
 {
 public:
     static std::size_t const                            size = Traits::size;
@@ -36,7 +36,7 @@ public:
         template <typename Arg>
         hasher (Arg arg) : m_hasher (arg)
             { }
-        std::size_t operator() (CryptoIdentifierType const& id) const
+        std::size_t operator() (IdentifierType const& id) const
             { return m_hasher(id.value()); }
     private:
         typename Traits::hasher m_hasher;
@@ -51,39 +51,39 @@ public:
         template <typename Arg>
         equal (Arg arg) : m_equal (arg)
             { }
-        bool operator() (CryptoIdentifierType const& lhs,
-                         CryptoIdentifierType const& rhs) const
+        bool operator() (IdentifierType const& lhs,
+                         IdentifierType const& rhs) const
             { return m_equal (lhs.value(), rhs.value()); }
     private:
         typename Traits::equal m_equal;
     };
 
     /** Create an uninitialized value. */
-    CryptoIdentifierType ()
+    IdentifierType ()
     {
     }
 
     /** Create a copy from another value . */
-    CryptoIdentifierType (value_type const& value)
+    IdentifierType (value_type const& value)
         : m_value (value)
     {
     }
 
     /** Create a copy of the value from range of bytes. */
-    CryptoIdentifierType (uint8 const* begin, uint8 const* end)
+    IdentifierType (uint8 const* begin, uint8 const* end)
     {
         Traits::construct (begin, end, m_value);
     }
 
     /** Conversion construction from any specialized type. */
     template <typename Other>
-    explicit CryptoIdentifierType (Other const& other)
+    explicit IdentifierType (Other const& other)
     {
         this->operator= (other);
     }
 
     /** Assign a copy from another value. */
-    CryptoIdentifierType& operator= (value_type const& value)
+    IdentifierType& operator= (value_type const& value)
     {
         m_value = value;
         return *this;
@@ -91,7 +91,7 @@ public:
 
     /** Copy conversion from any specialized type. */
     template <typename Other>
-    CryptoIdentifierType& operator= (Other const& other)
+    IdentifierType& operator= (Other const& other)
     {
         typename Traits::template assign <Other> () (
             m_value, other);
@@ -102,6 +102,25 @@ public:
     value_type const& value() const
     {
         return m_value;
+    }
+
+    /** Smart dereference.
+        This provides access to the underlying container for compatibility.
+        For example, to call member functions that are otherwise not
+        available.
+    */
+    value_type const* operator->() const
+    {
+        return &value();
+    }
+
+    /** Implicit conversion to value_type.
+        This lets the IdentifierType appear as an rvalue in an assignment
+        where the lvalue is of type value_type.
+    */
+    operator value_type const& () const
+    {
+        return value();
     }
 
     /** Iterator access. */
@@ -129,8 +148,40 @@ private:
 //------------------------------------------------------------------------------
 
 template <class Traits>
+bool operator== (IdentifierType<Traits> const& lhs,
+                 IdentifierType<Traits> const& rhs)
+{ return lhs.value() == rhs.value(); }
+
+template <class Traits>
+bool operator!= (IdentifierType<Traits> const& lhs,
+                 IdentifierType<Traits> const& rhs)
+{ return lhs.value() != rhs.value(); }
+
+template <class Traits>
+bool operator< (IdentifierType<Traits> const& lhs,
+    IdentifierType<Traits> const& rhs)
+{ return lhs.value() < rhs.value(); }
+
+template <class Traits>
+bool operator> (IdentifierType<Traits> const& lhs,
+                IdentifierType<Traits> const& rhs)
+{ return lhs.value() > rhs.value(); }
+
+template <class Traits>
+bool operator<= (IdentifierType<Traits> const& lhs,
+                 IdentifierType<Traits> const& rhs)
+{ return lhs.value() <= rhs.value(); }
+
+template <class Traits>
+bool operator>= (IdentifierType<Traits> const& lhs,
+                 IdentifierType<Traits> const& rhs)
+{ return lhs.value() >= rhs.value(); }
+
+//------------------------------------------------------------------------------
+
+template <class Traits>
 std::ostream& operator<< (std::ostream& os,
-                          CryptoIdentifierType <Traits> const& id)
+                          IdentifierType <Traits> const& id)
 {
     os << id.to_string();
     return os;
@@ -138,7 +189,7 @@ std::ostream& operator<< (std::ostream& os,
 
 template <class Traits>
 std::istream& operator>> (std::istream& is,
-                          CryptoIdentifierType <Traits> const& id)
+                          IdentifierType <Traits> const& id)
 {
     return is;
 }
@@ -151,10 +202,10 @@ namespace std {
 
 /** Specialization for hash. */
 template <class Traits>
-struct hash <ripple::CryptoIdentifierType <Traits> >
+struct hash <ripple::IdentifierType <Traits> >
 {
 public:
-    typedef ripple::CryptoIdentifierType <Traits> argument_type;
+    typedef ripple::IdentifierType <Traits> argument_type;
     typedef std::size_t                           result_type;
 
     hash ()
@@ -182,11 +233,11 @@ private:
 
 /** Specialization for equal_to. */
 template <class Traits>
-struct equal_to <ripple::CryptoIdentifierType <Traits> >
+struct equal_to <ripple::IdentifierType <Traits> >
 {
 public:
     typedef bool                                  result_type;
-    typedef ripple::CryptoIdentifierType <Traits> argument_type;
+    typedef ripple::IdentifierType <Traits> argument_type;
     typedef argument_type                         first_argument_type;
     typedef argument_type                         second_argument_type;
 

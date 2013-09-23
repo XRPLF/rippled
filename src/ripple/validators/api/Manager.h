@@ -70,7 +70,7 @@ public:
 
     // Trusted Validators
 
-    //virtual bool isPublicKeyTrusted (PublicKey const& publicKey) = 0;
+    //virtual bool isPublicKeyTrusted (RipplePublicKey const& publicKey) = 0;
 
     //--------------------------------------------------------------------------
 

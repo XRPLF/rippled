@@ -28,24 +28,6 @@ struct Protocol
     static int const txMaxSizeBytes = 1024 * 1024; // 1048576
 };
 
-/*
-    Hashes are used to uniquely identify objects like
-    transactions, peers, validators, and accounts.
-
-    For historical reasons, some hashes are 256 bits and some are 160.
-
-    David:
-        "The theory is that you may need to communicate public keys
-         to others, so having them be shorter is a good idea. plus,
-         you can't arbitrarily tweak them because you wouldn't know
-         the corresponding private key anyway. So the security
-         requirements aren't as great."
-*/
-
-/** A ledger hash.
-*/
-typedef uint256 LedgerHash;
-
 /** A ledger index.
 */
 // VFALCO TODO pick one. I like Index since its not an abbreviation

@@ -1056,7 +1056,7 @@
     <ClCompile Include="..\..\src\ripple_app\peers\PackedMessage.cpp">
       <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\RippleCryptoIdentifierTests.cpp">
+    <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
       <Filter>[1] Ripple\types\impl</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2085,15 +2085,6 @@
     <ClInclude Include="..\..\src\ripple\types\api\RipplePublicKeyHash.h">
       <Filter>[1] Ripple\types\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifierType.h">
-      <Filter>[1] Ripple\types\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RippleCryptoIdentifier.h">
-      <Filter>[1] Ripple\types\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifierStorage.h">
-      <Filter>[1] Ripple\types\api</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\RippleAccountID.h">
       <Filter>[1] Ripple\types\api</Filter>
     </ClInclude>
@@ -2104,6 +2095,21 @@
       <Filter>[1] Ripple\types\api</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPublicKey.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\RippleLedgerHash.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\IdentifierStorage.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\IdentifierType.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\SimpleIdentifier.h">
+      <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifier.h">
       <Filter>[1] Ripple\types\api</Filter>
     </ClInclude>
   </ItemGroup>
