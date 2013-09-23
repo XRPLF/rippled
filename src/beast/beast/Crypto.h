@@ -17,12 +17,10 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INTRUSIVE_H_INCLUDED
-#define BEAST_INTRUSIVE_H_INCLUDED
+#ifndef BEAST_CRYPTO_H_INCLUDED
+#define BEAST_CRYPTO_H_INCLUDED
 
-#include "intrusive/ForwardList.h"
-#include "intrusive/IntrusiveArray.h"
-#include "intrusive/List.h"
-#include "intrusive/LockFreeStack.h"
+#include "crypto/api/Sha256.h"
 
 #endif
+

@@ -17,12 +17,9 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INTRUSIVE_H_INCLUDED
-#define BEAST_INTRUSIVE_H_INCLUDED
+#include "BeastConfig.h"
 
-#include "intrusive/ForwardList.h"
-#include "intrusive/IntrusiveArray.h"
-#include "intrusive/List.h"
-#include "intrusive/LockFreeStack.h"
+#include "../CStdInt.h"
+#include "../config/PlatformConfig.h"
 
-#endif
+#include "impl/Sha256.cpp"
