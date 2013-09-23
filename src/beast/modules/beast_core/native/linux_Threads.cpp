@@ -47,7 +47,7 @@ void Process::setPriority (const ProcessPriority prior)
     pthread_setschedparam (pthread_self(), policy, &param);
 }
 
-BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger()
+bool beast_isRunningUnderDebugger()
 {
     static char testResult = 0;
 

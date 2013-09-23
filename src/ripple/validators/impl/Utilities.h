@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_UTILITIES_H_INCLUDED
 #define RIPPLE_VALIDATORS_UTILITIES_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 /** Common code for Validators classes.
 */
@@ -67,6 +67,7 @@ public:
         Source::Info& info, std::string const& line, Journal journal);
 };
 
+}
 }
 
 #endif

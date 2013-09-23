@@ -22,7 +22,6 @@
 
 // TargetPlatform.h should not use anything from BeastConfig.h
 #include "../../../beast/Config.h"
-#include "BeastConfigCheck.h"
 
 // This file should be included before including any boost headers.
 // If you don't include this file, and you include boost headers,

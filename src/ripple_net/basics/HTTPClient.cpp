@@ -10,19 +10,70 @@
 
 SETUP_LOG (HTTPClient)
 
+//------------------------------------------------------------------------------
+
+class HTTPClientSSLContext
+{
+public:
+    HTTPClientSSLContext ()
+        : m_context (boost::asio::ssl::context::sslv23)
+    {
+        boost::system::error_code ec;
+
+        if (getConfig().SSL_VERIFY_FILE.empty ())
+        {
+            m_context.set_default_verify_paths (ec);
+
+            if (ec && getConfig().SSL_VERIFY_DIR.empty ())
+                throw std::runtime_error (boost::str (
+                    boost::format ("Failed to set_default_verify_paths: %s") % ec.message ()));
+        }
+        else
+        {
+            m_context.load_verify_file (getConfig().SSL_VERIFY_FILE);
+        }
+
+        if (! getConfig().SSL_VERIFY_DIR.empty ())
+        {
+            m_context.add_verify_path (getConfig().SSL_VERIFY_DIR, ec);
+
+            if (ec)
+                throw std::runtime_error (boost::str (
+                    boost::format ("Failed to add verify path: %s") % ec.message ()));
+        }
+    }
+
+    boost::asio::ssl::context& context()
+    {
+        return m_context;
+    }
+
+private:
+    boost::asio::ssl::context m_context;
+};
+
+//------------------------------------------------------------------------------
+
+// VFALCO NOTE I moved the SSL_CONTEXT out of the Config and into this
+//             singleton to eliminate the asio dependency in the headers.
+//
+void HTTPClient::initializeSSLContext ()
+{
+    SharedSingleton <HTTPClientSSLContext>::get();
+}
+
+//------------------------------------------------------------------------------
+
 class HTTPClientImp
     : public boost::enable_shared_from_this <HTTPClientImp>
     , public HTTPClient
     , LeakChecked <HTTPClientImp>
 {
 public:
-    // VFALCO NOTE Why use getConfig ().SSL_CONTEXT instead of just passing it?
-    //        TODO Remove all theConfig deps from this file
-    //
     HTTPClientImp (boost::asio::io_service& io_service,
                               const unsigned short port,
                               std::size_t responseMax)
-        : mSocket (io_service, getConfig ().SSL_CONTEXT)
+        : mSocket (io_service, SharedSingleton <HTTPClientSSLContext>::get()->context())
         , mResolver (io_service)
         , mHeader (maxClientHeaderBytes)
         , mPort (port)

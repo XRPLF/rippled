@@ -55,6 +55,7 @@
 
 #include "../../beast/MPL.h"
 #include "../../beast/Utility.h"
+#include "../../beast/HTTP.h"
 
 namespace beast
 {
@@ -87,7 +88,6 @@ namespace beast
 # include "http/HTTPRequest.h"
 # include "http/HTTPResponse.h"
 # include "http/HTTPParser.h"
-# include "http/UniformResourceLocator.h"
 #include "http/HTTPClientType.h"
 
 #  include "protocol/InputParser.h"

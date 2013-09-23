@@ -293,4 +293,7 @@ BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, InputSt
 */
 BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const NewLine&);
 
+/** Writes a string to an OutputStream as UTF8. */
+BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const String& stringToWrite);
+
 #endif

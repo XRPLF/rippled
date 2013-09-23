@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 // Tunable constants
 enum
@@ -400,6 +400,7 @@ public:
     //----------------------------------------------------------------------
 };
 
+}
 }
 
 #endif

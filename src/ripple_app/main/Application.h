@@ -9,6 +9,7 @@
 
 namespace Validators { class Manager; }
 namespace NodeStore { class Database; }
+namespace RPC { class Manager; }
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class IFeatures;

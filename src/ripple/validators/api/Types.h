@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_TYPES_H_INCLUDED
 #define RIPPLE_VALIDATORS_TYPES_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 typedef RipplePublicKey     PublicKey;
 typedef RipplePublicKeyHash PublicKeyHash;
@@ -25,6 +25,7 @@ struct CancelCallback
     virtual bool shouldCancel () = 0;
 };
 
+}
 }
 
 #endif

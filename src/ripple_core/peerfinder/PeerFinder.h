@@ -34,15 +34,14 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** An abstract address that can be turned into a socket endpoint.
-    */
+    /** An abstract address that can be turned into a socket endpoint. */
     struct Address
     {
         virtual String asString () = 0;
     };
 
-    /** An IPv4 address.
-    */
+    /** An IPv4 address. */
+#if 0
     struct AddressIPv4 : Address
     {
         AddressIPv4 (InputParser::IPv4Address const& address, uint16 port)
@@ -66,6 +65,7 @@ public:
         InputParser::IPv4Address m_address;
         uint16 m_port;
     };
+#endif
 
     //--------------------------------------------------------------------------
 

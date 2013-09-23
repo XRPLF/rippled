@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 StoreSqdb::StoreSqdb (Journal journal)
     : m_journal (journal)
@@ -342,4 +342,5 @@ Error StoreSqdb::init ()
     return error;
 }
 
+}
 }

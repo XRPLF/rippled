@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 class Tests : public UnitTest
 {
@@ -219,4 +219,5 @@ public:
 
 static Tests tests;
 
+}
 }

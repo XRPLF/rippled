@@ -257,7 +257,7 @@ void Process::setPriority (ProcessPriority prior)
     }
 }
 
-BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger()
+bool beast_isRunningUnderDebugger()
 {
     return IsDebuggerPresent() != FALSE;
 }

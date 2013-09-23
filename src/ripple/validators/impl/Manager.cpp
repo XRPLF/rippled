@@ -84,8 +84,8 @@ What determines that a validator is good?
       the behavior is measured.
 */
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 class ManagerImp
     : public Manager
@@ -180,7 +180,7 @@ public:
         addStaticSource (SourceFile::New (file));
     }
 
-    void addURL (UniformResourceLocator const& url)
+    void addURL (URL const& url)
     {
         addSource (SourceURL::New (url));
     }
@@ -307,4 +307,5 @@ Validators::Manager* Validators::Manager::New (Stoppable& parent, Journal journa
     return new Validators::ManagerImp (parent, journal);
 }
 
+}
 }

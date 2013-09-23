@@ -59,7 +59,7 @@ void Process::setPriority (ProcessPriority)
 }
 
 //==============================================================================
-BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger()
+bool beast_isRunningUnderDebugger()
 {
     static char testResult = 0;
 

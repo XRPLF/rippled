@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 struct Utilities::Helpers
 {
@@ -251,4 +251,5 @@ PublicKey Utilities::stringToPublicKey (std::string const& s)
 
 //------------------------------------------------------------------------------
 
+}
 }

@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_SOURCESTRINGS_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCESTRINGS_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 /** Provides validators from a set of Validator strings.
     Typically this will come from a local configuration file.
@@ -20,6 +20,7 @@ public:
         String name, StringArray const& strings);
 };
 
+}
 }
 
 #endif

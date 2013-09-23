@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_SOURCEFILE_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCEFILE_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 /** Provides validators from a text file.
     Typically this will come from a local configuration file.
@@ -19,6 +19,7 @@ public:
     static SourceFile* New (File const& path);
 };
 
+}
 }
 
 #endif

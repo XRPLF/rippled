@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_CANCELCALLBACKS_H_INCLUDED
 #define RIPPLE_VALIDATORS_CANCELCALLBACKS_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 // Dummy CancelCallback that does nothing
 //
@@ -49,6 +49,7 @@ private:
     bool m_interrupted;
 };
 
+}
 }
 
 #endif

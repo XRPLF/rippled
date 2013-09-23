@@ -25,5 +25,7 @@
 #include "../beast/modules/beast_db/beast_db.cpp"
 #include "../beast/modules/beast_sqdb/beast_sqdb.cpp"
 
+#include "../beast/beast/http/HTTP.cpp"
 #include "../beast/beast/net/Net.cpp"
+#include "../beast/beast/strings/Strings.cpp"
 #include "../beast/beast/utility/Utility.cpp"

@@ -180,7 +180,6 @@ namespace beast
 #include "network/MACAddress.cpp"
 #include "network/NamedPipe.cpp"
 #include "network/Socket.cpp"
-#include "network/URL.cpp"
 #include "network/IPAddress.cpp"
 
 #include "streams/BufferedInputStream.cpp"
@@ -193,11 +192,9 @@ namespace beast
 
 #include "system/SystemStats.cpp"
 
-#include "text/CharacterFunctions.cpp"
 #include "text/LexicalCast.cpp"
 #include "text/Identifier.cpp"
 #include "text/LocalisedStrings.cpp"
-#include "text/String.cpp"
 #include "text/StringArray.cpp"
 #include "text/StringPairArray.cpp"
 #include "text/StringPool.cpp"
@@ -291,6 +288,17 @@ namespace beast
 
 #include "threads/HighResolutionTimer.cpp"
 
+}
+
+// Has to be outside the beast namespace
+extern "C" {
+void beast_reportFatalError (char const* message, char const* fileName, int lineNumber)
+{
+    if (beast::beast_isRunningUnderDebugger())
+        beast_breakDebugger;
+    beast::FatalError (message, fileName, lineNumber);
+    BEAST_ANALYZER_NORETURN
+}
 }
 
 #ifdef _CRTDBG_MAP_ALLOC

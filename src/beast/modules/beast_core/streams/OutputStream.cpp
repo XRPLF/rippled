@@ -414,3 +414,20 @@ BEAST_API bool OutputStream::writeTypeBigEndian <float> (float v) { return write
 
 template <>
 BEAST_API bool OutputStream::writeTypeBigEndian <double> (double v) { return writeDoubleBigEndian (v); }
+
+BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const String& text)
+{
+    const size_t numBytes = text.getNumBytesAsUTF8();
+
+   #if (BEAST_STRING_UTF_TYPE == 8)
+    stream.write (text.getCharPointer().getAddress(), numBytes);
+   #else
+    // (This avoids using toUTF8() to prevent the memory bloat that it would leave behind
+    // if lots of large, persistent strings were to be written to streams).
+    HeapBlock<char> temp (numBytes + 1);
+    CharPointer_UTF8 (temp).writeAll (text.getCharPointer());
+    stream.write (temp, numBytes);
+   #endif
+
+    return stream;
+}

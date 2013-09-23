@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 class SourceFileImp : public SourceFile
 {
@@ -55,4 +55,5 @@ SourceFile* SourceFile::New (File const& file)
     return object.release ();
 }
 
+}
 }

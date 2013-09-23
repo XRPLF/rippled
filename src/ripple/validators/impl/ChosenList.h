@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_CHOSENLIST_H_INCLUDED
 #define RIPPLE_VALIDATORS_CHOSENLIST_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 class ChosenList : public SharedObject
 {
@@ -59,6 +59,7 @@ private:
     MapType m_map;
 };
 
+}
 }
 
 #endif

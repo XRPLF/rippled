@@ -4,13 +4,13 @@
 */
 //==============================================================================
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 class SourceURLImp : public SourceURL
 {
 public:
-    explicit SourceURLImp (UniformResourceLocator const& url)
+    explicit SourceURLImp (URL const& url)
         : m_url (url)
     {
     }
@@ -57,13 +57,13 @@ public:
     }
 
 private:
-    UniformResourceLocator m_url;
+    URL m_url;
 };
 
 //------------------------------------------------------------------------------
 
 SourceURL* SourceURL::New (
-    UniformResourceLocator const& url)
+    URL const& url)
 {
     ScopedPointer <SourceURL> object (
         new SourceURLImp (url));
@@ -71,4 +71,5 @@ SourceURL* SourceURL::New (
     return object.release ();
 }
 
+}
 }

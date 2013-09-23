@@ -7,17 +7,17 @@
 #ifndef RIPPLE_VALIDATORS_SOURCEURL_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCEURL_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
-/** Provides validators from a trusted URI (e.g. HTTPS)
-*/
+/** Provides validators from a trusted URI (e.g. HTTPS) */
 class SourceURL : public Source
 {
 public:
-    static SourceURL* New (UniformResourceLocator const& url);
+    static SourceURL* New (URL const& url);
 };
 
+}
 }
 
 #endif

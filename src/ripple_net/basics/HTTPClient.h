@@ -17,6 +17,8 @@ public:
         maxClientHeaderBytes = 32 * 1024
     };
 
+    static void initializeSSLContext ();
+
     static void get (
         bool bSSL,
         boost::asio::io_service& io_service,

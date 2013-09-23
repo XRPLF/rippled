@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_MANAGER_H_INCLUDED
 #define RIPPLE_VALIDATORS_MANAGER_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 /** Maintains the list of chosen validators.
 
@@ -57,7 +57,7 @@ public:
     /** Add a live source of validators from a trusted URL.
         The URL will be contacted periodically to update the list.
     */
-    virtual void addURL (UniformResourceLocator const& url) = 0;
+    virtual void addURL (URL const& url) = 0;
 
     /** Add a live source of validators.
         The caller loses ownership of the object.
@@ -79,6 +79,7 @@ public:
     virtual void receiveValidation (ReceivedValidation const& rv) = 0;
 };
 
+}
 }
 
 #endif

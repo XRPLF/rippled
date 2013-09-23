@@ -20,6 +20,8 @@
 
 #include "nodestore/NodeStore.cpp"
 
+#include "../ripple_net/ripple_net.h" // for HTTPClient
+
 namespace ripple
 {
 

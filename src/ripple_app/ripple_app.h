@@ -39,7 +39,7 @@
 #include "../ripple_data/ripple_data.h"
 #include "../ripple_net/ripple_net.h"
 
-#include "beast/modules/beast_sqdb/beast_sqdb.h"
+//#include "beast/modules/beast_sqdb/beast_sqdb.h"
 #include "beast/modules/beast_sqlite/beast_sqlite.h"
 
 // VFALCO NOTE If we forward declare PackedMessage and write out shared_ptr

@@ -7,13 +7,10 @@
 #ifndef RIPPLE_CORE_H_INCLUDED
 #define RIPPLE_CORE_H_INCLUDED
 
-// VFALCO TODO For UniformResourceLocator, remove asap
-#include "beast/modules/beast_asio/beast_asio.h"
-
-#include "../ripple/rpc/ripple_rpc.h"
 #include "../ripple_basics/ripple_basics.h"
 #include "../ripple_data/ripple_data.h"
 
+#include "beast/beast/http/URL.h" // for Config
 
 
 #include "nodestore/NodeStore.h"
