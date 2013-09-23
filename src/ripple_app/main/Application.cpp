@@ -424,6 +424,8 @@ public:
         mFeatures->addInitialFeatures ();
         Pathfinder::initPathTable ();
 
+        m_ledgerMaster.setMinValidations (getConfig ().VALIDATION_QUORUM);
+
         if (getConfig ().START_UP == Config::FRESH)
         {
             m_journal.info << "Starting new Ledger";
@@ -473,7 +475,6 @@ public:
         m_sleCache.setTargetSize (getConfig ().getSize (siSLECacheSize));
         m_sleCache.setTargetAge (getConfig ().getSize (siSLECacheAge));
 
-        m_ledgerMaster.setMinValidations (getConfig ().VALIDATION_QUORUM);
 
         //----------------------------------------------------------------------
         //
