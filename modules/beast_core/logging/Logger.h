@@ -69,7 +69,7 @@ public:
     /** Writes a message to the standard error stream.
 
         This can be called directly, or by using the DBG() macro in
-        PlatformDefs.h (which will avoid calling the method in non-debug builds).
+        CompilerConfig.h (which will avoid calling the method in non-debug builds).
     */
     static void BEAST_CALLTYPE outputDebugString (const String& text);
 

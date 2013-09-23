@@ -26,13 +26,11 @@
 
 // TargetPlatform.h should not use anything from BeastConfig.h
 #include "../../beast/Config.h"
-#include "system/BeastConfigCheck.h"
+#include "../../beast/config/ContractChecks.h"
 
 # include "system/BeforeBoost.h"
 # include "system/BoostIncludes.h"
 #include "system/FunctionalIncludes.h"
-#include "system/PlatformDefs.h"
-#include "system/StandardHeader.h"
 
 #if BEAST_MSVC
 # pragma warning (disable: 4251) // (DLL build warning, must be disabled before pushing the warning state)
@@ -42,6 +40,53 @@
 #  pragma warning (disable: 1125)
 # endif
 #endif
+
+//------------------------------------------------------------------------------
+
+// New header-only library modeled more closely according to boost
+#include "../../beast/CStdInt.h"
+#include "../../beast/StaticAssert.h"
+#include "../../beast/Uncopyable.h"
+#include "../../beast/Atomic.h"
+#include "../../beast/Arithmetic.h"
+#include "../../beast/ByteOrder.h"
+#include "../../beast/HeapBlock.h"
+#include "../../beast/Memory.h"
+#include "../../beast/Intrusive.h"
+#include "../../beast/Net.h"
+#include "../../beast/Strings.h"
+#include "../../beast/TypeTraits.h"
+#include "../../beast/Thread.h"
+#include "../../beast/Utility.h"
+
+#include "system/StandardIncludes.h"
+
+namespace beast {
+
+class InputStream;
+class OutputStream;
+class FileInputStream;
+class FileOutputStream;
+
+// Order matters, since headers don't have their own #include lines.
+// Add new includes to the bottom.
+
+#include "diagnostic/Throw.h"
+#include "system/Functional.h"
+#include "memory/AtomicCounter.h"
+#include "memory/AtomicFlag.h"
+#include "memory/AtomicPointer.h"
+#include "memory/AtomicState.h"
+#include "threads/SpinDelay.h"
+#include "memory/StaticObject.h"
+
+#include "time/AtExitHook.h"
+#include "diagnostic/LeakChecked.h"
+#include "time/RelativeTime.h"
+#include "time/Time.h"
+#include "threads/ScopedLock.h"
+#include "threads/CriticalSection.h"
+#include "containers/ElementComparator.h"
 
 // If the MSVC debug heap headers were included, disable
 // the macros during the juce include since they conflict.
@@ -73,75 +118,25 @@
 #undef _aligned_offset_recalloc
 #undef _aligned_msize
 #endif
-
-//------------------------------------------------------------------------------
-
-namespace beast {
-extern BEAST_API bool BEAST_CALLTYPE beast_isRunningUnderDebugger();
-extern BEAST_API void BEAST_CALLTYPE logAssertion (char const* file, int line) noexcept;
-}
-
-// New header-only library modeled more closely according to boost
-#include "../../beast/CStdInt.h"
-#include "../../beast/StaticAssert.h"
-#include "../../beast/Uncopyable.h"
-#include "../../beast/Atomic.h"
-#include "../../beast/Intrusive.h"
-#include "../../beast/Net.h"
-#include "../../beast/TypeTraits.h"
-#include "../../beast/Thread.h"
-#include "../../beast/Utility.h"
-
-namespace beast {
-
-class InputStream;
-class OutputStream;
-class FileInputStream;
-class FileOutputStream;
-
-// Order matters, since headers don't have their own #include lines.
-// Add new includes to the bottom.
-
-#include "diagnostic/ContractChecks.h"
-#include "memory/Memory.h"
-#include "maths/MathsFunctions.h"
-#include "memory/ByteOrder.h"
-#include "text/CharacterFunctions.h"
-
-#if BEAST_MSVC
-# pragma warning (push)
-# pragma warning (disable: 4514 4996)
-#endif
-#include "text/CharPointer_UTF8.h"
-#include "text/CharPointer_UTF16.h"
-#include "text/CharPointer_UTF32.h"
-#include "text/CharPointer_ASCII.h"
-#if BEAST_MSVC
-# pragma warning (pop)
-#endif
-
-#include "diagnostic/Throw.h"
-#include "system/Functional.h"
-#include "memory/AtomicCounter.h"
-#include "memory/AtomicFlag.h"
-#include "memory/AtomicPointer.h"
-#include "memory/AtomicState.h"
-#include "threads/SpinDelay.h"
-#include "memory/StaticObject.h"
-
-#include "text/StringCharPointerType.h"
-#include "text/StringFromNumber.h"
-#include "text/String.h"
-#include "time/AtExitHook.h"
-#include "diagnostic/LeakChecked.h"
-#include "time/RelativeTime.h"
-#include "time/Time.h"
-#include "memory/HeapBlock.h"
-#include "threads/ScopedLock.h"
-#include "threads/CriticalSection.h"
-#include "containers/ElementComparator.h"
 #include "containers/ArrayAllocationBase.h"
+#ifdef _CRTDBG_MAP_ALLOC
+#pragma pop_macro("_aligned_msize")
+#pragma pop_macro("_aligned_offset_recalloc")
+#pragma pop_macro("_aligned_offset_realloc")
+#pragma pop_macro("_aligned_recalloc")
+#pragma pop_macro("_aligned_realloc")
+#pragma pop_macro("_aligned_offset_malloc")
+#pragma pop_macro("_aligned_malloc")
+#pragma pop_macro("_aligned_free")
+#pragma pop_macro("_recalloc")
+#pragma pop_macro("realloc")
+#pragma pop_macro("malloc")
+#pragma pop_macro("free")
+#pragma pop_macro("calloc")
+#endif
+
 #include "containers/Array.h"
+
 #include "misc/Result.h"
 #include "text/StringArray.h"
 #include "memory/MemoryBlock.h"
@@ -163,7 +158,6 @@ class FileOutputStream;
 #include "diagnostic/Debug.h"
 #include "text/LexicalCast.h"
 #include "memory/ContainerDeletePolicy.h"
-#include "memory/ByteSwap.h"
 #include "maths/Math.h"
 #include "maths/uint24.h"
 #include "logging/Logger.h"
@@ -200,7 +194,6 @@ class FileOutputStream;
 #include "files/FileInputStream.h"
 #include "streams/InputSource.h"
 #include "streams/FileInputSource.h"
-#include "text/NewLine.h"
 #include "streams/OutputStream.h"
 #include "files/FileOutputStream.h"
 #include "files/FileSearchPath.h"
@@ -212,10 +205,7 @@ class FileOutputStream;
 #include "logging/Logger.h"
 #include "maths/Expression.h"
 #include "maths/Interval.h"
-#include "maths/MathsFunctions.h"
 #include "maths/MurmurHash.h"
-#include "memory/ByteOrder.h"
-#include "memory/Memory.h"
 #include "memory/OptionalScopedPointer.h"
 #include "memory/SharedSingleton.h"
 #include "memory/WeakReference.h"
@@ -228,7 +218,6 @@ class FileOutputStream;
 #include "threads/ReadWriteLock.h"
 #include "network/NamedPipe.h"
 #include "network/Socket.h"
-#include "network/URL.h"
 #include "streams/BufferedInputStream.h"
 #include "streams/MemoryInputStream.h"
 #include "streams/MemoryOutputStream.h"
@@ -278,22 +267,6 @@ class FileOutputStream;
 #include "thread/Workers.h"
 
 }
-
-#ifdef _CRTDBG_MAP_ALLOC
-#pragma pop_macro("_aligned_msize")
-#pragma pop_macro("_aligned_offset_recalloc")
-#pragma pop_macro("_aligned_offset_realloc")
-#pragma pop_macro("_aligned_recalloc")
-#pragma pop_macro("_aligned_realloc")
-#pragma pop_macro("_aligned_offset_malloc")
-#pragma pop_macro("_aligned_malloc")
-#pragma pop_macro("_aligned_free")
-#pragma pop_macro("_recalloc")
-#pragma pop_macro("realloc")
-#pragma pop_macro("malloc")
-#pragma pop_macro("free")
-#pragma pop_macro("calloc")
-#endif
 
 #if BEAST_MSVC
 #pragma warning (pop)

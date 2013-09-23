@@ -24,6 +24,9 @@
 #ifndef BEAST_ATOMIC_H_INCLUDED
 #define BEAST_ATOMIC_H_INCLUDED
 
+#include "Config.h"
+#include "StaticAssert.h"
+
 namespace beast {
 
 //==============================================================================

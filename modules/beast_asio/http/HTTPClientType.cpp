@@ -87,7 +87,7 @@ public:
         return m_result;
     }
 
-    Result const& get (UniformResourceLocator const& url)
+    Result const& get (URL const& url)
     {
         boost::asio::io_service io_service;
         async_get (io_service, nullptr, url);
@@ -98,7 +98,7 @@ public:
     //--------------------------------------------------------------------------
 
     void async_get (boost::asio::io_service& io_service, Listener* listener,
-        UniformResourceLocator const& url)
+        URL const& url)
     {
         async_get (io_service, url, ListenerHandler (this, listener));
     }
@@ -107,7 +107,7 @@ public:
     //
     template <typename Handler>
     void async_get (boost::asio::io_service& io_service,
-        UniformResourceLocator const& url,
+        URL const& url,
             BOOST_ASIO_MOVE_ARG(Handler) handler)
     {
         async_get (io_service, url, newErrorHandler (
@@ -115,7 +115,7 @@ public:
     }
 
     void async_get (boost::asio::io_service& io_service,
-        UniformResourceLocator const& url, SharedHandlerPtr handler)
+        URL const& url, SharedHandlerPtr handler)
     {
         // This automatically dispatches
         m_async_op = new AsyncGetOp (
@@ -143,7 +143,7 @@ private:
 
     /** Helper function to fill out a Query from a URL. */
     template <typename Query>
-    static Query queryFromURL (UniformResourceLocator const& url)
+    static Query queryFromURL (URL const& url)
     {
         if (url.port () != 0)
         {
@@ -206,7 +206,7 @@ private:
     public:
         AsyncGetOp (HTTPClientType& owner,
                     boost::asio::io_service& io_service,
-                    UniformResourceLocator const& url,
+                    URL const& url,
                     SharedHandlerPtr const& handler,
                     double timeoutSeconds,
                     std::size_t messageLimitBytes,
@@ -688,7 +688,7 @@ private:
         HTTPClientType& m_owner;
         boost::asio::io_service& m_io_service;
         boost::asio::io_service& m_strand;
-        UniformResourceLocator m_url;
+        URL m_url;
         SharedHandlerPtr m_handler;
         boost::asio::deadline_timer m_timer;
         resolver m_resolver;

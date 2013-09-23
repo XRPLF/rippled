@@ -21,9 +21,9 @@
 #define BEAST_NET_IPENDPOINT_H_INCLUDED
 
 #include <string>
-#include <istream>
-#include <ostream>
-
+#include <ios>
+#include <sstream>
+    
 #include "../CStdInt.h"
 #include "../mpl/IfCond.h"
 

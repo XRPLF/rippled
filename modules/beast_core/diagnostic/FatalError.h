@@ -146,11 +146,4 @@ private:
     static Reporter* s_reporter;
 };
 
-//------------------------------------------------------------------------------
-
-/** Report a fatal error message and terminate the application.
-    Normally you won't call this directly.
-*/
-extern void reportFatalError (char const* message, char const* fileName, int lineNumber);
-
 #endif
