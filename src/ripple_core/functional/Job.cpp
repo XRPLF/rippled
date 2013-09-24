@@ -16,12 +16,24 @@ Job::Job (JobType type, uint64 index)
 {
 }
 
+Job::Job (Job const& other)
+    : m_cancelCallback (other.m_cancelCallback)
+    , mType (other.mType)
+    , mJobIndex (other.mJobIndex)
+    , mJob (other.mJob)
+    , m_loadEvent (other.m_loadEvent)
+    , mName (other.mName)
+{
+}
+
 Job::Job (JobType type,
           std::string const& name,
           uint64 index,
           LoadMonitor& lm,
-          FUNCTION_TYPE <void (Job&)> const& job)
-    : mType (type)
+          FUNCTION_TYPE <void (Job&)> const& job,
+          CancelCallback cancelCallback)
+    : m_cancelCallback (cancelCallback)
+    , mType (type)
     , mJobIndex (index)
     , mJob (job)
     , mName (name)
@@ -29,9 +41,33 @@ Job::Job (JobType type,
     m_loadEvent = boost::make_shared <LoadEvent> (boost::ref (lm), name, false);
 }
 
+Job& Job::operator= (Job const& other)
+{
+    mType = other.mType;
+    mJobIndex = other.mJobIndex;
+    mJob = other.mJob;
+    m_loadEvent = other.m_loadEvent;
+    mName = other.mName;
+    m_cancelCallback = other.m_cancelCallback;
+    return *this;
+}
+
 JobType Job::getType () const
 {
     return mType;
+}
+
+CancelCallback Job::getCancelCallback () const
+{
+    bassert (! m_cancelCallback.empty());
+    return m_cancelCallback;
+}
+
+bool Job::shouldCancel () const
+{
+    if (! m_cancelCallback.empty ())
+        return m_cancelCallback ();
+    return false;
 }
 
 void Job::doJob ()
@@ -65,6 +101,7 @@ const char* Job::toString (JobType t)
     case jtLEDGER_DATA:     return "ledgerData";
     case jtUPDATE_PF:       return "updatePaths";
     case jtCLIENT:          return "clientCommand";
+    case jtRPC:             return "RPC";
     case jtTRANSACTION:     return "transaction";
     case jtUNL:             return "unl";
     case jtADVANCE:         return "advanceLedger";

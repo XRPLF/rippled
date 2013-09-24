@@ -37,7 +37,7 @@
 #endif
 
 #if BEAST_BOOST_HAS_LOCKABLES
-# include "traits/beast_BoostLockableTraits.h"
+# include "traits/BoostLockableTraits.h"
 #endif
 
 #endif

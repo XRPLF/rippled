@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HASHROUTER_RIPPLEHEADER
-#define RIPPLE_HASHROUTER_RIPPLEHEADER
+#ifndef RIPPLE_HASHROUTER_H_INCLUDED
+#define RIPPLE_HASHROUTER_H_INCLUDED
 
 // VFALCO NOTE Are these the flags?? Why aren't we using a packed struct?
 // VFALCO TODO convert these macros to int constants

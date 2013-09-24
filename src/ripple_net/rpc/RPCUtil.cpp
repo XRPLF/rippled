@@ -5,9 +5,9 @@
 //==============================================================================
 
 // Used for logging
-struct RPC;
+struct RPCLog;
 
-SETUP_LOG (RPC)
+SETUP_LOGN (RPCLog, "RPC")
 
 unsigned int const gMaxHTTPHeaderSize = 0x02000000;
 
@@ -75,7 +75,7 @@ std::string rfc1123Time ()
 
 std::string HTTPReply (int nStatus, const std::string& strMsg)
 {
-    WriteLog (lsTRACE, RPC) << "HTTP Reply " << nStatus << " " << strMsg;
+    WriteLog (lsTRACE, RPCLog) << "HTTP Reply " << nStatus << " " << strMsg;
 
     if (nStatus == 401)
         return strprintf ("HTTP/1.0 401 Authorization Required\r\n"

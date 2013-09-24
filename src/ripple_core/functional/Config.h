@@ -199,7 +199,7 @@ public:
     File getValidatorsFile () const;
 
     /** Returns the optional URL to a trusted network source of validators. */
-    UniformResourceLocator getValidatorsURL () const;
+    URL getValidatorsURL () const;
 
     // DEPRECATED
     boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
@@ -288,7 +288,7 @@ public:
         This is 1 or more strings of the form <key>=<value>
         The 'type' and 'path' keys are required, see rippled-example.cfg
 
-        @see NodeStore
+        @see Database
     */
     StringPairArray nodeDatabase;
 
@@ -300,7 +300,7 @@ public:
 
         The format is the same as that for @ref nodeDatabase
 
-        @see NodeStore
+        @see Database
     */
     StringPairArray ephemeralNodeDatabase;
 
@@ -443,7 +443,6 @@ public:
     uint32                      SIGN_VALIDATION;
     uint32                      SIGN_PROPOSAL;
 
-    boost::asio::ssl::context   SSL_CONTEXT;            // Generic SSL context.
     bool                        SSL_VERIFY;
     std::string                 SSL_VERIFY_FILE;
     std::string                 SSL_VERIFY_DIR;

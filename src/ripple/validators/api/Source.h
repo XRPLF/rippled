@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 /** A source of validator descriptors. */
 class Source
@@ -57,6 +57,7 @@ public:
     virtual Result fetch (CancelCallback& callback, Journal journal) = 0;
 };
 
+}
 }
 
 #endif

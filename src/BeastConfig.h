@@ -77,13 +77,6 @@
 //
 //------------------------------------------------------------------------------
 
-/** Config: BEAST_DISABLE_BEAST_VERSION_PRINTING
-    Turns off the debugging display of the beast version number
-*/
-#ifndef   BEAST_DISABLE_BEAST_VERSION_PRINTING
-//#define BEAST_DISABLE_BEAST_VERSION_PRINTING 1
-#endif
-
 /** Config: BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES
     In a Visual C++  build, this can be used to stop the required system libs
     being automatically added to the link stage.
@@ -176,9 +169,15 @@
 // This is only here temporarily. Use it to turn off the sending of
 // "ANNOUNCE" messages if you suspect that you're having problems
 // because of it.
-
 #ifndef RIPPLE_USE_MT_ANNOUNCE
 #define RIPPLE_USE_MT_ANNOUNCE 0
+#endif
+
+// Here temporarily
+// Controls whether or not the new RPC::Manager logic will be
+// used to invoke RPC commands before they pass to the original code.
+#ifndef  RIPPLE_USE_RPC_SERVICE_MANAGER
+#define  RIPPLE_USE_RPC_SERVICE_MANAGER 0
 #endif
 
 #endif

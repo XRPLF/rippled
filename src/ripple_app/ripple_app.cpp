@@ -6,11 +6,12 @@
 
 #include "BeastConfig.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
+#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/bimap.hpp>
 #include <boost/bimap/list_of.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
+#include <boost/optional.hpp>
 
 #include "ripple_app.h"
 
@@ -20,6 +21,8 @@
 // This .cpp will end up including all of the public header
 // material in Ripple since it holds the Application object.
 
+#include "../ripple/http/ripple_http.h"
+#include "../ripple/rpc/ripple_rpc.h"
 #include "../ripple/validators/ripple_validators.h"
 
 namespace ripple
@@ -28,6 +31,12 @@ namespace ripple
 //
 // Application
 //
+
+# include "main/NodeStoreScheduler.h"
+#include "main/NodeStoreScheduler.cpp"
+
+# include "main/IoServicePool.h"
+#include "main/IoServicePool.cpp"
 
 # include "main/FatalErrorReporter.h"
 #include "main/FatalErrorReporter.cpp"
@@ -42,6 +51,8 @@ namespace ripple
 #include "rpc/RPCHandler.cpp"
 
 # include "rpc/RPCServerHandler.h"
+# include "main/RPCHTTPServer.h"
+#include "main/RPCHTTPServer.cpp"
 #include "rpc/RPCServerHandler.cpp"
 #include "websocket/WSConnection.h"
 
@@ -62,18 +73,54 @@ namespace ripple
 // RippleMain
 //
 # include "main/RippleMain.h"
-# include "node/SqliteBackendFactory.h"
-#include "node/SqliteBackendFactory.cpp"
+# include "node/SqliteFactory.h"
+#include "node/SqliteFactory.cpp"
 #include "main/RippleMain.cpp"
 
 }
 
 //------------------------------------------------------------------------------
 
+struct ProtobufLibrary
+{
+    ~ProtobufLibrary ()
+    {
+        google::protobuf::ShutdownProtobufLibrary();
+    }
+};
+
 // Must be outside the namespace for obvious reasons
 //
 int main (int argc, char** argv)
 {
+    //
+    // These debug heap calls do nothing in release or non Visual Studio builds.
+    //
+
+    // Checks the heap at every allocation and deallocation (slow).
+    //
+    //beast::Debug::setAlwaysCheckHeap (false);
+
+    // Keeps freed memory blocks and fills them with a guard value.
+    //
+    //beast::Debug::setHeapDelayedFree (false);
+
+    // At exit, reports all memory blocks which have not been freed.
+    //
+#if RIPPLE_DUMP_LEAKS_ON_EXIT
+    beast::Debug::setHeapReportLeaks (true);
+#else
+    beast::Debug::setHeapReportLeaks (false);
+#endif
+
+    beast::SharedSingleton <ProtobufLibrary>::get ();
+
+    int result (0);
+
     ripple::RippleMain rippled;
-    return rippled.runFromMain (argc, argv);
+
+    result = rippled.runFromMain (argc, argv);
+
+    return result;
 }
+

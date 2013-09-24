@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_CHOSENLIST_H_INCLUDED
 #define RIPPLE_VALIDATORS_CHOSENLIST_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 class ChosenList : public SharedObject
 {
@@ -22,12 +22,17 @@ public:
         }
     };
 
-    typedef boost::unordered_map <PublicKey, Info, PublicKey::HashFunction> MapType;
+    typedef boost::unordered_map <PublicKey, Info, PublicKey::hasher> MapType;
 
     ChosenList (std::size_t expectedSize = 0)
     {
         // Available only in recent boost versions?
         //m_map.reserve (expectedSize);
+    }
+
+    MapType const& map() const
+    {
+        return m_map;
     }
 
     std::size_t size () const noexcept
@@ -54,6 +59,7 @@ private:
     MapType m_map;
 };
 
+}
 }
 
 #endif

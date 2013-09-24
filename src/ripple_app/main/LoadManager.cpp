@@ -10,7 +10,7 @@ SETUP_LOG (LoadManager)
 
 class LoadManagerImp
     : public LoadManager
-    , public beast::InterruptibleThread::EntryPoint
+    , public Thread
 {
 private:
     /*  Entry mapping utilization to cost.
@@ -60,8 +60,8 @@ private:
 
 public:
     LoadManagerImp ()
-        : mLock (this, "LoadManagerImp", __FILE__, __LINE__)
-        , m_thread ("loadmgr")
+        : Thread ("loadmgr")
+        , mLock (this, "LoadManagerImp", __FILE__, __LINE__)
         , m_logThread ("loadmgr_log")
         , mCreditRate (100)
         , mCreditLimit (500)
@@ -119,12 +119,12 @@ private:
     {
         UptimeTimer::getInstance ().endManualUpdates ();
 
-        m_thread.interrupt ();
+        stopThread ();
     }
 
-    void startThread ()
+    void start ()
     {
-        m_thread.start (this);
+        startThread();
     }
 
     void canonicalize (LoadSource& source, int now) const
@@ -324,14 +324,14 @@ private:
 
     // VFALCO NOTE Where's the thread object? It's not a data member...
     //
-    void threadRun ()
+    void run ()
     {
         // VFALCO TODO replace this with a beast Time object?
         //
         // Initialize the clock to the current time.
         boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time ();
 
-        while (! m_thread.interruptionPoint ())
+        while (! threadShouldExit ())
         {
             {
                 // VFALCO NOTE What is this lock protecting?
@@ -413,7 +413,6 @@ private:
     typedef LockType::ScopedLockType ScopedLockType;
     LockType mLock;
 
-    beast::InterruptibleThread m_thread;
     beast::ThreadWithCallQueue m_logThread;
 
     int mCreditRate;            // credits gained/lost per second

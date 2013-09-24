@@ -117,7 +117,7 @@ TER PathState::pushImply (
     const uint160& uIssuerID)   // --> Delivering this issuer.
 {
     const Node&  pnPrv       = vpnNodes.back ();
-    TER                 terResult   = tesSUCCESS;
+    TER          terResult   = tesSUCCESS;
 
     WriteLog (lsTRACE, RippleCalc) << "pushImply> "
                                    << RippleAddress::createHumanAccountID (uAccountID)
@@ -168,9 +168,9 @@ TER PathState::pushNode (
     const uint160& uCurrencyID,
     const uint160& uIssuerID)
 {
-    Node         pnCur;
+    Node                pnCur;
     const bool          bFirst      = vpnNodes.empty ();
-    const Node&  pnPrv       = bFirst ? Node () : vpnNodes.back ();
+    const Node&         pnPrv       = bFirst ? Node () : vpnNodes.back ();
     // true, iff node is a ripple account. false, iff node is an offer node.
     const bool          bAccount    = isSetBit (iType, STPathElement::typeAccount);
     // true, iff currency supplied.
@@ -255,8 +255,8 @@ TER PathState::pushNode (
 
         if (tesSUCCESS == terResult && !vpnNodes.empty ())
         {
-            const Node&  pnBck       = vpnNodes.back ();
-            bool                bBckAccount = isSetBit (pnBck.uFlags, STPathElement::typeAccount);
+            const Node&     pnBck       = vpnNodes.back ();
+            bool            bBckAccount = isSetBit (pnBck.uFlags, STPathElement::typeAccount);
 
             if (bBckAccount)
             {
@@ -300,6 +300,13 @@ TER PathState::pushNode (
                              && sleRippleState->getFieldAmount(sfBalance).isZero()) // CHECKME
                     {
                         WriteLog (lsWARNING, RippleCalc) << "pushNode: delay: can't receive IOUs from issuer without auth.";
+
+                        terResult   = terNO_AUTH;
+                    }
+                    else if (isSetBit (sleRippleState->getFieldU32 (sfFlags), bHigh ? lsfHighNoRipple : lsfLowNoRipple) &&
+                            (vpnNodes.size() > 1))
+                    { // If the link leaves the side that set no ripple, it must be the first link
+                        WriteLog (lsWARNING, RippleCalc) << "pushNode: illegal use of noRipple link";
 
                         terResult   = terNO_AUTH;
                     }

@@ -1109,6 +1109,10 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, LoadType* loadType, 
                     jPeer["authorized"] = true;
                 if (line->getAuthPeer())
                     jPeer["peer_authorized"] = true;
+                if (line->getNoRipple())
+                    jPeer["no_ripple"]  = true;
+                if (line->getNoRipplePeer())
+                    jPeer["no_ripple_peer"] = true;
             }
         }
 
@@ -2739,7 +2743,7 @@ Json::Value RPCHandler::doSMS (Json::Value params, LoadType* loadType, Applicati
 }
 Json::Value RPCHandler::doStop (Json::Value, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
-    getApp().stop ();
+    getApp().signalStop ();
 
     return SYSTEM_NAME " server stopping";
 }
@@ -3697,7 +3701,16 @@ Json::Value RPCHandler::doRpcCommand (const std::string& strMethod, Json::Value 
     // Provide the JSON-RPC method as the field "command" in the request.
     params["command"]    = strMethod;
 
-    Json::Value jvResult    = doCommand (params, iRole, loadType);
+    Json::Value jvResult;
+#if RIPPLE_USE_RPC_SERVICE_MANAGER
+    std::pair <bool, Json::Value> result (getApp().
+        getRPCServiceManager().call (strMethod, params));
+    if (result.first)
+        jvResult = result.second;
+    else
+#endif
+        jvResult = doCommand (params, iRole, loadType);
+
 
     // Always report "status".  On an error report the request as received.
     if (jvResult.isMember ("error"))
@@ -3727,6 +3740,8 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
 {
     if (iRole != Config::ADMIN)
     {
+        // VFALCO NOTE Should we also add up the jtRPC jobs?
+        //
         int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
 
         if (jc > 500)

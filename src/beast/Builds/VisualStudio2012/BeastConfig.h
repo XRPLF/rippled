@@ -90,13 +90,6 @@
 //
 //------------------------------------------------------------------------------
 
-/** Config: BEAST_DISABLE_BEAST_VERSION_PRINTING
-    Turns off the debugging display of the beast version number
-*/
-#ifndef   BEAST_DISABLE_BEAST_VERSION_PRINTING
-//#define BEAST_DISABLE_BEAST_VERSION_PRINTING 1
-#endif
-
 /** Config: BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES
     In a Visual C++  build, this can be used to stop the required system libs
     being automatically added to the link stage.

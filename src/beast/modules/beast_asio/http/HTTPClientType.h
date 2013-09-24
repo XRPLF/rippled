@@ -47,11 +47,11 @@ public:
     virtual Result const& result () const = 0;
 
     virtual Result const& get (
-        UniformResourceLocator const& url) = 0;
+        URL const& url) = 0;
 
     virtual void async_get (boost::asio::io_service& io_service,
                             Listener* listener,
-                            UniformResourceLocator const& url) = 0;
+                            URL const& url) = 0;
 
     /** Cancel any pending asynchronous operations.
         This must be called before destroying the container if there are

@@ -358,7 +358,7 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     return true;
 }
 
-void PathRequest::updateAll (Ledger::ref ledger, bool newOnly)
+void PathRequest::updateAll (Ledger::ref ledger, bool newOnly, CancelCallback shouldCancel)
 {
     std::set<wptr> requests;
 
@@ -374,6 +374,9 @@ void PathRequest::updateAll (Ledger::ref ledger, bool newOnly)
 
     BOOST_FOREACH (wref wRequest, requests)
     {
+        if (shouldCancel())
+            break;
+
         bool remove = true;
         PathRequest::pointer pRequest = wRequest.lock ();
 

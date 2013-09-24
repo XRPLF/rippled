@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOADFEETRACK_RIPPLEHEADER
-#define RIPPLE_LOADFEETRACK_RIPPLEHEADER
+#ifndef RIPPLE_LOADFEETRACK_H_INCLUDED
+#define RIPPLE_LOADFEETRACK_H_INCLUDED
 
 // PRIVATE HEADER
 class LoadManager;

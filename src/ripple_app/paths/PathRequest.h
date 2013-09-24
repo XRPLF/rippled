@@ -41,7 +41,7 @@ public:
 
     bool        doUpdate (const boost::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
 
-    static void updateAll (const boost::shared_ptr<Ledger>& ledger, bool newOnly);
+    static void updateAll (const boost::shared_ptr<Ledger>& ledger, bool newOnly, CancelCallback shouldCancel);
 
 private:
     void setValid ();

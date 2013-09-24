@@ -40,6 +40,8 @@ TER TrustSetTransactor::doApply ()
     }
 
     const bool          bSetAuth        = isSetBit (uTxFlags, tfSetfAuth);
+    const bool          bSetNoRipple    = isSetBit (uTxFlags, tfSetNoRipple);
+    const bool          bClearNoRipple  = isSetBit (uTxFlags, tfClearNoRipple);
 
     if (bSetAuth && !isSetBit (mTxnAccount->getFieldU32 (sfFlags), lsfRequireAuth))
     {
@@ -225,6 +227,15 @@ TER TrustSetTransactor::doApply ()
         if (bSetAuth)
         {
             uFlagsOut           |= (bHigh ? lsfHighAuth : lsfLowAuth);
+        }
+
+        if (bSetNoRipple && !bClearNoRipple)
+        {
+            uFlagsOut           |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
+        }
+        else if (bClearNoRipple && !bSetNoRipple)
+        {
+            uFlagsOut           &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
         if (bLowReserveSet && !bLowReserved)

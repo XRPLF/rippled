@@ -127,7 +127,7 @@ public:
         uint8 const* src (v.cbegin()-1);
         char const* const tab (alphabet().c_str());
         s.reserve (Bytes * 2);
-        for (std::size_t bytes (v.sizeInBytes);bytes--;)
+        for (std::size_t bytes (v.size);bytes--;)
         {
             uint8 const v (*++src);
             s.push_back (tab [v>>4]);
@@ -280,7 +280,7 @@ public:
         {
             typedef UnsignedInteger <Bytes> UInt;
             UInt v0;
-            random().fillBitsRandomly (v0.begin(), UInt::sizeInBytes);
+            random().fillBitsRandomly (v0.begin(), UInt::size);
             std::string const good (HexEncoding::encode (v0));
 
             UInt v1;
@@ -351,7 +351,7 @@ public:
         for (int i = 0; i < 50; ++i)
         {
             UInt v1;
-            random().fillBitsRandomly (v1.begin(), UInt::sizeInBytes);
+            random().fillBitsRandomly (v1.begin(), UInt::size);
             std::string const s1 (BinaryEncoding::encode (v1, c));
 
             UInt v2;

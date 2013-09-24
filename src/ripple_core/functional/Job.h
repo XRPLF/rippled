@@ -22,34 +22,35 @@ enum JobType
     jtLEDGER_DATA   = 7,    // Received data for a ledger we're acquiring
     jtUPDATE_PF     = 8,    // Update pathfinding requests
     jtCLIENT        = 9,    // A websocket command from the client
-    jtTRANSACTION   = 10,   // A transaction received from the network
-    jtUNL           = 11,   // A Score or Fetch of the UNL (DEPRECATED)
-    jtADVANCE       = 12,   // Advance validated/acquired ledgers
-    jtPUBLEDGER     = 13,   // Publish a fully-accepted ledger
-    jtTXN_DATA      = 14,   // Fetch a proposed set
-    jtWAL           = 15,   // Write-ahead logging
-    jtVALIDATION_t  = 16,   // A validation from a trusted source
-    jtWRITE         = 17,   // Write out hashed objects
-    jtPROPOSAL_t    = 18,   // A proposal from a trusted source
-    jtSWEEP         = 19,   // Sweep for stale structures
-    jtNETOP_CLUSTER = 20,   // NetworkOPs cluster peer report
-    jtNETOP_TIMER   = 21,   // NetworkOPs net timer processing
-    jtADMIN         = 22,   // An administrative operation
+    jtRPC           = 10,    // A websocket command from the client
+    jtTRANSACTION   = 11,   // A transaction received from the network
+    jtUNL           = 12,   // A Score or Fetch of the UNL (DEPRECATED)
+    jtADVANCE       = 13,   // Advance validated/acquired ledgers
+    jtPUBLEDGER     = 14,   // Publish a fully-accepted ledger
+    jtTXN_DATA      = 15,   // Fetch a proposed set
+    jtWAL           = 16,   // Write-ahead logging
+    jtVALIDATION_t  = 17,   // A validation from a trusted source
+    jtWRITE         = 18,   // Write out hashed objects
+    jtPROPOSAL_t    = 19,   // A proposal from a trusted source
+    jtSWEEP         = 20,   // Sweep for stale structures
+    jtNETOP_CLUSTER = 21,   // NetworkOPs cluster peer report
+    jtNETOP_TIMER   = 22,   // NetworkOPs net timer processing
+    jtADMIN         = 23,   // An administrative operation
 
     // special types not dispatched by the job pool
-    jtPEER          = 24,
-    jtDISK          = 25,
-    jtACCEPTLEDGER  = 26,
-    jtTXN_PROC      = 27,
-    jtOB_SETUP      = 28,
-    jtPATH_FIND     = 29,
-    jtHO_READ       = 30,
-    jtHO_WRITE      = 31,
-    jtGENERIC       = 32,   // Used just to measure time
-}; // CAUTION: If you add new types, add them to ripple_Job.cpp too
+    jtPEER          = 30,
+    jtDISK          = 31,
+    jtACCEPTLEDGER  = 32,
+    jtTXN_PROC      = 33,
+    jtOB_SETUP      = 34,
+    jtPATH_FIND     = 35,
+    jtHO_READ       = 36,
+    jtHO_WRITE      = 37,
+    jtGENERIC       = 38,   // Used just to measure time
+}; // CAUTION: If you add new types, add them to Job.cpp too
 
 // VFALCO TODO move this into the enum so it calculates itself?
-#define NUM_JOB_TYPES 48 // why 48 and not 32?
+#define NUM_JOB_TYPES 48 // why 48 and not 38?
 
 class Job
 {
@@ -67,6 +68,8 @@ public:
     //
     Job ();
 
+    Job (Job const& other);
+
     Job (JobType type, uint64 index);
 
     // VFALCO TODO try to remove the dependency on LoadMonitor.
@@ -74,9 +77,17 @@ public:
          std::string const& name,
          uint64 index,
          LoadMonitor& lm,
-         FUNCTION_TYPE <void (Job&)> const& job);
+         FUNCTION_TYPE <void (Job&)> const& job,
+         CancelCallback cancelCallback);
+
+    Job& operator= (Job const& other);
 
     JobType getType () const;
+
+    CancelCallback getCancelCallback () const;
+
+    /** Returns `true` if the running job should make a best-effort cancel. */
+    bool shouldCancel () const;
 
     void doJob ();
 
@@ -93,6 +104,7 @@ public:
     static const char* toString (JobType);
 
 private:
+    CancelCallback m_cancelCallback;
     JobType                     mType;
     uint64                      mJobIndex;
     FUNCTION_TYPE <void (Job&)> mJob;

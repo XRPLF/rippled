@@ -14,7 +14,9 @@
 // VFALCO TODO Rename to Ledgers
 //        It sounds like this holds all the ledgers...
 //
-class LedgerMaster : LeakChecked <LedgerMaster>
+class LedgerMaster
+    : public Stoppable
+    , public LeakChecked <LedgerMaster>
 {
 public:
     typedef FUNCTION_TYPE <void (Ledger::ref)> callback;
@@ -23,8 +25,9 @@ public:
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
 
-    LedgerMaster ()
-        : mLock (this, "LedgerMaster", __FILE__, __LINE__)
+    explicit LedgerMaster (Stoppable& parent)
+        : Stoppable ("LedgerMaster", parent)
+        , mLock (this, "LedgerMaster", __FILE__, __LINE__)
         , mHeldTransactions (uint256 ())
         , mMinValidations (0)
         , mLastValidateSeq (0)
@@ -198,9 +201,9 @@ private:
     bool isTransactionOnFutureList (Transaction::ref trans);
 
     void getFetchPack (Ledger::ref have);
-    void tryFill (Ledger::pointer);
+    void tryFill (Job&, Ledger::pointer);
     void advanceThread ();
-    void updatePaths ();
+    void updatePaths (Job&);
 
 private:
     LockType mLock;

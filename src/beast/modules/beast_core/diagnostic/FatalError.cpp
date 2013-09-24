@@ -107,14 +107,6 @@ FatalError::FatalError (char const* message, char const* fileName, int lineNumbe
     Process::terminate ();
 }
 
-void reportFatalError (char const* message, char const* fileName, int lineNumber)
-{
-    if (beast::beast_isRunningUnderDebugger())
-        beast_breakDebugger;
-    FatalError (message, fileName, lineNumber);
-    BEAST_ANALYZER_NORETURN
-}
-
 //------------------------------------------------------------------------------
 
 // Yes even this class can have a unit test. It's manually triggered though.

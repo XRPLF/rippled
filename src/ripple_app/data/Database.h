@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_DATABASE_RIPPLEHEADER
-#define RIPPLE_DATABASE_RIPPLEHEADER
+#ifndef RIPPLE_DATABASE_H_INCLUDED
+#define RIPPLE_DATABASE_H_INCLUDED
 
 // VFALCO Get rid of these macros
 //

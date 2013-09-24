@@ -53,6 +53,10 @@
 # define BEAST_SOCKET_VIRTUAL
 #endif
 
+#include "../../beast/MPL.h"
+#include "../../beast/Utility.h"
+#include "../../beast/HTTP.h"
+
 namespace beast
 {
 
@@ -62,6 +66,7 @@ namespace beast
 # include "async/SharedHandlerPtr.h"
 # include "async/ComposedAsyncOperation.h"
 #include "async/SharedHandlerAllocator.h"
+#include "async/AsyncObject.h"
 
 #  include "basics/BufferType.h"
 # include "basics/BuffersType.h"
@@ -69,6 +74,7 @@ namespace beast
 #include "basics/FixedInputBuffer.h"
 #include "basics/PeerRole.h"
 #include "basics/SSLContext.h"
+#include "basics/SharedArg.h"
 
 #   include "sockets/SocketBase.h"
 #  include "sockets/Socket.h"
@@ -79,9 +85,9 @@ namespace beast
 #   include "http/HTTPField.h"
 #   include "http/HTTPHeaders.h"
 #  include "http/HTTPMessage.h"
+# include "http/HTTPRequest.h"
 # include "http/HTTPResponse.h"
 # include "http/HTTPParser.h"
-# include "http/UniformResourceLocator.h"
 #include "http/HTTPClientType.h"
 
 #  include "protocol/InputParser.h"

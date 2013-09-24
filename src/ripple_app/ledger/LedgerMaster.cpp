@@ -313,7 +313,7 @@ bool LedgerMaster::getValidatedRange (uint32& minVal, uint32& maxVal)
     return true;
 }
 
-void LedgerMaster::tryFill (Ledger::pointer ledger)
+void LedgerMaster::tryFill (Job& job, Ledger::pointer ledger)
 {
     uint32 seq = ledger->getLedgerSeq ();
     uint256 prevHash = ledger->getParentHash ();
@@ -323,7 +323,7 @@ void LedgerMaster::tryFill (Ledger::pointer ledger)
     uint32 minHas = ledger->getLedgerSeq ();
     uint32 maxHas = ledger->getLedgerSeq ();
 
-    while (seq > 0)
+    while (! job.shouldCancel() && seq > 0)
     {
         {
             ScopedLockType ml (mLock, __FILE__, __LINE__);
@@ -616,7 +616,7 @@ void LedgerMaster::advanceThread()
                             { // Previous ledger is in DB
                                 sl.lock(__FILE__, __LINE__);
                                 mFillInProgress = ledger->getLedgerSeq();
-                                getApp().getJobQueue().addJob(jtADVANCE, "tryFill", BIND_TYPE (&LedgerMaster::tryFill, this, ledger));
+                                getApp().getJobQueue().addJob(jtADVANCE, "tryFill", BIND_TYPE (&LedgerMaster::tryFill, this, P_1, ledger));
                                 sl.unlock();
                             }
                             progress = true;
@@ -673,7 +673,7 @@ void LedgerMaster::advanceThread()
             {
                 mPathFindThread = true;
                 getApp().getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
-                    BIND_TYPE (&LedgerMaster::updatePaths, this));
+                    BIND_TYPE (&LedgerMaster::updatePaths, this, P_1));
             }
         }
         if (progress)
@@ -824,11 +824,11 @@ uint256 LedgerMaster::getLedgerHash(uint32 desiredSeq, Ledger::ref knownGoodLedg
     return hash;
 }
 
-void LedgerMaster::updatePaths ()
+void LedgerMaster::updatePaths (Job& job)
 {
     Ledger::pointer lastLedger;
 
-    do
+    while (! job.shouldCancel())
     {
         bool newOnly = true;
 
@@ -856,10 +856,8 @@ void LedgerMaster::updatePaths ()
         }
 
         // VFALCO TODO Fix this global variable
-        PathRequest::updateAll (lastLedger, newOnly);
-
+        PathRequest::updateAll (lastLedger, newOnly, job.getCancelCallback ());
     }
-    while (1);
 }
 
 void LedgerMaster::newPathRequest ()
@@ -871,8 +869,6 @@ void LedgerMaster::newPathRequest ()
     {
         mPathFindThread = true;
         getApp().getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
-                                       BIND_TYPE (&LedgerMaster::updatePaths, this));
+            BIND_TYPE (&LedgerMaster::updatePaths, this, P_1));
     }
 }
-
-// vim:ts=4

@@ -220,36 +220,6 @@ int RippleMain::run (int argc, char const* const* argv)
 {
     FatalErrorReporter reporter;
 
-    //
-    // These debug heap calls do nothing in release or non Visual Studio builds.
-    //
-
-    // Checks the heap at every allocation and deallocation (slow).
-    //
-    //Debug::setAlwaysCheckHeap (false);
-
-    // Keeps freed memory blocks and fills them with a guard value.
-    //
-    //Debug::setHeapDelayedFree (false);
-
-    // At exit, reports all memory blocks which have not been freed.
-    //
-#if RIPPLE_DUMP_LEAKS_ON_EXIT
-    Debug::setHeapReportLeaks (true);
-#else
-    Debug::setHeapReportLeaks (false);
-#endif
-
-#if 0
-    // This is some temporary leak checking test code
-    Debug::setHeapReportLeaks (false);
-    //malloc (512); // Any leaks before this line in the output are from static initializations.
-    ThreadWithCallQueue t ("test");
-    GlobalPagedFreeStore::getInstance ();
-    t.start ();
-    return 0;
-#endif
-
     using namespace std;
 
     setCallingThreadName ("main");
@@ -299,12 +269,12 @@ int RippleMain::run (int argc, char const* const* argv)
     // NOTE: These must be added before the
     //       Application object is created.
     //
-    NodeStore::addAvailableBackends ();
+    NodeStore::Database::addAvailableBackends ();
 
-    // VFALCO NOTE SqliteBackendFactory is here because it has
+    // VFALCO NOTE SqliteFactory is here because it has
     //             dependencies like SqliteDatabase and DatabaseCon
     //
-    NodeStore::addBackendFactory (SqliteBackendFactory::getInstance ());
+    NodeStore::Database::addFactory (SqliteFactory::getInstance ());
 
     if (! RandomNumbers::getInstance ().initialize ())
     {
@@ -456,7 +426,6 @@ int RippleMain::run (int argc, char const* const* argv)
             // No arguments. Run server.
             ScopedPointer <Application> app (Application::New ());
             setupServer ();
-            setCallingThreadName ("io");
             startServer ();
         }
         else
@@ -474,3 +443,5 @@ int RippleMain::run (int argc, char const* const* argv)
 
     return iResult;
 }
+
+

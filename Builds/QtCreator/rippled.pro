@@ -59,17 +59,20 @@ OTHER_FILES += \
 
 UI_HEADERS_DIR += ../../src/ripple_basics
 
-# -----
-# Beast
+# ---------
+# New style
 #
 SOURCES += \
-    ../../src/beast/modules/beast_asio/beast_asio.cpp \
-    ../../src/beast/modules/beast_core/beast_core.cpp \
-    ../../src/beast/modules/beast_crypto/beast_crypto.cpp \
-    ../../src/beast/modules/beast_db/beast_db.cpp \
-    ../../src/beast/modules/beast_extras/beast_extras.cpp \
-    ../../src/beast/modules/beast_sqdb/beast_sqdb.cpp \
-    ../../src/beast/modules/beast_sqlite/beast_sqlite.c
+    ../../src/ripple/beast/ripple_beast.cpp \
+    ../../src/ripple/beast/ripple_beastc.c \
+    ../../src/ripple/http/ripple_http.cpp \
+    ../../src/ripple/json/ripple_json.cpp \
+    ../../src/ripple/rpc/ripple_rpc.cpp \
+    ../../src/ripple/sophia/ripple_sophia.c \
+    ../../src/ripple/sslutil/ripple_sslutil.cpp \
+    ../../src/ripple/testoverlay/ripple_testoverlay.cpp \
+    ../../src/ripple/types/ripple_types.cpp \
+    ../../src/ripple/validators/ripple_validators.cpp
 
 # ---------
 # Old style
@@ -92,13 +95,6 @@ SOURCES += \
     ../../src/ripple_mdb/ripple_mdb.c \
     ../../src/ripple_net/ripple_net.cpp \
     ../../src/ripple_websocket/ripple_websocket.cpp
-
-# ---------
-# New style
-#
-SOURCES += \
-    ../../src/ripple/testoverlay/ripple_testoverlay.cpp \
-    ../../src/ripple/validators/ripple_validators.cpp
 
 LIBS += \
     -lboost_date_time-mt\

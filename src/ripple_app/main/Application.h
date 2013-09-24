@@ -4,10 +4,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_IAPPLICATION_H
-#define RIPPLE_IAPPLICATION_H
+#ifndef RIPPLE_APP_APPLICATION_H_INCLUDED
+#define RIPPLE_APP_APPLICATION_H_INCLUDED
 
 namespace Validators { class Manager; }
+namespace NodeStore { class Database; }
+namespace RPC { class Manager; }
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class IFeatures;
@@ -16,8 +18,6 @@ class IHashRouter;
 class ILoadFeeTrack;
 class Peers;
 class UniqueNodeList;
-
-class NodeStore;
 class JobQueue;
 class InboundLedgers;
 class LedgerMaster;
@@ -58,7 +58,7 @@ public:
 public:
     struct State
     {
-        // Stuff in here is accessed concurrently and requires a WriteAccess
+        // Stuff in here is accessed concurrently and requires a Access
     };
     
     typedef SharedData <State> SharedState;
@@ -77,9 +77,9 @@ public:
 
     virtual boost::asio::io_service& getIOService () = 0;
 
+    virtual RPC::Manager&           getRPCServiceManager() = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual SLECache&               getSLECache () = 0;
-
     virtual Validators::Manager&    getValidators () = 0;
     virtual IFeatures&              getFeatureTable () = 0;
     virtual IFeeVote&               getFeeVote () = 0;
@@ -90,7 +90,7 @@ public:
     virtual ProofOfWorkFactory&     getProofOfWorkFactory () = 0;
     virtual UniqueNodeList&         getUNL () = 0;
     virtual Validations&            getValidations () = 0;
-    virtual NodeStore&              getNodeStore () = 0;
+    virtual NodeStore::Database&    getNodeStore () = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual InboundLedgers&         getInboundLedgers () = 0;
     virtual LedgerMaster&           getLedgerMaster () = 0;
@@ -119,8 +119,7 @@ public:
     virtual bool running () = 0;
     virtual void setup () = 0;
     virtual void run () = 0;
-    virtual void stop () = 0;
-    virtual void sweep () = 0;
+    virtual void signalStop () = 0;
 };
 
 extern Application& getApp ();

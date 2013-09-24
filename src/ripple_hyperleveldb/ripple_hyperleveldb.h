@@ -4,10 +4,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HYPERLEVELDB_RIPPLEHEADER
-#define RIPPLE_HYPERLEVELDB_RIPPLEHEADER
+#ifndef RIPPLE_HYPERLEVELDB_H_INCLUDED
+#define RIPPLE_HYPERLEVELDB_H_INCLUDED
 
-#include "beast/modules/beast_core/system/TargetPlatform.h"
+#include "beast/beast/Config.h"
 
 #if ! BEAST_WIN32
 

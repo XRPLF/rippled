@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_STORESQDB_H_INCLUDED
 #define RIPPLE_VALIDATORS_STORESQDB_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 /** Database persistence for Validators using SQLite */
 class StoreSqdb : public Store
@@ -36,6 +36,7 @@ private:
     sqdb::session m_session;
 };
 
+}
 }
 
 #endif

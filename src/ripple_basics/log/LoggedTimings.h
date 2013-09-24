@@ -93,21 +93,22 @@ void logTimedDestroy (
 //------------------------------------------------------------------------------
 
 /** Log a timed function call if the time exceeds a threshold. */
-template <typename PartitionKey, typename Function>
-void logTimedCall (String description, char const* fileName, int lineNumber,
+template <typename Function>
+void logTimedCall (Journal::Stream stream,
+                   String description,
+                   char const* fileName,
+                   int lineNumber,
     Function f, double thresholdSeconds = 1)
 {
     double const seconds = measureFunctionCallTime (f);
 
     if (seconds > thresholdSeconds)
     {
-        LogSeverity const severity = lsWARNING;
-
-        Log (severity, LogPartition::get <PartitionKey> ()) <<
+        stream <<
             description << " took "<<
-            String (detail::cleanElapsed (seconds)) <<
-            " seconds to execute at " <<
-                Debug::getSourceLocation (fileName, lineNumber);
+                String (detail::cleanElapsed (seconds)) <<
+                " seconds to execute at " <<
+                    Debug::getSourceLocation (fileName, lineNumber);
     }
 }
 

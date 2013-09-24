@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 // Tunable constants
 enum
@@ -33,8 +33,6 @@ enum
 class Logic
 {
 public:
-    //----------------------------------------------------------------------
-
     // Information associated with each distinguishable validator
     //
     struct ValidatorInfo
@@ -48,7 +46,21 @@ public:
     };
 
     typedef boost::unordered_map <
-        PublicKey, ValidatorInfo, PublicKey::HashFunction> MapType;
+        PublicKey, ValidatorInfo, PublicKey::hasher> MapType;
+
+    struct State
+    {
+        MapType map;
+        SourcesType sources;
+    };
+
+    typedef SharedData <State> SharedState;
+
+    Store& m_store;
+    Journal m_journal;
+    bool m_rebuildChosenList;
+    ChosenList::Ptr m_chosenList;
+    SharedState m_state;
 
     //----------------------------------------------------------------------
 
@@ -77,9 +89,10 @@ public:
 
         Source::Result result (object->fetch (cancelCallback, m_journal));
 
+        SharedState::Access state (m_state);
         if (result.success)
         {
-            merge (result.list);
+            merge (result.list, state);
         }
         else
         {
@@ -92,23 +105,22 @@ public:
     void add (Source* source)
     {
         m_journal.info << "Add Source, " << source->name();
-
-        SourceDesc& desc (*m_sources.emplace_back ());
+        SharedState::Access state (m_state);
+        SourceDesc& desc (*state->sources.emplace_back ());
         desc.source = source;
-
         m_store.insert (desc);
     }
 
     // Add each entry in the list to the map, incrementing the
     // reference count if it already exists, and updating fields.
     //
-    void merge (Array <Source::Info> const& list)
+    void merge (Array <Source::Info> const& list, SharedState::Access& state)
     {
         for (std::size_t i = 0; i < list.size (); ++i)
         {
             Source::Info const& info (list.getReference (i));
             std::pair <MapType::iterator, bool> result (
-                m_map.emplace (info.publicKey, ValidatorInfo ()));
+                state->map.emplace (info.publicKey, ValidatorInfo ()));
             ValidatorInfo& validatorInfo (result.first->second);
             ++validatorInfo.refCount;
             if (result.second)
@@ -122,18 +134,18 @@ public:
     // Decrement the reference count of each item in the list
     // in the map.
     //
-    void remove (Array <Source::Info> const& list)
+    void remove (Array <Source::Info> const& list, SharedState::Access& state)
     {
         for (std::size_t i = 0; i < list.size (); ++i)
         {
             Source::Info const& info (list.getReference (i));
-            MapType::iterator iter (m_map.find (info.publicKey));
-            bassert (iter != m_map.end ());
+            MapType::iterator iter (state->map.find (info.publicKey));
+            bassert (iter != state->map.end ());
             ValidatorInfo& validatorInfo (iter->second);
             if (--validatorInfo.refCount == 0)
             {
                 // Last reference removed
-                m_map.erase (iter);
+                state->map.erase (iter);
                 dirtyChosen ();
             }
         }
@@ -147,10 +159,11 @@ public:
     /** Rebuild the Chosen List. */
     void buildChosen ()
     {
-        ChosenList::Ptr list (new ChosenList (m_map.size ()));
+        SharedState::ConstAccess state (m_state);
+        ChosenList::Ptr list (new ChosenList (state->map.size ()));
 
-        for (MapType::iterator iter = m_map.begin ();
-            iter != m_map.end (); ++iter)
+        for (MapType::const_iterator iter = state->map.begin ();
+            iter != state->map.end (); ++iter)
         {
             ChosenList::Info info;
             list->insert (iter->first, info);
@@ -208,14 +221,16 @@ public:
 
             if (result.success)
             {
+                SharedState::Access state (m_state);
+
                 // Add the new source info to the map
-                merge (result.list);
+                merge (result.list, state);
 
                 // Swap lists
                 desc.result.swapWith (result);
 
                 // Remove the old source info from the map
-                remove (result.list);
+                remove (result.list, state);
 
                 // See if we need to rebuild
                 checkChosen ();
@@ -239,10 +254,10 @@ public:
     }
 
     /** Expire a source's list of validators. */
-    void expire (SourceDesc& desc)
+    void expire (SourceDesc& desc, SharedState::Access& state)
     {
         // Decrement reference count on each validator
-        remove (desc.result.list);
+        remove (desc.result.list, state);
 
         m_store.update (desc);
     }
@@ -254,8 +269,10 @@ public:
     {
         bool interrupted (false);
         Time const currentTime (Time::getCurrentTime ());
-        for (SourcesType::iterator iter = m_sources.begin ();
-            iter != m_sources.end (); ++iter)
+        
+        SharedState::Access state (m_state);
+        for (SourcesType::iterator iter = state->sources.begin ();
+            iter != state->sources.end (); ++iter)
         {
             SourceDesc& desc (*iter);
 
@@ -276,11 +293,73 @@ public:
             if (desc.expirationTime.isNotNull () &&
                 desc.expirationTime <= currentTime)
             {
-                expire (desc);
+                expire (desc, state);
             }
         }
 
         return interrupted;
+    }
+
+    //----------------------------------------------------------------------
+    // 
+    // RPC Handlers
+    //
+
+    // Return the current ChosenList as JSON
+    Json::Value rpcPrint (Json::Value const& args)
+    {
+        Json::Value result (Json::objectValue);
+
+        Json::Value entries (Json::arrayValue);
+        ChosenList::Ptr list (m_chosenList);
+        if (list != nullptr)
+        {
+            for (ChosenList::MapType::const_iterator iter (list->map().begin());
+                iter != list->map().end(); ++iter)
+            {
+                Json::Value entry (Json::objectValue);
+                ChosenList::MapType::key_type const& key (iter->first);
+                entry ["key"] = key.to_string();
+                //ChosenList::MapType::mapped_type const& value (iter->second);
+                //entry ["value"] = value.to_string();
+                entries.append (entry);
+            }
+        }
+        result ["chosen_list"] = entries;
+
+        return result;
+    }
+
+    // Returns the list of sources
+    Json::Value rpcSources (Json::Value const& arg)
+    {
+        Json::Value result (Json::objectValue);
+
+        Json::Value entries (Json::arrayValue);
+        SharedState::ConstAccess state (m_state);
+        for (SourcesType::const_iterator iter (state->sources.begin());
+            iter != state->sources.end(); ++iter)
+        {
+            Json::Value entry (Json::objectValue);
+            SourceDesc const& desc (*iter);
+            entry ["name"] = desc.source->name();
+            entry ["param"] = desc.source->createParam();
+
+            Json::Value results (Json::arrayValue);
+            for (int i = 0; i < desc.result.list.size(); ++i)
+            {
+                Json::Value info (Json::objectValue);
+                info ["key"] = "publicKey";
+                info ["label"] = desc.result.list[i].label;
+                results.append (info);
+            }
+            entry ["result"] = results;
+
+            entries.append (entry);
+        }
+        result ["sources"] = entries;
+
+        return result;
     }
 
     //----------------------------------------------------------------------
@@ -293,8 +372,8 @@ public:
     void receiveValidation (ReceivedValidation const& rv)
     {
 #if 0
-        MapType::iterator iter (m_map.find (rv.signerPublicKeyHash));
-        if (iter != m_map.end ())
+        MapType::iterator iter (state->map.find (rv.signerPublicKeyHash));
+        if (iter != state->map.end ())
         {
             // Exists
             //ValidatorInfo& validatorInfo (iter->value ());
@@ -302,7 +381,7 @@ public:
         else
         {
             // New
-            //ValidatorInfo& validatorInfo (m_map.insert (rv.signerPublicKeyHash));
+            //ValidatorInfo& validatorInfo (state->map.insert (rv.signerPublicKeyHash));
         }
 #endif
     }
@@ -317,16 +396,9 @@ public:
     //
     //
     //----------------------------------------------------------------------
-
-private:
-    Store& m_store;
-    Journal m_journal;
-    SourcesType m_sources;
-    MapType m_map;
-    bool m_rebuildChosenList;
-    ChosenList::Ptr m_chosenList;
 };
 
+}
 }
 
 #endif

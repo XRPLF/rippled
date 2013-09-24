@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 Source::Result::Result ()
     : success (false)
@@ -20,4 +20,5 @@ void Source::Result::swapWith (Result& other)
     list.swapWith (other.list);
 }
 
+}
 }

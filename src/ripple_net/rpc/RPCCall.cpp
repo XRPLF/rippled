@@ -803,18 +803,19 @@ public:
 
     // Convert a rpc method and params to a request.
     // <-- { method: xyz, params: [... ] } or { error: ..., ... }
-    Json::Value parseCommand (std::string strMethod, Json::Value jvParams)
+    Json::Value parseCommand (std::string strMethod, Json::Value jvParams, bool allowAnyCommand)
     {
         WriteLog (lsTRACE, RPCParser) << "RPC method:" << strMethod;
         WriteLog (lsTRACE, RPCParser) << "RPC params:" << jvParams;
 
-        static struct
+        struct Command
         {
             const char*     pCommand;
             parseFuncPtr    pfpFunc;
             int             iMinParams;
             int             iMaxParams;
-        } commandsA[] =
+        };
+        static Command commandsA[] =
         {
             // Request-response methods
             // - Returns an error, or the request.
@@ -897,7 +898,10 @@ public:
 
         if (i < 0)
         {
-            return rpcError (rpcUNKNOWN_COMMAND);
+            if (!allowAnyCommand)
+                return rpcError (rpcUNKNOWN_COMMAND);
+
+            return parseAsIs (jvParams);
         }
         else if ((commandsA[i].iMinParams >= 0 && jvParams.size () < commandsA[i].iMinParams)
                  || (commandsA[i].iMaxParams >= 0 && jvParams.size () > commandsA[i].iMaxParams))
@@ -1004,7 +1008,7 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
         jvRpc["method"] = vCmd[0];
         jvRpc["params"] = jvRpcParams;
 
-        jvRequest   = rpParser.parseCommand (vCmd[0], jvRpcParams);
+        jvRequest   = rpParser.parseCommand (vCmd[0], jvRpcParams, true);
 
         WriteLog (lsTRACE, RPCParser) << "RPC Request: " << jvRequest << std::endl;
 

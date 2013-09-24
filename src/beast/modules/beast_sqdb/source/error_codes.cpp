@@ -63,6 +63,10 @@ namespace sqdb
 namespace detail
 {
 
+#ifdef c
+#undef c
+#endif
+
 const Error sqliteError(const char* sourceFileName,
                         int lineNumber,
                         int sqliteErrorCode)

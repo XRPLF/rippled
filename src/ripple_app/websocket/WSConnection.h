@@ -112,6 +112,14 @@ public:
             m_serverHandler.send (ptr, jvObj, broadcast);
     }
 
+    void send (const Json::Value& jvObj, const std::string& sObj, bool broadcast)
+    {
+        connection_ptr ptr = m_connection.lock ();
+
+        if (ptr)
+            m_serverHandler.send (ptr, sObj, broadcast);
+    }
+
     void disconnect ()
     {
         // FIXME: Must dispatch to strand

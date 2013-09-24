@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 class SourceStringsImp : public SourceStrings
 {
@@ -69,4 +69,5 @@ SourceStrings* SourceStrings::New (
     return object.release ();
 }
 
+}
 }

@@ -21,9 +21,8 @@
 #define BEAST_INTRUSIVE_FORWARDLIST_H_INCLUDED
 
 #include <iterator>
-
 #include "PointerTraits.h"
-#include "../mpl.h"
+#include "../MPL.h"
 
 // Ideas based on boost
 

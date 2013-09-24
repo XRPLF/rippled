@@ -20,7 +20,6 @@
 
 Config::Config ()
     : m_rpcPort (5001)
-    , SSL_CONTEXT (boost::asio::ssl::context::sslv23)
 {
     //--------------------------------------------------------------------------
     //
@@ -190,24 +189,7 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
         }
     }
 
-
-    if (SSL_VERIFY_FILE.empty ())
-    {
-        SSL_CONTEXT.set_default_verify_paths (ec);
-
-        if (ec && SSL_VERIFY_DIR.empty ())
-            throw std::runtime_error (boost::str (boost::format ("Failed to set_default_verify_paths: %s") % ec.message ()));
-    }
-    else
-        SSL_CONTEXT.load_verify_file (SSL_VERIFY_FILE);
-
-    if (!SSL_VERIFY_DIR.empty ())
-    {
-        SSL_CONTEXT.add_verify_path (SSL_VERIFY_DIR, ec);
-
-        if (ec)
-            throw std::runtime_error (boost::str (boost::format ("Failed to add verify path: %s") % ec.message ()));
-    }
+    HTTPClient::initializeSSLContext();
 
     // Update default values
     load ();
@@ -736,7 +718,7 @@ File Config::getValidatorsFile () const
     return File::nonexistent ();
 }
 
-UniformResourceLocator Config::getValidatorsURL () const
+URL Config::getValidatorsURL () const
 {
     //String s = "https://" + VALIDATORS_SITE + VALIDATORS_URI;
     String s = VALIDATORS_SITE;

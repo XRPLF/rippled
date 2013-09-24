@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_STORE_H_INCLUDED
 #define RIPPLE_VALIDATORS_STORE_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 /** Abstract persistence for Validators data. */
 class Store
@@ -29,6 +29,7 @@ protected:
     Store () { }
 };
 
+}
 }
 
 #endif

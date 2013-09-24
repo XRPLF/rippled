@@ -86,7 +86,7 @@ enum LedgerSpecificFlags
     lsfRequireDestTag   = 0x00020000,   // True, to require a DestinationTag for payments.
     lsfRequireAuth      = 0x00040000,   // True, to require a authorization to hold IOUs.
     lsfDisallowXRP      = 0x00080000,   // True, to disallow sending XRP.
-    lsfDisableMaster	= 0x00100000,	// True, force regular key
+    lsfDisableMaster    = 0x00100000,   // True, force regular key
 
     // ltOFFER
     lsfPassive          = 0x00010000,
@@ -97,6 +97,8 @@ enum LedgerSpecificFlags
     lsfHighReserve      = 0x00020000,
     lsfLowAuth          = 0x00040000,
     lsfHighAuth         = 0x00080000,
+    lsfLowNoRipple      = 0x00100000,
+    lsfHighNoRipple     = 0x00200000,
 };
 
 //------------------------------------------------------------------------------

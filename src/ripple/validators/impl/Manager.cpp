@@ -4,10 +4,6 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_DISABLE_MANAGER
-#define RIPPLE_VALIDATORS_DISABLE_MANAGER 1
-#endif
-
 /*
 
 Information to track:
@@ -88,30 +84,81 @@ What determines that a validator is good?
       the behavior is measured.
 */
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 class ManagerImp
     : public Manager
-    , private ThreadWithCallQueue::EntryPoints
-    , private DeadlineTimer::Listener
-    , private LeakChecked <ManagerImp>
+    , public Stoppable
+    , public ThreadWithCallQueue::EntryPoints
+    , public DeadlineTimer::Listener
+    , public LeakChecked <ManagerImp>
 {
 public:
-    explicit ManagerImp (Journal journal)
-        : m_store (journal)
+    ManagerImp (Stoppable& parent, Journal journal)
+        : Stoppable ("Validators::Manager", parent)
+        , m_store (journal)
         , m_logic (m_store, journal)
         , m_journal (journal)
         , m_thread ("Validators")
         , m_checkTimer (this)
         , m_checkSources (true) // true to cause a full scan on start
     {
+        addRPCHandlers();
         m_thread.start (this);
     }
 
     ~ManagerImp ()
     {
+        m_thread.stop (true);
     }
+
+    //--------------------------------------------------------------------------
+    //
+    // Stoppable
+    //
+
+    void onStop ()
+    {
+        m_thread.stop (false);
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // RPC::Service
+    //
+
+    Json::Value rpcPrint (Json::Value const& args)
+    {
+        return m_logic.rpcPrint (args);
+    }
+
+    Json::Value rpcRebuild (Json::Value const& args)
+    {
+        m_thread.call (&Logic::buildChosen, &m_logic);
+        Json::Value result;
+        result ["chosen_list"] = "rebuilding";
+        return result;
+    }
+
+    Json::Value rpcSources (Json::Value const& args)
+    {
+        return m_logic.rpcSources(args);
+    }
+
+    void addRPCHandlers()
+    {
+        addRPCHandler ("validators_print", beast::bind (
+            &ManagerImp::rpcPrint, this, beast::_1));
+
+        addRPCHandler ("validators_rebuild", beast::bind (
+            &ManagerImp::rpcRebuild, this, beast::_1));
+
+        addRPCHandler ("validators_sources", beast::bind (
+            &ManagerImp::rpcSources, this, beast::_1));
+    }
+
+    //--------------------------------------------------------------------------
 
     void addStrings (String name, std::vector <std::string> const& strings)
     {
@@ -133,7 +180,7 @@ public:
         addStaticSource (SourceFile::New (file));
     }
 
-    void addURL (UniformResourceLocator const& url)
+    void addURL (URL const& url)
     {
         addSource (SourceURL::New (url));
     }
@@ -142,26 +189,29 @@ public:
 
     void addSource (Source* source)
     {
-#if RIPPLE_VALIDATORS_DISABLE_MANAGER
-        delete source;
-#else
+#if RIPPLE_USE_NEW_VALIDATORS
+        bassert (! isStopping());
         m_thread.call (&Logic::add, &m_logic, source);
+#else
+        delete source;
 #endif
     }
 
     void addStaticSource (Source* source)
     {
-#if RIPPLE_VALIDATORS_DISABLE_MANAGER
-        delete source;
-#else
+#if RIPPLE_USE_NEW_VALIDATORS
+        bassert (! isStopping());
         m_thread.call (&Logic::addStatic, &m_logic, source);
+#else
+        delete source;
 #endif
     }
 
     void receiveValidation (ReceivedValidation const& rv)
     {
-#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
-        m_thread.call (&Logic::receiveValidation, &m_logic, rv);
+#if RIPPLE_USE_NEW_VALIDATORS
+        if (! isStopping())
+            m_thread.call (&Logic::receiveValidation, &m_logic, rv);
 #endif
     }
 
@@ -169,7 +219,7 @@ public:
 
     void onDeadlineTimer (DeadlineTimer& timer)
     {
-#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
+#if RIPPLE_USE_NEW_VALIDATORS
         if (timer == m_checkTimer)
         {
             m_checkSources = true;
@@ -184,7 +234,7 @@ public:
 
     void threadInit ()
     {
-#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
+#if RIPPLE_USE_NEW_VALIDATORS
         File const file (File::getSpecialLocation (
             File::userDocumentsDirectory).getChildFile ("validators.sqlite"));
         
@@ -211,13 +261,15 @@ public:
 
     void threadExit ()
     {
+        // must come last
+        stopped ();
     }
 
     bool threadIdle ()
     {
         bool interrupted = false;
 
-#if ! RIPPLE_VALIDATORS_DISABLE_MANAGER
+#if RIPPLE_USE_NEW_VALIDATORS
         if (m_checkSources)
         {
             ThreadCancelCallback cancelCallback (m_thread);
@@ -250,9 +302,10 @@ private:
 
 //------------------------------------------------------------------------------
 
-Manager* Manager::New (Journal journal)
+Validators::Manager* Validators::Manager::New (Stoppable& parent, Journal journal)
 {
-    return new ManagerImp (journal);
+    return new Validators::ManagerImp (parent, journal);
 }
 
+}
 }

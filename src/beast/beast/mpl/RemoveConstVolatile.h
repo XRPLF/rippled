@@ -28,7 +28,7 @@
 namespace beast {
 namespace mpl {
 
-/// Remove both the `const` and `volatile` qualifiers from a type.
+/** Remove both the `const` and `volatile` qualifiers from a type. */
 template <typename T>
 struct RemoveConstVolatile
 {

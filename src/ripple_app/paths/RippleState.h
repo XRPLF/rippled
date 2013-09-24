@@ -52,6 +52,16 @@ public:
         return isSetBit (mFlags, !mViewLowest ? lsfLowAuth : lsfHighAuth);
     }
 
+    bool getNoRipple () const
+    {
+        return isSetBit (mFlags, mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+    }
+
+    bool getNoRipplePeer () const
+    {
+        return isSetBit (mFlags, !mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+    }
+
     const STAmount& getBalance () const
     {
         return mBalance;

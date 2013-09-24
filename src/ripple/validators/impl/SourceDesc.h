@@ -7,8 +7,8 @@
 #ifndef RIPPLE_VALIDATORS_SOURCEDESC_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCEDESC_H_INCLUDED
 
-namespace Validators
-{
+namespace ripple {
+namespace Validators {
 
 /** Additional state information associated with a Source. */
 struct SourceDesc
@@ -52,6 +52,7 @@ struct SourceDesc
 
 typedef DynamicList <SourceDesc> SourcesType;
 
+}
 }
 
 #endif

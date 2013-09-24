@@ -10,7 +10,7 @@
 
 //#include <cmath>
 
-#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
+#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -28,8 +28,9 @@
 #include <openssl/ecdsa.h>
 #include <openssl/pem.h>
 #include <openssl/hmac.h>
-//#include <openssl/rand.h> // includes <windows.h> and causes errors due to #define GetMessage
 #include <openssl/err.h>
+
+#include "../ripple/sslutil/ripple_sslutil.h"
 
 // VFALCO TODO fix these warnings!
 #if BEAST_MSVC
@@ -44,22 +45,18 @@
 namespace ripple
 {
 
-#include "crypto/Base58.h" // for RippleAddress
 #include "crypto/CKey.h" // needs RippleAddress VFALCO TODO remove this dependency cycle
 #include "crypto/RFC1751.h"
 
-#include "crypto/CBigNum.cpp"
 #include "crypto/CKey.cpp"
 #include "crypto/CKeyDeterministic.cpp"
 #include "crypto/CKeyECIES.cpp"
-#include "crypto/Base58.cpp"
 #include "crypto/Base58Data.cpp"
 #include "crypto/RFC1751.cpp"
 
 #include "protocol/BuildInfo.cpp"
 #include "protocol/FieldNames.cpp"
 #include "protocol/LedgerFormats.cpp"
-#include "protocol/PackedMessage.cpp"
 #include "protocol/RippleAddress.cpp"
 #include "protocol/SerializedTypes.cpp"
 #include "protocol/Serializer.cpp"

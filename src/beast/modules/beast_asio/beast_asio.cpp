@@ -23,8 +23,9 @@
 
 #include "beast_asio.h"
 
-namespace beast
-{
+namespace beast {
+
+# include "../../beast/http/impl/http-parser/http_parser.h"
 
 #include "async/SharedHandler.cpp"
 
@@ -37,14 +38,13 @@ namespace beast
 
 #include "protocol/HandshakeDetectLogicPROXY.cpp"
 
-# include "parsehttp/http_parser.h"
 # include "http/HTTPParserImpl.h"
 #include "http/HTTPParser.cpp"
-#include "http/UniformResourceLocator.cpp"
 #include "http/HTTPClientType.cpp"
 #include "http/HTTPField.cpp"
 #include "http/HTTPHeaders.cpp"
 #include "http/HTTPMessage.cpp"
+#include "http/HTTPRequest.cpp"
 #include "http/HTTPResponse.cpp"
 #include "http/HTTPVersion.cpp"
 
@@ -60,16 +60,4 @@ namespace beast
 
 #include "system/BoostUnitTests.cpp"
 
-#ifdef _MSC_VER
-#pragma warning (push)
-#pragma warning (disable: 4127) // conditional expression is constant
-#pragma warning (disable: 4244) // integer conversion, possible loss of data
-#endif
-#include "parsehttp/http_parser.c"
-#ifdef _MSC_VER
-#pragma warning (pop)
-#endif
-
 }
-
-//------------------------------------------------------------------------------

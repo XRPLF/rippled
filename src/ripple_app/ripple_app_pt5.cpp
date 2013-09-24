@@ -25,5 +25,6 @@ namespace ripple
 #  include "misc/ProofOfWork.h"
 # include "misc/ProofOfWorkFactory.h"
 #include "peers/Peer.cpp"
+#include "peers/PackedMessage.cpp"
 
 }

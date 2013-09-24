@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BOOSTINCLUDES_RIPPLEHEADER
-#define RIPPLE_BOOSTINCLUDES_RIPPLEHEADER
+#ifndef RIPPLE_BOOSTINCLUDES_H_INCLUDED
+#define RIPPLE_BOOSTINCLUDES_H_INCLUDED
 
 // All Boost includes used throughout Ripple.
 //
@@ -27,17 +27,13 @@
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 
 #include <boost/algorithm/string.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
 #include <boost/bind.hpp>
-#include <boost/cstdint.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/function.hpp>
-#include <boost/functional/hash.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/ptr_container/ptr_vector.hpp> // VFALCO NOTE this looks like junk
 #include <boost/ref.hpp>

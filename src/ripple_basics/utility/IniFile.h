@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_INIFILE_RIPPLEHEADER
-#define RIPPLE_INIFILE_RIPPLEHEADER
+#ifndef RIPPLE_INIFILE_H_INCLUDED
+#define RIPPLE_INIFILE_H_INCLUDED
 
 // VFALCO TODO Rename to IniFile and clean up
 typedef std::map <const std::string, std::vector<std::string> > Section;

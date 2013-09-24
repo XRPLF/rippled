@@ -25,8 +25,8 @@
 namespace beast {
 namespace mpl {
 
-/// Remove the `const` qualifier from a type.
-/// @{
+/** Remove the `const` qualifier from a type. */
+/** @{ */
 template <typename T>
 struct RemoveConst
 {
@@ -38,7 +38,7 @@ struct RemoveConst <T const>
 {
     typedef T type;
 };
-/// @}
+/** @} */
 
 }
 }

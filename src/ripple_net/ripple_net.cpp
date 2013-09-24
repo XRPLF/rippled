@@ -12,7 +12,7 @@
 
 #include "BeastConfig.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
+#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/version.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl.hpp>
@@ -32,11 +32,15 @@
 namespace ripple
 {
 
-#include "basics/impl/MultiSocketType.h"
-#include "basics/RippleSSLContext.cpp"
-#include "basics/MultiSocket.cpp"
+#include "basics/AsyncService.cpp"
 #include "basics/HTTPRequest.cpp"
 #include "basics/HTTPClient.cpp"
+
+# include "basics/impl/MultiSocketType.h"
+#include "basics/MultiSocket.cpp"
+
+#include "basics/RippleSSLContext.cpp"
+
 # include "basics/impl/RPCServerImp.h"
 #include "basics/RPCDoor.cpp"
 #include "basics/SNTPClient.cpp"

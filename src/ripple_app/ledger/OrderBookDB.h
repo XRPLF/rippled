@@ -12,13 +12,19 @@
 // But, for now it is probably faster to just generate it each time.
 //
 
+//------------------------------------------------------------------------------
+
 typedef std::pair<uint160, uint160> currencyIssuer_t;
+
+//------------------------------------------------------------------------------
 
 #ifdef C11X
 typedef std::pair<const uint160&, const uint160&> currencyIssuer_ct;
 #else
 typedef std::pair<uint160, uint160> currencyIssuer_ct; // C++ defect 106
 #endif
+
+//------------------------------------------------------------------------------
 
 class BookListeners
 {
@@ -37,10 +43,15 @@ private:
     boost::unordered_map<uint64, InfoSub::wptr> mListeners;
 };
 
-class OrderBookDB : LeakChecked <OrderBookDB>
+//------------------------------------------------------------------------------
+
+class OrderBookDB
+    : public Stoppable
+    , public LeakChecked <OrderBookDB>
 {
 public:
-    OrderBookDB ();
+    explicit OrderBookDB (Stoppable& parent);
+
     void setup (Ledger::ref ledger);
     void update (Ledger::pointer ledger);
     void invalidate ();

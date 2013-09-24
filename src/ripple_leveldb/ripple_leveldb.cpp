@@ -10,7 +10,7 @@
 
 #include "ripple_leveldb.h"
 
-#include "beast/modules/beast_core/system/TargetPlatform.h"
+#include "beast/beast/Config.h"
 
 // Set the appropriate LevelDB platform macro based on our platform.
 //

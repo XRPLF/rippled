@@ -6,12 +6,15 @@
 
 SETUP_LOG (PeerDoor)
 
-class PeerDoorImp : public PeerDoor, LeakChecked <PeerDoorImp>
+class PeerDoorImp
+    : public PeerDoor
+    , public LeakChecked <PeerDoorImp>
 {
 public:
-    PeerDoorImp (Kind kind, std::string const& ip, int port,
+    PeerDoorImp (Stoppable& parent, Kind kind, std::string const& ip, int port,
         boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
-        : m_kind (kind)
+        : PeerDoor (parent)
+        , m_kind (kind)
         , m_ssl_context (ssl_context)
         , mAcceptor (io_service, boost::asio::ip::tcp::endpoint (
             boost::asio::ip::address ().from_string (ip.empty () ? "0.0.0.0" : ip), port))
@@ -20,13 +23,20 @@ public:
         if (! ip.empty () && port != 0)
         {
             Log (lsINFO) << "Peer port: " << ip << " " << port;
-            startListening ();
+            
+            async_accept ();
         }
+    }
+
+    ~PeerDoorImp ()
+    {
     }
 
     //--------------------------------------------------------------------------
 
-    void startListening ()
+    // Initiating function for performing an asynchronous accept
+    //
+    void async_accept ()
     {
         bool const isInbound (true);
         bool const requirePROXYHandshake (m_kind == sslAndPROXYRequired);
@@ -37,38 +47,65 @@ public:
                     isInbound, requirePROXYHandshake));
 
         mAcceptor.async_accept (new_connection->getNativeSocket (),
-            boost::bind (&PeerDoorImp::handleConnect, this, new_connection,
-                boost::asio::placeholders::error));
+            boost::bind (&PeerDoorImp::handleAccept, this,
+                boost::asio::placeholders::error,
+                new_connection));
     }
 
     //--------------------------------------------------------------------------
 
-    void handleConnect (Peer::pointer new_connection,
-        boost::system::error_code const& error)
+    // Called when the deadline timer wait completes
+    //
+    void handleTimer (boost::system::error_code ec)
+    {
+        async_accept ();
+    }
+
+    // Called when the accept socket wait completes
+    //
+    void handleAccept (boost::system::error_code ec, Peer::pointer new_connection)
     {
         bool delay = false;
 
-        if (!error)
+        if (! ec)
         {
-            new_connection->connected (error);
+            // VFALCO NOTE the error code doesnt seem to be used in connected()
+            new_connection->connected (ec);
         }
         else
         {
-            if (error == boost::system::errc::too_many_files_open)
+            if (ec == boost::system::errc::too_many_files_open)
                 delay = true;
-
-            WriteLog (lsERROR, PeerDoor) << error;
+            WriteLog (lsERROR, PeerDoor) << ec;
         }
 
         if (delay)
         {
             mDelayTimer.expires_from_now (boost::posix_time::milliseconds (500));
-            mDelayTimer.async_wait (boost::bind (&PeerDoorImp::startListening, this));
+            mDelayTimer.async_wait (boost::bind (&PeerDoorImp::handleTimer,
+                this, boost::asio::placeholders::error));
         }
         else
         {
-            startListening ();
+            async_accept ();
         }
+    }
+
+    //--------------------------------------------------------------------------
+
+    void onStop ()
+    {
+        {
+            boost::system::error_code ec;
+            mDelayTimer.cancel (ec);
+        }
+
+        {
+            boost::system::error_code ec;
+            mAcceptor.cancel (ec);
+        }
+
+        stopped ();
     }
 
 private:
@@ -80,8 +117,15 @@ private:
 
 //------------------------------------------------------------------------------
 
-PeerDoor* PeerDoor::New (Kind kind, std::string const& ip, int port,
+PeerDoor::PeerDoor (Stoppable& parent)
+    : AsyncService ("PeerDoor", parent)
+{
+}
+
+//------------------------------------------------------------------------------
+
+PeerDoor* PeerDoor::New (Stoppable& parent, Kind kind, std::string const& ip, int port,
     boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
 {
-    return new PeerDoorImp (kind, ip, port, io_service, ssl_context);
+    return new PeerDoorImp (parent, kind, ip, port, io_service, ssl_context);
 }

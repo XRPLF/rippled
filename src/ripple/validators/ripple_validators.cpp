@@ -8,16 +8,20 @@
 
 #include "ripple_validators.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h" // must come first
+#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/regex.hpp>
 #include <boost/unordered_set.hpp>
 
+#include "beast/modules/beast_asio/beast_asio.h"
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
+
+#include "../ripple_data/ripple_data.h" // for RippleAddress REMOVE ASAP
 
 #include "../testoverlay/ripple_testoverlay.h" // for unit test
 
-namespace ripple
-{
+namespace ripple {
+using namespace beast;
+}
 
 # include "impl/CancelCallbacks.h"
 # include "impl/ChosenList.h"
@@ -38,5 +42,3 @@ namespace ripple
 #include "impl/StoreSqdb.cpp"
 #include "impl/Tests.cpp"
 #include "impl/Utilities.cpp"
-
-}

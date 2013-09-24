@@ -32,7 +32,7 @@ class DynamicArrayIterator
         typename V::size_type>
 {
 public:
-    typedef typename copyconst <V, typename V::value_type>::type
+    typedef typename mpl::CopyConst <V, typename V::value_type>::type
 
                               value_type;
     typedef value_type*       pointer;
@@ -216,7 +216,7 @@ class DynamicArrayReverseIterator
         typename V::size_type>
 {
 public:
-    typedef typename copyconst <V, typename V::value_type>::type
+    typedef typename mpl::CopyConst<V, typename V::value_type>::type
 
                               value_type;
     typedef value_type*       pointer;

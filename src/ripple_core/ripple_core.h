@@ -4,21 +4,16 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_RIPPLEHEADER
-#define RIPPLE_CORE_RIPPLEHEADER
-
-// For Validators
-//
-// VFALCO NOTE It is unfortunate that we are exposing boost/asio.hpp
-//             needlessly. Its only required because of the buffers types.
-//             The HTTPClient interface doesn't need asio (although the
-//             implementation does. This is also reuqired for
-//             UniformResourceLocator.
-//
-#include "beast/modules/beast_asio/beast_asio.h"
+#ifndef RIPPLE_CORE_H_INCLUDED
+#define RIPPLE_CORE_H_INCLUDED
 
 #include "../ripple_basics/ripple_basics.h"
 #include "../ripple_data/ripple_data.h"
+
+#include "beast/beast/http/URL.h" // for Config
+
+
+#include "nodestore/NodeStore.h"
 
 namespace ripple
 {
@@ -34,9 +29,6 @@ namespace ripple
 #include "functional/JobQueue.h"
 # include "functional/LoadType.h"
 #include "functional/LoadSource.h"
-
-#include "node/NodeObject.h"
-#include "node/NodeStore.h"
 
 #include "peerfinder/PeerFinder.h"
 

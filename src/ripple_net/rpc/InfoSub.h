@@ -30,8 +30,11 @@ public:
 public:
     /** Abstracts the source of subscription data.
     */
-    class Source
+    class Source : public Stoppable
     {
+    protected:
+        Source (char const* name, Stoppable& parent);
+
     public:
         // VFALCO TODO Rename the 'rt' parameters to something meaningful.
         virtual void subAccount (ref ispListener,

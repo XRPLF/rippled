@@ -4,8 +4,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEVELDB_RIPPLEHEADER
-#define RIPPLE_LEVELDB_RIPPLEHEADER
+#ifndef RIPPLE_LEVELDB_H_INCLUDED
+#define RIPPLE_LEVELDB_H_INCLUDED
 
 #include "leveldb/cache.h"
 #include "leveldb/filter_policy.h"

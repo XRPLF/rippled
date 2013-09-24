@@ -262,6 +262,22 @@ private:
 
 //------------------------------------------------------------------------------
 
+// bind() helpers for pointer to member function
+
+template <class T>
+const T* get_pointer (SharedPtr<T> const& ptr)
+{
+    return ptr.get();
+}
+
+template <class T>
+T* get_pointer (SharedPtr<T>& ptr)
+{
+    return ptr.get();
+}
+
+//------------------------------------------------------------------------------
+
 /** SharedPtr comparisons. */
 /** @{ */
 template <class T, class U>
