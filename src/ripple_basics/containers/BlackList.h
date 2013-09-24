@@ -48,7 +48,7 @@ public:
         boost::mutex::scoped_lock sl(mMutex);
 
         iBlackList* e = findEntry(source, true);
-        return e ? (e->mBalance <= (mCreditLimit * mDecaySeconds)) : true;
+        return (e == NULL) || (e->mBalance <= (mCreditLimit * mDecaySeconds)) || isWhiteList(source);
     }
 
     // Clean up stale entries
