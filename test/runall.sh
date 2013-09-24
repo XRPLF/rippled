@@ -1,5 +1,4 @@
 #!/bin/bash
-for f in test/*.js
-do
-  node $f
-done
+
+mocha --ui tdd --reporter xunit --timeout 10000 test/*-test.js
+
