@@ -853,6 +853,7 @@ void Pathfinder::initPathTable()
         list.push_back(CostedPath_t(3, makePath("safad")));
         list.push_back(CostedPath_t(4, makePath("sxfd")));
         list.push_back(CostedPath_t(5, makePath("saxfd")));
+        list.push_back(CostedPath_t(5, makePath("sxfad")));
         list.push_back(CostedPath_t(6, makePath("saxfad")));
         list.push_back(CostedPath_t(7, makePath("saafd")));
         list.push_back(CostedPath_t(8, makePath("saafad")));
