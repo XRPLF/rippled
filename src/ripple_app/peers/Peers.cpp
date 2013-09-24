@@ -352,7 +352,8 @@ void PeersImp::policyEnforce ()
     (void) mPolicyTimer.cancel ();
 
     // Enforce policies.
-    policyLowWater ();
+    if (!getConfig ().PEER_PRIVATE)
+        policyLowWater ();
 
     if (((++mPhase) % 12) == 0)
     {

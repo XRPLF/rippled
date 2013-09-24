@@ -614,19 +614,20 @@ public:
         // Begin connecting to network.
         //
         if (!getConfig ().RUN_STANDALONE)
+        {
             m_peers->start ();
+            if (getConfig ().PEER_PRIVATE && getConfig ().IPS.empty ())
+                m_journal.warning << "No outbound peer connections will be made";
 
-        if (getConfig ().RUN_STANDALONE)
+            // VFALCO NOTE the state timer resets the deadlock detector.
+            //
+            m_networkOPs->setStateTimer ();
+        }
+        else
         {
             m_journal.warning << "Running in standalone mode";
 
             m_networkOPs->setStandAlone ();
-        }
-        else
-        {
-            // VFALCO NOTE the state timer resets the deadlock detector.
-            //
-            m_networkOPs->setStateTimer ();
         }
     }
 
