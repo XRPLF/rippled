@@ -71,7 +71,7 @@ public:
         , mCluster (false)
         , mPeerId (peerID)
         , mPrivate (false)
-        , mLoad (std::string())
+        , mLoad (std::string(), std::string())
         , mMinLedger (0)
         , mMaxLedger (0)
         , mActivityTimer (io_service)
@@ -406,7 +406,7 @@ void PeerImp::handleWrite (const boost::system::error_code& error, size_t bytes_
 void PeerImp::setIpPort (const std::string& strIP, int iPort)
 {
     mIpPort = make_pair (strIP, iPort);
-    mLoad.rename (strIP);
+    mLoad.rename (strIP + lexicalCast<std::string>(iPort), strIP);
 
     WriteLog (lsDEBUG, Peer) << "Peer: Set: "
                              << addressToString (this) << "> "
@@ -1085,7 +1085,7 @@ void PeerImp::recvHello (protocol::TMHello& packet)
             mCluster = true;
             mLoad.setPrivileged ();
             if (!mNodeName.empty())
-                mLoad.rename (mNodeName);
+                mLoad.rename (mNodeName, mNodeName);
             WriteLog (lsINFO, Peer) << "Cluster connection to \"" << (mNodeName.empty () ? getIP () : mNodeName)
                                     << "\" established";
         }

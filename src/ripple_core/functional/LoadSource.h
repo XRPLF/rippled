@@ -63,8 +63,9 @@ public:
     /** Construct a load source with a given name.
         The endpoint is considered non-privileged.
     */
-    explicit LoadSource (std::string const& name)
+    explicit LoadSource (std::string const& name, std::string const& costName)
         : mName (name)
+        , mCostName (costName)
         , mBalance (0)
         , mFlags (0)
         , mLastUpdate (UptimeTimer::getInstance ().getElapsedSeconds ())
@@ -81,9 +82,10 @@ public:
     // VFALCO TODO Figure out a way to construct the LoadSource object with
     //             the proper name instead of renaming it later.
     //
-    void rename (std::string const& name) noexcept
+    void rename (std::string const& name, std::string const& costName) noexcept
     {
         mName = name;
+        mCostName = costName;
     }
 
     /** Retrieve the name of this endpoint.
@@ -91,6 +93,11 @@ public:
     std::string const& getName () const noexcept
     {
         return mName;
+    }
+
+    std::string const& getCostName () const noexcept
+    {
+        return mCostName;
     }
 
     /** Determine if this endpoint is privileged.
@@ -154,7 +161,8 @@ private:
     static const int lsfOutbound    = 2;
 
 private:
-    std::string mName;
+    std::string mName;         // Name of this particular load source, can include details like ports
+    std::string mCostName;     // The name to "charge" for load from this connection
     int         mBalance;
     int         mFlags;
     int         mLastUpdate;

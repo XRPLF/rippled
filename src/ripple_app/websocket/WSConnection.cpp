@@ -6,6 +6,12 @@
 
 SETUP_LOGN (WSConnection, "WSConnection")
 
+static std::string trimIP(const std::string& ip)
+{ // Make sure there's no port
+    size_t pos = ip.find(':');
+    return (pos == std::string::npos) ? ip : ip.substr(0, pos - 1);
+}
+
 //------------------------------------------------------------------------------
 
 WSConnection::WSConnection (InfoSub::Source& source, bool isPublic,
@@ -15,7 +21,7 @@ WSConnection::WSConnection (InfoSub::Source& source, bool isPublic,
     , m_remoteIP (remoteIP)
     , m_receiveQueueMutex (this, "WSConnection", __FILE__, __LINE__)
     , m_netOPs (getApp ().getOPs ())
-    , m_loadSource (m_remoteIP)
+    , m_loadSource (m_remoteIP, trimIP(m_remoteIP))
     , m_pingTimer (io_service)
     , m_sentPing (false)
     , m_receiveQueueRunning (false)

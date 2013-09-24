@@ -608,6 +608,15 @@ Json::Value RPCHandler::doAccountInfo (Json::Value params, LoadType* loadType, A
     return jvResult;
 }
 
+Json::Value RPCHandler::doBlackList (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
+{
+    masterLockHolder.unlock();
+    if (params.isMember("threshold"))
+        return getApp().getLoadManager().getBlackList(params["threshold"].asInt());
+    else
+        return getApp().getLoadManager().getBlackList();
+}
+
 // {
 //   ip: <string>,
 //   port: <number>
@@ -3774,6 +3783,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {   "account_lines",        &RPCHandler::doAccountLines,        false,  optCurrent  },
         {   "account_offers",       &RPCHandler::doAccountOffers,       false,  optCurrent  },
         {   "account_tx",           &RPCHandler::doAccountTxSwitch,     false,  optNetwork  },
+        {   "blacklist",            &RPCHandler::doBlackList,           true,   optNone     },
         {   "book_offers",          &RPCHandler::doBookOffers,          false,  optCurrent  },
         {   "connect",              &RPCHandler::doConnect,             true,   optNone     },
         {   "consensus_info",       &RPCHandler::doConsensusInfo,       true,   optNone     },

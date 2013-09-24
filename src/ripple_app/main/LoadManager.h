@@ -80,8 +80,10 @@ public:
     // VFALCO TODO Eliminate these two functions and just make applyLoadCharge()
     //             return a LoadSource::Disposition
     //
-    virtual bool shouldWarn (LoadSource&) const = 0;
-    virtual bool shouldCutoff (LoadSource&) const = 0;
+    virtual bool shouldWarn (LoadSource&) = 0;
+    virtual bool shouldCutoff (LoadSource&) = 0;
+
+    virtual Json::Value getBlackList(int threshold = (BlackList<UptimeTimerAdapter>::mCreditLimit / 2)) = 0;
 };
 
 #endif

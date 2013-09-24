@@ -88,6 +88,7 @@ private:
     Json::Value doAccountTxSwitch       (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doAccountTxOld          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doBookOffers            (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doBlackList             (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doConnect               (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doConsensusInfo         (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doFeature               (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);

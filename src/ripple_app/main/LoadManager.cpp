@@ -146,7 +146,7 @@ private:
         }
     }
 
-    bool shouldWarn (LoadSource& source) const
+    bool shouldWarn (LoadSource& source)
     {
         {
             ScopedLockType sl (mLock, __FILE__, __LINE__);
@@ -159,12 +159,14 @@ private:
 
             source.mLastWarning = now;
         }
+        mBlackList.doWarning(source.getCostName ());
         logWarning (source.getName ());
         return true;
     }
 
-    bool shouldCutoff (LoadSource& source) const
+    bool shouldCutoff (LoadSource& source)
     {
+        bool bLogged;
         {
             ScopedLockType sl (mLock, __FILE__, __LINE__);
             int now = UptimeTimer::getInstance ().getElapsedSeconds ();
@@ -173,13 +175,20 @@ private:
             if (source.isPrivileged () || (source.mBalance > mDebitLimit))
                 return false;
 
-            if (source.mLogged)
-                return true;
-
+            bLogged = source.mLogged;
             source.mLogged = true;
         }
-        logDisconnect (source.getName ());
+
+        mBlackList.doDisconnect (source.getName ());
+
+        if (!bLogged)
+            logDisconnect (source.getName ());
         return true;
+    }
+
+    bool shouldAllow (LoadSource& source)
+    {
+        return mBlackList.isAllowed (source.getCostName ());
     }
 
     bool applyLoadCharge (LoadSource& source, LoadType loadType) const
@@ -228,6 +237,17 @@ private:
             WriteLog (lsINFO, LoadManager) << "Disconnect for empty source";
         else
             WriteLog (lsWARNING, LoadManager) << "Disconnect for: " << source;
+    }
+
+    Json::Value getBlackList (int threshold)
+    {
+        Json::Value ret(Json::objectValue);
+
+        BOOST_FOREACH(const BlackList<UptimeTimerAdapter>::BlackListEntry& entry, mBlackList.getBlackList(threshold))
+        {
+            ret[entry.first] = entry.second;
+        }
+        return ret;
     }
 
     // VFALCO TODO Implement this and stop accessing the vector directly
@@ -414,6 +434,8 @@ private:
     LockType mLock;
 
     beast::ThreadWithCallQueue m_logThread;
+
+    BlackList<UptimeTimerAdapter> mBlackList;
 
     int mCreditRate;            // credits gained/lost per second
     int mCreditLimit;           // the most credits a source can have

@@ -10,8 +10,11 @@ class BlackList
         int    mBalance;         // Exponentially-decaying "cost" balance
         int    mLastUpdate;      // The uptime when the balance was last decayed
 
-        iBlackList(int now) : mBalance(0), mLastUpdate(now) { ; }
-        iBlackList() : mBalance(0), mLastUpdate(0) { ; }
+        iBlackList(int now) : mBalance(0), mLastUpdate(now)
+        { ; }
+
+        iBlackList() : mBalance(0), mLastUpdate(0)
+        { ; }
     };
 
 public:
@@ -21,7 +24,11 @@ public:
     typedef std::vector<BlackListEntry>   BlackListEntryList;
 
     BlackList()
-    { }
+    {
+        mWhiteList.push_back("127.");
+        mWhiteList.push_back("10.");
+        mWhiteList.push_back("192.168.");
+    }
 
     // We are issuing a warning to a source, update its entry
     bool doWarning(const std::string& source)
@@ -107,6 +114,27 @@ public:
         }
     }
 
+    void setWhiteList(std::vector<std::string> wl)
+    {
+        boost::mutex::scoped_lock sl(mMutex);
+
+        mWhiteList.swap(wl);
+    }
+
+    bool isWhiteList(const std::string& source)
+    {
+        {
+            boost::mutex::scoped_lock sl(mMutex);
+            BOOST_FOREACH(const std::string& entry, mWhiteList)
+            { // Does this source start with the entry?
+                if ((source.size() >= entry.size()) && (entry.compare(0, entry.size(), source) == 0))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     static const int    mWarnCost         = 10;     // The cost of being warned
     static const int    mDiscCost         = 100;    // The cost of being disconnected for abuse
     static const int    mRejectCost       = 1;      // The cost of having a connection disconnected
@@ -119,8 +147,9 @@ private:
 
     typedef std::map<std::string, iBlackList> BlackListTable;
 
-    BlackListTable  mList;
-    boost::mutex    mMutex;
+    BlackListTable            mList;
+    std::vector<std::string>  mWhiteList;
+    boost::mutex              mMutex;
 
     bool chargeEntry(const std::string& source, int charge)
     {
