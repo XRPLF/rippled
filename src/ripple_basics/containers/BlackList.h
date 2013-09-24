@@ -48,7 +48,7 @@ public:
         boost::mutex::scoped_lock sl(mMutex);
 
         iBlackList* e = findEntry(source, true);
-        return (e == NULL) || (e->mBalance <= (mCreditLimit * mDecaySeconds)) || isWhiteList(source);
+        return (e == NULL) || (e->mBalance <= (mCreditLimit * mDecaySeconds)) || isWhiteListLocked(source);
     }
 
     // Clean up stale entries
@@ -123,16 +123,8 @@ public:
 
     bool isWhiteList(const std::string& source)
     {
-        {
-            boost::mutex::scoped_lock sl(mMutex);
-            BOOST_FOREACH(const std::string& entry, mWhiteList)
-            { // Does this source start with the entry?
-                if ((source.size() >= entry.size()) && (entry.compare(0, entry.size(), source) == 0))
-                    return true;
-            }
-        }
-
-        return false;
+        boost::mutex::scoped_lock sl(mMutex);
+        return isWhiteListLocked(source);
     }
 
     static const int    mWarnCost         = 10;     // The cost of being warned
@@ -150,6 +142,16 @@ private:
     BlackListTable            mList;
     std::vector<std::string>  mWhiteList;
     boost::mutex              mMutex;
+
+    bool isWhiteListLocked(const std::string& source)
+    {
+        BOOST_FOREACH(const std::string& entry, mWhiteList)
+        { // Does this source start with the entry?
+            if ((source.size() >= entry.size()) && (entry.compare(0, entry.size(), source) == 0))
+                return true;
+        }
+        return false;
+    }
 
     bool chargeEntry(const std::string& source, int charge)
     {
