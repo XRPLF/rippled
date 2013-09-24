@@ -7,11 +7,6 @@
 #ifndef ORDERBOOK_DB_H
 #define ORDERBOOK_DB_H
 
-//
-// XXX Eventually make this cached and just update it as transactions come in.
-// But, for now it is probably faster to just generate it each time.
-//
-
 //------------------------------------------------------------------------------
 
 typedef std::pair<uint160, uint160> currencyIssuer_t;
