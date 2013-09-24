@@ -34,6 +34,7 @@ TER RippleCalc::calcNodeAdvance (
     uint256&        uDirectTip      = pnCur.uDirectTip;
     uint256&        uDirectEnd      = pnCur.uDirectEnd;
     bool&           bDirectAdvance  = pnCur.bDirectAdvance;
+    bool&           bDirectRestart  = pnCur.bDirectRestart;
     SLE::pointer&   sleDirectDir    = pnCur.sleDirectDir;
     STAmount&       saOfrRate       = pnCur.saOfrRate;
 
@@ -73,17 +74,20 @@ TER RippleCalc::calcNodeAdvance (
             sleDirectDir    = lesActive.entryCache (ltDIR_NODE, uDirectTip);
             bDirectDirDirty = !!sleDirectDir;   // Associated vars are dirty, if found it.
             bDirectAdvance  = !sleDirectDir;    // Advance, if didn't find it. Normal not to be unable to lookup firstdirectory. Maybe even skip this lookup.
+            bDirectRestart  = false;
 
             WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: Initialize node: uDirectTip=%s uDirectEnd=%s bDirectAdvance=%d") % uDirectTip % uDirectEnd % bDirectAdvance);
         }
 
-        if (bDirectAdvance)
+        if (bDirectAdvance || bDirectRestart)
         {
             // Get next quality.
-            uDirectTip      = lesActive.getNextLedgerIndex (uDirectTip, uDirectEnd);
+            if (bDirectAdvance)
+                uDirectTip  = lesActive.getNextLedgerIndex (uDirectTip, uDirectEnd);
 
             bDirectDirDirty = true;
             bDirectAdvance  = false;
+            bDirectRestart  = false;
 
             if (!!uDirectTip)
             {
@@ -344,8 +348,12 @@ TER RippleCalc::calcNodeDeliverRev (
     STAmount&       saPrvDlvReq     = pnPrv.saRevDeliver;   // Accumulation of what the previous node must deliver.
 
     uint256&        uDirectTip      = pnCur.uDirectTip;
+    bool&           bDirectRestart  = pnCur.bDirectRestart;
 
-    uDirectTip      = 0;                                    // Restart book searching.
+    if (bMultiQuality)
+        uDirectTip      = 0;                        // Restart book searching.
+    else
+        bDirectRestart  = true;                     // Restart at same quality.
 
     // YYY Note this gets zeroed on each increment, ideally only on first increment, then it could be a limit on the forward pass.
     saOutAct.zero (saOutReq);
@@ -636,8 +644,12 @@ TER RippleCalc::calcNodeDeliverFwd (
     STAmount&       saCurDeliverAct = pnCur.saFwdDeliver;   // Zeroed in reverse pass.
 
     uint256&        uDirectTip      = pnCur.uDirectTip;
+    bool&           bDirectRestart  = pnCur.bDirectRestart;
 
-    uDirectTip      = 0;                        // Restart book searching.
+    if (bMultiQuality)
+        uDirectTip      = 0;                        // Restart book searching.
+    else
+        bDirectRestart  = true;                     // Restart at same quality.
 
     saInAct.zero (saInReq);
     saInFees.zero (saInReq);

@@ -55,6 +55,7 @@ public:
         uint256                         uDirectTip;         // Current directory.
         uint256                         uDirectEnd;         // Next order book.
         bool                            bDirectAdvance;     // Need to advance directory.
+        bool                            bDirectRestart;     // Need to restart directory.
         SLE::pointer                    sleDirectDir;
         STAmount                        saOfrRate;          // For correct ratio.
 
