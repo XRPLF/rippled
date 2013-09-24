@@ -1476,6 +1476,7 @@ static void checkValidation (Job&, SerializedValidation::pointer val, bool isTru
 
 void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, Application::ScopedLockType& masterLockHolder)
 {
+    uint32 closeTime = getApp().getOPs().getCloseTimeNC();
     masterLockHolder.unlock ();
 
     if (packet->validation ().size () < 50)
@@ -1493,6 +1494,13 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
         Serializer s (packet->validation ());
         SerializerIterator sit (s);
         SerializedValidation::pointer val = boost::make_shared<SerializedValidation> (boost::ref (sit), false);
+
+        if (closeTime > (120 + val->getFieldU32(sfSigningTime)))
+        {
+            WriteLog (lsTRACE, Peer) << "Validation is more than two minutes old";
+            applyLoadCharge (LT_UnwantedData);
+            return;
+        }
 
         if (! getApp().getHashRouter ().addSuppressionPeer (s.getSHA512Half(), mPeerId))
         {
