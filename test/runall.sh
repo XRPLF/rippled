@@ -1,4 +1,4 @@
 #!/bin/bash
 
-mocha --ui tdd --reporter xunit --timeout 10000 test/*-test.js
+mocha --ui tdd --reporter spec --timeout 10000 test/*-test.js
 
