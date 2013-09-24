@@ -99,9 +99,9 @@ private:
     uint256         mClosedLedgerHash;
     uint256         mPreviousLedgerHash;
 
-    std::list<uint256>  mRecentLedgers;
-    std::list<uint256>  mRecentTxSets;
-    boost::mutex        mRecentLock;
+    std::list<uint256>    mRecentLedgers;
+    std::list<uint256>    mRecentTxSets;
+    mutable boost::mutex  mRecentLock;
 
 
     boost::asio::deadline_timer                                 mActivityTimer;
