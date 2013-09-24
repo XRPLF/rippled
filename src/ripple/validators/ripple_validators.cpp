@@ -11,6 +11,11 @@
 #include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/regex.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/key_extractors.hpp>
+
+#include <set>
 
 #include "beast/modules/beast_asio/beast_asio.h"
 #include "beast/modules/beast_sqdb/beast_sqdb.h"

@@ -27,26 +27,228 @@ enum
 
 //------------------------------------------------------------------------------
 
+enum
+{
+    maxSizeBeforeSwap    = 100
+};
+
+// Simple container swapping template
+template <class Container>
+class AgedHistory
+{
+public:
+    typedef Container container_type;
+
+    AgedHistory()
+        : m_p1 (&m_c1)
+        , m_p2 (&m_c2)
+    {
+    }
+
+    AgedHistory (AgedHistory const& other)
+        : m_c1 (other.front())
+        , m_c2 (other.back())
+        , m_p1 (&m_c1)
+        , m_p2 (&m_c2)
+    {
+    }
+
+    AgedHistory& operator= (AgedHistory const& other)
+    {
+        m_c1 = other.front();
+        m_c2 = other.back();
+        m_p1 = &m_c1;
+        m_p2 = &m_c2;
+        return *this;
+    }
+
+    void swap () { std::swap (m_p1, m_p2); }
+
+    Container*       operator-> ()       { return m_p1; }
+    Container const* operator-> () const { return m_p1; }
+
+    Container&       front()       { return *m_p1; }
+    Container const& front() const { return *m_p1; }
+    Container&       back()        { return *m_p2; }
+    Container const& back()  const { return *m_p2; }
+
+private:
+    Container  m_c1;
+    Container  m_c2;
+    Container* m_p1;
+    Container* m_p2;
+};
+
+//------------------------------------------------------------------------------
+
+struct Ledger
+{
+    Ledger() : when (Time::getCurrentTime())
+    {
+    }
+
+    Time when;
+};
+
+typedef AgedHistory <boost::unordered_map <
+    RippleLedgerHash, Ledger, RippleLedgerHash::hasher> > Ledgers;
+
+// Information associated with each distinguishable validator
+struct Validator
+{
+    Validator ()
+        : refCount (0)
+    {
+    }
+
+    void receiveValidation (RippleLedgerHash const& ledgerHash)
+    {
+        typedef Ledgers::container_type::iterator iterator;
+
+        ++count->seen;
+
+        // If we already have it in the expected list, close it out
+        //
+        iterator iter (expected->find (ledgerHash));
+        if (iter != expected->end())
+        {
+            expected->erase (iter);
+            expected.back().erase (ledgerHash);
+            return;
+        }
+        else if ((iter = expected.back().find(ledgerHash)) !=
+            expected.back().end())
+        {
+            expected.back().erase (iter);
+            return;
+        }
+
+        // Ledger hasn't closed yet so put it in the received list
+        //
+        std::pair <iterator, bool> result (
+            received->emplace (ledgerHash, Ledger()));
+        bassert (result.second);
+        if (received->size() >= maxSizeBeforeSwap)
+            swap();
+    }
+
+    void ledgerClosed (RippleLedgerHash const& ledgerHash)
+    {
+        typedef Ledgers::container_type::iterator iterator;
+
+        ++count->closed;
+
+        // If the Validator already gave us the ledger
+        // then count it and remove it from both tables.
+        //
+        iterator iter (received->find (ledgerHash));
+        if (iter != received->end())
+        {
+            received->erase (iter);
+            received.back().erase (ledgerHash);
+            return;
+        }
+        else if ((iter = received.back().find (ledgerHash)) !=
+            received.back().end())
+        {
+            received.back().erase (iter);
+            return;
+        }
+
+        // We haven't seen this ledger hash from the
+        // validator yet so put it on the expected list
+        //
+        std::pair <iterator, bool> result (
+            expected->emplace (ledgerHash, Ledger ()));
+        bassert (result.second);
+        if (expected->size() >= maxSizeBeforeSwap)
+            swap();
+    }
+
+    void swap()
+    {
+        // Count anything in the old expected list as missing
+        count->missing += expected.back().size();
+
+        // Count anything in the old received list as orphaned
+        count->orphans += received.back().size();
+
+        // Rotate and clear
+        count.swap();
+        expected.swap();
+        received.swap();
+        count->clear();
+        expected->clear();
+        received->clear();
+    }
+
+    struct Count
+    {
+        Count()
+            : closed (0)
+            , seen (0)
+            , missing (0)
+            , orphans (0)
+        {
+        }
+
+        void clear ()
+        {
+            *this = Count();
+        }
+
+        // How many ledgers we've seen
+        std::size_t closed;
+
+        // How many validation's we've seen
+        std::size_t seen;
+
+        // Estimate of validation's that were missed
+        std::size_t missing;
+
+        // Estimate of validations not belonging to any ledger
+        std::size_t orphans;
+    };
+
+    int refCount;
+
+    AgedHistory <Count> count;
+    Ledgers received;
+    Ledgers expected;
+};
+
+//------------------------------------------------------------------------------
+
 // Encapsulates the logic for creating the chosen validators.
 // This is a separate class to facilitate the unit tests.
 //
 class Logic
 {
 public:
-    // Information associated with each distinguishable validator
-    //
-    struct ValidatorInfo
-    {
-        ValidatorInfo ()
-            : refCount (0)
-        {
-        }
-
-        int refCount;
-    };
+    //--------------------------------------------------------------------------
 
     typedef boost::unordered_map <
-        RipplePublicKey, ValidatorInfo, RipplePublicKey::hasher> MapType;
+        RipplePublicKey, Validator,
+            RipplePublicKey::hasher> MapType;
+
+    // The master in-memory database of Validator, indexed by all the
+    // possible things that we need to care about, and even some that we don't.
+    //
+    /*
+    typedef boost::multi_index_container <
+        Validator, boost::multi_index::indexed_by <
+            
+            boost::multi_index::hashed_unique <
+                BOOST_MULTI_INDEX_MEMBER(Logic::Validator,UniqueID,uniqueID)>,
+
+            boost::multi_index::hashed_unique <
+                BOOST_MULTI_INDEX_MEMBER(Logic::Validator,IPEndpoint,endpoint),
+                Connectible::HashAddress>
+        >
+    > ValidationsMap;
+    */
+
+    //--------------------------------------------------------------------------
 
     struct State
     {
@@ -61,6 +263,18 @@ public:
     bool m_rebuildChosenList;
     ChosenList::Ptr m_chosenList;
     SharedState m_state;
+
+    // Used to filter duplicate public keys
+    //
+    typedef AgedHistory <boost::unordered_set <
+        RipplePublicKey, RipplePublicKey::hasher> > SeenPublicKeys;
+    SeenPublicKeys m_seenPublicKeys;
+
+    // Used to filter duplicate ledger hashes
+    //
+    typedef AgedHistory <boost::unordered_set <
+        RippleLedgerHash, RippleLedgerHash::hasher> > SeenLedgerHashes;
+    SeenLedgerHashes m_seenLedgerHashes;
 
     //----------------------------------------------------------------------
 
@@ -120,8 +334,8 @@ public:
         {
             Source::Info const& info (list.getReference (i));
             std::pair <MapType::iterator, bool> result (
-                state->map.emplace (info.publicKey, ValidatorInfo ()));
-            ValidatorInfo& validatorInfo (result.first->second);
+                state->map.emplace (info.publicKey, Validator ()));
+            Validator& validatorInfo (result.first->second);
             ++validatorInfo.refCount;
             if (result.second)
             {
@@ -141,7 +355,7 @@ public:
             Source::Info const& info (list.getReference (i));
             MapType::iterator iter (state->map.find (info.publicKey));
             bassert (iter != state->map.end ());
-            ValidatorInfo& validatorInfo (iter->second);
+            Validator& validatorInfo (iter->second);
             if (--validatorInfo.refCount == 0)
             {
                 // Last reference removed
@@ -310,6 +524,7 @@ public:
     {
         Json::Value result (Json::objectValue);
 
+#if 0
         Json::Value entries (Json::arrayValue);
         ChosenList::Ptr list (m_chosenList);
         if (list != nullptr)
@@ -327,6 +542,57 @@ public:
         }
         result ["chosen_list"] = entries;
 
+       {
+            SharedState::ConstAccess state (m_state);
+            std::size_t count (0);
+            result ["validators"] = state->map.size();
+            for (MapType::const_iterator iter (state->map.begin());
+                iter != state->map.end(); ++iter)
+                count += iter->second.map.size();
+            result ["signatures"] = count;
+        }
+#else
+        Json::Value entries (Json::arrayValue);
+        {
+            SharedState::ConstAccess state (m_state);
+            result ["count"] = int(state->map.size());
+            for (MapType::const_iterator iter (state->map.begin());
+                iter != state->map.end(); ++iter)
+            {
+                Validator const& v (iter->second);
+                Json::Value entry (Json::objectValue);
+
+                std::size_t const closed (
+                    v.count->closed + v.count.back().closed);
+
+                std::size_t const seen (
+                    v.count->seen + v.count.back().seen);
+
+                std::size_t const missing (
+                    v.count->missing + v.count.back().missing);
+
+                std::size_t const orphans (
+                    v.count->orphans + v.count.back().orphans);
+
+                entry ["public"]  = iter->first.to_string();
+                entry ["closed"]  = int(closed);
+                entry ["seen"]    = int(seen);
+                entry ["missing"] = int(missing);
+                entry ["orphans"] = int(orphans);
+
+                if (closed > 0)
+                {
+                    int const percent (
+                        ((seen - missing) * 100) / closed);
+                    entry ["percent"] = percent;
+                }
+
+                entries.append (entry);
+            }
+        }
+        result ["validators"] = entries;
+
+#endif
         return result;
     }
 
@@ -367,23 +633,69 @@ public:
     // Ripple interface
     //
 
-    // Called when we receive a validation from a peer.
+    // VFALCO NOTE We cannot make any assumptions about the quality of the
+    //             information being passed into the logic. Specifically,
+    //             we can expect to see duplicate ledgerClose, and duplicate
+    //             receiveValidation. Therefore, we must program defensively
+    //             to prevent undefined behavior
+
+    // Called when we receive a signed validation
     //
     void receiveValidation (ReceivedValidation const& rv)
     {
+        // Filter duplicates
+        {
+            std::pair <SeenPublicKeys::container_type::iterator, bool> result (
+                    m_seenPublicKeys->emplace (rv.publicKey));
+            if (m_seenPublicKeys->size() > maxSizeBeforeSwap)
+            {
+                m_seenPublicKeys.swap();
+                m_seenPublicKeys->clear();
+            }
+            if (! result.second)
+                return;
+        }
+
+        SharedState::Access state (m_state);
 #if 0
-        MapType::iterator iter (state->map.find (rv.signerPublicKeyHash));
+        MapType::iterator iter (state->map.find (rv.publicKey));
         if (iter != state->map.end ())
         {
-            // Exists
-            //ValidatorInfo& validatorInfo (iter->value ());
+            Validator& v (iter->second);
+            v.receiveValidation (rv.ledgerHash);
         }
-        else
-        {
-            // New
-            //ValidatorInfo& validatorInfo (state->map.insert (rv.signerPublicKeyHash));
-        }
+#else
+        std::pair <MapType::iterator, bool> result (
+            state->map.emplace (rv.publicKey, Validator()));
+        Validator& v (result.first->second);
+        v.receiveValidation (rv.ledgerHash);
 #endif
+    }
+
+    // Called when a ledger is closed
+    //
+    void ledgerClosed (RippleLedgerHash const& ledgerHash)
+    {
+        // Filter duplicates
+        {
+            std::pair <SeenLedgerHashes::container_type::iterator, bool> result (
+                    m_seenLedgerHashes->emplace (ledgerHash));
+            if (m_seenLedgerHashes->size() > maxSizeBeforeSwap)
+            {
+                m_seenLedgerHashes.swap();
+                m_seenLedgerHashes->clear();
+            }
+            if (! result.second)
+                return;
+        }
+
+        SharedState::Access state (m_state);
+        for (MapType::iterator iter (state->map.begin());
+            iter != state->map.end(); ++iter)
+        {
+            Validator& v (iter->second);
+            v.ledgerClosed (ledgerHash);
+        }
     }
 
     // Returns `true` if the public key hash is contained in the Chosen List.
@@ -393,7 +705,6 @@ public:
         return m_chosenList->containsPublicKeyHash (publicKeyHash);
     }
 
-    //
     //
     //----------------------------------------------------------------------
 };

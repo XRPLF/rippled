@@ -74,9 +74,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Called when a validation with a proper signature is received.
-    */
+    /** Called when a validation with a proper signature is received. */
     virtual void receiveValidation (ReceivedValidation const& rv) = 0;
+    
+    /** Called when a ledger is closed. */
+    virtual void ledgerClosed (RippleLedgerHash const& ledgerHash) = 0;
 };
 
 }

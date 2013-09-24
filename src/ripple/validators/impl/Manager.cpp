@@ -191,7 +191,7 @@ public:
     {
 #if RIPPLE_USE_NEW_VALIDATORS
         bassert (! isStopping());
-        m_thread.call (&Logic::add, &m_logic, source);
+        //m_thread.call (&Logic::add, &m_logic, source);
 #else
         delete source;
 #endif
@@ -201,7 +201,7 @@ public:
     {
 #if RIPPLE_USE_NEW_VALIDATORS
         bassert (! isStopping());
-        m_thread.call (&Logic::addStatic, &m_logic, source);
+        //m_thread.call (&Logic::addStatic, &m_logic, source);
 #else
         delete source;
 #endif
@@ -212,6 +212,14 @@ public:
 #if RIPPLE_USE_NEW_VALIDATORS
         if (! isStopping())
             m_thread.call (&Logic::receiveValidation, &m_logic, rv);
+#endif
+    }
+
+    void ledgerClosed (RippleLedgerHash const& ledgerHash)
+    {
+#if RIPPLE_USE_NEW_VALIDATORS
+        if (! isStopping())
+            m_thread.call (&Logic::ledgerClosed, &m_logic, ledgerHash);
 #endif
     }
 

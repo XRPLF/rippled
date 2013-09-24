@@ -453,32 +453,45 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
     mLedgerHistory.addLedger(ledger);
     ledger->setFull();
 
-    ScopedLockType ml (mLock, __FILE__, __LINE__);
-
-    mCompleteLedgers.setValue (ledger->getLedgerSeq ());
-
-    ledger->pendSaveValidated (isSynchronous, isCurrent);
-
-    if (!mValidLedger || (ledger->getLedgerSeq() > mValidLedger->getLedgerSeq()))
-        mValidLedger = ledger;
-    if (!mPubLedger)
     {
-        mPubLedger = ledger;
-        getApp().getOrderBookDB().setup(ledger);
-    }
+        ScopedLockType ml (mLock, __FILE__, __LINE__);
 
-    if ((ledger->getLedgerSeq () != 0) && mCompleteLedgers.hasValue (ledger->getLedgerSeq () - 1))
-    {
-        // we think we have the previous ledger, double check
-        Ledger::pointer prevLedger = getLedgerBySeq (ledger->getLedgerSeq () - 1);
+        mCompleteLedgers.setValue (ledger->getLedgerSeq ());
 
-        if (!prevLedger || (prevLedger->getHash () != ledger->getParentHash ()))
+        ledger->pendSaveValidated (isSynchronous, isCurrent);
+
+        if (!mValidLedger || (ledger->getLedgerSeq() > mValidLedger->getLedgerSeq()))
+            mValidLedger = ledger;
+        if (!mPubLedger)
         {
-            WriteLog (lsWARNING, LedgerMaster) << "Acquired ledger invalidates previous ledger: " <<
-                                               (prevLedger ? "hashMismatch" : "missingLedger");
-            fixMismatch (ledger);
+            mPubLedger = ledger;
+            getApp().getOrderBookDB().setup(ledger);
+        }
+
+        if ((ledger->getLedgerSeq () != 0) && mCompleteLedgers.hasValue (ledger->getLedgerSeq () - 1))
+        {
+            // we think we have the previous ledger, double check
+            Ledger::pointer prevLedger = getLedgerBySeq (ledger->getLedgerSeq () - 1);
+
+            if (!prevLedger || (prevLedger->getHash () != ledger->getParentHash ()))
+            {
+                WriteLog (lsWARNING, LedgerMaster) << "Acquired ledger invalidates previous ledger: " <<
+                                                   (prevLedger ? "hashMismatch" : "missingLedger");
+                fixMismatch (ledger);
+            }
         }
     }
+
+    //--------------------------------------------------------------------------
+    //
+#if RIPPLE_USE_NEW_VALIDATORS
+    {
+        if (isCurrent)
+            getApp ().getValidators ().ledgerClosed (ledger->getHash());
+    }
+#endif
+    //
+    //--------------------------------------------------------------------------
 }
 
 void LedgerMaster::checkAccept (uint256 const& hash)

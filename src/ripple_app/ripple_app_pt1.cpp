@@ -13,6 +13,8 @@
 
 #include "ripple_app.h"
 
+#include "../ripple/validators/ripple_validators.h"
+
 namespace ripple
 {
 

@@ -834,9 +834,6 @@
     <ClCompile Include="..\..\src\ripple\validators\impl\SourceURL.cpp">
       <Filter>[1] Ripple\validators\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\Utilities.cpp">
-      <Filter>[1] Ripple\validators\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\validators\impl\Tests.cpp">
       <Filter>[1] Ripple\validators\impl</Filter>
     </ClCompile>
@@ -1058,6 +1055,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
       <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\Utilities.cpp">
+      <Filter>[1] Ripple\validators\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
