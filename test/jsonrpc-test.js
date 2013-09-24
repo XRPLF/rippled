@@ -1,188 +1,172 @@
-var async     = require("async");
-var buster    = require("buster");
-var http      = require("http");
-var jsonrpc   = require("simple-jsonrpc");
-var EventEmitter  = require('events').EventEmitter;
+var async        = require("async");
+var assert       = require('assert');
+var http         = require("http");
+var jsonrpc      = require("simple-jsonrpc");
+var EventEmitter = require('events').EventEmitter;
+var Remote       = require("ripple-lib").Remote;
+var testutils    = require("./testutils");
+var config       = testutils.init_config();
 
-var Amount    = require("ripple-lib").Amount;
-var Remote    = require("ripple-lib").Remote;
-var Server    = require("./server").Server;
-
-var testutils = require("./testutils");
-
-var config      = testutils.init_config();
-
-// How long to wait for server to start.
-var serverDelay = 1500;
-
-buster.testRunner.timeout = 5000;
-
-var server;
-var server_events;
-
-var build_setup = function (options) {
+function build_setup(options) {
   var setup = testutils.build_setup(options);
 
   return function (done) {
-      var self  = this;
+    var self  = this;
 
-      var http_config = config.http_servers["zed"];
+    var http_config = config.http_servers["zed"];
 
-      server_events = new EventEmitter;
-      server = http.createServer(function (req, res) {
-          // console.log("REQUEST");
-          var input = "";
+    self.server_events = new EventEmitter;
 
-          req.setEncoding();
+    self.server = http.createServer(function (req, res) {
+      // console.log("REQUEST");
+      var input = "";
 
-          req.on('data', function (buffer) {
-              // console.log("DATA: %s", buffer);
+      req.setEncoding('utf8');
 
-              input = input + buffer;
-            });
+      req.on('data', function (buffer) {
+        // console.log("DATA: %s", buffer);
+        input = input + buffer;
+      });
 
-          req.on('end', function () {
-              // console.log("END");
-              var request = JSON.parse(input);
+      req.on('end', function () {
+        var request = JSON.parse(input);
+        // console.log("REQ: %s", JSON.stringify(request, undefined, 2));
+        self.server_events.emit('request', request, res);
+      });
 
-              // console.log("REQ: %s", JSON.stringify(request, undefined, 2));
+      req.on('close', function () { });
+    });
 
-              server_events.emit('request', request, res);
-            });
-
-          req.on('close', function () {
-              // console.log("CLOSE");
-            });
-        });
-
-      server.listen(http_config.port, http_config.ip, undefined,
-        function () {
-          // console.log("server up: %s %d", http_config.ip, http_config.port);
-
-          setup.call(self, done);
-        });
-    };
+    self.server.listen(http_config.port, http_config.ip, void(0), function () {
+      // console.log("server up: %s %d", http_config.ip, http_config.port);
+      setup.call(self, done);
+    });
+  };
 };
 
-var build_teardown = function () {
+function build_teardown() {
   var teardown = testutils.build_teardown();
 
   return function (done) {
     var self  = this;
 
-    server.close(function () {
-        // console.log("server closed");
-    
-        teardown.call(self, done);
-      });
+    self.server.close(function () {
+      // console.log("server closed");
+
+      teardown.call(self, done);
+    });
   };
 };
 
-buster.testCase("JSON-RPC", {
-  setUp     : build_setup(),
-  // setUp     : build_setup({ verbose: true }),
-  // setUp     : build_setup({verbose: true , no_server: true}),
-  tearDown  : build_teardown(),
+suite('JSON-RPC', function() {
+  var $ = { };
 
-  "server_info" :
-    function (done) {
-      var rippled_config = config.servers.alpha;
-      var client  = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
+  setup(function(done) {
+    build_setup().call($, done);
+  });
 
-      client.call('server_info', [], function (result) {
-          // console.log(JSON.stringify(result, undefined, 2));
-          buster.assert('info' in result);
+  teardown(function(done) {
+    build_teardown().call($, done);
+  });
 
-          done();
-        });
-    },
+  test('server info', function(done) {
+    var rippled_config = config.servers.alpha;
+    var client  = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
 
-  "subscribe server" :
-    function (done) {
-      var rippled_config = config.servers.alpha;
-      var client  = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
-      var http_config = config.http_servers["zed"];
+    client.call('server_info', [ ], function (result) {
+      // console.log(JSON.stringify(result, undefined, 2));
+      assert(typeof result === 'object');
+      assert('info' in result);
+      done();
+    });
+  });
 
-      client.call('subscribe', [{
+  test('subscribe server', function(done) {
+    var rippled_config = config.servers.alpha;
+    var client         = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
+    var http_config    = config.http_servers["zed"];
+
+    client.call('subscribe', [{
+      'url' :  "http://" + http_config.ip + ":" + http_config.port,
+      'streams' : [ 'server' ],
+    }], function (result) {
+      // console.log(JSON.stringify(result, undefined, 2));
+      assert(typeof result === 'object');
+      assert('random' in result);
+      done();
+    });
+  });
+
+  test('subscribe ledger', function(done) {
+    var self = this;
+
+    var rippled_config = config.servers.alpha;
+    var client         = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
+    var http_config    = config.http_servers["zed"];
+
+    var steps = [
+      function (callback) {
+        self.what = "Subscribe.";
+
+        client.call('subscribe', [{
           'url' :  "http://" + http_config.ip + ":" + http_config.port,
-          'streams' : [ 'server' ],
+          'streams' : [ 'ledger' ],
         }], function (result) {
-          // console.log(JSON.stringify(result, undefined, 2));
-
-          buster.assert('random' in result);
-
-          done();
+          //console.log(JSON.stringify(result, undefined, 2));
+          assert(typeof result === 'object');
+          assert('ledger_index' in result);
+          callback();
         });
-    },
+      },
 
-  "subscribe ledger" :
-    function (done) {
-      var self = this;
+      function (callback) {
+        self.what = "Accept a ledger.";
 
-      var rippled_config = config.servers.alpha;
-      var client  = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
-      var http_config = config.http_servers["zed"];
+        $.server_events.once('request', function (request, response) {
+          // console.log("GOT: %s", JSON.stringify(request, undefined, 2));
 
-      async.waterfall([
-          function (callback) {
-            self.what = "Subscribe.";
+          assert.strictEqual(1, request.params.seq);
+          assert.strictEqual(3, request.params.ledger_index);
 
-            client.call('subscribe', [{
-                'url' :  "http://" + http_config.ip + ":" + http_config.port,
-                'streams' : [ 'ledger' ],
-              }], function (result) {
-                //console.log(JSON.stringify(result, undefined, 2));
+          response.statusCode = 200;
+          response.end(JSON.stringify({
+            jsonrpc:  "2.0",
+            result:   {},
+            id:       request.id
+          }));
 
-                buster.assert('ledger_index' in result);
-
-                callback();
-              });
-          },
-          function (callback) {
-            self.what = "Accept a ledger.";
-
-            server_events.once('request', function (request, response) {
-                // console.log("GOT: %s", JSON.stringify(request, undefined, 2));
-
-                buster.assert.equals(1, request.params.seq);
-                buster.assert.equals(3, request.params.ledger_index);
-
-                response.statusCode = 200;
-                response.end(JSON.stringify({
-                    jsonrpc: "2.0",
-                    result: {},
-                    id: request.id
-                  }));
-
-                callback();
-              });
-
-            self.remote.ledger_accept();
-          },
-          function (callback) {
-            self.what = "Accept another ledger.";
-
-            server_events.once('request', function (request, response) {
-                // console.log("GOT: %s", JSON.stringify(request, undefined, 2));
-
-                buster.assert.equals(2, request.params.seq);
-                buster.assert.equals(4, request.params.ledger_index);
-
-                response.statusCode = 200;
-                response.end(JSON.stringify({
-                    jsonrpc: "2.0",
-                    result: {},
-                    id: request.id
-                  }));
-
-                callback();
-              });
-
-            self.remote.ledger_accept();
-          },
-        ], function (error) {
-          buster.refute(error, self.what);
-          done();
+          callback();
         });
-    }
+
+        $.remote.ledger_accept();
+      },
+
+      function (callback) {
+        self.what = "Accept another ledger.";
+
+        $.server_events.once('request', function (request, response) {
+          // console.log("GOT: %s", JSON.stringify(request, undefined, 2));
+
+          assert.strictEqual(2, request.params.seq);
+          assert.strictEqual(4, request.params.ledger_index);
+
+          response.statusCode = 200;
+          response.end(JSON.stringify({
+            jsonrpc:  "2.0",
+            result:   {},
+            id:       request.id
+          }));
+
+          callback();
+        });
+
+        $.remote.ledger_accept();
+      }
+    ]
+
+    async.waterfall(steps, function(error) {
+      assert(!error, self.what);
+      done();
+    });
+  });
 });

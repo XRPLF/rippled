@@ -1,52 +1,53 @@
 var async     = require("async");
-var buster    = require("buster");
-
-var Amount    = require("ripple-lib").Amount;
+var assert    = require('assert');
 var Remote    = require("ripple-lib").Remote;
-var Server    = require("./server").Server;
-
 var testutils = require("./testutils");
 var config    = testutils.init_config();
 
-buster.testRunner.timeout = 5000;
+suite('Monitor account', function() {
+  var $ = { };
 
-buster.testCase("//Monitor account", {
-  'setUp' : testutils.build_setup({ verbose: true }),
-  'tearDown' : testutils.build_teardown(),
+  setup(function(done) {
+    testutils.build_setup().call($, done);
+  });
 
-  "monitor root" :
-    function (done) {
-      var self = this;
+  teardown(function(done) {
+    testutils.build_teardown().call($, done);
+  });
 
-      async.waterfall([
-          function (callback) {
-            self.what = "Create accounts.";
+  test('monitor root', function() {
 
-            testutils.create_accounts(self.remote, "root", "10000", ["alice"], callback);
-          },
-          function (callback) {
-            self.what = "Close ledger.";
+    var self = this;
 
-            self.remote.once('ledger_closed', function () {
-                callback();
-              });
+    var steps = [
+      function (callback) {
+        self.what = "Create accounts.";
+        testutils.create_accounts($.remote, "root", "10000", ["alice"], callback);
+      },
 
-            self.remote.ledger_accept();
-          },
-          function (callback) {
-            self.what = "Dumping root.";
+      function (callback) {
+        self.what = "Close ledger.";
+        $.remote.once('ledger_closed', function () {
+          callback();
+        });
+        $.remote.ledger_accept();
+      },
 
-            testutils.account_dump(self.remote, "root", function (error) {
-                buster.refute(error);
+      function (callback) {
+        self.what = "Dumping root.";
 
-                callback();
-              });
-          },
-      ], function (error) {
-        buster.refute(error, self.what);
-        done();
-      });
-    },
+        testutils.account_dump($.remote, "root", function (error) {
+          assert.ifError(error);
+          callback();
+        });
+      }
+    ]
+
+    async.waterfall(steps, function(error) {
+      assert(!effor, self.what);
+      done();
+    });
+  });
 });
 
 // vim:sw=2:sts=2:ts=8:et
