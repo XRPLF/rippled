@@ -98,8 +98,10 @@ private:
 
     uint256         mClosedLedgerHash;
     uint256         mPreviousLedgerHash;
+
     std::list<uint256>  mRecentLedgers;
     std::list<uint256>  mRecentTxSets;
+    boost::mutex        mRecentLock;
 
 
     boost::asio::deadline_timer                                 mActivityTimer;
@@ -2276,7 +2278,9 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
 }
 
 bool PeerImp::hasLedger (uint256 const& hash, uint32 seq) const
-{ // FIXME: mRecentLedgers needs some kind of synchronization
+{
+    boost::mutex::scoped_lock sl(mRecentLock);
+
     if ((seq != 0) && (seq >= mMinLedger) && (seq <= mMaxLedger))
         return true;
 
@@ -2291,6 +2295,7 @@ bool PeerImp::hasLedger (uint256 const& hash, uint32 seq) const
 
 void PeerImp::addLedger (uint256 const& hash)
 {
+    boost::mutex::scoped_lock sl(mRecentLock);
     BOOST_FOREACH (uint256 const & ledger, mRecentLedgers)
 
     if (ledger == hash)
@@ -2304,6 +2309,7 @@ void PeerImp::addLedger (uint256 const& hash)
 
 bool PeerImp::hasTxSet (uint256 const& hash) const
 {
+    boost::mutex::scoped_lock sl(mRecentLock);
     BOOST_FOREACH (uint256 const & set, mRecentTxSets)
 
     if (set == hash)
@@ -2314,6 +2320,7 @@ bool PeerImp::hasTxSet (uint256 const& hash) const
 
 void PeerImp::addTxSet (uint256 const& hash)
 {
+    boost::mutex::scoped_lock sl(mRecentLock);
     BOOST_FOREACH (uint256 const & set, mRecentTxSets)
 
     if (set == hash)
