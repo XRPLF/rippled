@@ -50,6 +50,7 @@ protected:
     bool m_sentPing;
     bool m_receiveQueueRunning;
     bool m_isDead;
+    boost::asio::io_service& m_io_service;
 
 private:
     WSConnection (WSConnection const&);
@@ -122,7 +123,17 @@ public:
 
     void disconnect ()
     {
-        // FIXME: Must dispatch to strand
+        connection_ptr ptr = m_connection.lock ();
+
+        if (ptr)
+        {
+            m_io_service.dispatch (ptr->get_strand ().wrap (boost::bind (
+                &WSConnectionType <endpoint_type>::handle_disconnect, m_connection)));
+        }
+    }
+
+    void handle_disconnect()
+    {
         connection_ptr ptr = m_connection.lock ();
 
         if (ptr)

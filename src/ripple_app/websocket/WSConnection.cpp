@@ -26,6 +26,7 @@ WSConnection::WSConnection (InfoSub::Source& source, bool isPublic,
     , m_sentPing (false)
     , m_receiveQueueRunning (false)
     , m_isDead (false)
+    , m_io_service (io_service)
 {
     WriteLog (lsDEBUG, WSConnection) << "Websocket connection from " << m_remoteIP;
 }
@@ -98,18 +99,8 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     // VFALCO TODO Make LoadManager a ctor argument
     if (getApp().getLoadManager ().shouldCutoff (m_loadSource))
     {
-        // VFALCO TODO This must be implemented before open sourcing
-        #if BEAST_MSVC
-        # pragma message(BEAST_FILEANDLINE_ "Need to implement before open sourcing")
-        #else
-        # warning message("WSConnection.h: Need implementation before open sourcing.")
-        #endif
-
-#if SHOULD_DISCONNECT
         disconnect ();
-
         return rpcError (rpcSLOW_DOWN);
-#endif
     }
 
     // Requests without "command" are invalid.
