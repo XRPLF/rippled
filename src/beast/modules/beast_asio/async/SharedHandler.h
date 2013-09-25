@@ -45,11 +45,9 @@ class SharedHandler : public SharedObject
 {
 protected:
     typedef boost::system::error_code error_code;
-#if 0
-    typedef boost::function <void(void)> invoked_type;
-#else
-    typedef SharedFunction <void(void), SharedHandlerAllocator <char> > invoked_type;
-#endif
+
+    typedef SharedFunction <void(void),
+        SharedHandlerAllocator <char> > invoked_type;
 
     SharedHandler () noexcept { }
 
@@ -65,9 +63,6 @@ public:
 
     template <typename Function>
     void invoke (BOOST_ASIO_MOVE_ARG(Function) f)
-#if 0
-        ;
-#else
     {
         // The allocator will hold a reference to the SharedHandler
         // so that we can safely destroy the function object.
@@ -75,7 +70,6 @@ public:
             SharedHandlerAllocator <char> (this));
         invoke (invoked);
     }
-#endif
 
     virtual void  invoke (invoked_type& invoked) = 0;
     virtual void* allocate (std::size_t size) = 0;
