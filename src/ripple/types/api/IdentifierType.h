@@ -60,20 +60,19 @@ public:
 
     /** Create an uninitialized value. */
     IdentifierType ()
-    {
-    }
+        { }
 
-    /** Create a copy from another value . */
+    /** Implicit conversion construction from value_type.
+        This allows the IdentifierType to appear as an lvalue where the
+        rvalue is the underlying container type.
+    */
     IdentifierType (value_type const& value)
         : m_value (value)
-    {
-    }
+        { }
 
     /** Create a copy of the value from range of bytes. */
     IdentifierType (uint8 const* begin, uint8 const* end)
-    {
-        Traits::construct (begin, end, m_value);
-    }
+        { Traits::construct (begin, end, m_value); }
 
     /** Conversion construction from any specialized type. */
     template <typename Other>
@@ -100,19 +99,19 @@ public:
 
     /** Access the value. */
     value_type const& value() const
-    {
-        return m_value;
-    }
+        { return m_value; }
 
     /** Smart dereference.
         This provides access to the underlying container for compatibility.
         For example, to call member functions that are otherwise not
         available.
     */
+    /** @{ */
     value_type const* operator->() const
-    {
-        return &value();
-    }
+        { return &value(); }
+    value_type const& operator*() const
+        { return value(); }
+    /** @} */
 
     /** Implicit conversion to value_type.
         This lets the IdentifierType appear as an rvalue in an assignment
