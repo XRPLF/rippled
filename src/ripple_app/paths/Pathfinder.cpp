@@ -842,7 +842,7 @@ void Pathfinder::initPathTable()
         list.push_back(CostedPath_t(6, makePath("safad")));
         list.push_back(CostedPath_t(6, makePath("saxfd")));             // source -> gateway -> book to XRP -> book -> destination
         list.push_back(CostedPath_t(6, makePath("saxfad")));
-        list.push_back(CostedPath_t(8, makePath("saaad")));
+        list.push_back(CostedPath_t(7, makePath("saaad")));
     }
 
     { // non-XRP to non-XRP (different currency)
