@@ -462,7 +462,10 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
     if (!mValidLedger || (ledger->getLedgerSeq() > mValidLedger->getLedgerSeq()))
         mValidLedger = ledger;
     if (!mPubLedger)
+    {
         mPubLedger = ledger;
+        getApp().getOrderBookDB().setup(ledger);
+    }
 
     if ((ledger->getLedgerSeq () != 0) && mCompleteLedgers.hasValue (ledger->getLedgerSeq () - 1))
     {
@@ -539,6 +542,7 @@ void LedgerMaster::checkAccept (Ledger::ref ledger)
     {
         ledger->pendSaveValidated(true, true);
         mPubLedger = ledger;
+        getApp().getOrderBookDB().setup(ledger);
     }
 
     uint64 fee, fee2, ref;
@@ -699,6 +703,7 @@ std::list<Ledger::pointer> LedgerMaster::findNewLedgersToPublish(ScopedLockType&
         WriteLog (lsWARNING, LedgerMaster) << "Gap in validated ledger stream " << mPubLedger->getLedgerSeq () << " - " <<
                                            mValidLedger->getLedgerSeq () - 1;
         ret.push_back (mValidLedger);
+        getApp().getOrderBookDB().setup(mValidLedger);
     }
     else if (mValidLedger->getLedgerSeq () > mPubLedger->getLedgerSeq ())
     {
