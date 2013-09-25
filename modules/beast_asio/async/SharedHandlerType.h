@@ -21,7 +21,6 @@
 #define BEAST_ASIO_ASYNC_SHAREDHANDLERTYPE_H_INCLUDED
 
 /** An instance of SharedHandler that wraps an existing Handler.
-
     The wrapped handler will meet all the execution guarantees of
     the original Handler object.
 */

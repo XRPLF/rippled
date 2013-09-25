@@ -144,8 +144,10 @@
     <ClInclude Include="..\..\beast\utility\EnableIf.h" />
     <ClInclude Include="..\..\beast\utility\Journal.h" />
     <ClInclude Include="..\..\beast\Version.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\AbstractHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\AsyncObject.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\WrapHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerPtr.h" />

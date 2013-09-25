@@ -57,8 +57,10 @@
 #include "../../beast/Utility.h"
 #include "../../beast/HTTP.h"
 
-namespace beast
-{
+#include "async/AbstractHandler.h"
+#include "async/WrapHandler.h"
+
+namespace beast {
 
 // Order matters
 #  include "async/SharedHandler.h"
@@ -88,7 +90,12 @@ namespace beast
 # include "http/HTTPRequest.h"
 # include "http/HTTPResponse.h"
 # include "http/HTTPParser.h"
+
+}
+
 #include "http/HTTPClientType.h"
+
+namespace beast {
 
 #  include "protocol/InputParser.h"
 # include "protocol/HandshakeDetectLogic.h"

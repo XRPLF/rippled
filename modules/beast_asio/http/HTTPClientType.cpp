@@ -19,120 +19,108 @@
 
 class HTTPClientType : public HTTPClientBase, public Uncopyable
 {
-private:
-    using HTTPClientBase::Listener;
+public:
+    class Session;
 
-    typedef boost::system::error_code error_code;
-
-    class ListenerHandler
+    struct State
     {
-    public:
-        ListenerHandler ()
-            : m_owner (nullptr)
-            , m_listener (nullptr)
-        {
-        }
-
-        ListenerHandler (HTTPClientType* owner, Listener* listener = nullptr)
-            : m_owner (owner)
-            , m_listener (listener)
-        {
-        }
-
-        ListenerHandler (ListenerHandler const& other)
-            : m_owner (other.m_owner)
-            , m_listener (other.m_listener)
-        {
-        }
-
-        ListenerHandler& operator= (ListenerHandler const& other)
-        {
-            m_owner = other.m_owner;
-            m_listener = other.m_listener;
-            return *this;
-        }
-
-        void operator() (error_code)
-        {
-            if (m_listener != nullptr)
-                m_listener->onHTTPRequestComplete (
-                    *m_owner, m_owner->result ());
-        }
-
-    private:
-        HTTPClientType* m_owner;
-        Listener* m_listener;
+        List <Session> list;
     };
 
-public:
+    typedef SharedData <State> SharedState;
+
+    SharedState m_state;
+    Journal m_journal;
+    double m_timeoutSeconds;
+    std::size_t m_messageLimitBytes;
+    std::size_t m_bufferSize;
+    boost::asio::io_service m_io_service;
+    WaitableEvent m_stopped;
+
     //--------------------------------------------------------------------------
 
     HTTPClientType (
+        Journal journal,
         double timeoutSeconds,
         std::size_t messageLimitBytes,
         std::size_t bufferSize)
-        : m_timeoutSeconds (timeoutSeconds)
+        : m_journal (journal)
+        , m_timeoutSeconds (timeoutSeconds)
         , m_messageLimitBytes (messageLimitBytes)
         , m_bufferSize (bufferSize)
+        , m_stopped (true, true) // manual reset, initially signaled
     {
     }
 
     ~HTTPClientType ()
     {
-        m_async_op = nullptr;
+        cancel();
+        wait();
     }
 
-    Result const& result () const
+    result_type get (URL const& url)
     {
-        return m_result;
-    }
-
-    Result const& get (URL const& url)
-    {
+        result_type result;
         boost::asio::io_service io_service;
-        async_get (io_service, nullptr, url);
+        async_get (io_service, url, bind (
+            &HTTPClientType::handle_get, placeholders::_1, &result));
         io_service.run ();
-        return result ();
+        return result;
     }
 
-    //--------------------------------------------------------------------------
-
-    void async_get (boost::asio::io_service& io_service, Listener* listener,
-        URL const& url)
+    void abstract_async_get (boost::asio::io_service& io_service, URL const& url,
+        AbstractHandler <void (result_type)> handler)
     {
-        async_get (io_service, url, ListenerHandler (this, listener));
-    }
-
-    // Handler signature is void(error_code)
-    //
-    template <typename Handler>
-    void async_get (boost::asio::io_service& io_service,
-        URL const& url,
-            BOOST_ASIO_MOVE_ARG(Handler) handler)
-    {
-        async_get (io_service, url, newErrorHandler (
-            BOOST_ASIO_MOVE_CAST(Handler)(handler)));
-    }
-
-    void async_get (boost::asio::io_service& io_service,
-        URL const& url, SharedHandlerPtr handler)
-    {
-        // This automatically dispatches
-        m_async_op = new AsyncGetOp (
-            *this, io_service, url, handler,
-            m_timeoutSeconds, m_messageLimitBytes, m_bufferSize);
+        new Session (*this, io_service, url,
+            handler, m_timeoutSeconds, m_messageLimitBytes, m_bufferSize);
     }
 
     void cancel ()
     {
-        if (m_async_op != nullptr)
-        {
-            m_async_op->cancel ();
-            m_async_op = nullptr;
-        }
+        SharedState::Access state (m_state);
+        for (List <Session>::iterator iter (state->list.begin());
+            iter != state->list.end(); ++iter)
+            iter->cancel();
     }
 
-private:
+    void wait()
+    {
+        m_stopped.wait();
+    }
+
+    //--------------------------------------------------------------------------
+
+    void add (Session& session)
+    {
+        SharedState::Access state (m_state);
+        if (state->list.empty())
+            m_stopped.reset();
+        state->list.push_back (session);
+    }
+
+    void remove (Session& session)
+    {
+        SharedState::Access state (m_state);
+        state->list.erase (state->list.iterator_to (session));
+        if (state->list.empty())
+            m_stopped.signal();
+    }
+
+    static void handle_get (result_type const& result, result_type* dest)
+    {
+        *dest = result;
+    }
+
+    Journal journal() const
+    {
+        return m_journal;
+    }
+
+    boost::asio::io_service& get_io_service()
+    {
+        return m_io_service;
+    }
+
     //--------------------------------------------------------------------------
 
     /** Helper function to get a const_buffer from a String. */
@@ -160,75 +148,83 @@ private:
 
     //--------------------------------------------------------------------------
 
-    class AsyncGetOp : public ComposedAsyncOperation
+    class Session
+        : public SharedObject
+        , public AsyncObject <Session>
+        , public List <Session>::Node
     {
-    private:
-        typedef boost::asio::ip::tcp Protocol;
-        typedef boost::system::error_code error_code;
-
-        typedef Protocol::resolver     resolver;
-        typedef resolver::query        query;
-        typedef resolver::iterator     iterator;
-        typedef iterator::value_type   resolver_entry;
-        typedef Protocol::socket       socket;
-
-        //----------------------------------------------------------------------
-
-        enum State
-        {
-            stateStart,
-            stateResolveComplete,
-            stateConnectComplete,
-            stateHandshakeComplete,
-            stateWriteComplete,
-            stateShutdownComplete
-        };
-
-        //----------------------------------------------------------------------
-
-        struct TimerHandler : SharedHandlerPtr
-        {
-            explicit TimerHandler (AsyncGetOp* owner)
-                : SharedHandlerPtr (owner)
-                , m_owner (owner)
-            {
-            }
-            void operator() (error_code const& ec)
-            {
-                m_owner->timerCompletion (ec);
-            }
-
-            AsyncGetOp* m_owner;
-        };
-
-        //----------------------------------------------------------------------
-
     public:
-        AsyncGetOp (HTTPClientType& owner,
-                    boost::asio::io_service& io_service,
-                    URL const& url,
-                    SharedHandlerPtr const& handler,
-                    double timeoutSeconds,
-                    std::size_t messageLimitBytes,
-                    std::size_t bufferSize)
-            : ComposedAsyncOperation (sizeof (*this), handler)
-            , m_owner (owner)
+        typedef SharedPtr <Session>         Ptr;
+        typedef boost::asio::ip::tcp        Protocol;
+        typedef boost::system::error_code   error_code;
+        typedef HTTPClientBase::error_type  error_type;
+        typedef HTTPClientBase::value_type  value_type;
+        typedef HTTPClientBase::result_type result_type;
+
+        typedef Protocol::resolver          resolver;
+        typedef Protocol::socket            socket;
+        typedef resolver::query             query;
+        typedef resolver::iterator          iterator;
+        typedef iterator::value_type        resolver_entry;
+
+        HTTPClientType& m_owner;
+        boost::asio::io_service& m_io_service;
+        boost::asio::io_service::strand m_strand;
+        boost::asio::deadline_timer m_timer;
+        resolver m_resolver;
+        socket m_socket;
+        AbstractHandler <void (result_type)> m_handler;
+
+        URL m_url;
+        boost::asio::ssl::context m_context;
+        MemoryBlock m_buffer;
+        HTTPParser m_parser;
+        std::size_t m_messageLimitBytes;
+        std::size_t m_bytesReceived;
+
+        String m_get_string;
+        WaitableEvent m_done;
+        ScopedPointer <Socket> m_stream;
+
+        struct State
+        {
+            State () : complete (false)
+            {
+            }
+
+            bool complete;
+            error_code error;
+            SharedPtr <HTTPResponse> response;
+        };
+        typedef SharedData <State> SharedState;
+        SharedState m_state;
+
+        //----------------------------------------------------------------------
+
+        Session (HTTPClientType& owner,
+                 boost::asio::io_service& io_service,
+                 URL const& url,
+                 AbstractHandler <void (result_type)> const& handler,
+                 double timeoutSeconds,
+                 std::size_t messageLimitBytes,
+                 std::size_t bufferSize)
+            : m_owner (owner)
             , m_io_service (io_service)
-            , m_strand (m_io_service)
-            , m_url (url)
-            , m_handler (handler)
+            , m_strand (io_service)
             , m_timer (io_service)
             , m_resolver (io_service)
             , m_socket (io_service)
+            , m_handler (handler)
+            , m_url (url)
             , m_context (boost::asio::ssl::context::sslv23)
             , m_buffer (bufferSize)
             , m_parser (HTTPParser::typeResponse)
-            , m_timer_set (false)
-            , m_timer_canceled (false)
-            , m_timer_expired (false)
             , m_messageLimitBytes (messageLimitBytes)
             , m_bytesReceived (0)
         {
+            m_owner.add (*this);
+
+            // Configure the SSL context for certificate verification
             m_context.set_default_verify_paths ();
             m_context.set_options (
                 boost::asio::ssl::context::no_sslv2 |
@@ -236,341 +232,162 @@ private:
                 boost::asio::ssl::context::default_workarounds);
             //m_context.set_verify_mode (boost::asio::ssl::verify_peer);
 
+            // Set the timer if a timeout is requested
             if (timeoutSeconds > 0)
             {
                 m_timer.expires_from_now (
                     boost::posix_time::milliseconds (
                         long (timeoutSeconds * 1000)));
-                m_timer_set = true;
 
-                ++m_io_pending;
-                m_timer.async_wait (TimerHandler (this));
+                m_timer.async_wait (m_strand.wrap (wrapHandler (
+                    boost::bind (&Session::handle_timer, Ptr(this),
+                        boost::asio::placeholders::error,
+                            CompletionCounter(this)), m_handler)));
             }
 
-            // Count as pending i/o
-            ++m_io_pending;
-            m_io_service.dispatch (
-                m_strand.wrap (StartHandler (this)));
+            // Start the operation on an io_service thread
+            io_service.dispatch (m_strand.wrap (wrapHandler (
+                boost::bind (&Session::handle_start, Ptr(this),
+                    CompletionCounter(this)), m_handler)));
         }
 
-        ~AsyncGetOp ()
+        ~Session ()
         {
+            State result;
+            {
+                SharedState::ConstAccess state (m_state);
+                result = *state;
+            }
+
+            m_io_service.wrap (m_handler) (std::make_pair (
+                result.error, result.response));
+
+            m_owner.remove (*this);
         }
 
-        // Cancel all pending I/O, if any, and block until
-        // there are no more completion handler calls pending.
-        //
+        //----------------------------------------------------------------------
+
+        // Called by the owner to cancel pending i/o.
         void cancel ()
         {
-            cancel_timer ();
-            m_resolver.cancel ();
-            error_code ec;
-            m_socket.close (ec);
-
-            m_done.wait ();
-        }
-
-    private:
-        //----------------------------------------------------------------------
-
-        // Counts a pending i/o as canceled
-        //
-        void io_canceled ()
-        {
-            bassert (m_io_pending.get () > 0);
-            if (--m_io_pending == 0)
-                m_done.signal ();
-        }
-
-        // Cancels the deadline timer.
-        //
-        void cancel_timer ()
-        {
-            // Make sure the timer was set (versus infinite timeout)
-            if (m_timer_set)
             {
-                // See if it was already canceled.
-                if (! m_timer_canceled)
+                SharedState::Access state (m_state);
+                if (! state->complete)
                 {
-                    m_timer_canceled = true;
-                    error_code ec;
-                    m_timer.cancel (ec);
-
-                    // At this point, there will either be a pending completion
-                    // or a pending abort for the handler. If its a completion,
-                    // they will see that the timer was canceled (since we're on
-                    // a strand, everything is serialized). If its an abort it
-                    // counts as a cancellation anyway. Either way, we will deduct
-                    // one i/o from the pending i/o count.
+                    state->complete = true;
+                    state->error = boost::asio::error::operation_aborted;
                 }
             }
+
+            cancel_all();
         }
 
-        // Called to notify the original handler the operation is complete.
-        //
-        void complete (error_code const& ec)
+        // Cancel all pending I/O
+        void cancel_all ()
         {
-            // Set the error code in the result.
-            m_owner.m_result.error = ec;
-
-            // Cancel the deadline timer. This ensures that
-            // we will not return 'timeout' to the caller later.
-            //
-            cancel_timer ();
-
-            bassert (m_io_pending.get () > 0);
-
-            io_canceled ();
-
-            // We call the handler directly since we know
-            // we are already in the right context, and
-            // because we need to do some things afterwards.
-            //
-            m_handler->operator() (ec);
-        }
-
-        // Called every time an async operation completes.
-        // The return value indicates if the handler should
-        // stop additional activity and return immediately.
-        //
-        bool io_complete (error_code const& ec)
-        {
-            if (m_timer_expired ||
-                ec == boost::asio::error::operation_aborted)
-            {
-                // Timer expired, or the operation was aborted due to
-                // cancel, so we deduct one i/o and return immediately.
-                //
-                io_canceled ();
-                return true;
-            }
-
-            if (ec != 0 && ec != boost::asio::error::eof)
-            {
-                // A real error happened, and the timer didn't expire, so
-                // notify the original handler that the operation is complete.
-                //
-                complete (ec);
-                return true;
-            }
-
-            // Process the completion as usual. If the caller does not
-            // call another initiating function, it is their responsibility
-            // to call io_canceled() to deduce one pending i/o.
-            //
-            return false;
-        }
-
-        // Called when the deadline timer expires or is canceled.
-        //
-        void timerCompletion (error_code ec)
-        {
-            bassert (m_timer_set);
-
-            if (m_timer_canceled || ec == boost::asio::error::operation_aborted)
-            {
-                // If the cancel flag is set or the operation was aborted it
-                // means we canceled the timer so deduct one i/o and return.
-                //
-                io_canceled ();
-                return;
-            }
-
-            bassert (ec == 0);
-
-            // The timer expired, so this is a real timeout scenario.
-            // We want to set the error code, notify the handler, and cancel
-            // all other pending i/o.
-            //
-            m_timer_expired = true;
-
-            ec = error_code (boost::asio::error::timed_out,
-                boost::asio::error::get_system_category ());
-
-            // Cancel pending name resolution
+            error_code ec;
+            m_timer.cancel (ec);
             m_resolver.cancel ();
-
-            // Close the socket. This will cancel up to 2 pending i/o
-            m_socket.close (ec);
-
-            // Notify the original handler of a timeout error.
-            // The call to complete() consumes one pending i/o, which
-            // we need since this function counts as one completion.
-            //
-            complete (ec);
+            m_socket.cancel (ec);
+            m_socket.shutdown (socket::shutdown_both);
         }
 
-        //----------------------------------------------------------------------
-
-        struct StartHandler : SharedHandlerPtr
+        // Called by a completion handler when error is not eof or aborted.
+        void failed (error_code ec)
         {
-            explicit StartHandler (AsyncGetOp* owner)
-                : SharedHandlerPtr (owner)
-                , m_owner (owner)
             {
+                SharedState::Access state (m_state);
+                if (! state->complete)
+                {
+                    state->complete = true;
+                    state->error = ec;
+                    state->response = nullptr;
+                }
             }
 
-            void operator() ()
-            {
-                m_owner->start_complete ();
-            }
-
-            AsyncGetOp* m_owner;
-        };
-
-        struct ResolveHandler : SharedHandlerPtr
-        {
-            explicit ResolveHandler (AsyncGetOp* owner)
-                : SharedHandlerPtr (owner)
-                , m_owner (owner)
-            {
-            }
-
-            void operator() (error_code const& ec, iterator iter)
-            {
-                m_owner->resolve_complete (ec, iter);
-            }
-
-            AsyncGetOp* m_owner;
-        };
-
-        struct ConnectHandler : SharedHandlerPtr
-        {
-            explicit ConnectHandler (AsyncGetOp* owner)
-                : SharedHandlerPtr (owner)
-                , m_owner (owner)
-            {
-            }
-
-            void operator() (error_code const& ec)
-            {
-                m_owner->connect_complete (ec);
-            }
-
-            AsyncGetOp* m_owner;
-        };
-
-        struct HandshakeHandler : SharedHandlerPtr
-        {
-            explicit HandshakeHandler (AsyncGetOp* owner)
-                : SharedHandlerPtr (owner)
-                , m_owner (owner)
-            {
-            }
-
-            void operator() (error_code const& ec)
-            {
-                m_owner->handshake_complete (ec);
-            }
-
-            AsyncGetOp* m_owner;
-        };
-
-        struct WriteHandler : SharedHandlerPtr
-        {
-            explicit WriteHandler (AsyncGetOp* owner)
-                : SharedHandlerPtr (owner)
-                , m_owner (owner)
-            {
-            }
-
-            void operator() (error_code const& ec, std::size_t bytes_transferred)
-            {
-                m_owner->write_complete (ec, bytes_transferred);
-            }
-
-            AsyncGetOp* m_owner;
-        };
-
-        struct ReadHandler : SharedHandlerPtr
-        {
-            explicit ReadHandler (AsyncGetOp* owner)
-                : SharedHandlerPtr (owner)
-                , m_owner (owner)
-            {
-            }
-
-            void operator() (error_code const& ec, std::size_t bytes_transferred)
-            {
-                m_owner->read_complete (ec, bytes_transferred);
-            }
-
-            AsyncGetOp* m_owner;
-        };
-
-        struct ShutdownHandler : SharedHandlerPtr
-        {
-            explicit ShutdownHandler (AsyncGetOp* owner)
-                : SharedHandlerPtr (owner)
-                , m_owner (owner)
-            {
-            }
-
-            void operator() (error_code const& ec)
-            {
-                m_owner->shutdown_complete (ec);
-            }
-
-            AsyncGetOp* m_owner;
-        };
-
-        //----------------------------------------------------------------------
+            cancel_all();
+        }
 
         void async_read_some ()
         {
             boost::asio::mutable_buffers_1 buf (
                 m_buffer.getData (), m_buffer.getSize ());
 
-            m_stream->async_read_some (buf,
-                m_strand.wrap (ReadHandler (this)));
-        }
-
-        // Called when the HTTP parser returns an error
-        void parse_error ()
-        {
-            //unsigned char const http_errno (m_parser.error ());
-            String const http_errmsg (m_parser.message ());
-
-            // VFALCO TODO put the parser error in ec
-            error_code ec (
-                boost::system::errc::invalid_argument,
-                    boost::system::system_category ());
-
-            complete (ec);
-        }
-
-        // Called to create an error when the message is over the limit
-        error_code message_limit_error ()
-        {
-            // VFALCO TODO Make a suitable error code
-            return error_code (
-                boost::system::errc::invalid_argument,
-                    boost::system::system_category ());
+            m_stream->async_read_some (buf, m_strand.wrap (
+                wrapHandler (boost::bind (&Session::handle_read,
+                    Ptr(this), boost::asio::placeholders::error,
+                        boost::asio::placeholders::bytes_transferred,
+                            CompletionCounter(this)), m_handler)));
         }
 
         //----------------------------------------------------------------------
+        //
+        // Completion handlers
+        //
 
-        void start_complete ()
+        // Called when there are no more pending i/o completions
+        void asyncHandlersComplete()
+        {
+        }
+
+        // Called when the operation starts
+        void handle_start (CompletionCounter)
         {
             query q (queryFromURL <query> (m_url));
-            m_resolver.async_resolve (q,
-                m_strand.wrap (ResolveHandler (this)));
+
+            m_resolver.async_resolve (q, m_strand.wrap (
+                wrapHandler (boost::bind (&Session::handle_resolve,
+                    Ptr(this), boost::asio::placeholders::error,
+                        boost::asio::placeholders::iterator,
+                            CompletionCounter(this)), m_handler)));
         }
 
-        void resolve_complete (error_code ec, iterator iter)
+        // Called when the timer completes
+        void handle_timer (error_code ec, CompletionCounter)
         {
-            if (io_complete (ec))
+            if (ec == boost::asio::error::operation_aborted)
                 return;
+
+            if (ec != 0)
+            {
+                failed (ec);
+                return;
+            }
+
+            failed (boost::system::errc::make_error_code (
+                boost::system::errc::timed_out));
+        }
+
+        // Called when the resolver completes
+        void handle_resolve (error_code ec, iterator iter, CompletionCounter)
+        {
+            if (ec == boost::asio::error::operation_aborted)
+                return;
+
+            if (ec != 0)
+            {
+                failed (ec);
+                return;
+            }
 
             resolver_entry const entry (*iter);
-            m_socket.async_connect (entry.endpoint (),
-                m_strand.wrap (ConnectHandler (this)));
+            m_socket.async_connect (entry.endpoint (), m_strand.wrap (
+                wrapHandler (boost::bind (&Session::handle_connect,
+                    Ptr(this), boost::asio::placeholders::error,
+                        CompletionCounter(this)), m_handler)));
         }
 
-        void connect_complete (error_code ec)
+        // Called when the connection attempt completes
+        void handle_connect (error_code ec, CompletionCounter)
         {
-            if (io_complete (ec))
+            if (ec == boost::asio::error::operation_aborted)
                 return;
+
+            if (ec != 0)
+            {
+                failed (ec);
+                return;
+            }
 
             if (m_url.scheme () == "https")
             {
@@ -581,19 +398,28 @@ private:
                     boost::asio::ssl::verify_peer |
                     boost::asio::ssl::verify_fail_if_no_peer_cert);
                 */
-                m_stream->async_handshake (
-                    Socket::client, HandshakeHandler (this));
+                m_stream->async_handshake (Socket::client, m_strand.wrap (
+                    wrapHandler (boost::bind (&Session::handle_handshake,
+                        Ptr(this), boost::asio::placeholders::error,
+                            CompletionCounter(this)), m_handler)));
                 return;
             }
 
             m_stream = new SocketWrapper <socket&> (m_socket);
-            handshake_complete (ec);
+            handle_handshake (ec, CompletionCounter(this));
         }
 
-        void handshake_complete (error_code ec)
+        // Called when the SSL handshake completes
+        void handle_handshake (error_code ec, CompletionCounter)
         {
-            if (io_complete (ec))
+            if (ec == boost::asio::error::operation_aborted)
                 return;
+
+            if (ec != 0)
+            {
+                failed (ec);
+                return;
+            }
 
             m_get_string =
                 "GET " + m_url.path() + " HTTP/1.1\r\n" +
@@ -601,134 +427,131 @@ private:
                 "Accept: */*\r\n" +
                 "Connection: close\r\n\r\n";
 
-            boost::asio::async_write (
-                *m_stream, stringBuffer (m_get_string),
-                    m_strand.wrap (WriteHandler (this)));
-            ++m_io_pending;
+            boost::asio::async_write (*m_stream, stringBuffer (
+                m_get_string), m_strand.wrap (wrapHandler (
+                    boost::bind (&Session::handle_write, Ptr(this),
+                        boost::asio::placeholders::error,
+                            boost::asio::placeholders::bytes_transferred,
+                                CompletionCounter(this)), m_handler)));
 
             async_read_some ();
         }
 
-        void write_complete (error_code ec, std::size_t)
+        // Called when the write operation completes
+        void handle_write (error_code ec, std::size_t, CompletionCounter)
         {
-            if (io_complete (ec))
+            if (ec == boost::asio::error::operation_aborted)
                 return;
 
-            if (! m_stream->needs_handshake ())
+            if (ec != 0)
             {
-                m_socket.shutdown (socket::shutdown_send, ec);
-                if (ec != 0)
-                    return complete (ec);
+                failed (ec);
+                return;
             }
 
-            // deduct one i/o since we aren't issuing any new one
-            io_canceled ();
+            if (! m_stream->needs_handshake ())
+                m_socket.shutdown (socket::shutdown_send, ec);
         }
 
-        void read_complete (error_code ec, std::size_t bytes_transferred)
+        void handle_read (error_code ec,
+            std::size_t bytes_transferred, CompletionCounter)
         {
+            if (ec == boost::asio::error::operation_aborted)
+                return;
+
+            if (ec != 0)
+            {
+                failed (ec);
+                return;
+            }
+
             m_bytesReceived += bytes_transferred;
             if (m_bytesReceived > m_messageLimitBytes)
-                ec = message_limit_error ();
-
-            if (io_complete (ec))
+            {
+                failed (error_code (
+                    boost::system::errc::invalid_argument,
+                    boost::system::system_category ()));
                 return;
+            }
 
             std::size_t const bytes_parsed (m_parser.process (
                 m_buffer.getData (), bytes_transferred));
 
             if (m_parser.error ())
             {
-                parse_error ();
+                failed (error_code (
+                    boost::system::errc::invalid_argument,
+                    boost::system::system_category ()));
                 return;
             }
 
             if (bytes_parsed != bytes_transferred)
             {
-                // VFALCO TODO put an appropriate error in ec
-                ec = error_code (
+                failed (error_code (
                     boost::system::errc::invalid_argument,
-                        boost::system::system_category ());
-                return complete (ec);
+                    boost::system::system_category ()));
+                return;
             }
 
             if (ec == boost::asio::error::eof)
-            {
                 m_parser.process_eof ();
-            }
 
             if (m_parser.finished ())
             {
-                m_state = stateShutdownComplete;
                 if (m_stream->needs_handshake ())
-                    m_stream->async_shutdown (ShutdownHandler (this));
+                {
+                    m_stream->async_shutdown (m_strand.wrap (wrapHandler (
+                        boost::bind (&Session::handle_shutdown, Ptr(this),
+                            boost::asio::placeholders::error,
+                                CompletionCounter(this)), m_handler)));
+                }
                 else
-                    shutdown_complete (error_code ());
+                {
+                    handle_shutdown (error_code (), CompletionCounter(this));
+                }
                 return;
             }
 
             async_read_some ();
         }
 
-        void shutdown_complete (error_code ec)
+        void handle_shutdown (error_code ec, CompletionCounter)
         {
-            if (io_complete (ec))
+            if (ec == boost::asio::error::operation_aborted)
                 return;
 
-            m_owner.m_result.response = m_parser.response ();
-            if (ec == boost::asio::error::eof)
-                ec = error_code ();
+            if (ec != 0)
+            {
+                failed (ec);
+                return;
+            }
 
-            return complete (ec);
+            {
+                SharedState::Access state (m_state);
+                if (! state->complete)
+                {
+                    state->complete = true;
+                    state->response = m_parser.response();
+                }
+            }
+
+            cancel_all();
         }
-
-    private:
-        WaitableEvent m_done;
-        Atomic <int> m_io_pending;
-        HTTPClientType& m_owner;
-        boost::asio::io_service& m_io_service;
-        boost::asio::io_service& m_strand;
-        URL m_url;
-        SharedHandlerPtr m_handler;
-        boost::asio::deadline_timer m_timer;
-        resolver m_resolver;
-        socket m_socket;
-        ScopedPointer <Socket> m_stream;
-        boost::asio::ssl::context m_context;
-        MemoryBlock m_buffer;
-        State m_state;
-        HTTPParser m_parser;
-        String m_get_string;
-        bool m_timer_set;
-        bool m_timer_canceled;
-        bool m_timer_expired;
-        std::size_t m_messageLimitBytes;
-        std::size_t m_bytesReceived;
     };
-
-    double m_timeoutSeconds;
-    std::size_t m_messageLimitBytes;
-    std::size_t m_bufferSize;
-    boost::asio::io_service  m_io_service;
-    SharedPtr <AsyncGetOp> m_async_op;
-    Result m_result;
 };
 
 //------------------------------------------------------------------------------
 
-HTTPClientBase* HTTPClientBase::New (
+HTTPClientBase* HTTPClientBase::New (Journal journal,
     double timeoutSeconds, std::size_t messageLimitBytes, std::size_t bufferSize)
 {
-    ScopedPointer <HTTPClientBase> object (new HTTPClientType
-        (timeoutSeconds, messageLimitBytes, bufferSize));
-    return object.release ();
+    return new HTTPClientType (
+        journal, timeoutSeconds, messageLimitBytes, bufferSize);
 }
 
 //------------------------------------------------------------------------------
 
-class HTTPClientTests
-    : public UnitTest
-    , public HTTPClientBase::Listener
+class HTTPClientTests : public UnitTest
 {
 public:
     typedef boost::system::error_code error_code;
@@ -787,19 +610,19 @@ public:
         }
     }
 
-    void log (HTTPClientBase::Result const& result)
+    void log (HTTPClientBase::error_type error, HTTPClientBase::value_type const& response)
     {
-        if (result.error != 0)
+        if (error != 0)
         {
             logMessage (String (
-                "HTTPClient error: '" + result.error.message() + "'"));
+                "HTTPClient error: '" + error.message() + "'"));
         }
-        else if (! result.response.empty ())
+        else if (! response.empty ())
         {
             logMessage (String ("Status: ") +
-                String::fromNumber (result.response->status()));
-            
-            log (*result.response);
+                String::fromNumber (response->status()));
+
+            log (*response);
         }
         else
         {
@@ -809,28 +632,31 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void onHTTPRequestComplete (
-        HTTPClientBase const&, HTTPClientBase::Result const& result)
+    void handle_get (HTTPClientBase::result_type result)
     {
-        log (result);
+        log (result.first, result.second);
     }
 
     void testSync (String const& s, double timeoutSeconds)
     {
         ScopedPointer <HTTPClientBase> client (
-            HTTPClientBase::New (timeoutSeconds));
+            HTTPClientBase::New (Journal(), timeoutSeconds));
 
-        log (client->get (ParsedURL (s).url ()));
+        HTTPClientBase::result_type const& result (
+            client->get (ParsedURL (s).url ()));
+
+        log (result.first, result.second);
     }
 
     void testAsync (String const& s, double timeoutSeconds)
     {
         IoServiceThread t;
         ScopedPointer <HTTPClientBase> client (
-            HTTPClientBase::New (timeoutSeconds));
+            HTTPClientBase::New (Journal(), timeoutSeconds));
 
-        client->async_get (t.get_io_service (), this,
-            ParsedURL (s).url ());
+        client->async_get (t.get_io_service (), ParsedURL (s).url (),
+            beast::bind (&HTTPClientTests::handle_get, this,
+                beast::_1));
 
         t.start ();
         t.join ();
