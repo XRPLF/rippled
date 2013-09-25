@@ -227,30 +227,41 @@ TER LedgerMaster::doTransaction (SerializedTransaction::ref txn, TransactionEngi
 
 bool LedgerMaster::haveLedgerRange (uint32 from, uint32 to)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
     uint32 prevMissing = mCompleteLedgers.prevMissing (to + 1);
     return (prevMissing == RangeSet::absent) || (prevMissing < from);
 }
 
 bool LedgerMaster::haveLedger (uint32 seq)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
     return mCompleteLedgers.hasValue (seq);
+}
+
+void LedgerMaster::clearLedger (uint32 seq)
+{
+    ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+    return mCompleteLedgers.clearValue (seq);
 }
 
 bool LedgerMaster::getFullValidatedRange (uint32& minVal, uint32& maxVal)
 { // Ledgers we have all the nodes for
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    {
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    if (!mPubLedger)
-        return false;
+        if (!mPubLedger)
+            return false;
 
-    maxVal = mPubLedger->getLedgerSeq ();
+        maxVal = mPubLedger->getLedgerSeq ();
+    }
 
     if (maxVal == 0)
         return false;
 
-    minVal = mCompleteLedgers.prevMissing (maxVal);
+    {
+        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+        minVal = mCompleteLedgers.prevMissing (maxVal);
+    }
 
     if (minVal == RangeSet::absent)
         minVal = maxVal;
@@ -262,17 +273,22 @@ bool LedgerMaster::getFullValidatedRange (uint32& minVal, uint32& maxVal)
 
 bool LedgerMaster::getValidatedRange (uint32& minVal, uint32& maxVal)
 { // Ledgers we have all the nodes for and are indexed
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    {
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    if (!mPubLedger)
-        return false;
+        if (!mPubLedger)
+            return false;
 
-    maxVal = mPubLedger->getLedgerSeq ();
+        maxVal = mPubLedger->getLedgerSeq ();
+    }
 
     if (maxVal == 0)
         return false;
 
-    minVal = mCompleteLedgers.prevMissing (maxVal);
+    {
+        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+        minVal = mCompleteLedgers.prevMissing (maxVal);
+    }
 
     if (minVal == RangeSet::absent)
         minVal = maxVal;
@@ -330,7 +346,7 @@ void LedgerMaster::tryFill (Job& job, Ledger::pointer ledger)
             minHas = seq;
             --seq;
 
-            if (mCompleteLedgers.hasValue (seq))
+            if (haveLedger (seq))
                 break;
         }
 
@@ -342,7 +358,7 @@ void LedgerMaster::tryFill (Job& job, Ledger::pointer ledger)
                 return;
 
             {
-                ScopedLockType ml (mLock, __FILE__, __LINE__);
+                ScopedLockType ml (mCompleteLock, __FILE__, __LINE__);
                 mCompleteLedgers.setRange (minHas, maxHas);
             }
             maxHas = minHas;
@@ -360,8 +376,11 @@ void LedgerMaster::tryFill (Job& job, Ledger::pointer ledger)
     }
 
     {
-        ScopedLockType ml (mLock, __FILE__, __LINE__);
+        ScopedLockType ml (mCompleteLock, __FILE__, __LINE__);
         mCompleteLedgers.setRange (minHas, maxHas);
+    }
+    {
+        ScopedLockType ml (mLock, __FILE__, __LINE__);
         mFillInProgress = 0;
         tryAdvance();
     }
@@ -417,7 +436,7 @@ void LedgerMaster::fixMismatch (Ledger::ref ledger)
     int invalidate = 0;
 
     for (uint32 lSeq = ledger->getLedgerSeq () - 1; lSeq > 0; --lSeq)
-        if (mCompleteLedgers.hasValue (lSeq))
+        if (haveLedger (lSeq))
         {
             uint256 hash = ledger->getLedgerHash (lSeq);
 
@@ -435,7 +454,7 @@ void LedgerMaster::fixMismatch (Ledger::ref ledger)
                 }
             }
 
-            mCompleteLedgers.clearValue (lSeq);
+            clearLedger (lSeq);
             ++invalidate;
         }
 
@@ -454,9 +473,13 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
     ledger->setFull();
 
     {
-        ScopedLockType ml (mLock, __FILE__, __LINE__);
 
-        mCompleteLedgers.setValue (ledger->getLedgerSeq ());
+        {
+            ScopedLockType ml (mCompleteLock, __FILE__, __LINE__);
+            mCompleteLedgers.setValue (ledger->getLedgerSeq ());
+        }
+
+        ScopedLockType ml (mLock, __FILE__, __LINE__);
 
         ledger->pendSaveValidated (isSynchronous, isCurrent);
 
@@ -468,7 +491,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
             getApp().getOrderBookDB().setup(ledger);
         }
 
-        if ((ledger->getLedgerSeq () != 0) && mCompleteLedgers.hasValue (ledger->getLedgerSeq () - 1))
+        if ((ledger->getLedgerSeq () != 0) && haveLedger (ledger->getLedgerSeq () - 1))
         {
             // we think we have the previous ledger, double check
             Ledger::pointer prevLedger = getLedgerBySeq (ledger->getLedgerSeq () - 1);
@@ -591,7 +614,11 @@ void LedgerMaster::advanceThread()
                 (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
                 (mValidLedger->getLedgerSeq() == mPubLedger->getLedgerSeq()))
             { // We are in sync, so can acquire
-                uint32 missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
+                uint32 missing;
+                {
+                    ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+                    missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
+                }
                 WriteLog (lsTRACE, LedgerMaster) << "tryAdvance discovered missing " << missing;
                 if ((missing != RangeSet::absent) && (missing > 0) &&
                     shouldAcquire(mValidLedger->getLedgerSeq(), getConfig().LEDGER_HISTORY, missing) &&
@@ -654,7 +681,7 @@ void LedgerMaster::advanceThread()
                         WriteLog (lsFATAL, LedgerMaster) << "Unable to find ledger following prevMissing " << missing;
                         WriteLog (lsFATAL, LedgerMaster) << "Pub:" << mPubLedger->getLedgerSeq() << " Val:" << mValidLedger->getLedgerSeq();
                         WriteLog (lsFATAL, LedgerMaster) << "Ledgers: " << getApp().getLedgerMaster().getCompleteLedgers();
-                        mCompleteLedgers.clearValue (missing + 1);
+                        clearLedger (missing + 1);
                         progress = true;
                     }
                     sl.lock(__FILE__, __LINE__);

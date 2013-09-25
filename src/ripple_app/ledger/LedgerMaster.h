@@ -103,7 +103,7 @@ public:
 
     std::string getCompleteLedgers ()
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
         return mCompleteLedgers.toString ();
     }
 
@@ -121,19 +121,21 @@ public:
 
     Ledger::pointer getLedgerBySeq (uint32 index)
     {
-        if (mCurrentLedger && (mCurrentLedger->getLedgerSeq () == index))
-            return mCurrentLedger;
+        {
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            if (mCurrentLedger && (mCurrentLedger->getLedgerSeq () == index))
+                return mCurrentLedger;
 
-        if (mClosedLedger && (mClosedLedger->getLedgerSeq () == index))
-            return mClosedLedger;
+                if (mClosedLedger && (mClosedLedger->getLedgerSeq () == index))
+                return mClosedLedger;
+        }
 
         Ledger::pointer ret = mLedgerHistory.getLedgerBySeq (index);
 
         if (ret)
             return ret;
 
-        ScopedLockType ml (mLock, __FILE__, __LINE__);
-        mCompleteLedgers.clearValue (index);
+        clearLedger (index);
         return ret;
     }
 
@@ -153,7 +155,7 @@ public:
 
     void setLedgerRangePresent (uint32 minV, uint32 maxV)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
         mCompleteLedgers.setRange (minV, maxV);
     }
 
@@ -164,6 +166,7 @@ public:
 
     bool haveLedgerRange (uint32 from, uint32 to);
     bool haveLedger (uint32 seq);
+    void clearLedger (uint32 seq);
     bool getValidatedRange (uint32& minVal, uint32& maxVal);
     bool getFullValidatedRange (uint32& minVal, uint32& maxVal);
 
@@ -221,6 +224,7 @@ private:
 
     CanonicalTXSet mHeldTransactions;
 
+    LockType mCompleteLock;
     RangeSet mCompleteLedgers;
 
     int                         mMinValidations;    // The minimum validations to publish a ledger
