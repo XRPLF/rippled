@@ -124,17 +124,14 @@ public:
     void disconnect ()
     {
         connection_ptr ptr = m_connection.lock ();
-
-        if (ptr)
-        {
-            m_io_service.dispatch (ptr->get_strand ().wrap (boost::bind (
-                &WSConnectionType <endpoint_type>::handle_disconnect, m_connection)));
-        }
+        m_io_service.dispatch (ptr->get_strand ().wrap (boost::bind (
+            &WSConnectionType <endpoint_type>::handle_disconnect,
+                m_connection)));
     }
 
-    void handle_disconnect()
+    static void handle_disconnect(weak_connection_ptr c)
     {
-        connection_ptr ptr = m_connection.lock ();
+        connection_ptr ptr = c.lock ();
 
         if (ptr)
             ptr->close (websocketpp::close::status::PROTOCOL_ERROR, "overload");
