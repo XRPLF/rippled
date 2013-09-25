@@ -15,17 +15,16 @@
 // Servers are created in tmp/server/$server
 //
 
-var buster        = require("buster");
-var child         = require("child_process");
-var fs            = require("fs");
-var path          = require("path");
-var util          = require("util");
-var EventEmitter  = require('events').EventEmitter;
-
+var child        = require("child_process");
+var fs           = require("fs");
+var path         = require("path");
+var util         = require("util");
+var assert       = require('assert');
+var EventEmitter = require('events').EventEmitter;
 var nodeutils     = require("./nodeutils");
 
 // Create a server object
-var Server = function (name, config, verbose) {
+function Server(name, config, verbose) {
   this.name     = name;
   this.config   = config;
   this.started  = false;
@@ -47,10 +46,8 @@ var Server = function (name, config, verbose) {
               ? nodejs_version[0] - wanted_version[0]
               : -1;
 
-  if (sgn < 0)
-  {
+  if (sgn < 0) {
     console.log("\n*** Node.js version is too low.");
-
     throw "Nodejs version is too low.";
   }
 };
@@ -59,18 +56,6 @@ util.inherits(Server, EventEmitter);
 
 Server.from_config = function (name, config, verbose) {
   return new Server(name, config, verbose);
-};
-
-Server.prototype.on = function (e, c) {
-  EventEmitter.prototype.on.call(this, e, c);
-
-  return this;
-};
-
-Server.prototype.once = function (e, c) {
-  EventEmitter.prototype.once.call(this, e, c);
-
-  return this;
 };
 
 Server.prototype.serverPath = function() {
@@ -98,20 +83,19 @@ Server.prototype._serverSpawnSync = function() {
   var self  = this;
 
   var args  = [
-      "-a",
-      "-v",
-      "--conf=rippled.cfg"
-    ];
+    "-a",
+    "-v",
+    "--conf=rippled.cfg"
+  ];
+
+  var options = {
+    cwd: this.serverPath(),
+    env: process.env,
+    stdio: this.quiet ? 'ignore' : 'inherit'
+  };
 
   // Spawn in standalone mode for now.
-  this.child = child.spawn(
-    this.config.rippled_path,
-    args,
-    {
-      cwd: this.serverPath(),
-      env: process.env,
-      stdio: this.quiet ? 'ignore' : 'inherit'
-    });
+  this.child = child.spawn(this.config.rippled_path, args, options);
 
   if (!this.quiet)
     console.log("server: start %s: %s --conf=%s",
@@ -126,16 +110,10 @@ Server.prototype._serverSpawnSync = function() {
 
     self.emit('exited');
 
-    // Workaround for
-    // https://github.com/busterjs/buster/issues/266
-    if (!self.stopping) {
-      buster.assertions.throwOnFailure = true;
-    }
-
     // If could not exec: code=127, signal=null
     // If regular exit: code=0, signal=null
     // Fail the test if the server has not called "stop".
-    buster.assert(self.stopping, 'Server died with signal '+signal);
+    assert(self.stopping, 'Server died with signal '+signal);
   });
 };
 
@@ -146,13 +124,9 @@ Server.prototype._makeBase = function (done) {
 
   // Reset the server directory, build it if needed.
   nodeutils.resetPath(path, '0777', function (e) {
-      if (e) {
-        throw e;
-      }
-      else {
-        self._writeConfig(done);
-      }
-    });
+    if (e) throw e;
+    self._writeConfig(done);
+  });
 };
 
 Server.prototype.verbose = function () {
@@ -169,14 +143,10 @@ Server.prototype.start = function () {
   if (!this.quiet) console.log("server: start: %s: %s", this.name, JSON.stringify(this.config));
 
   this._makeBase(function (e) {
-      if (e) {
-        throw e;
-      }
-      else {
-        self._serverSpawnSync();
-        self.emit('started');
-      }
-    });
+    if (e) throw e;
+    self._serverSpawnSync();
+    self.emit('started');
+  });
 
   return this;
 };
@@ -187,23 +157,19 @@ Server.prototype.stop = function () {
 
   self.stopping = true;
 
-  if (this.child) {
-    // Update the on exit to invoke done.
-    this.child.on('exit', function (code, signal) {
-
-        if (!self.quiet) console.log("server: stop: server exited");
-
-        self.emit('stopped');
-
-        delete self.child;
-      });
-
-    this.child.kill();
+  if (!this.child) {
+    console.log("server: stop: can't stop");
+    return;
   }
-  else
-  {
-    buster.log("server: stop: can't stop");
-  }
+
+  // Update the on exit to invoke done.
+  this.child.on('exit', function (code, signal) {
+    if (!self.quiet) console.log("server: stop: server exited");
+    self.emit('stopped');
+    delete self.child;
+  });
+
+  this.child.kill();
 
   return this;
 };

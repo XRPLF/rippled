@@ -1,0 +1,334 @@
+--------------------------------------------------------------------------------
+RIPPLE TODO
+--------------------------------------------------------------------------------
+
+Vinnie's List: Changes day to day, descending priority
+- Parse Validator line using cribbed code
+- Parse ContentBodyBuffer from HTTPResponse
+- HTTPMessage improvements
+- HTTPClient improvements based on HTTPServer
+- Ditch old HTTPClient so I can take the name
+- Finish RPCAsyncServer, RPCService and RPCService::Manager
+- Fix and tidy up broken beast classes
+- Fix RPCDoor to respect config setting for [rpc_secure]
+- Validators should delay the application of newly downloaded lists from
+  sources, to mitigate the effects of attacks. Unless there's no validators
+  in the list.
+- Validators RPC options to immediately apply UNL,
+  manually revisit sources, etc...
+- Clean up calculation of COnfig file location.
+- Remove TESTNET and all related code and settings.
+- Remove addRpcSub, findRpcSub, and notify the appropriate partner(s)
+
+David Features:
+- override config items from command line
+- change config via RPC, this is for debugging
+
+--------------------------------------------------------------------------------
+
+- Look into using CMake
+
+- IPv6 support in IPEndpoint
+
+- Configuration list for Jenkins
+
+- Fix all crash and leaks on exit
+    Say there's a leak, a ledger that can never be accessed is locked in some
+        structure. If the organized teardown code frees that structure, the leak
+        will not be reported.
+    Yes, so you'll detect some small subset of leaks that way.
+    You'll still have to be vigilant for the leaks that won't detect.
+    The problem is ordering. There are lots of circular dependencies.
+    The biggest problem is the order of destruction of global objects. (I think)
+    Getting rid of global objects is a good solution to that.
+    Vinnie Falco: Those I can resolve with my ReferenceCountedSingleton. And
+                  yeah thats a good approach, one that I am doing slowly anyway
+    Yeah, that's good for other reasons too, not just the unpredictability of
+        creation order that can hide bugs.
+    There may also just be some missing destructors.
+    Some of it may be things being shut down in the wrong order. Like if you shut
+        down the cache and then something that uses the cache, objects may get
+        put in the cache after it was shut down.
+
+- Figure out the right behavior of ProtectedCall
+
+- Do something about the throw() reporting weaknesses:
+  * Make sure all Sconstruct and .pro builds have debug symbols in release
+  * Replace all throw with beast::Throw()
+    (Only in ripple sources, not in Subtrees/, protobuf, or websocket)
+  - Improved Beast exception object, provides __FILE__ and __LINE__
+  - Add file and line capabilities to beast::Throw()
+  - Allow beast::Throw to be hooked for logging
+  - Add stack trace capability to beast::Throw() diagnostics via the hook
+    (use the existing beast::SystemStats::getStackBacktrace())
+  - Implement getStackBacktrace for BEAST_BSD targets
+  - Add UnhandledExceptionCatcher to beast
+  - Return EXIT_FAILURE on unhandled exception
+
+- Consolidate JSON code maybe use Beast
+
+- Deeply create directories specified in config settings
+
+- Refactor Section code into ConfigFile
+
+- Supress useless gcc warnings
+  http://stackoverflow.com/questions/3378560/how-to-disable-gcc-warnings-for-a-few-lines-of-code
+
+- Get rid of boost::filesystem
+
+- What the heck is up with site_scons/site_tools/protoc.py?
+
+- Add convenience variadic functions to JobQueue that do the bind for you
+
+- Consolidate databases
+
+- Figure out why we need WAL sqlite mode if we no longer use sqlite for the node store
+
+- Add "skipped" field to beginTestCase() to disable a test but still record
+  that it was skipped in the output. Like for mdb import.
+
+- use beast DeadlineTimer for sweep in Application
+
+- Get rid of 'ref' typedefs that really mean const&
+
+- Use secp256k1 from beast
+
+- Fix xsd/dtd line in JUnit XML output
+
+- Get rid of the WriteLog() stuff in the ripple tests and make it report the
+  message directly to the UnitTest object. Then update the JUnit XML output
+  routines to also write the auxiliary messages.
+
+* Restyle all the macros in ConfigSection.h
+
+- Move src/protobuf to Subtrees and deal with protobuf_core.cpp
+
+- Replace home-made database wrappers with beast::sqdb
+
+- Use static creation member functions instead of endless constructor
+  variations in base_uint, uint256, and family.
+
+- Raise the warning level and fix everything
+
+- Replace base_uint and uintXXX with UnsignedInteger
+  * Need to specialize UnsignedInteger to work efficiently with 4 and 8 byte
+    multiples of the size.
+
+- Rewrite boost program_options in Beast
+
+- Replace endian conversion calls with beast calls:
+  htobe32, be32toh, ntohl, etc...
+  Start by removing the system headers which provide these routines, if possible
+
+- Rename RPCHandler to CallHandler
+
+- Profile/VTune the application to identify hot spots
+  * Determine why rippled has a slow startup on Windows
+  * Improve the performance when running all unit tests on Windows
+
+- Rename "fullBelow" to something like haveAllDescendants or haveAllChildren.
+
+- Remove dependence on JobQueue, LoadFeeTrack, and NetworkOPs from LoadManager
+  by providing an observer (beast::ListenerList or Listeners). This way
+  LoadManager does not need stopThread() function.
+
+- Rewrite Sustain to use Beast and work on Windows as well
+  * Do not enable watchdog process if a debugger is attached
+
+- Make sure the leak detector output appears on Linux and FreeBSD debug builds.
+
+- Create SharedData <LoadState>, move all load related state variables currently
+  protected by separated mutexes in different classes into the LoadState, and
+  use read/write locking semantics to update the values. Later, use Listeners
+  to notify dependent code to resolve the dependency inversion.
+
+- Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
+
+- Rename LedgerMaster to Ledgers, create ILedgers interface.
+
+- Figure out where previous ledgers go after a call to LedgerMaster::pushLedger()
+  and see if it is possible to clean up the leaks on exit.
+
+- Replace all NULL with nullptr
+
+- Make TxFormats a member of ICore instead of a singleton.
+  PROBLEM: STObject derived classes like STInt16 make direct use of the
+           singleton. It might have to remain a singleton. At the very least,
+           it should be a SharedSingleton to resolve ordering issues.
+
+- Rename include guards to boost style, e.g. RIPPLE_LOG_H_INCLUDED
+
+- Replace C11X with BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
+
+- Remove "ENABLE_INSECURE" when the time is right.
+
+- lift unique_ptr / auto_ptr into ripple namespace,
+  or replace with ScopedPointer (preferred)
+
+- Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs
+
+- Go searching through VFALCO notes and fix everything
+
+- Deal with function-level statics used for SqliteDatabase (like in
+  HSBESQLite::visitAll)
+
+- Document in order:
+    SerializedType
+    STObject
+    SerializedLedgerEntry
+
+- Replace uint160, uint256 in argument lists, template parameter lists, and
+  data members with tyepdefs from ripple_ProtocolTypes.h
+
+- Consolidate SQLite database classes: DatabaseCon, Database, SqliteDatabase.
+
+--------------------------------------------------------------------------------
+HYPERLEVELDB TODO
+--------------------------------------------------------------------------------
+
+- Port to Windows
+
+--------------------------------------------------------------------------------
+LEVELDB TODO
+--------------------------------------------------------------------------------
+
+- Add VisualStudio 2012 project file to our fork
+
+- Add LevelDB unity .cpp and .h to our fork
+
+- Replace Beast specific platform macros with universal macros so that the
+  unity doesn't require Beast
+
+- Submit LevelDB fork changes to Bitcoin upstream
+
+--------------------------------------------------------------------------------
+WEBSOCKET TODO
+--------------------------------------------------------------------------------
+
+- Rewrite for sanity
+
+--------------------------------------------------------------------------------
+PROTOCOL BUFFERS TODO
+--------------------------------------------------------------------------------
+
+- Create/maintain the protobuf Git repo (original uses SVN)
+
+- Update the subtree
+
+- Make a Visual Studio 2012 Project for source browsing
+
+--------------------------------------------------------------------------------
+NOTES
+--------------------------------------------------------------------------------
+
+LoadEvent
+
+    Is referenced with both a shared pointer and an auto pointer.
+    Should be named LoadMeter::ScopedSample. Or possibly ScopedLoadSample
+
+JobQueue
+
+    getLoadEvent and getLoadEventAP differ only in the style of pointer
+    container which is returned. Unnecessary complexity.
+
+Naming: Some names don't make sense.
+
+  Index
+    Stop using Index to refer to keys in tables. Replace with "Key" ?
+    Index implies a small integer, or a data structure.
+
+    This is all over the place in the Ledger API, "Index" of this and
+    "Index" of that, the terminology is imprecise and helps neither
+    understanding nor recall.
+    
+Inconsistent names
+
+  We have full names like SerializedType and then acronyms like STObject
+  Two names for some things, e.g. SerializedLedgerEntry and SLE
+
+  Shared/Smart pointer typedefs in classes have a variety of different names
+  for the same thing. e.g. "pointer", "ptr", "ptr_t", "wptr"
+
+Verbose names
+
+  The prefix "Flat" is more appealing than "Serialized" because its shorter and
+    easier to pronounce.
+
+Ledger "Skip List"
+
+  Is not really a skip list data structure. This is more appropriately
+  called an "index" although that name is currently used to identify hashes
+  used as keys.
+
+Interfaces
+
+  Serializer
+
+    Upon analysis this class does two incompatible things. Flattening, and
+    unflattening. The interface should be reimplemented as two distinct
+    abstract classes, InputStream and OutputStream with suitable implementations
+    such as to and from a block of memory or dynamically allocated buffer.
+
+    The name and conflation of dual roles serves to confuse code at the point
+    of call. Does set(Serializer& s) flatten or unflatten the data? This
+    would be more clear:
+        bool write (OutputStream& stream);
+
+    We have beast for InputStream and OutputStream, we can use those now.
+
+--------------------------------------------------------------------------------
+Davidisms
+--------------------------------------------------------------------------------
+
+(Figure out a good place to record information like this permanently)
+
+Regarding a defect where a failing transaction was being submitted over and over
+  again on the network (July 3, 2013)
+
+  The core problem was an interaction between two bits of logic.
+  1) Normally, we won't relay a transaction again if we already recently relayed
+     it. But this is bypassed if the transaction failed in a way that could
+     allow it to succeed later. This way, if one server discovers a transaction
+     can now work, it can get all servers to retry it.
+  2) Normally, we won't relay a transaction if we think it can't claim a fee.
+     But if we're not sure it can't claim a fee because we're in an unhealthy
+     state, we propagate the transaction to let other servers decide if they
+     think it can claim a fee.
+  With these two bits of logic, two unhealthy servers could infinitely propagate
+     a transaction back and forth between each other.
+
+A node is "full below" if we believe we have (either in the database or
+  scheduled to be stored in the database) the contents of every node below that
+  node in a hash tree. When trying to acquire a hash tree/map, if a node is
+  full below, we know not to bother with anything below that node.
+
+The fullBelowCache is a cache of hashes of nodes that are full below. Which means
+  there are no missing children
+
+
+What we want from the unique node list:
+  - Some number of trusted roots (known by domain)
+    probably organizations whose job is to provide a list of validators
+  - We imagine the IRGA for example would establish some group whose job is to
+    maintain a list of validators. There would be a public list of criteria
+    that they would use to vet the validator. Things like:
+    * Not anonymous
+    * registered business
+    * Physical location
+    * Agree not to cease operations without notice / arbitrarily
+    * Responsive to complaints
+  - Identifiable jurisdiction
+    * Homogeneity in the jurisdiction is a business risk
+    * If all validators are in the same jurisdiction this is a business risk
+  - OpenCoin sets criteria for the organizations
+  - Rippled will ship with a list of trusted root "certificates"
+    In other words this is a list of trusted domains from which the software
+      can contact each trusted root and retrieve a list of "good" validators
+      and then do something with that information
+  - All the validation information would be public, including the broadcast
+    messages.
+  - The goal is to easily identify bad actors and assess network health
+    * Malicious intent
+    * Or, just hardware problems (faulty drive or memory)
+
+

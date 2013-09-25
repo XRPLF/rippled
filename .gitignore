@@ -24,15 +24,17 @@ Debug/*.*
 Release/*.*
 
 # Ignore locally installed node_modules
-node_modules
+/node_modules
 
 # Ignore tmp directory.
 tmp
 
 # Ignore database directory.
-db
 db/*.db
 db/*.db-*
+
+# Ignore debug logs
+debug_log.txt
 
 # Ignore customized configs
 rippled.cfg
@@ -67,3 +69,6 @@ My Amplifier XE Results - RippleD
 # KeyvaDB files
 *.key
 *.val
+
+# Compiler intermediate output
+/out.txt

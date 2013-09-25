@@ -1,7 +1,7 @@
 
 # Ripple protocol buffers
 
-PROTOS = ../../modules/ripple_data/protocol/ripple.proto
+PROTOS = ../../src/ripple_data/protocol/ripple.proto
 PROTOS_DIR = ../../build/proto
 
 # Google Protocol Buffers support
@@ -31,7 +31,9 @@ TEMPLATE = app
 CONFIG += console thread warn_off
 CONFIG -= qt gui
 
-linux-gg++:QMAKE_CXXFLAGS += \
+DEFINES += _DEBUG
+
+linux-g++:QMAKE_CXXFLAGS += \
     -Wall \
     -Wno-sign-compare \
     -Wno-char-subscripts \
@@ -39,52 +41,60 @@ linux-gg++:QMAKE_CXXFLAGS += \
     -Wno-unused-parameter \
     -Wformat \
     -O0 \
+    -std=c++11 \
     -pthread
 
 INCLUDEPATH += \
-    "../.." \
-    "../../Subtrees" \
-    "../../Subtrees/leveldb/" \
-    "../../Subtrees/leveldb/port" \
-    "../../Subtrees/leveldb/include" \
+    "../../src" \
+    "../../src/leveldb/" \
+    "../../src/leveldb/port" \
+    "../../src/leveldb/include" \
     $${PROTOS_DIR}
 
 OTHER_FILES += \
-    $$files(../../Subtrees/beast/*) \
-    $$files(../../Subtrees/beast/modules/beast_basics/diagnostic/*)
+#   $$files(../../src/*, true) \
+#   $$files(../../src/beast/*) \
+#   $$files(../../src/beast/modules/beast_basics/diagnostic/*)
+#   $$files(../../src/beast/modules/beast_core/, true)
 
-#   $$files(../../Subtrees/beast/modules/beast_core/, true)
-#   $$files(../../modules/*, true) \
+UI_HEADERS_DIR += ../../src/ripple_basics
 
-UI_HEADERS_DIR += ../../modules/ripple_basics
-
+# ---------
+# New style
+#
 SOURCES += \
-    ../../Subtrees/beast/modules/beast_asio/beast_asio.cpp \
-    ../../Subtrees/beast/modules/beast_basics/beast_basics.cpp \
-    ../../Subtrees/beast/modules/beast_core/beast_core.cpp \
-    ../../Subtrees/beast/modules/beast_crypto/beast_crypto.cpp \
-    ../../Subtrees/beast/modules/beast_db/beast_db.cpp \
-    ../../Subtrees/beast/modules/beast_sqdb/beast_sqdb.cpp \
-    ../../Subtrees/beast/modules/beast_sqlite/beast_sqlite.c \
-    ../../modules/ripple_app/ripple_app_pt1.cpp \
-    ../../modules/ripple_app/ripple_app_pt2.cpp \
-    ../../modules/ripple_app/ripple_app_pt3.cpp \
-    ../../modules/ripple_app/ripple_app_pt4.cpp \
-    ../../modules/ripple_app/ripple_app_pt5.cpp \
-    ../../modules/ripple_app/ripple_app_pt6.cpp \
-    ../../modules/ripple_app/ripple_app_pt7.cpp \
-    ../../modules/ripple_app/ripple_app_pt8.cpp \
-    ../../modules/ripple_asio/ripple_asio.cpp \
-    ../../modules/ripple_basics/ripple_basics.cpp \
-    ../../modules/ripple_core/ripple_core.cpp \
-    ../../modules/ripple_client/ripple_client.cpp \
-    ../../modules/ripple_data/ripple_data.cpp \
-    ../../modules/ripple_hyperleveldb/ripple_hyperleveldb.cpp \
-    ../../modules/ripple_json/ripple_json.cpp \
-    ../../modules/ripple_leveldb/ripple_leveldb.cpp \
-    ../../modules/ripple_mdb/ripple_mdb.c \
-    ../../modules/ripple_net/ripple_net.cpp \
-    ../../modules/ripple_websocket/ripple_websocket.cpp
+    ../../src/ripple/beast/ripple_beast.cpp \
+    ../../src/ripple/beast/ripple_beastc.c \
+    ../../src/ripple/http/ripple_http.cpp \
+    ../../src/ripple/json/ripple_json.cpp \
+    ../../src/ripple/rpc/ripple_rpc.cpp \
+    ../../src/ripple/sophia/ripple_sophia.c \
+    ../../src/ripple/sslutil/ripple_sslutil.cpp \
+    ../../src/ripple/testoverlay/ripple_testoverlay.cpp \
+    ../../src/ripple/types/ripple_types.cpp \
+    ../../src/ripple/validators/ripple_validators.cpp
+
+# ---------
+# Old style
+#
+SOURCES += \
+    ../../src/ripple_app/ripple_app.cpp \
+    ../../src/ripple_app/ripple_app_pt1.cpp \
+    ../../src/ripple_app/ripple_app_pt2.cpp \
+    ../../src/ripple_app/ripple_app_pt3.cpp \
+    ../../src/ripple_app/ripple_app_pt4.cpp \
+    ../../src/ripple_app/ripple_app_pt5.cpp \
+    ../../src/ripple_app/ripple_app_pt6.cpp \
+    ../../src/ripple_app/ripple_app_pt7.cpp \
+    ../../src/ripple_app/ripple_app_pt8.cpp \
+    ../../src/ripple_basics/ripple_basics.cpp \
+    ../../src/ripple_core/ripple_core.cpp \
+    ../../src/ripple_data/ripple_data.cpp \
+    ../../src/ripple_hyperleveldb/ripple_hyperleveldb.cpp \
+    ../../src/ripple_leveldb/ripple_leveldb.cpp \
+    ../../src/ripple_mdb/ripple_mdb.c \
+    ../../src/ripple_net/ripple_net.cpp \
+    ../../src/ripple_websocket/ripple_websocket.cpp
 
 LIBS += \
     -lboost_date_time-mt\

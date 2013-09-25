@@ -1,220 +1,235 @@
-var async       = require("async");
-var buster      = require("buster");
+var async     = require("async");
+var assert    = require('assert');
+var Remote    = require("ripple-lib").Remote;
+var testutils = require("./testutils");
+var config    = testutils.init_config();
 
-var Amount      = require("ripple-lib").Amount;
-var Remote      = require("ripple-lib").Remote;
-var Request     = require("ripple-lib").Request;
-var Server      = require("./server").Server;
+suite('Account set', function() {
+  var $ = { };
 
-var testutils   = require("./testutils");
-var config      = testutils.init_config();
+  setup(function(done) {
+    testutils.build_setup().call($, done);
+  });
 
-// How long to wait for server to start.
-var serverDelay = 1500;
+  teardown(function(done) {
+    testutils.build_teardown().call($, done);
+  });
 
-buster.testRunner.timeout = 5000;
+  test('set RequireDestTag', function(done) {
+    var self = this;
 
-buster.testCase("AccountSet", {
-  'setUp'     : testutils.build_setup(),
-  // 'setUp'     : testutils.build_setup({verbose: true , no_server: false}),
-  'tearDown'  : testutils.build_teardown(),
+    var steps = [
+      function (callback) {
+        self.what = "Set RequireDestTag.";
 
-  "RequireDestTag" :
-    function (done) {
-      var self = this;
+        $.remote.transaction()
+        .account_set("root")
+        .set_flags('RequireDestTag')
+        .on('submitted', function (m) {
+          //console.log("proposed: %s", JSON.stringify(m));
+          if (m.engine_result === 'tesSUCCESS') {
+            callback(null);
+          } else {
+            callback(new Error(m.engine_result));
+          }
+        })
+        .submit();
+      },
 
-      async.waterfall([
-          function (callback) {
-            self.what = "Set RequireDestTag.";
+      function (callback) {
+        self.what = "Check RequireDestTag";
 
-            self.remote.transaction()
-              .account_set("root")
-              .set_flags('RequireDestTag')
-              .on('proposed', function (m) {
-                  //console.log("proposed: %s", JSON.stringify(m));
+        $.remote.request_account_flags('root', 'CURRENT')
+        .on('success', function (m) {
+          var wrong = !(m.node.Flags & Remote.flags.account_root.RequireDestTag);
 
-                  callback(m.result !== 'tesSUCCESS');
-                })
-              .submit();
-          },
-          function (callback) {
-            self.what = "Check RequireDestTag";
+          if (wrong) {
+            console.log("Set RequireDestTag: failed: %s", JSON.stringify(m));
+          }
 
-            self.remote.request_account_flags('root', 'CURRENT')
-              .on('success', function (m) {
-                  var wrong = !(m.node.Flags & Remote.flags.account_root.RequireDestTag);
+          callback(wrong ? new Error(wrong) : null);
+        })
+        .request();
+      },
 
-                  if (wrong)
-                    console.log("Set RequireDestTag: failed: %s", JSON.stringify(m));
+      function (callback) {
+        self.what = "Clear RequireDestTag.";
 
-                  callback(wrong);
-                })
-              .request();
-          },
-          function (callback) {
-            self.what = "Clear RequireDestTag.";
+        $.remote.transaction()
+        .account_set("root")
+        .set_flags('OptionalDestTag')
+        .on('submitted', function (m) {
+          //console.log("proposed: %s", JSON.stringify(m));
+          callback(m.engine_result === 'tesSUCCESS' ? null : new Error());
+        })
+        .submit();
+      },
 
-            self.remote.transaction()
-              .account_set("root")
-              .set_flags('OptionalDestTag')
-              .on('proposed', function (m) {
-                  //console.log("proposed: %s", JSON.stringify(m));
+      function (callback) {
+        self.what = "Check No RequireDestTag";
 
-                  callback(m.result !== 'tesSUCCESS');
-                })
-              .submit();
-          },
-          function (callback) {
-            self.what = "Check No RequireDestTag";
+        $.remote.request_account_flags('root', 'CURRENT')
+        .on('success', function (m) {
+          var wrong = !!(m.node.Flags & Remote.flags.account_root.RequireDestTag);
 
-            self.remote.request_account_flags('root', 'CURRENT')
-              .on('success', function (m) {
-                  var wrong = !!(m.node.Flags & Remote.flags.account_root.RequireDestTag);
+          if (wrong) {
+            console.log("Clear RequireDestTag: failed: %s", JSON.stringify(m));
+          }
 
-                  if (wrong)
-                    console.log("Clear RequireDestTag: failed: %s", JSON.stringify(m));
+          callback(wrong ? new Error(m) : null);
+        })
+        .request();
+      }
+    ]
 
-                  callback(wrong);
-                })
-              .request();
-          },
-        ], function (error) {
-          buster.refute(error, self.what);
-          done();
-        });
-    },
+    async.waterfall(steps,function (error) {
+      assert(!error, self.what);
+      done();
+    });
+  });
 
-  "RequireAuth" :
-    function (done) {
-      var self = this;
+  test("set RequireAuth",  function (done) {
+    var self = this;
 
-      async.waterfall([
-          function (callback) {
-            self.what = "Set RequireAuth.";
+    var steps = [
+      function (callback) {
+        self.what = "Set RequireAuth.";
 
-            self.remote.transaction()
-              .account_set("root")
-              .set_flags('RequireAuth')
-              .on('proposed', function (m) {
-                  //console.log("proposed: %s", JSON.stringify(m));
+        $.remote.transaction()
+        .account_set("root")
+        .set_flags('RequireAuth')
+        .on('submitted', function (m) {
+          //console.log("proposed: %s", JSON.stringify(m));
+          callback(m.engine_result === 'tesSUCCESS' ? null : new Error(m));
+        })
+        .submit();
+      },
 
-                  callback(m.result !== 'tesSUCCESS');
-                })
-              .submit();
-          },
-          function (callback) {
-            self.what = "Check RequireAuth";
+      function (callback) {
+        self.what = "Check RequireAuth";
 
-            self.remote.request_account_flags('root', 'CURRENT')
-              .on('success', function (m) {
-                  var wrong = !(m.node.Flags & Remote.flags.account_root.RequireAuth);
+        $.remote.request_account_flags('root', 'CURRENT')
+        .on('error', callback)
+        .on('success', function (m) {
+          var wrong = !(m.node.Flags & Remote.flags.account_root.RequireAuth);
 
-                  if (wrong)
-                    console.log("Set RequireAuth: failed: %s", JSON.stringify(m));
+          if (wrong) {
+            console.log("Set RequireAuth: failed: %s", JSON.stringify(m));
+          }
 
-                  callback(wrong);
-                })
-              .request();
-          },
-          function (callback) {
-            self.what = "Clear RequireAuth.";
+          callback(wrong ? new Error(m) : null);
+        })
+        .request();
+      },
 
-            self.remote.transaction()
-              .account_set("root")
-              .set_flags('OptionalAuth')
-              .on('proposed', function (m) {
-                  //console.log("proposed: %s", JSON.stringify(m));
+      function (callback) {
+        self.what = "Clear RequireAuth.";
 
-                  callback(m.result !== 'tesSUCCESS');
-                })
-              .submit();
-          },
-          function (callback) {
-            self.what = "Check No RequireAuth";
+        $.remote.transaction()
+        .account_set("root")
+        .set_flags('OptionalAuth')
+        .on('submitted', function (m) {
+          //console.log("proposed: %s", JSON.stringify(m));
 
-            self.remote.request_account_flags('root', 'CURRENT')
-              .on('success', function (m) {
-                  var wrong = !!(m.node.Flags & Remote.flags.account_root.RequireAuth);
+          callback(m.engine_result !== 'tesSUCCESS');
+        })
+        .submit();
+      },
 
-                  if (wrong)
-                    console.log("Clear RequireAuth: failed: %s", JSON.stringify(m));
+      function (callback) {
+        self.what = "Check No RequireAuth";
 
-                  callback(wrong);
-                })
-              .request();
-          },
-          // XXX Also check fails if something is owned.
-        ], function (error) {
-          buster.refute(error, self.what);
-          done();
-        });
-    },
+        $.remote.request_account_flags('root', 'CURRENT')
+        .on('error', callback)
+        .on('success', function (m) {
+          var wrong = !!(m.node.Flags & Remote.flags.account_root.RequireAuth);
 
-  "DisallowXRP" :
-    function (done) {
-      var self = this;
+          if (wrong) {
+            console.log("Clear RequireAuth: failed: %s", JSON.stringify(m));
+          }
 
-      async.waterfall([
-          function (callback) {
-            self.what = "Set DisallowXRP.";
+          callback(wrong ? new Error(m) : null);
+        })
+        .request();
+      }
+      // XXX Also check fails if something is owned.
+    ]
 
-            self.remote.transaction()
-              .account_set("root")
-              .set_flags('DisallowXRP')
-              .on('proposed', function (m) {
-                  //console.log("proposed: %s", JSON.stringify(m));
+    async.waterfall(steps, function(error) {
+      assert(!error, self.what);
+      done();
+    });
+  });
 
-                  callback(m.result !== 'tesSUCCESS');
-                })
-              .submit();
-          },
-          function (callback) {
-            self.what = "Check DisallowXRP";
+  test('set DisallowXRP', function(done) {
+    var self = this;
 
-            self.remote.request_account_flags('root', 'CURRENT')
-              .on('success', function (m) {
-                  var wrong = !(m.node.Flags & Remote.flags.account_root.DisallowXRP);
+    var steps = [
+      function (callback) {
+        self.what = "Set DisallowXRP.";
 
-                  if (wrong)
-                    console.log("Set RequireDestTag: failed: %s", JSON.stringify(m));
+        $.remote.transaction()
+        .account_set("root")
+        .set_flags('DisallowXRP')
+        .on('submitted', function (m) {
+          //console.log("proposed: %s", JSON.stringify(m));
+          callback(m.engine_result === 'tesSUCCESS' ? null : new Error(m));
+        })
+        .submit();
+      },
 
-                  callback(wrong);
-                })
-              .request();
-          },
-          function (callback) {
-            self.what = "Clear DisallowXRP.";
+      function (callback) {
+        self.what = "Check DisallowXRP";
 
-            self.remote.transaction()
-              .account_set("root")
-              .set_flags('AllowXRP')
-              .on('proposed', function (m) {
-                  //console.log("proposed: %s", JSON.stringify(m));
+        $.remote.request_account_flags('root', 'CURRENT')
+        .on('error', callback)
+        .on('success', function (m) {
+          var wrong = !(m.node.Flags & Remote.flags.account_root.DisallowXRP);
 
-                  callback(m.result !== 'tesSUCCESS');
-                })
-              .submit();
-          },
-          function (callback) {
-            self.what = "Check AllowXRP";
+          if (wrong) {
+            console.log("Set RequireDestTag: failed: %s", JSON.stringify(m));
+          }
 
-            self.remote.request_account_flags('root', 'CURRENT')
-              .on('success', function (m) {
-                  var wrong = !!(m.node.Flags & Remote.flags.account_root.DisallowXRP);
+          callback(wrong ? new Error(m) : null);
+        })
+        .request();
+      },
 
-                  if (wrong)
-                    console.log("Clear DisallowXRP: failed: %s", JSON.stringify(m));
+      function (callback) {
+        self.what = "Clear DisallowXRP.";
 
-                  callback(wrong);
-                })
-              .request();
-          },
-        ], function (error) {
-          buster.refute(error, self.what);
-          done();
-        });
-    },
+        $.remote.transaction()
+        .account_set("root")
+        .set_flags('AllowXRP')
+        .on('submitted', function (m) {
+          //console.log("proposed: %s", JSON.stringify(m));
 
+          callback(m.engine_result === 'tesSUCCESS' ? null : new Error(m));
+        })
+        .submit();
+      },
+
+      function (callback) {
+        self.what = "Check AllowXRP";
+
+        $.remote.request_account_flags('root', 'CURRENT')
+        .on('error', callback)
+        .on('success', function (m) {
+          var wrong = !!(m.node.Flags & Remote.flags.account_root.DisallowXRP);
+
+          if (wrong) {
+            console.log("Clear DisallowXRP: failed: %s", JSON.stringify(m));
+          }
+
+          callback(wrong ? new Error(m) : null);
+        })
+        .request();
+      }
+    ]
+
+    async.waterfall(steps, function(err) {
+      assert(!err);
+      done();
+    });
+  });
 });
-
-// vim:sw=2:sts=2:ts=8:et

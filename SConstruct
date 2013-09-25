@@ -101,8 +101,12 @@ else:
 
 #-------------------------------------------------------------------------------
 #
-# VFALCO This is my oasis of sanity. Nothing having to do with directories,
-#         source files, or include paths should reside outside the boundaries.
+# VFALCO NOTE Clean area.
+#
+#-------------------------------------------------------------------------------
+#
+# Nothing having to do with directories, source files,
+# or include paths should reside outside the boundaries.
 #
 
 # List of includes passed to the C++ compiler.
@@ -110,62 +114,79 @@ else:
 #
 INCLUDE_PATHS = [
     '.',
-    'build/proto',
-    'Subtrees',
-    'Subtrees/leveldb',
-    'Subtrees/leveldb/port',
-    'Subtrees/leveldb/include',
-    'Subtrees/beast',
+    'src',
+    'src/leveldb',
+    'src/leveldb/port',
+    'src/leveldb/include',
+    'src/beast',
+    'build/proto'
     ]
 
 # if BOOST_HOME:
 #     INCLUDE_PATHS.append(BOOST_HOME)
 
-if OSX:
-    COMPILED_FILES = [
-        'Subtrees/beast/modules/beast_core/beast_core.mm'
-    ]
-else:
-    COMPILED_FILES = [
-        'Subtrees/beast/modules/beast_core/beast_core.cpp'
-    ]
+#-------------------------------------------------------------------------------
+#
+# Compiled sources
+#
 
+COMPILED_FILES = []
+
+# -------------------
+# Beast unity sources
+#
+if OSX:
+    # OSX: Use the Objective C++ version of beast_core
+    COMPILED_FILES.extend (['src/ripple/beast/ripple_beastobjc.mm'])
+else:
+    COMPILED_FILES.extend (['src/ripple/beast/ripple_beast.cpp'])
+COMPILED_FILES.extend (['src/ripple/beast/ripple_beastc.c'])
+
+# ------------------------------
+# New-style Ripple unity sources
+#
 COMPILED_FILES.extend([
-    'Subtrees/beast/modules/beast_asio/beast_asio.cpp',
-    'Subtrees/beast/modules/beast_basics/beast_basics.cpp',
-    # 'Subtrees/beast/modules/beast_core/beast_core.cpp',
-    'Subtrees/beast/modules/beast_crypto/beast_crypto.cpp',
-    'Subtrees/beast/modules/beast_db/beast_db.cpp',
-    'Subtrees/beast/modules/beast_sqdb/beast_sqdb.cpp',
-    'Subtrees/beast/modules/beast_sqlite/beast_sqlite.c',
-    'modules/ripple_app/ripple_app_pt1.cpp',
-    'modules/ripple_app/ripple_app_pt2.cpp',
-    'modules/ripple_app/ripple_app_pt3.cpp',
-    'modules/ripple_app/ripple_app_pt4.cpp',
-    'modules/ripple_app/ripple_app_pt5.cpp',
-    'modules/ripple_app/ripple_app_pt6.cpp',
-    'modules/ripple_app/ripple_app_pt7.cpp',
-    'modules/ripple_app/ripple_app_pt8.cpp',
-    'modules/ripple_asio/ripple_asio.cpp',
-    'modules/ripple_basics/ripple_basics.cpp',
-    'modules/ripple_core/ripple_core.cpp',
-    'modules/ripple_data/ripple_data.cpp',
-    'modules/ripple_hyperleveldb/ripple_hyperleveldb.cpp',
-    'modules/ripple_json/ripple_json.cpp',
-    'modules/ripple_leveldb/ripple_leveldb.cpp',
-    'modules/ripple_mdb/ripple_mdb.c',
-    'modules/ripple_net/ripple_net.cpp',
-    'modules/ripple_websocket/ripple_websocket.cpp'
+    'src/ripple/http/ripple_http.cpp',
+    'src/ripple/json/ripple_json.cpp',
+    'src/ripple/rpc/ripple_rpc.cpp',
+    'src/ripple/sophia/ripple_sophia.c',
+    'src/ripple/sslutil/ripple_sslutil.cpp',
+    'src/ripple/testoverlay/ripple_testoverlay.cpp',
+    'src/ripple/types/ripple_types.cpp',
+    'src/ripple/validators/ripple_validators.cpp'
     ])
 
+# ------------------------------
+# Old-style Ripple unity sources
+#
+COMPILED_FILES.extend([
+    'src/ripple_app/ripple_app.cpp',
+    'src/ripple_app/ripple_app_pt1.cpp',
+    'src/ripple_app/ripple_app_pt2.cpp',
+    'src/ripple_app/ripple_app_pt3.cpp',
+    'src/ripple_app/ripple_app_pt4.cpp',
+    'src/ripple_app/ripple_app_pt5.cpp',
+    'src/ripple_app/ripple_app_pt6.cpp',
+    'src/ripple_app/ripple_app_pt7.cpp',
+    'src/ripple_app/ripple_app_pt8.cpp',
+    'src/ripple_basics/ripple_basics.cpp',
+    'src/ripple_core/ripple_core.cpp',
+    'src/ripple_data/ripple_data.cpp',
+    'src/ripple_hyperleveldb/ripple_hyperleveldb.cpp',
+    'src/ripple_leveldb/ripple_leveldb.cpp',
+    'src/ripple_mdb/ripple_mdb.c',
+    'src/ripple_net/ripple_net.cpp',
+    'src/ripple_websocket/ripple_websocket.cpp'
+    ])
+
+#
+#
 #-------------------------------------------------------------------------------
 
 # Map top level source directories to their location in the outputs
 #
 
 VariantDir('build/obj/src', 'src', duplicate=0)
-VariantDir('build/obj/modules', 'modules', duplicate=0)
-VariantDir('build/obj/Subtrees', 'Subtrees', duplicate=0)
 
 #-------------------------------------------------------------------------------
 
@@ -207,10 +228,10 @@ if not OSX:
         '-rdynamic', '-pthread', 
         ])
 
-DEBUGFLAGS  = ['-g', '-DDEBUG']
+DEBUGFLAGS  = ['-g', '-DDEBUG', '-D_DEBUG']
 
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts']+DEBUGFLAGS)
-env.Append(CXXFLAGS = ['-O0', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+DEBUGFLAGS)
+env.Append(CXXFLAGS = ['-O1', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+DEBUGFLAGS)
 
 
 # RTTI is required for Beast and CountedObject.
@@ -228,7 +249,7 @@ if OSX:
     env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
     env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
 
-PROTO_SRCS = env.Protoc([], 'modules/ripple_data/protocol/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
+PROTO_SRCS = env.Protoc([], 'src/ripple_data/protocol/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
 
 # Only tag actual Ripple files.

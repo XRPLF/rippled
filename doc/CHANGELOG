@@ -1,0 +1,19 @@
+VFALCO NOTE - This file appears to be unmaintained.
+
+Critical protocol changes
+-------------------------
+
+Mon Apr  8 16:13:12 PDT 2013
+* The JSON field "inLedger" changing to "ledger_index"
+
+Previous
+* The JSON field "metaData" changing to "meta".
+* RPC ledger will no longer take "ledger", use "ledger_hash" or "ledger_index".
+* "ledgerClose" events:
+** "hash" DEPRECATED: use "ledger_hash"
+** "seqNum" DEPRECATED: use "ledger_index"
+** "closeTime" DEPRECATED: use "close" or "close_human"
+* stream "rt_accounts" --> "accounts_proposed"
+* stream "rt_transactions" --> "transactions_proposed"
+* subscribe "username" --> "url_username"
+* subscribe "password" --> "url_password"

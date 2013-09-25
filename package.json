@@ -10,18 +10,17 @@
   },
 
   "dependencies": {
-    "ripple-lib": "0.7.18",
-    "async": "~0.1.22",
-    "extend": "~1.1.1",
-    "simple-jsonrpc": "~0.0.1"
+    "ripple-lib": "0.7.21",
+    "async": "~0.2.9",
+    "extend": "~1.2.0",
+    "simple-jsonrpc": "~0.0.2"
   },
   "devDependencies": {
-    "buster": "~0.6.12",
-    "mocha": "~1.12.0"
+    "mocha": "~1.13.0"
   },
 
   "scripts": {
-    "test": "./node_modules/buster/bin/buster-test"
+    "test": "mocha --reporter spec --ui tdd --timeout 10000 --slow 600 test/*-test.js"
   },
 
   "repository": {
