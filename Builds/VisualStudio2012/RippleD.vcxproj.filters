@@ -2112,6 +2112,9 @@
     <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifier.h">
       <Filter>[1] Ripple\types\api</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\containers\BlackList.h">
+      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\ripple_data\protocol\ripple.proto">
