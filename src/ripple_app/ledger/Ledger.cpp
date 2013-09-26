@@ -576,7 +576,20 @@ void Ledger::saveValidatedLedger (bool current)
         getApp().getNodeStore ().store (hotLEDGER, mLedgerSeq, s.modData (), mHash);
     }
 
-    AcceptedLedger::pointer aLedger = AcceptedLedger::makeAcceptedLedger (shared_from_this ());
+    AcceptedLedger::pointer aLedger;
+    try
+    {
+        aLedger = AcceptedLedger::makeAcceptedLedger (shared_from_this ());
+    }
+    catch (...)
+    {
+        WriteLog (lsWARNING, Ledger) << "An accepted ledger was missing nodes";
+        getApp().getLedgerMaster().failedSave(mLedgerSeq, mHash);
+        { // Clients can now trust the database for information about this ledger sequence
+            StaticScopedLockType sl (sPendingSaveLock, __FILE__, __LINE__);
+            sPendingSaves.erase(getLedgerSeq());
+        }
+    }
 
     {
         DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());

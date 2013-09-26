@@ -119,6 +119,8 @@ public:
 
     void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer newCurrent);
 
+    void failedSave(uint32 seq, uint256 const& hash);
+
     std::string getCompleteLedgers ()
     {
         ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);

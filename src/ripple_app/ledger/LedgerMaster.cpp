@@ -532,6 +532,12 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
     //--------------------------------------------------------------------------
 }
 
+void LedgerMaster::failedSave(uint32 seq, uint256 const& hash)
+{
+    clearLedger(seq);
+    getApp().getInboundLedgers().findCreate(hash, seq, true);
+}
+
 void LedgerMaster::checkAccept (uint256 const& hash)
 {
     Ledger::pointer ledger = mLedgerHistory.getLedgerByHash (hash);
