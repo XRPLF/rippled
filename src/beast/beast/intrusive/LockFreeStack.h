@@ -182,6 +182,12 @@ public:
     {
     }
 
+    /** Returns true if the stack is empty. */
+    bool empty() const
+    {
+        return m_head.get() == &m_end;
+    }
+
     /** Return the number of elements in the stack.
         Thread safety:
             Safe to call from any thread.
