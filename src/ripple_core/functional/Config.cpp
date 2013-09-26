@@ -524,18 +524,18 @@ int Config::getSize (SizedItemName item)
         { siValidationsSize,    {   256,    256,    512,    1024,       1024    } },
         { siValidationsAge,     {   500,    500,    500,    500,        500     } },
 
-        { siNodeCacheSize,      {   8192,   65536,  262144, 2097152,    0       } },
-        { siNodeCacheAge,       {   30,     60,     90,     300,        900     } },
+        { siNodeCacheSize,      {   8192,   65536,  262144, 512000,     0       } },
+        { siNodeCacheAge,       {   30,     60,     90,     120,        900     } },
 
         { siSLECacheSize,       {   4096,   8192,   16384,  65536,      0       } },
         { siSLECacheAge,        {   30,     60,     90,     120,        300     } },
 
-        { siLedgerSize,         {   32,     128,    256,    2048,       0       } },
-        { siLedgerAge,          {   30,     90,     180,    300,        900     } },
+        { siLedgerSize,         {   32,     128,    256,    384,        0       } },
+        { siLedgerAge,          {   30,     90,     180,    240,        900     } },
 
-        { siHashNodeDBCache,    {   4,      12,     24,     32,         64      } },
-        { siTxnDBCache,         {   4,      12,     24,     32,         32      } },
-        { siLgrDBCache,         {   4,      8,      16,     16,         16      } },
+        { siHashNodeDBCache,    {   4,      12,     24,     64,         128      } },
+        { siTxnDBCache,         {   4,      12,     24,     64,         128      } },
+        { siLgrDBCache,         {   4,      8,      16,     32,         128      } },
     };
 
     for (int i = 0; i < (sizeof (sizeTable) / sizeof (SizedItem)); ++i)
