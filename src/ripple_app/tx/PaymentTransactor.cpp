@@ -220,7 +220,7 @@ TER PaymentTransactor::doApply ()
         const uint64    uReserve        = mEngine->getLedger ()->getReserve (uOwnerCount);
 
         // Make sure have enough reserve to send. Allow final spend to use reserve for fee.
-        if (mPriorBalance < saDstAmount + uReserve)     // Reserve is not scaled by fee.
+        if (mPriorBalance < saDstAmount + std::max(uReserve, mTxn.getTransactionFee ().getNValue ()))
         {
             // Vote no. However, transaction might succeed, if applied in a different order.
             WriteLog (lsINFO, PaymentTransactor) << "";
