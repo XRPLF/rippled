@@ -39,15 +39,15 @@ Ledger::ref LedgerMaster::getCurrentSnapshot ()
 
 int LedgerMaster::getPublishedLedgerAge ()
 {
-    ScopedLockType ml (mLock, __FILE__, __LINE__);
-    if (!mPubLedger)
+    uint32 pubClose = mPubLedgerClose.get();
+    if (!pubClose)
     {
         WriteLog (lsDEBUG, LedgerMaster) << "No published ledger";
         return 999999;
     }
 
     int64 ret = getApp().getOPs ().getCloseTimeNC ();
-    ret -= static_cast<int64> (mPubLedger->getCloseTimeNC ());
+    ret -= static_cast<int64> (pubClose);
     ret = std::max (0LL, ret);
 
     WriteLog (lsTRACE, LedgerMaster) << "Published ledger age is " << ret;
@@ -56,15 +56,15 @@ int LedgerMaster::getPublishedLedgerAge ()
 
 int LedgerMaster::getValidatedLedgerAge ()
 {
-    ScopedLockType ml (mLock, __FILE__, __LINE__);
-    if (!mValidLedger)
+    uint32 valClose = mValidLedgerClose.get();
+    if (!valClose)
     {
         WriteLog (lsDEBUG, LedgerMaster) << "No validated ledger";
         return 999999;
     }
 
     int64 ret = getApp().getOPs ().getCloseTimeNC ();
-    ret -= static_cast<int64> (mValidLedger->getCloseTimeNC ());
+    ret -= static_cast<int64> (valClose);
     ret = std::max (0LL, ret);
 
     WriteLog (lsTRACE, LedgerMaster) << "Validated ledger age is " << ret;
@@ -78,18 +78,33 @@ bool LedgerMaster::isCaughtUp(std::string& reason)
         reason = "No recently-published ledger";
         return false;
     }
-    ScopedLockType ml (mLock, __FILE__, __LINE__);
-    if (!mValidLedger || !mPubLedger)
+    uint32 validClose = mValidLedgerClose.get();
+    uint32 pubClose = mPubLedgerClose.get();
+    if (!validClose || !pubClose)
     {
         reason = "No published ledger";
         return false;
     }
-    if (mValidLedger->getLedgerSeq() > (mPubLedger->getLedgerSeq() + 3))
+    if (validClose  > (pubClose + 90))
     {
         reason = "Published ledger lags validated ledger";
         return false;
     }
     return true;
+}
+
+void LedgerMaster::setValidLedger(Ledger::ref l)
+{
+    mValidLedger =  l;
+    mValidLedgerClose = l->getCloseTimeNC();
+    mValidLedgerSeq = l->getLedgerSeq();
+}
+
+void LedgerMaster::setPubLedger(Ledger::ref l)
+{
+    mPubLedger = l;
+    mPubLedgerClose = l->getCloseTimeNC();
+    mPubLedgerSeq = l->getLedgerSeq();
 }
 
 void LedgerMaster::addHeldTransaction (Transaction::ref transaction)
@@ -260,16 +275,9 @@ void LedgerMaster::clearLedger (uint32 seq)
 
 bool LedgerMaster::getFullValidatedRange (uint32& minVal, uint32& maxVal)
 { // Ledgers we have all the nodes for
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+    maxVal = mPubLedgerSeq.get();
 
-        if (!mPubLedger)
-            return false;
-
-        maxVal = mPubLedger->getLedgerSeq ();
-    }
-
-    if (maxVal == 0)
+    if (!maxVal)
         return false;
 
     {
@@ -287,16 +295,9 @@ bool LedgerMaster::getFullValidatedRange (uint32& minVal, uint32& maxVal)
 
 bool LedgerMaster::getValidatedRange (uint32& minVal, uint32& maxVal)
 { // Ledgers we have all the nodes for and are indexed
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+    maxVal = mPubLedgerSeq.get();
 
-        if (!mPubLedger)
-            return false;
-
-        maxVal = mPubLedger->getLedgerSeq ();
-    }
-
-    if (maxVal == 0)
+    if (!maxVal)
         return false;
 
     {
@@ -498,10 +499,10 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
         ledger->pendSaveValidated (isSynchronous, isCurrent);
 
         if (!mValidLedger || (ledger->getLedgerSeq() > mValidLedger->getLedgerSeq()))
-            mValidLedger = ledger;
+            setValidLedger(ledger);
         if (!mPubLedger)
         {
-            mPubLedger = ledger;
+            setPubLedger(ledger);
             getApp().getOrderBookDB().setup(ledger);
         }
 
@@ -552,6 +553,9 @@ void LedgerMaster::checkAccept (uint256 const& hash)
 
 void LedgerMaster::checkAccept (Ledger::ref ledger)
 {
+    if (ledger->getLedgerSeq() <= mValidLedgerSeq.get())
+        return;
+
     // Can we advance the last fully-validated ledger? If so, can we publish?
     ScopedLockType ml (mLock, __FILE__, __LINE__);
 
@@ -587,11 +591,11 @@ void LedgerMaster::checkAccept (Ledger::ref ledger)
 
     ledger->setValidated();
     ledger->setFull();
-    mValidLedger = ledger;
+    setValidLedger(ledger);
     if (!mPubLedger)
     {
         ledger->pendSaveValidated(true, true);
-        mPubLedger = ledger;
+        setPubLedger(ledger);
         getApp().getOrderBookDB().setup(ledger);
     }
 
@@ -721,7 +725,7 @@ void LedgerMaster::advanceThread()
                 getApp().getOPs().pubLedger(ledger);
 
                 sl.lock(__FILE__, __LINE__);
-                mPubLedger = ledger;
+                setPubLedger(ledger);
                 progress = true;
             }
 

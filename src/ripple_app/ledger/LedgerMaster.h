@@ -42,6 +42,10 @@ public:
     explicit LedgerMaster (Stoppable& parent)
         : Stoppable ("LedgerMaster", parent)
         , mLock (this, "LedgerMaster", __FILE__, __LINE__)
+        , mPubLedgerClose (0)
+        , mPubLedgerSeq (0)
+        , mValidLedgerClose (0)
+        , mValidLedgerSeq (0)
         , mHeldTransactions (uint256 ())
         , mMinValidations (0)
         , mLastValidateSeq (0)
@@ -222,6 +226,9 @@ private:
     void advanceThread ();
     void updatePaths (Job&);
 
+    void setValidLedger(Ledger::ref);
+    void setPubLedger(Ledger::ref);
+
 private:
     LockType mLock;
 
@@ -233,6 +240,11 @@ private:
     Ledger::pointer mValidLedger;       // The highest-sequence ledger we have fully accepted
     Ledger::pointer mPubLedger;         // The last ledger we have published
     Ledger::pointer mPathLedger;        // The last ledger we did pathfinding against
+
+    beast::Atomic<uint32> mPubLedgerClose;
+    beast::Atomic<uint32> mPubLedgerSeq;
+    beast::Atomic<uint32> mValidLedgerClose;
+    beast::Atomic<uint32> mValidLedgerSeq;
 
     LedgerHistory mLedgerHistory;
 
