@@ -13,6 +13,7 @@ OSX = bool(platform.mac_ver()[0])
 FreeBSD = bool('FreeBSD' == platform.system())
 Linux   = bool('Linux' == platform.system())
 Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
+Archlinux  = bool(Linux and ('','','') == platform.linux_distribution()) #Arch still has issues with the platform module
 
 #
 # We expect this to be set
@@ -20,7 +21,7 @@ Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
 BOOST_HOME = os.environ.get("RIPPLED_BOOST_HOME", None) 
 
 
-if OSX or Ubuntu:
+if OSX or Ubuntu or Archlinux:
     CTAGS = 'ctags'
 elif FreeBSD:
     CTAGS = 'exctags'
@@ -89,7 +90,7 @@ BOOST_LIBS = [
 # We whitelist platforms where the non -mt version is linked with pthreads. This
 # can be verified with: ldd libboost_filesystem.* If a threading library is
 # included the platform can be whitelisted.
-if FreeBSD or Ubuntu or OSX:
+if FreeBSD or Ubuntu or Archlinux or OSX:
     # non-mt libs do link with pthreads.
     env.Append(
         LIBS = BOOST_LIBS
