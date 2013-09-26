@@ -17,6 +17,22 @@
 */
 //==============================================================================
 
+RippleMain::RippleMain()
+{
+    ProtectedCall::setHandler (*this);
+}
+
+RippleMain::~RippleMain()
+{
+
+}
+
+void RippleMain::onException (ProtectedCall::Exception const& e) const
+{
+    std::_Exit(EXIT_FAILURE);
+}
+
+//------------------------------------------------------------------------------
 
 namespace po = boost::program_options;
 

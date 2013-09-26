@@ -81,8 +81,8 @@
     are thrown.
     @see ProtectedCall
 */
-#ifndef   BEAST_CATCH_UNHANDLED_EXCEPTIONS
-//#define BEAST_CATCH_UNHANDLED_EXCEPTIONS 1
+#ifndef BEAST_CATCH_UNHANDLED_EXCEPTIONS
+#define BEAST_CATCH_UNHANDLED_EXCEPTIONS 1
 #endif
 
 //------------------------------------------------------------------------------
