@@ -108,12 +108,16 @@ void LoadMonitor::addLatency (int latency)
         mLatencyMSPeak = latencyPeak;
 }
 
-
-void LoadMonitor::addCountAndLatency (const std::string& name, int latency)
+void LoadMonitor::addLoadSample (LoadEvent const& sample)
 {
+    std::string const& name (sample.name());
+    std::size_t latency (sample.getSecondsTotal());
+
     if (latency > 500)
     {
-        WriteLog ((latency > 1000) ? lsWARNING : lsINFO, LoadMonitor) << "Job: " << name << " ExecutionTime: " << latency;
+        WriteLog ((latency > 1000) ? lsWARNING : lsINFO, LoadMonitor)
+            << "Job: " << name << " ExecutionTime: " << sample.getSecondsRunning() <<
+            " WaitingTime: " << sample.getSecondsWaiting();
     }
 
     // VFALCO NOTE Why does 1 become 0?

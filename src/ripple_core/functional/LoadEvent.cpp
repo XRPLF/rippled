@@ -17,40 +17,74 @@
 */
 //==============================================================================
 
-
 LoadEvent::LoadEvent (LoadMonitor& monitor, const std::string& name, bool shouldStart)
-    : mMonitor (monitor)
-    , mRunning (false)
-    , mName (name)
+    : m_loadMonitor (monitor)
+    , m_isRunning (false)
+    , m_name (name)
+    , m_timeStopped (Time::getCurrentTime())
+    , m_secondsWaiting (0)
+    , m_secondsRunning (0)
 {
-    mStartTime = boost::posix_time::microsec_clock::universal_time ();
-
     if (shouldStart)
         start ();
 }
 
 LoadEvent::~LoadEvent ()
 {
-    if (mRunning)
+    if (m_isRunning)
         stop ();
+}
+
+std::string const& LoadEvent::name () const
+{
+    return m_name;
+}
+
+std::size_t LoadEvent::getSecondsWaiting() const
+{
+    return m_secondsWaiting;
+}
+
+std::size_t LoadEvent::getSecondsRunning() const
+{
+    return m_secondsRunning;
+}
+
+std::size_t LoadEvent::getSecondsTotal() const
+{
+    return m_secondsWaiting + m_secondsRunning;
 }
 
 void LoadEvent::reName (const std::string& name)
 {
-    mName = name;
+    m_name = name;
 }
 
 void LoadEvent::start ()
 {
-    mRunning = true;
-    mStartTime = boost::posix_time::microsec_clock::universal_time ();
+    Time currentTime (Time::getCurrentTime());
+
+    // If we already called start, this call will replace the previous one.
+    if (m_isRunning)
+    {
+        m_secondsWaiting += (currentTime - m_timeStarted).inSeconds();
+    }
+    else
+    {
+        m_secondsWaiting += (currentTime - m_timeStopped).inSeconds();
+        m_isRunning = true;
+    }
+
+    m_timeStarted = currentTime;
 }
 
 void LoadEvent::stop ()
 {
-    assert (mRunning);
+    bassert (m_isRunning);
 
-    mRunning = false;
-    mMonitor.addCountAndLatency (mName,
-                                 static_cast<int> ((boost::posix_time::microsec_clock::universal_time () - mStartTime).total_milliseconds ()));
+    m_timeStopped = Time::getCurrentTime();
+    m_secondsRunning += (m_timeStopped - m_timeStarted).inSeconds();
+
+    m_isRunning = false;
+    m_loadMonitor.addLoadSample (*this);
 }

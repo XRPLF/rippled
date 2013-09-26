@@ -34,7 +34,7 @@ public:
 
     void addLatency (int latency);
 
-    void addCountAndLatency (const std::string& name, int latency);
+    void addLoadSample (LoadEvent const& sample);
 
     void setTargetLatency (uint64 avg, uint64 pk);
 

@@ -48,19 +48,33 @@ public:
 
     ~LoadEvent ();
 
+    std::string const& name () const;
+    std::size_t getSecondsWaiting() const;
+    std::size_t getSecondsRunning() const;
+    std::size_t getSecondsTotal() const;
+
     // VFALCO TODO rename this to setName () or setLabel ()
     void reName (const std::string& name);
 
-    // okay to call if already started
+    // Start the measurement. The constructor calls this automatically if
+    // shouldStart is true. If the operation is aborted, start() can be
+    // called again later.
+    //
     void start ();
 
+    // Stops the measurement and reports the results. The time reported is
+    // measured from the last call to start.
+    //
     void stop ();
 
 private:
-    LoadMonitor&                mMonitor;
-    bool                        mRunning;
-    std::string                 mName;
-    boost::posix_time::ptime    mStartTime;
+    LoadMonitor& m_loadMonitor;
+    bool m_isRunning;
+    std::string m_name;
+    Time m_timeStopped;
+    Time m_timeStarted;
+    std::size_t m_secondsWaiting;
+    std::size_t m_secondsRunning;
 };
 
 #endif
