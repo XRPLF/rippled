@@ -24,33 +24,41 @@
 #ifndef BEAST_ARITHMETIC_H_INCLUDED
 #define BEAST_ARITHMETIC_H_INCLUDED
 
+#include <cmath>
+
 namespace beast {
 
 // Some indispensible min/max functions
 
 /** Returns the larger of two values. */
 template <typename Type>
-inline Type bmax (const Type a, const Type b)                                               { return (a < b) ? b : a; }
+inline Type bmax (const Type a, const Type b)
+    { return (a < b) ? b : a; }
 
 /** Returns the larger of three values. */
 template <typename Type>
-inline Type bmax (const Type a, const Type b, const Type c)                                 { return (a < b) ? ((b < c) ? c : b) : ((a < c) ? c : a); }
+inline Type bmax (const Type a, const Type b, const Type c)
+    { return (a < b) ? ((b < c) ? c : b) : ((a < c) ? c : a); }
 
 /** Returns the larger of four values. */
 template <typename Type>
-inline Type bmax (const Type a, const Type b, const Type c, const Type d)                   { return bmax (a, bmax (b, c, d)); }
+inline Type bmax (const Type a, const Type b, const Type c, const Type d)
+    { return bmax (a, bmax (b, c, d)); }
 
 /** Returns the smaller of two values. */
 template <typename Type>
-inline Type bmin (const Type a, const Type b)                                               { return (b < a) ? b : a; }
+inline Type bmin (const Type a, const Type b)
+    { return (b < a) ? b : a; }
 
 /** Returns the smaller of three values. */
 template <typename Type>
-inline Type bmin (const Type a, const Type b, const Type c)                                 { return (b < a) ? ((c < b) ? c : b) : ((c < a) ? c : a); }
+inline Type bmin (const Type a, const Type b, const Type c)
+    { return (b < a) ? ((c < b) ? c : b) : ((c < a) ? c : a); }
 
 /** Returns the smaller of four values. */
 template <typename Type>
-inline Type bmin (const Type a, const Type b, const Type c, const Type d)                   { return bmin (a, bmin (b, c, d)); }
+inline Type bmin (const Type a, const Type b, const Type c, const Type d)
+    { return bmin (a, bmin (b, c, d)); }
 
 /** Scans an array of values, returning the minimum value that it contains. */
 template <typename Type>
@@ -114,7 +122,6 @@ void findMinAndMax (const Type* values, int numValues, Type& lowest, Type& highe
         highest = mx;
     }
 }
-
 
 //==============================================================================
 /** Constrains a value to keep it within a given range.
