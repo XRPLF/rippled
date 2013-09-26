@@ -376,6 +376,8 @@ void PathRequest::updateAll (Ledger::ref ledger, bool newOnly, CancelCallback sh
 {
     std::set<wptr> requests;
 
+    LoadEvent::autoptr event (getApp().getJobQueue().getLoadEventAP(jtPATH_FIND, "PathRequest::updateAll"));
+
     {
         StaticScopedLockType sl (sLock, __FILE__, __LINE__);
         requests = sRequests;
