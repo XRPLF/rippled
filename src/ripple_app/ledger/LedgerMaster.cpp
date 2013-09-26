@@ -685,13 +685,20 @@ void LedgerMaster::advanceThread()
                         }
                         else
                         {
-                            for (int i = 0; i < getConfig().getSize(siLedgerFetch); ++i)
-                            {
-                                uint32 seq = missing - i;
-                                uint256 hash = nextLedger->getLedgerHash(seq);
-                                if (hash.isNonZero())
-                                    getApp().getInboundLedgers().findCreate(hash, seq, false);
-                            }
+			    try
+			    {
+                                for (int i = 0; i < getConfig().getSize(siLedgerFetch); ++i)
+                                {
+                                    uint32 seq = missing - i;
+                                    uint256 hash = nextLedger->getLedgerHash(seq);
+                                    if (hash.isNonZero())
+                                        getApp().getInboundLedgers().findCreate(hash, seq, false);
+                                }
+			    }
+			    catch (...)
+			    {
+			        WriteLog (lsWARNING, LedgerMaster) << "Threw while prefecthing";
+			    }
                         }
                     }
                     else
