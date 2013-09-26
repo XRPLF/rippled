@@ -1924,6 +1924,7 @@
     </CustomBuild>
     <None Include="..\..\doc\Doxyfile" />
     <None Include="..\..\doc\rippled-example.cfg" />
+    <None Include="..\..\LICENSE" />
     <None Include="..\..\src\ripple\beast\ripple_beastobjc.mm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

@@ -2155,6 +2155,9 @@
     <None Include="..\..\src\ripple\json\impl\version">
       <Filter>[1] Ripple\json\impl</Filter>
     </None>
+    <None Include="..\..\LICENSE">
+      <Filter>%28Notes%29</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\doc\todo\NIKB_TODO.txt">
