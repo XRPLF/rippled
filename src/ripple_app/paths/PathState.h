@@ -15,9 +15,12 @@ typedef boost::unordered_map <aciSource, unsigned int>::const_iterator   curIssu
 extern std::size_t hash_value (const aciSource& asValue);
 
 // Holds a path state under incremental application.
-class PathState
+class PathState : public CountedObject <PathState>
 {
 public:
+
+    static char const* getCountedObjectName () { return "PathState"; }
+
     class Node
     {
     public:

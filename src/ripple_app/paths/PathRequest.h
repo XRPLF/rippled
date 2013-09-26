@@ -17,9 +17,12 @@ class RippleLineCache;
 #define PFR_PJ_NOCHANGE             0
 #define PFR_PJ_CHANGE               1
 
-class PathRequest : public boost::enable_shared_from_this<PathRequest>
+class PathRequest : public boost::enable_shared_from_this<PathRequest>, public CountedObject <PathRequest>
 {
 public:
+
+    static char const* getCountedObjectName () { return "PathRequest"; }
+
     typedef boost::weak_ptr<PathRequest>    wptr;
     typedef boost::shared_ptr<PathRequest>  pointer;
     typedef const pointer&                  ref;
