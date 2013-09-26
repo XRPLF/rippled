@@ -1815,6 +1815,11 @@ TER RippleCalc::calcNodeFwd (const unsigned int uNode, PathState& psCur, const b
         terResult   = calcNodeFwd (uNode + 1, psCur, bMultiQuality);
     }
 
+    if (tesSUCCESS == terResult && (!psCur.saInPass || !psCur.saOutPass))
+    {
+        terResult = tecPATH_DRY;
+    }
+
     WriteLog (lsDEBUG, RippleCalc) << boost::str (boost::format ("calcNodeFwd< uNode=%d terResult=%d") % uNode % terResult);
 
     return terResult;
