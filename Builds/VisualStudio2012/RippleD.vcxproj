@@ -1635,6 +1635,7 @@
     <ClInclude Include="..\..\src\ripple\validators\api\Source.h" />
     <ClInclude Include="..\..\src\ripple\validators\api\Types.h" />
     <ClInclude Include="..\..\src\ripple\validators\api\Manager.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\AgedHistory.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\CancelCallbacks.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\ChosenList.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h" />

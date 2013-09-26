@@ -2115,6 +2115,9 @@
     <ClInclude Include="..\..\src\ripple_basics\containers\BlackList.h">
       <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\AgedHistory.h">
+      <Filter>[1] Ripple\validators\impl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\ripple_data\protocol\ripple.proto">

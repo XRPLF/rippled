@@ -21,6 +21,8 @@
 #ifndef RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
+#include "AgedHistory.h"
+
 namespace ripple {
 namespace Validators {
 
@@ -44,53 +46,6 @@ enum
 enum
 {
     maxSizeBeforeSwap    = 100
-};
-
-// Simple container swapping template
-template <class Container>
-class AgedHistory
-{
-public:
-    typedef Container container_type;
-
-    AgedHistory()
-        : m_p1 (&m_c1)
-        , m_p2 (&m_c2)
-    {
-    }
-
-    AgedHistory (AgedHistory const& other)
-        : m_c1 (other.front())
-        , m_c2 (other.back())
-        , m_p1 (&m_c1)
-        , m_p2 (&m_c2)
-    {
-    }
-
-    AgedHistory& operator= (AgedHistory const& other)
-    {
-        m_c1 = other.front();
-        m_c2 = other.back();
-        m_p1 = &m_c1;
-        m_p2 = &m_c2;
-        return *this;
-    }
-
-    void swap () { std::swap (m_p1, m_p2); }
-
-    Container*       operator-> ()       { return m_p1; }
-    Container const* operator-> () const { return m_p1; }
-
-    Container&       front()       { return *m_p1; }
-    Container const& front() const { return *m_p1; }
-    Container&       back()        { return *m_p2; }
-    Container const& back()  const { return *m_p2; }
-
-private:
-    Container  m_c1;
-    Container  m_c2;
-    Container* m_p1;
-    Container* m_p2;
 };
 
 //------------------------------------------------------------------------------
