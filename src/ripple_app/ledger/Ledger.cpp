@@ -589,6 +589,7 @@ void Ledger::saveValidatedLedger (bool current)
             StaticScopedLockType sl (sPendingSaveLock, __FILE__, __LINE__);
             sPendingSaves.erase(getLedgerSeq());
         }
+        return;
     }
 
     {
