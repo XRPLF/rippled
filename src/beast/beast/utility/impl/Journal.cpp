@@ -27,25 +27,25 @@ bool Journal::Sink::active (Severity)
     return true;
 }
 
+// A Sink that does nothing.
+class NullJournalSink : public Journal::Sink
+{
+public:
+    void write (Journal::Severity, std::string const&)
+    {
+    }
+
+    bool active (Journal::Severity)
+    {
+        return false;
+    }
+};
+
 //------------------------------------------------------------------------------
 
 Journal::Sink& Journal::getNullSink ()
 {
-    // A Sink that does nothing.
-    class NullSink : public Sink
-    {
-    public:
-        void write (Severity, std::string const&)
-        {
-        }
-
-        bool active (Severity)
-        {
-            return false;
-        }
-    };
-
-    return *SharedSingleton <NullSink>::get (
+    return *SharedSingleton <NullJournalSink>::get (
         SingletonLifetime::neverDestroyed);
 }
 
