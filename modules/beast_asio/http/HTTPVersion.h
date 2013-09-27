@@ -29,8 +29,8 @@ public:
     HTTPVersion (HTTPVersion const& other);
     HTTPVersion& operator= (HTTPVersion const& other);
     String toString () const;
-    unsigned short major () const;
-    unsigned short minor () const;
+    unsigned short vmajor () const;
+    unsigned short vminor () const;
     bool operator== (HTTPVersion const& rhs) const;
     bool operator!= (HTTPVersion const& rhs) const;
     bool operator>  (HTTPVersion const& rhs) const;
@@ -40,7 +40,7 @@ public:
 
 private:
     unsigned short m_major;
-    unsigned short m_minor;;
+    unsigned short m_minor;
 };
 
 #endif
