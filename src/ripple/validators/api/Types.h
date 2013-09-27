@@ -31,12 +31,6 @@ struct ReceivedValidation
     RipplePublicKeyHash     publicKeyHash;
 };
 
-/** Callback used to optionally cancel long running fetch operations. */
-struct CancelCallback
-{
-    virtual bool shouldCancel () = 0;
-};
-
 }
 }
 

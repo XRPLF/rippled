@@ -122,7 +122,7 @@ public:
             return String::empty;
         }
 
-        Result fetch (CancelCallback& cancel, Journal)
+        Result fetch (Journal)
         {
             Result result;
 
@@ -207,8 +207,7 @@ public:
 
         addSources (logic);
 
-        NoOpCancelCallback cancelCallback;
-        logic.check (cancelCallback);
+        logic.fetch_one ();
 
         ChosenList::Ptr list (logic.getChosen ());
 

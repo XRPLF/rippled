@@ -166,7 +166,6 @@ public:
     // Initialize the Validators object with Config information.
     void initValidatorsConfig ()
     {
-#if RIPPLE_USE_NEW_VALIDATORS
         {
             std::vector <std::string> const& strings (getConfig().validators);
             if (! strings.empty ())
@@ -182,7 +181,6 @@ public:
         {
             m_validators->addFile (getConfig().getValidatorsFile());
         }
-#endif
     }
 
     //--------------------------------------------------------------------------

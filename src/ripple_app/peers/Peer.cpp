@@ -1460,14 +1460,12 @@ static void checkValidation (Job&, SerializedValidation::pointer val, bool isTru
         //----------------------------------------------------------------------
         //
         {
-#if RIPPLE_USE_NEW_VALIDATORS
             SerializedValidation const& sv (*val);
             Validators::ReceivedValidation rv;
             rv.ledgerHash = sv.getLedgerHash ();
             rv.publicKey = sv.getSignerPublic();
             rv.publicKeyHash = sv.getSignerPublic();
             getApp ().getValidators ().receiveValidation (rv);
-#endif
         }
         //
         //----------------------------------------------------------------------

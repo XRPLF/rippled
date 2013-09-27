@@ -52,9 +52,6 @@ public:
     virtual String createParam () = 0;
 
     /** Fetch the most recent list from the Source.
-        If possible, the Source should periodically poll the
-        CancelCallback, and abort the operation if shouldCancel
-        returns `true`.
         This call will block.
     */
     struct Result
@@ -67,8 +64,12 @@ public:
         Time expirationTime;
         Array <Info> list;
     };
-    
-    virtual Result fetch (CancelCallback& callback, Journal journal) = 0;
+
+    /** Cancel any pending fetch.
+        The default implementation does nothing.
+    */
+    virtual void cancel () { }
+    virtual Result fetch (Journal journal) = 0;
 };
 
 }

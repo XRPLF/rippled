@@ -50,7 +50,7 @@ public:
         return String::empty;
     }
 
-    Result fetch (CancelCallback&, Journal journal)
+    Result fetch (Journal journal)
     {
         Result result;
 

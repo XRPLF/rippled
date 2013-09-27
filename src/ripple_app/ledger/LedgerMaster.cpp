@@ -522,12 +522,10 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
 
     //--------------------------------------------------------------------------
     //
-#if RIPPLE_USE_NEW_VALIDATORS
     {
         if (isCurrent)
             getApp ().getValidators ().ledgerClosed (ledger->getHash());
     }
-#endif
     //
     //--------------------------------------------------------------------------
 }

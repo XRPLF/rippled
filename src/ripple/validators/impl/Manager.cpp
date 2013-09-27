@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 /*
 
 Information to track:
@@ -104,27 +103,39 @@ namespace Validators {
 class ManagerImp
     : public Manager
     , public Stoppable
-    , public ThreadWithCallQueue::EntryPoints
+    , public Thread
     , public DeadlineTimer::Listener
     , public LeakChecked <ManagerImp>
 {
 public:
+    StoreSqdb m_store;
+    Logic m_logic;
+    Journal m_journal;
+    DeadlineTimer m_checkTimer;
+    ServiceQueue m_queue;
+
+    // True if we should call check on idle.
+    // This gets set to false once we make it through the whole list.
+    //
+    bool m_checkSources;
+
     ManagerImp (Stoppable& parent, Journal journal)
         : Stoppable ("Validators::Manager", parent)
+        , Thread ("Validators")
         , m_store (journal)
         , m_logic (m_store, journal)
         , m_journal (journal)
-        , m_thread ("Validators")
         , m_checkTimer (this)
-        , m_checkSources (true) // true to cause a full scan on start
+        , m_checkSources (true)
     {
         addRPCHandlers();
-        m_thread.start (this);
+
+        startThread();
     }
 
     ~ManagerImp ()
     {
-        m_thread.stop (true);
+        stopThread ();
     }
 
     //--------------------------------------------------------------------------
@@ -134,7 +145,7 @@ public:
 
     void onStop ()
     {
-        m_thread.stop (false);
+        m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
     }
 
     //--------------------------------------------------------------------------
@@ -149,7 +160,7 @@ public:
 
     Json::Value rpcRebuild (Json::Value const& args)
     {
-        m_thread.call (&Logic::buildChosen, &m_logic);
+        m_queue.dispatch (bind (&Logic::buildChosen, &m_logic));
         Json::Value result;
         result ["chosen_list"] = "rebuilding";
         return result;
@@ -203,60 +214,40 @@ public:
 
     void addSource (Source* source)
     {
-#if RIPPLE_USE_NEW_VALIDATORS
-        bassert (! isStopping());
-        //m_thread.call (&Logic::add, &m_logic, source);
-#else
-        delete source;
-#endif
+        m_queue.dispatch (bind (&Logic::add, &m_logic, source));
     }
 
     void addStaticSource (Source* source)
     {
-#if RIPPLE_USE_NEW_VALIDATORS
-        bassert (! isStopping());
-        //m_thread.call (&Logic::addStatic, &m_logic, source);
-#else
-        delete source;
-#endif
+        m_queue.dispatch (bind (&Logic::addStatic, &m_logic, source));
     }
 
+    // VFALCO NOTE we should just do this on the callers thread?
+    //
     void receiveValidation (ReceivedValidation const& rv)
     {
 #if RIPPLE_USE_NEW_VALIDATORS
         if (! isStopping())
-            m_thread.call (&Logic::receiveValidation, &m_logic, rv);
+            m_queue.dispatch (bind (
+                &Logic::receiveValidation, &m_logic, rv));
 #endif
     }
 
+    // VFALCO NOTE we should just do this on the callers thread?
+    //
     void ledgerClosed (RippleLedgerHash const& ledgerHash)
     {
 #if RIPPLE_USE_NEW_VALIDATORS
         if (! isStopping())
-            m_thread.call (&Logic::ledgerClosed, &m_logic, ledgerHash);
+            m_queue.dispatch (bind (
+                &Logic::ledgerClosed, &m_logic, ledgerHash));
 #endif
     }
 
     //--------------------------------------------------------------------------
 
-    void onDeadlineTimer (DeadlineTimer& timer)
+    void init ()
     {
-#if RIPPLE_USE_NEW_VALIDATORS
-        if (timer == m_checkTimer)
-        {
-            m_checkSources = true;
-
-            // This will kick us back into threadIdle
-            m_thread.interrupt();
-        }
-#endif
-    }
-
-    //--------------------------------------------------------------------------
-
-    void threadInit ()
-    {
-#if RIPPLE_USE_NEW_VALIDATORS
         File const file (File::getSpecialLocation (
             File::userDocumentsDirectory).getChildFile ("validators.sqlite"));
         
@@ -271,55 +262,49 @@ public:
         if (! error)
         {
             m_logic.load ();
-
-            // This flag needs to be on, to force a full check of all
-            // sources on startup. Once we finish the check we will
-            // set the deadine timer.
-            //
-            bassert (m_checkSources);
         }
-#endif
     }
 
-    void threadExit ()
+    void onDeadlineTimer (DeadlineTimer& timer)
     {
-        // must come last
-        stopped ();
+        if (timer == m_checkTimer)
+        {
+            m_queue.dispatch (bind (&ManagerImp::setCheckSources, this));
+        }
     }
 
-    bool threadIdle ()
+    void setCheckSources ()
     {
-        bool interrupted = false;
+        m_checkSources = true;
+    }
 
-#if RIPPLE_USE_NEW_VALIDATORS
+    void checkSources ()
+    {
         if (m_checkSources)
         {
-            ThreadCancelCallback cancelCallback (m_thread);
-            interrupted = m_logic.check (cancelCallback);
-            if (! interrupted)
+            if (m_logic.fetch_one () == 0)
             {
                 // Made it through the list without interruption!
                 // Clear the flag and set the deadline timer again.
+                //
                 m_checkSources = false;
                 m_checkTimer.setExpiration (checkEverySeconds);
             }
         }
-#endif
-
-        return interrupted;
     }
 
-private:
-    StoreSqdb m_store;
-    Logic m_logic;
-    Journal m_journal;
-    ThreadWithCallQueue m_thread;
-    DeadlineTimer m_checkTimer;
+    void run ()
+    {
+        init ();
 
-    // True if we should call check on idle.
-    // This gets set to false once we make it through the whole
-    // list without interruption.
-    bool m_checkSources;
+        while (! this->threadShouldExit())
+        {
+            checkSources ();
+            m_queue.run_one();
+        }
+
+        stopped();
+    }
 };
 
 //------------------------------------------------------------------------------

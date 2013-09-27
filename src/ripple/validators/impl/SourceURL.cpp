@@ -48,7 +48,7 @@ public:
         return m_url.full();
     }
 
-    Result fetch (CancelCallback&, Journal journal)
+    Result fetch (Journal journal)
     {
         Result result;
 

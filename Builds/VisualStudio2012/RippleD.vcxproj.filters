@@ -1830,9 +1830,6 @@
     <ClInclude Include="..\..\src\ripple\validators\impl\StoreSqdb.h">
       <Filter>[1] Ripple\validators\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\CancelCallbacks.h">
-      <Filter>[1] Ripple\validators\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\ripple_app.h">
       <Filter>[2] Old Ripple\ripple_app</Filter>
     </ClInclude>

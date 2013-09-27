@@ -268,9 +268,7 @@ public:
 
         ScopedPointer <Source> object (source);
 
-        NoOpCancelCallback cancelCallback;
-
-        Source::Result result (object->fetch (cancelCallback, m_journal));
+        Source::Result result (object->fetch (m_journal));
 
         SharedState::Access state (m_state);
         if (result.success)
@@ -390,49 +388,46 @@ public:
     //
 
     /** Perform a fetch on the source. */
-    void fetch (SourceDesc& desc, CancelCallback& callback)
+    void fetch (SourceDesc& desc)
     {
         m_journal.info << "fetch ('" << desc.source->name() << "')";
 
-        Source::Result result (desc.source->fetch (callback, m_journal));
+        Source::Result result (desc.source->fetch (m_journal));
 
-        if (! callback.shouldCancel ())
+        // Reset fetch timer for the source.
+        desc.whenToFetch = Time::getCurrentTime () +
+            RelativeTime (secondsBetweenFetches);
+
+        if (result.success)
         {
-            // Reset fetch timer for the source.
-            desc.whenToFetch = Time::getCurrentTime () +
-                RelativeTime (secondsBetweenFetches);
+            SharedState::Access state (m_state);
 
-            if (result.success)
-            {
-                SharedState::Access state (m_state);
+            // Add the new source info to the map
+            merge (result.list, state);
 
-                // Add the new source info to the map
-                merge (result.list, state);
+            // Swap lists
+            desc.result.swapWith (result);
 
-                // Swap lists
-                desc.result.swapWith (result);
+            // Remove the old source info from the map
+            remove (result.list, state);
 
-                // Remove the old source info from the map
-                remove (result.list, state);
+            // See if we need to rebuild
+            checkChosen ();
 
-                // See if we need to rebuild
-                checkChosen ();
+            // Reset failure status
+            desc.numberOfFailures = 0;
+            desc.status = SourceDesc::statusFetched;
 
-                // Reset failure status
-                desc.numberOfFailures = 0;
-                desc.status = SourceDesc::statusFetched;
+            // Update the source's list in the store
+            m_store.update (desc, true);
+        }
+        else
+        {
+            ++desc.numberOfFailures;
+            desc.status = SourceDesc::statusFailed;
 
-                // Update the source's list in the store
-                m_store.update (desc, true);
-            }
-            else
-            {
-                ++desc.numberOfFailures;
-                desc.status = SourceDesc::statusFailed;
-
-                // Record the failure in the Store
-                m_store.update (desc);
-            }
+            // Record the failure in the Store
+            m_store.update (desc);
         }
     }
 
@@ -445,17 +440,17 @@ public:
         m_store.update (desc);
     }
 
-    /** Check each Source to see if it needs processing.
-        @return `true` if an interruption occurred.
+    /** Process up to one source that needs fetching.
+        @return The number of sources that were fetched.
     */
-    bool check (CancelCallback& callback)
+    std::size_t fetch_one ()
     {
-        bool interrupted (false);
+        std::size_t n (0);
         Time const currentTime (Time::getCurrentTime ());
         
         SharedState::Access state (m_state);
         for (SourcesType::iterator iter = state->sources.begin ();
-            iter != state->sources.end (); ++iter)
+            (n == 0) && iter != state->sources.end (); ++iter)
         {
             SourceDesc& desc (*iter);
 
@@ -463,12 +458,8 @@ public:
             //
             if (desc.whenToFetch <= currentTime)
             {
-                fetch (desc, callback);
-                if (callback.shouldCancel ())
-                {
-                    interrupted = true;
-                    break;
-                }
+                fetch (desc);
+                ++n;
             }
 
             // See if we need to expire
@@ -480,7 +471,7 @@ public:
             }
         }
 
-        return interrupted;
+        return n;
     }
 
     //----------------------------------------------------------------------

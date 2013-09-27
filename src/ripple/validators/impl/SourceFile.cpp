@@ -48,7 +48,7 @@ public:
         return m_file.getFullPathName ();
     }
 
-    Result fetch (CancelCallback&, Journal journal)
+    Result fetch (Journal journal)
     {
         Result result;
         
