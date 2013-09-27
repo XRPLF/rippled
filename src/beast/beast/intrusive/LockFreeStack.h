@@ -188,15 +188,6 @@ public:
         return m_head.get() == &m_end;
     }
 
-    /** Return the number of elements in the stack.
-        Thread safety:
-            Safe to call from any thread.
-    */
-    size_type size () const
-    {
-        return m_size.get ();
-    }
-
     /** Push a node onto the stack.
         The caller is responsible for preventing the ABA problem.
         This operation is lock-free.
@@ -219,7 +210,6 @@ public:
             node->m_next = head;
         }
         while (!m_head.compareAndSetBool (node, head));
-        ++m_size;
         return first;
     }
 
@@ -244,7 +234,6 @@ public:
             head = node->m_next.get ();
         }
         while (!m_head.compareAndSetBool (head, node));
-        --m_size;
         return static_cast <Element*> (node);
     }
 
@@ -288,7 +277,6 @@ public:
 
 private:
     Node m_end;
-    Atomic <size_type> m_size;
     Atomic <Node*> m_head;
 };
 
