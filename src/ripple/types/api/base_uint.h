@@ -500,6 +500,9 @@ std::ostream& operator<< (std::ostream& out, const base_uint<BITS>& u)
 
 namespace std {
 
+template <typename>
+struct hash;
+
 /** Specialization for hash. */
 template<unsigned int BITS>
 struct hash <ripple::base_uint <BITS> >
@@ -529,6 +532,9 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
+template <typename>
+struct equal_to;
 
 /** Specialization for equal_to. */
 template <unsigned int BITS>

@@ -65,7 +65,7 @@ public:
     void write (std::string const& s)
     {
         if (! s.empty())
-            write (&s.front(),
+            write (&s[0],
                 std::distance (s.begin(), s.end()));
     }
 

@@ -147,7 +147,7 @@ public:
             m_parser.request()->body ());
         s.resize (body.size ());
         boost::asio::buffer_copy (
-            boost::asio::buffer (&s.front(),
+            boost::asio::buffer (&s[0],
                 s.size()), body.data());
         return s;
     }
@@ -482,7 +482,7 @@ public:
         // count will drop to zero and the buffer will be freed.
         //
         boost::asio::async_write (*m_socket,
-            boost::asio::const_buffers_1 (&buf->front(), buf->size()),
+            boost::asio::const_buffers_1 (&(*buf)[0], buf->size()),
                 m_strand.wrap (boost::bind (&Peer::handle_write,
                     Ptr (this), boost::asio::placeholders::error,
                         boost::asio::placeholders::bytes_transferred,
