@@ -160,8 +160,12 @@ template <typename Handler, typename Context>
 bool asio_handler_is_continuation(
     WrappedHandler <Handler, Context>* this_handler)
 {
+#if BEAST_ASIO_HAS_CONTINUATION_HOOKS
     return boost_asio_handler_cont_helpers::is_continuation(
         this_handler->handler());
+#else
+    return false;
+#endif
 }
 
 template <typename Function, typename Handler, typename Context>
