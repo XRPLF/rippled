@@ -163,8 +163,9 @@ struct AbstractHandler <R (void), A>
 #else
             { return false; }
 #endif
-        void invoke (invoked_type& invoked)
-            { boost_asio_handler_invoke_helpers::invoke <invoked_type, H> (invoked, m_h); }
+        void invoke (typename detail::AbstractHandlerCallBase::invoked_type& invoked)
+            { boost_asio_handler_invoke_helpers::invoke <
+                typename detail::AbstractHandlerCallBase::invoked_type, H> (invoked, m_h); }
     private:
         H m_h;
         Allocator m_alloc;
@@ -260,8 +261,9 @@ struct AbstractHandler <R (P1), A>
 #else
             { return false; }
 #endif
-        void invoke (invoked_type& invoked)
-            { boost_asio_handler_invoke_helpers::invoke <invoked_type, H> (invoked, m_h); }
+        void invoke (typename detail::AbstractHandlerCallBase::invoked_type& invoked)
+            { boost_asio_handler_invoke_helpers::invoke <
+                typename detail::AbstractHandlerCallBase::invoked_type, H> (invoked, m_h); }
     private:
         H m_h;
         Allocator m_alloc;
@@ -356,8 +358,9 @@ struct AbstractHandler <R (P1, P2), A>
 #else
             { return false; }
 #endif
-        void invoke (invoked_type& invoked)
-            { boost_asio_handler_invoke_helpers::invoke <invoked_type, H> (invoked, m_h); }
+        void invoke (typename detail::AbstractHandlerCallBase::invoked_type& invoked)
+            { boost_asio_handler_invoke_helpers::invoke <
+                typename detail::AbstractHandlerCallBase::invoked_type, H> (invoked, m_h); }
     private:
         H m_h;
         Allocator m_alloc;
@@ -450,8 +453,9 @@ struct AbstractHandler <R (P1, P2, P3), A>
 #else
             { return false; }
 #endif
-        void invoke (invoked_type& invoked)
-            { boost_asio_handler_invoke_helpers::invoke <invoked_type, H> (invoked, m_h); }
+        void invoke (typename detail::AbstractHandlerCallBase::invoked_type& invoked)
+            { boost_asio_handler_invoke_helpers::invoke <
+                typename detail::AbstractHandlerCallBase::invoked_type, H> (invoked, m_h); }
     private:
         H m_h;
         Allocator m_alloc;
@@ -544,8 +548,9 @@ struct AbstractHandler <R (P1, P2, P3, P4), A>
 #else
             { return false; }
 #endif
-        void invoke (invoked_type& invoked)
-            { boost_asio_handler_invoke_helpers::invoke <invoked_type, H> (invoked, m_h); }
+        void invoke (typename detail::AbstractHandlerCallBase::invoked_type& invoked)
+            { boost_asio_handler_invoke_helpers::invoke <
+                typename detail::AbstractHandlerCallBase::invoked_type, H> (invoked, m_h); }
     private:
         H m_h;
         Allocator m_alloc;
@@ -638,8 +643,9 @@ struct AbstractHandler <R (P1, P2, P3, P4, P5), A>
 #else
             { return false; }
 #endif
-        void invoke (invoked_type& invoked)
-            { boost_asio_handler_invoke_helpers::invoke <invoked_type, H> (invoked, m_h); }
+        void invoke (typename detail::AbstractHandlerCallBase::invoked_type& invoked)
+            { boost_asio_handler_invoke_helpers::invoke <
+                typename detail::AbstractHandlerCallBase::invoked_type, H> (invoked, m_h); }
     private:
         H m_h;
         Allocator m_alloc;
