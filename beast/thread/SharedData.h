@@ -48,8 +48,15 @@ class CriticalSection;
         ConstAccess acquires a shared lock on the mutex associated with the
         container.
 
-    - UnlockedAccess
+    - ConstUnlockedAccess
         Provides access to the shared state via a const reference or pointer.
+        No locking is performed. It is the callers responsibility to ensure that
+        the operation is synchronized. This can be useful for diagnostics or
+        assertions, or for when it is known that no other threads can access
+        the data.
+
+    - UnlockedAccess
+        Provides access to the shared state via a reference or pointer.
         No locking is performed. It is the callers responsibility to ensure that
         the operation is synchronized. This can be useful for diagnostics or
         assertions, or for when it is known that no other threads can access
@@ -115,6 +122,7 @@ public:
     class Access;
     class ConstAccess;
     class UnlockedAccess;
+    class ConstUnlockedAccess;
 
     /** Create a shared data container.
         Up to 8 parameters can be specified in the constructor. These parameters
@@ -174,44 +182,14 @@ public:
     explicit Access (SharedData& state)
         : m_state (state)
         , m_lock (m_state.m_mutex)
-    {
-    }
+        { }
 
-    /** Returns a const reference to the data. */
-    Data const& get () const
-    {
-        return m_state.m_value;
-    }
-
-    /** Returns a const reference to the data. */
-    Data const& operator* () const
-    {
-        return get ();
-    }
-
-    /** Returns a const pointer to the data. */
-    Data const* operator-> () const
-    {
-        return &get ();
-    }
-
-    /** Returns a non-const reference to the data. */
-    Data& get ()
-    {
-        return m_state.m_value;
-    }
-
-    /** Returns a non-const reference to the data. */
-    Data& operator* ()
-    {
-        return get ();
-    }
-
-    /** Returns a non-const pointer to the data. */
-    Data* operator-> ()
-    {
-        return &get ();
-    }
+    Data const& get () const { return m_state.m_value; }
+    Data const& operator* () const { return get (); }
+    Data const* operator-> () const { return &get (); }
+    Data& get () { return m_state.m_value; }
+    Data& operator* () { return get (); }
+    Data* operator-> () { return &get (); }
 
 private:
     SharedData& m_state;
@@ -231,26 +209,11 @@ public:
     explicit ConstAccess (SharedData const volatile& state)
         : m_state (const_cast <SharedData const&> (state))
         , m_lock (m_state.m_mutex)
-    {
-    }
+        { }
 
-    /** Returns a const reference to the data. */
-    Data const& get () const
-    {
-        return m_state.m_value;
-    }
-
-    /** Returns a const reference to the data. */
-    Data const& operator* () const
-    {
-        return get ();
-    }
-
-    /** Returns a const pointer to the data. */
-    Data const* operator-> () const
-    {
-        return &get ();
-    }
+    Data const& get () const { return m_state.m_value; }
+    Data const& operator* () const { return get (); }
+    Data const* operator-> () const { return &get (); }
 
 private:
     SharedData const& m_state;
@@ -263,35 +226,45 @@ private:
     This acquires a shared lock on the underlying mutex.
 */
 template <class Data, class SharedMutexType>
+class SharedData <Data, SharedMutexType>::ConstUnlockedAccess : public Uncopyable
+{
+public:
+    /** Create an UnlockedAccess from the specified SharedData */
+    explicit ConstUnlockedAccess (SharedData const volatile& state)
+        : m_state (const_cast <SharedData const&> (state))
+        { }
+
+    Data const& get () const { return m_state.m_value; }
+    Data const& operator* () const { return get (); }
+    Data const* operator-> () const { return &get (); }
+
+private:
+    SharedData const& m_state;
+};
+
+//------------------------------------------------------------------------------
+
+/** Provides access to the contents of a SharedData.
+    This acquires a shared lock on the underlying mutex.
+*/
+template <class Data, class SharedMutexType>
 class SharedData <Data, SharedMutexType>::UnlockedAccess : public Uncopyable
 {
 public:
     /** Create an UnlockedAccess from the specified SharedData */
-    explicit UnlockedAccess (SharedData const volatile& state)
-        : m_state (const_cast <SharedData const&> (state))
-    {
-    }
+    explicit UnlockedAccess (SharedData& state)
+        : m_state (state)
+        { }
 
-    /** Returns a const reference to the data. */
-    Data const& get () const
-    {
-        return m_state.m_value;
-    }
-
-    /** Returns a const reference to the data. */
-    Data const& operator* () const
-    {
-        return get ();
-    }
-
-    /** Returns a const pointer to the data. */
-    Data const* operator-> () const
-    {
-        return &get ();
-    }
+    Data const& get () const { return m_state.m_value; }
+    Data const& operator* () const { return get (); }
+    Data const* operator-> () const { return &get (); }
+    Data& get () { return m_state.m_value; }
+    Data& operator* () { return get (); }
+    Data* operator-> () { return &get (); }
 
 private:
-    SharedData const& m_state;
+    SharedData& m_state;
 };
 
 }
