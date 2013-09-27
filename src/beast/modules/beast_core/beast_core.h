@@ -268,6 +268,8 @@ class FileOutputStream;
 
 }
 
+#include "thread/ServiceQueue.h"
+
 #if BEAST_MSVC
 #pragma warning (pop)
 #endif

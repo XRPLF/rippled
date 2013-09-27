@@ -3,13 +3,16 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's List: Changes day to day, descending priority
+- Fix and tidy up broken beast classes
+- Validators work
+- Open Source aftermath
+
 - Parse Validator line using cribbed code
 - Parse ContentBodyBuffer from HTTPResponse
 - HTTPMessage improvements
 - HTTPClient improvements based on HTTPServer
 - Ditch old HTTPClient so I can take the name
 - Finish RPCAsyncServer, RPCService and RPCService::Manager
-- Fix and tidy up broken beast classes
 - Fix RPCDoor to respect config setting for [rpc_secure]
 - Validators should delay the application of newly downloaded lists from
   sources, to mitigate the effects of attacks. Unless there's no validators
