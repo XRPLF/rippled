@@ -30,7 +30,7 @@
 # include <windows.h>
 # include <wincrypt.h>
 #endif
-#if BEAST_LINUX
+#if BEAST_LINUX || BEAST_BSD
 # include <sys/time.h>
 #else
 # include <time.h>
