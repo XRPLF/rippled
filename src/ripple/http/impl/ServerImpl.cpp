@@ -45,7 +45,7 @@ Journal const& ServerImpl::journal() const
 
 Ports const& ServerImpl::getPorts () const
 {
-    SharedState::UnlockedAccess state (m_state);
+    SharedState::ConstUnlockedAccess state (m_state);
     return state->ports;
 }
 

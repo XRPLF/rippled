@@ -395,7 +395,7 @@ void TrackedMutex::acquired (char const* fileName, int lineNumber) const noexcep
     else
     {
         // Thread already had ownership of the mutex.
-        bassert (SharedState::UnlockedAccess (m_state)->thread == &thread);
+        bassert (SharedState::ConstUnlockedAccess (m_state)->thread == &thread);
 
         // If this goes off it means we counted wrong.
         bassert (thread.refCount >= m_count);
