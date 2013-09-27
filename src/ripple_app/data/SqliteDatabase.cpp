@@ -65,7 +65,8 @@ SqliteDatabase::SqliteDatabase (const char* host)
 
 void SqliteDatabase::connect ()
 {
-    int rc = sqlite3_open (mHost.c_str (), &mConnection);
+    int rc = sqlite3_open_v2 (mHost.c_str (), &mConnection,
+                SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL);
 
     if (rc)
     {
@@ -81,7 +82,8 @@ sqlite3* SqliteDatabase::getAuxConnection ()
 
     if (mAuxConnection == NULL)
     {
-        int rc = sqlite3_open (mHost.c_str (), &mAuxConnection);
+        int rc = sqlite3_open_v2 (mHost.c_str (), &mAuxConnection,
+                    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL);
 
         if (rc)
         {

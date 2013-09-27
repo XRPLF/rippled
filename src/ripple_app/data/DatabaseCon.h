@@ -36,16 +36,11 @@ public:
     {
         return mLock;
     }
-    static int getCount ()
-    {
-        return sCount;
-    }
 
     // VFALCO TODO change "protected" to "private" throughout the code
 private:
     Database*               mDatabase;
     DeprecatedRecursiveMutex  mLock;
-    static int              sCount;
 };
 
 #endif
