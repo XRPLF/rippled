@@ -62,8 +62,8 @@ public:
     {
         result_type result;
         boost::asio::io_service io_service;
-        async_get (io_service, url, bind (
-            &HTTPClientType::handle_get, placeholders::_1, &result));
+        async_get (io_service, url, beast::bind (
+            &HTTPClientType::handle_get, beast::placeholders::_1, &result));
         io_service.run ();
         return result;
     }
