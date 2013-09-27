@@ -38,40 +38,40 @@
       <Filter>_meta</Filter>
     </None>
     <None Include="..\..\beast\http\impl\http-parser\.gitignore">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </None>
     <None Include="..\..\beast\http\impl\http-parser\.mailmap">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </None>
     <None Include="..\..\beast\http\impl\http-parser\.travis.yml">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </None>
     <None Include="..\..\beast\http\impl\http-parser\AUTHORS">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </None>
     <None Include="..\..\beast\http\impl\http-parser\CONTRIBUTIONS">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </None>
     <None Include="..\..\beast\http\impl\http-parser\http_parser.gyp">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </None>
     <None Include="..\..\beast\http\impl\http-parser\LICENSE-MIT">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </None>
     <None Include="..\..\beast\http\impl\http-parser\Makefile">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </None>
     <None Include="..\..\beast\http\impl\http-parser\README.md">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </None>
     <None Include="..\..\modules\beast_core\beast_core.mm">
       <Filter>beast_core</Filter>
     </None>
     <None Include="..\..\beast\crypto\impl\sha2\README">
-      <Filter>beast_asio\async\beast\crypto\impl\sha2</Filter>
+      <Filter>beast\crypto\impl\sha2</Filter>
     </None>
     <None Include="..\..\beast\crypto\impl\sha2\sha2test.pl">
-      <Filter>beast_asio\async\beast\crypto\impl\sha2</Filter>
+      <Filter>beast\crypto\impl\sha2</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -207,61 +207,61 @@
     <Filter Include="_meta">
       <UniqueIdentifier>{27052a76-e315-4725-9d9a-1233c7d71aba}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast">
+    <Filter Include="beast">
       <UniqueIdentifier>{92d1bb42-289a-4444-85c7-cb87540f2fff}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\intrusive">
+    <Filter Include="beast\intrusive">
       <UniqueIdentifier>{8832eb52-53f9-4850-8dc9-1d579a386a0e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\mpl">
+    <Filter Include="beast\mpl">
       <UniqueIdentifier>{5904368f-a0f2-4d26-a031-8cbe4448dc3f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\net">
+    <Filter Include="beast\net">
       <UniqueIdentifier>{5faa76ea-5691-4e63-8833-577f92991356}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\net\impl">
+    <Filter Include="beast\net\impl">
       <UniqueIdentifier>{93670bc9-a748-42bd-8118-8de30c468b16}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\type_traits">
+    <Filter Include="beast\type_traits">
       <UniqueIdentifier>{85158eb2-9340-4b3d-a136-f7631c7f1b7c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\utility">
+    <Filter Include="beast\utility">
       <UniqueIdentifier>{56d34c67-7027-44ba-9f09-4591ce4afb36}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\utility\impl">
+    <Filter Include="beast\utility\impl">
       <UniqueIdentifier>{775ab0d6-aa5f-43d7-ab3b-3c01652a9ef1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\thread">
+    <Filter Include="beast\thread">
       <UniqueIdentifier>{da8084c0-491b-4eb0-b750-97182a9deed4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\http">
+    <Filter Include="beast\http">
       <UniqueIdentifier>{56ef157f-ad92-4da7-8fbf-00723f769732}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\http\impl">
+    <Filter Include="beast\http\impl">
       <UniqueIdentifier>{565f012b-42b7-42c9-81b7-9e93aa378000}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\http\impl\http-parser">
+    <Filter Include="beast\http\impl\http-parser">
       <UniqueIdentifier>{7eead15d-f9dc-4b4d-a653-57d9c090e697}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\http\impl\http-parser\contrib">
+    <Filter Include="beast\http\impl\http-parser\contrib">
       <UniqueIdentifier>{233e3c4d-e398-4c11-a42c-3483107eb8e9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\strings">
+    <Filter Include="beast\strings">
       <UniqueIdentifier>{8d80e304-a42d-411a-9528-811eddff3191}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\strings\impl">
+    <Filter Include="beast\strings\impl">
       <UniqueIdentifier>{eabf472c-e198-409a-a65b-7c087ae911d0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\config">
+    <Filter Include="beast\config">
       <UniqueIdentifier>{1fff3bd8-44ae-41df-8dd4-8bb6f07b2908}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\crypto">
+    <Filter Include="beast\crypto">
       <UniqueIdentifier>{9c1ef4c4-5623-4500-859f-12d6ce5ae362}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\crypto\impl">
+    <Filter Include="beast\crypto\impl">
       <UniqueIdentifier>{fc3d3f14-9ba1-43e4-b086-cbbd2f63b944}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\async\beast\crypto\impl\sha2">
+    <Filter Include="beast\crypto\impl\sha2">
       <UniqueIdentifier>{44489531-f44a-439a-a6ea-d32c252b1e8b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -825,28 +825,28 @@
       <Filter>beast_core\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\intrusive\ForwardList.h">
-      <Filter>beast_asio\async\beast\intrusive</Filter>
+      <Filter>beast\intrusive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\intrusive\PointerTraits.h">
-      <Filter>beast_asio\async\beast\intrusive</Filter>
+      <Filter>beast\intrusive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\RemoveConst.h">
-      <Filter>beast_asio\async\beast\mpl</Filter>
+      <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h">
-      <Filter>beast_asio\async\beast\mpl</Filter>
+      <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\RemoveReference.h">
-      <Filter>beast_asio\async\beast\mpl</Filter>
+      <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h">
-      <Filter>beast_asio\async\beast\mpl</Filter>
+      <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\AddConst.h">
-      <Filter>beast_asio\async\beast\mpl</Filter>
+      <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\PointerToOther.h">
-      <Filter>beast_asio\async\beast\mpl</Filter>
+      <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\SharedPtr.h">
       <Filter>beast_core\memory</Filter>
@@ -972,7 +972,7 @@
       <Filter>beast_asio\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\IfCond.h">
-      <Filter>beast_asio\async\beast\mpl</Filter>
+      <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\basics\BuffersType.h">
       <Filter>beast_asio\basics</Filter>
@@ -1011,64 +1011,64 @@
       <Filter>beast_core\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\net\IPEndpoint.h">
-      <Filter>beast_asio\async\beast\net</Filter>
+      <Filter>beast\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Config.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\CStdInt.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\MPL.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Net.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\TypeTraits.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\type_traits\IsSigned.h">
-      <Filter>beast_asio\async\beast\type_traits</Filter>
+      <Filter>beast\type_traits</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\type_traits\IntegralConstant.h">
-      <Filter>beast_asio\async\beast\type_traits</Filter>
+      <Filter>beast\type_traits</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\type_traits\IsIntegral.h">
-      <Filter>beast_asio\async\beast\type_traits</Filter>
+      <Filter>beast\type_traits</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\type_traits\RemoveSigned.h">
-      <Filter>beast_asio\async\beast\type_traits</Filter>
+      <Filter>beast\type_traits</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\utility\EnableIf.h">
-      <Filter>beast_asio\async\beast\utility</Filter>
+      <Filter>beast\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\utility\Journal.h">
-      <Filter>beast_asio\async\beast\utility</Filter>
+      <Filter>beast\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Utility.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\IsCallPossible.h">
-      <Filter>beast_asio\async\beast\mpl</Filter>
+      <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Thread.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\thread\LockGuard.h">
-      <Filter>beast_asio\async\beast\thread</Filter>
+      <Filter>beast\thread</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\thread\SharedLockGuard.h">
-      <Filter>beast_asio\async\beast\thread</Filter>
+      <Filter>beast\thread</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\thread\SharedData.h">
-      <Filter>beast_asio\async\beast\thread</Filter>
+      <Filter>beast\thread</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\thread\SharedMutexAdapter.h">
-      <Filter>beast_asio\async\beast\thread</Filter>
+      <Filter>beast\thread</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Uncopyable.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPRequest.h">
       <Filter>beast_asio\http</Filter>
@@ -1080,122 +1080,125 @@
       <Filter>beast_asio\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Intrusive.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Atomic.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\intrusive\LockFreeStack.h">
-      <Filter>beast_asio\async\beast\intrusive</Filter>
+      <Filter>beast\intrusive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\intrusive\List.h">
-      <Filter>beast_asio\async\beast\intrusive</Filter>
+      <Filter>beast\intrusive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\CopyConst.h">
-      <Filter>beast_asio\async\beast\mpl</Filter>
+      <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\Stoppable.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\http\impl\http-parser\http_parser.h">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\HTTP.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\strings\CharacterFunctions.h">
-      <Filter>beast_asio\async\beast\strings</Filter>
+      <Filter>beast\strings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\strings\CharPointer_ASCII.h">
-      <Filter>beast_asio\async\beast\strings</Filter>
+      <Filter>beast\strings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\strings\CharPointer_UTF8.h">
-      <Filter>beast_asio\async\beast\strings</Filter>
+      <Filter>beast\strings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\strings\CharPointer_UTF16.h">
-      <Filter>beast_asio\async\beast\strings</Filter>
+      <Filter>beast\strings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\strings\CharPointer_UTF32.h">
-      <Filter>beast_asio\async\beast\strings</Filter>
+      <Filter>beast\strings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\strings\NewLine.h">
-      <Filter>beast_asio\async\beast\strings</Filter>
+      <Filter>beast\strings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\strings\String.h">
-      <Filter>beast_asio\async\beast\strings</Filter>
+      <Filter>beast\strings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\strings\StringCharPointerType.h">
-      <Filter>beast_asio\async\beast\strings</Filter>
+      <Filter>beast\strings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\strings\StringFromNumber.h">
-      <Filter>beast_asio\async\beast\strings</Filter>
+      <Filter>beast\strings</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Strings.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\config\CompilerConfig.h">
-      <Filter>beast_asio\async\beast\config</Filter>
+      <Filter>beast\config</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\config\PlatformConfig.h">
-      <Filter>beast_asio\async\beast\config</Filter>
+      <Filter>beast\config</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\config\StandardConfig.h">
-      <Filter>beast_asio\async\beast\config</Filter>
+      <Filter>beast\config</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Version.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\config\ConfigCheck.h">
-      <Filter>beast_asio\async\beast\config</Filter>
+      <Filter>beast\config</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\config\ContractChecks.h">
-      <Filter>beast_asio\async\beast\config</Filter>
+      <Filter>beast\config</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\StaticAssert.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Arithmetic.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Memory.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\ByteOrder.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\HeapBlock.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\system\StandardIncludes.h">
       <Filter>beast_core\system</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\http\URL.h">
-      <Filter>beast_asio\async\beast\http</Filter>
+      <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\http\ParsedURL.h">
-      <Filter>beast_asio\async\beast\http</Filter>
+      <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="BeastConfig.h" />
     <ClInclude Include="..\..\beast\FixedArray.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\intrusive\IntrusiveArray.h">
-      <Filter>beast_asio\async\beast\intrusive</Filter>
+      <Filter>beast\intrusive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Crypto.h">
-      <Filter>beast_asio\async\beast</Filter>
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\crypto\impl\sha2\sha2.h">
-      <Filter>beast_asio\async\beast\crypto\impl\sha2</Filter>
+      <Filter>beast\crypto\impl\sha2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\crypto\Sha256.h">
-      <Filter>beast_asio\async\beast\crypto</Filter>
+      <Filter>beast\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\async\WrapHandler.h">
       <Filter>beast_asio\async</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\async\AbstractHandler.h">
       <Filter>beast_asio\async</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_core\thread\ServiceQueue.h">
+      <Filter>beast_core\thread</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1698,16 +1701,16 @@
       <Filter>beast_extras</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
-      <Filter>beast_asio\async\beast\net\impl</Filter>
+      <Filter>beast\net\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\net\Net.cpp">
-      <Filter>beast_asio\async\beast\net</Filter>
+      <Filter>beast\net</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\Utility.cpp">
-      <Filter>beast_asio\async\beast\utility</Filter>
+      <Filter>beast\utility</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\impl\Journal.cpp">
-      <Filter>beast_asio\async\beast\utility\impl</Filter>
+      <Filter>beast\utility\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPRequest.cpp">
       <Filter>beast_asio\http</Filter>
@@ -1716,52 +1719,55 @@
       <Filter>beast_core\thread</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\impl\http-parser\http_parser.c">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\impl\http-parser\test.c">
-      <Filter>beast_asio\async\beast\http\impl\http-parser</Filter>
+      <Filter>beast\http\impl\http-parser</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\impl\http-parser\contrib\parsertrace.c">
-      <Filter>beast_asio\async\beast\http\impl\http-parser\contrib</Filter>
+      <Filter>beast\http\impl\http-parser\contrib</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\impl\http-parser\contrib\url_parser.c">
-      <Filter>beast_asio\async\beast\http\impl\http-parser\contrib</Filter>
+      <Filter>beast\http\impl\http-parser\contrib</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\HTTP.cpp">
-      <Filter>beast_asio\async\beast\http</Filter>
+      <Filter>beast\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\impl\http_parser.cpp">
-      <Filter>beast_asio\async\beast\http\impl</Filter>
+      <Filter>beast\http\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\strings\impl\CharacterFunctions.cpp">
-      <Filter>beast_asio\async\beast\strings\impl</Filter>
+      <Filter>beast\strings\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\strings\impl\String.cpp">
-      <Filter>beast_asio\async\beast\strings\impl</Filter>
+      <Filter>beast\strings\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\strings\Strings.cpp">
-      <Filter>beast_asio\async\beast\strings</Filter>
+      <Filter>beast\strings</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\impl\URL.cpp">
-      <Filter>beast_asio\async\beast\http\impl</Filter>
+      <Filter>beast\http\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\impl\ParsedURL.cpp">
-      <Filter>beast_asio\async\beast\http\impl</Filter>
+      <Filter>beast\http\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2.c">
-      <Filter>beast_asio\async\beast\crypto\impl\sha2</Filter>
+      <Filter>beast\crypto\impl\sha2</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2prog.c">
-      <Filter>beast_asio\async\beast\crypto\impl\sha2</Filter>
+      <Filter>beast\crypto\impl\sha2</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2speed.c">
-      <Filter>beast_asio\async\beast\crypto\impl\sha2</Filter>
+      <Filter>beast\crypto\impl\sha2</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\Crypto.cpp">
-      <Filter>beast_asio\async\beast\crypto</Filter>
+      <Filter>beast\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\Sha256.cpp">
-      <Filter>beast_asio\async\beast\crypto\impl</Filter>
+      <Filter>beast\crypto\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\thread\ServiceQueue.cpp">
+      <Filter>beast_core\thread</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
