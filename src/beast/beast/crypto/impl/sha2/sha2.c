@@ -103,9 +103,9 @@
  * types and pointing out recent ANSI C support for uintXX_t in inttypes.h.
  */
 
-typedef u_int8_t  sha2_byte;	/* Exactly 1 byte */
-typedef u_int32_t sha2_word32;	/* Exactly 4 bytes */
-typedef u_int64_t sha2_word64;	/* Exactly 8 bytes */
+typedef uint8  sha2_byte;	/* Exactly 1 byte */
+typedef uint32 sha2_word32;	/* Exactly 4 bytes */
+typedef uint64 sha2_word64;	/* Exactly 8 bytes */
 
 /*** SHA-256/384/512 Various Length Definitions ***********************/
 /* NOTE: Most of these are in sha2.h */

@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CRYPTO_Sha256_H_INCLUDED
-#define BEAST_CRYPTO_Sha256_H_INCLUDED
+#ifndef BEAST_CRYPTO_SHA256_H_INCLUDED
+#define BEAST_CRYPTO_SHA256_H_INCLUDED
 
-#include "../config/PlatformConfig.h"
+#include "../Config.h"
 #include "../CStdInt.h"
 #include "../FixedArray.h"
 

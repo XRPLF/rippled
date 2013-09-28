@@ -21,10 +21,12 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NEWLINE_H_INCLUDED
-#define BEAST_NEWLINE_H_INCLUDED
+#ifndef BEAST_STRINGS_NEWLINE_H_INCLUDED
+#define BEAST_STRINGS_NEWLINE_H_INCLUDED
 
 #include "../Config.h"
+
+#include "String.h"
 
 namespace beast {
 

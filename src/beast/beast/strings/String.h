@@ -26,6 +26,8 @@
 
 #include "../Config.h"
 #include "../CStdInt.h"
+#include "../Memory.h"
+
 #include "CharacterFunctions.h"
 #if BEAST_MSVC
 # pragma warning (push)

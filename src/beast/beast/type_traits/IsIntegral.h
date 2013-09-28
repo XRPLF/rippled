@@ -20,6 +20,7 @@
 #ifndef BEAST_TYPE_TRAITS_ISINTEGRAL_H_INCLUDED
 #define BEAST_TYPE_TRAITS_ISINTEGRAL_H_INCLUDED
 
+#include "../CStdInt.h"
 #include "IntegralConstant.h"
 
 namespace beast {

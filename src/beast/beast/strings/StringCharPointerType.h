@@ -24,6 +24,11 @@
 #ifndef BEAST_STRINGS_STRINGCHARPOINTERTYPE_H_INCLUDED
 #define BEAST_STRINGS_STRINGCHARPOINTERTYPE_H_INCLUDED
 
+#include "../Config.h"
+#include "CharPointer_UTF8.h"
+#include "CharPointer_UTF16.h"
+#include "CharPointer_UTF32.h"
+
 namespace beast {
 
 /** This is the character encoding type used internally to store the string.
