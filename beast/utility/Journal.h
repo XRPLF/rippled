@@ -105,6 +105,7 @@ public:
         Sink& m_sink;
         Severity const m_severity;
         std::ostringstream mutable m_ostream;
+        bool m_toOutputWindow;
     };
 
     //--------------------------------------------------------------------------
@@ -122,6 +123,12 @@ public:
         /** Returns `true` if the sink logs messages at the severity of this stream. */
         bool active() const;
 
+        /** Returns `true` if the stream also loggs messages to the Output window. */
+        bool toOutputWindow() const;
+
+        /** Also outputs Stream messages to the Output window (MSVC-specific). */
+        void setOutputWindow (bool toOutputWindow) const;
+
         Sink& sink() const;
         Severity severity() const;
 
@@ -136,6 +143,7 @@ public:
     private:
         Sink* m_sink;
         Severity m_severity;
+        bool mutable m_toOutputWindow;
     };
 
     //--------------------------------------------------------------------------
@@ -150,6 +158,9 @@ public:
 
     /** Returns `true` if the sink logs messages at that severity. */
     bool active (Severity severity) const;
+
+    /** Sets all streams to also log to the Output window (MSVC-specific). */
+    void setOutputWindow (bool toOutputWindow) const;
 
     /** Convenience sink streams for each severity level. */
     Stream const trace;
