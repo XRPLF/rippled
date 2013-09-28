@@ -181,6 +181,7 @@ typedef uint64 sha2_word64;	/* Exactly 8 bytes */
  */
 /* Shift-right (used in SHA-256, SHA-384, and SHA-512): */
 #define R(b,x) 		((x) >> (b))
+
 /* 32-bit Rotate-right (used in SHA-256): */
 #define S32(b,x)	(((x) >> (b)) | ((x) << (32 - (b))))
 /* 64-bit Rotate-right (used in SHA-384 and SHA-512): */
@@ -1050,3 +1051,17 @@ char* SHA384_Data(const sha2_byte* data, size_t len, char digest[SHA384_DIGEST_S
 	SHA384_Update(&context, data, len);
 	return SHA384_End(&context, digest);
 }
+
+#undef R
+#undef S32
+#undef S64
+#undef Ch
+#undef Maj
+#undef Sigma0_256
+#undef Sigma1_256
+#undef sigma0_256
+#undef sigma1_256
+#undef Sigma0_512
+#undef Sigma1_512
+#undef sigma0_512
+#undef sigma1_512

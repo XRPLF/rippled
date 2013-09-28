@@ -221,7 +221,6 @@ namespace beast
 
 #include "time/PerformanceCounter.cpp"
 #include "time/AtExitHook.cpp"
-#include "time/RelativeTime.cpp"
 #include "time/Time.cpp"
 
 #include "xml/XmlDocument.cpp"
@@ -320,6 +319,22 @@ void beast_reportFatalError (char const* message, char const* fileName, int line
 #endif
 
 //------------------------------------------------------------------------------
+
+// When we compile the static library, which is really just for browsing the
+// sources in the Visual Studio IDE, we want to compile each individual unity
+// .cpp in order to make sure that it builds by itself. An application that
+// uses beast will typically include all of these .cpp files in one of its
+// own unity .cpp
+#if ! BEAST_COMPILING_STATIC_LIBARARY
+/*
+#include "../../beast/chrono/Chrono.cpp"
+#include "../../beast/crypto/Crypto.cpp"
+#include "../../beast/http/HTTP.cpp"
+#include "../../beast/net/Net.cpp"
+#include "../../beast/strings/Strings.cpp"
+#include "../../beast/utility/Utility.cpp"
+*/
+#endif
 
 // Must be outside the namespace
 #include "system/BoostPlaceholdersFix.cpp"

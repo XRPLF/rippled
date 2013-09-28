@@ -21,8 +21,16 @@
 */
 //==============================================================================
 
-#ifndef BEAST_RELATIVETIME_H_INCLUDED
-#define BEAST_RELATIVETIME_H_INCLUDED
+#ifndef BEAST_CHRONO_RELATIVETIME_H_INCLUDED
+#define BEAST_CHRONO_RELATIVETIME_H_INCLUDED
+
+#include "../Config.h"
+#include "../strings/String.h"
+
+#include <string>
+#include <sstream>
+
+namespace beast {
 
 //==============================================================================
 /** A relative measure of time.
@@ -135,7 +143,7 @@ public:
         @see inMilliseconds, inSeconds, inMinutes, inHours, inDays, inWeeks
     */
     String getDescription (const String& returnValueForZeroTime = "0") const;
-
+    std::string to_string () const;
 
     //==============================================================================
     /** Adds another RelativeTime to this one. */
@@ -173,4 +181,13 @@ RelativeTime  operator+  (RelativeTime t1, RelativeTime t2) noexcept;
 /** Subtracts two RelativeTimes. */
 RelativeTime  operator-  (RelativeTime t1, RelativeTime t2) noexcept;
 
-#endif   // BEAST_RELATIVETIME_H_INCLUDED
+inline std::ostream& operator<< (std::ostream& os, RelativeTime const& diff)
+{
+    os << diff.to_string();
+    return os;
+}
+
+}
+
+#endif
+
