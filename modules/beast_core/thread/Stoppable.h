@@ -20,16 +20,66 @@
 #ifndef BEAST_CORE_STOPPABLE_H_INCLUDED
 #define BEAST_CORE_STOPPABLE_H_INCLUDED
 
-/** Provides an interface for stopping.
+class RootStoppable;
+
+/** Provides an interface for starting and stopping.
+
+    A common method of structuring server or peer to peer code is to isolate
+    conceptual portions of functionality into individual classes, aggregated
+    into some larger "application" or "core" object which holds all the parts.
+    Frequently, these components are dependent on each other in unavoidably
+    complex ways. They also often use threads and perform asynchronous i/o
+    operations involving sockets or other operating system objects. The process
+    of starting and stopping such a system can be complex. This interface
+    provides a set of behaviors for ensuring that the start and stop of a
+    composite application-style object is well defined.
+
+    Upon the initialization of the composite object these steps are peformed:
+
+    1.  Construct sub-components.
+
+        These are all typically derived from Stoppable. There can be a deep
+        hierarchy: Stoppable objects may themselves have Stoppable child
+        objects. This captures the relationship of dependencies.
+
+    2.  prepare()
+
+        Because some components may depend on others, preparatory steps require
+        that all objects be first constructed. The prepare step calls all
+        Stoppable objects in the tree starting from the leaves and working up
+        to the root. In this stage we are guaranteed that all objects have been
+        constructed and are in a well-defined state.
+
+    3.  onPrepare()
+
+        This override is called for all Stoppable objects in the hierarchy
+        during the prepare stage. Objects are called from the bottom up.
+        It is guaranteed that all child Stoppable objects have already been
+        prepared when this is called.
+
+    4.  start()
+
+        At this point all sub-components have been constructed and prepared,
+        so it should be safe for them to be started. While some Stoppable
+        objects may do nothing in their start function, others will start
+        threads or call asynchronous i/o initiating functions like timers or
+        sockets.
+
+    5.  onStart()
+
+        This override is called for all Stoppable objects in the hierarchy
+        during the start stage. Objects are called from the bottom up.
+        It is guaranteed that all child Stoppable objects have already been
+        started when this is called.
 
     This is the sequence of events involved in stopping:
 
-    1.  stopAsync() [optional]
+    6.  stopAsync() [optional]
 
         This notifies the root Stoppable and all its children that a stop is
         requested.
 
-    2.  stop()
+    7.  stop()
 
         This first calls stopAsync(), and then blocks on each child Stoppable in
         the in the tree from the bottom up, until the Stoppable indicates it has
@@ -37,21 +87,21 @@
         when some external signal indicates that the process should stop. For
         example, an RPC 'stop' command, or a SIGINT POSIX signal.
 
-    3.  onStop()
+    8.  onStop()
 
         This override is called for the root Stoppable and all its children when
         stopAsync() is called. Derived classes should cancel pending I/O and
         timers, signal that threads should exit, queue cleanup jobs, and perform
         any other necessary final actions in preparation for exit.
 
-    4.  onChildrenStopped()
+    9.  onChildrenStopped()
 
         This override is called when all the children have stopped. This informs
         the Stoppable that there should not be any more dependents making calls
         into its member functions. A Stoppable that has no children will still
         have this function called.
 
-    5.  stopped()
+    10. stopped()
 
         The derived class calls this function to inform the Stoppable API that
         it has completed the stop. This unblocks the caller of stop().
@@ -102,84 +152,43 @@
 
     @note A Stoppable may not be restarted.
 */
+/** @{ */
 class Stoppable
 {
-public:
-    /** Create the stoppable.
-        A stoppable without a parent is a root stoppable.
-        @param name A name used in log output.
-        @param parent Optional parent of this stoppable.
-    */
-    /** @{ */
-    Stoppable (char const* name, Stoppable& parent);
-    explicit Stoppable (char const* name, Stoppable* parent = nullptr);
-    /** @} */
+protected:
+    Stoppable (char const* name, RootStoppable& root);
 
-    /** Destroy the stoppable.
-        Undefined behavior results if the object is not stopped first.
-        Stoppable objects should not be created and destroyed dynamically during
-        the process lifetime. Rather, the set of stoppables should be static and
-        well-defined after initialization. If the set of domain-specific objects
-        which need to stop is dynamic, use a single parent Stoppable to manage
-        those objects. For example, make an HTTP server implementation a
-        Stoppable, rather than each of its active connections.
-    */
+public:
+    /** Create the Stoppable. */
+    Stoppable (char const* name, Stoppable& parent);
+
+    /** Destroy the Stoppable. */
     virtual ~Stoppable ();
 
-    /** Notify a root stoppable and children to stop, and block until stopped.
-        Has no effect if the stoppable was already notified.
-        This blocks until the stoppable and all of its children have stopped.
-        @param stream An optional Journal::Stream on which to log progress.
+    /** Returns `true` if the stoppable should stop. */
+    bool isStopping () const;
 
-        Thread safety:
-            Safe to call from any thread not associated with a Stoppable.
-    */
-    void stop (Journal::Stream stream = Journal::Stream());
+    /** Returns `true` if the requested stop has completed. */
+    bool isStopped () const;
 
-    /** Notify a root stoppable and children to stop, without waiting.
-        Has no effect if the stoppable was already notified.
+    /** Returns `true` if all children have stopped. */
+    bool areChildrenStopped () const;
 
-        Thread safety:
-            Safe to call from any thread at any time.
-    */
-    void stopAsync ();
-
-    /** Returns `true` if the stoppable should stop.
-        Call from the derived class to determine if a long-running operation
-        should be canceled. This is not appropriate for either threads, or
-        asynchronous I/O. For threads, use the thread-specific facilities
-        available to inform the thread that it should exit. For asynchronous
-        I/O, cancel all pending operations inside the onStop override.
-        @see onStop
-
-        Thread safety:
-            Safe to call from any thread at any time.
-    */
-    bool isStopping ();
-  
-    /** Returns `true` if the stoppable has completed its stop.
-        Thread safety:
-            Safe to call from any thread at any time.
-    */
-    bool isStopped ();
-
-    /** Returns `true` if all children have stopped.
-        For stoppables without children, this returns `true` immediately
-        after a stop notification is received.
-
-        Thread safety:
-            Safe to call from any thread at any time.
-    */
-    bool areChildrenStopped ();
-
-    /** Called by derived classes to indicate that the stoppable has stopped.
-        The derived class must call this either after isStopping returns `true`,
-        or when onStop is called, or else the call to stop will never unblock.
-
-        Thread safety:
-            Safe to call from any thread at any time.
-    */
+    /** Called by derived classes to indicate that the stoppable has stopped. */
     void stopped ();
+
+    /** Override called during preparation.
+        Since all other Stoppable objects in the tree have already been
+        constructed, this provides an opportunity to perform initialization which
+        depends on calling into other Stoppable objects.
+        This call is made on the same thread that called prepare().
+        The default implementation does nothing.
+        Guaranteed to only be called once.
+    */
+    virtual void onPrepare (Journal journal);
+
+    /** Override called during start. */
+    virtual void onStart (Journal journal);
 
     /** Override called when the stop notification is issued.
 
@@ -202,7 +211,7 @@ public:
             Guaranteed only to be called once.
             Must be safe to call from any thread at any time.
     */
-    virtual void onStop ();
+    virtual void onStop (Journal journal);
 
     /** Override called when all children have stopped.
 
@@ -222,9 +231,11 @@ public:
             Guaranteed only to be called once.
             Must be safe to call from any thread at any time.
     */
-    virtual void onChildrenStopped ();
+    virtual void onChildrenStopped (Journal journal);
 
 private:
+    friend class RootStoppable;
+
     struct Child;
     typedef LockFreeStack <Child> Children;
 
@@ -237,28 +248,70 @@ private:
         Stoppable* stoppable;
     };
 
-    void stopAsyncRecursive ();
-    void stopRecursive (Journal::Stream stream);
+    void prepareRecursive (Journal journal);
+    void startRecursive (Journal journal);
+    void stopAsyncRecursive (Journal journal);
+    void stopRecursive (Journal journal);
 
+protected:
     char const* m_name;
-    bool m_root;
+    RootStoppable& m_root;
     Child m_child;
-    Children m_children;
-
-    // Flag that we called stop. This is for diagnostics.
-    bool m_calledStop;
-
-    // Atomic flag to make sure we only call stopAsync once.
-    Atomic <int> m_calledStopAsync;
-
-    // Flag that this service stopped. Never goes back to false.
     bool volatile m_stopped;
-
-    // Flag that all children have stopped (recursive). Never goes back to false.
     bool volatile m_childrenStopped;
-
-    // stop() blocks on this event until stopped() is called.
+    Children m_children;
     WaitableEvent m_stoppedEvent;
 };
+
+//------------------------------------------------------------------------------
+
+class RootStoppable : public Stoppable
+{
+public:
+    explicit RootStoppable (char const* name);
+
+    ~RootStoppable ();
+
+    bool isStopping() const;
+
+    /** Prepare all contained Stoppable objects.
+        This calls onPrepare for all Stoppable objects in the tree.
+        Calls made after the first have no effect.
+        Thread safety:
+            May be called from any thread.
+    */
+    void prepare (Journal journal = Journal());
+
+    /** Start all contained Stoppable objects.
+        The default implementation does nothing.
+        Calls made after the first have no effect.
+        Thread safety:
+            May be called from any thread.
+    */
+    void start (Journal journal = Journal());
+
+    /** Notify a root stoppable and children to stop, and block until stopped.
+        Has no effect if the stoppable was already notified.
+        This blocks until the stoppable and all of its children have stopped.
+        Thread safety:
+            Safe to call from any thread not associated with a Stoppable.
+    */
+    void stop (Journal journal = Journal());
+
+    /** Notify a root stoppable and children to stop, without waiting.
+        Has no effect if the stoppable was already notified.
+
+        Thread safety:
+            Safe to call from any thread at any time.
+    */
+    void stopAsync (Journal journal = Journal());
+
+private:
+    Atomic <int> m_prepared;
+    Atomic <int> m_started;
+    Atomic <int> m_calledStop;
+    Atomic <int> m_calledStopAsync;
+};
+/** @} */
 
 #endif

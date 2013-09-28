@@ -17,8 +17,17 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ERROR_H_INCLUDED
-#define BEAST_ERROR_H_INCLUDED
+#ifndef BEAST_UTILITY_ERROR_H_INCLUDED
+#define BEAST_UTILITY_ERROR_H_INCLUDED
+
+#include "../Config.h"
+
+#include "../SafeBool.h"
+#include "../strings/String.h"
+
+#include <stdexcept>
+
+namespace beast {
 
 /** A concise error report.
 
@@ -32,7 +41,7 @@
 
     @ingroup beast_core
 */
-class BEAST_API Error
+class Error
     : public std::exception
     , public SafeBool <Error>
 {
@@ -118,5 +127,7 @@ private:
     mutable String m_what; // created on demand
     mutable char const* m_szWhat;
 };
+
+}
 
 #endif

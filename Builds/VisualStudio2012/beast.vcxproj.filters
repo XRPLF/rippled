@@ -73,6 +73,9 @@
     <None Include="..\..\beast\crypto\impl\sha2\sha2test.pl">
       <Filter>beast\crypto\impl\sha2</Filter>
     </None>
+    <None Include="..\..\scripts\compile.sh">
+      <Filter>scripts</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="beast_core">
@@ -269,6 +272,9 @@
     </Filter>
     <Filter Include="beast\chrono\impl">
       <UniqueIdentifier>{39886e0f-1607-4b7a-81cf-011d83dadee3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="scripts">
+      <UniqueIdentifier>{c65af439-8c23-46c3-9b95-7da15651e5f6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -578,19 +584,10 @@
     <ClInclude Include="..\..\modules\beast_core\containers\SortedLookupTable.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\Debug.h">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\Error.h">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FPUFlags.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\LeakChecked.h">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\SafeBool.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\Throw.h">
@@ -1178,7 +1175,6 @@
     <ClInclude Include="..\..\beast\http\ParsedURL.h">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="BeastConfig.h" />
     <ClInclude Include="..\..\beast\FixedArray.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1208,6 +1204,16 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\chrono\RelativeTime.h">
       <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\SafeBool.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\config\BeastConfig.h" />
+    <ClInclude Include="..\..\beast\utility\Error.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\utility\Debug.h">
+      <Filter>beast\utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1450,12 +1456,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\bsd_Threads.cpp">
       <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\Debug.cpp">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\Error.cpp">
-      <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\FPUFlags.cpp">
       <Filter>beast_core\diagnostic</Filter>
@@ -1780,6 +1780,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\chrono\Chrono.cpp">
       <Filter>beast\chrono</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\Debug.cpp">
+      <Filter>beast\utility\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\Error.cpp">
+      <Filter>beast\utility\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

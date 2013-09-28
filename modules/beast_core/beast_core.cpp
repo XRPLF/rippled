@@ -138,8 +138,6 @@ namespace beast
 #include "containers/DynamicList.cpp"
 #include "containers/HashMap.cpp"
 
-#include "diagnostic/Debug.cpp"
-#include "diagnostic/Error.cpp"
 #include "diagnostic/FatalError.cpp"
 #include "diagnostic/FPUFlags.cpp"
 #include "diagnostic/LeakChecked.cpp"

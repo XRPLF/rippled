@@ -17,84 +17,45 @@
 */
 //==============================================================================
 
-
-Stoppable::Stoppable (char const* name, Stoppable& parent)
+Stoppable::Stoppable (char const* name, RootStoppable& root)
     : m_name (name)
-    , m_root (false)
+    , m_root (root)
     , m_child (this)
-    , m_calledStop (false)
     , m_stopped (false)
     , m_childrenStopped (false)
 {
-    // must not have had stop called
+}
+
+Stoppable::Stoppable (char const* name, Stoppable& parent)
+    : m_name (name)
+    , m_root (parent.m_root)
+    , m_child (this)
+    , m_stopped (false)
+    , m_childrenStopped (false)
+{
+    // Must not have stopping parent.
     bassert (! parent.isStopping());
 
     parent.m_children.push_front (&m_child);
 }
 
-Stoppable::Stoppable (char const* name, Stoppable* parent)
-    : m_name (name)
-    , m_root (parent == nullptr)
-    , m_child (this)
-    , m_calledStop (false)
-    , m_stopped (false)
-    , m_childrenStopped (false)
-{
-    if (parent != nullptr)
-    {
-        // must not have had stop called
-        bassert (! parent->isStopping());
-
-        parent->m_children.push_front (&m_child);
-    }
-}
-
 Stoppable::~Stoppable ()
 {
-    // must be stopped
-    bassert (m_stopped);
-
-    // children must be stopped
+    // Children must be stopped.
     bassert (m_childrenStopped);
 }
 
-void Stoppable::stop (Journal::Stream stream)
+bool Stoppable::isStopping() const
 {
-    // may only be called once
-    if (m_calledStop)
-        return;
-
-    m_calledStop = true;
-
-    // must be called from a root stoppable
-    bassert (m_root);
-
-    // send the notification
-    stopAsync ();
-
-    // now block on the tree of Stoppable objects from the leaves up.
-    stopRecursive (stream);
+    return m_root.isStopping();
 }
 
-void Stoppable::stopAsync ()
-{
-    // must be called from a root stoppable
-    bassert (m_root);
-
-    stopAsyncRecursive ();
-}
-
-bool Stoppable::isStopping ()
-{
-    return m_calledStopAsync.get() != 0;
-}
-
-bool Stoppable::isStopped ()
+bool Stoppable::isStopped () const
 {
     return m_stopped;
 }
 
-bool Stoppable::areChildrenStopped ()
+bool Stoppable::areChildrenStopped () const
 {
     return m_childrenStopped;
 }
@@ -104,75 +65,134 @@ void Stoppable::stopped ()
     m_stoppedEvent.signal();
 }
 
-void Stoppable::onStop()
+void Stoppable::onPrepare (Journal journal)
+{
+}
+
+void Stoppable::onStart (Journal journal)
+{
+}
+
+void Stoppable::onStop (Journal journal)
 {
     stopped();
 }
 
-void Stoppable::onChildrenStopped ()
+void Stoppable::onChildrenStopped (Journal journal)
 {
 }
 
 //------------------------------------------------------------------------------
 
-void Stoppable::stopAsyncRecursive ()
+void Stoppable::prepareRecursive (Journal journal)
 {
-    // make sure we only do this once
-    if (m_root)
-    {
-        // if this fails, some other thread got to it first
-        if (! m_calledStopAsync.compareAndSetBool (1, 0))
-            return;
-    }
-    else
-    {
-        // can't possibly already be set
-        bassert (m_calledStopAsync.get() == 0);
-
-        m_calledStopAsync.set (1);
-    }
-
-    // notify this stoppable
-    onStop ();
-
-    // notify children
+    onPrepare (journal);
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
-    {
-        iter->stoppable->stopAsyncRecursive();
-    }
+        iter->stoppable->prepareRecursive (journal);
 }
 
-void Stoppable::stopRecursive (Journal::Stream stream)
+void Stoppable::startRecursive (Journal journal)
 {
-    // Block on each child recursively. Thinking of the Stoppable
-    // hierarchy as a tree with the root at the top, we will block
-    // first on leaves, and then at each successivly higher level.
+    onStart (journal);
+    for (Children::const_iterator iter (m_children.cbegin ());
+        iter != m_children.cend(); ++iter)
+        iter->stoppable->startRecursive (journal);
+}
+
+void Stoppable::stopAsyncRecursive (Journal journal)
+{
+    onStop (journal);
+    for (Children::const_iterator iter (m_children.cbegin ());
+        iter != m_children.cend(); ++iter)
+        iter->stoppable->stopAsyncRecursive (journal);
+}
+
+void Stoppable::stopRecursive (Journal journal)
+{
+    // Block on each child from the bottom of the tree up.
     //
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
-    {
-        iter->stoppable->stopRecursive (stream);
-    }
+        iter->stoppable->stopRecursive (journal);
 
-    // Once we get here, we either have no children, or all of
-    // our children have stopped, so update state accordingly.
+    // if we get here then all children have stopped
     //
+    memoryBarrier ();
     m_childrenStopped = true;
+    onChildrenStopped (journal);
 
-    // Notify derived class that children have stopped.
-    onChildrenStopped ();
-
-    // Block until this stoppable stops. First we do a timed wait of 1 second, and
-    // if that times out we report to the Journal and then do an infinite wait.
+    // Now block on this Stoppable.
     //
     bool const timedOut (! m_stoppedEvent.wait (1 * 1000)); // milliseconds
     if (timedOut)
     {
-        stream << "Waiting for '" << m_name << "' to stop";
+        journal.warning << "Waiting for '" << m_name << "' to stop";
         m_stoppedEvent.wait ();
     }
 
     // once we get here, we know the stoppable has stopped.
     m_stopped = true;
+}
+
+//------------------------------------------------------------------------------
+
+RootStoppable::RootStoppable (char const* name)
+    : Stoppable (name, *this)
+{
+}
+
+RootStoppable::~RootStoppable ()
+{
+}
+
+bool RootStoppable::isStopping() const
+{
+    return m_calledStopAsync.get() != 0;
+}
+
+void RootStoppable::prepare (Journal journal)
+{
+    if (! m_prepared.compareAndSetBool (1, 0))
+    {
+        journal.warning << "Stoppable::prepare called again";
+        return;
+    }
+
+    prepareRecursive (journal);
+}
+
+void RootStoppable::start (Journal journal)
+{
+    // Courtesy call to prepare.
+    if (m_prepared.compareAndSetBool (1, 0))
+        prepareRecursive (journal);
+
+    if (! m_started.compareAndSetBool (1, 0))
+    {
+        journal.warning << "Stoppable::start called again";
+        return;
+    }
+
+    startRecursive (journal);
+}
+
+void RootStoppable::stop (Journal journal)
+{
+    if (! m_calledStop.compareAndSetBool (1, 0))
+    {
+        journal.warning << "Stoppable::stop called again";
+        return;
+    }
+
+    stopAsync (journal);
+    stopRecursive (journal);
+}
+
+void RootStoppable::stopAsync (Journal journal)
+{
+    if (! m_calledStopAsync.compareAndSetBool (1, 0))
+        return;
+
+    stopAsyncRecursive (journal);
 }

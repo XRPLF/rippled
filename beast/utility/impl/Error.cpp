@@ -17,6 +17,19 @@
 */
 //==============================================================================
 
+#include "../Error.h"
+#include "../Debug.h"
+
+#include <ostream>
+
+// VFALCO TODO Localizable strings
+#ifndef TRANS
+#define TRANS(s) (s)
+#define UNDEF_TRANS
+#endif
+
+namespace beast {
+
 Error::Error ()
     : m_code (success)
     , m_lineNumber (0)
@@ -241,3 +254,11 @@ String const Error::getReasonTextForCode (Code code)
 
     return s;
 }
+
+#ifdef UNDEF_TRANS
+#undef TRANs
+#undef UNDEF_TRANS
+#endif
+
+}
+

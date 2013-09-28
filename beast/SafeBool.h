@@ -20,23 +20,11 @@
 #ifndef BEAST_SAFEBOOL_H_INCLUDED
 #define BEAST_SAFEBOOL_H_INCLUDED
 
-/** Safe evaluation of class as `bool`.
+namespace beast {
 
-    This allows a class to be safely evaluated as a bool without the usual
-    harmful side effects of the straightforward operator conversion approach.
-    To use it, derive your class from SafeBool and implement `asBoolean()` as:
+namespace detail {
 
-    @code
-
-    bool asBoolean () const;
-
-    @endcode
-
-    Ideas from http://www.artima.com/cppsource/safebool.html
-
-    @class SafeBool
-*/
-class BEAST_API SafeBoolBase
+class SafeBoolBase
 {
 private:
     void disallowed () const { }
@@ -56,11 +44,29 @@ protected:
     ~SafeBoolBase () { }
 };
 
+}
+
+/** Safe evaluation of class as `bool`.
+
+    This allows a class to be safely evaluated as a bool without the usual
+    harmful side effects of the straightforward operator conversion approach.
+    To use it, derive your class from SafeBool and implement `asBoolean()` as:
+
+    @code
+
+    bool asBoolean () const;
+
+    @endcode
+
+    Ideas from http://www.artima.com/cppsource/safebool.html
+
+    @class SafeBool
+*/
 template <typename T = void>
-class SafeBool : public SafeBoolBase
+class SafeBool : public detail::SafeBoolBase
 {
 public:
-    operator boolean_t () const
+    operator detail::SafeBoolBase::boolean_t () const
     {
         return (static_cast <T const*> (this))->asBoolean ()
                ? &SafeBoolBase::allowed : 0;
@@ -80,6 +86,8 @@ template <typename T, typename U>
 void operator!= (SafeBool <T> const& lhs, SafeBool <U> const& rhs)
 {
     lhs.disallowed ();
+}
+
 }
 
 #endif

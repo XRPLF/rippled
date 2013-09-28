@@ -17,8 +17,12 @@
 */
 //==============================================================================
 
-#ifndef BEAST_DEBUG_H_INCLUDED
-#define BEAST_DEBUG_H_INCLUDED
+#ifndef BEAST_UTILITY_DEBUG_H_INCLUDED
+#define BEAST_UTILITY_DEBUG_H_INCLUDED
+
+#include "../strings/String.h"
+    
+namespace beast {
 
 // Auxiliary outines for debugging
 
@@ -80,6 +84,8 @@ extern void reportLeaks ();
     debug heap (debug version only.
 */
 extern void checkHeap ();
+
+}
 
 }
 

@@ -34,7 +34,7 @@ namespace beast {
 /** Contains static methods for converting the byte order between different
     endiannesses.
 */
-class BEAST_API ByteOrder : public Uncopyable
+class ByteOrder : public Uncopyable
 {
 public:
     //==============================================================================
