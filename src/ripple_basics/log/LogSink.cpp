@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 LogSink::LogSink ()
     : m_mutex ("Log", __FILE__, __LINE__)
     , m_minSeverity (lsINFO)
@@ -71,47 +70,59 @@ std::string LogSink::rotateLog ()
     }
 }
 
+void LogSink::format (
+    std::string& output,
+    std::string const& message,
+    LogSeverity severity,
+    std::string const& partitionName)
+{
+    output.reserve (message.size() + partitionName.size() + 100);
+
+    output = boost::posix_time::to_simple_string (
+        boost::posix_time::second_clock::universal_time ());
+
+    output += " ";
+    if (! partitionName.empty ())
+        output += partitionName + ":";
+
+    switch (severity)
+    {
+    case lsTRACE:       output += "TRC "; break;
+    case lsDEBUG:       output += "DBG "; break;
+    case lsINFO:        output += "NFO "; break;
+    case lsWARNING:     output += "WRN "; break;
+    case lsERROR:       output += "ERR "; break;
+    default:
+        bassertfalse;
+    case lsFATAL:       output += "FTL ";
+        break;
+    }
+
+    output += replaceFirstSecretWithAsterisks (message);
+
+    if (output.size() > maximumMessageCharacters)
+    {
+        output.resize (maximumMessageCharacters - 3);
+        output += "...";
+    }
+}
+
 void LogSink::write (
     std::string const& message,
     LogSeverity severity,
     std::string const& partitionName)
 {
-    std::string text;
-    text.reserve (message.size() + partitionName.size() + 100);
+    std::string output;
 
-    text = boost::posix_time::to_simple_string (
-        boost::posix_time::second_clock::universal_time ());
+    format (output, message, severity, partitionName);
 
-    text += " ";
-    if (! partitionName.empty ())
-        text += partitionName + ":";
+    write (output, severity);
+}
 
-    switch (severity)
-    {
-    case lsTRACE:       text += "TRC "; break;
-    case lsDEBUG:       text += "DBG "; break;
-    case lsINFO:        text += "NFO "; break;
-    case lsWARNING:     text += "WRN "; break;
-    case lsERROR:       text += "ERR "; break;
-    default:
-        bassertfalse;
-    case lsFATAL:       text += "FTL ";
-        break;
-    }
-
-    text += replaceFirstSecretWithAsterisks (message);
-
-    if (text.size() > maximumMessageCharacters)
-    {
-        text.resize (maximumMessageCharacters - 3);
-        text += "...";
-    }
-
-    {
-        ScopedLockType lock (m_mutex, __FILE__, __LINE__);
-
-        write (text, severity >= getMinSeverity(), lock);
-    }
+void LogSink::write (std::string const& output, LogSeverity severity)
+{
+    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+    write (output, severity >= getMinSeverity(), lock);
 }
 
 void LogSink::write (std::string const& text)
@@ -121,37 +132,13 @@ void LogSink::write (std::string const& text)
     write (text, true, lock);
 }
 
-void LogSink::write (StringArray const& strings)
-{
-    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
-
-    for (int i = 0; i < strings.size (); ++i)
-        write (strings [i].toStdString (), true, lock);
-
-}
-
 void LogSink::write (std::string const& line, bool toStdErr, ScopedLockType&)
 {
     // Does nothing if not open.
     m_logFile.writeln (line);
 
     if (toStdErr)
-    {
-#if 0
-#if BEAST_MSVC
-        if (beast_isRunningUnderDebugger ())
-        {
-            // Send it to the attached debugger's Output window
-            //
-            Logger::outputDebugString (line);
-        }
-        else
-#endif
-#endif
-        {
-            std::cerr << line << std::endl;
-        }
-    }
+        std::cerr << line << std::endl;
 }
 
 //------------------------------------------------------------------------------

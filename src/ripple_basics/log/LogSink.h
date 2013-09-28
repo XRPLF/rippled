@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_BASICS_LOGSINK_H_INCLUDED
 #define RIPPLE_BASICS_LOGSINK_H_INCLUDED
 
@@ -31,7 +30,10 @@ public:
     /** Returns the minimum severity required for also writing to stderr. */
     LogSeverity getMinSeverity ();
 
-    /** Sets the minimum severity required for also writing to stderr. */
+    /** Sets the minimum severity required for also writing to stderr.
+        If 'all' is true this will set the minimum reporting severity for
+        all partitions.
+    */
     void setMinSeverity (LogSeverity, bool all);
 
     /** Sets the path to the log file. */
@@ -44,14 +46,14 @@ public:
     */
     std::string rotateLog ();
 
+    /** Format a log message. */
+    void format (std::string& output,
+        std::string const& message, LogSeverity severity,
+            std::string const& partitionName);
+
     /** Write to log output.
-
-        All logging eventually goes through this function. If a debugger
-        is attached, the string goes to the debugging console, else it goes
-        to the standard error output. If a log file is open, then the message
-        is additionally written to the open log file.
-
-        The text should not contain a newline, it will be automatically
+        All logging eventually goes through these functios.
+        The text should not contain a final newline, it will be automatically
         added as needed.
 
         @note  This acquires a global mutex.
@@ -60,10 +62,9 @@ public:
         @param toStdErr `true` to also write to std::cerr
     */
     /** @{ */
-    void write (std::string const& message,
-                LogSeverity severity, std::string const& partitionName);
+    void write (std::string const& message, LogSeverity severity, std::string const& partitionName);
+    void write (std::string const& text, LogSeverity severity);
     void write (std::string const& text);
-    void write (StringArray const& strings);
     /** @} */
 
     /** Hides secret keys from log output. */

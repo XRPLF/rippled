@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_BASICS_LOGJOURNAL_H_INCLUDED
 #define RIPPLE_BASICS_LOGJOURNAL_H_INCLUDED
 
@@ -37,13 +36,22 @@ public:
     public:
         PartitionSink ()
             : m_partition (LogPartition::get <Key> ())
-            , m_console (false)
+            , m_severity (Journal::kLowestSeverity)
+            , m_to_console (false)
         {
         }
 
         void write (Journal::Severity severity, std::string const& text)
         {
-            LogSink::get()->write (text, convertSeverity (severity), m_partition.getName());
+            std::string output;
+            LogSeverity const logSeverity (convertSeverity (severity));
+            LogSink::get()->format (output, text, logSeverity,
+                m_partition.getName());
+            LogSink::get()->write (output, logSeverity);
+        #if BEAST_MSVC
+            if (m_to_console && beast_isRunningUnderDebugger ())
+                Logger::outputDebugString (output.c_str());
+        #endif
         }
 
         bool active (Journal::Severity severity)
@@ -53,24 +61,24 @@ public:
 
         bool console()
         {
-            return m_console;
+            return m_to_console;
         }
 
         void set_severity (Journal::Severity severity)
         {
-            // VFALCO TODO Per-partition severity levels
-            bassertfalse;
+            LogSeverity const logSeverity (convertSeverity (severity));
+            m_partition.setMinimumSeverity (logSeverity);
         }
 
         void set_console (bool to_console)
         {
-            m_console = to_console;
+            m_to_console = to_console;
         }
 
     private:
-        LogPartition const& m_partition;
+        LogPartition& m_partition;
         Journal::Severity m_severity;
-        bool m_console;
+        bool m_to_console;
     };
 
     //--------------------------------------------------------------------------

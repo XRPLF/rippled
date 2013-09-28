@@ -47,6 +47,11 @@ std::vector< std::pair<std::string, std::string> > LogPartition::getSeverities (
 
 //------------------------------------------------------------------------------
 
+void LogPartition::setMinimumSeverity (LogSeverity severity)
+{
+    mMinSeverity = severity;
+}
+
 bool LogPartition::setSeverity (const std::string& partition, LogSeverity severity)
 {
     for (LogPartition* p = headLog; p != NULL; p = p->mNextLog)

@@ -17,84 +17,82 @@
 */
 //==============================================================================
 
-/*
+/** ChosenValidators (formerly known as UNL)
 
-Information to track:
+    Motivation:
 
-- Percentage of validations that the validator has signed
-- Number of validations the validator signed that never got accepted
+    To protect the integrity of the shared ledger data structure, Validators
+    independently sign LedgerHash objects with their RipplePublicKey. These
+    signed Validations are propagated through the peer to peer network so
+    that other nodes may inspect them. Every peer and client on the network
+    gains confidence in a ledger and its associated chain of previous ledgers
+    by maintaining a suitably sized list of Validator public keys that it
+    trusts.
+
+    The most important factors in choosing Validators for a ChosenValidators
+    list (the name we will use to designate such a list) are the following:
+
+        - That different Validators are not controlled by one entity
+        - That each Validator participates in a majority of ledgers
+        - That a Validator does not sign ledgers which fail consensus
+
+    This module maintains ChosenValidators list. The list is built from a set
+    of independent Source objects, which may come from the configuration file,
+    a separate file, a URL from some trusted domain, or from the network itself.
+
+    In order that rippled administrators may publish their ChosenValidators
+    list at a URL on a trusted domain that they own, this module compiles
+    statistics on ledgers signed by validators and stores them in a database.
+    From this database reports and alerts may be generated so that up-to-date
+    information about the health of the set of ChosenValidators is always
+    availabile.
+
+    In addition to the automated statistics provided by the module, it is
+    expected that organizations and meta-organizations will form from
+    stakeholders such as gateways who publish their own lists and provide
+    "best practices" to further refine the quality of validators placed into
+    ChosenValidators list.
 
 
-- Target number for Chosen
-- Pseudo-randomly choose a subset from Chosen
+    ----------------------------------------------------------------------------
 
+    Unorganized Notes:
 
+    David:
+      Maybe OC should have a URL that you can query to get the latest list of URI's
+      for OC-approved organzations that publish lists of validators. The server and
+      client can ship with that master trust URL and also the list of URI's at the
+      time it's released, in case for some reason it can't pull from OC. That would
+      make the default installation safe even against major changes in the
+      organizations that publish validator lists.
 
+      The difference is that if an organization that provides lists of validators
+      goes rogue, administrators don't have to act.
 
+    TODO:
+      Write up from end-user perspective on the deployment and administration
+      of this feature, on the wiki. "DRAFT" or "PROPOSE" to mark it as provisional.
+      Template: https://ripple.com/wiki/Federation_protocol
+      - What to do if you're a publisher of ValidatorList
+      - What to do if you're a rippled administrator
+      - Overview of how ChosenValidators works
 
-Goal:
+    Goals:
+      Make default configuration of rippled secure.
+        * Ship with TrustedUriList
+        * Also have a preset RankedValidators
+      Eliminate administrative burden of maintaining
+      Produce the ChosenValidators list.
+      Allow quantitative analysis of network health.
 
-  Provide the listener with a ValidatorList.
-  - This forms the UNL
-
-Task:
-
-  fetch ValidatorInfo array from a source
-
-  - We have the old one and the new one, compute the following:
-
-    * unchanged validators list
-    * new validators list
-    * removed validators list
-
-  - From the unchanged / new / removed, figure out what to do.
-
-Two important questions:
-
-- Are there any validators in my ChosenValidators that I dont want
-  * For example, they have dropped off all the trusted lists
-
-- Do I have enough?
-
---------------------------------------------------------------------------------
-ChosenValidators
---------------------------------------------------------------------------------
-
-David:
-  Maybe OC should have a URL that you can query to get the latest list of URI's
-  for OC-approved organzations that publish lists of validators. The server and
-  client can ship with that master trust URL and also the list of URI's at the
-  time it's released, in case for some reason it can't pull from OC. That would
-  make the default installation safe even against major changes in the
-  organizations that publish validator lists.
-
-  The difference is that if an organization that provides lists of validators
-  goes rogue, administrators don't have to act.
-
-TODO:
-  Write up from end-user perspective on the deployment and administration
-  of this feature, on the wiki. "DRAFT" or "PROPOSE" to mark it as provisional.
-  Template: https://ripple.com/wiki/Federation_protocol
-  - What to do if you're a publisher of ValidatorList
-  - What to do if you're a rippled administrator
-  - Overview of how ChosenValidators works
-
-Goals:
-  Make default configuration of rippled secure.
-    * Ship with TrustedUriList
-    * Also have a preset RankedValidators
-  Eliminate administrative burden of maintaining
-  Produce the ChosenValidators list.
-  Allow quantitative analysis of network health.
-
-What determines that a validator is good?
-  - Are they present (i.e. sending validations)
-  - Are they on the consensus ledger
-  - What percentage of consensus rounds do they participate in
-  - Are they stalling consensus
-    * Measurements of constructive/destructive behavior is
-      calculated in units of percentage of ledgers for which
-      the behavior is measured.
+    What determines that a validator is good?
+      - Are they present (i.e. sending validations)
+      - Are they on the consensus ledger
+      - What percentage of consensus rounds do they participate in
+      - Are they stalling consensus
+        * Measurements of constructive/destructive behavior is
+          calculated in units of percentage of ledgers for which
+          the behavior is measured.
 */
 
 namespace ripple {
@@ -128,7 +126,13 @@ public:
         , m_checkTimer (this)
         , m_checkSources (true)
     {
-        m_journal.sink().set_console (true);
+#if BEAST_MSVC
+        if (beast_isRunningUnderDebugger())
+        {
+            m_journal.sink().set_console (true);
+            m_journal.sink().set_severity (Journal::kLowestSeverity);
+        }
+#endif
     }
 
     ~ManagerImp ()

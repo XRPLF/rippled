@@ -22,15 +22,7 @@
 namespace beast
 {
 
-bool Journal::Sink::active (Severity)
-{
-    return true;
-}
-
-bool Journal::Sink::console ()
-{
-    return false;
-}
+//------------------------------------------------------------------------------
 
 // A Sink that does nothing.
 class NullJournalSink : public Journal::Sink
@@ -45,7 +37,7 @@ public:
         return false;
     }
 
-    bool console (Journal::Severity)
+    bool console ()
     {
         return false;
     }
@@ -94,11 +86,6 @@ Journal::ScopedStream::~ScopedStream ()
     {
         if (m_sink.active (m_severity))
             m_sink.write (m_severity, m_ostream.str());
-
-    #if BEAST_MSVC
-        if (m_sink.console () && beast_isRunningUnderDebugger ())
-            Logger::outputDebugString (m_ostream.str());
-    #endif
     }
 }
 
@@ -116,7 +103,7 @@ std::ostringstream& Journal::ScopedStream::ostream () const
 
 Journal::Stream::Stream ()
     : m_sink (&getNullSink ())
-    , m_severity (kFatal)
+    , m_severity (kDisabled)
 {
 }
 
@@ -124,22 +111,13 @@ Journal::Stream::Stream (Sink& sink, Severity severity)
     : m_sink (&sink)
     , m_severity (severity)
 {
+    bassert (severity != kDisabled);
 }
 
 Journal::Stream::Stream (Stream const& other)
     : m_sink (other.m_sink)
     , m_severity (other.m_severity)
 {
-}
-
-bool Journal::Stream::active () const
-{
-    return m_sink->active (m_severity);
-}
-
-bool Journal::Stream::console() const
-{
-    return m_sink->console ();
 }
 
 Journal::Sink& Journal::Stream::sink () const
@@ -150,6 +128,11 @@ Journal::Sink& Journal::Stream::sink () const
 Journal::Severity Journal::Stream::severity () const
 {
     return m_severity;
+}
+
+bool Journal::Stream::active () const
+{
+    return m_sink->active (m_severity);
 }
 
 Journal::Stream& Journal::Stream::operator= (Stream const& other)
@@ -203,25 +186,20 @@ Journal::~Journal ()
 {
 }
 
-Journal::Stream Journal::stream (Severity severity) const
-{
-    return Stream (*m_sink, severity);
-}
-
 Journal::Sink& Journal::sink() const
 {
     return *m_sink;
 }
 
-/** Returns `true` if the sink logs messages at that severity. */
-bool Journal::active (Severity severity) const
+Journal::Stream Journal::stream (Severity severity) const
 {
-    return m_sink->active (severity);
+    return Stream (*m_sink, severity);
 }
 
-bool Journal::console () const
+bool Journal::active (Severity severity) const
 {
-    return m_sink->console ();
+    bassert (severity != kDisabled);
+    return m_sink->active (severity);
 }
 
 }

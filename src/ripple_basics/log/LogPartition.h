@@ -21,17 +21,17 @@
 #ifndef RIPPLE_BASICS_LOGPARTITION_H_INCLUDED
 #define RIPPLE_BASICS_LOGPARTITION_H_INCLUDED
 
-class LogPartition // : public List <LogPartition>::Node
+class LogPartition
 {
 public:
-    LogPartition (const char* partitionName);
+    explicit LogPartition (const char* partitionName);
 
     /** Retrieve the LogPartition associated with an object.
 
         Each LogPartition is a singleton.
     */
     template <class Key>
-    static LogPartition const& get ()
+    static LogPartition& get ()
     {
         struct LogPartitionType : LogPartition
         {
@@ -52,6 +52,8 @@ public:
     {
         return mName;
     }
+
+    void setMinimumSeverity (LogSeverity severity);
 
     static bool setSeverity (const std::string& partition, LogSeverity severity);
     static void setSeverity (LogSeverity severity);
