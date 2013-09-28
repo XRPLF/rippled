@@ -36,9 +36,6 @@ env = Environment(
     tools = ['default', 'protoc']
 )
 
-GCC_VERSION = re.split('\.', commands.getoutput(env['CXX'] + ' -dumpversion'))
-
-
 # Use a newer gcc on FreeBSD
 if FreeBSD:
     env.Replace(CC = 'gcc46')
@@ -52,6 +49,17 @@ if OSX:
     env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libc++'])
     env.Append(LINKFLAGS='-stdlib=libc++')
     env['FRAMEWORKS'] = ['AppKit']
+
+GCC_VERSION = re.split('\.', commands.getoutput(env['CXX'] + ' -dumpversion'))
+
+# Add support for ccache. Usage: scons ccache=1
+ccache = ARGUMENTS.get('ccache', 0)
+if int(ccache):
+    env.Prepend(CC = ['ccache'])
+    env.Prepend(CXX = ['ccache'])
+    ccache_dir = os.getenv('CCACHE_DIR')
+    if ccache_dir:
+        env.Replace(CCACHE_DIR = ccache_dir)
 
 #
 # Builder for CTags
@@ -239,7 +247,9 @@ env.Append(CXXFLAGS = ['-O1', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+D
 #
 env.Append(CXXFLAGS = ['-frtti'])
 
-if (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
+if (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) == 6):
+    env.Append(CXXFLAGS = ['-std=c++0x'])
+elif (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
     env.Append(CXXFLAGS = ['-std=c++11'])
 
 # FreeBSD doesn't support O_DSYNC
