@@ -32,7 +32,7 @@ void RippleMain::onException (ProtectedCall::Exception const& e) const
 #if BEAST_MSVC
     ExitProcess(0);
 #else
-    std::_Exit(EXIT_FAILURE);
+    _Exit(EXIT_FAILURE);
 #endif
 }
 

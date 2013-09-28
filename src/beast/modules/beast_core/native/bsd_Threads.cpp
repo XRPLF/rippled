@@ -50,7 +50,7 @@ void Process::setPriority (const ProcessPriority prior)
 bool beast_isRunningUnderDebugger()
 {
     // XXX not implemented for FreeBSD!
-    bassertfalse;
+    // bassertfalse; // commented out since it calls isRunningUnderDebugger recursively
     return false;
 }
 
