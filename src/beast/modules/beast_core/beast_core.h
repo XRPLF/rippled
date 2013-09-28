@@ -58,6 +58,7 @@
 #include "../../beast/TypeTraits.h"
 #include "../../beast/Thread.h"
 #include "../../beast/Utility.h"
+#include "../../beast/Chrono.h"
 
 #include "system/StandardIncludes.h"
 
@@ -82,7 +83,6 @@ class FileOutputStream;
 
 #include "time/AtExitHook.h"
 #include "diagnostic/LeakChecked.h"
-#include "time/RelativeTime.h"
 #include "time/Time.h"
 #include "threads/ScopedLock.h"
 #include "threads/CriticalSection.h"

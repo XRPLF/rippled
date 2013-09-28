@@ -29,13 +29,16 @@ namespace Validators {
 // Tunable constants
 enum
 {
+#if 0
     // We will fetch a source at this interval
     hoursBetweenFetches = 24
-
     ,secondsBetweenFetches = hoursBetweenFetches * 60 * 60
-
     // We check Source expirations on this time interval
     ,checkEverySeconds = 60 * 60
+#else
+     secondsBetweenFetches = 5 * 60
+    ,checkEverySeconds = 60 * 60
+#endif
 
     // This tunes the preallocated arrays
     ,expectedNumberOfResults = 1000

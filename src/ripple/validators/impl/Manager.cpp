@@ -108,9 +108,9 @@ class ManagerImp
     , public LeakChecked <ManagerImp>
 {
 public:
+    Journal m_journal;
     StoreSqdb m_store;
     Logic m_logic;
-    Journal m_journal;
     DeadlineTimer m_checkTimer;
     ServiceQueue m_queue;
 
@@ -122,12 +122,14 @@ public:
     ManagerImp (Stoppable& parent, Journal journal)
         : Stoppable ("Validators::Manager", parent)
         , Thread ("Validators")
-        , m_store (journal)
-        , m_logic (m_store, journal)
         , m_journal (journal)
+        , m_store (m_journal)
+        , m_logic (m_store, m_journal)
         , m_checkTimer (this)
         , m_checkSources (true)
     {
+        m_journal.sink().set_console (true);
+
         addRPCHandlers();
 
         startThread();
@@ -248,9 +250,13 @@ public:
 
     void init ()
     {
+        m_journal.trace << "Initializing";
+
         File const file (File::getSpecialLocation (
             File::userDocumentsDirectory).getChildFile ("validators.sqlite"));
         
+        m_journal.trace << "Opening database at '" << file.getFullPathName() << "'";
+
         Error error (m_store.open (file));
 
         if (error)
@@ -269,6 +275,7 @@ public:
     {
         if (timer == m_checkTimer)
         {
+            m_journal.trace << "Check timer signaled";
             m_queue.dispatch (bind (&ManagerImp::setCheckSources, this));
         }
     }
@@ -282,12 +289,20 @@ public:
     {
         if (m_checkSources)
         {
+            m_journal.trace << "Checking sources";
+
             if (m_logic.fetch_one () == 0)
             {
+                m_journal.trace << "Finished checking sources";
+
                 // Made it through the list without interruption!
                 // Clear the flag and set the deadline timer again.
                 //
                 m_checkSources = false;
+
+                m_journal.trace << "Next check timer expires in " <<
+                    RelativeTime::seconds (checkEverySeconds) << " seconds";
+
                 m_checkTimer.setExpiration (checkEverySeconds);
             }
         }
