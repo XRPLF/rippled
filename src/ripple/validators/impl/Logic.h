@@ -37,7 +37,7 @@ enum
     ,checkEverySeconds = 60 * 60
 #else
      secondsBetweenFetches = 5 * 60
-    ,checkEverySeconds = 60 * 60
+    ,checkEverySeconds = 60
 #endif
 
     // This tunes the preallocated arrays

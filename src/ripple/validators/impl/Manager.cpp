@@ -129,10 +129,6 @@ public:
         , m_checkSources (true)
     {
         m_journal.sink().set_console (true);
-
-        addRPCHandlers();
-
-        startThread();
     }
 
     ~ManagerImp ()
@@ -145,9 +141,28 @@ public:
     // Stoppable
     //
 
-    void onStop (Journal)
+    void onPrepare (Journal journal)
     {
-        m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
+        journal.info << "Preparing Validators";
+
+        addRPCHandlers();
+    }
+
+    void onStart (Journal journal)
+    {
+        journal.info << "Starting Validators";
+
+        startThread();
+    }
+
+    void onStop (Journal journal)
+    {
+        journal.info << "Stopping Validators";
+
+        if (this->Thread::isThreadRunning())
+            m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
+        else
+            stopped();
     }
 
     //--------------------------------------------------------------------------
@@ -301,7 +316,7 @@ public:
                 m_checkSources = false;
 
                 m_journal.trace << "Next check timer expires in " <<
-                    RelativeTime::seconds (checkEverySeconds) << " seconds";
+                    RelativeTime::seconds (checkEverySeconds);
 
                 m_checkTimer.setExpiration (checkEverySeconds);
             }
