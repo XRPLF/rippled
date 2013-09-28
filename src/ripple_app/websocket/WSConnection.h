@@ -138,9 +138,11 @@ public:
     void disconnect ()
     {
         connection_ptr ptr = m_connection.lock ();
-        m_io_service.dispatch (ptr->get_strand ().wrap (boost::bind (
-            &WSConnectionType <endpoint_type>::handle_disconnect,
-                m_connection)));
+
+        if (ptr)
+            m_io_service.dispatch (ptr->get_strand ().wrap (boost::bind (
+                &WSConnectionType <endpoint_type>::handle_disconnect,
+                    m_connection)));
     }
 
     static void handle_disconnect(weak_connection_ptr c)
