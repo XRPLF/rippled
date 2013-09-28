@@ -61,6 +61,12 @@ public:
             The default implementation always returns `true`.
         */
         virtual bool active (Severity);
+
+        /** Returns `true` if text at the severity goes to the Output window. */
+        virtual bool console ();
+
+        virtual void set_severity (Severity severity) = 0;
+        virtual void set_console (bool to_console) = 0;
     };
 
     /** Returns a Sink which does nothing. */
@@ -123,11 +129,8 @@ public:
         /** Returns `true` if the sink logs messages at the severity of this stream. */
         bool active() const;
 
-        /** Returns `true` if the stream also loggs messages to the Output window. */
-        bool toOutputWindow() const;
-
-        /** Also outputs Stream messages to the Output window (MSVC-specific). */
-        void setOutputWindow (bool toOutputWindow) const;
+        /** Returns `true` if the stream also logs messages to the Output window. */
+        bool console() const;
 
         Sink& sink() const;
         Severity severity() const;
@@ -143,7 +146,6 @@ public:
     private:
         Sink* m_sink;
         Severity m_severity;
-        bool mutable m_toOutputWindow;
     };
 
     //--------------------------------------------------------------------------
@@ -156,11 +158,13 @@ public:
     /** Returns a stream for this sink, with the specified severity. */
     Stream stream (Severity severity) const;
 
-    /** Returns `true` if the sink logs messages at that severity. */
-    bool active (Severity severity) const;
+    Sink& sink() const;
 
-    /** Sets all streams to also log to the Output window (MSVC-specific). */
-    void setOutputWindow (bool toOutputWindow) const;
+    /** Returns `true` if the sink logs messages at that severity. */
+    /** @{ */
+    bool active (Severity severity) const;
+    bool console () const;
+    /** @} */
 
     /** Convenience sink streams for each severity level. */
     Stream const trace;

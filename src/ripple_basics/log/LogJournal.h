@@ -37,6 +37,7 @@ public:
     public:
         PartitionSink ()
             : m_partition (LogPartition::get <Key> ())
+            , m_console (false)
         {
         }
 
@@ -50,8 +51,26 @@ public:
             return m_partition.doLog (convertSeverity (severity));
         }
 
+        bool console()
+        {
+            return m_console;
+        }
+
+        void set_severity (Journal::Severity severity)
+        {
+            // VFALCO TODO Per-partition severity levels
+            bassertfalse;
+        }
+
+        void set_console (bool to_console)
+        {
+            m_console = to_console;
+        }
+
     private:
         LogPartition const& m_partition;
+        Journal::Severity m_severity;
+        bool m_console;
     };
 
     //--------------------------------------------------------------------------
