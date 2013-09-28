@@ -24,6 +24,8 @@
 #ifndef BEAST_BYTEORDER_H_INCLUDED
 #define BEAST_BYTEORDER_H_INCLUDED
 
+#include "Config.h"
+#include "CStdInt.h"
 #include "Uncopyable.h"
 
 namespace beast {

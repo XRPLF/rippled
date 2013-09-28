@@ -19,7 +19,4 @@
 
 #include "BeastConfig.h"
 
-#include "../CStdInt.h"
-#include "../config/PlatformConfig.h"
-
 #include "impl/Sha256.cpp"

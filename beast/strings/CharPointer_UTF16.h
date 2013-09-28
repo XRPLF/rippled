@@ -24,6 +24,12 @@
 #ifndef BEAST_CHARPOINTER_UTF16_H_INCLUDED
 #define BEAST_CHARPOINTER_UTF16_H_INCLUDED
 
+#include "../Config.h"
+#include "../Atomic.h"
+#include "../CStdInt.h"
+
+#include "CharacterFunctions.h"
+
 namespace beast {
 
 //==============================================================================

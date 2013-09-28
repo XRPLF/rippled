@@ -24,7 +24,11 @@
 #ifndef BEAST_ARITHMETIC_H_INCLUDED
 #define BEAST_ARITHMETIC_H_INCLUDED
 
+#include "Config.h"
+#include "CStdInt.h"
+
 #include <cmath>
+#include <algorithm>
 
 namespace beast {
 

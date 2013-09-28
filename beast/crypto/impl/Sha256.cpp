@@ -39,9 +39,6 @@ namespace Sha256 {
 //#define SHA2_USE_INTTYPES_H
 
 namespace detail {
-typedef uint8  u_int8_t;
-typedef uint32 u_int32_t;
-typedef uint64 u_int64_t;
 #include "sha2/sha2.c"
 }
 

@@ -24,9 +24,13 @@
 #ifndef BEAST_HEAPBLOCK_H_INCLUDED
 #define BEAST_HEAPBLOCK_H_INCLUDED
 
+#include <cstddef>
+#include <cstdlib>
+#include <stdexcept>
+
 #include "Memory.h"
 #include "Uncopyable.h"
-    
+
 // If the MSVC debug heap headers were included, disable
 // the macros during the juce include since they conflict.
 #ifdef _CRTDBG_MAP_ALLOC

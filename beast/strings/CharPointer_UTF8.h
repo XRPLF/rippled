@@ -24,9 +24,13 @@
 #ifndef BEAST_CHARPOINTER_UTF8_H_INCLUDED
 #define BEAST_CHARPOINTER_UTF8_H_INCLUDED
 
-#include <string>
-
+#include "../Config.h"
 #include "../Atomic.h"
+    
+#include "CharacterFunctions.h"
+
+#include <cstdlib>
+#include <cstring>
 
 namespace beast {
 

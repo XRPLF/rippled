@@ -24,8 +24,11 @@
 #ifndef BEAST_STRINGS_CHARACTERFUNCTIONS_H_INCLUDED
 #define BEAST_STRINGS_CHARACTERFUNCTIONS_H_INCLUDED
 
+#include <limits>
+
 #include "../Config.h"
 #include "../CStdInt.h"
+#include "../Memory.h"
 
 namespace beast {
 
@@ -329,8 +332,11 @@ public:
     static size_t copyWithDestByteLimit (DestCharPointerType& dest, SrcCharPointerType src, size_t maxBytesToWrite) noexcept
     {
         typename DestCharPointerType::CharType const* const startAddress = dest.getAddress();
-        ssize_t maxBytes = (ssize_t) maxBytesToWrite;
-        maxBytes -= sizeof (typename DestCharPointerType::CharType); // (allow for a terminating null)
+        size_t maxBytes = maxBytesToWrite;
+        if (maxBytes >= sizeof (typename DestCharPointerType::CharType))
+            maxBytes -= sizeof (typename DestCharPointerType::CharType); // (allow for a terminating null)
+        else
+            maxBytes = 0;
 
         for (;;)
         {

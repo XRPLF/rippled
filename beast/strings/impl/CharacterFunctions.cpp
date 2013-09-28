@@ -21,9 +21,10 @@
 */
 //==============================================================================
 
-#include <cctype>
-
 #include "../CharacterFunctions.h"
+
+#include <cctype>
+#include <cwctype>
 
 namespace beast {
 

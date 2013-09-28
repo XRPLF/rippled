@@ -20,7 +20,7 @@
 #ifndef BEAST_CRYPTO_H_INCLUDED
 #define BEAST_CRYPTO_H_INCLUDED
 
-#include "crypto/api/Sha256.h"
+#include "crypto/Sha256.h"
 
 #endif
 

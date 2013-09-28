@@ -25,6 +25,7 @@
 #define BEAST_ATOMIC_H_INCLUDED
 
 #include "Config.h"
+#include "CStdInt.h"
 #include "StaticAssert.h"
 
 namespace beast {
@@ -69,13 +70,16 @@ public:
     Type get() const noexcept;
 
     /** Copies another value onto this one (atomically). */
-    inline Atomic& operator= (const Atomic& other) noexcept         { exchange (other.get()); return *this; }
+     Atomic& operator= (const Atomic& other) noexcept
+      { exchange (other.get()); return *this; }
 
     /** Copies another value onto this one (atomically). */
-    inline Atomic& operator= (const Type newValue) noexcept         { exchange (newValue); return *this; }
+     Atomic& operator= (const Type newValue) noexcept
+      { exchange (newValue); return *this; }
 
     /** Atomically sets the current value. */
-    void set (Type newValue) noexcept                               { exchange (newValue); }
+    void set (Type newValue) noexcept
+      { exchange (newValue); }
 
     /** Atomically sets the current value, returning the value that was replaced. */
     Type exchange (Type value) noexcept;

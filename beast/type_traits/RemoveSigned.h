@@ -21,6 +21,7 @@
 #define BEAST_TYPE_TRAITS_REMOVESIGNED_H_INCLUDED
 
 #include "IntegralConstant.h"
+#include "../CStdInt.h"
 
 namespace beast {
 

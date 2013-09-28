@@ -3,10 +3,6 @@
     This file is part of Beast: https://github.com/vinniefalco/Beast
     Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
-    Portions of this file are from JUCE.
-    Copyright (c) 2013 - Raw Material Software Ltd.
-    Please visit http://www.juce.com
-
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
@@ -21,17 +17,9 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CONFIG_H_INCLUDED
-#define BEAST_CONFIG_H_INCLUDED
+#ifndef BEAST_CONFIG_SUFFIX_H_INCLUDED
+#define BEAST_CONFIG_SUFFIX_H_INCLUDED
 
-// VFALCO NOTE this is analogous to <boost/config.hpp>
+// Included at the end of Config.h
 
-#include "Version.h"
-#include "config/PlatformConfig.h"
-#include "config/CompilerConfig.h"
-#include "config/StandardConfig.h"
-#include "config/ConfigCheck.h"
-
-#include "config/Suffix.h"
-    
 #endif

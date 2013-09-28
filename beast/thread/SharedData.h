@@ -20,6 +20,8 @@
 #ifndef BEAST_THREAD_SHAREDDATA_H_INCLUDED
 #define BEAST_THREAD_SHAREDDATA_H_INCLUDED
 
+#include "SharedMutexAdapter.h"
+
 namespace beast
 {
 
