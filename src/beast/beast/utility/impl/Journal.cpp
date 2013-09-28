@@ -54,18 +54,21 @@ Journal::Sink& Journal::getNullSink ()
 Journal::ScopedStream::ScopedStream (Stream const& stream)
     : m_sink (stream.sink())
     , m_severity (stream.severity())
+    , m_toOutputWindow (stream.toOutputWindow())
 {
 }
 
 Journal::ScopedStream::ScopedStream (ScopedStream const& other)
     : m_sink (other.m_sink)
     , m_severity (other.m_severity)
+    , m_toOutputWindow (other.m_toOutputWindow)
 {
 }
 
 Journal::ScopedStream::ScopedStream (Stream const& stream, std::ostream& manip (std::ostream&))
     : m_sink (stream.sink())
     , m_severity (stream.severity())
+    , m_toOutputWindow (stream.toOutputWindow())
 {
     m_ostream << manip;
 }
@@ -77,6 +80,11 @@ Journal::ScopedStream::~ScopedStream ()
         if (! m_ostream.str().empty())
             m_sink.write (m_severity, m_ostream.str());
     }
+
+#if BEAST_MSVC
+    if (m_toOutputWindow && beast_isRunningUnderDebugger ())
+        Logger::outputDebugString (m_ostream.str());
+#endif
 }
 
 std::ostream& Journal::ScopedStream::operator<< (std::ostream& manip (std::ostream&)) const
@@ -94,24 +102,37 @@ std::ostringstream& Journal::ScopedStream::ostream () const
 Journal::Stream::Stream ()
     : m_sink (&getNullSink ())
     , m_severity (kFatal)
+    , m_toOutputWindow (false)
 {
 }
 
 Journal::Stream::Stream (Sink& sink, Severity severity)
     : m_sink (&sink)
     , m_severity (severity)
+    , m_toOutputWindow (false)
 {
 }
 
 Journal::Stream::Stream (Stream const& other)
     : m_sink (other.m_sink)
     , m_severity (other.m_severity)
+    , m_toOutputWindow (other.m_toOutputWindow)
 {
 }
 
 bool Journal::Stream::active () const
 {
     return m_sink->active (m_severity);
+}
+
+bool Journal::Stream::toOutputWindow() const
+{
+    return m_toOutputWindow;
+}
+
+void Journal::Stream::setOutputWindow (bool toOutputWindow) const
+{
+    m_toOutputWindow = toOutputWindow;
 }
 
 Journal::Sink& Journal::Stream::sink () const
@@ -184,6 +205,16 @@ Journal::Stream Journal::stream (Severity severity) const
 bool Journal::active (Severity severity) const
 {
     return m_sink->active (severity);
+}
+
+void Journal::setOutputWindow (bool toOutputWindow) const
+{
+    trace.setOutputWindow (toOutputWindow);
+    debug.setOutputWindow (toOutputWindow);
+    info.setOutputWindow (toOutputWindow);
+    warning.setOutputWindow (toOutputWindow);
+    fatal.setOutputWindow (toOutputWindow);
+    trace.setOutputWindow (toOutputWindow);
 }
 
 }

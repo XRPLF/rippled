@@ -137,6 +137,7 @@ void LogSink::write (std::string const& line, bool toStdErr, ScopedLockType&)
 
     if (toStdErr)
     {
+#if 0
 #if BEAST_MSVC
         if (beast_isRunningUnderDebugger ())
         {
@@ -145,6 +146,7 @@ void LogSink::write (std::string const& line, bool toStdErr, ScopedLockType&)
             Logger::outputDebugString (line);
         }
         else
+#endif
 #endif
         {
             std::cerr << line << std::endl;
