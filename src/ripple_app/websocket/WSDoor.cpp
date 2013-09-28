@@ -112,7 +112,7 @@ private:
         stopped ();
     }
 
-    void onStop ()
+    void onStop (Journal)
     {
         {
             ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);

@@ -21,7 +21,7 @@
 */
 //==============================================================================
 
-#include "RelativeTime.h"
+#include "../RelativeTime.h"
 
 // VFALCO TODO Migrate the localizable strings interfaces for this file
 

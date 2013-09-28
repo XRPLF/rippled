@@ -145,7 +145,7 @@ public:
     // Stoppable
     //
 
-    void onStop ()
+    void onStop (Journal)
     {
         m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
     }

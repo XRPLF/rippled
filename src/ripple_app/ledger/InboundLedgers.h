@@ -76,7 +76,7 @@ public:
     void gotFetchPack (Job&);
     void sweep ();
 
-    void onStop ();
+    void onStop (Journal);
 
 private:
     typedef boost::unordered_map <uint256, InboundLedger::pointer> MapType;

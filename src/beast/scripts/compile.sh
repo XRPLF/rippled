@@ -23,7 +23,7 @@ for f in $1/*/*.cpp
 do
 {
 	echo "Compilng '$f'"
-	g++ -xc++ -I$1/../scripts/ "$f" -c -o /dev/null
-	g++ -xc++ -std=c++11 -I$1/../scripts/ "$f" -c -o /dev/null
+	g++ -xc++ -I$1/../config/ "$f" -c -o /dev/null
+	g++ -xc++ -std=c++11 -I$1/../config/ "$f" -c -o /dev/null
 }
 done

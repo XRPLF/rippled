@@ -90,7 +90,7 @@ IoServicePool::operator boost::asio::io_service& ()
     return m_service;
 }
 
-void IoServicePool::onStop ()
+void IoServicePool::onStop (Journal)
 {
     // VFALCO NOTE This is a hack! We should gracefully
     //             cancel all pending I/O, and delete the work
@@ -100,7 +100,7 @@ void IoServicePool::onStop ()
     m_service.stop ();
 }
 
-void IoServicePool::onChildrenStopped ()
+void IoServicePool::onChildrenStopped (Journal)
 {
 }
 

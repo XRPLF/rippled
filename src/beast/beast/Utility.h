@@ -20,7 +20,9 @@
 #ifndef BEAST_UTILITY_H_INCLUDED
 #define BEAST_UTILITY_H_INCLUDED
 
+#include "utility/Debug.h"
 #include "utility/EnableIf.h"
+#include "utility/Error.h"
 #include "utility/Journal.h"
 
 #endif

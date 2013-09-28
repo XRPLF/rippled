@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-namespace Debug
-{
+namespace beast {
+
+namespace Debug {
 
 void breakPoint ()
 {
@@ -358,3 +359,5 @@ public:
 };
 
 static DebugTests debugTests;
+
+}

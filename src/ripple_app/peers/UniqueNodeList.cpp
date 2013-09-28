@@ -115,7 +115,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void onStop ()
+    void onStop (Journal)
     {
         m_fetchTimer.cancel ();
         m_scoreTimer.cancel ();

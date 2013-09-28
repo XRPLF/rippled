@@ -47,7 +47,7 @@ template <> char const* LogPartition::getPartitionName <HTTPServerLog> () { retu
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp
     : public Application
-    , public Stoppable
+    , public RootStoppable
     , public DeadlineTimer::Listener
     , LeakChecked <ApplicationImp>
     , PeerFinder::Callback
@@ -65,7 +65,7 @@ public:
     //--------------------------------------------------------------------------
 
     ApplicationImp ()
-        : Stoppable ("Application")
+        : RootStoppable ("Application")
         , m_journal (LogJournal::get <ApplicationLog> ())
         , m_tempNodeCache ("NodeCache", 16384, 90)
         , m_sleCache ("LedgerEntryCache", 4096, 120)
@@ -648,7 +648,7 @@ public:
     // Stoppable
 
     // Called to indicate shutdown.
-    void onStop ()
+    void onStop (Journal)
     {
         m_sweepTimer.cancel();
 
@@ -665,6 +665,15 @@ public:
 
     void run ()
     {
+        // VFALCO NOTE I put this here in the hopes that when unit tests run (which
+        //             tragically require an Application object to exist or else they
+        //             crash), the run() function will not get called and we will
+        //             avoid doing silly things like contacting the SNTP server, or
+        //             running the various logic threads like Validators, PeerFinder, etc.
+        prepare (m_journal);
+        start (m_journal);
+    
+
         {
             if (!getConfig ().RUN_STANDALONE)
             {
@@ -724,7 +733,7 @@ public:
         m_journal.info << "Received shutdown request";
         StopSustain ();
 
-        stop (m_journal.warning);
+        stop (m_journal);
     }
 
     void signalStop ()
@@ -1185,8 +1194,7 @@ ApplicationImp* ApplicationImp::s_instance;
 
 Application* Application::New ()
 {
-    ScopedPointer <Application> object (new ApplicationImp);
-    return object.release();
+    return new ApplicationImp;
 }
 
 Application& getApp ()
