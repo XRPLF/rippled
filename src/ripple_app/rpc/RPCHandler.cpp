@@ -3492,24 +3492,27 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, LoadType* loadType, App
             if (bSnapshot)
             {
                 Ledger::pointer     lpLedger = getApp().getLedgerMaster ().getPublishedLedger ();
-                const Json::Value   jvMarker = Json::Value (Json::nullValue);
-
-                if (bBoth)
+                if (lpLedger)
                 {
-                    Json::Value jvBids (Json::objectValue);
-                    Json::Value jvAsks (Json::objectValue);
+                    const Json::Value   jvMarker = Json::Value (Json::nullValue);
 
-                    mNetOps->getBookPage (lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID (), false, 0, jvMarker, jvBids);
+                    if (bBoth)
+                    {
+                        Json::Value jvBids (Json::objectValue);
+                        Json::Value jvAsks (Json::objectValue);
 
-                    if (jvBids.isMember ("offers")) jvResult["bids"] = jvBids["offers"];
+                        mNetOps->getBookPage (lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID (), false, 0, jvMarker, jvBids);
 
-                    mNetOps->getBookPage (lpLedger, uTakerGetsCurrencyID, uTakerGetsIssuerID, uTakerPaysCurrencyID, uTakerPaysIssuerID, raTakerID.getAccountID (), false, 0, jvMarker, jvAsks);
+                        if (jvBids.isMember ("offers")) jvResult["bids"] = jvBids["offers"];
 
-                    if (jvAsks.isMember ("offers")) jvResult["asks"] = jvAsks["offers"];
-                }
-                else
-                {
-                    mNetOps->getBookPage (lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID (), false, 0, jvMarker, jvResult);
+                        mNetOps->getBookPage (lpLedger, uTakerGetsCurrencyID, uTakerGetsIssuerID, uTakerPaysCurrencyID, uTakerPaysIssuerID, raTakerID.getAccountID (), false, 0, jvMarker, jvAsks);
+
+                        if (jvAsks.isMember ("offers")) jvResult["asks"] = jvAsks["offers"];
+                    }
+                    else
+                    {
+                        mNetOps->getBookPage (lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID (), false, 0, jvMarker, jvResult);
+                    }
                 }
             }
         }
