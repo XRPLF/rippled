@@ -38,6 +38,7 @@ public:
 public:
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
+    typedef LockType::ScopedUnlockType ScopedUnlockType;
 
     explicit LedgerMaster (Stoppable& parent)
         : Stoppable ("LedgerMaster", parent)
@@ -217,7 +218,7 @@ public:
     static bool shouldAcquire (uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
 
 private:
-    std::list<Ledger::pointer> findNewLedgersToPublish(ScopedLockType& sl);
+    std::list<Ledger::pointer> findNewLedgersToPublish ();
 
     void applyFutureTransactions (uint32 ledgerIndex);
     bool isValidTransaction (Transaction::ref trans);
@@ -226,6 +227,7 @@ private:
     void getFetchPack (Ledger::ref have);
     void tryFill (Job&, Ledger::pointer);
     void advanceThread ();
+    void doAdvance ();
     void updatePaths (Job&);
 
     void setValidLedger(Ledger::ref);
