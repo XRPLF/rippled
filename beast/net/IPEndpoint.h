@@ -144,6 +144,14 @@ public:
         operator std::string () const;
         /** @} */
 
+        struct hasher
+        {
+            std::size_t operator() (V4 const& v) const
+            {
+                return v.value;
+            }
+        };
+
         /** The value as a 32 bit unsigned. */
         uint32 value;
     };
@@ -195,6 +203,14 @@ public:
             return to_string();
         }
         /** @} */
+
+        struct hasher
+        {
+            std::size_t operator() (V6 const&) const
+            {
+                return 0;
+            }
+        };
     };
 
     //--------------------------------------------------------------------------
@@ -285,6 +301,20 @@ public:
     std::string to_string () const;
     operator std::string () const;
     /** @} */
+
+    struct hasher
+    {
+        std::size_t operator() (IPEndpoint const& value) const
+        {
+            std::size_t hash (0);
+            if (value.isV4())
+                hash = V4::hasher() (value.v4());
+            else if (value.isV6())
+                hash = V6::hasher() (value.v6());
+            hash += value.port();
+            return hash;
+        }
+    };
 
 private:
     Type m_type;
