@@ -142,44 +142,6 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // Stoppable
-    //
-
-    void onPrepare (Journal journal)
-    {
-        journal.info << "Preparing";
-
-        addRPCHandlers();
-    }
-
-    void onStart (Journal journal)
-    {
-        journal.info << "Starting";
-
-        // Do this late so the sources have a chance to be added.
-        m_queue.dispatch (bind (&ManagerImp::setCheckSources, this));
-
-        startThread();
-    }
-
-    void onStop (Journal journal)
-    {
-        journal.info << "Stopping";
-
-        if (this->Thread::isThreadRunning())
-        {
-            m_journal.debug << "Signaling thread exit";
-            m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
-        }
-        else
-        {
-            m_journal.debug << "Thread was never started";
-            stopped();
-        }
-    }
-
-    //--------------------------------------------------------------------------
-    //
     // RPC::Service
     //
 
@@ -232,7 +194,8 @@ public:
 
     void addFile (File const& file)
     {
-        addStaticSource (SourceFile::New (file));
+        //addStaticSource (SourceFile::New (file));
+        addSource (SourceFile::New (file));
     }
 
     void addURL (URL const& url)
@@ -244,12 +207,20 @@ public:
 
     void addSource (Source* source)
     {
+#if RIPPLE_USE_NEW_VALIDATORS
         m_queue.dispatch (bind (&Logic::add, &m_logic, source));
+#else
+        delete source;
+#endif
     }
 
     void addStaticSource (Source* source)
     {
+#if RIPPLE_USE_NEW_VALIDATORS
         m_queue.dispatch (bind (&Logic::addStatic, &m_logic, source));
+#else
+        delete source;
+#endif
     }
 
     // VFALCO NOTE we should just do this on the callers thread?
@@ -272,6 +243,47 @@ public:
             m_queue.dispatch (bind (
                 &Logic::ledgerClosed, &m_logic, ledgerHash));
 #endif
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // Stoppable
+    //
+
+    void onPrepare (Journal journal)
+    {
+#if RIPPLE_USE_NEW_VALIDATORS
+        journal.info << "Preparing";
+
+        addRPCHandlers();
+#endif
+    }
+
+    void onStart (Journal journal)
+    {
+#if RIPPLE_USE_NEW_VALIDATORS
+        journal.info << "Starting";
+
+        // Do this late so the sources have a chance to be added.
+        m_queue.dispatch (bind (&ManagerImp::setCheckSources, this));
+
+        startThread();
+#endif
+    }
+
+    void onStop (Journal journal)
+    {
+        journal.info << "Stopping";
+
+        if (this->Thread::isThreadRunning())
+        {
+            m_journal.debug << "Signaling thread exit";
+            m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
+        }
+        else
+        {
+            stopped();
+        }
     }
 
     //--------------------------------------------------------------------------

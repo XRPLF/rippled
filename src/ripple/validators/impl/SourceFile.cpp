@@ -51,7 +51,34 @@ public:
     Result fetch (Journal journal)
     {
         Result result;
-        
+
+        int64 const fileSize (m_file.getSize ());
+
+        if (fileSize != 0)
+        {
+            if (fileSize < std::numeric_limits<int32>::max())
+            {
+                MemoryBlock buffer (fileSize);
+                RandomAccessFile f;
+                RandomAccessFile::ByteCount amountRead;
+
+                f.open (m_file, RandomAccessFile::readOnly);
+                f.read (buffer.begin(), fileSize, &amountRead);
+
+                if (amountRead == fileSize)
+                {
+                }
+            }
+            else
+            {
+                // too big!
+            }
+        }
+        else
+        {
+            // file doesn't exist
+        }
+
         return result;
     }
 

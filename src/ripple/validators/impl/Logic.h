@@ -223,6 +223,11 @@ public:
 
     struct State
     {
+        State ()
+        {
+            //sources.reserve (64);
+        }
+
         MapType map;
         SourcesType sources;
     };
@@ -266,20 +271,19 @@ public:
     //
     void addStatic (Source* source)
     {
-        m_journal.info << "Add static Source, " << source->name();
+        m_journal.info << "Addding static source '" << source->name() << "'";
 
         ScopedPointer <Source> object (source);
-
         Source::Result result (object->fetch (m_journal));
 
-        SharedState::Access state (m_state);
         if (result.success)
         {
-            merge (result.list, state);
+            SharedState::Access state (m_state);
+            merge (result.list, source, state);
         }
         else
         {
-            // VFALCO NOTE Maybe log the error and message?
+            // TODO: Report the error
         }
     }
 
@@ -287,18 +291,23 @@ public:
     //
     void add (Source* source)
     {
-        m_journal.info << "Add Source, " << source->name();
-        SharedState::Access state (m_state);
-        SourceDesc& desc (*state->sources.emplace_back ());
-        desc.source = source;
-        m_store.insert (desc);
+        m_journal.info << "Adding source '" << source->name() << "'";
+
+        {
+            SharedState::Access state (m_state);
+            SourceDesc& desc (*state->sources.emplace_back ());
+            desc.source = source;
+            m_store.insert (desc);
+        }
     }
 
     // Add each entry in the list to the map, incrementing the
     // reference count if it already exists, and updating fields.
     //
-    void merge (Array <Source::Info> const& list, SharedState::Access& state)
+    void merge (Array <Source::Info> const& list,
+        Source* source, SharedState::Access& state)
     {
+        std::size_t numAdded (0);
         for (std::size_t i = 0; i < list.size (); ++i)
         {
             Source::Info const& info (list.getReference (i));
@@ -309,16 +318,22 @@ public:
             if (result.second)
             {
                 // This is a new one
+                ++numAdded;
                 dirtyChosen ();
             }
         }
+
+        m_journal.info << "Added " << numAdded
+                       << " trusted validators from '" << source->name() << "'";
     }
 
     // Decrement the reference count of each item in the list
     // in the map.
     //
-    void remove (Array <Source::Info> const& list, SharedState::Access& state)
+    void remove (Array <Source::Info> const& list,
+        Source* source, SharedState::Access& state)
     {
+        std::size_t numRemoved (0);
         for (std::size_t i = 0; i < list.size (); ++i)
         {
             Source::Info const& info (list.getReference (i));
@@ -328,10 +343,14 @@ public:
             if (--validatorInfo.refCount == 0)
             {
                 // Last reference removed
+                ++numRemoved;
                 state->map.erase (iter);
                 dirtyChosen ();
             }
         }
+
+        m_journal.info << "Removed " << numRemoved
+                       << " trusted validators from '" << source->name() << "'";
     }
 
     //----------------------------------------------------------------------
@@ -405,13 +424,13 @@ public:
             SharedState::Access state (m_state);
 
             // Add the new source info to the map
-            merge (result.list, state);
+            merge (result.list, desc.source, state);
 
             // Swap lists
             desc.result.swapWith (result);
 
             // Remove the old source info from the map
-            remove (result.list, state);
+            remove (result.list, desc.source, state);
 
             // See if we need to rebuild
             checkChosen ();
@@ -437,7 +456,7 @@ public:
     void expire (SourceDesc& desc, SharedState::Access& state)
     {
         // Decrement reference count on each validator
-        remove (desc.result.list, state);
+        remove (desc.result.list, desc.source, state);
 
         m_store.update (desc);
     }
