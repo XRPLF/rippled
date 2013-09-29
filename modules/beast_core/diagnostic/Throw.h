@@ -31,10 +31,8 @@ extern void breakPoint ();
 };
 
 template <class Exception>
-inline void Throw (Exception const& e, char const* = "", int = 0)
+void Throw (Exception const& e, char const* = "", int = 0)
 {
-    Debug::breakPoint ();
-
     throw e;
 }
 
