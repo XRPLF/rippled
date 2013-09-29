@@ -111,29 +111,30 @@ void LoadMonitor::addLatency (int latency)
 void LoadMonitor::addLoadSample (LoadEvent const& sample)
 {
     std::string const& name (sample.name());
-    std::size_t latency (sample.getSecondsTotal());
+    RelativeTime const latency (sample.getSecondsTotal());
 
-    if (latency > 500)
+    if (latency.inSeconds() > 0.5)
     {
-        WriteLog ((latency > 1000) ? lsWARNING : lsINFO, LoadMonitor)
-            << "Job: " << name << " ExecutionTime: " << sample.getSecondsRunning() <<
-            " WaitingTime: " << sample.getSecondsWaiting();
+        WriteLog ((latency.inSeconds() > 1.0) ? lsWARNING : lsINFO, LoadMonitor)
+            << "Job: " << name << " ExecutionTime: " << RelativeTime (sample.getSecondsRunning()) <<
+            " WaitingTime: " << RelativeTime (sample.getSecondsWaiting());
     }
 
     // VFALCO NOTE Why does 1 become 0?
-    if (latency == 1)
-        latency = 0;
+    std::size_t latencyMilliseconds (latency.inMilliseconds());
+    if (latencyMilliseconds == 1)
+        latencyMilliseconds = 0;
 
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     update ();
     ++mCounts;
     ++mLatencyEvents;
-    mLatencyMSAvg += latency;
-    mLatencyMSPeak += latency;
+    mLatencyMSAvg += latencyMilliseconds;
+    mLatencyMSPeak += latencyMilliseconds;
 
     // VFALCO NOTE Why are we multiplying by 4?
-    int const latencyPeak = mLatencyEvents * latency * 4;
+    int const latencyPeak = mLatencyEvents * latencyMilliseconds * 4;
 
     if (mLatencyMSPeak < latencyPeak)
         mLatencyMSPeak = latencyPeak;
