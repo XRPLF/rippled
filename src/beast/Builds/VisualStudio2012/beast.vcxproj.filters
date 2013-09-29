@@ -276,6 +276,15 @@
     <Filter Include="scripts">
       <UniqueIdentifier>{c65af439-8c23-46c3-9b95-7da15651e5f6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\config\compiler">
+      <UniqueIdentifier>{8d88283b-24ec-49ca-a94b-cb6271bc14f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\config\platform">
+      <UniqueIdentifier>{38c81e1f-f831-4632-af45-6340683f3346}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\config\stdlib">
+      <UniqueIdentifier>{7243e5e5-ad7e-4d81-8444-d545919e850c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1214,6 +1223,42 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\utility\Debug.h">
       <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\compiler\Clang.h">
+      <Filter>beast\config\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\compiler\Gcc.h">
+      <Filter>beast\config\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\compiler\Intel.h">
+      <Filter>beast\config\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\compiler\VisualC.h">
+      <Filter>beast\config\compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\platform\Android.h">
+      <Filter>beast\config\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\platform\Bsd.h">
+      <Filter>beast\config\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\platform\Linux.h">
+      <Filter>beast\config\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\platform\MacOS.h">
+      <Filter>beast\config\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\platform\Win32.h">
+      <Filter>beast\config\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\SelectCompilerConfig.h">
+      <Filter>beast\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\SelectPlatformConfig.h">
+      <Filter>beast\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\config\SelectStdlibConfig.h">
+      <Filter>beast\config</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
