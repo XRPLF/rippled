@@ -276,7 +276,7 @@ SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& id, uint256 const& has
     SHAMapTreeNode* ret = getNodePointerNT (id, hash);
 
     if (!ret)
-        Throw (SHAMapMissingNode (mType, id, hash));
+        throw (SHAMapMissingNode (mType, id, hash));
 
     return ret;
 }
@@ -297,7 +297,7 @@ SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& id, uint256 const& has
     SHAMapTreeNode* ret = getNodePointerNT (id, hash, filter);
 
     if (!ret)
-        Throw (SHAMapMissingNode (mType, id, hash));
+        throw (SHAMapMissingNode (mType, id, hash));
 
     return ret;
 }
@@ -539,7 +539,7 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNT
                     firstNode = firstBelow (firstNode);
 
                     if (!firstNode || firstNode->isInner ())
-                        Throw (std::runtime_error ("missing/corrupt node"));
+                        throw (std::runtime_error ("missing/corrupt node"));
 
                     type = firstNode->getType ();
                     return firstNode->peekItem ();
@@ -577,7 +577,7 @@ SHAMapItem::pointer SHAMap::peekPrevItem (uint256 const& id)
                     SHAMapTreeNode* item = firstBelow (node.get ());
 
                     if (!item)
-                        Throw (std::runtime_error ("missing node"));
+                        throw (std::runtime_error ("missing node"));
 
                     return item->peekItem ();
                 }
@@ -643,7 +643,7 @@ bool SHAMap::delItem (uint256 const& id)
     std::stack<SHAMapTreeNode::pointer> stack = getStack (id, true);
 
     if (stack.empty ())
-        Throw (std::runtime_error ("missing node"));
+        throw (std::runtime_error ("missing node"));
 
     SHAMapTreeNode::pointer leaf = stack.top ();
     stack.pop ();
@@ -724,7 +724,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
     std::stack<SHAMapTreeNode::pointer> stack = getStack (tag, true);
 
     if (stack.empty ())
-        Throw (std::runtime_error ("missing node"));
+        throw (std::runtime_error ("missing node"));
 
     SHAMapTreeNode::pointer node = stack.top ();
     stack.pop ();
@@ -749,7 +749,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
             WriteLog (lsFATAL, SHAMap) << "NewNode: " << *newNode;
             dump ();
             assert (false);
-            Throw (std::runtime_error ("invalid inner node"));
+            throw (std::runtime_error ("invalid inner node"));
         }
 
         trackNewNode (newNode);
@@ -822,7 +822,7 @@ bool SHAMap::updateGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasM
     std::stack<SHAMapTreeNode::pointer> stack = getStack (tag, true);
 
     if (stack.empty ())
-        Throw (std::runtime_error ("missing node"));
+        throw (std::runtime_error ("missing node"));
 
     SHAMapTreeNode::pointer node = stack.top ();
     stack.pop ();
@@ -856,7 +856,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal (const SHAMapNode& id, uint256
     SHAMapTreeNode::pointer ret = fetchNodeExternalNT (id, hash);
 
     if (!ret)
-        Throw (SHAMapMissingNode (mType, id, hash));
+        throw (SHAMapMissingNode (mType, id, hash));
 
     return ret;
 }
