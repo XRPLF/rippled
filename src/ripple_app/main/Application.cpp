@@ -40,6 +40,8 @@ class RPCServiceManagerLog;
 template <> char const* LogPartition::getPartitionName <RPCServiceManagerLog> () { return "RPCServiceManager"; }
 class HTTPServerLog;
 template <> char const* LogPartition::getPartitionName <HTTPServerLog> () { return "RPCServer"; }
+class LoadManagerLog;
+template <> char const* LogPartition::getPartitionName <LoadManagerLog> () { return "LoadManager"; }
 
 //
 //------------------------------------------------------------------------------
@@ -124,7 +126,7 @@ public:
 
         , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
 
-        , mFeeTrack (ILoadFeeTrack::New ())
+        , mFeeTrack (LoadFeeTrack::New (LogJournal::get <LoadManagerLog> ()))
 
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
 
@@ -132,7 +134,7 @@ public:
 
         , mProofOfWorkFactory (ProofOfWorkFactory::New ())
 
-        , m_loadManager (LoadManager::New ())
+        , m_loadManager (LoadManager::New (*this, LogJournal::get <LoadManagerLog> ()))
 
         , mPeerFinder (PeerFinder::New (*this))
 
@@ -145,8 +147,6 @@ public:
 
         // VFALCO TODO remove these once the call is thread safe.
         HashMaps::getInstance ().initializeNonce <size_t> ();
-
-        initValidatorsConfig ();
     }
 
     ~ApplicationImp ()
@@ -159,28 +159,6 @@ public:
 
         bassert (s_instance == this);
         s_instance = nullptr;
-    }
-
-    //--------------------------------------------------------------------------
-
-    // Initialize the Validators object with Config information.
-    void initValidatorsConfig ()
-    {
-        {
-            std::vector <std::string> const& strings (getConfig().validators);
-            if (! strings.empty ())
-                m_validators->addStrings ("rippled.cfg", strings);
-        }
-
-        if (! getConfig().getValidatorsURL().empty())
-        {
-            m_validators->addURL (getConfig().getValidatorsURL());
-        }
-
-        if (getConfig().getValidatorsFile() != File::nonexistent ())
-        {
-            m_validators->addFile (getConfig().getValidatorsFile());
-        }
     }
 
     //--------------------------------------------------------------------------
@@ -270,7 +248,7 @@ public:
         return *mFeatures;
     }
 
-    ILoadFeeTrack& getFeeTrack ()
+    LoadFeeTrack& getFeeTrack ()
     {
         return *mFeeTrack;
     }
@@ -387,10 +365,6 @@ public:
     {
         // VFALCO NOTE: 0 means use heuristics to determine the thread count.
         m_jobQueue->setThreadCount (0, getConfig ().RUN_STANDALONE);
-
-        m_sweepTimer.setExpiration (10);
-
-        m_loadManager->start ();
 
     #if ! BEAST_WIN32
     #ifdef SIGINT
@@ -642,16 +616,54 @@ public:
             m_networkOPs->setStandAlone ();
         }
     }
+   
+    //--------------------------------------------------------------------------
+
+    // Initialize the Validators object with Config information.
+    void prepareValidators ()
+    {
+        {
+            std::vector <std::string> const& strings (getConfig().validators);
+            if (! strings.empty ())
+                m_validators->addStrings ("rippled.cfg", strings);
+        }
+
+        if (! getConfig().getValidatorsURL().empty())
+        {
+            m_validators->addURL (getConfig().getValidatorsURL());
+        }
+
+        if (getConfig().getValidatorsFile() != File::nonexistent ())
+        {
+            m_validators->addFile (getConfig().getValidatorsFile());
+        }
+    }
 
     //--------------------------------------------------------------------------
     //
     // Stoppable
+    //
+
+    void onPrepare (Journal)
+    {
+        prepareValidators ();
+    }
+
+    void onStart (Journal journal)
+    {
+        journal.debug << "Application starting";
+
+        m_sweepTimer.setExpiration (10);
+    }
 
     // Called to indicate shutdown.
-    void onStop (Journal)
+    void onStop (Journal journal)
     {
+        journal.debug << "Application stopping";
+
         m_sweepTimer.cancel();
 
+        // VFALCO TODO get rid of this flag
         mShutdown = true;
 
         mValidations->flush ();
@@ -717,7 +729,7 @@ public:
             //             eliminate LoadManager's dependency inversions.
             //
             // This deletes the object and therefore, stops the thread.
-            m_loadManager = nullptr;
+            //m_loadManager = nullptr;
 
             m_journal.info << "Done.";
 
@@ -844,7 +856,7 @@ private:
     ScopedPointer <Validators::Manager> m_validators;
     ScopedPointer <IFeatures> mFeatures;
     ScopedPointer <IFeeVote> mFeeVote;
-    ScopedPointer <ILoadFeeTrack> mFeeTrack;
+    ScopedPointer <LoadFeeTrack> mFeeTrack;
     ScopedPointer <IHashRouter> mHashRouter;
     ScopedPointer <Validations> mValidations;
     ScopedPointer <ProofOfWorkFactory> mProofOfWorkFactory;

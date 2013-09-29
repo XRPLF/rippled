@@ -34,32 +34,24 @@
 
     @see LoadSource, LoadType
 */
-class LoadManager
+class LoadManager : public Stoppable
 {
+protected:
+    explicit LoadManager (Stoppable& parent);
+
 public:
     /** Create a new manager.
-
-        The manager thread begins running immediately.
 
         @note The thresholds for warnings and punishments are in
               the ctor-initializer
     */
-    static LoadManager* New ();
+    static LoadManager* New (Stoppable& parent, Journal journal);
 
     /** Destroy the manager.
 
         The destructor returns only after the thread has stopped.
     */
     virtual ~LoadManager () { }
-
-    /** Start the associated thread.
-
-        This is here to prevent the deadlock detector from activating during
-        a lengthy program initialization.
-    */
-    // VFALCO TODO Simplify the two stage initialization to one stage (construction).
-    //        NOTE In stand-alone mode the load manager thread isn't started
-    virtual void start () = 0;
 
     /** Turn on deadlock detection.
 

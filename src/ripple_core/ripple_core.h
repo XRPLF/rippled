@@ -36,7 +36,7 @@ namespace ripple
 
 # include "functional/ConfigSections.h"
 #include "functional/Config.h"
-#include "functional/ILoadFeeTrack.h"
+#include "functional/LoadFeeTrack.h"
 #  include "functional/LoadEvent.h"
 #  include "functional/LoadMonitor.h"
 # include "functional/Job.h"

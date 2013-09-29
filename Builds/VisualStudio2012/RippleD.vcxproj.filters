@@ -270,9 +270,6 @@
     <ClCompile Include="..\..\src\ripple_core\functional\LoadEvent.cpp">
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\LoadFeeTrack.cpp">
-      <Filter>[2] Old Ripple\ripple_core\functional</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\functional\LoadMonitor.cpp">
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClCompile>
@@ -1059,6 +1056,9 @@
     <ClCompile Include="..\..\src\ripple\validators\impl\Utilities.cpp">
       <Filter>[1] Ripple\validators\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\functional\LoadFeeTrackImp.cpp">
+      <Filter>[2] Old Ripple\ripple_core\functional</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -1100,9 +1100,6 @@
     <ClInclude Include="..\..\src\ripple_basics\utility\UptimeTimer.h">
       <Filter>[2] Old Ripple\ripple_basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\ILoadFeeTrack.h">
-      <Filter>[2] Old Ripple\ripple_core\functional</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\functional\Job.h">
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClInclude>
@@ -1110,9 +1107,6 @@
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\functional\LoadEvent.h">
-      <Filter>[2] Old Ripple\ripple_core\functional</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h">
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\functional\LoadMonitor.h">
@@ -2114,6 +2108,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\AgedHistory.h">
       <Filter>[1] Ripple\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrackImp.h">
+      <Filter>[2] Old Ripple\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h">
+      <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

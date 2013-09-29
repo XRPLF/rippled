@@ -131,10 +131,6 @@ David Features:
 
 - Rename "fullBelow" to something like haveAllDescendants or haveAllChildren.
 
-- Remove dependence on JobQueue, LoadFeeTrack, and NetworkOPs from LoadManager
-  by providing an observer (beast::ListenerList or Listeners). This way
-  LoadManager does not need stopThread() function.
-
 - Rewrite Sustain to use Beast and work on Windows as well
   * Do not enable watchdog process if a debugger is attached
 

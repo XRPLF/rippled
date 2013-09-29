@@ -17,16 +17,11 @@
 */
 //==============================================================================
 
-
-SETUP_LOG (LoadManager)
-
-//------------------------------------------------------------------------------
-
 class LoadManagerImp
     : public LoadManager
     , public Thread
 {
-private:
+public:
     /*  Entry mapping utilization to cost.
 
         The cost is expressed as a unitless relative quantity. These
@@ -72,11 +67,33 @@ private:
         int         m_resourceFlags;
     };
 
-public:
-    LoadManagerImp ()
-        : Thread ("loadmgr")
+    //--------------------------------------------------------------------------
+
+    Journal m_journal;
+    typedef RippleMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType mLock;
+
+    BlackList<UptimeTimerAdapter> mBlackList;
+
+    int mCreditRate;            // credits gained/lost per second
+    int mCreditLimit;           // the most credits a source can have
+    int mDebitWarn;             // when a source drops below this, we warn
+    int mDebitLimit;            // when a source drops below this, we cut it off (should be negative)
+
+    bool mArmed;
+
+    int mDeadLock;              // Detect server deadlocks
+
+    std::vector <Cost> mCosts;
+
+    //--------------------------------------------------------------------------
+
+    LoadManagerImp (Stoppable& parent, Journal journal)
+        : LoadManager (parent)
+        , Thread ("loadmgr")
+        , m_journal (journal)
         , mLock (this, "LoadManagerImp", __FILE__, __LINE__)
-        , m_logThread ("loadmgr_log")
         , mCreditRate (100)
         , mCreditLimit (500)
         , mDebitWarn (-500)
@@ -85,8 +102,6 @@ public:
         , mDeadLock (0)
         , mCosts (LT_MAX)
     {
-        m_logThread.start ();
-
         /** Flags indicating the type of load.
 
             Utilization may include any combination of:
@@ -128,7 +143,6 @@ public:
         UptimeTimer::getInstance ().beginManualUpdates ();
     }
 
-private:
     ~LoadManagerImp ()
     {
         UptimeTimer::getInstance ().endManualUpdates ();
@@ -136,10 +150,35 @@ private:
         stopThread ();
     }
 
-    void start ()
+    //--------------------------------------------------------------------------
+    //
+    // Stoppable
+    //
+
+    void onPrepare (Journal)
     {
-        startThread();
     }
+
+    void onStart (Journal journal)
+    {
+        journal.debug << "Starting";
+        startThread ();
+    }
+
+    void onStop (Journal journal)
+    {
+        if (isThreadRunning ())
+        {
+            journal.debug << "Stopping";
+            stopThread (0);
+        }
+        else
+        {
+            stopped ();
+        }
+    }
+
+    //--------------------------------------------------------------------------
 
     void canonicalize (LoadSource& source, int now) const
     {
@@ -240,17 +279,17 @@ private:
     void logWarning (const std::string& source) const
     {
         if (source.empty ())
-            WriteLog (lsDEBUG, LoadManager) << "Load warning from empty source";
+            m_journal.debug << "Load warning from empty source";
         else
-            WriteLog (lsINFO, LoadManager) << "Load warning: " << source;
+            m_journal.info << "Load warning: " << source;
     }
 
     void logDisconnect (const std::string& source) const
     {
         if (source.empty ())
-            WriteLog (lsINFO, LoadManager) << "Disconnect for empty source";
+            m_journal.info << "Disconnect for empty source";
         else
-            WriteLog (lsWARNING, LoadManager) << "Disconnect for: " << source;
+            m_journal.warning << "Disconnect for: " << source;
     }
 
     Json::Value getBlackList (int threshold)
@@ -282,9 +321,9 @@ private:
         mArmed = true;
     }
 
-    static void logDeadlock (int dlTime)
+    void logDeadlock (int dlTime)
     {
-        WriteLog (lsWARNING, LoadManager) << "Server stalled for " << dlTime << " seconds.";
+        m_journal.warning << "Server stalled for " << dlTime << " seconds.";
 
 #if RIPPLE_TRACK_MUTEXES
         StringArray report;
@@ -298,59 +337,6 @@ private:
 #endif
     }
 
-private:
-    // VFALCO TODO These used to be public but are apparently not used. Find out why.
-    /*
-    int getCreditRate () const
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        return mCreditRate;
-    }
-
-    int getCreditLimit () const
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        return mCreditLimit;
-    }
-
-    int getDebitWarn () const
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        return mDebitWarn;
-    }
-
-    int getDebitLimit () const
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        return mDebitLimit;
-    }
-
-    void setCreditRate (int r)
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        mCreditRate = r;
-    }
-
-    void setCreditLimit (int r)
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        mCreditLimit = r;
-    }
-
-    void setDebitWarn (int r)
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        mDebitWarn = r;
-    }
-
-    void setDebitLimit (int r)
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        mDebitLimit = r;
-    }
-    */
-
-private:
     void addCost (const Cost& c)
     {
         mCosts [static_cast <int> (c.getLoadType ())] = c;
@@ -393,9 +379,7 @@ private:
                     // Report the deadlocked condition every 10 seconds
                     if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0)
                     {
-                        // VFALCO TODO Replace this with a dedicated thread with call queue.
-                        //
-                        m_logThread.call (&logDeadlock, timeSpentDeadlocked);
+                        logDeadlock (timeSpentDeadlocked);
                     }
 
                     // If we go over 500 seconds spent deadlocked, it means that the
@@ -413,7 +397,7 @@ private:
             //             Another option is using an observer pattern to invert the dependency.
             if (getApp().getJobQueue ().isOverloaded ())
             {
-                WriteLog (lsINFO, LoadManager) << getApp().getJobQueue ().getJson (0);
+                m_journal.info << getApp().getJobQueue ().getJson (0);
                 change = getApp().getFeeTrack ().raiseLocalFee ();
             }
             else
@@ -432,7 +416,7 @@ private:
 
             if ((when.is_negative ()) || (when.total_seconds () > 1))
             {
-                WriteLog (lsWARNING, LoadManager) << "time jump";
+                m_journal.warning << "time jump";
                 t = boost::posix_time::microsec_clock::universal_time ();
             }
             else
@@ -441,32 +425,18 @@ private:
             }
         }
     }
-
-private:
-    typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-    LockType mLock;
-
-    beast::ThreadWithCallQueue m_logThread;
-
-    BlackList<UptimeTimerAdapter> mBlackList;
-
-    int mCreditRate;            // credits gained/lost per second
-    int mCreditLimit;           // the most credits a source can have
-    int mDebitWarn;             // when a source drops below this, we warn
-    int mDebitLimit;            // when a source drops below this, we cut it off (should be negative)
-
-    bool mArmed;
-
-    int mDeadLock;              // Detect server deadlocks
-
-    std::vector <Cost> mCosts;
 };
 
 //------------------------------------------------------------------------------
 
-LoadManager* LoadManager::New ()
+LoadManager::LoadManager (Stoppable& parent)
+    : Stoppable ("LoadManager", parent)
 {
-    ScopedPointer <LoadManager> object (new LoadManagerImp);
-    return object.release ();
+}
+
+//------------------------------------------------------------------------------
+
+LoadManager* LoadManager::New (Stoppable& parent, Journal journal)
+{
+    return new LoadManagerImp (parent, journal);
 }

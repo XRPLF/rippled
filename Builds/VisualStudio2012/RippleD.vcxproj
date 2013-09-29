@@ -908,7 +908,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\functional\LoadFeeTrack.cpp">
+    <ClCompile Include="..\..\src\ripple_core\functional\LoadFeeTrackImp.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1764,11 +1764,11 @@
     <ClInclude Include="..\..\src\ripple_core\functional\LoadType.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\Config.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\ConfigSections.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\ILoadFeeTrack.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\Job.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\JobQueue.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadEvent.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrackImp.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadMonitor.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\Backend.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\Database.h" />

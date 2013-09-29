@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
@@ -36,7 +35,7 @@ enum
     // We check Source expirations on this time interval
     ,checkEverySeconds = 60 * 60
 #else
-     secondsBetweenFetches = 5 * 60
+     secondsBetweenFetches = 59
     ,checkEverySeconds = 60
 #endif
 

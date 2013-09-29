@@ -40,8 +40,8 @@ namespace ripple
 {
 
 #include "functional/Config.cpp"
-# include "functional/LoadFeeTrack.h" // private
-#include "functional/LoadFeeTrack.cpp"
+# include "functional/LoadFeeTrackImp.h" // private
+#include "functional/LoadFeeTrackImp.cpp"
 #include "functional/Job.cpp"
 #include "functional/JobQueue.cpp"
 #include "functional/LoadEvent.cpp"

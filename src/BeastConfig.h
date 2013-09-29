@@ -171,7 +171,7 @@
 // is being written.
 //
 #ifndef RIPPLE_USE_NEW_VALIDATORS
-#define RIPPLE_USE_NEW_VALIDATORS 1
+#define RIPPLE_USE_NEW_VALIDATORS 0
 #endif
 
 // Turning this on makes the Application object get destroyed,

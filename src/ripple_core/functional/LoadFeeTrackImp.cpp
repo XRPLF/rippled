@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
-
-ILoadFeeTrack* ILoadFeeTrack::New ()
+LoadFeeTrack* LoadFeeTrack::New (Journal journal)
 {
-    return new LoadFeeTrack;
+    return new LoadFeeTrackImp (journal);
 }
 
 //------------------------------------------------------------------------------
@@ -35,7 +34,7 @@ public:
     void runTest ()
     {
         Config d; // get a default configuration object
-        LoadFeeTrack l;
+        LoadFeeTrackImp l;
 
         beginTestCase ("fee scaling");
 

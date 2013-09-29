@@ -124,7 +124,7 @@ public:
         , m_store (m_journal)
         , m_logic (m_store, m_journal)
         , m_checkTimer (this)
-        , m_checkSources (true)
+        , m_checkSources (false)
     {
 #if BEAST_MSVC
         if (beast_isRunningUnderDebugger())
@@ -147,26 +147,35 @@ public:
 
     void onPrepare (Journal journal)
     {
-        journal.info << "Preparing Validators";
+        journal.info << "Preparing";
 
         addRPCHandlers();
     }
 
     void onStart (Journal journal)
     {
-        journal.info << "Starting Validators";
+        journal.info << "Starting";
+
+        // Do this late so the sources have a chance to be added.
+        m_queue.dispatch (bind (&ManagerImp::setCheckSources, this));
 
         startThread();
     }
 
     void onStop (Journal journal)
     {
-        journal.info << "Stopping Validators";
+        journal.info << "Stopping";
 
         if (this->Thread::isThreadRunning())
+        {
+            m_journal.debug << "Signaling thread exit";
             m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
+        }
         else
+        {
+            m_journal.debug << "Thread was never started";
             stopped();
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -269,12 +278,12 @@ public:
 
     void init ()
     {
-        m_journal.trace << "Initializing";
+        m_journal.debug << "Initializing";
 
         File const file (File::getSpecialLocation (
             File::userDocumentsDirectory).getChildFile ("validators.sqlite"));
         
-        m_journal.trace << "Opening database at '" << file.getFullPathName() << "'";
+        m_journal.debug << "Opening database at '" << file.getFullPathName() << "'";
 
         Error error (m_store.open (file));
 
@@ -294,13 +303,14 @@ public:
     {
         if (timer == m_checkTimer)
         {
-            m_journal.trace << "Check timer signaled";
+            m_journal.debug << "Check timer expired";
             m_queue.dispatch (bind (&ManagerImp::setCheckSources, this));
         }
     }
 
     void setCheckSources ()
     {
+        m_journal.debug << "Checking sources";
         m_checkSources = true;
     }
 
@@ -308,18 +318,16 @@ public:
     {
         if (m_checkSources)
         {
-            m_journal.trace << "Checking sources";
-
             if (m_logic.fetch_one () == 0)
             {
-                m_journal.trace << "Finished checking sources";
+                m_journal.debug << "All sources checked";
 
                 // Made it through the list without interruption!
                 // Clear the flag and set the deadline timer again.
                 //
                 m_checkSources = false;
 
-                m_journal.trace << "Next check timer expires in " <<
+                m_journal.debug << "Next check timer expires in " <<
                     RelativeTime::seconds (checkEverySeconds);
 
                 m_checkTimer.setExpiration (checkEverySeconds);

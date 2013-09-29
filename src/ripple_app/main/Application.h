@@ -29,7 +29,7 @@ namespace RPC { class Manager; }
 class IFeatures;
 class IFeeVote;
 class IHashRouter;
-class ILoadFeeTrack;
+class LoadFeeTrack;
 class Peers;
 class UniqueNodeList;
 class JobQueue;
@@ -98,7 +98,7 @@ public:
     virtual IFeatures&              getFeatureTable () = 0;
     virtual IFeeVote&               getFeeVote () = 0;
     virtual IHashRouter&            getHashRouter () = 0;
-    virtual ILoadFeeTrack&          getFeeTrack () = 0;
+    virtual LoadFeeTrack&          getFeeTrack () = 0;
     virtual LoadManager&            getLoadManager () = 0;
     virtual Peers&                  getPeers () = 0;
     virtual ProofOfWorkFactory&     getProofOfWorkFactory () = 0;
