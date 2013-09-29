@@ -180,8 +180,7 @@ Error statement_imp::execute()
 {
     Error error;
 
-    if (!m_stmt)
-        Throw(Error().fail(__FILE__, __LINE__, Error::badParameter));
+    check_precondition (m_stmt != nullptr);
 
     // ???
     m_bGotData = false;
@@ -253,7 +252,7 @@ bool statement_imp::fetch(Error& error)
     else
     {
         // should never get SQLITE_OK here
-        Throw(Error().fail(__FILE__, __LINE__, Error::assertFailed));
+        fatal_error ("invalid result");
     }
 
     return m_bGotData;

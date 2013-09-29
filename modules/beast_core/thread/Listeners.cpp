@@ -380,7 +380,7 @@ ListenersBase::Proxy::Proxy (void const* const member, const size_t bytes)
     : m_bytes (bytes)
 {
     if (bytes > maxMemberBytes)
-        Throw (Error ().fail (__FILE__, __LINE__, "the Proxy member is too large"));
+        fatal_error ("the Proxy member is too large");
 
     memcpy (m_member, member, bytes);
 }

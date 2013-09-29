@@ -144,7 +144,7 @@ FifoFreeStoreWithoutTLS::FifoFreeStoreWithoutTLS ()
     : m_pages (GlobalPagedFreeStore::getInstance ())
 {
     if (m_pages->getPageBytes () < sizeof (Block) + 256)
-        Throw (Error ().fail (__FILE__, __LINE__, TRANS ("the block size is too small")));
+        fatal_error ("the block size is too small");
 
     m_active = newBlock ();
 }
@@ -161,7 +161,7 @@ void* FifoFreeStoreWithoutTLS::allocate (const size_t bytes)
     const size_t actual = sizeof (Header) + bytes;
 
     if (actual > m_pages->getPageBytes ())
-        Throw (Error ().fail (__FILE__, __LINE__, TRANS ("the memory request was too large")));
+        fatal_error ("the memory request was too large");
 
     Header* h;
 

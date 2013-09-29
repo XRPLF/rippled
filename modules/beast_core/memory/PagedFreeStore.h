@@ -46,7 +46,7 @@ public:
     inline void* allocate (const size_t bytes)
     {
         if (bytes > m_pageBytes)
-            Throw (Error ().fail (__FILE__, __LINE__, "the size is too large"));
+            fatal_error ("the size is too large");
 
         return allocate ();
     }

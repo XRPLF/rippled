@@ -123,16 +123,14 @@ void* PagedFreeStore::allocate ()
         const bool exhausted = m_newPagesLeft.release ();
 
         if (exhausted)
-            Throw (Error ().fail (__FILE__, __LINE__,
-                                  TRANS ("the limit of memory allocations was reached")));
+            fatal_error ("the limit of memory allocations was reached");
 
 #endif
 
         void* storage = ::malloc (m_pageBytes);
 
         if (!storage)
-            Throw (Error ().fail (__FILE__, __LINE__,
-                                  TRANS ("a memory allocation failed")));
+            fatal_error ("a memory allocation failed");
 
         page = new (storage) Page (this);
 
