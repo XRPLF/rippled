@@ -3004,7 +3004,7 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
             wantLedger->peekAccountStateMap ()->getFetchPack (haveLedger->peekAccountStateMap ().get (), true, 1024,
                     BIND_TYPE (fpAppender, &reply, lSeq, P_1, P_2));
 
-            if (wantLedger->getAccountHash ().isNonZero ())
+            if (wantLedger->getTransHash ().isNonZero ())
                 wantLedger->peekTransactionMap ()->getFetchPack (NULL, true, 256,
                         BIND_TYPE (fpAppender, &reply, lSeq, P_1, P_2));
 
