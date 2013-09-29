@@ -115,7 +115,7 @@ public:
         const size_t bytesNeeded = headerBytes + bytes;
 
         if (bytesNeeded > m_allocator.m_pages->getPageBytes ())
-            Throw (Error ().fail (__FILE__, __LINE__, TRANS ("the memory request was too large")));
+            fatal_error ("the memory request was too large");
 
         Header* header;
 

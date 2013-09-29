@@ -34,10 +34,6 @@ namespace vf
 namespace
 {
 
-//
-// While this object is in scope, any Windows SEH
-// exceptions will be caught and re-thrown as an Error object.
-//
 class ScopedPlatformExceptionCatcher : public Uncopyable
 {
 public:
@@ -155,7 +151,7 @@ public:
                 break;
             }
 
-            Throw (Error ().fail (__FILE__, __LINE__, s, Error::platform));
+            beast_reportFatalError (s, __FILE__, __LINE__);
         }
 
         return s_sehPrev (ei);
@@ -217,26 +213,6 @@ bool CatchAny (Function <void (void)> f, bool returnFromException)
         f ();
 
         caughtException = false;
-    }
-    catch (Error& e)
-    {
-        if (!returnFromException)
-        {
-            JUCEApplication* app = JUCEApplication::getInstance ();
-
-            if (app)
-            {
-                app->unhandledException (
-                    &e,
-                    e.getSourceFilename (),
-                    e.getLineNumber ());
-            }
-            else
-            {
-                std::cout << e.what ();
-                std::unexpected ();
-            }
-        }
     }
     catch (std::exception& e)
     {

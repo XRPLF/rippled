@@ -64,7 +64,7 @@ bool Result::operator!= (const Result& other) const noexcept
 
 Result Result::fail (const String& errorMessage) noexcept
 {
-    return Result (errorMessage.isEmpty() ? "Unknown Error" : errorMessage);
+    return Result (errorMessage.isEmpty() ? "Unknown error" : errorMessage);
 }
 
 const String& Result::getErrorMessage() const noexcept
