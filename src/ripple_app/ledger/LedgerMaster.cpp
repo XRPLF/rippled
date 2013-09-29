@@ -449,11 +449,21 @@ bool LedgerMaster::shouldAcquire (uint32 currentLedger, uint32 ledgerHistory, ui
 void LedgerMaster::fixMismatch (Ledger::ref ledger)
 {
     int invalidate = 0;
+    uint256 hash;
 
     for (uint32 lSeq = ledger->getLedgerSeq () - 1; lSeq > 0; --lSeq)
         if (haveLedger (lSeq))
         {
-            uint256 hash = ledger->getLedgerHash (lSeq);
+            try
+            {
+                hash = ledger->getLedgerHash (lSeq);
+	    }
+	    catch (...)
+	    {
+	        WriteLog (lsWARNING, LedgerMaster) << "fixMismatch encounters partial ledger";
+	        clearLedger(lSeq);
+	        return;
+	    }
 
             if (hash.isNonZero ())
             {
