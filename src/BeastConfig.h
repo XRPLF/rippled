@@ -174,17 +174,15 @@
 #define RIPPLE_USE_NEW_VALIDATORS 0
 #endif
 
-// Turning this on makes the Application object get destroyed,
-// which is part of an attempt to have a "clean exit."
-#ifndef RIPPLE_APPLICATION_CLEAN_EXIT
-#define RIPPLE_APPLICATION_CLEAN_EXIT 1
-#endif
-
 // This is only here temporarily. Use it to turn off the sending of
 // "ANNOUNCE" messages if you suspect that you're having problems
 // because of it.
 #ifndef RIPPLE_USE_MT_ANNOUNCE
 #define RIPPLE_USE_MT_ANNOUNCE 0
+#endif
+
+#ifndef RIPPLE_USE_PEERFINDER
+#define RIPPLE_USE_PEERFINDER 0
 #endif
 
 // Here temporarily

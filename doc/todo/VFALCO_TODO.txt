@@ -3,11 +3,10 @@ RIPPLE TODO
 --------------------------------------------------------------------------------
 
 Vinnie's List: Changes day to day, descending priority
+- PeerFinder work
 - Fix and tidy up broken beast classes
 - Validators work
-- Open Source aftermath
-
-- Parse Validator line using cribbed code
+  * Parse Validator line using cribbed code
 - Parse ContentBodyBuffer from HTTPResponse
 - HTTPMessage improvements
 - HTTPClient improvements based on HTTPServer
