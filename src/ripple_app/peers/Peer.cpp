@@ -192,6 +192,7 @@ public:
         return mClosedLedgerHash;
     }
     bool hasLedger (uint256 const & hash, uint32 seq) const;
+    void ledgerRange (uint32& minSeq, uint32& maxSeq) const;
     bool hasTxSet (uint256 const & hash) const;
     uint64 getPeerId () const
     {
@@ -2289,6 +2290,14 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
         applyLoadCharge (LT_UnwantedData);
 }
 
+void PeerImp::ledgerRange (uint32& minSeq, uint32& maxSeq) const
+{
+    boost::mutex::scoped_lock sl(mRecentLock);
+
+    minSeq = mMinLedger;
+    maxSeq = mMaxLedger;
+}
+
 bool PeerImp::hasLedger (uint256 const& hash, uint32 seq) const
 {
     boost::mutex::scoped_lock sl(mRecentLock);
@@ -2588,6 +2597,12 @@ Json::Value PeerImp::getJson ()
     {
         ret["protocol"] = BuildInfo::Protocol (mHello.protoversion ()).toStdString ();
     }
+
+    uint32 minSeq, maxSeq;
+    ledgerRange(minSeq, maxSeq);
+    if ((minSeq != 0) || (maxSeq != 0))
+        ret["complete_ledgers"] = boost::lexical_cast<std::string>(minSeq) + " - " +
+                                  boost::lexical_cast<std::string>(maxSeq);
 
     if (!!mClosedLedgerHash)
         ret["ledger"] = mClosedLedgerHash.GetHex ();

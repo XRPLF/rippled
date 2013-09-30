@@ -162,7 +162,10 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 
     if (getTimeouts () > LEDGER_TIMEOUT_COUNT)
     {
-        WriteLog (lsWARNING, InboundLedger) << "Too many timeouts( " << getTimeouts () << ") for ledger " << mHash;
+        if (mSeq != 0)
+            WriteLog (lsWARNING, InboundLedger) << getTimeouts() << " timeouts  for ledger " << mSeq;
+        else
+            WriteLog (lsWARNING, InboundLedger) << getTimeouts() << " timeouts  for ledger " << mHash;
         setFailed ();
         done ();
         return;
@@ -236,8 +239,21 @@ void InboundLedger::addPeers ()
     }
 
     if (!found)
+    {
         for (int i = 0; (i < 6) && (i < vSize); ++i)
-            peerHas (peerList[ (i + firstPeer) % vSize]);
+        {
+            if (peerHas (peerList[ (i + firstPeer) % vSize]))
+                ++found;
+	}
+	if (mSeq != 0)
+            WriteLog (lsDEBUG, InboundLedger) << "Chose " << found << " peer(s) for ledger " << mSeq;
+        else
+            WriteLog (lsDEBUG, InboundLedger) << "Chose " << found << " peer(s) for ledger " << getHash ().GetHex();
+    }
+    else if (mSeq != 0)
+        WriteLog (lsDEBUG, InboundLedger) << "Found " << found << " peer(s) with ledger " << mSeq;
+    else
+        WriteLog (lsDEBUG, InboundLedger) << "Found " << found << " peer(s) with ledger " << getHash ().GetHex();
 }
 
 boost::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
