@@ -60,6 +60,9 @@ public:
     /** Destructor. */
     ~RelativeTime() noexcept;
 
+    /** Returns the amount of time since the process was started. */
+    static RelativeTime fromStartup ();
+
     //==============================================================================
     /** Creates a new RelativeTime object representing a number of milliseconds.
         @see seconds, minutes, hours, days, weeks
@@ -145,41 +148,44 @@ public:
     String getDescription (const String& returnValueForZeroTime = "0") const;
     std::string to_string () const;
 
-    //==============================================================================
+    RelativeTime operator+ (double seconds) const noexcept
+        { return RelativeTime (numSeconds + seconds); }
+
+    RelativeTime operator- (double seconds) const noexcept
+        { return RelativeTime (numSeconds - seconds); }
+
     /** Adds another RelativeTime to this one. */
     RelativeTime operator+= (RelativeTime timeToAdd) noexcept;
+
     /** Subtracts another RelativeTime from this one. */
     RelativeTime operator-= (RelativeTime timeToSubtract) noexcept;
 
     /** Adds a number of seconds to this time. */
     RelativeTime operator+= (double secondsToAdd) noexcept;
+
     /** Subtracts a number of seconds from this time. */
     RelativeTime operator-= (double secondsToSubtract) noexcept;
 
 private:
-    //==============================================================================
     double numSeconds;
 };
 
-//==============================================================================
-/** Compares two RelativeTimes. */
+//------------------------------------------------------------------------------
+
 bool operator== (RelativeTime t1, RelativeTime t2) noexcept;
-/** Compares two RelativeTimes. */
 bool operator!= (RelativeTime t1, RelativeTime t2) noexcept;
-/** Compares two RelativeTimes. */
 bool operator>  (RelativeTime t1, RelativeTime t2) noexcept;
-/** Compares two RelativeTimes. */
 bool operator<  (RelativeTime t1, RelativeTime t2) noexcept;
-/** Compares two RelativeTimes. */
 bool operator>= (RelativeTime t1, RelativeTime t2) noexcept;
-/** Compares two RelativeTimes. */
 bool operator<= (RelativeTime t1, RelativeTime t2) noexcept;
 
-//==============================================================================
+//------------------------------------------------------------------------------
+
 /** Adds two RelativeTimes together. */
-RelativeTime  operator+  (RelativeTime t1, RelativeTime t2) noexcept;
+RelativeTime operator+ (RelativeTime t1, RelativeTime t2) noexcept;
+
 /** Subtracts two RelativeTimes. */
-RelativeTime  operator-  (RelativeTime t1, RelativeTime t2) noexcept;
+RelativeTime operator- (RelativeTime t1, RelativeTime t2) noexcept;
 
 inline std::ostream& operator<< (std::ostream& os, RelativeTime const& diff)
 {
@@ -190,4 +196,3 @@ inline std::ostream& operator<< (std::ostream& os, RelativeTime const& diff)
 }
 
 #endif
-

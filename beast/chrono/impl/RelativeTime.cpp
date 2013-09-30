@@ -256,3 +256,71 @@ std::string RelativeTime::to_string () const
 }
 
 }
+
+#if BEAST_WINDOWS
+
+#include <Windows.h>
+
+namespace beast {
+
+RelativeTime RelativeTime::fromStartup ()
+{
+    ULONGLONG ticks (GetTickCount64());
+
+    return RelativeTime (ticks / 1000.0);
+}
+
+}
+
+#else
+
+#include <time.h>
+
+namespace beast {
+
+namespace detail {
+
+// Converts a timespec to a RelativeTme
+static RelativeTime toRelativeTime (timespec const& ts)
+{
+    return RelativeTime (ts.tv_sec +
+        ts.tv_nsec / 1000000000.0);
+}
+
+// Records and returns the time from process startup
+static RelativeTime getStartupTime()
+{
+    struct StartupTime
+    {
+        StartupTime ()
+            { clock_gettime (CLOCK_MONOTONIC, &ts); }
+        timespec ts;
+    };
+
+    static StartupTime startupTime;
+
+    return toRelativeTime (startupTime.ts);
+}
+
+// Used to call getStartupTime as early as possible
+struct StartupTimeStaticInitializer
+{
+    StartupTimeStaticInitializer ()
+        { getStartupTime(); }
+};
+
+static StartupTimeStaticInitializer startupTimeStaticInitializer;
+
+}
+
+RelativeTime RelativeTime::fromStartup ()
+{
+    timespec ts;
+    clock_gettime (CLOCK_MONOTONIC, &ts);
+
+    return detail::toRelativeTime (ts) - detail::getStartupTime();
+}
+
+}
+
+#endif
