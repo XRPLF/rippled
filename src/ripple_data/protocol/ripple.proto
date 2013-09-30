@@ -14,6 +14,7 @@ enum MessageType
     mtCONTACT               = 11;
     mtGET_PEERS             = 12;
     mtPEERS                 = 13;
+    mtENDPOINTS             = 14;
 
     // operations for 'small' nodes
     mtSEARCH_TRANSACTION    = 20;
@@ -230,6 +231,23 @@ message TMPeers
 {
     repeated TMIPv4EndPoint nodes   = 1;
 }
+
+// An Endpoint describes a network peer that can accept incoming connections
+message TMEndpoint
+{
+    required TMIPv4EndPoint ipv4 = 1;
+    required uint32         hops = 2;
+    required uint32         slots = 3;         // the number of available incoming slots
+    required uint32         maxSlots = 4;      // the maximum number of incoming slots
+    required uint32         uptimeMinutes = 5; // uptime in minutes
+    required string         features = 6;
+}
+
+// An array of Endpoint messages
+message TMEndpoints
+{
+    repeated TMEndpoint endpoints = 1;
+};
 
 message TMSearchTransaction
 {

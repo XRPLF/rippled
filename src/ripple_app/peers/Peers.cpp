@@ -17,26 +17,82 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (Peers)
+
+class PeerFinderLog;
+template <> char const* LogPartition::getPartitionName <PeerFinderLog> () { return "PeerFinder"; }
 
 class PeersImp
     : public Peers
     , public Stoppable
+    , public PeerFinder::Callback
     , public LeakChecked <PeersImp>
 {
 public:
     enum
     {
-        /** Frequency of policy enforcement.
-        */
+        /** Frequency of policy enforcement. */
         policyIntervalSeconds = 5
     };
+
+    typedef RippleRecursiveMutex LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::pair<RippleAddress, Peer::pointer>     naPeer;
+    typedef std::pair<IPAndPortNumber, Peer::pointer>            pipPeer;
+    typedef std::map<IPAndPortNumber, Peer::pointer>::value_type vtPeer;
+
+    ScopedPointer <PeerFinder::Manager> m_peerFinder;
+
+    boost::asio::io_service& m_io_service;
+    boost::asio::ssl::context& m_ssl_context;
+
+    LockType mPeerLock;
+
+    uint64                  mLastPeer;
+    int                     mPhase;
+
+    // PeersImp we are connecting with and non-thin peers we are connected to.
+    // Only peers we know the connection ip for are listed.
+    // We know the ip and port for:
+    // - All outbound connections
+    // - Some inbound connections (which we figured out).
+    boost::unordered_map<IPAndPortNumber, Peer::pointer>         mIpMap;
+
+    // Non-thin peers which we are connected to.
+    // PeersImp we have the public key for.
+    typedef boost::unordered_map<RippleAddress, Peer::pointer>::value_type vtConMap;
+    boost::unordered_map<RippleAddress, Peer::pointer>  mConnectedMap;
+
+    // Connections with have a 64-bit identifier
+    boost::unordered_map<uint64, Peer::pointer>         mPeerIdMap;
+
+    Peer::pointer                                       mScanning;
+    boost::asio::deadline_timer                         mScanTimer;
+    std::string                                         mScanIp;
+    int                                                 mScanPort;
+
+    void            scanHandler (const boost::system::error_code& ecResult);
+
+    boost::asio::deadline_timer                         mPolicyTimer;
+
+    void            policyHandler (const boost::system::error_code& ecResult);
+
+    // PeersImp we are establishing a connection with as a client.
+    // int                                              miConnectStarting;
+
+    bool            peerAvailable (std::string& strIp, int& iPort);
+    bool            peerScanSet (const std::string& strIp, int iPort);
+
+    Peer::pointer   peerConnect (const std::string& strIp, int iPort);
+
+    //--------------------------------------------------------------------------
 
     PeersImp (Stoppable& parent,
         boost::asio::io_service& io_service,
             boost::asio::ssl::context& ssl_context)
         : Stoppable ("Peers", parent)
+        , m_peerFinder (PeerFinder::Manager::New (
+            *this, *this, LogJournal::get <PeerFinderLog> ()))
         , m_io_service (io_service)
         , m_ssl_context (ssl_context)
         , mPeerLock (this, "PeersImp", __FILE__, __LINE__)
@@ -45,6 +101,127 @@ public:
         , mScanTimer (io_service)
         , mPolicyTimer (io_service)
     {
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // PeerFinder
+    //
+
+    // Maps Config settings to PeerFinder::Config
+    void preparePeerFinder()
+    {
+        PeerFinder::Config config;
+        
+        // config.maxPeerCount = ?
+
+        config.wantIncoming =
+            (! getConfig ().PEER_PRIVATE) &&
+            (getConfig().peerListeningPort != 0);
+
+        if (config.wantIncoming)
+            config.listeningPort = getConfig().peerListeningPort;
+
+        config.featureList = "";
+
+        m_peerFinder->setConfig (config);
+
+        // Add the static IPs from the rippled.cfg file
+        m_peerFinder->addStrings ("rippled.cfg", getConfig().IPS);
+    }
+
+    void sendPeerEndpoints (PeerFinder::PeerID const& id,
+        std::vector <PeerFinder::Endpoint> const& endpoints)
+    {
+        bassert (! endpoints.empty());
+
+        typedef std::vector <PeerFinder::Endpoint> List;
+        protocol::TMEndpoints tm;
+
+        for (List::const_iterator iter (endpoints.begin());
+            iter != endpoints.end(); ++iter)
+        {
+            PeerFinder::Endpoint const& ep (*iter);
+            protocol::TMEndpoint& tme (*tm.add_endpoints());
+
+            if (ep.address.isV4())
+                tme.mutable_ipv4()->set_ipv4(
+                    toNetworkByteOrder (ep.address.v4().value));
+            else
+                tme.mutable_ipv4()->set_ipv4(0);
+            tme.mutable_ipv4()->set_ipv4port (ep.port);
+
+            tme.set_hops (ep.hops);
+            tme.set_slots (ep.incomingSlotsAvailable);
+            tme.set_maxslots (ep.incomingSlotsMax);
+            tme.set_uptimeminutes (ep.uptimeMinutes);
+            tme.set_features (ep.featureList);
+        }
+
+        PackedMessage::pointer msg (
+            boost::make_shared <PackedMessage> (
+                tm, protocol::mtENDPOINTS));
+
+        std::vector <Peer::pointer> list = getPeerVector ();
+        BOOST_FOREACH (Peer::ref peer, list)
+        {
+            if (peer->isConnected() &&
+                PeerFinder::PeerID (peer->getNodePublic()) == id)
+            {
+                peer->sendPacket (msg, false);
+                break;
+            }
+        }
+    }
+
+    void connectPeerEndpoints (std::vector <IPEndpoint> const& list)
+    {
+        typedef std::vector <IPEndpoint> List;
+
+        for (List::const_iterator iter (list.begin());
+            iter != list.end(); ++iter)
+            peerConnect (iter->withPort (0), iter->port());
+    }
+
+    void chargePeerLoadPenalty (PeerFinder::PeerID const& id)
+    {
+        std::vector <Peer::pointer> list = getPeerVector ();
+        BOOST_FOREACH (Peer::ref peer, list)
+        {
+            if (peer->isConnected() &&
+                PeerFinder::PeerID (peer->getNodePublic()) == id)
+            {
+                peer->applyLoadCharge (LT_UnwantedData);
+                break;
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // Stoppable
+    //
+
+    void onPrepare (Journal)
+    {
+        preparePeerFinder();
+    }
+
+    void onStart (Journal)
+    {
+    }
+
+    void onStop (Journal)
+    {
+        // VFALCO TODO Clean this up and do it right, based on sockets
+        stopped();
+    }
+
+    //--------------------------------------------------------------------------
+
+    PeerFinder::Manager& getPeerFinder()
+    {
+        return *m_peerFinder;
     }
 
     // Begin enforcing connection policy.
@@ -102,55 +279,6 @@ public:
 
     // configured connections
     void makeConfigured ();
-
-private:
-    typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-    typedef std::pair<RippleAddress, Peer::pointer>     naPeer;
-    typedef std::pair<IPAndPortNumber, Peer::pointer>            pipPeer;
-    typedef std::map<IPAndPortNumber, Peer::pointer>::value_type vtPeer;
-
-    boost::asio::io_service& m_io_service;
-    boost::asio::ssl::context& m_ssl_context;
-
-    LockType mPeerLock;
-
-    uint64                  mLastPeer;
-    int                     mPhase;
-
-    // PeersImp we are connecting with and non-thin peers we are connected to.
-    // Only peers we know the connection ip for are listed.
-    // We know the ip and port for:
-    // - All outbound connections
-    // - Some inbound connections (which we figured out).
-    boost::unordered_map<IPAndPortNumber, Peer::pointer>         mIpMap;
-
-    // Non-thin peers which we are connected to.
-    // PeersImp we have the public key for.
-    typedef boost::unordered_map<RippleAddress, Peer::pointer>::value_type vtConMap;
-    boost::unordered_map<RippleAddress, Peer::pointer>  mConnectedMap;
-
-    // Connections with have a 64-bit identifier
-    boost::unordered_map<uint64, Peer::pointer>         mPeerIdMap;
-
-    Peer::pointer                                       mScanning;
-    boost::asio::deadline_timer                         mScanTimer;
-    std::string                                         mScanIp;
-    int                                                 mScanPort;
-
-    void            scanHandler (const boost::system::error_code& ecResult);
-
-    boost::asio::deadline_timer                         mPolicyTimer;
-
-    void            policyHandler (const boost::system::error_code& ecResult);
-
-    // PeersImp we are establishing a connection with as a client.
-    // int                                              miConnectStarting;
-
-    bool            peerAvailable (std::string& strIp, int& iPort);
-    bool            peerScanSet (const std::string& strIp, int iPort);
-
-    Peer::pointer   peerConnect (const std::string& strIp, int iPort);
 };
 
 void splitIpPort (const std::string& strIpPort, std::string& strIp, int& iPort)
@@ -167,16 +295,18 @@ void PeersImp::start ()
     if (getConfig ().RUN_STANDALONE)
         return;
 
+#if ! RIPPLE_USE_PEERFINDER
     // Start running policy.
     policyEnforce ();
 
     // Start scanning.
     scanRefresh ();
+#endif
 }
 
 bool PeersImp::getTopNAddrs (int n, std::vector<std::string>& addrs)
 {
-
+#if ! RIPPLE_USE_PEERFINDER
     // Try current connections first
     std::vector<Peer::pointer> peers = getPeerVector();
     BOOST_FOREACH(Peer::ref peer, peers)
@@ -206,6 +336,7 @@ bool PeersImp::getTopNAddrs (int n, std::vector<std::string>& addrs)
     }
 
     // FIXME: Should uniqify addrs
+#endif
 
     return true;
 }
@@ -214,6 +345,7 @@ bool PeersImp::savePeer (const std::string& strIp, int iPort, char code)
 {
     bool    bNew    = false;
 
+#if ! RIPPLE_USE_PEERFINDER
     Database* db = getApp().getWalletDB ()->getDB ();
 
     std::string ipAndPort  = sqlEscape (str (boost::format ("%s %d") % strIp % iPort));
@@ -246,6 +378,7 @@ bool PeersImp::savePeer (const std::string& strIp, int iPort, char code)
 
     if (bNew)
         scanRefresh ();
+#endif
 
     return bNew;
 }
@@ -362,6 +495,7 @@ void PeersImp::policyLowWater ()
 
 void PeersImp::policyEnforce ()
 {
+#if ! RIPPLE_USE_PEERFINDER
     // Cancel any in progress timer.
     (void) mPolicyTimer.cancel ();
 
@@ -378,6 +512,7 @@ void PeersImp::policyEnforce ()
     // Schedule next enforcement.
     mPolicyTimer.expires_at (boost::posix_time::second_clock::universal_time () + boost::posix_time::seconds (policyIntervalSeconds));
     mPolicyTimer.async_wait (BIND_TYPE (&PeersImp::policyHandler, this, P_1));
+#endif
 }
 
 void PeersImp::policyHandler (const boost::system::error_code& ecResult)
@@ -829,6 +964,7 @@ void PeersImp::makeConfigured ()
 // Scan ips as per db entries.
 void PeersImp::scanRefresh ()
 {
+#if ! RIPPLE_USE_PEERFINDER
     if (getConfig ().RUN_STANDALONE)
     {
         nothing ();
@@ -922,6 +1058,7 @@ void PeersImp::scanRefresh ()
             mScanTimer.async_wait (BIND_TYPE (&PeersImp::scanHandler, this, P_1));
         }
     }
+#endif
 }
 
 //------------------------------------------------------------------------------

@@ -67,6 +67,7 @@ SOURCES += \
     ../../src/ripple/beast/ripple_beastc.c \
     ../../src/ripple/http/ripple_http.cpp \
     ../../src/ripple/json/ripple_json.cpp \
+    ../../src/ripple/peerfinder/ripple_peerfinder.cpp \
     ../../src/ripple/rpc/ripple_rpc.cpp \
     ../../src/ripple/sophia/ripple_sophia.c \
     ../../src/ripple/sslutil/ripple_sslutil.cpp \

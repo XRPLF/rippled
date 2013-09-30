@@ -17,61 +17,55 @@
 */
 //==============================================================================
 
-
-#ifndef RIPPLE_VALIDATORS_AGEDHISTORY_H_INCLUDED
-#define RIPPLE_VALIDATORS_AGEDHISTORY_H_INCLUDED
+#include "SourceStrings.h"
 
 namespace ripple {
-namespace Validators {
+namespace PeerFinder {
 
-// Simple container swapping template
-template <class Container>
-class AgedHistory
+class SourceStringsImp : public SourceStrings
 {
 public:
-    typedef Container container_type;
-
-    AgedHistory()
-        : m_p1 (&m_c1)
-        , m_p2 (&m_c2)
+    SourceStringsImp (std::string const& name, Strings const& strings)
+        : m_name (name)
+        , m_strings (strings)
     {
     }
 
-    AgedHistory (AgedHistory const& other)
-        : m_c1 (other.front())
-        , m_c2 (other.back())
-        , m_p1 (&m_c1)
-        , m_p2 (&m_c2)
+    ~SourceStringsImp ()
     {
     }
 
-    AgedHistory& operator= (AgedHistory const& other)
+    std::string const& name ()
     {
-        m_c1 = other.front();
-        m_c2 = other.back();
-        m_p1 = &m_c1;
-        m_p2 = &m_c2;
-        return *this;
+        return m_name;
     }
 
-    void swap () { std::swap (m_p1, m_p2); }
+    void fetch (IPEndpoints& list, Journal journal)
+    {
+        list.resize (0);
+        list.reserve (m_strings.size());
 
-    Container*       operator-> ()       { return m_p1; }
-    Container const* operator-> () const { return m_p1; }
-
-    Container&       front()       { return *m_p1; }
-    Container const& front() const { return *m_p1; }
-    Container&       back()        { return *m_p2; }
-    Container const& back()  const { return *m_p2; }
+        for (int i = 0; i < m_strings.size (); ++i)
+        {
+            IPEndpoint ep (
+                IPEndpoint::from_string_altform (
+                    m_strings [i]));
+            if (! ep.empty())
+                list.push_back (ep);
+        }
+    }
 
 private:
-    Container  m_c1;
-    Container  m_c2;
-    Container* m_p1;
-    Container* m_p2;
+    std::string m_name;
+    Strings m_strings;
 };
 
-}
+//------------------------------------------------------------------------------
+
+SourceStrings* SourceStrings::New (std::string const& name, Strings const& strings)
+{
+    return new SourceStringsImp (name, strings);
 }
 
-#endif
+}
+}

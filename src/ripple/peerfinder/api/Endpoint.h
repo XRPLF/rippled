@@ -17,33 +17,39 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
+#define RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#include "Types.h"
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+namespace ripple {
+namespace PeerFinder {
 
-#include "beast/beast/http/URL.h" // for Config
-
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** Describes a connectible peer address along with some metadata. */
+struct Endpoint
 {
+    Endpoint ();
 
-// Order matters
+    IPEndpoint address;
+    uint16 port;
+    int hops;
+    uint32 incomingSlotsAvailable;
+    uint32 incomingSlotsMax;
+    uint32 uptimeMinutes;
+    std::string featureList;
+};
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-# include "functional/LoadType.h"
-#include "functional/LoadSource.h"
+inline bool operator< (Endpoint const& lhs, Endpoint const& rhs)
+{
+    return lhs.address < rhs.address;
+}
 
+inline bool operator== (Endpoint const& lhs, Endpoint const& rhs)
+{
+    return lhs.address == rhs.address;
+}
+
+}
 }
 
 #endif

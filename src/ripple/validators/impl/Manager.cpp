@@ -253,7 +253,7 @@ public:
     void onPrepare (Journal journal)
     {
 #if RIPPLE_USE_NEW_VALIDATORS
-        journal.info << "Preparing";
+        journal.info << "Validators preparing";
 
         addRPCHandlers();
 #endif
@@ -262,7 +262,7 @@ public:
     void onStart (Journal journal)
     {
 #if RIPPLE_USE_NEW_VALIDATORS
-        journal.info << "Starting";
+        journal.info << "Validators starting";
 
         // Do this late so the sources have a chance to be added.
         m_queue.dispatch (bind (&ManagerImp::setCheckSources, this));
@@ -273,7 +273,7 @@ public:
 
     void onStop (Journal journal)
     {
-        journal.info << "Stopping";
+        journal.info << "Validators stopping";
 
         if (this->Thread::isThreadRunning())
         {

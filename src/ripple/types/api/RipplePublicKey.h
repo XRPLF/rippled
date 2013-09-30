@@ -21,6 +21,9 @@
 #ifndef RIPPLE_TYPES_RIPPLEPUBLICKEY_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEPUBLICKEY_H_INCLUDED
 
+#include "CryptoIdentifier.h"
+#include "IdentifierType.h"
+
 namespace ripple {
 
 class RipplePublicKeyTraits

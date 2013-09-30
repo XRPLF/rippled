@@ -18,32 +18,20 @@
 //==============================================================================
 
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#include "BeastConfig.h"
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+#include "ripple_peerfinder.h"
 
-#include "beast/beast/http/URL.h" // for Config
-
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
-{
-
-// Order matters
-
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-# include "functional/LoadType.h"
-#include "functional/LoadSource.h"
-
+namespace ripple {
+using namespace beast;
 }
 
-#endif
+#  include "impl/Source.h"
+# include "impl/SourceStrings.h"
+#include "impl/SourceStrings.cpp"
+#include "impl/Config.cpp"
+#include "impl/Endpoint.cpp"
+#include "impl/EndpointCache.cpp"
+#include "impl/Manager.cpp"
+#include "impl/Slots.cpp"
+#include "impl/Tests.cpp"

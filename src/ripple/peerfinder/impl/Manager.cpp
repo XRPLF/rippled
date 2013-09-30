@@ -78,10 +78,10 @@ network graph
 
 We define these values:
 
-    PeerCount (calculated)
+    peerCount (calculated)
         The number of currently connected and established peers
 
-    OutCount (calculated)
+    outCount (calculated)
         The number of peers in PeerCount that are outbound connections.
 
     MinOutCount (hard-coded constant)
@@ -95,7 +95,7 @@ We define these values:
         that a peer wishes to maintain. Setting MaxPeerCount equal to
         or below MinOutCount would disallow incoming connections.
 
-    OutDesiredPercent (a baked-in program constant for now)
+    OutPercent (a baked-in program constant for now)
         The peer's target value for OutCount. When the value of OutCount
         is below this number, the peer will employ the Outgoing Strategy
         to raise its value of OutCount. This value is initially a constant
@@ -170,214 +170,214 @@ Gnutella 0.6 Protocol
 Revised Gnutella Ping Pong Scheme
     By Christopher Rohrs and Vincent Falco
     http://rfc-gnutella.sourceforge.net/src/pong-caching.html
-
 */
-//------------------------------------------------------------------------------
 
-class PeerFinderImp
-    : public PeerFinder
-    , private ThreadWithCallQueue::EntryPoints
-    , private DeadlineTimer::Listener
-    , LeakChecked <PeerFinderImp>
+#include "Logic.h"
+#include "StoreSqdb.h"
+
+namespace ripple {
+namespace PeerFinder {
+
+class ManagerImp
+    : public Manager
+    , public Thread
+    , public DeadlineTimer::Listener
+    , public LeakChecked <ManagerImp>
 {
 public:
-    // Tunable constants
-    enum
-    {
-        // How often our timer goes off to consult outside sources for IPs
-        secondsPerUpdate = 1 * 60 * 60,     // once per hour
-        // How often we announce our IP
-        secondsPerBroadcast      = 5 * 60,
-
-        // The minimum number of peers we want
-        numberOfPeersMinimum     = 4,
-        numberOfPeersMaximum     = 10,
-
-		// The minimum number of seconds a connection ought to be sustained
-		// before we consider it "stable"
-		secondsForStability = 60,          // one minute
-    };
+    ServiceQueue m_queue;
+    Journal m_journal;
+    StoreSqdb m_store;
+    Logic m_logic;
+    DeadlineTimer m_connectTimer;
+    DeadlineTimer m_endpointsTimer;
+    RelativeTime m_whenStoreLegacyEndpoints;
 
     //--------------------------------------------------------------------------
 
-    /** The Logic for maintaining the list of Peer addresses.
-        We keep this in a separate class so it can be instantiated
-        for unit tests.
-    */
-    class Logic
+    ManagerImp (Stoppable& stoppable, Callback& callback, Journal journal)
+        : Manager (stoppable)
+        , Thread ("PeerFinder")
+        , m_journal (journal)
+        , m_store (journal)
+        , m_logic (callback, m_store, journal)
+        , m_connectTimer (this)
+        , m_endpointsTimer (this)
     {
-        Callback &m_callback;
-
-    public:
-        explicit Logic (Callback& callback)
-            : m_callback (callback)
+#if BEAST_MSVC
+        if (beast_isRunningUnderDebugger())
         {
+            m_journal.sink().set_console (true);
+            m_journal.sink().set_severity (Journal::kLowestSeverity);
         }
-
-        // Called on the PeerFinder thread
-        void onUpdateConnectionsStatus (
-            Connections const& connections)
-        {
-            if (connections.numberTotal () < numberOfPeersMinimum)
-            {
-                // do something
-            }
-            else
-            {
-                // do something?
-            }
-        }
-
-		void onPeerConnected (
-			const PeerId& id)
-		{
-
-		}
-
-		void onPeerDisconnected (
-			const PeerId& id)
-		{
-
-		}
-
-        void onAcceptTimer() 
-        {
-            m_callback.onAnnounceAddress ();
-        }
-    };
-
-    //--------------------------------------------------------------------------
-
-public:
-    explicit PeerFinderImp (Callback& callback)
-        : m_logic (callback)
-        , m_thread ("PeerFinder")
-        , m_acceptTimer (this)
-        , m_updateTimer (this)
-    {
-        m_thread.start (this);
-    }
-
-    ~PeerFinderImp ()
-    {
-    }
-
-    void updateConnectionsStatus (Connections& connections)
-    {
-        // Queue the call to the logic
-        m_thread.call (&Logic::onUpdateConnectionsStatus,
-            &m_logic, connections);
-    }
-
-	void onPeerConnected(const PeerId& id)
-	{
-		m_thread.call (&Logic::onPeerConnected,
-			&m_logic, id);
-	}
-
-	void onPeerDisconnected(const PeerId& id)
-	{
-		m_thread.call (&Logic::onPeerDisconnected,
-			&m_logic, id);
-	}
-
-    //--------------------------------------------------------------------------
-    void onAcceptTimer ()
-    {
-#if 0
-        static int x = 0;
-
-        if(x == 0)
-            Debug::breakPoint ();
-
-        x++;
 #endif
     }
 
+    ~ManagerImp ()
+    {
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // PeerFinder
+    //
+
+    void setConfig (Config const& config)
+    {
+        m_queue.dispatch (bind (&Logic::setConfig, &m_logic, config));
+    }
+
+    void addStrings (std::string const& name,
+        std::vector <std::string> const& strings)
+    {
+        m_queue.dispatch (bind (&Logic::addStaticSource, &m_logic,
+            SourceStrings::New (name, strings)));
+    }
+
+    void addURL (std::string const& name, std::string const& url)
+    {
+    }
+
+    void onPeerConnected (PeerID const& id,
+        IPEndpoint const& address, bool incoming)
+    {
+        m_queue.dispatch (bind (&Logic::onPeerConnected, &m_logic,
+            id, address, incoming));
+    }
+
+    void onPeerDisconnected (const PeerID& id)
+    {
+        m_queue.dispatch (bind (&Logic::onPeerDisconnected, &m_logic, id));
+    }
+
+    void onPeerLegacyEndpoint (IPEndpoint const& ep)
+    {
+        m_queue.dispatch (bind (&Logic::onPeerLegacyEndpoint, &m_logic,
+            ep));
+    }
+
+    void onPeerEndpoints (PeerID const& id,
+        std::vector <Endpoint> const& endpoints)
+    {
+        m_queue.dispatch (beast::bind (&Logic::onPeerEndpoints, &m_logic,
+            id, endpoints));
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // Stoppable
+    //
+
+    void onPrepare (Journal journal)
+    {
+    }
+
+    void onStart (Journal journal)
+    {
+        startThread();
+    }
+
+    void onStop (Journal journal)
+    {
+        if (this->Thread::isThreadRunning ())
+        {
+            m_journal.debug << "Stopping";
+            m_connectTimer.cancel();
+            m_endpointsTimer.cancel();
+            m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
+        }
+        else
+        {
+            stopped();
+        }
+    }
+
+    //--------------------------------------------------------------------------
+
     void onDeadlineTimer (DeadlineTimer& timer)
     {
-        // This will make us fall into the idle proc as needed
-        //
-        if (timer == m_updateTimer)
-            m_thread.interrupt ();
-        else if (timer == m_acceptTimer)
-            m_thread.call (&Logic::onAcceptTimer, &m_logic);
+        if (timer == m_connectTimer)
+        {
+            m_queue.dispatch (bind (&Logic::makeOutgoingConnections, &m_logic));
+            m_connectTimer.setExpiration (secondsPerConnect);
+        }
+        else if (timer == m_endpointsTimer)
+        {
+            m_queue.dispatch (bind (&Logic::sendEndpoints, &m_logic));
+            m_endpointsTimer.setExpiration (secondsPerEndpoints);
+        }
     }
 
-    void threadInit ()
+    // Checks to see if its time to update legacy endpoints
+    void storeLegacyEndpoints()
     {
-        m_updateTimer.setRecurringExpiration (secondsPerUpdate);
-        m_acceptTimer.setRecurringExpiration (secondsPerBroadcast);
+        RelativeTime const now (RelativeTime::fromStartup());
+        if (now >= m_whenStoreLegacyEndpoints)
+        {
+            m_logic.storeLegacyEndpoints ();
+            m_whenStoreLegacyEndpoints = now
+                + RelativeTime (legacyEndpointUpdateSeconds);
+        }
     }
 
-    void threadExit ()
+    void init ()
     {
+        m_journal.debug << "Initializing";
+
+        File const file (File::getSpecialLocation (
+            File::userDocumentsDirectory).getChildFile ("PeerFinder.sqlite"));
+
+        m_journal.debug << "Opening database at '" << file.getFullPathName() << "'";
+
+        Error error (m_store.open (file));
+
+        if (error)
+        {
+            m_journal.fatal <<
+                "Failed to open '" << file.getFullPathName() << "'";
+        }
+
+        if (! error)
+        {
+            m_logic.load ();
+        }
+
+        m_connectTimer.setExpiration (secondsPerConnect);
+        m_endpointsTimer.setExpiration (secondsPerEndpoints);
+
+        m_queue.post (bind (&Logic::makeOutgoingConnections, &m_logic));
     }
 
-    bool threadIdle ()
+    void run ()
     {
-        bool interrupted = false;
+        m_journal.debug << "Started";
 
-        // This is where you can go into a loop and do stuff
-        // like process the lists, and what not. Just be
-        // sure to call:
-        //
-        // @code
-        // interrupted = interruptionPoint ();
-        // @encode
-        //
-        // From time to time. If it returns true then you
-        // need to exit this function so that Thread can
-        // process its asynchronous call queue and then come
-        // back into threadIdle()
+        m_whenStoreLegacyEndpoints = RelativeTime::fromStartup()
+            + RelativeTime (legacyEndpointUpdateSeconds);
 
-        return interrupted;
+        init ();
+
+        while (! this->threadShouldExit())
+        {
+            storeLegacyEndpoints();
+            m_queue.run_one();
+        }
+
+        stopped();
     }
-
-private:
-    Logic m_logic;
-    ThreadWithCallQueue m_thread;
-    DeadlineTimer m_acceptTimer;
-    DeadlineTimer m_updateTimer;
 };
 
 //------------------------------------------------------------------------------
 
-PeerFinder* PeerFinder::New (PeerFinder::Callback& callback)
+Manager::Manager (Stoppable& parent)
+    : Stoppable ("PeerFinder", parent)
 {
-    return new PeerFinderImp (callback);
 }
 
-//------------------------------------------------------------------------------
-
-class PeerFinderTests : public UnitTest,
-                        public PeerFinder::Callback
+Manager* Manager::New (Stoppable& parent, Callback& callback, Journal journal)
 {
-public:
-    void testValidityChecks ()
-    {
-        beginTestCase ("ip validation");
+    return new ManagerImp (parent, callback, journal);
+}
 
-        fail ("there's no code!");
-    }
-
-    void runTest ()
-    {
-        PeerFinderImp::Logic logic (*this);
-
-        beginTestCase ("logic");
-        logic.onAcceptTimer ();
-    }
-
-    void onAnnounceAddress ()
-    {
-
-    }
-
-    PeerFinderTests () : UnitTest ("PeerFinder", "ripple", runManual)
-    {
-    }
-};
-
-static PeerFinderTests peerFinderTests;
-
+}
+}

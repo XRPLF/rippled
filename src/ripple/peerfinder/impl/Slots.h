@@ -17,33 +17,50 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_SLOTS_H_INCLUDED
+#define RIPPLE_PEERFINDER_SLOTS_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#include "../api/Config.h"
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+namespace ripple {
+namespace PeerFinder {
 
-#include "beast/beast/http/URL.h" // for Config
-
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+class Slots
 {
+public:
+    Slots ();
 
-// Order matters
+    void update (Config const& config);
+    void addPeer (Config const& config, bool inbound);
+    void dropPeer (Config const& config, bool inbound);
+    uint32 uptimeMinutes () const;
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-# include "functional/LoadType.h"
-#include "functional/LoadSource.h"
+    // Most recent time when we went from 0 to 1 peers
+    Time startTime;
 
+    // Current total of connected peers that have HELLOed
+    int peerCount;
+
+    // The portion of peers which are incoming connections
+    int inboundCount;
+
+    // The portion of peers which are outgoing connections
+    int outboundCount;
+
+    // The number of outgoing peer connections we want (calculated)
+    int outDesired;
+
+    // The number of available incoming slots (calculated)
+    int inboundSlots;
+
+    // The maximum number of incoming slots (calculated)
+    int inboundSlotsMaximum;
+
+private:
+    bool m_roundUpwards;
+};
+
+}
 }
 
 #endif

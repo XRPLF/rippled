@@ -17,33 +17,24 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_SOURCESTRINGS_H_INCLUDED
+#define RIPPLE_PEERFINDER_SOURCESTRINGS_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#include "Source.h"
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+namespace ripple {
+namespace PeerFinder {
 
-#include "beast/beast/http/URL.h" // for Config
-
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** Provides an IPEndpoint list from a set of strings. */
+class SourceStrings : public Source
 {
+public:
+    typedef std::vector <std::string> Strings;
 
-// Order matters
+    static SourceStrings* New (std::string const& name, Strings const& strings);
+};
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-# include "functional/LoadType.h"
-#include "functional/LoadSource.h"
-
+}
 }
 
 #endif

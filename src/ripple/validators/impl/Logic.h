@@ -20,8 +20,6 @@
 #ifndef RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
-#include "AgedHistory.h"
-
 namespace ripple {
 namespace Validators {
 

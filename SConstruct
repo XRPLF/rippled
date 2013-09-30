@@ -13,6 +13,7 @@ OSX = bool(platform.mac_ver()[0])
 FreeBSD = bool('FreeBSD' == platform.system())
 Linux   = bool('Linux' == platform.system())
 Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
+Debian  = bool(Linux and 'debian' == platform.linux_distribution()[0])
 Archlinux  = bool(Linux and ('','','') == platform.linux_distribution()) #Arch still has issues with the platform module
 
 #
@@ -21,7 +22,7 @@ Archlinux  = bool(Linux and ('','','') == platform.linux_distribution()) #Arch s
 BOOST_HOME = os.environ.get("RIPPLED_BOOST_HOME", None) 
 
 
-if OSX or Ubuntu or Archlinux:
+if OSX or Ubuntu or Debian or Archlinux:
     CTAGS = 'ctags'
 elif FreeBSD:
     CTAGS = 'exctags'
@@ -157,6 +158,7 @@ COMPILED_FILES.extend (['src/ripple/beast/ripple_beastc.c'])
 COMPILED_FILES.extend([
     'src/ripple/http/ripple_http.cpp',
     'src/ripple/json/ripple_json.cpp',
+    'src/ripple/peerfinder/ripple_peerfinder.cpp',
     'src/ripple/rpc/ripple_rpc.cpp',
     'src/ripple/sophia/ripple_sophia.c',
     'src/ripple/sslutil/ripple_sslutil.cpp',

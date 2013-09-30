@@ -23,6 +23,7 @@
 #include "ripple_app.h"
 #include "../ripple_net/ripple_net.h"
 
+#include "../ripple/peerfinder/ripple_peerfinder.h"
 #include "../ripple/validators/ripple_validators.h"
 
 namespace ripple
@@ -40,5 +41,6 @@ namespace ripple
 # include "misc/ProofOfWorkFactory.h"
 #include "peers/Peer.cpp"
 #include "peers/PackedMessage.cpp"
+#include "peers/Peers.cpp"
 
 }

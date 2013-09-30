@@ -17,33 +17,30 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_ENDPOINTCACHE_H_INCLUDED
+#define RIPPLE_PEERFINDER_ENDPOINTCACHE_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#include "../../ripple/types/api/AgedHistory.h"
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+#include "../api/Types.h"
 
-#include "beast/beast/http/URL.h" // for Config
+namespace ripple {
+namespace PeerFinder {
 
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** This container holds the master set of Endpoints. */
+class EndpointCache
 {
+public:
+    EndpointCache ();
+    ~EndpointCache ();
 
-// Order matters
+    // Informs the cache we've received an endpoint.
+    void update (Endpoint const& ep);
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-# include "functional/LoadType.h"
-#include "functional/LoadSource.h"
+private:
+};
 
+}
 }
 
 #endif

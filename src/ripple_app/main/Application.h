@@ -43,7 +43,6 @@ class SerializedLedgerEntry;
 class TransactionMaster;
 class TxQueue;
 class LocalCredentials;
-class PeerFinder;
 
 class DatabaseCon;
 
@@ -113,7 +112,6 @@ public:
     virtual TransactionMaster&      getMasterTransaction () = 0;
     virtual TxQueue&                getTxQueue () = 0;
     virtual LocalCredentials&       getLocalCredentials () = 0;
-    virtual PeerFinder&             getPeerFinder () = 0;
 
     virtual DatabaseCon* getRpcDB () = 0;
     virtual DatabaseCon* getTxnDB () = 0;

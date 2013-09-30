@@ -17,33 +17,21 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_H_INCLUDED
+#define RIPPLE_PEERFINDER_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#include "beast/modules/beast_core/beast_core.h"
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
-
-#include "beast/beast/http/URL.h" // for Config
-
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
-{
-
-// Order matters
-
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-# include "functional/LoadType.h"
-#include "functional/LoadSource.h"
-
+namespace ripple {
+using namespace beast;
 }
+
+#include "../types/api/RipplePublicKey.h"
+
+#include "api/Types.h"
+#include "api/Endpoint.h"
+#include "api/Config.h"
+#include "api/Callback.h"
+#include "api/Manager.h"
 
 #endif

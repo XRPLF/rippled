@@ -17,12 +17,14 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_PEERS_H_INCLUDED
 #define RIPPLE_PEERS_H_INCLUDED
 
-/** Manages the set of connected peers.
-*/
+namespace PeerFinder {
+class Manager;
+}
+
+/** Manages the set of connected peers. */
 class Peers
 {
 public:
@@ -31,6 +33,8 @@ public:
             boost::asio::ssl::context& context);
 
     virtual ~Peers () { }
+
+    virtual PeerFinder::Manager& getPeerFinder() = 0;
 
     // Begin enforcing connection policy.
     virtual void start () = 0;

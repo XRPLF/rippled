@@ -17,33 +17,29 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_CONFIG_H_INCLUDED
+#define RIPPLE_PEERFINDER_CONFIG_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+namespace ripple {
+namespace PeerFinder {
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
-
-#include "beast/beast/http/URL.h" // for Config
-
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** Configuration for the Manager. */
+struct Config
 {
+    Config ();
 
-// Order matters
+    static int const minOutCount = 10;
+    static int const outPercent = 15;
+    int maxPeerCount;
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-# include "functional/LoadType.h"
-#include "functional/LoadSource.h"
+    /** True if we want to accept incoming connections. */
+    bool wantIncoming;
 
+    uint16 listeningPort;
+    std::string featureList;
+};
+
+}
 }
 
 #endif

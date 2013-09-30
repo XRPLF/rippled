@@ -17,33 +17,26 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_STORE_H_INCLUDED
+#define RIPPLE_PEERFINDER_STORE_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+namespace ripple {
+namespace PeerFinder {
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
-
-#include "beast/beast/http/URL.h" // for Config
-
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** Abstract persistence for PeerFinder data. */
+class Store
 {
+public:
+    virtual ~Store () { }
 
-// Order matters
+    virtual void loadLegacyEndpoints (
+        std::vector <IPEndpoint>& list) = 0;
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-# include "functional/LoadType.h"
-#include "functional/LoadSource.h"
+    virtual void storeLegacyEndpoints (
+        std::vector <IPEndpoint> const& list) = 0;
+};
 
+}
 }
 
 #endif

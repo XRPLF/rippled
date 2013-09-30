@@ -51,8 +51,7 @@ class ApplicationImp
     : public Application
     , public RootStoppable
     , public DeadlineTimer::Listener
-    , LeakChecked <ApplicationImp>
-    , PeerFinder::Callback
+    , public LeakChecked <ApplicationImp>
 {
 private:
     static ApplicationImp* s_instance;
@@ -135,8 +134,6 @@ public:
         , mProofOfWorkFactory (ProofOfWorkFactory::New ())
 
         , m_loadManager (LoadManager::New (*this, LogJournal::get <LoadManagerLog> ()))
-
-        , mPeerFinder (PeerFinder::New (*this))
 
         , m_sweepTimer (this)
 
@@ -281,11 +278,6 @@ public:
     Peers& getPeers ()
     {
         return *m_peers;
-    }
-
-    PeerFinder& getPeerFinder ()
-    {
-        return *mPeerFinder;
     }
 
     // VFALCO TODO Move these to the .cpp
@@ -861,7 +853,6 @@ private:
     ScopedPointer <Validations> mValidations;
     ScopedPointer <ProofOfWorkFactory> mProofOfWorkFactory;
     ScopedPointer <LoadManager> m_loadManager;
-    ScopedPointer <PeerFinder> mPeerFinder;
     DeadlineTimer m_sweepTimer;
     bool volatile mShutdown;
 

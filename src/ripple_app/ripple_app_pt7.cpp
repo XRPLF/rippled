@@ -29,7 +29,6 @@ namespace ripple
 #include "ledger/LedgerHistory.cpp"
 #include "misc/SerializedLedger.cpp"
 #include "tx/TransactionAcquire.cpp"
-#include "peers/Peers.cpp"
 
 # include "tx/TxQueueEntry.h"
 # include "tx/TxQueue.h"

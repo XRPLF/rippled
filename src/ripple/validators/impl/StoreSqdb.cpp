@@ -159,11 +159,12 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
 
     if (! error)
     {
-        error = tr.commit ();
+        error = tr.commit();
     }
 
     if (error)
     {
+        tr.rollback ();
         report (error, __FILE__, __LINE__);
     }
 }

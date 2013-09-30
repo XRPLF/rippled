@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef BEAST_BEASTCONFIG_H_INCLUDED
 #define BEAST_BEASTCONFIG_H_INCLUDED
 
@@ -164,13 +163,10 @@
 #define RIPPLE_USE_NEW_VALIDATORS 0
 #endif
 
-// This is only here temporarily. Use it to turn off the sending of
-// "ANNOUNCE" messages if you suspect that you're having problems
-// because of it.
-#ifndef RIPPLE_USE_MT_ANNOUNCE
-#define RIPPLE_USE_MT_ANNOUNCE 0
-#endif
-
+// Turning this on will use the new PeerFinder logic to establish connections
+// to other peers. Even with this off, PeerFinder will still send mtENDPOINTS
+// messages as needed, and collect legacy IP endpoint information.
+//
 #ifndef RIPPLE_USE_PEERFINDER
 #define RIPPLE_USE_PEERFINDER 0
 #endif

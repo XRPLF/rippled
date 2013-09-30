@@ -17,33 +17,34 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_CALLBACK_H_INCLUDED
+#define RIPPLE_PEERFINDER_CALLBACK_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#include "Endpoint.h"
+#include "Types.h"
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+namespace ripple {
+namespace PeerFinder {
 
-#include "beast/beast/http/URL.h" // for Config
-
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** The Callback receives PeerFinder notifications.
+    The notifications are sent on a thread owned by the PeerFinder,
+    so it is best not to do too much work in here. Just post functor
+    to another worker thread or job queue and return.
+*/
+struct Callback
 {
+    /** Sends a set of Endpoint records to the specified peer. */
+    virtual void sendPeerEndpoints (PeerID const& id,
+        std::vector <Endpoint> const& endpoints) = 0;
 
-// Order matters
+    /** Initiate outgoing Peer connections to the specified set of endpoints. */
+    virtual void connectPeerEndpoints (std::vector <IPEndpoint> const& list) = 0;
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-# include "functional/LoadType.h"
-#include "functional/LoadSource.h"
+    /** Impose a load charge on the specified peer. */
+    virtual void chargePeerLoadPenalty (PeerID const& id) = 0;
+};
 
+}
 }
 
 #endif
