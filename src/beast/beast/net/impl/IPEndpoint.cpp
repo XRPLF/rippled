@@ -500,6 +500,61 @@ std::istream& operator>> (std::istream &is, IPEndpoint& ep)
 
 //------------------------------------------------------------------------------
 
+IPEndpoint IPEndpoint::from_string_altform (std::string const& s)
+{
+    // Accept the regular form if it parses
+    {
+        IPEndpoint ep (IPEndpoint::from_string (s));
+        if (! ep.empty())
+            return ep;
+    }
+
+    // Now try the alt form
+    std::stringstream is (s);
+
+    IPEndpoint::V4 v4;
+    is >> v4;
+    if (! is.fail())
+    {
+        IPEndpoint ep (v4);
+
+        if (is.rdbuf()->in_avail()>0)
+        {
+            if (! parse::expect (is, ' '))
+                return IPEndpoint();
+
+            while (is.rdbuf()->in_avail()>0)
+            {
+                char c;
+                is.get(c);
+                if (c != ' ')
+                {
+                    is.unget();
+                    break;
+                }
+            }
+
+            uint16 port;
+            is >> port;
+            if (is.fail())
+                return IPEndpoint();
+
+            return ep.withPort (port);
+        }
+        else
+        {
+            // Just an address with no port
+            return ep;
+        }
+    }
+
+    // Could be V6 here...
+
+    return IPEndpoint();
+}
+
+//------------------------------------------------------------------------------
+
 int compare (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs)
 {
     if (lhs.value < rhs.value)

@@ -235,6 +235,14 @@ public:
     */
     static IPEndpoint from_string (std::string const& s);
 
+    /** Create an IPEndpoint from a string.
+        If a parsing error occurs, the endpoint will be empty.
+        This recognizes an alternate form of the text. Instead of a colon
+        separating the optional port specification, any amount of whitespace
+        is allowed.
+    */
+    static IPEndpoint from_string_altform (std::string const& s);
+
     /** Copy assign an IPv4 address.
         The port is set to zero.
     */
