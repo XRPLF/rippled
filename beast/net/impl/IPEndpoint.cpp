@@ -197,10 +197,10 @@ IPEndpoint& IPEndpoint::operator= (IPEndpoint const& other)
 
 IPEndpoint IPEndpoint::from_string (std::string const& s)
 {
-    std::stringstream ss (s);
+    std::stringstream is (s);
     IPEndpoint ep;
-    ss >> ep;
-    if (! ss.fail())
+    is >> ep;
+    if (! is.fail() && is.rdbuf()->in_avail() == 0)
         return ep;
     return IPEndpoint();
 }
