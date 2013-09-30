@@ -46,6 +46,8 @@ public:
     bool isOver ();
 
 private:
+    static std::string printElapsed (double seconds);
+
     void update ();
 
     typedef RippleMutex LockType;

@@ -40,17 +40,17 @@ std::string const& LoadEvent::name () const
     return m_name;
 }
 
-std::size_t LoadEvent::getSecondsWaiting() const
+double LoadEvent::getSecondsWaiting() const
 {
     return m_secondsWaiting;
 }
 
-std::size_t LoadEvent::getSecondsRunning() const
+double LoadEvent::getSecondsRunning() const
 {
     return m_secondsRunning;
 }
 
-std::size_t LoadEvent::getSecondsTotal() const
+double LoadEvent::getSecondsTotal() const
 {
     return m_secondsWaiting + m_secondsRunning;
 }

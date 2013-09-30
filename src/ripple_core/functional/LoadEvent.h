@@ -49,9 +49,9 @@ public:
     ~LoadEvent ();
 
     std::string const& name () const;
-    std::size_t getSecondsWaiting() const;
-    std::size_t getSecondsRunning() const;
-    std::size_t getSecondsTotal() const;
+    double getSecondsWaiting() const;
+    double getSecondsRunning() const;
+    double getSecondsTotal() const;
 
     // VFALCO TODO rename this to setName () or setLabel ()
     void reName (const std::string& name);
@@ -73,8 +73,8 @@ private:
     std::string m_name;
     Time m_timeStopped;
     Time m_timeStarted;
-    std::size_t m_secondsWaiting;
-    std::size_t m_secondsRunning;
+    double m_secondsWaiting;
+    double m_secondsRunning;
 };
 
 #endif
