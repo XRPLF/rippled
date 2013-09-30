@@ -110,6 +110,11 @@ public:
     */
     bool stopThread (int timeOutMilliseconds = -1);
 
+    /** Stop the thread without blocking.
+        This calls signalThreadShouldExit followed by notify.
+    */
+    void stopThreadAsync ();
+
     //==============================================================================
     /** Returns true if the thread is currently active */
     bool isThreadRunning() const;

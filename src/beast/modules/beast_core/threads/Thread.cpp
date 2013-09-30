@@ -208,6 +208,17 @@ bool Thread::stopThread (const int timeOutMilliseconds)
     return cleanExit;
 }
 
+void Thread::stopThreadAsync ()
+{
+    const ScopedLock sl (startStopLock);
+
+    if (isThreadRunning())
+    {
+        signalThreadShouldExit();
+        notify();
+    }
+}
+
 //==============================================================================
 bool Thread::setPriority (const int newPriority)
 {
