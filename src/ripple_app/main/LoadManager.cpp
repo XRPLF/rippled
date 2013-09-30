@@ -170,7 +170,7 @@ public:
         if (isThreadRunning ())
         {
             journal.debug << "Stopping";
-            stopThread (0);
+            stopThreadAsync ();
         }
         else
         {
@@ -424,6 +424,8 @@ public:
                 boost::this_thread::sleep (when);
             }
         }
+
+        stopped ();
     }
 };
 
