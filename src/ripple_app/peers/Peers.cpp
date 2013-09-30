@@ -37,9 +37,10 @@ public:
 
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
-    typedef std::pair<RippleAddress, Peer::pointer>     naPeer;
-    typedef std::pair<IPAndPortNumber, Peer::pointer>            pipPeer;
+    typedef std::pair<RippleAddress, Peer::pointer>  naPeer;
+    typedef std::pair<IPAndPortNumber, Peer::pointer> pipPeer;
     typedef std::map<IPAndPortNumber, Peer::pointer>::value_type vtPeer;
+    typedef boost::unordered_map<RippleAddress, Peer::pointer>::value_type vtConMap;
 
     ScopedPointer <PeerFinder::Manager> m_peerFinder;
 
@@ -60,7 +61,6 @@ public:
 
     // Non-thin peers which we are connected to.
     // PeersImp we have the public key for.
-    typedef boost::unordered_map<RippleAddress, Peer::pointer>::value_type vtConMap;
     boost::unordered_map<RippleAddress, Peer::pointer>  mConnectedMap;
 
     // Connections with have a 64-bit identifier
@@ -594,7 +594,7 @@ void PeersImp::relayMessageTo (const std::set<uint64>& fromPeers, const PackedMe
 }
 
 // Schedule a connection via scanning.
-//
+//addr.to_v4().to_bytes()
 // Add or modify into PeerIps as a manual entry for immediate scanning.
 // Requires sane IP and port.
 void PeersImp::connectTo (const std::string& strIp, int iPort)
@@ -718,6 +718,9 @@ bool PeersImp::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
             mConnectedMap[naPeer]   = peer;
             bNew                    = true;
 
+            // Notify peerfinder since this is a connection that we didn't know about and are keeping
+            getPeerFinder ().onPeerConnected (RipplePublicKey (peer->getNodePublic()), peer->getPeerEndpoint(), peer->isInbound());
+
             assert (peer->getPeerId () != 0);
             mPeerIdMap.insert (std::make_pair (peer->getPeerId (), peer));
         }
@@ -778,7 +781,9 @@ void PeersImp::peerDisconnected (Peer::ref peer, const RippleAddress& naPeer)
         }
         else
         {
-            // Found it. Delete it.
+            // Found it. Notify peerfinder, then delete it.
+            getPeerFinder ().onPeerDisconnected (RipplePublicKey (itCm->first));
+
             mConnectedMap.erase (itCm);
 
             //WriteLog (lsINFO, Peers) << "Pool: disconnected: " << naPeer.humanNodePublic() << " " << peer->getIP() << " " << peer->getPort();
