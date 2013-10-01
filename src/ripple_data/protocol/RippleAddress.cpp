@@ -30,6 +30,7 @@ void RippleAddress::clear ()
 {
     nVersion = VER_NONE;
     vchData.clear ();
+    mIsValid = false;
 }
 
 bool RippleAddress::isSet () const
