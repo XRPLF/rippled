@@ -163,7 +163,6 @@ class FileOutputStream;
 #include "memory/SharedObject.h"
 #include "memory/SharedPtr.h"
 #include "memory/SharedFunction.h"
-#include "diagnostic/ProtectedCall.h"
 #include "containers/AbstractFifo.h"
 #include "text/Identifier.h"
 #include "containers/Variant.h"
