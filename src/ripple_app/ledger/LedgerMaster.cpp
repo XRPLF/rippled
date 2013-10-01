@@ -187,7 +187,7 @@ void LedgerMaster::switchLedgers (Ledger::pointer lastClosed, Ledger::pointer cu
 
 void LedgerMaster::storeLedger (Ledger::pointer ledger)
 {
-    mLedgerHistory.addLedger (ledger);
+    mLedgerHistory.addLedger (ledger, false);
 }
 
 void LedgerMaster::forceValid (Ledger::pointer ledger)
@@ -494,7 +494,7 @@ void LedgerMaster::setFullLedger (Ledger::pointer ledger, bool isSynchronous, bo
     assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
 
     ledger->setValidated();
-    mLedgerHistory.addLedger(ledger);
+    mLedgerHistory.addLedger(ledger, true);
     ledger->setFull();
 
     {

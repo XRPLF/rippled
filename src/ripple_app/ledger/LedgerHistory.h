@@ -27,7 +27,7 @@ class LedgerHistory : LeakChecked <LedgerHistory>
 public:
     LedgerHistory ();
 
-    void addLedger (Ledger::pointer ledger);
+    void addLedger (Ledger::pointer ledger, bool validated);
 
     float getCacheHitRate ()
     {
@@ -36,12 +36,9 @@ public:
 
     Ledger::pointer getLedgerBySeq (LedgerIndex ledgerIndex);
 
-    // VFALCO NOTE shouldn't this call the function above?
     LedgerHash getLedgerHash (LedgerIndex ledgerIndex);
 
     Ledger::pointer getLedgerByHash (LedgerHash const& ledgerHash);
-
-    Ledger::pointer canonicalizeLedger (Ledger::pointer ledger, bool cache);
 
     void tune (int size, int age);
 
