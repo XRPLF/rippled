@@ -1351,6 +1351,9 @@ Json::Value RPCHandler::doRandom (Json::Value params, LoadType* loadType, Applic
 
 Json::Value RPCHandler::doPathFind (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
+    Ledger::pointer lpLedger = mNetOps->getClosedLedger();
+    masterLockHolder.unlock();
+
     if (!params.isMember ("subcommand") || !params["subcommand"].isString ())
         return rpcError (rpcINVALID_PARAMS);
 
@@ -1363,7 +1366,7 @@ Json::Value RPCHandler::doPathFind (Json::Value params, LoadType* loadType, Appl
     {
         mInfoSub->clearPathRequest ();
         PathRequest::pointer request = boost::make_shared<PathRequest> (mInfoSub);
-        Json::Value result = request->doCreate (mNetOps->getClosedLedger (), params);
+        Json::Value result = request->doCreate (lpLedger, params);
 
         if (request->isValid ())
         {
