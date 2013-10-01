@@ -86,6 +86,7 @@ bool Job::shouldCancel () const
 
 void Job::doJob ()
 {
+    m_loadEvent->start ();
     m_loadEvent->reName (mName);
 
     mJob (*this);
@@ -94,11 +95,6 @@ void Job::doJob ()
 void Job::rename (std::string const& newName)
 {
     mName = newName;
-}
-
-LoadEvent& Job::peekEvent() const
-{
-    return *m_loadEvent;
 }
 
 const char* Job::toString (JobType t)

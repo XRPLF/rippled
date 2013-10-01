@@ -141,9 +141,6 @@ public:
                 m_jobSet.insert (Job (
                     type, name, ++m_lastJob, m_loads[type], jobFunc, m_cancelCallback));
 
-            // start timing how long it stays in the queue
-            it.first->peekEvent().start();
-
             queueJob (*it.first, lock);
         }
     }

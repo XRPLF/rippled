@@ -71,8 +71,8 @@ private:
     LoadMonitor& m_loadMonitor;
     bool m_isRunning;
     std::string m_name;
-    Time m_timeStopped;
-    Time m_timeStarted;
+    RelativeTime m_timeStopped;
+    RelativeTime m_timeStarted;
     double m_secondsWaiting;
     double m_secondsRunning;
 };

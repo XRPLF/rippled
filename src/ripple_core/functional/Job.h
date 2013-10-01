@@ -107,8 +107,6 @@ public:
 
     void rename (const std::string& n);
 
-    LoadEvent& peekEvent() const;
-
     // These comparison operators make the jobs sort in priority order in the job set
     bool operator< (const Job& j) const;
     bool operator> (const Job& j) const;
