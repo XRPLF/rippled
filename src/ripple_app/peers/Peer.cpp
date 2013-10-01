@@ -1680,28 +1680,6 @@ void PeerImp::recvEndpoints (protocol::TMEndpoints& packet)
         // hops
         endpoint.hops = tm.hops();
 
-        // ipv4
-        if (endpoint.hops > 0)
-        {
-            in_addr addr;
-            addr.s_addr = tm.ipv4().ipv4();
-            IPEndpoint::V4 v4 (ntohl (addr.s_addr));
-            endpoint.address = IPEndpoint (v4, 0);
-            endpoint.port = tm.ipv4().ipv4port ();
-        }
-        else
-        {
-            // This Endpoint describes the peer we are connected to.
-            // We will take the remote address seen on the socket and
-            // store that in the Endpoint. If this is the first time,
-            // then we'll verify that their listener can receive incoming
-            // by performing a connectivity test.
-            //
-            bassert (m_remoteAddressSet);
-            endpoint.address = m_remoteAddress.withPort (0);
-            endpoint.port = tm.ipv4().ipv4port ();
-        }
-        
         // slots
         endpoint.incomingSlotsAvailable = tm.slots();
 
@@ -1711,7 +1689,32 @@ void PeerImp::recvEndpoints (protocol::TMEndpoints& packet)
         // uptimeMinutes
         endpoint.uptimeMinutes = tm.uptimeminutes();
 
-        endpoints.push_back (endpoint);
+        // ipv4
+        if (endpoint.hops > 0)
+        {
+            in_addr addr;
+            addr.s_addr = tm.ipv4().ipv4();
+            IPEndpoint::V4 v4 (ntohl (addr.s_addr));
+            endpoint.address = IPEndpoint (v4, 0);
+            endpoint.port = tm.ipv4().ipv4port ();
+
+            endpoints.push_back (endpoint);
+        }
+        else
+        {
+            // This Endpoint describes the peer we are connected to.
+            // We will take the remote address seen on the socket and
+            // store that in the Endpoint. If this is the first time,
+            // then we'll verify that their listener can receive incoming
+            // by performing a connectivity test.
+            //
+            if (m_remoteAddressSet)
+            {
+                endpoint.address = m_remoteAddress.withPort (0);
+                endpoint.port = tm.ipv4().ipv4port ();
+                endpoints.push_back (endpoint);
+            }
+        }
     }
 
     getApp().getPeers().getPeerFinder().onPeerEndpoints (
