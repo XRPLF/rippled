@@ -60,6 +60,12 @@ public:
     /** Destructor. */
     ~RelativeTime() noexcept;
 
+    bool isZero() const
+        { return numSeconds == 0; }
+
+    bool isNotZero() const
+        { return numSeconds != 0; }
+
     /** Returns the amount of time since the process was started. */
     static RelativeTime fromStartup ();
 
@@ -148,10 +154,12 @@ public:
     String getDescription (const String& returnValueForZeroTime = "0") const;
     std::string to_string () const;
 
-    RelativeTime operator+ (double seconds) const noexcept
+    template <typename Number>
+    RelativeTime operator+ (Number seconds) const noexcept
         { return RelativeTime (numSeconds + seconds); }
 
-    RelativeTime operator- (double seconds) const noexcept
+    template <typename Number>
+    RelativeTime operator- (Number seconds) const noexcept
         { return RelativeTime (numSeconds - seconds); }
 
     /** Adds another RelativeTime to this one. */
