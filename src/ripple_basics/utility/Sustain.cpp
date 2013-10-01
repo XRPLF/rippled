@@ -77,16 +77,17 @@ std::string DoSustain (std::string logFile)
 
         setCallingThreadName (boost::str (boost::format ("#%d") % childCount).c_str ());
 
+        sleep (9);
         do
         {
             int i;
-            sleep (10);
-            waitpid (-1, &i, 0);
+            sleep (1);
+            waitpid (pChild, &i, 0);
         }
         while (kill (pChild, 0) == 0);
 
         rename ("core", boost::str (boost::format ("core.%d") % static_cast<int> (pChild)).c_str ());
-        if (!logFile.empty())
+        if (!logFile.empty()) // FIXME: logFile hasn't been set yet
             rename (logFile.c_str(),
 	        boost::str (boost::format ("%s.%d") % logFile % static_cast<int> (pChild)).c_str ());
     }
