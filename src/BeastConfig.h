@@ -75,16 +75,6 @@
 //#define BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES 1
 #endif
 
-/** Config: BEAST_CATCH_UNHANDLED_EXCEPTIONS
-    This will wrap thread entry points with an exception catching block.
-    A customizable hook is provided to get called when unhandled exceptions
-    are thrown.
-    @see ProtectedCall
-*/
-#ifndef BEAST_CATCH_UNHANDLED_EXCEPTIONS
-#define BEAST_CATCH_UNHANDLED_EXCEPTIONS 1
-#endif
-
 //------------------------------------------------------------------------------
 //
 // Libraries

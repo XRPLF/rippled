@@ -998,9 +998,6 @@
     <ClInclude Include="..\..\modules\beast_core\misc\Main.h">
       <Filter>beast_core\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\ProtectedCall.h">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FatalError.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
@@ -1729,9 +1726,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\misc\Main.cpp">
       <Filter>beast_core\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\ProtectedCall.cpp">
-      <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\FatalError.cpp">
       <Filter>beast_core\diagnostic</Filter>

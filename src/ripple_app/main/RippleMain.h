@@ -21,13 +21,12 @@
 #ifndef RIPPLE_RIPPLEMAIN_H_INCLUDED
 #define RIPPLE_RIPPLEMAIN_H_INCLUDED
 
-class RippleMain : public Main, public ProtectedCall::Handler
+class RippleMain : public Main
 {
 public:
     RippleMain ();
     ~RippleMain ();
 
-    void onException (ProtectedCall::Exception const& e) const;
     int run (int argc, char const* const* argv);
 };
 

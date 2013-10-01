@@ -141,7 +141,6 @@ namespace beast
 #include "diagnostic/FatalError.cpp"
 #include "diagnostic/FPUFlags.cpp"
 #include "diagnostic/LeakChecked.cpp"
-#include "diagnostic/ProtectedCall.cpp"
 #include "diagnostic/SemanticVersion.cpp"
 #include "diagnostic/UnitTest.cpp"
 #include "diagnostic/UnitTestUtilities.cpp"

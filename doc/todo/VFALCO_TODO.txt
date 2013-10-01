@@ -52,8 +52,6 @@ David Features:
         down the cache and then something that uses the cache, objects may get
         put in the cache after it was shut down.
 
-- Figure out the right behavior of ProtectedCall
-
 - Do something about the throw() reporting weaknesses:
   * Make sure all Sconstruct and .pro builds have debug symbols in release
   * Replace all throw with beast::Throw()
