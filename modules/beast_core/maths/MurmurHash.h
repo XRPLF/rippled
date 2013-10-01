@@ -44,11 +44,27 @@ inline void Hash (const void* key, int len, uint32 seed, HashType* out)
         break;
 
 #if BEAST_64BIT
+    case 64:
+        {
+            HashType tmp[2];
+            MurmurHash3_x64_128 (key, len, seed, &tmp[0]);
+            *out = tmp[0];
+        }
+        break;
+
     case 128:
         MurmurHash3_x64_128 (key, len, seed, out);
         break;
 
 #else
+    case 64:
+        {
+            HashType tmp[2];
+            MurmurHash3_x86_128 (key, len, seed, &tmp[0]);
+            *out = tmp[0];
+        }
+        break;
+
     case 128:
         MurmurHash3_x86_128 (key, len, seed, out);
         break;
