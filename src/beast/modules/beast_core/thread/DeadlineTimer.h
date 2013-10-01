@@ -52,7 +52,6 @@ public:
     */
     void cancel ();
 
-
     /** Set the timer to go off once in the future.
         If the timer is already active, this will reset it.
         @note If the timer is already active, the old one might go off
@@ -72,15 +71,6 @@ public:
                                     greater than zero.
     */
     void setRecurringExpiration (double secondsUntilDeadline);
-
-    /** Set the timer to go off at a specific time.
-        If the timer is already active, this will reset it.
-        @note If the timer is already active, the old one might go off
-              before this function returns.
-        @note If the time is in the past, the timer will go off
-              immediately.
-    */
-    void setExpirationTime (Time const& when);
 
     /** Equality comparison.
         Timers are equal if they have the same address.
@@ -102,7 +92,7 @@ private:
     Listener* const m_listener;
     SharedPtr <SharedSingleton <Manager> > m_manager;
     bool m_isActive;
-    Time m_notificationTime;
+    RelativeTime m_notificationTime;
     double m_secondsRecurring; // non zero if recurring
 };
 

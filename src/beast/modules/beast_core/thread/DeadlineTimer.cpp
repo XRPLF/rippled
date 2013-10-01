@@ -42,7 +42,8 @@ public:
     // Okay to call on an active timer.
     // However, an extra notification may still happen due to concurrency.
     //
-    void activate (DeadlineTimer& timer, double secondsRecurring, Time const& when)
+    void activate (DeadlineTimer& timer,
+        double secondsRecurring, RelativeTime const& when)
     {
         bassert (secondsRecurring >= 0);
 
@@ -85,7 +86,8 @@ public:
     {
         while (! threadShouldExit ())
         {
-            Time const currentTime = Time::getCurrentTime ();
+            RelativeTime const currentTime (
+                RelativeTime::fromStartup ());
 
             double seconds (0);
             DeadlineTimer* timer (nullptr);
@@ -110,7 +112,7 @@ public:
                         {
                             // Yes so set the timer again.
                             timer->m_notificationTime =
-                                currentTime + RelativeTime (timer->m_secondsRecurring);
+                                currentTime + timer->m_secondsRecurring;
 
                             // Put it back into the list as active
                             insertSorted (*timer);
@@ -224,7 +226,8 @@ void DeadlineTimer::setExpiration (double secondsUntilDeadline)
 {
     bassert (secondsUntilDeadline != 0);
 
-    Time const when = Time::getCurrentTime () + RelativeTime (secondsUntilDeadline);
+    RelativeTime const when (
+        RelativeTime::fromStartup() + secondsUntilDeadline);
 
     m_manager->activate (*this, 0, when);
 }
@@ -233,13 +236,8 @@ void DeadlineTimer::setRecurringExpiration (double secondsUntilDeadline)
 {
     bassert (secondsUntilDeadline != 0);
 
-    Time const when = Time::getCurrentTime () + RelativeTime (secondsUntilDeadline);
+    RelativeTime const when (
+        RelativeTime::fromStartup() + secondsUntilDeadline);
 
     m_manager->activate (*this, secondsUntilDeadline, when);
 }
-
-void DeadlineTimer::setExpirationTime (Time const& when)
-{
-    m_manager->activate (*this, 0, when);
-}
-
