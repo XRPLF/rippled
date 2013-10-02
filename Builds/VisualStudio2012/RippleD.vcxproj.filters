@@ -1086,6 +1086,9 @@
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\SourceStrings.cpp">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\json\impl\Tests.cpp">
+      <Filter>[1] Ripple\json\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">

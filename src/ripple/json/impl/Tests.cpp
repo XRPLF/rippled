@@ -17,33 +17,55 @@
 */
 //==============================================================================
 
+namespace ripple {
+using namespace beast;
 
-#include "BeastConfig.h"
+class JsonCppTests : public UnitTest
+{
+public:
+    void testSprintf ()
+    {
+        beginTestCase ("sprintf");
+        
+        char buffer [256];
 
-#include "beast/modules/beast_core/beast_core.h"
+        double const value (1.0000000000000001e+300);
 
-#include "ripple_json.h"
+        sprintf (buffer, "%#f", value);
+    }
 
-#include <cassert>
-#include <iomanip>
-#include <sstream>
-#include <string>
+    void testBadJson ()
+    {
+        beginTestCase ("bad input");
 
-// For json/
-//
-#ifdef JSON_USE_CPPTL
-# include <cpptl/conststring.h>
-#endif
-#ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
-#include "impl/json_batchallocator.h"
-#endif
+        char const* s (
+            "{\"method\":\"ledger\",\"params\":[{\"ledger_index\":1e300}]}"
+            );
 
-#define JSON_ASSERT_UNREACHABLE assert( false )
-#define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw
-#define JSON_ASSERT_MESSAGE( condition, message ) if (!( condition )) throw std::runtime_error( message );
+        Json::Value j;
+        Json::Reader r;
 
-#include "impl/json_reader.cpp"
-#include "impl/json_value.cpp"
-#include "impl/json_writer.cpp"
+        if (! r.parse (s, j))
+        {
+            pass ();
+        }
+        else
+        {
+            fail ();
+        }
+    }
 
-#include "impl/Tests.cpp"
+    void runTest ()
+    {
+        testSprintf();
+        testBadJson ();
+    }
+
+    JsonCppTests () : UnitTest ("JsonCpp", "ripple")
+    {
+    }
+};
+
+static JsonCppTests jsonCppTests;
+
+}
