@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_VALIDATORS_SOURCEFILE_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCEFILE_H_INCLUDED
 

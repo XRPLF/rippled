@@ -293,7 +293,8 @@ public:
 
         {
             SharedState::Access state (m_state);
-            SourceDesc& desc (*state->sources.emplace_back ());
+            state->sources.resize (state->sources.size() + 1);
+            SourceDesc& desc (state->sources.back());
             desc.source = source;
             m_store.insert (desc);
         }
@@ -409,7 +410,7 @@ public:
     /** Perform a fetch on the source. */
     void fetch (SourceDesc& desc)
     {
-        m_journal.info << "fetch ('" << desc.source->name() << "')";
+        m_journal.info << "fetch " << desc.source->name();
 
         Source::Result result (desc.source->fetch (m_journal));
 

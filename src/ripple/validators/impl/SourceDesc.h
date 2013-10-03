@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_VALIDATORS_SOURCEDESC_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCEDESC_H_INCLUDED
 
@@ -34,7 +33,7 @@ struct SourceDesc
         statusFailed
     };
 
-    ScopedPointer <Source> source;
+    SharedPtr <Source> source;
     Status status;
     Time whenToFetch;
     int numberOfFailures;
@@ -64,7 +63,7 @@ struct SourceDesc
     }
 };
 
-typedef DynamicList <SourceDesc> SourcesType;
+typedef std::vector <SourceDesc> SourcesType;
 
 }
 }

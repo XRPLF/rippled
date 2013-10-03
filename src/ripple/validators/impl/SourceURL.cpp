@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-
 namespace ripple {
 namespace Validators {
 
-class SourceURLImp : public SourceURL
+class SourceURLImp
+    : public SourceURL
+    , public LeakChecked <SourceURLImp>
 {
 public:
     explicit SourceURLImp (URL const& url)

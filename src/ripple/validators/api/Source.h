@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 
@@ -25,7 +24,7 @@ namespace ripple {
 namespace Validators {
 
 /** A source of validator descriptors. */
-class Source
+class Source : public SharedObject
 {
 public:
     /** A Source's descriptor for a Validator. */

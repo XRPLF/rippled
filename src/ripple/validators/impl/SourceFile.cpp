@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-
 namespace ripple {
 namespace Validators {
 
-class SourceFileImp : public SourceFile
+class SourceFileImp
+    : public SourceFile
+    , public LeakChecked <SourceFileImp>
 {
 public:
     SourceFileImp (File const& file)

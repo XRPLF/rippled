@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-
 namespace ripple {
 namespace Validators {
 
-class SourceStringsImp : public SourceStrings
+class SourceStringsImp
+    : public SourceStrings
+    , public LeakChecked <SourceStringsImp>
 {
 public:
     SourceStringsImp (
