@@ -1837,6 +1837,8 @@ Json::Value RPCHandler::doTxHistory (Json::Value params, LoadType* loadType, App
 // }
 Json::Value RPCHandler::doTx (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     if (!params.isMember ("transaction"))
         return rpcError (rpcINVALID_PARAMS);
 
