@@ -219,8 +219,6 @@
     <ClInclude Include="..\..\modules\beast_core\containers\ArrayAllocationBase.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\DynamicObject.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\ElementComparator.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\DynamicArray.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\HashMap.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\LinkedListPointer.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\LockFreeQueue.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\NamedValueSet.h" />
@@ -228,8 +226,6 @@
     <ClInclude Include="..\..\modules\beast_core\containers\PropertySet.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\SharedObjectArray.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\ScopedValueSetter.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\SharedTable.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\SortedLookupTable.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\SortedSet.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\SparseSet.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\DynamicList.h" />
@@ -701,19 +697,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\DynamicArray.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicList.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\HashMap.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

@@ -587,12 +587,6 @@
     <ClInclude Include="..\..\modules\beast_core\threads\SpinDelay.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\SharedTable.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\SortedLookupTable.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FPUFlags.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
@@ -825,12 +819,6 @@
       <Filter>beast_core\system</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\DynamicList.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\DynamicArray.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\HashMap.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\intrusive\ForwardList.h">
@@ -1634,13 +1622,7 @@
     <ClCompile Include="..\..\modules\beast_core\system\SystemStats.cpp">
       <Filter>beast_core\system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\DynamicArray.cpp">
-      <Filter>beast_core\containers</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicList.cpp">
-      <Filter>beast_core\containers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\HashMap.cpp">
       <Filter>beast_core\containers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\async\SharedHandler.cpp">

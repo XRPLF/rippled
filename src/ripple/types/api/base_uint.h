@@ -102,7 +102,7 @@ public:
     class hasher
     {
     public:
-        explicit hasher (HashValue seedToUse = Random::getSystemRandom ().nextInt ())
+        explicit hasher (std::size_t seedToUse = Random::getSystemRandom ().nextInt ())
             : m_seed (seedToUse)
         {
         }

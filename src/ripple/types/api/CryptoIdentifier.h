@@ -22,7 +22,6 @@
 #define RIPPLE_TYPES_CRYPTOIDENTIFIER_H_INCLUDED
 
 #include "beast/beast/FixedArray.h"
-#include "beast/beast/intrusive/IntrusiveArray.h"
 #include "beast/beast/crypto/Sha256.h"
 
 #include "Base58.h"

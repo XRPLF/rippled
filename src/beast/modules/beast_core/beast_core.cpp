@@ -134,9 +134,7 @@ namespace beast
 #include "containers/NamedValueSet.cpp"
 #include "containers/PropertySet.cpp"
 #include "containers/Variant.cpp"
-#include "containers/DynamicArray.cpp"
 #include "containers/DynamicList.cpp"
-#include "containers/HashMap.cpp"
 
 #include "diagnostic/FatalError.cpp"
 #include "diagnostic/FPUFlags.cpp"
