@@ -223,6 +223,8 @@ public:
         testVersion ();
         testProtocol ();
         testValues ();
+
+        logMessage ("Ripple version: " + BuildInfo::getVersionString());
     }
 };
 
