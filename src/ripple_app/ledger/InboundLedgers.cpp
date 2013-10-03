@@ -48,22 +48,7 @@ InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 s
                 ret = boost::make_shared<InboundLedger> (hash, seq);
                 assert (ret);
                 mLedgers.insert (std::make_pair (hash, ret));
-
-                if (!ret->tryLocal())
-                {
-                    ret->addPeers ();
-                    ret->setTimer (); // Cannot call in constructor
-                }
-                else if (!ret->isFailed ())
-                {
-                    WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have locally: " << hash;
-                    Ledger::pointer ledger = ret->getLedger ();
-                    ledger->setClosed ();
-                    ledger->setImmutable ();
-                    getApp().getLedgerMaster ().storeLedger (ledger);
-                    if (couldBeNew)
-                        getApp().getLedgerMaster().checkAccept(ledger);
-                }
+                ret->init (sl, couldBeNew);
             }
         }
     }

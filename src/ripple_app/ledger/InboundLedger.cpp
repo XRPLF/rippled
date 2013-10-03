@@ -58,6 +58,27 @@ InboundLedger::~InboundLedger ()
 {
 }
 
+void InboundLedger::init(ScopedLockType& collectionLock, bool couldBeNew)
+{
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    collectionLock.unlock ();
+
+    if (!tryLocal ())
+    {
+        addPeers ();
+        setTimer ();
+    }
+    else if (!isFailed ())
+    {
+        WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have locally: " << getHash ();
+        mLedger->setClosed ();
+        mLedger->setImmutable ();
+        getApp ().getLedgerMaster ().storeLedger (mLedger);
+        if (couldBeNew)
+            getApp ().getLedgerMaster ().checkAccept (mLedger);
+    }
+}
+
 bool InboundLedger::tryLocal ()
 {
     // return value: true = no more work to do

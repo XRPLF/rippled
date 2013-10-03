@@ -83,6 +83,7 @@ public:
     void awaitData ();
     void noAwaitData ();
     bool checkLocal ();
+    void init(ScopedLockType& collectionLock, bool couldBeNew);
 
     typedef std::pair <protocol::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
 

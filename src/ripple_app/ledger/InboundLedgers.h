@@ -81,7 +81,7 @@ public:
 private:
     typedef boost::unordered_map <uint256, InboundLedger::pointer> MapType;
 
-    typedef RippleMutex LockType;
+    typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
     LockType mLock;
 
