@@ -17,13 +17,6 @@ BEAST TODO
 
 - Import secp256k1 from sipa
 
-- HashMap work:
-  - Add unit test
-  - Return size_t from hash function, take out upperLimit, move mod % to caller
-  - Make hash function a functor using operator()
-  - Implement HardenedHashFunctions
-  - Fix problem with assigning to the result of operator[] maybe use a proxy?
-
 - Set sqlite thread safety model to '2' in beast_sqlite
 
 - Document and rename all the sqdb files and classes
@@ -59,8 +52,6 @@ BEAST TODO
   host program do it.
 
 - Rename malloc/calloc JUCE members that conflict with the debug CRT from MSVC
-
-- Make beast::HashMap support assignment via operator[]
 
 - Reformat every Doxygen comment
 - Fix Doxygen metatags

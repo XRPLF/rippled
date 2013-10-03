@@ -46,7 +46,7 @@ public:
     typedef value_type*        iterator;
     typedef value_type const*  const_iterator;
 
-    /** Hardened hash function for use with HashMap.
+    /** Hardened hash function for use with hash based containers.
         The seed is used to make the hash unpredictable. This prevents
         attackers from exploiting crafted inputs to produce degenerate
         containers.
@@ -59,21 +59,21 @@ public:
             will be generated from the system
             @param seedToUse An optional seed to use.
         */
-        explicit hasher (HashValue seedToUse = Random::getSystemRandom ().nextInt ())
+        explicit hasher (std::size_t seedToUse = Random::getSystemRandom ().nextInt ())
             : m_seed (seedToUse)
         {
         }
 
         /** Generates a simple hash from an UnsignedInteger. */
-        HashValue operator() (UnsignedInteger const& key) const
+        std::size_t operator() (UnsignedInteger const& key) const
         {
-            HashValue hash;
+            std::size_t hash;
             Murmur::Hash (key.cbegin (), key.size, m_seed, &hash);
             return hash;
         }
 
     private:
-        HashValue m_seed;
+        std::size_t m_seed;
     };
 
     /** Determins if two UnsignedInteger objects are equal. */
