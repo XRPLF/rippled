@@ -204,12 +204,14 @@ public:
         , m_connectTimer (this)
         , m_endpointsTimer (this)
     {
+#if 0
 #if BEAST_MSVC
         if (beast_isRunningUnderDebugger())
         {
             m_journal.sink().set_console (true);
             m_journal.sink().set_severity (Journal::kLowestSeverity);
         }
+#endif
 #endif
     }
 
