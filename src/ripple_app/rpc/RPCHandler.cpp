@@ -616,7 +616,8 @@ Json::Value RPCHandler::doAccountInfo (Json::Value params, LoadType* loadType, A
     }
     else
     {
-        jvResult    = rpcError (rpcACT_NOT_FOUND);
+        jvResult["account"] = naAccount.humanAccountID ();
+        jvResult            = rpcError (rpcACT_NOT_FOUND, jvResult);
     }
 
     return jvResult;
