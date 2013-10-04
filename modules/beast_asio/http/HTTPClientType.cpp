@@ -520,6 +520,9 @@ public:
             if (ec == boost::asio::error::operation_aborted)
                 return;
 
+            if (ec == boost::asio::error::eof)
+                ec = error_code();
+
             if (ec != 0)
             {
                 failed (ec);

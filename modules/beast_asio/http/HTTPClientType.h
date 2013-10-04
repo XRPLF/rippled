@@ -56,7 +56,7 @@ public:
     virtual void abstract_async_get (boost::asio::io_service& io_service,
         URL const& url, AbstractHandler <void (result_type)> handler) = 0;
 
-    /** Cancel any pending asynchronous operations. */
+    /** Cancel all pending asynchronous operations. */
     virtual void cancel() = 0;
 
     /** Block until all asynchronous i/o completes. */
