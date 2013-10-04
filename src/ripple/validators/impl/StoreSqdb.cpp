@@ -64,7 +64,7 @@ void StoreSqdb::insert (SourceDesc& desc)
         String const expirationTime (Utilities::timeToString (desc.expirationTime));
 
         sqdb::statement st = (m_session.prepare <<
-            "INSERT INTO ValidatorsSource ( "
+            "INSERT INTO Validators_Source ( "
             "  sourceID, "
             "  createParam, "
             "  lastFetchTime, "
@@ -106,7 +106,7 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
     sqdb::transaction tr (m_session);
 
     m_session.once (error) <<
-        "UPDATE ValidatorsSource SET "
+        "UPDATE Validators_Source SET "
         "  lastFetchTime = ?, "
         "  expirationTime = ? "
         "WHERE "
@@ -120,7 +120,7 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
     {
         // Delete the previous data set
         m_session.once (error) <<
-            "DELETE FROM ValidatorsSourceInfo WHERE "
+            "DELETE FROM Validators_SourceItem WHERE "
             "  sourceID = ?; "
             ,sqdb::use (sourceID)
             ;
@@ -132,7 +132,7 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
             String label;
 
             sqdb::statement st = (m_session.prepare <<
-                "INSERT INTO ValidatorsSourceInfo ( "
+                "INSERT INTO Validators_SourceItem ( "
                 "  sourceID, "
                 "  publicKey, "
                 "  label "
@@ -144,11 +144,11 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
                 ,sqdb::use (label)
                 );
 
-            std::vector <Source::Info>& list (desc.result.list);
+            std::vector <Source::Item>& list (desc.results.list);
             for (std::size_t i = 0; ! error && i < list.size(); ++i)
             {
-                Source::Info& info (list [i]);
-                publicKeyString = info.publicKey.to_string ();
+                Source::Item& item (list [i]);
+                publicKeyString = item.publicKey.to_string ();
                 label = list[i].label;
                 st.execute_and_fetch (error);
             }
@@ -197,7 +197,7 @@ bool StoreSqdb::select (SourceDesc& desc)
         "SELECT "
         "  lastFetchTime, "
         "  expirationTime "
-        "FROM ValidatorsSource WHERE "
+        "FROM Validators_Source WHERE "
         "  sourceID = ? "
         ,sqdb::into (lastFetchTime)
         ,sqdb::into (expirationTime)
@@ -245,7 +245,7 @@ void StoreSqdb::selectList (SourceDesc& desc)
         m_session.once (error) <<
             "SELECT "
             "  COUNT(*) "
-            "FROM ValidatorsSourceInfo WHERE "
+            "FROM Validators_SourceItem WHERE "
             "  sourceID = ? "
             ,sqdb::into (count)
             ,sqdb::use (sourceID)
@@ -259,10 +259,10 @@ void StoreSqdb::selectList (SourceDesc& desc)
     }
 
     // Precondition: the list must be empty.
-    bassert (desc.result.list.size() == 0);
+    bassert (desc.results.list.size() == 0);
 
     // Pre-allocate some storage
-    desc.result.list.reserve (count);
+    desc.results.list.reserve (count);
 
     // Prepare the select
     {
@@ -272,7 +272,7 @@ void StoreSqdb::selectList (SourceDesc& desc)
             "SELECT "
             "  publicKey, "
             "  label "
-            "FROM ValidatorsSourceInfo WHERE "
+            "FROM Validators_SourceItem WHERE "
             "  sourceID = ? "
             ,sqdb::into (publicKeyString)
             ,sqdb::into (label)
@@ -284,7 +284,7 @@ void StoreSqdb::selectList (SourceDesc& desc)
         {
             do
             {
-                Source::Info info;
+                Source::Item info;
                 std::pair <RipplePublicKey, bool> result (
                     RipplePublicKey::from_string (publicKeyString));
                 if (result.second)
@@ -292,7 +292,7 @@ void StoreSqdb::selectList (SourceDesc& desc)
                     bassert (result.first.to_string() == publicKeyString);
                     info.publicKey = result.first;
                     info.label = label;
-                    desc.result.list.push_back (info);
+                    desc.results.list.push_back (info);
                 }
                 else
                 {
@@ -304,7 +304,7 @@ void StoreSqdb::selectList (SourceDesc& desc)
 
             if (! error)
             {
-                m_journal.info << "Loaded " << desc.result.list.size() <<
+                m_journal.info << "Loaded " << desc.results.list.size() <<
                     " trusted validators for " << desc.source->name ();
             }
         }
@@ -346,21 +346,25 @@ Error StoreSqdb::update ()
 
     if (! error && version != currentSchemaVersion)
     {
-        m_journal.info << "Updating old database version " << version;
+        m_journal.info <<
+            "Update database to version " << currentSchemaVersion <<
+            " from version " << version;
     }
 
     // Update database based on version
-    if (! error && version < 1)
+    if (! error && version < 2)
     {
-        // Delete all the old data since its likely wrong
-        m_session.once (error) <<
-            "DELETE FROM ValidatorsSource";
+        if (! error)
+            m_session.once (error) <<
+                "DROP TABLE IF EXISTS ValidatorsSource";
 
         if (! error)
-        {
             m_session.once (error) <<
-                "DELETE FROM ValidatorsSourceInfo";
-        }
+                "DROP TABLE IF EXISTS ValidatorsSourceInfo";
+
+        if (! error)
+            m_session.once (error) <<
+                "DROP INDEX IF EXISTS ValidatorsSourceInfoIndex";
     }
 
     // Update the version to the current version
@@ -393,6 +397,8 @@ Error StoreSqdb::update ()
     return error;
 }
 
+//--------------------------------------------------------------------------
+
 Error StoreSqdb::init ()
 {
     Error error;
@@ -403,42 +409,6 @@ Error StoreSqdb::init ()
     {
         m_session.once (error) <<
             "PRAGMA encoding=\"UTF-8\"";
-    }
-
-    if (! error)
-    {
-        m_session.once (error) <<
-            "CREATE TABLE IF NOT EXISTS ValidatorsSource ( "
-            "  id               INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "  sourceID         TEXT UNIQUE,   "
-            "  createParam      TEXT NOT NULL, "
-            "  lastFetchTime    TEXT NOT NULL, "
-            "  expirationTime   TEXT NOT NULL "
-            ");"
-            ;
-    }
-
-    if (! error)
-    {
-        m_session.once (error) <<
-            "CREATE TABLE IF NOT EXISTS ValidatorsSourceInfo ( "
-            "  id               INTEGER PRIMARY KEY AUTOINCREMENT, "
-            "  sourceID         TEXT NOT NULL, "
-            "  publicKey        TEXT NOT NULL, "
-            "  label            TEXT NOT NULL  "
-            ");"
-            ;
-    }
-
-    if (! error)
-    {
-        m_session.once (error) <<
-            "CREATE INDEX IF NOT EXISTS "
-            "  ValidatorsSourceInfoIndex ON ValidatorsSourceInfo "
-            "  (  "
-            "    sourceID "
-            "  ); "
-            ;
     }
 
     if (! error)
@@ -457,6 +427,64 @@ Error StoreSqdb::init ()
             ");"
             ;
     }
+
+    if (! error)
+    {
+        m_session.once (error) <<
+            "CREATE TABLE IF NOT EXISTS Validators_Source ( "
+            "  id               INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "  sourceID         TEXT UNIQUE,   "
+            "  createParam      TEXT NOT NULL, "
+            "  lastFetchTime    TEXT NOT NULL, "
+            "  expirationTime   TEXT NOT NULL "
+            ");"
+            ;
+    }
+
+    if (! error)
+    {
+        m_session.once (error) <<
+            "CREATE TABLE IF NOT EXISTS Validators_SourceItem ( "
+            "  id               INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "  sourceID         TEXT NOT NULL, "
+            "  publicKey        TEXT NOT NULL, "
+            "  label            TEXT NOT NULL  "
+            ");"
+            ;
+    }
+
+    if (! error)
+    {
+        m_session.once (error) <<
+            "CREATE INDEX IF NOT EXISTS "
+            "  Validators_SourceItem_Index ON Validators_SourceItem "
+            "  (  "
+            "    sourceID "
+            "  ); "
+            ;
+    }
+
+#if 0
+    if (! error)
+    {
+        m_session.once (error) <<
+            "CREATE TABLE IF NOT EXISTS ValidatorsValidator ( "
+            "  id               INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "  publicKey        TEXT UNIQUE "
+            ");"
+            ;
+    }
+
+    if (! error)
+    {
+        m_session.once (error) <<
+            "CREATE TABLE IF NOT EXISTS ValidatorsValidatorStats ( "
+            "  id               INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "  publicKey        TEXT UNIQUE "
+            ");"
+            ;
+    }
+#endif
 
     if (! error)
     {

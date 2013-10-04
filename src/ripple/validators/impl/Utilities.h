@@ -29,12 +29,12 @@ class Utilities
 public:
     typedef std::vector <std::string> Strings;
 
-    /** A suitable LineFunction for parsing items into a fetch result. */
+    /** A suitable LineFunction for parsing items into a fetch results. */
     class ParseResultLine
     {
     public:
-        ParseResultLine (Source::Result& result, Journal journal)
-            : m_result (&result)
+        ParseResultLine (Source::Results& results, Journal journal)
+            : m_result (&results)
             , m_journal (journal)
         { }
 
@@ -46,7 +46,7 @@ public:
         }
 
     private:
-        Source::Result* m_result;
+        Source::Results* m_result;
         Journal m_journal;
     };
 
@@ -111,13 +111,13 @@ public:
         }
     }
 
-    /** Parse a string into the Source::Result.
+    /** Parse a string into the Source::Results.
         Invalid or comment lines will be skipped.
-        Lines containing validator info will be added to the Result object.
-        Metadata lines will update the corresponding Result fields.
+        Lines containing validator info will be added to the Results object.
+        Metadata lines will update the corresponding Results fields.
     */
     static void parseResultLine (
-        Source::Result& result,
+        Source::Results& results,
         std::string const& line,
         Journal journal = Journal());
 
@@ -131,11 +131,11 @@ public:
 
     struct Helpers;
 
-    /** Parse a string into a Source::Info.
+    /** Parse a string into a Source::Item.
         @return `true` on success.
     */
     static bool parseInfoLine (
-        Source::Info& info, std::string const& line, Journal journal);
+        Source::Item& item, std::string const& line, Journal journal);
 };
 
 }

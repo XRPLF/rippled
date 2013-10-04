@@ -51,18 +51,18 @@ public:
         return String::empty;
     }
 
-    void fetch (Result& result, Journal journal)
+    void fetch (Results& results, Journal journal)
     {
-        result.list.reserve (m_strings.size ());
+        results.list.reserve (m_strings.size ());
 
         for (int i = 0; i < m_strings.size (); ++i)
         {
             std::string const s (m_strings [i].toStdString ());
-            Utilities::parseResultLine (result, s);
+            Utilities::parseResultLine (results, s);
         }
 
-        result.success = result.list.size () > 0;
-        result.expirationTime = Time::getCurrentTime () + RelativeTime::hours (24);
+        results.success = results.list.size () > 0;
+        results.expirationTime = Time::getCurrentTime () + RelativeTime::hours (24);
     }
 
 private:

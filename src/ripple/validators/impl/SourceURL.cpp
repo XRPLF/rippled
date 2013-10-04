@@ -27,6 +27,7 @@ class SourceURLImp
 public:
     explicit SourceURLImp (URL const& url)
         : m_url (url)
+        , m_client (HTTPClientBase::New ())
     {
     }
 
@@ -49,15 +50,18 @@ public:
         return m_url.full();
     }
 
-    void fetch (Result& result, Journal journal)
+    void cancel ()
     {
-        ScopedPointer <HTTPClientBase> client (HTTPClientBase::New ());
+        m_client->cancel ();
+    }
 
-        HTTPClientBase::result_type httpResult (client->get (m_url));
+    void fetch (Results& results, Journal journal)
+    {
+        HTTPClientBase::result_type httpResult (m_client->get (m_url));
 
         if (httpResult.first == 0)
         {
-            Utilities::ParseResultLine lineFunction (result, journal);
+            Utilities::ParseResultLine lineFunction (results, journal);
             std::string const s (httpResult.second->body().to_string());
             Utilities::processLines (s.begin(), s.end(), lineFunction);
         }
@@ -71,6 +75,7 @@ public:
 
 private:
     URL m_url;
+    ScopedPointer <HTTPClientBase> m_client;
 };
 
 //------------------------------------------------------------------------------

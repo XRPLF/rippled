@@ -17,25 +17,40 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_LEDGER_H_INCLUDED
-#define RIPPLE_VALIDATORS_LEDGER_H_INCLUDED
+#ifndef RIPPLE_VALIDATORS_VALIDATION_INCLUDED
+#define RIPPLE_VALIDATORS_VALIDATION_INCLUDED
 
 namespace ripple {
 namespace Validators {
 
-// Stored each time a ledger is closed
-//
-struct Ledger
+/** Hash function for ReceivedValidation. */
+class ReceivedValidationHash
 {
-    Ledger() : when (RelativeTime::fromStartup())
+public:
+    std::size_t operator() (ReceivedValidation const& key) const
     {
+        return m_ledger_hasher (key.ledgerHash) +
+                m_key_hasher (key.publicKey);
     }
 
-    RelativeTime when;
+private:
+    RippleLedgerHash::hasher m_ledger_hasher;
+    RipplePublicKey::hasher m_key_hasher;
 };
 
-typedef AgedHistory <boost::unordered_map <
-    RippleLedgerHash, Ledger, RippleLedgerHash::hasher> > LedgerMap;
+//------------------------------------------------------------------------------
+
+/** KeyEqual function for ReceivedValidation. */
+class ReceivedValidationKeyEqual
+{
+public:
+    bool operator() (ReceivedValidation const& lhs,
+                     ReceivedValidation const& rhs) const
+    {
+        return lhs.ledgerHash == rhs.ledgerHash &&
+               lhs.publicKey == rhs.publicKey;
+    }
+};
 
 }
 }

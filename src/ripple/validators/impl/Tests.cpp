@@ -121,18 +121,18 @@ public:
             return String::empty;
         }
 
-        void fetch (Result& result, Journal)
+        void fetch (Results& results, Journal)
         {
-            result.success = true;
-            result.message = String::empty;
-            result.list.reserve (numberOfTestValidators);
+            results.success = true;
+            results.message = String::empty;
+            results.list.reserve (numberOfTestValidators);
 
             for (uint32 i = m_start ; i < m_end; ++i)
             {
-                Info info;
-                info.publicKey = RipplePublicKey::createFromInteger (i);
-                info.label = String::fromNumber (i);
-                result.list.push_back (info);
+                Item item;;
+                item.publicKey = RipplePublicKey::createFromInteger (i);
+                item.label = String::fromNumber (i);
+                results.list.push_back (item);
             }
         }
 

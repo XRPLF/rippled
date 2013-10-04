@@ -49,7 +49,7 @@ public:
         return m_file.getFullPathName ();
     }
     
-    void fetch (Result& result, Journal journal)
+    void fetch (Results& results, Journal journal)
     {
         int64 const fileSize (m_file.getSize ());
 
@@ -66,7 +66,7 @@ public:
 
                 if (amountRead == fileSize)
                 {
-                    Utilities::ParseResultLine lineFunction (result, journal);
+                    Utilities::ParseResultLine lineFunction (results, journal);
                     Utilities::processLines (buffer.begin(), buffer.end(), lineFunction);
                 }
             }

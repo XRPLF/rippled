@@ -32,7 +32,7 @@ public:
     enum
     {
         // This affects the format of the data!
-        currentSchemaVersion = 1
+        currentSchemaVersion = 2
     };
 
     explicit StoreSqdb (Journal journal = Journal());
@@ -44,6 +44,8 @@ public:
     void insert (SourceDesc& desc);
 
     void update (SourceDesc& desc, bool updateFetchResults);
+
+    void remove (RipplePublicKey const& publicKey);
 
 private:
     void report (Error const& error, char const* fileName, int lineNumber);

@@ -25,9 +25,20 @@ namespace Validators {
 
 struct ReceivedValidation
 {
-    RippleLedgerHash        ledgerHash;
-    RipplePublicKey         publicKey;
-    RipplePublicKeyHash     publicKeyHash;
+    ReceivedValidation ()
+    {
+    }
+
+    ReceivedValidation (
+        LedgerHash const& ledgerHash_,
+        RipplePublicKey const& publicKey_)
+        : ledgerHash (ledgerHash_)
+        , publicKey (publicKey_)
+    {
+    }
+
+    RippleLedgerHash ledgerHash;
+    RipplePublicKey  publicKey;
 };
 
 }

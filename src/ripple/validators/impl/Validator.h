@@ -23,154 +23,90 @@
 namespace ripple {
 namespace Validators {
 
-// Stored for each distinguishable Validator in the trusted list.
-// These are kept in an associative container or multi-index container.
-//
+/** Tracks statistics on a validator. */
 class Validator
 {
-public:
-    Validator () : refCount (0)
+private:
+    /** State of a ledger. */
+    struct Ledger
     {
-    }
+        Ledger() : closed (false), received (false)
+            { }
 
-    void receiveValidation (RippleLedgerHash const& ledgerHash)
-    {
-        typedef LedgerMap::container_type::iterator iterator;
-
-        ++count->seen;
-
-        // If we already have it in the expected list, close it out
-        //
-        iterator iter (expected->find (ledgerHash));
-        if (iter != expected->end())
-        {
-            expected->erase (iter);
-            expected.back().erase (ledgerHash);
-            return;
-        }
-        else if ((iter = expected.back().find(ledgerHash)) !=
-            expected.back().end())
-        {
-            expected.back().erase (iter);
-            return;
-        }
-
-        // Ledger hasn't closed yet so put it in the received list
-        //
-        std::pair <iterator, bool> result (
-            received->emplace (ledgerHash, Ledger()));
-        bassert (result.second);
-        if (received->size() >= maxSizeBeforeSwap)
-            swap();
-    }
-
-    void ledgerClosed (RippleLedgerHash const& ledgerHash)
-    {
-        typedef LedgerMap::container_type::iterator iterator;
-
-        ++count->closed;
-
-        // If the Validator already gave us the ledger
-        // then count it and remove it from both tables.
-        //
-        iterator iter (received->find (ledgerHash));
-        if (iter != received->end())
-        {
-            received->erase (iter);
-            received.back().erase (ledgerHash);
-            return;
-        }
-        else if ((iter = received.back().find (ledgerHash)) !=
-            received.back().end())
-        {
-            received.back().erase (iter);
-            return;
-        }
-
-        // We haven't seen this ledger hash from the
-        // validator yet so put it on the expected list
-        //
-        std::pair <iterator, bool> result (
-            expected->emplace (ledgerHash, Ledger ()));
-        bassert (result.second);
-        if (expected->size() >= maxSizeBeforeSwap)
-            swap();
-    }
-
-    void swap()
-    {
-        // Count anything in the old expected list as missing
-        count->missing += expected.back().size();
-
-        // Count anything in the old received list as orphaned
-        count->orphans += received.back().size();
-
-        // Rotate and clear
-        count.swap();
-        expected.swap();
-        received.swap();
-        count->clear();
-        expected->clear();
-        received->clear();
-    }
-
-    struct Count
-    {
-        Count()
-            : closed (0)
-            , seen (0)
-            , missing (0)
-            , orphans (0)
-        {
-        }
-
-        void clear ()
-        {
-            *this = Count();
-        }
-
-        // How many LedgerMap we've seen
-        std::size_t closed;
-
-        // How many validation's we've seen
-        std::size_t seen;
-
-        // Estimate of validation's that were missed
-        std::size_t missing;
-
-        // Estimate of validations not belonging to any ledger
-        std::size_t orphans;
+        bool closed;    // `true` if the ledger was closed
+        bool received;  // `true` if we got a validation
     };
 
-    int refCount;
+    /** Number of sources that reference this validator. */
+    int m_refCount;
 
-    AgedHistory <Count> count;
-    LedgerMap received;
-    LedgerMap expected;
+    /** Holds the state of all recent ledgers for this validator. */
+    /** @{ */
+    typedef CycledMap <RippleLedgerHash, Ledger, Count,
+        RippleLedgerHash::hasher, RippleLedgerHash::key_equal> LedgerMap;
+    LedgerMap m_ledgers;
+    /** @} */
+
+public:
+    Validator ()
+        : m_refCount (0)
+        , m_ledgers (ledgersPerValidator)
+    {
+    }
+
+    /** Increment the number of references to this validator. */
+    void addRef ()
+        { ++m_refCount; }
+
+    /** Decrement the number of references to this validator.
+        When the reference count reaches zero, the validator will
+        be removed and no longer tracked.
+    */
+    bool release ()
+        { return (--m_refCount) == 0; }
+
+    /** Returns the composite performance statistics. */
+    Count count () const
+        { return m_ledgers.front() + m_ledgers.back(); }
+
+    /** Called upon receipt of a validation. */
+    void receiveValidation (RippleLedgerHash const& ledgerHash)
+    {
+        std::pair <Ledger&, Count&> result (m_ledgers.insert (
+            std::make_pair (ledgerHash, Ledger())));
+        Ledger& ledger (result.first);
+        Count& count (result.second);
+        ledger.received = true;
+        if (ledger.closed)
+        {
+            --count.expected;
+            ++count.closed;
+        }
+        else
+        {
+            ++count.received;
+        }
+    }
+
+    /** Called when a ledger is closed. */
+    void ledgerClosed (RippleLedgerHash const& ledgerHash)
+    {
+        std::pair <Ledger&, Count&> result (m_ledgers.insert (
+            std::make_pair (ledgerHash, Ledger())));
+        Ledger& ledger (result.first);
+        Count& count (result.second);
+        ledger.closed = true;
+        if (ledger.received)
+        {
+            --count.received;
+            ++count.closed;
+        }
+        else
+        {
+            ++count.expected;
+        }
+    }
 };
-
-//------------------------------------------------------------------------------
-
-typedef boost::unordered_map <
-    RipplePublicKey, Validator,
-        RipplePublicKey::hasher> ValidatorMap;
-
-// The master in-memory database of Validator, indexed by all the
-// possible things that we need to care about, and even some that we don't.
-//
-/*
-typedef boost::multi_index_container <
-    Validator, boost::multi_index::indexed_by <
-            
-        boost::multi_index::hashed_unique <
-            BOOST_MULTI_INDEX_MEMBER(Logic::Validator,UniqueID,uniqueID)>,
-
-        boost::multi_index::hashed_unique <
-            BOOST_MULTI_INDEX_MEMBER(Logic::Validator,IPEndpoint,endpoint),
-            Connectible::HashAddress>
-    >
-> ValidationsMap;
-*/
 
 }
 }

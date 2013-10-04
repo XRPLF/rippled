@@ -75,7 +75,7 @@ struct Utilities::Helpers
 //------------------------------------------------------------------------------
 
 bool Utilities::parseInfoLine (
-    Source::Info& info,
+    Source::Item& item,
         std::string const& line,
             Journal journal)
 {
@@ -88,14 +88,14 @@ bool Utilities::parseInfoLine (
         std::string const encodedKey (match [1]);
         std::string const commentText (match [2]);
 
-        std::pair <RipplePublicKey, bool> result (
+        std::pair <RipplePublicKey, bool> results (
             RipplePublicKey::from_string (encodedKey));
 
-        if (result.second)
+        if (results.second)
         {
             // We got a public key.
-            info.label = commentText;
-            info.publicKey = result.first;
+            item.label = commentText;
+            item.publicKey = results.first;
             success = true;
         }
         else
@@ -120,17 +120,17 @@ bool Utilities::parseInfoLine (
 //------------------------------------------------------------------------------
 
 void Utilities::parseResultLine (
-    Source::Result& result,
+    Source::Results& results,
         std::string const& line,
             Journal journal)
 {
-    Source::Info info;
+    Source::Item item;
 
-    bool success = parseInfoLine (info, line, journal);
+    bool success = parseInfoLine (item, line, journal);
     if (success)
     {
-        result.list.push_back (info);
-        result.success = true;
+        results.list.push_back (item);
+        results.success = true;
     }
 }
 

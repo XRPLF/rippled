@@ -28,7 +28,7 @@ class Source : public SharedObject
 {
 public:
     /** A Source's descriptor for a Validator. */
-    struct Info
+    struct Item
     {
         /** The unique key for this validator. */
         RipplePublicKey publicKey;
@@ -55,25 +55,26 @@ public:
     /** A string that is used to recreate the source from the database entry. */
     virtual String createParam () = 0;
 
-    /** Fetch the most recent list from the Source.
-        This call will block.
-    */
-    struct Result
-    {
-        Result ();
-        void swapWith (Result& other);
-
-        bool success;
-        String message;
-        Time expirationTime;
-        std::vector <Info> list;
-    };
-
     /** Cancel any pending fetch.
         The default implementation does nothing.
     */
     virtual void cancel () { }
-    virtual void fetch (Result& result, Journal journal) = 0;
+
+    /** Fetch results.
+        This call will block
+    */
+    /** @{ */
+    struct Results
+    {
+        Results ();
+
+        bool success;
+        String message;
+        Time expirationTime;
+        std::vector <Item> list;
+    };
+    virtual void fetch (Results& results, Journal journal) = 0;
+    /** @} */
 };
 
 }

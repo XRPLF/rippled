@@ -2184,13 +2184,16 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Manager.h">
       <Filter>[1] Ripple\peerfinder\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Ledger.h">
-      <Filter>[1] Ripple\validators\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\Validator.h">
       <Filter>[1] Ripple\validators\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\Tuning.h">
+      <Filter>[1] Ripple\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\Validation.h">
+      <Filter>[1] Ripple\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\Count.h">
       <Filter>[1] Ripple\validators\impl</Filter>
     </ClInclude>
   </ItemGroup>

@@ -176,6 +176,9 @@ public:
     }
 
     //--------------------------------------------------------------------------
+    //
+    // Manager
+    //
 
     void addStrings (String name, std::vector <std::string> const& strings)
     {
@@ -203,47 +206,43 @@ public:
         addStaticSource (SourceFile::New (file));
     }
 
-    void addURL (URL const& url)
-    {
-        addSource (SourceURL::New (url));
-    }
-
-    //--------------------------------------------------------------------------
-
-    void addSource (Source* source)
-    {
-#if RIPPLE_USE_NEW_VALIDATORS
-        m_queue.dispatch (bind (&Logic::add, &m_logic, source));
-#else
-        delete source;
-#endif
-    }
-
     void addStaticSource (Source* source)
     {
-#if RIPPLE_USE_NEW_VALIDATORS
+#if RIPPLE_USE_VALIDATORS
         m_queue.dispatch (bind (&Logic::addStatic, &m_logic, source));
 #else
         delete source;
 #endif
     }
 
-    // VFALCO NOTE we should just do this on the callers thread?
-    //
+    void addURL (URL const& url)
+    {
+        addSource (SourceURL::New (url));
+    }
+
+    void addSource (Source* source)
+    {
+#if RIPPLE_USE_VALIDATORS
+        m_queue.dispatch (bind (&Logic::add, &m_logic, source));
+#else
+        delete source;
+#endif
+    }
+
+    //--------------------------------------------------------------------------
+
     void receiveValidation (ReceivedValidation const& rv)
     {
-#if RIPPLE_USE_NEW_VALIDATORS
+#if RIPPLE_USE_VALIDATORS
         if (! isStopping())
             m_queue.dispatch (bind (
                 &Logic::receiveValidation, &m_logic, rv));
 #endif
     }
 
-    // VFALCO NOTE we should just do this on the callers thread?
-    //
     void ledgerClosed (RippleLedgerHash const& ledgerHash)
     {
-#if RIPPLE_USE_NEW_VALIDATORS
+#if RIPPLE_USE_VALIDATORS
         if (! isStopping())
             m_queue.dispatch (bind (
                 &Logic::ledgerClosed, &m_logic, ledgerHash));
@@ -257,7 +256,7 @@ public:
 
     void onPrepare ()
     {
-#if RIPPLE_USE_NEW_VALIDATORS
+#if RIPPLE_USE_VALIDATORS
         m_journal.info << "Validators preparing";
 
         addRPCHandlers();
@@ -266,7 +265,7 @@ public:
 
     void onStart ()
     {
-#if RIPPLE_USE_NEW_VALIDATORS
+#if RIPPLE_USE_VALIDATORS
         m_journal.info << "Validators starting";
 
         // Do this late so the sources have a chance to be added.
@@ -278,7 +277,11 @@ public:
 
     void onStop ()
     {
+#if RIPPLE_USE_VALIDATORS
         m_journal.info << "Validators stopping";
+#endif
+
+        m_logic.stop ();
 
         if (this->Thread::isThreadRunning())
         {
@@ -292,6 +295,9 @@ public:
     }
 
     //--------------------------------------------------------------------------
+    //
+    // ManagerImp
+    //
 
     void init ()
     {

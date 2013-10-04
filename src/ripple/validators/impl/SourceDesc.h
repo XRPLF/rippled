@@ -39,7 +39,7 @@ struct SourceDesc
     int numberOfFailures;
 
     // The result of the last fetch
-    Source::Result result;
+    Source::Results results;
 
     //------------------------------------------------------------------
 
@@ -62,8 +62,6 @@ struct SourceDesc
     {
     }
 };
-
-typedef std::vector <SourceDesc> SourcesType;
 
 }
 }

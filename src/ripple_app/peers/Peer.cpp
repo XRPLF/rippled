@@ -1483,7 +1483,6 @@ static void checkValidation (Job&, SerializedValidation::pointer val, bool isTru
             Validators::ReceivedValidation rv;
             rv.ledgerHash = sv.getLedgerHash ();
             rv.publicKey = sv.getSignerPublic();
-            rv.publicKeyHash = sv.getSignerPublic();
             getApp ().getValidators ().receiveValidation (rv);
         }
         //

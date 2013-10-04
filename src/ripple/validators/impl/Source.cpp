@@ -20,17 +20,10 @@
 namespace ripple {
 namespace Validators {
 
-Source::Result::Result ()
+Source::Results::Results ()
     : success (false)
     , message ("uninitialized")
 {
-}
-
-void Source::Result::swapWith (Result& other)
-{
-    std::swap (success, other.success);
-    std::swap (message, other.message);
-    list.swap (other.list);
 }
 
 }
