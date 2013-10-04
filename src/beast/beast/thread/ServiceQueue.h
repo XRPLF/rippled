@@ -17,8 +17,14 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SERVICEQUEUE_H_INCLUDED
-#define BEAST_SERVICEQUEUE_H_INCLUDED
+#ifndef BEAST_THREAD_SERVICEQUEUE_H_INCLUDED
+#define BEAST_THREAD_SERVICEQUEUE_H_INCLUDED
+
+#include "../intrusive/List.h"
+#include "../intrusive/LockFreeStack.h"
+#include "SharedData.h"
+#include "ThreadLocalValue.h"
+#include "WaitableEvent.h"
 
 namespace beast {
 

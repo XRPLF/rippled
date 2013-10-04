@@ -497,13 +497,7 @@
     <ClInclude Include="..\..\modules\beast_core\threads\ScopedWriteLock.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\SpinLock.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\Thread.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\ThreadLocalValue.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\ThreadPool.h">
@@ -1239,6 +1233,15 @@
     <ClInclude Include="..\..\beast\thread\WaitableEvent.h">
       <Filter>beast\thread</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\thread\ServiceQueue.h">
+      <Filter>beast\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\thread\ThreadLocalValue.h">
+      <Filter>beast\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\thread\SpinLock.h">
+      <Filter>beast\thread</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1788,6 +1791,9 @@
       <Filter>beast\chrono\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\thread\impl\WaitableEvent.cpp">
+      <Filter>beast\thread\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\thread\impl\ServiceQueue.cpp">
       <Filter>beast\thread\impl</Filter>
     </ClCompile>
   </ItemGroup>

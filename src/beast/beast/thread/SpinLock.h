@@ -21,8 +21,14 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SPINLOCK_H_INCLUDED
-#define BEAST_SPINLOCK_H_INCLUDED
+#ifndef BEAST_THREAD_SPINLOCK_H_INCLUDED
+#define BEAST_THREAD_SPINLOCK_H_INCLUDED
+
+#include "../Atomic.h"
+#include "LockGuard.h"
+#include "UnlockGuard.h"
+
+namespace beast {
 
 //==============================================================================
 /**
@@ -40,6 +46,12 @@
 class BEAST_API SpinLock : public Uncopyable
 {
 public:
+    /** Provides the type of scoped lock to use for locking a SpinLock. */
+    typedef LockGuard <SpinLock>       ScopedLockType;
+
+    /** Provides the type of scoped unlocker to use with a SpinLock. */
+    typedef UnlockGuard <SpinLock>     ScopedUnlockType;
+
     inline SpinLock() noexcept {}
     inline ~SpinLock() noexcept {}
 
@@ -57,27 +69,29 @@ public:
     /** Attempts to acquire the lock, returning true if this was successful. */
     inline bool tryEnter() const noexcept
     {
-        return lock.compareAndSetBool (1, 0);
+        return m_lock.compareAndSetBool (1, 0);
     }
 
     /** Releases the lock. */
     inline void exit() const noexcept
     {
-        bassert (lock.value == 1); // Agh! Releasing a lock that isn't currently held!
-        lock = 0;
+        bassert (m_lock.value == 1); // Agh! Releasing a lock that isn't currently held!
+        m_lock = 0;
     }
 
-    //==============================================================================
-    /** Provides the type of scoped lock to use for locking a SpinLock. */
-    typedef GenericScopedLock <SpinLock>       ScopedLockType;
-
-    /** Provides the type of scoped unlocker to use with a SpinLock. */
-    typedef GenericScopedUnlock <SpinLock>     ScopedUnlockType;
+    void lock () const
+        { enter(); }
+    void unlock () const
+        { exit(); }
+    bool try_lock () const
+        { return tryEnter(); }
 
 private:
     //==============================================================================
-    mutable Atomic<int> lock;
+    mutable Atomic<int> m_lock;
 };
 
+}
 
-#endif   // BEAST_SPINLOCK_H_INCLUDED
+#endif
+

@@ -28,6 +28,11 @@
 #include "../StaticAssert.h"
 
 #include <Windows.h>
+#undef check
+#undef direct
+#undef max
+#undef min
+#undef TYPE_BOOL
 
 namespace beast {
 
