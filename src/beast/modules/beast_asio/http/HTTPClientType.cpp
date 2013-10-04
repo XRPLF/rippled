@@ -178,7 +178,7 @@ public:
         URL m_url;
         boost::asio::ssl::context m_context;
         MemoryBlock m_buffer;
-        HTTPParser m_parser;
+        HTTPResponseParser m_parser;
         std::size_t m_messageLimitBytes;
         std::size_t m_bytesReceived;
 
@@ -218,7 +218,6 @@ public:
             , m_url (url)
             , m_context (boost::asio::ssl::context::sslv23)
             , m_buffer (bufferSize)
-            , m_parser (HTTPParser::typeResponse)
             , m_messageLimitBytes (messageLimitBytes)
             , m_bytesReceived (0)
         {

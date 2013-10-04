@@ -60,7 +60,7 @@ public:
     boost::asio::deadline_timer m_request_timer;
     ScopedPointer <MultiSocket> m_socket;
     MemoryBlock m_buffer;
-    HTTPParser m_parser;
+    HTTPRequestParser m_parser;
     int m_writesPending;
     bool m_closed;
     bool m_callClose;
@@ -77,7 +77,6 @@ public:
         , m_data_timer (m_impl.get_io_service())
         , m_request_timer (m_impl.get_io_service())
         , m_buffer (bufferSize)
-        , m_parser (HTTPParser::typeRequest)
         , m_writesPending (0)
         , m_closed (false)
         , m_callClose (false)
