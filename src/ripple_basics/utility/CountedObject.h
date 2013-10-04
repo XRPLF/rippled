@@ -119,9 +119,9 @@ private:
     class Counter : public CountedObjects::CounterBase
     {
     public:
-        Counter () noexcept { }
+        Counter () { }
 
-        char const* getName () const noexcept
+        char const* getName () const
         {
             return Object::getCountedObjectName ();
         }
@@ -130,10 +130,8 @@ private:
     };
 
 private:
-    static Counter& getCounter () noexcept
+    static Counter& getCounter ()
     {
-        // VFALCO TODO Research the thread safety of static initializers
-        //             on all supported platforms
         return StaticObject <Counter>::get();
     }
 };

@@ -89,9 +89,10 @@ namespace beast {
 #  include "http/HTTPMessage.h"
 # include "http/HTTPRequest.h"
 # include "http/HTTPResponse.h"
-# include "http/HTTPParser.h"
 
 }
+
+# include "http/HTTPParser.h"
 
 #include "http/HTTPClientType.h"
 

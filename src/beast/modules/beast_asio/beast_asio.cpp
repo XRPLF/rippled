@@ -39,7 +39,6 @@ namespace beast {
 #include "protocol/HandshakeDetectLogicPROXY.cpp"
 
 # include "http/HTTPParserImpl.h"
-#include "http/HTTPParser.cpp"
 #include "http/HTTPClientType.cpp"
 #include "http/HTTPField.cpp"
 #include "http/HTTPHeaders.cpp"
@@ -61,3 +60,5 @@ namespace beast {
 #include "system/BoostUnitTests.cpp"
 
 }
+
+#include "http/HTTPParser.cpp"

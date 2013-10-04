@@ -30,8 +30,9 @@ public:
         The listener is called on an auxiliary thread. It is suggested
         not to perform any time consuming operations during the call.
     */
-    // VFALCO TODO Allow construction with a specific ThreadWithCallQueue&
-    //             on which to notify the listener.
+    // VFALCO TODO Perhaps allow construction using a ServiceQueue to use
+    //             for notifications.
+    //
     class Listener
     {
     public:

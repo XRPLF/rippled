@@ -285,6 +285,12 @@
     <Filter Include="beast\config\stdlib">
       <UniqueIdentifier>{7243e5e5-ad7e-4d81-8444-d545919e850c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\asio">
+      <UniqueIdentifier>{549430fc-36f6-450e-9d8d-38f4b9e72fb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\smart_ptr">
+      <UniqueIdentifier>{4e9c54da-1581-41d7-ac75-48140e4a13d4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -375,9 +381,6 @@
       <Filter>beast_core\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\OptionalScopedPointer.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\ScopedPointer.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\WeakReference.h">
@@ -704,9 +707,6 @@
     <ClInclude Include="..\..\modules\beast_core\maths\uint24.h">
       <Filter>beast_core\maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\ContainerDeletePolicy.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\MeasureFunctionCallTime.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
@@ -737,22 +737,7 @@
     <ClInclude Include="..\..\modules\beast_core\thread\DeadlineTimer.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\CallQueue.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\InterruptibleThread.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\Listeners.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\ManualCallQueue.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\Semaphore.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\ThreadWithCallQueue.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\Workers.h">
@@ -760,27 +745,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\maths\Math.h">
       <Filter>beast_core\maths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\AllocatedBy.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\FifoFreeStore.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\FifoFreeStoreWithoutTLS.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\FifoFreeStoreWithTLS.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\GlobalFifoFreeStore.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\GlobalPagedFreeStore.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\PagedFreeStore.h">
-      <Filter>beast_core\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapperStrand.h">
       <Filter>beast_asio\sockets</Filter>
@@ -817,9 +781,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\system\SystemStats.h">
       <Filter>beast_core\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\DynamicList.h">
-      <Filter>beast_core\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\intrusive\ForwardList.h">
       <Filter>beast\intrusive</Filter>
@@ -1245,6 +1206,15 @@
     <ClInclude Include="..\..\beast\config\SelectStdlibConfig.h">
       <Filter>beast\config</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\smart_ptr\ContainerDeletePolicy.h">
+      <Filter>beast\smart_ptr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\smart_ptr\ScopedPointer.h">
+      <Filter>beast\smart_ptr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\SmartPtr.h">
+      <Filter>beast</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1580,38 +1550,11 @@
     <ClCompile Include="..\..\modules\beast_core\thread\DeadlineTimer.cpp">
       <Filter>beast_core\thread</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\CallQueue.cpp">
-      <Filter>beast_core\thread</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\InterruptibleThread.cpp">
-      <Filter>beast_core\thread</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\Listeners.cpp">
-      <Filter>beast_core\thread</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\ManualCallQueue.cpp">
-      <Filter>beast_core\thread</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\Semaphore.cpp">
-      <Filter>beast_core\thread</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\ThreadWithCallQueue.cpp">
       <Filter>beast_core\thread</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\Workers.cpp">
       <Filter>beast_core\thread</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\memory\FifoFreeStoreWithoutTLS.cpp">
-      <Filter>beast_core\memory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\memory\FifoFreeStoreWithTLS.cpp">
-      <Filter>beast_core\memory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\memory\GlobalPagedFreeStore.cpp">
-      <Filter>beast_core\memory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\memory\PagedFreeStore.cpp">
-      <Filter>beast_core\memory</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\basics\SSLContext.cpp">
       <Filter>beast_asio\basics</Filter>
@@ -1621,9 +1564,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\system\SystemStats.cpp">
       <Filter>beast_core\system</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\DynamicList.cpp">
-      <Filter>beast_core\containers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\async\SharedHandler.cpp">
       <Filter>beast_asio\async</Filter>
