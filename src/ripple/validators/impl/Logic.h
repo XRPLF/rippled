@@ -412,12 +412,13 @@ public:
     //
 
     // Return the current ChosenList as JSON
-    Json::Value rpcPrint (Json::Value const& args)
+    Json::Value rpcPrint (Json::Value const& args, int cpuPercent)
     {
         Json::Value results (Json::objectValue);
 
         Json::Value entries (Json::arrayValue);
         {
+            results ["cpu"] = cpuPercent;
             results ["count"] = int(m_validators.size());
             for (ValidatorTable::const_iterator iter (m_validators.begin());
                 iter != m_validators.end(); ++iter)

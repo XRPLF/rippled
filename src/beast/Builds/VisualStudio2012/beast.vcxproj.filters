@@ -1139,9 +1139,6 @@
     <ClInclude Include="..\..\modules\beast_asio\async\AbstractHandler.h">
       <Filter>beast_asio\async</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\ServiceQueue.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\Chrono.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1756,9 +1753,6 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\Sha256.cpp">
       <Filter>beast\crypto\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\ServiceQueue.cpp">
-      <Filter>beast_core\thread</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\chrono\impl\RelativeTime.cpp">
       <Filter>beast\chrono\impl</Filter>

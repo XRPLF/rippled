@@ -147,7 +147,8 @@ public:
 
     Json::Value rpcPrint (Json::Value const& args)
     {
-        return m_logic.rpcPrint (args);
+        int const cpuPercent (std::ceil (m_queue.getUtilizaton() * 100));
+        return m_logic.rpcPrint (args, cpuPercent);
     }
 
     Json::Value rpcRebuild (Json::Value const& args)
