@@ -185,10 +185,10 @@ public:
         The default implementation does nothing.
         Guaranteed to only be called once.
     */
-    virtual void onPrepare (Journal journal);
+    virtual void onPrepare ();
 
     /** Override called during start. */
-    virtual void onStart (Journal journal);
+    virtual void onStart ();
 
     /** Override called when the stop notification is issued.
 
@@ -211,7 +211,7 @@ public:
             Guaranteed only to be called once.
             Must be safe to call from any thread at any time.
     */
-    virtual void onStop (Journal journal);
+    virtual void onStop ();
 
     /** Override called when all children have stopped.
 
@@ -231,7 +231,7 @@ public:
             Guaranteed only to be called once.
             Must be safe to call from any thread at any time.
     */
-    virtual void onChildrenStopped (Journal journal);
+    virtual void onChildrenStopped ();
 
 private:
     friend class RootStoppable;
@@ -248,9 +248,9 @@ private:
         Stoppable* stoppable;
     };
 
-    void prepareRecursive (Journal journal);
-    void startRecursive (Journal journal);
-    void stopAsyncRecursive (Journal journal);
+    void prepareRecursive ();
+    void startRecursive ();
+    void stopAsyncRecursive ();
     void stopRecursive (Journal journal);
 
 protected:
@@ -280,7 +280,7 @@ public:
         Thread safety:
             May be called from any thread.
     */
-    void prepare (Journal journal = Journal());
+    void prepare ();
 
     /** Start all contained Stoppable objects.
         The default implementation does nothing.
@@ -288,7 +288,7 @@ public:
         Thread safety:
             May be called from any thread.
     */
-    void start (Journal journal = Journal());
+    void start ();
 
     /** Notify a root stoppable and children to stop, and block until stopped.
         Has no effect if the stoppable was already notified.
@@ -304,7 +304,7 @@ public:
         Thread safety:
             Safe to call from any thread at any time.
     */
-    void stopAsync (Journal journal = Journal());
+    void stopAsync ();
 
 private:
     Atomic <int> m_prepared;
