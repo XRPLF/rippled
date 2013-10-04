@@ -17,39 +17,25 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_TRYLOCKGUARD_H_INCLUDED
-#define BEAST_THREAD_TRYLOCKGUARD_H_INCLUDED
-
-#include "../Uncopyable.h"
+#include "../StaticObject.h"
+#include "../../threads/Thread.h"
 
 namespace beast {
 
-template <typename Mutex>
-class TryLockGuard : public Uncopyable
+namespace detail
 {
-public:
-    typedef Mutex MutexType;
 
-    explicit TryLockGuard (Mutex const& mutex)
-        : m_mutex (mutex)
-        , m_owns_lock (m_mutex.try_lock())
-    {
-    }
-
-    ~TryLockGuard ()
-    {
-        if (m_owns_lock)
-            m_mutex.unlock();
-    }
-
-    bool owns_lock() const
-        { return m_owns_lock; }
-
-private:
-    Mutex const& m_mutex;
-    bool m_owns_lock;
-};
+// This is here so we don't need the Thread class declaration
+void staticObjectWait (std::size_t n)
+{
+    // Wait for initialization
+    Thread::yield ();
+    if (n > 10)
+        Thread::sleep (1);
+    else if (n > 100)
+        Thread::sleep (10);
+}
 
 }
 
-#endif
+}

@@ -17,11 +17,17 @@
 */
 //==============================================================================
 
-#ifndef BEAST_LEAKCHECKED_H_INCLUDED
-#define BEAST_LEAKCHECKED_H_INCLUDED
+#ifndef BEAST_UTILITY_LEAKCHECKED_H_INCLUDED
+#define BEAST_UTILITY_LEAKCHECKED_H_INCLUDED
 
-namespace detail
-{
+#include "../Config.h"
+#include "../Atomic.h"
+#include "../intrusive/LockFreeStack.h"
+#include "StaticObject.h"
+
+namespace beast {
+
+namespace detail {
 
 class LeakCheckedBase
 {
@@ -168,5 +174,7 @@ using detail::LeakCheckedBase;
 using detail::disabled::LeakChecked;
 using detail::disabled::LeakCheckedBase;
 #endif
+
+}
 
 #endif

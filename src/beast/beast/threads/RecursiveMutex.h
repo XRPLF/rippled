@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_RECURSIVEMUTEX_H_INCLUDED
-#define BEAST_THREAD_RECURSIVEMUTEX_H_INCLUDED
+#ifndef BEAST_THREADS_RECURSIVEMUTEX_H_INCLUDED
+#define BEAST_THREADS_RECURSIVEMUTEX_H_INCLUDED
 
 #include "../Config.h"
 #include "LockGuard.h"

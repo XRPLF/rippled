@@ -42,6 +42,7 @@
 #include "../beast/beast/crypto/Crypto.cpp"
 #include "../beast/beast/http/HTTP.cpp"
 #include "../beast/beast/net/Net.cpp"
+#include "../beast/beast/smart_ptr/SmartPtr.cpp"
 #include "../beast/beast/strings/Strings.cpp"
-#include "../beast/beast/thread/Thread.cpp"
+#include "../beast/beast/threads/Threads.cpp"
 #include "../beast/beast/utility/Utility.cpp"

@@ -21,8 +21,14 @@
 */
 //==============================================================================
 
-#ifndef BEAST_JUCE_THREAD_H_INCLUDED
-#define BEAST_JUCE_THREAD_H_INCLUDED
+#ifndef BEAST_THREADS_THREAD_H_INCLUDED
+#define BEAST_THREADS_THREAD_H_INCLUDED
+
+#include "../utility/LeakChecked.h"
+#include "RecursiveMutex.h"
+#include "WaitableEvent.h"
+
+namespace beast {
 
 //==============================================================================
 /**
@@ -265,7 +271,7 @@ private:
     const String threadName;
     void* volatile threadHandle;
     ThreadID threadId;
-    CriticalSection startStopLock;
+    RecursiveMutex startStopLock;
     WaitableEvent startSuspensionEvent, defaultEvent;
     int threadPriority;
     uint32 affinityMask;
@@ -282,4 +288,7 @@ private:
     static bool setThreadPriority (void*, int);
 };
 
-#endif   // BEAST_THREAD_H_INCLUDED
+}
+
+#endif
+

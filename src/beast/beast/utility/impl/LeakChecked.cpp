@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../LeakChecked.h"
+
+namespace beast {
+
 namespace detail
 {
 
@@ -121,6 +125,8 @@ void LeakCheckedBase::reportDanglingPointer (char const*)
 void LeakCheckedBase::checkForLeaks ()
 {
     LeakCounterBase::Singleton::getInstance ().checkForLeaks ();
+}
+
 }
 
 }

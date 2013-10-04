@@ -17,14 +17,39 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SMARTPTR_H_INCLUDED
-#define BEAST_SMARTPTR_H_INCLUDED
+#ifndef BEAST_THREADS_TRYLOCKGUARD_H_INCLUDED
+#define BEAST_THREADS_TRYLOCKGUARD_H_INCLUDED
 
-#include "Config.h"
+#include "../Uncopyable.h"
 
-#include "smart_ptr/ContainerDeletePolicy.h"
-#include "smart_ptr/SharedObject.h"
-#include "smart_ptr/SharedPtr.h"
-#include "smart_ptr/ScopedPointer.h"
+namespace beast {
+
+template <typename Mutex>
+class TryLockGuard : public Uncopyable
+{
+public:
+    typedef Mutex MutexType;
+
+    explicit TryLockGuard (Mutex const& mutex)
+        : m_mutex (mutex)
+        , m_owns_lock (m_mutex.try_lock())
+    {
+    }
+
+    ~TryLockGuard ()
+    {
+        if (m_owns_lock)
+            m_mutex.unlock();
+    }
+
+    bool owns_lock() const
+        { return m_owns_lock; }
+
+private:
+    Mutex const& m_mutex;
+    bool m_owns_lock;
+};
+
+}
 
 #endif

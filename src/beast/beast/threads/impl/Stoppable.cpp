@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../Stoppable.h"
+
+namespace beast {
+
 Stoppable::Stoppable (char const* name, RootStoppable& root)
     : m_name (name)
     , m_root (root)
@@ -189,4 +193,6 @@ void RootStoppable::stopAsync ()
         return;
 
     stopAsyncRecursive ();
+}
+
 }

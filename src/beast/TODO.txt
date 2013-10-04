@@ -2,13 +2,6 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
-- Remove ReadWriteMutex and replace it with a CriticalSection
-  since the implementation is broken.
-
-- Rewrite SharedData to work with a CriticalSection
-
-- Use new file naming convention
-
 - Use SemanticVersion for beast version numbers to replace BEAST_VERSION
 
 - add support for a __PRETTY_FUNCTION__ equivalent for all environments

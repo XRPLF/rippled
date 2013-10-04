@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_SHAREDDATA_H_INCLUDED
-#define BEAST_THREAD_SHAREDDATA_H_INCLUDED
+#ifndef BEAST_THREADS_SHAREDDATA_H_INCLUDED
+#define BEAST_THREADS_SHAREDDATA_H_INCLUDED
 
 #include "RecursiveMutex.h"
 #include "SharedMutexAdapter.h"

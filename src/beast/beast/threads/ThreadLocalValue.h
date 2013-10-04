@@ -21,10 +21,12 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_THREADLOCALVALUE_H_INCLUDED
-#define BEAST_THREAD_THREADLOCALVALUE_H_INCLUDED
+#ifndef BEAST_THREADS_THREADLOCALVALUE_H_INCLUDED
+#define BEAST_THREADS_THREADLOCALVALUE_H_INCLUDED
 
 #include "../Config.h"
+#include "SpinLock.h"
+#include "Thread.h"
 
 namespace beast {
 

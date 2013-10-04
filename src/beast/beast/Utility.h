@@ -24,6 +24,8 @@
 #include "utility/EnableIf.h"
 #include "utility/Error.h"
 #include "utility/Journal.h"
+#include "utility/LeakChecked.h"
+#include "utility/StaticObject.h"
 
 #endif
 

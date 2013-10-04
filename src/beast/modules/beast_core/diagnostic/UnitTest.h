@@ -170,8 +170,7 @@ public:
         }
     };
 
-    /** The type of a list of tests.
-    */
+    /** The type of a list of tests. */
     typedef Array <UnitTest*, CriticalSection> TestList;
 
     //--------------------------------------------------------------------------

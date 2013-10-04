@@ -17,36 +17,9 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_SHAREDLOCKGUARD_H_INCLUDED
-#define BEAST_THREAD_SHAREDLOCKGUARD_H_INCLUDED
+#include "BeastConfig.h"
 
-#include "../Uncopyable.h"
-
-namespace beast
-{
-
-/** A scoped container that acquires a shared lock. */   
-template <typename Mutex>
-class SharedLockGuard : public Uncopyable
-{
-public:
-    typedef Mutex MutexType;
-
-    explicit SharedLockGuard (Mutex const& mutex)
-        : m_mutex (mutex)
-    {
-        m_mutex.lock_shared();
-    }
-
-    ~SharedLockGuard ()
-    {
-        m_mutex.unlock_shared();
-    }
-
-private:
-    Mutex const& m_mutex;
-};
-
-}
-
-#endif
+#include "ContainerDeletePolicy.h"
+#include "ScopedPointer.h"
+#include "SharedObject.h"
+#include "SharedPtr.h"

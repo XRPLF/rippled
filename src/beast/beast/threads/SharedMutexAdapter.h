@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_SHAREDMUTEXADAPTER_H_INCLUDED
-#define BEAST_THREAD_SHAREDMUTEXADAPTER_H_INCLUDED
+#ifndef BEAST_THREADS_SHAREDMUTEXADAPTER_H_INCLUDED
+#define BEAST_THREADS_SHAREDMUTEXADAPTER_H_INCLUDED
 
 #include "LockGuard.h"
 #include "SharedLockGuard.h"

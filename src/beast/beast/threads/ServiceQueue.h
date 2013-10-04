@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_SERVICEQUEUE_H_INCLUDED
-#define BEAST_THREAD_SERVICEQUEUE_H_INCLUDED
+#ifndef BEAST_THREADS_SERVICEQUEUE_H_INCLUDED
+#define BEAST_THREADS_SERVICEQUEUE_H_INCLUDED
 
 #include "../chrono/CPUMeter.h"
 #include "../intrusive/List.h"

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_UNLOCKGUARD_H_INCLUDED
-#define BEAST_THREAD_UNLOCKGUARD_H_INCLUDED
+#ifndef BEAST_THREADS_UNLOCKGUARD_H_INCLUDED
+#define BEAST_THREADS_UNLOCKGUARD_H_INCLUDED
 
 #include "../Uncopyable.h"
 
