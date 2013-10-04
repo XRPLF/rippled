@@ -40,8 +40,17 @@ void OrderBookDB::setup (Ledger::ref ledger)
         ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         // Do a full update every 256 ledgers
-        if ((mSeq != 0) && (ledger->getLedgerSeq () >= mSeq) && ((ledger->getLedgerSeq() - mSeq) < 256))
-            return;
+        if (mSeq != 0)
+        {
+            if (ledger->getLedgerSeq () == mSeq)
+                return;
+            if ((ledger->getLedgerSeq () > mSeq) && ((ledger->getLedgerSeq () - mSeq) < 256))
+                return;
+            if ((ledger->getLedgerSeq () < mSeq) && ((mSeq - ledger->getLedgerSeq ()) < 16))
+                return;
+        }
+
+        WriteLog (lsDEBUG, OrderBookDB) << "Advancing from " << mSeq << " to " << ledger->getLedgerSeq();
 
         mSeq = ledger->getLedgerSeq ();
     }
