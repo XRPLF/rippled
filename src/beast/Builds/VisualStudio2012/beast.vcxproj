@@ -84,8 +84,9 @@
     <ClInclude Include="..\..\beast\Arithmetic.h" />
     <ClInclude Include="..\..\beast\Atomic.h" />
     <ClInclude Include="..\..\beast\ByteOrder.h" />
-    <ClInclude Include="..\..\beast\chrono\CPUUsage.h" />
+    <ClInclude Include="..\..\beast\chrono\CPUMeter.h" />
     <ClInclude Include="..\..\beast\chrono\RelativeTime.h" />
+    <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h" />
     <ClInclude Include="..\..\beast\Config.h" />
     <ClInclude Include="..\..\beast\config\CompilerConfig.h" />
     <ClInclude Include="..\..\beast\config\compiler\Clang.h" />
@@ -398,7 +399,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\beast\chrono\Chrono.cpp" />
-    <ClCompile Include="..\..\beast\chrono\impl\CPUUsage.cpp">
+    <ClCompile Include="..\..\beast\chrono\impl\CPUMeter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
