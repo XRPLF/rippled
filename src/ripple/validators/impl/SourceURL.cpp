@@ -57,11 +57,6 @@ public:
 
         if (httpResult.first == 0)
         {
-#if 0
-            journal.debug << std::endl << httpResult.second->toString ();
-            journal.debug << std::endl << httpResult.second->body().to_string();
-#endif
-
             Utilities::ParseResultLine lineFunction (result, journal);
             std::string const s (httpResult.second->body().to_string());
             Utilities::processLines (s.begin(), s.end(), lineFunction);

@@ -206,9 +206,17 @@ bool StoreSqdb::select (SourceDesc& desc)
 
     if (st.execute_and_fetch (error))
     {
+        m_journal.debug << "Found record for " <<
+            desc.source->name ();
+        
         found = true;
         desc.lastFetchTime = Utilities::stringToTime (lastFetchTime);
         desc.expirationTime = Utilities::stringToTime (expirationTime);
+    }
+    else if (! error)
+    {
+        m_journal.info << "No previous record for " <<
+            desc.source->name ();
     }
 
     if (error)
@@ -293,6 +301,12 @@ void StoreSqdb::selectList (SourceDesc& desc)
                 }
             }
             while (st.fetch (error));
+
+            if (! error)
+            {
+                m_journal.info << "Loaded " << desc.result.list.size() <<
+                    " trusted validators for " << desc.source->name ();
+            }
         }
     }
 

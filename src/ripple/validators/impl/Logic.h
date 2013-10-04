@@ -264,16 +264,35 @@ public:
         // load data from m_store
     }
 
+    // Returns `true` if a Source with the same unique ID already exists
+    //
+    bool findSourceByID (String id)
+    {
+        SharedState::Access state (m_state);
+        for (SourcesType::const_iterator iter (state->sources.begin());
+            iter != state->sources.end(); ++iter)
+            if (iter->source->uniqueID() == id)
+                return true;
+        return false;
+    }
+
     // Add a one-time static source.
     // Fetch is called right away, this call blocks.
     //
     void addStatic (Source* source)
     {
+        ScopedPointer <Source> object (source);
+
+        if (findSourceByID (source->uniqueID()))
+        {
+            m_journal.error << "Duplicate static " << source->name();
+            return;
+        }
+
         m_journal.info << "Addding static " << source->name();
 
-        ScopedPointer <Source> object (source);
         Source::Result result;
-        object->fetch (result, m_journal);
+        source->fetch (result, m_journal);
 
         if (result.success)
         {
@@ -293,6 +312,13 @@ public:
     //
     void add (Source* source)
     {
+        if (findSourceByID (source->uniqueID()))
+        {
+            ScopedPointer <Source> object (source);
+            m_journal.error << "Duplicate " << source->name();
+            return;
+        }
+
         m_journal.info << "Adding " << source->name();
 
         {
@@ -301,6 +327,7 @@ public:
             SourceDesc& desc (state->sources.back());
             desc.source = source;
             m_store.insert (desc);
+            merge (desc.result.list, desc.source, state);
         }
     }
 
@@ -414,8 +441,6 @@ public:
     {
         Source* const source (desc.source);
 
-        m_journal.info << "fetch " << source->name();
-
         Source::Result result;
         source->fetch (result, m_journal);
 
@@ -426,6 +451,10 @@ public:
         if (result.success)
         {
             SharedState::Access state (m_state);
+
+            // Count the number fetched
+            std::size_t const numFetched (
+                result.list.size());
 
             // Add the new source info to the map
             std::size_t const numAdded (
@@ -438,12 +467,27 @@ public:
             std::size_t const numRemoved (
                 remove (result.list, source, state));
 
+            // Report
             if (numAdded > numRemoved)
-                m_journal.info << "Added " << (numAdded - numRemoved) <<
+            {
+                m_journal.info <<
+                    "Fetched " << numFetched <<
+                    "(" << (numAdded - numRemoved) << " new) " <<
                     " trusted validators from " << source->name();
+            }
             else if (numRemoved > numAdded)
-                m_journal.info << "Removed " << (numRemoved - numAdded) <<
+            {
+                m_journal.info <<
+                    "Fetched " << numFetched <<
+                    "(" << numRemoved - numAdded << " removed) " <<
                     " trusted validators from " << source->name();
+            }
+            else
+            {
+                m_journal.info <<
+                    "Fetched " << numFetched <<
+                    " trusted validators from " << source->name();
+            }
 
             // See if we need to rebuild
             checkChosen ();
@@ -457,6 +501,8 @@ public:
         }
         else
         {
+            m_journal.error << "Failed to fetch " << source->name();
+
             ++desc.numberOfFailures;
             desc.status = SourceDesc::statusFailed;
 
