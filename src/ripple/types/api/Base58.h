@@ -43,18 +43,49 @@ namespace ripple {
 class Base58
 {
 public:
-    static char const* getBitcoinAlphabet ();
-    static char const* getRippleAlphabet ();
-    static char const* getTestnetAlphabet ();
+    class Alphabet
+    {
+    public:
+        // chars may not contain high-ASCII values
+        explicit Alphabet (char const* chars)
+            : m_chars (chars)
+        {
+            std::fill (m_inverse, m_inverse + 128, -1);
+            int i (0);
+            for (char const* c (chars); *c; ++c)
+                m_inverse [*c] = i++;
+        }
+
+        char const* chars () const
+            { return m_chars; }
+
+        char to_char (int digit) const
+            { return m_chars [digit]; }
+
+        char operator[] (int digit) const
+            { return to_char (digit); }
+
+        int from_char (char c) const
+            { return m_inverse [c]; }
+
+    private:
+        char const* m_chars;
+        int m_inverse [128];
+    };
+
+    static Alphabet const& getBitcoinAlphabet ();
+    static Alphabet const& getRippleAlphabet ();
+    static Alphabet const& getTestnetAlphabet ();
 
     static std::string raw_encode (
         unsigned char const* begin, unsigned char const* end,
-            char const* alphabet, bool withCheck);
+            Alphabet const& alphabet, bool withCheck);
 
     static void fourbyte_hash256 (void* out, void const* in, std::size_t bytes);
 
     template <class InputIt>
-    static std::string encode (InputIt first, InputIt last, char const* alphabet, bool withCheck)
+    static std::string encode (InputIt first, InputIt last,
+        Alphabet const& alphabet, bool withCheck)
     {
         typedef typename std::iterator_traits<InputIt>::value_type value_type;
         std::vector <typename mpl::RemoveConst <value_type>::type> v;
@@ -87,8 +118,8 @@ public:
     // VFALCO NOTE Avoid this interface which uses globals, explicitly
     //             pass the alphabet in the call to encode!
     //
-    static char const* getCurrentAlphabet ();
-    static void setCurrentAlphabet (char const* alphabet);
+    static Alphabet const& getCurrentAlphabet ();
+    static void setCurrentAlphabet (Alphabet const& alphabet);
 
     template <class Container>
     static std::string encode (Container const& container)
@@ -111,13 +142,18 @@ public:
 
     //--------------------------------------------------------------------------
 
-    static bool decode (const char* psz, Blob& vchRet, const char* pAlphabet = getCurrentAlphabet ());
+    // Raw decoder leaves the check bytes in place if present
+
+    static bool raw_decode (char const* first, char const* last,
+        void* dest, std::size_t size, bool checked, Alphabet const& alphabet);
+
+    static bool decode (const char* psz, Blob& vchRet, Alphabet const& alphabet = getCurrentAlphabet ());
     static bool decode (const std::string& str, Blob& vchRet);
-    static bool decodeWithCheck (const char* psz, Blob& vchRet, const char* pAlphabet = getCurrentAlphabet ());
-    static bool decodeWithCheck (const std::string& str, Blob& vchRet, const char* pAlphabet);
+    static bool decodeWithCheck (const char* psz, Blob& vchRet, Alphabet const& alphabet = getCurrentAlphabet());
+    static bool decodeWithCheck (const std::string& str, Blob& vchRet, Alphabet const& alphabet = getCurrentAlphabet());
 
 private:
-    static char const* s_currentAlphabet;
+    static Alphabet const* s_currentAlphabet;
 };
 
 }

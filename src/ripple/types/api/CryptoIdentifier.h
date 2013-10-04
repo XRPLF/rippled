@@ -112,6 +112,20 @@ public:
         return Base58::raw_encode (le.begin(), le.end(),
             Base58::getRippleAlphabet(), Checked);
     }
+
+    /** Convert from std::string. */
+    static std::pair <value_type, bool> from_string (std::string const& s)
+    {
+        value_type value;
+        bool success (! s.empty());
+        if (success && !Base58::raw_decode (&s.front(), &s.back()+1,
+            value.storage().begin(), value_type::storage_size, Checked,
+                Base58::getRippleAlphabet()))
+            success = false;
+        if (success && value.storage()[0] != Token)
+            success = false;
+        return std::make_pair (value, success);
+    }
 };
 
 }

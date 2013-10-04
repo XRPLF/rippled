@@ -51,11 +51,9 @@ public:
         return String::empty;
     }
 
-    Result fetch (Journal journal)
+    void fetch (Result& result, Journal journal)
     {
-        Result result;
-
-        result.list.ensureStorageAllocated (m_strings.size ());
+        result.list.reserve (m_strings.size ());
 
         for (int i = 0; i < m_strings.size (); ++i)
         {
@@ -65,7 +63,6 @@ public:
 
         result.success = result.list.size () > 0;
         result.expirationTime = Time::getCurrentTime () + RelativeTime::hours (24);
-        return result;
     }
 
 private:

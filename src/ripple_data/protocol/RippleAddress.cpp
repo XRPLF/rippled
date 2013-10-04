@@ -348,7 +348,7 @@ std::string RippleAddress::humanAccountID () const
     }
 }
 
-bool RippleAddress::setAccountID (const std::string& strAccountID, const char* pAlphabet)
+bool RippleAddress::setAccountID (const std::string& strAccountID, Base58::Alphabet const& alphabet)
 {
     if (strAccountID.empty ())
     {
@@ -358,7 +358,7 @@ bool RippleAddress::setAccountID (const std::string& strAccountID, const char* p
     }
     else
     {
-        mIsValid    = SetString (strAccountID.c_str (), VER_ACCOUNT_ID, pAlphabet);
+        mIsValid    = SetString (strAccountID.c_str (), VER_ACCOUNT_ID, alphabet);
     }
 
     return mIsValid;

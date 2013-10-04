@@ -23,31 +23,93 @@
 namespace ripple {
 namespace Validators {
 
-/** Common code for Validators classes.
-*/
+/** Common code for Validators classes. */
 class Utilities
 {
 public:
     typedef std::vector <std::string> Strings;
 
-#if 0
-    /** Parse a ConstBufferSequence of newline delimited text into strings.
-        This works incrementally.
-    */
-    template <typename ConstBufferSequence>
-    static void parseLines (Strings& lines, ConstBufferSequence const& buffers)
+    /** A suitable LineFunction for parsing items into a fetch result. */
+    class ParseResultLine
     {
-        for (typename ConstBufferSequence::const_iterator iter = buffers.begin ();
-            iter != buffers.end (); ++iter)
-            parserLines (lines, *iter);
-    }
+    public:
+        ParseResultLine (Source::Result& result, Journal journal)
+            : m_result (&result)
+            , m_journal (journal)
+        { }
 
-    /** Turn a linear buffer of newline delimited text into strings.
-        This can be called incrementally, i.e. successive calls with
-        multiple buffer segments.
+        template <typename BidirectionalIterator>
+        void operator() (BidirectionalIterator first, BidirectionalIterator last)
+        {
+            std::string s (first, last);
+            Utilities::parseResultLine (*m_result, s, m_journal);
+        }
+
+    private:
+        Source::Result* m_result;
+        Journal m_journal;
+    };
+
+    /** UnaryPredicate for breaking up lines.
+        This returns `true` for the first non-vertical whitespace character that
+        follows a vertical whitespace character.
     */
-    static void parseLines (Strings& lines, char const* buf, std::size_t bytes);
-#endif
+    class FollowingVerticalWhite
+    {
+    public:
+        FollowingVerticalWhite ()
+            : m_gotWhite (false)
+        {
+        }
+
+        template <typename CharT>
+        static bool isVerticalWhitespace (CharT c)
+        {
+            return c == '\r' || c == '\n';
+        }
+
+        template <typename CharT>
+        bool operator() (CharT c)
+        {
+            if (isVerticalWhitespace (c))
+            {
+                m_gotWhite = true;
+                return false;
+            }
+            else if (m_gotWhite)
+            {
+                m_gotWhite = false;
+                return true;
+            }
+            return false;
+        }
+
+    private:
+        bool m_gotWhite;
+    };
+
+    /** Call LineFunction for each newline-separated line in the input.
+        LineFunction will be called with this signature:
+        @code
+            void LineFunction (BidirectionalIterator first, BidirectionalIterator last)
+        @endcode
+        Where first and last mark the beginning and ending of the line.
+        The last line in the input may or may not contain the trailing newline.
+    */
+    template <typename BidirectionalIterator, typename LineFunction>
+    static void processLines (BidirectionalIterator first,
+        BidirectionalIterator last, LineFunction f)
+    {
+        for (;;)
+        {
+            BidirectionalIterator split (std::find_if (
+                first, last, FollowingVerticalWhite ()));
+            f (first, split);
+            if (split == last)
+                break;
+            first = split;
+        }
+    }
 
     /** Parse a string into the Source::Result.
         Invalid or comment lines will be skipped.
@@ -66,10 +128,6 @@ public:
     // conversion betwen Time and String
     static String timeToString (Time const& t);
     static Time stringToTime (String s);
-
-    // conversion between RipplePublicKey and String
-    static std::string publicKeyToString (RipplePublicKey const& publicKey);
-    static RipplePublicKey stringToPublicKey (std::string const& s);
 
     struct Helpers;
 

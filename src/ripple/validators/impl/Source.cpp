@@ -30,7 +30,7 @@ void Source::Result::swapWith (Result& other)
 {
     std::swap (success, other.success);
     std::swap (message, other.message);
-    list.swapWith (other.list);
+    list.swap (other.list);
 }
 
 }

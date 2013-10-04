@@ -29,6 +29,12 @@ class StoreSqdb
     , public LeakChecked <StoreSqdb>
 {
 public:
+    enum
+    {
+        // This affects the format of the data!
+        currentSchemaVersion = 1
+    };
+
     explicit StoreSqdb (Journal journal = Journal());
 
     ~StoreSqdb ();
@@ -45,6 +51,7 @@ private:
     bool select (SourceDesc& desc);
     void selectList (SourceDesc& desc);
 
+    Error update ();
     Error init ();
 
     Journal m_journal;

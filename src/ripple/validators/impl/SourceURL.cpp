@@ -49,17 +49,22 @@ public:
         return m_url.full();
     }
 
-    Result fetch (Journal journal)
+    void fetch (Result& result, Journal journal)
     {
-        Result result;
-
         ScopedPointer <HTTPClientBase> client (HTTPClientBase::New ());
 
         HTTPClientBase::result_type httpResult (client->get (m_url));
 
         if (httpResult.first == 0)
         {
-            //Logger::outputDebugString (httpResult.second->toString ());
+#if 0
+            journal.debug << std::endl << httpResult.second->toString ();
+            journal.debug << std::endl << httpResult.second->body().to_string();
+#endif
+
+            Utilities::ParseResultLine lineFunction (result, journal);
+            std::string const s (httpResult.second->body().to_string());
+            Utilities::processLines (s.begin(), s.end(), lineFunction);
         }
         else
         {
@@ -67,8 +72,6 @@ public:
                 "HTTP GET to " << m_url.full().toStdString() <<
                 " failed: '" << httpResult.first.message () << "'";
         }
-
-        return result;
     }
 
 private:
@@ -80,10 +83,7 @@ private:
 SourceURL* SourceURL::New (
     URL const& url)
 {
-    ScopedPointer <SourceURL> object (
-        new SourceURLImp (url));
-
-    return object.release ();
+    return new SourceURLImp (url);
 }
 
 }

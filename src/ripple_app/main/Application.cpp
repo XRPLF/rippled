@@ -614,21 +614,26 @@ public:
     // Initialize the Validators object with Config information.
     void prepareValidators ()
     {
+#if 0
         {
             std::vector <std::string> const& strings (getConfig().validators);
-            if (! strings.empty ())
-                m_validators->addStrings ("rippled.cfg", strings);
+            m_validators->addStrings ("rippled.cfg", strings);
         }
+#endif
 
+#if 1
         if (! getConfig().getValidatorsURL().empty())
         {
             m_validators->addURL (getConfig().getValidatorsURL());
         }
+#endif
 
+#if 0
         if (getConfig().getValidatorsFile() != File::nonexistent ())
         {
             m_validators->addFile (getConfig().getValidatorsFile());
         }
+#endif
     }
 
     //--------------------------------------------------------------------------

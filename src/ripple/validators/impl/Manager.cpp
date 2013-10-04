@@ -188,14 +188,19 @@ public:
 
     void addStrings (String name, StringArray const& stringArray)
     {
-        addStaticSource (SourceStrings::New (
-            name, stringArray));
+        if (stringArray.size() > 0)
+        {
+            addStaticSource (SourceStrings::New (name, stringArray));
+        }
+        else
+        {
+            m_journal.debug << "Static source '" << name << "' is empty.";
+        }
     }
 
     void addFile (File const& file)
     {
-        //addStaticSource (SourceFile::New (file));
-        addSource (SourceFile::New (file));
+        addStaticSource (SourceFile::New (file));
     }
 
     void addURL (URL const& url)

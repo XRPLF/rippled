@@ -62,10 +62,10 @@ void CBase58Data::SetData (int nVersionIn, const unsigned char* pbegin, const un
     SetData (nVersionIn, (void*)pbegin, pend - pbegin);
 }
 
-bool CBase58Data::SetString (const char* psz, unsigned char version, const char* pAlphabet)
+bool CBase58Data::SetString (const char* psz, unsigned char version, Base58::Alphabet const& alphabet)
 {
     Blob vchTemp;
-    Base58::decodeWithCheck (psz, vchTemp, pAlphabet);
+    Base58::decodeWithCheck (psz, vchTemp, alphabet);
 
     if (vchTemp.empty () || vchTemp[0] != version)
     {

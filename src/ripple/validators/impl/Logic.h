@@ -269,15 +269,19 @@ public:
     //
     void addStatic (Source* source)
     {
-        m_journal.info << "Addding static source '" << source->name() << "'";
+        m_journal.info << "Addding static " << source->name();
 
         ScopedPointer <Source> object (source);
-        Source::Result result (object->fetch (m_journal));
+        Source::Result result;
+        object->fetch (result, m_journal);
 
         if (result.success)
         {
             SharedState::Access state (m_state);
-            merge (result.list, source, state);
+            std::size_t const numAdded (
+                merge (result.list, source, state));
+            m_journal.info << "Added " << numAdded
+                           << " trusted validators from " << source->name();
         }
         else
         {
@@ -289,7 +293,7 @@ public:
     //
     void add (Source* source)
     {
-        m_journal.info << "Adding source '" << source->name() << "'";
+        m_journal.info << "Adding " << source->name();
 
         {
             SharedState::Access state (m_state);
@@ -303,13 +307,13 @@ public:
     // Add each entry in the list to the map, incrementing the
     // reference count if it already exists, and updating fields.
     //
-    void merge (Array <Source::Info> const& list,
+    std::size_t merge (std::vector <Source::Info> const& list,
         Source* source, SharedState::Access& state)
     {
         std::size_t numAdded (0);
         for (std::size_t i = 0; i < list.size (); ++i)
         {
-            Source::Info const& info (list.getReference (i));
+            Source::Info const& info (list [i]);
             std::pair <MapType::iterator, bool> result (
                 state->map.emplace (info.publicKey, Validator ()));
             Validator& validatorInfo (result.first->second);
@@ -322,20 +326,19 @@ public:
             }
         }
 
-        m_journal.info << "Added " << numAdded
-                       << " trusted validators from '" << source->name() << "'";
+        return numAdded;
     }
 
     // Decrement the reference count of each item in the list
     // in the map.
     //
-    void remove (Array <Source::Info> const& list,
+    std::size_t remove (std::vector <Source::Info> const& list,
         Source* source, SharedState::Access& state)
     {
         std::size_t numRemoved (0);
         for (std::size_t i = 0; i < list.size (); ++i)
         {
-            Source::Info const& info (list.getReference (i));
+            Source::Info const& info (list [i]);
             MapType::iterator iter (state->map.find (info.publicKey));
             bassert (iter != state->map.end ());
             Validator& validatorInfo (iter->second);
@@ -348,8 +351,7 @@ public:
             }
         }
 
-        m_journal.info << "Removed " << numRemoved
-                       << " trusted validators from '" << source->name() << "'";
+        return numRemoved;
     }
 
     //----------------------------------------------------------------------
@@ -410,9 +412,12 @@ public:
     /** Perform a fetch on the source. */
     void fetch (SourceDesc& desc)
     {
-        m_journal.info << "fetch " << desc.source->name();
+        Source* const source (desc.source);
 
-        Source::Result result (desc.source->fetch (m_journal));
+        m_journal.info << "fetch " << source->name();
+
+        Source::Result result;
+        source->fetch (result, m_journal);
 
         // Reset fetch timer for the source.
         desc.whenToFetch = Time::getCurrentTime () +
@@ -423,13 +428,22 @@ public:
             SharedState::Access state (m_state);
 
             // Add the new source info to the map
-            merge (result.list, desc.source, state);
+            std::size_t const numAdded (
+                merge (result.list, source, state));
 
             // Swap lists
             desc.result.swapWith (result);
 
             // Remove the old source info from the map
-            remove (result.list, desc.source, state);
+            std::size_t const numRemoved (
+                remove (result.list, source, state));
+
+            if (numAdded > numRemoved)
+                m_journal.info << "Added " << (numAdded - numRemoved) <<
+                    " trusted validators from " << source->name();
+            else if (numRemoved > numAdded)
+                m_journal.info << "Removed " << (numRemoved - numAdded) <<
+                    " trusted validators from " << source->name();
 
             // See if we need to rebuild
             checkChosen ();

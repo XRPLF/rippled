@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-char const* Base58::s_currentAlphabet = Base58::getRippleAlphabet ();
+Base58::Alphabet const* Base58::s_currentAlphabet = &Base58::getRippleAlphabet ();
 
 void Base58::fourbyte_hash256 (void* out, void const* in, std::size_t bytes)
 {
@@ -35,24 +35,33 @@ void Base58::fourbyte_hash256 (void* out, void const* in, std::size_t bytes)
     memcpy (out, hash.begin(), 4);
 }
 
-char const* Base58::getBitcoinAlphabet ()
+Base58::Alphabet const& Base58::getBitcoinAlphabet ()
 {
-    return "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    static Alphabet alphabet (
+        "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+        );
+    return alphabet;
 }
 
-char const* Base58::getRippleAlphabet ()
+Base58::Alphabet const& Base58::getRippleAlphabet ()
 {
-    return "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+    static Alphabet alphabet (
+        "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"
+        );
+    return alphabet;
 }
 
-char const* Base58::getTestnetAlphabet ()
+Base58::Alphabet const& Base58::getTestnetAlphabet ()
 {
-    return "RPShNAF39wBUDnEGHJKLM4pQrsT7VWXYZ2bcdeCg65jkm8ofqi1tuvaxyz";
+    static Alphabet alphabet (
+        "RPShNAF39wBUDnEGHJKLM4pQrsT7VWXYZ2bcdeCg65jkm8ofqi1tuvaxyz"
+        );
+    return alphabet;
 }
 
 std::string Base58::raw_encode (
     unsigned char const* begin, unsigned char const* end,
-        char const* alphabet, bool withCheck)
+        Alphabet const& alphabet, bool withCheck)
 {
     CAutoBN_CTX pctx;
     CBigNum bn58 = 58;
@@ -88,22 +97,77 @@ std::string Base58::raw_encode (
     return str;
 }
 
-char const* Base58::getCurrentAlphabet ()
+Base58::Alphabet const& Base58::getCurrentAlphabet ()
 {
-    return s_currentAlphabet;
+    return *s_currentAlphabet;
 }
 
-void Base58::setCurrentAlphabet (char const* alphabet)
+void Base58::setCurrentAlphabet (Alphabet const& alphabet)
 {
-    s_currentAlphabet = alphabet;
+    s_currentAlphabet = &alphabet;
 }
 
 //------------------------------------------------------------------------------
 
-bool Base58::decode (const char* psz, Blob& vchRet, const char* pAlpha)
+bool Base58::raw_decode (char const* first, char const* last, void* dest,
+    std::size_t size, bool checked, Alphabet const& alphabet)
 {
-    assert (pAlpha != 0);
+    CAutoBN_CTX pctx;
+    CBigNum bn58 = 58;
+    CBigNum bn = 0;
+    CBigNum bnChar;
 
+    // Convert big endian string to bignum
+    for (char const* p = first; p != last; ++p)
+    {
+        int i (alphabet.from_char (*p));
+        if (i == -1)
+            return false;
+        bnChar.setuint ((unsigned int) i);
+
+        meets_invariant (BN_mul (&bn, &bn, &bn58, pctx));
+
+        bn += bnChar;
+    }
+
+    // Get bignum as little endian data
+    Blob vchTmp = bn.getvch ();
+
+    // Trim off sign byte if present
+    if (vchTmp.size () >= 2 && vchTmp.end ()[-1] == 0 && vchTmp.end ()[-2] >= 0x80)
+        vchTmp.erase (vchTmp.end () - 1);
+
+    char* const out (static_cast <char*> (dest));
+
+    // Count leading zeros
+    int nLeadingZeros = 0;
+    for (char const* p = first; p!=last && *p==alphabet[0]; p++)
+        nLeadingZeros++;
+
+    // Verify that the size is correct
+    if (vchTmp.size() + nLeadingZeros != size)
+        return false;
+
+    // Fill the leading zeros
+    memset (out, 0, nLeadingZeros);
+
+    // Copy little endian data to big endian
+    std::reverse_copy (vchTmp.begin (), vchTmp.end (),
+        out + nLeadingZeros);
+
+    if (checked)
+    {
+        char hash4 [4];
+        fourbyte_hash256 (hash4, out, size - 4);
+        if (memcmp (hash4, out + size - 4, 4) != 0)
+            return false;
+    }
+
+    return true;
+}
+
+bool Base58::decode (const char* psz, Blob& vchRet, Alphabet const& alphabet)
+{
     CAutoBN_CTX pctx;
     vchRet.clear ();
     CBigNum bn58 = 58;
@@ -116,7 +180,10 @@ bool Base58::decode (const char* psz, Blob& vchRet, const char* pAlpha)
     // Convert big endian string to bignum
     for (const char* p = psz; *p; p++)
     {
-        const char* p1 = strchr (pAlpha, *p);
+        // VFALCO TODO Make this use the inverse table!
+        //             Or better yet ditch this and call raw_decode
+        //
+        const char* p1 = strchr (alphabet.chars(), *p);
 
         if (p1 == NULL)
         {
@@ -129,7 +196,7 @@ bool Base58::decode (const char* psz, Blob& vchRet, const char* pAlpha)
             break;
         }
 
-        bnChar.setuint (p1 - pAlpha);
+        bnChar.setuint (p1 - alphabet.chars());
 
         if (!BN_mul (&bn, &bn, &bn58, pctx))
             throw bignum_error ("DecodeBase58 : BN_mul failed");
@@ -147,7 +214,7 @@ bool Base58::decode (const char* psz, Blob& vchRet, const char* pAlpha)
     // Restore leading zeros
     int nLeadingZeros = 0;
 
-    for (const char* p = psz; *p == pAlpha[0]; p++)
+    for (const char* p = psz; *p == alphabet.chars()[0]; p++)
         nLeadingZeros++;
 
     vchRet.assign (nLeadingZeros + vchTmp.size (), 0);
@@ -162,11 +229,9 @@ bool Base58::decode (const std::string& str, Blob& vchRet)
     return decode (str.c_str (), vchRet);
 }
 
-bool Base58::decodeWithCheck (const char* psz, Blob& vchRet, const char* pAlphabet)
+bool Base58::decodeWithCheck (const char* psz, Blob& vchRet, Alphabet const& alphabet)
 {
-    assert (pAlphabet != NULL);
-
-    if (!decode (psz, vchRet, pAlphabet))
+    if (!decode (psz, vchRet, alphabet))
         return false;
 
     if (vchRet.size () < 4)
@@ -187,9 +252,9 @@ bool Base58::decodeWithCheck (const char* psz, Blob& vchRet, const char* pAlphab
     return true;
 }
 
-bool Base58::decodeWithCheck (const std::string& str, Blob& vchRet, const char* pAlphabet)
+bool Base58::decodeWithCheck (const std::string& str, Blob& vchRet, Alphabet const& alphabet)
 {
-    return decodeWithCheck (str.c_str (), vchRet, pAlphabet);
+    return decodeWithCheck (str.c_str (), vchRet, alphabet);
 }
 
 }

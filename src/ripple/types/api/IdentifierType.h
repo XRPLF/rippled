@@ -154,6 +154,14 @@ public:
         return Traits::to_string (m_value);
     }
 
+    /** Conversion from std::string.
+        The `bool` indicates the success of the conversion.
+    */
+    static std::pair <IdentifierType, bool> from_string (std::string const& s)
+    {
+        return Traits::from_string (s);
+    }
+
 private:
     value_type m_value;
 };

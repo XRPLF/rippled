@@ -44,10 +44,15 @@ public:
     */
     virtual ~Source () { }
 
+    /** The name of the source, used in diagnostic output. */
     virtual String name () = 0;
 
+    /** An identifier that uniquely describes the source.
+        This is used for identification in the database.
+    */
     virtual String uniqueID () = 0;
 
+    /** A string that is used to recreate the source from the database entry. */
     virtual String createParam () = 0;
 
     /** Fetch the most recent list from the Source.
@@ -61,14 +66,14 @@ public:
         bool success;
         String message;
         Time expirationTime;
-        Array <Info> list;
+        std::vector <Info> list;
     };
 
     /** Cancel any pending fetch.
         The default implementation does nothing.
     */
     virtual void cancel () { }
-    virtual Result fetch (Journal journal) = 0;
+    virtual void fetch (Result& result, Journal journal) = 0;
 };
 
 }

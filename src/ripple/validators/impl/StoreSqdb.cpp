@@ -36,6 +36,9 @@ Error StoreSqdb::open (File const& file)
     if (!error)
         error = init ();
 
+    if (!error)
+        error = update ();
+
     return error;
 }
 
@@ -116,20 +119,16 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
     if (! error && updateFetchResults)
     {
         // Delete the previous data set
-        {
-            sqdb::statement st = (m_session.prepare <<
-                "DELETE FROM ValidatorsSourceInfo WHERE "
-                "  sourceID = ?; "
-                ,sqdb::use (sourceID)
-                );
-
-            st.execute_and_fetch (error);
-        }
+        m_session.once (error) <<
+            "DELETE FROM ValidatorsSourceInfo WHERE "
+            "  sourceID = ?; "
+            ,sqdb::use (sourceID)
+            ;
 
         // Insert the new data set
         if (! error)
         {
-            std::string publicKey;
+            std::string publicKeyString;
             String label;
 
             sqdb::statement st = (m_session.prepare <<
@@ -141,15 +140,15 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
                 "  ?, ?, ? "
                 ");"
                 ,sqdb::use (sourceID)
-                ,sqdb::use (publicKey)
+                ,sqdb::use (publicKeyString)
                 ,sqdb::use (label)
                 );
 
-            Array <Source::Info>& list (desc.result.list);
+            std::vector <Source::Info>& list (desc.result.list);
             for (std::size_t i = 0; ! error && i < list.size(); ++i)
             {
-                Source::Info& info (list.getReference(i));
-                publicKey = Utilities::publicKeyToString (info.publicKey);
+                Source::Info& info (list [i]);
+                publicKeyString = info.publicKey.to_string ();
                 label = list[i].label;
                 st.execute_and_fetch (error);
             }
@@ -255,11 +254,11 @@ void StoreSqdb::selectList (SourceDesc& desc)
     bassert (desc.result.list.size() == 0);
 
     // Pre-allocate some storage
-    desc.result.list.ensureStorageAllocated (count);
+    desc.result.list.reserve (count);
 
     // Prepare the select
     {
-        std::string publicKey;
+        std::string publicKeyString;
         std::string label;
         sqdb::statement st = (m_session.prepare <<
             "SELECT "
@@ -267,7 +266,7 @@ void StoreSqdb::selectList (SourceDesc& desc)
             "  label "
             "FROM ValidatorsSourceInfo WHERE "
             "  sourceID = ? "
-            ,sqdb::into (publicKey)
+            ,sqdb::into (publicKeyString)
             ,sqdb::into (label)
             ,sqdb::use (sourceID)
             );
@@ -278,9 +277,20 @@ void StoreSqdb::selectList (SourceDesc& desc)
             do
             {
                 Source::Info info;
-                info.publicKey = Utilities::stringToPublicKey (publicKey);
-                info.label = label;
-                desc.result.list.add (info);
+                std::pair <RipplePublicKey, bool> result (
+                    RipplePublicKey::from_string (publicKeyString));
+                if (result.second)
+                {
+                    bassert (result.first.to_string() == publicKeyString);
+                    info.publicKey = result.first;
+                    info.label = label;
+                    desc.result.list.push_back (info);
+                }
+                else
+                {
+                    m_journal.error << "Invalid public key '" <<
+                        publicKeyString << "' found in database";
+                }
             }
             while (st.fetch (error));
         }
@@ -293,6 +303,81 @@ void StoreSqdb::selectList (SourceDesc& desc)
 }
 
 //--------------------------------------------------------------------------
+
+// Update the database for the current schema
+Error StoreSqdb::update ()
+{
+    Error error;
+
+    sqdb::transaction tr (m_session);
+
+    // Get the version from the database
+    int version (0);
+    if (! error)
+    {
+        m_session.once (error) <<
+            "SELECT "
+            "  version "
+            "FROM SchemaVersion WHERE "
+            "  name = 'Validators' "
+            ,sqdb::into (version)
+            ;
+
+        if (! m_session.got_data ())
+        {
+            // pre-dates the "SchemaVersion" table
+            version = 0;
+        }
+    }
+
+    if (! error && version != currentSchemaVersion)
+    {
+        m_journal.info << "Updating old database version " << version;
+    }
+
+    // Update database based on version
+    if (! error && version < 1)
+    {
+        // Delete all the old data since its likely wrong
+        m_session.once (error) <<
+            "DELETE FROM ValidatorsSource";
+
+        if (! error)
+        {
+            m_session.once (error) <<
+                "DELETE FROM ValidatorsSourceInfo";
+        }
+    }
+
+    // Update the version to the current version
+    if (! error)
+    {
+        int const version (currentSchemaVersion);
+
+        m_session.once (error) <<
+            "INSERT OR REPLACE INTO SchemaVersion ( "
+            "  name, "
+            "  version "
+            ") VALUES ( "
+            "  'Validators', ? "
+            "); "
+            ,sqdb::use (version)
+            ;
+    }
+
+    if (! error)
+    {
+        error = tr.commit();
+    }
+
+    if (error)
+    {
+        tr.rollback ();
+        report (error, __FILE__, __LINE__);
+    }
+
+    return error;
+}
 
 Error StoreSqdb::init ()
 {
@@ -339,6 +424,23 @@ Error StoreSqdb::init ()
             "  (  "
             "    sourceID "
             "  ); "
+            ;
+    }
+
+    if (! error)
+    {
+        // This table maps component names like "Validators" to their
+        // corresponding schema version number. This method allows us
+        // to keep all logic data in one database, or each in its own
+        // database, or in any grouping of databases, while still being
+        // able to let an individual component know what version of its
+        // schema it is opening.
+        //
+        m_session.once (error) <<
+            "CREATE TABLE IF NOT EXISTS SchemaVersion ( "
+            "  name             TEXT PRIMARY KEY, "
+            "  version          INTEGER"
+            ");"
             ;
     }
 

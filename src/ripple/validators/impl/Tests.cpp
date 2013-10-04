@@ -121,23 +121,19 @@ public:
             return String::empty;
         }
 
-        Result fetch (Journal)
+        void fetch (Result& result, Journal)
         {
-            Result result;
-
             result.success = true;
             result.message = String::empty;
-            result.list.ensureStorageAllocated (numberOfTestValidators);
+            result.list.reserve (numberOfTestValidators);
 
             for (uint32 i = m_start ; i < m_end; ++i)
             {
                 Info info;
                 info.publicKey = RipplePublicKey::createFromInteger (i);
                 info.label = String::fromNumber (i);
-                result.list.add (info);
+                result.list.push_back (info);
             }
-
-            return result;
         }
 
         String m_name;

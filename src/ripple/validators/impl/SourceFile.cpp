@@ -36,7 +36,7 @@ public:
     
     String name ()
     {
-        return "File :'" + m_file.getFullPathName () + "'";
+        return "File: '" + m_file.getFullPathName () + "'";
     }
 
     String uniqueID ()
@@ -48,11 +48,9 @@ public:
     {
         return m_file.getFullPathName ();
     }
-
-    Result fetch (Journal journal)
+    
+    void fetch (Result& result, Journal journal)
     {
-        Result result;
-
         int64 const fileSize (m_file.getSize ());
 
         if (fileSize != 0)
@@ -68,6 +66,8 @@ public:
 
                 if (amountRead == fileSize)
                 {
+                    Utilities::ParseResultLine lineFunction (result, journal);
+                    Utilities::processLines (buffer.begin(), buffer.end(), lineFunction);
                 }
             }
             else
@@ -79,8 +79,6 @@ public:
         {
             // file doesn't exist
         }
-
-        return result;
     }
 
 private:
