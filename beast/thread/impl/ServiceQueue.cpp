@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../ServiceQueue.h"
+
+#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+
 namespace beast {
 
 namespace detail {

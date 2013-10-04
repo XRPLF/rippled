@@ -26,6 +26,9 @@
 #include "thread/SharedLockGuard.h"
 #include "thread/SharedMutexAdapter.h"
 #include "thread/SharedData.h"
+#include "thread/ServiceQueue.h"
+#include "thread/SpinLock.h"
+#include "thread/ThreadLocalValue.h"
 #include "thread/WaitableEvent.h"
 
 #endif

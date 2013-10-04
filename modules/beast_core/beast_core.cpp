@@ -274,8 +274,6 @@ namespace beast
 
 }
 
-#include "thread/ServiceQueue.cpp"
-
 // Has to be outside the beast namespace
 extern "C" {
 void beast_reportFatalError (char const* message, char const* fileName, int lineNumber)

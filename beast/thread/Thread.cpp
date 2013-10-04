@@ -20,4 +20,5 @@
 #include "BeastConfig.h"
 
 #include "impl/RecursiveMutex.cpp"
+#include "impl/ServiceQueue.cpp"
 #include "impl/WaitableEvent.cpp"

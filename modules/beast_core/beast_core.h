@@ -149,8 +149,6 @@ class FileOutputStream;
 #include "memory/CacheLine.h"
 #include "threads/ReadWriteMutex.h"
 #include "threads/Thread.h"
-#include "threads/SpinLock.h"
-#include "threads/ThreadLocalValue.h"
 #include "thread/MutexTraits.h"
 #include "thread/TrackedMutex.h"
 #include "diagnostic/FatalError.h"
@@ -244,8 +242,6 @@ class FileOutputStream;
 #include "thread/Workers.h"
 
 }
-
-#include "thread/ServiceQueue.h"
 
 #if BEAST_MSVC
 #pragma warning (pop)
