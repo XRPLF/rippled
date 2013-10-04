@@ -20,12 +20,10 @@
 #ifndef BEAST_THREAD_SHAREDDATA_H_INCLUDED
 #define BEAST_THREAD_SHAREDDATA_H_INCLUDED
 
+#include "RecursiveMutex.h"
 #include "SharedMutexAdapter.h"
 
-namespace beast
-{
-
-class CriticalSection;
+namespace beast {
 
 /** Structured, multi-threaded access to a shared state.
 
@@ -111,7 +109,7 @@ class CriticalSection;
     @tparam SharedMutexType The type of shared mutex to use.
 */
 template <typename Value, class SharedMutexType =
-    SharedMutexAdapter <CriticalSection> >
+    SharedMutexAdapter <RecursiveMutex> >
 class SharedData : public Uncopyable
 {
 private:

@@ -17,28 +17,28 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_LOCKGUARD_H_INCLUDED
-#define BEAST_THREAD_LOCKGUARD_H_INCLUDED
+#ifndef BEAST_THREAD_UNLOCKGUARD_H_INCLUDED
+#define BEAST_THREAD_UNLOCKGUARD_H_INCLUDED
 
 #include "../Uncopyable.h"
 
 namespace beast {
 
 template <typename Mutex>
-class LockGuard : public Uncopyable
+class UnlockGuard : public Uncopyable
 {
 public:
     typedef Mutex MutexType;
 
-    explicit LockGuard (Mutex const& mutex)
+    explicit UnlockGuard (Mutex const& mutex)
         : m_mutex (mutex)
     {
-        m_mutex.lock();
+        m_mutex.unlock();
     }
 
-    ~LockGuard ()
+    ~UnlockGuard ()
     {
-        m_mutex.unlock();
+        m_mutex.lock();
     }
 
 private:

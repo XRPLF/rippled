@@ -20,6 +20,7 @@
 #ifndef BEAST_CHRONO_H_INCLUDED
 #define BEAST_CHRONO_H_INCLUDED
 
+#include "chrono/CPUUsage.h"
 #include "chrono/RelativeTime.h"
 
 #endif

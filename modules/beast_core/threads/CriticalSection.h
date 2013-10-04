@@ -82,7 +82,6 @@ public:
     */
     void exit() const noexcept;
 
-
     //==============================================================================
     /** Provides the type of scoped lock to use with a CriticalSection. */
     typedef GenericScopedLock <CriticalSection>       ScopedLockType;

@@ -23,8 +23,7 @@
 #include "LockGuard.h"
 #include "SharedLockGuard.h"
 
-namespace beast
-{
+namespace beast {
    
 /** Adapts a regular Lockable to conform to the SharedMutex concept.
     Shared locks become unique locks with this interface. Two threads may not
