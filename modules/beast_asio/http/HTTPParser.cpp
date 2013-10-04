@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace beast {
+
 HTTPParser::HTTPParser (Type type)
     : m_type (type)
     , m_impl (new HTTPParserImpl (
@@ -101,4 +103,6 @@ SharedPtr <HTTPResponse> const& HTTPParser::response ()
     bassert (m_type == typeResponse);
 
     return m_response;
+}
+
 }

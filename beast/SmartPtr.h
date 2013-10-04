@@ -17,22 +17,12 @@
 */
 //==============================================================================
 
-#ifndef BEAST_FIFOFREESTORE_H_INCLUDED
-#define BEAST_FIFOFREESTORE_H_INCLUDED
+#ifndef BEAST_SMARTPTR_H_INCLUDED
+#define BEAST_SMARTPTR_H_INCLUDED
 
-/** Selected free store based on compilation settings.
+#include "Config.h"
 
-    @ingroup beast_concurrent
-*/
-// VFALCO NOTE Disabled this because it seems that the TLS
-//             implementation has a leak. Although the other
-//             one also seems to have a leak.
-//
-//#if BEAST_USE_BOOST_FEATURES
-#if 0
-typedef FifoFreeStoreWithTLS FifoFreeStoreType;
-#else
-typedef FifoFreeStoreWithoutTLS FifoFreeStoreType;
-#endif
+#include "smart_ptr/ContainerDeletePolicy.h"
+#include "smart_ptr/ScopedPointer.h"
 
 #endif

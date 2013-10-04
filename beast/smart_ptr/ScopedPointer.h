@@ -21,8 +21,14 @@
 */
 //==============================================================================
 
-#ifndef BEAST_SCOPEDPOINTER_H_INCLUDED
-#define BEAST_SCOPEDPOINTER_H_INCLUDED
+#ifndef BEAST_SMARTPTR_SCOPEDPOINTER_H_INCLUDED
+#define BEAST_SMARTPTR_SCOPEDPOINTER_H_INCLUDED
+
+#include "ContainerDeletePolicy.h"
+#include "../Uncopyable.h"
+#include "../StaticAssert.h"
+    
+namespace beast {
 
 //==============================================================================
 /**
@@ -248,4 +254,7 @@ template <typename Type>
 void deleteAndZero (ScopedPointer<Type>&)  { static_bassert (sizeof (Type) == 12345); }
 #endif
 
-#endif   // BEAST_SCOPEDPOINTER_H_INCLUDED
+}
+
+#endif
+

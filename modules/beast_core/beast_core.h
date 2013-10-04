@@ -45,6 +45,7 @@
 
 // New header-only library modeled more closely according to boost
 #include "../../beast/CStdInt.h"
+#include "../../beast/SmartPtr.h"
 #include "../../beast/StaticAssert.h"
 #include "../../beast/Uncopyable.h"
 #include "../../beast/Atomic.h"
@@ -155,7 +156,6 @@ class FileOutputStream;
 #include "thread/TrackedMutex.h"
 #include "diagnostic/FatalError.h"
 #include "text/LexicalCast.h"
-#include "memory/ContainerDeletePolicy.h"
 #include "maths/Math.h"
 #include "maths/uint24.h"
 #include "logging/Logger.h"
@@ -180,8 +180,6 @@ class FileOutputStream;
 #include "containers/SortedSet.h"
 #include "maths/Range.h"
 #include "containers/SparseSet.h"
-# include "containers/DynamicList.h"
-#include "memory/ScopedPointer.h"
 #include "files/DirectoryIterator.h"
 #include "streams/InputStream.h"
 #include "files/FileInputStream.h"
@@ -242,21 +240,8 @@ class FileOutputStream;
 
 #include "thread/DeadlineTimer.h"
 
-#include "memory/AllocatedBy.h"
-#include "memory/PagedFreeStore.h"
-#include "memory/GlobalPagedFreeStore.h"
-#include "memory/FifoFreeStoreWithTLS.h"
-#include "memory/FifoFreeStoreWithoutTLS.h"
-#include "memory/FifoFreeStore.h"
-#include "memory/GlobalFifoFreeStore.h"
-
 #include "thread/Semaphore.h"
-#include "thread/InterruptibleThread.h"
 #include "thread/Stoppable.h"
-#include "thread/CallQueue.h"
-#include "thread/Listeners.h"
-#include "thread/ManualCallQueue.h"
-#include "thread/ThreadWithCallQueue.h"
 #include "thread/Workers.h"
 
 }

@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_HTTPPARSER_H_INCLUDED
 #define BEAST_ASIO_HTTPPARSER_H_INCLUDED
 
+namespace beast {
+
 class HTTPParserImpl;
 
 /** A parser for HTTPRequest and HTTPResponse objects. */
@@ -81,5 +83,7 @@ private:
     SharedPtr <HTTPRequest> m_request;
     SharedPtr <HTTPResponse> m_response;
 };
+
+}
 
 #endif

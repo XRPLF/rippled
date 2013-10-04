@@ -134,7 +134,6 @@ namespace beast
 #include "containers/NamedValueSet.cpp"
 #include "containers/PropertySet.cpp"
 #include "containers/Variant.cpp"
-#include "containers/DynamicList.cpp"
 
 #include "diagnostic/FatalError.cpp"
 #include "diagnostic/FPUFlags.cpp"
@@ -162,10 +161,6 @@ namespace beast
 #include "maths/Random.cpp"
 
 #include "memory/MemoryBlock.cpp"
-#include "memory/FifoFreeStoreWithTLS.cpp"
-#include "memory/FifoFreeStoreWithoutTLS.cpp"
-#include "memory/GlobalPagedFreeStore.cpp"
-#include "memory/PagedFreeStore.cpp"
 #include "memory/StaticObject.cpp"
 
 #include "misc/Main.cpp"
@@ -197,13 +192,8 @@ namespace beast
 
 #include "thread/impl/TrackedMutex.cpp"
 #include "thread/DeadlineTimer.cpp"
-#include "thread/InterruptibleThread.cpp"
 #include "thread/Stoppable.cpp"
 #include "thread/Semaphore.cpp"
-#include "thread/CallQueue.cpp"
-#include "thread/Listeners.cpp"
-#include "thread/ManualCallQueue.cpp"
-#include "thread/ThreadWithCallQueue.cpp"
 #include "thread/Workers.cpp"
 
 #include "threads/ChildProcess.cpp"

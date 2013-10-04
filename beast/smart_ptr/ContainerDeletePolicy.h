@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CONTAINERDELETEPOLICY_H_INCLUDED
-#define BEAST_CONTAINERDELETEPOLICY_H_INCLUDED
+#ifndef BEAST_SMARTPTR_CONTAINERDELETEPOLICY_H_INCLUDED
+#define BEAST_SMARTPTR_CONTAINERDELETEPOLICY_H_INCLUDED
+
+namespace beast {
 
 /** The DeletePolicy provides a way to destroy objects stored in containers.
 
@@ -44,5 +46,7 @@ struct ContainerDeletePolicy
         delete t;
     }
 };
+
+}
 
 #endif
