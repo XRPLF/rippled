@@ -148,7 +148,6 @@ class FileOutputStream;
 #include "memory/MemoryAlignment.h"
 #include "memory/CacheLine.h"
 #include "threads/ReadWriteMutex.h"
-#include "threads/WaitableEvent.h"
 #include "threads/Thread.h"
 #include "threads/SpinLock.h"
 #include "threads/ThreadLocalValue.h"

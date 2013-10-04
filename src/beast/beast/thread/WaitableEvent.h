@@ -24,15 +24,23 @@
 #ifndef BEAST_WAITABLEEVENT_H_INCLUDED
 #define BEAST_WAITABLEEVENT_H_INCLUDED
 
-//==============================================================================
-/**
-    Allows threads to wait for events triggered by other threads.
+#include "../Config.h"
+#include "../Uncopyable.h"
 
-    A thread can call wait() on a WaitableObject, and this will suspend the
+#if ! BEAST_WINDOWS
+#include <pthread.h>
+#endif
+
+namespace beast {
+
+/** Allows threads to wait for events triggered by other threads.
+    A thread can call wait() on a WaitableEvent, and this will suspend the
     calling thread until another thread wakes it up by calling the signal()
     method.
 */
-class BEAST_API WaitableEvent : LeakChecked <WaitableEvent>, public Uncopyable
+class WaitableEvent
+    : public Uncopyable
+    //, LeakChecked <WaitableEvent> // VFALCO TODO Move LeakChecked to beast/
 {
 public:
     //==============================================================================
@@ -45,14 +53,14 @@ public:
         @param initiallySignaled If this is true then the event will be signaled when
                                  the constructor returns.
     */
-    explicit WaitableEvent (bool manualReset = false, bool initiallySignaled = false) noexcept;
+    explicit WaitableEvent (bool manualReset = false, bool initiallySignaled = false);
 
     /** Destructor.
 
         If other threads are waiting on this object when it gets deleted, this
         can cause nasty errors, so be careful!
     */
-    ~WaitableEvent() noexcept;
+    ~WaitableEvent();
 
     //==============================================================================
     /** Suspends the calling thread until the event has been signalled.
@@ -69,7 +77,11 @@ public:
         @returns    true if the object has been signalled, false if the timeout expires first.
         @see signal, reset
     */
-    bool wait (int timeOutMilliseconds = -1) const noexcept;
+    /** @{ */
+    bool wait () const;                             // wait forever
+    // VFALCO TODO Change wait() to seconds instead of millis
+    bool wait (int timeOutMilliseconds) const; // DEPRECATED
+    /** @} */
 
     //==============================================================================
     /** Wakes up any threads that are currently waiting on this object.
@@ -87,26 +99,26 @@ public:
 
         @see wait, reset
     */
-    void signal() const noexcept;
+    void signal() const;
 
     //==============================================================================
     /** Resets the event to an unsignalled state.
 
         If it's not already signalled, this does nothing.
     */
-    void reset() const noexcept;
-
+    void reset() const;
 
 private:
-    //==============================================================================
-   #if BEAST_WINDOWS
+#if BEAST_WINDOWS
     void* handle;
-   #else
+#else
     mutable pthread_cond_t condition;
     mutable pthread_mutex_t mutex;
-    mutable bool triggered, manualReset;
-   #endif
+    mutable bool triggered;
+    mutable bool manualReset;
+#endif
 };
 
+}
 
-#endif   // BEAST_WAITABLEEVENT_H_INCLUDED
+#endif

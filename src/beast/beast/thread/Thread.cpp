@@ -20,3 +20,4 @@
 #include "BeastConfig.h"
 
 #include "impl/RecursiveMutex.cpp"
+#include "impl/WaitableEvent.cpp"

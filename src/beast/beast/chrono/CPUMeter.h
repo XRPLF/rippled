@@ -21,7 +21,7 @@
 #define BEAST_CHRONO_CPUMETER_H_INCLUDED
 
 #include "RelativeTime.h"
-#include "SCopedTimeInterval.h"
+#include "ScopedTimeInterval.h"
 #include "../thread/SharedData.h"
 #include "../Atomic.h"
 
@@ -120,7 +120,7 @@ private:
         void advance ()
         {
             usage += history [index];
-            index = (++index) % numberOfAggregates;
+            index = (index+1) % numberOfAggregates;
             usage -= history [index];
             history [index].clear ();
         }
