@@ -213,6 +213,10 @@ public:
 
     void onStop (Journal)
     {
+    }
+
+    void onChildrenStopped (Journal)
+    {
         // VFALCO TODO Clean this up and do it right, based on sockets
         stopped();
     }
