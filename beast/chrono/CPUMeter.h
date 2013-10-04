@@ -51,22 +51,6 @@ private:
         CPUMeter* m_meter;
     };
 
-public:
-    /** The type of container that measures idle time. */
-    typedef ScopedTimeInterval <MeasureIdle>    ScopedIdleTime;
-    typedef ScopedTimeInterval <MeasureActive>  ScopedActiveTime;
-
-    /** Returns the fraction of time that the CPU is being used. */
-    double getCpuUsage () const
-    {
-        SharedState::ConstAccess state (m_state);
-        double const seconds (state->usage.seconds());
-        if (seconds > 0)
-            return (state->usage.active.inSeconds() / seconds);
-        return 0;
-    }
-
-private:
     enum
     {
         // The amount of time an aggregate must accrue before a swap
@@ -151,6 +135,21 @@ private:
         SharedState::Access state (m_state);
         state->front().active += interval;
         state->update();
+    }
+
+public:
+    /** The type of container that measures idle time. */
+    typedef ScopedTimeInterval <MeasureIdle>    ScopedIdleTime;
+    typedef ScopedTimeInterval <MeasureActive>  ScopedActiveTime;
+
+    /** Returns the fraction of time that the CPU is being used. */
+    double getUtilizaton () const
+    {
+        SharedState::ConstAccess state (m_state);
+        double const seconds (state->usage.seconds());
+        if (seconds > 0)
+            return (state->usage.active.inSeconds() / seconds);
+        return 0;
     }
 };
 

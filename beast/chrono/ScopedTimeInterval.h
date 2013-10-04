@@ -41,7 +41,7 @@ public:
 
     /** Create the measurement with UnaryFunction constructed from one argument. */
     template <typename Arg>
-    explicit ScopedTimeInterval (Arg arg)
+    explicit ScopedTimeInterval (Arg& arg)
         : m_func (arg)
         , m_start (RelativeTime::fromStartup ())
     {

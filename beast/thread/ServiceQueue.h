@@ -20,6 +20,7 @@
 #ifndef BEAST_THREAD_SERVICEQUEUE_H_INCLUDED
 #define BEAST_THREAD_SERVICEQUEUE_H_INCLUDED
 
+#include "../chrono/CPUMeter.h"
 #include "../intrusive/List.h"
 #include "../intrusive/LockFreeStack.h"
 #include "SharedData.h"
@@ -390,6 +391,7 @@ protected:
 
     typedef SharedData <State> SharedState;
     SharedState m_state;
+    CPUMeter m_cpuMeter;
     Atomic <int> m_stopped;
 
     static ThreadLocalValue <ServiceQueueBase*> s_service;
@@ -458,6 +460,10 @@ public:
             a.deallocate (waiter, 1);
         }
     }
+
+    /** Returns the percentage of time the queue is using the CPU. */
+    double getUtilizaton () const
+        { return m_cpuMeter.getUtilizaton(); }
 
     /** Returns the allocator associated with the container. */
     allocator_type get_allocator() const
