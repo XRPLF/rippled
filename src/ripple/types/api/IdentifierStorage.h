@@ -69,7 +69,7 @@ public:
     };
 
     /** Container equality testing function. */
-    class equal
+    class key_equal
     {
     public:
         bool operator() (IdentifierStorage const& lhs,

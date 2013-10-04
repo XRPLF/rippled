@@ -61,7 +61,7 @@ public:
         pre_size, size, post_size>          value_type;
 
     typedef typename value_type::hasher     hasher;
-    typedef typename value_type::equal      equal;
+    typedef typename value_type::key_equal  key_equal;
 
     /** Initialize from an input sequence. */
     static void construct (

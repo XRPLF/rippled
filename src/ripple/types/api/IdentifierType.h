@@ -57,19 +57,19 @@ public:
     };
 
     /** Wraps Traits::equal. */
-    class equal
+    class key_equal
     {
     public:
-        equal()
+        key_equal()
             { }
         template <typename Arg>
-        equal (Arg arg) : m_equal (arg)
+        key_equal (Arg arg) : m_equal (arg)
             { }
         bool operator() (IdentifierType const& lhs,
                          IdentifierType const& rhs) const
             { return m_equal (lhs.value(), rhs.value()); }
     private:
-        typename Traits::equal m_equal;
+        typename Traits::key_equal m_equal;
     };
 
     /** Create an uninitialized value. */
@@ -263,10 +263,10 @@ template <class Traits>
 struct equal_to <ripple::IdentifierType <Traits> >
 {
 public:
-    typedef bool                                  result_type;
+    typedef bool                            result_type;
     typedef ripple::IdentifierType <Traits> argument_type;
-    typedef argument_type                         first_argument_type;
-    typedef argument_type                         second_argument_type;
+    typedef argument_type                   first_argument_type;
+    typedef argument_type                   second_argument_type;
 
     equal_to ()
     {
@@ -285,7 +285,7 @@ public:
     }
 
 private:
-    typename argument_type::equal m_equal;
+    typename argument_type::key_equal m_equal;
 };
 
 }

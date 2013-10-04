@@ -119,7 +119,7 @@ public:
     };
 
     /** Container equality testing function. */
-    class equal
+    class key_equal
     {
     public:
         bool operator() (base_uint const& lhs, base_uint const& rhs) const

@@ -30,12 +30,12 @@ template <std::size_t Bytes>
 class SimpleIdentifier
 {
 public:
-    static std::size_t const            size = Bytes;
+    static std::size_t const                size = Bytes;
 
-    typedef std::size_t                 size_type;
-    typedef base_uint <Bytes*8>         value_type;
-    typedef typename value_type::hasher hasher;
-    typedef typename value_type::equal  equal;
+    typedef std::size_t                     size_type;
+    typedef base_uint <Bytes*8>             value_type;
+    typedef typename value_type::hasher     hasher;
+    typedef typename value_type::key_equal  key_equal;
 
     /** Initialize from an input sequence. */
     static void construct (
