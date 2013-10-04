@@ -40,7 +40,7 @@ public:
     */
     HTTPMessage (HTTPVersion const& version_,
                  StringPairArray& fields,
-                 ContentBodyBuffer& body);
+                 DynamicBuffer& body);
 
     /** Returns the HTTP version of this message. */
     HTTPVersion const& version () const;
@@ -49,7 +49,7 @@ public:
     HTTPHeaders const& headers () const;
 
     /** Returns the content-body. */
-    ContentBodyBuffer const& body () const;
+    DynamicBuffer const& body () const;
 
     /** Outputs all the HTTPMessage data excluding the body into a string. */
     String toString () const;
@@ -57,7 +57,7 @@ public:
 private:
     HTTPVersion m_version;
     HTTPHeaders m_headers;
-    ContentBodyBuffer m_body;
+    DynamicBuffer m_body;
 };
 
 #endif

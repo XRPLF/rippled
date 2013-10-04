@@ -70,9 +70,7 @@ namespace beast {
 #include "async/SharedHandlerAllocator.h"
 #include "async/AsyncObject.h"
 
-#  include "basics/BufferType.h"
 # include "basics/BuffersType.h"
-#include "basics/ContentBodyBuffer.h"
 #include "basics/FixedInputBuffer.h"
 #include "basics/PeerRole.h"
 #include "basics/SSLContext.h"

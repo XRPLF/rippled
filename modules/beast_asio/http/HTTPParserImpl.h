@@ -125,7 +125,7 @@ public:
         return m_headersComplete;
     }
 
-    ContentBodyBuffer& body ()
+    DynamicBuffer& body ()
     {
         return m_body;
     }
@@ -188,8 +188,9 @@ private:
 
     int onBody (char const* at, std::size_t length)
     {
-        m_body.commit (boost::asio::buffer_copy (m_body.prepare (length),
-            boost::asio::buffer (at, length)));
+        m_body.commit (boost::asio::buffer_copy (
+            m_body.prepare <boost::asio::mutable_buffer> (length),
+                boost::asio::buffer (at, length)));
         return 0;
     }
 
@@ -258,7 +259,7 @@ private:
     std::string m_field;
     std::string m_value;
     bool m_headersComplete;
-    ContentBodyBuffer m_body;
+    DynamicBuffer m_body;
 };
 
 #endif

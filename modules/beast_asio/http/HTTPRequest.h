@@ -30,7 +30,7 @@ public:
     HTTPRequest (
         HTTPVersion const& version_,
         StringPairArray& fields,
-        ContentBodyBuffer& body,
+        DynamicBuffer& body,
         unsigned short method_);
 
     unsigned short method () const;

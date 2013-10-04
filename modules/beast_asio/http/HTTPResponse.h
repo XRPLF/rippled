@@ -30,7 +30,7 @@ public:
     HTTPResponse (
         HTTPVersion const& version_,
         StringPairArray& fields,
-        ContentBodyBuffer& body,
+        DynamicBuffer& body,
         unsigned short status_);
 
     unsigned short status () const;

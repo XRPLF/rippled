@@ -29,7 +29,6 @@ namespace beast {
 
 #include "async/SharedHandler.cpp"
 
-#include "basics/ContentBodyBuffer.cpp"
 #include "basics/PeerRole.cpp"
 #include "basics/SSLContext.cpp"
 
