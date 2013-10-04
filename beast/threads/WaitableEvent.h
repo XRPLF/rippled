@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_WAITABLEEVENT_H_INCLUDED
-#define BEAST_WAITABLEEVENT_H_INCLUDED
+#ifndef BEAST_THREADS_WAITABLEEVENT_H_INCLUDED
+#define BEAST_THREADS_WAITABLEEVENT_H_INCLUDED
 
 #include "../Config.h"
 #include "../Uncopyable.h"

@@ -58,7 +58,7 @@
 #include "../../beast/SafeBool.h"
 #include "../../beast/Strings.h"
 #include "../../beast/TypeTraits.h"
-#include "../../beast/Thread.h"
+#include "../../beast/Threads.h"
 #include "../../beast/Utility.h"
 #include "../../beast/Chrono.h"
 
@@ -81,10 +81,8 @@ class FileOutputStream;
 #include "memory/AtomicPointer.h"
 #include "memory/AtomicState.h"
 #include "threads/SpinDelay.h"
-#include "memory/StaticObject.h"
 
 #include "time/AtExitHook.h"
-#include "diagnostic/LeakChecked.h"
 #include "time/Time.h"
 #include "threads/ScopedLock.h"
 #include "threads/CriticalSection.h"
@@ -147,8 +145,6 @@ class FileOutputStream;
 
 #include "memory/MemoryAlignment.h"
 #include "memory/CacheLine.h"
-#include "threads/ReadWriteMutex.h"
-#include "threads/Thread.h"
 #include "thread/MutexTraits.h"
 #include "thread/TrackedMutex.h"
 #include "diagnostic/FatalError.h"
@@ -157,8 +153,6 @@ class FileOutputStream;
 #include "maths/uint24.h"
 #include "logging/Logger.h"
 #include "diagnostic/FPUFlags.h"
-#include "memory/SharedObject.h"
-#include "memory/SharedPtr.h"
 #include "memory/SharedFunction.h"
 #include "containers/AbstractFifo.h"
 #include "text/Identifier.h"
@@ -223,8 +217,6 @@ class FileOutputStream;
 #include "threads/Process.h"
 #include "threads/ScopedReadLock.h"
 #include "threads/ScopedWriteLock.h"
-#include "threads/ThreadPool.h"
-#include "threads/TimeSliceThread.h"
 #include "diagnostic/UnitTest.h"
 #include "xml/XmlDocument.h"
 #include "xml/XmlElement.h"
@@ -238,7 +230,6 @@ class FileOutputStream;
 #include "thread/DeadlineTimer.h"
 
 #include "thread/Semaphore.h"
-#include "thread/Stoppable.h"
 #include "thread/Workers.h"
 
 }

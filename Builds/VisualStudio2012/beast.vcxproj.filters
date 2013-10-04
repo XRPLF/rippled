@@ -234,9 +234,6 @@
     <Filter Include="beast\utility\impl">
       <UniqueIdentifier>{775ab0d6-aa5f-43d7-ab3b-3c01652a9ef1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\thread">
-      <UniqueIdentifier>{da8084c0-491b-4eb0-b750-97182a9deed4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\http">
       <UniqueIdentifier>{56ef157f-ad92-4da7-8fbf-00723f769732}</UniqueIdentifier>
     </Filter>
@@ -291,8 +288,11 @@
     <Filter Include="beast\smart_ptr">
       <UniqueIdentifier>{4e9c54da-1581-41d7-ac75-48140e4a13d4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\thread\impl">
-      <UniqueIdentifier>{96d46096-0e7d-4ca8-9d81-72f6834f88f8}</UniqueIdentifier>
+    <Filter Include="beast\threads">
+      <UniqueIdentifier>{f864ff58-1055-4c56-805f-9f181c4f0aa1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\threads\impl">
+      <UniqueIdentifier>{386a8cd8-6be3-4cac-9bca-7a01fdb5327a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -497,15 +497,6 @@
     <ClInclude Include="..\..\modules\beast_core\threads\ScopedWriteLock.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\Thread.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\ThreadPool.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\TimeSliceThread.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\time\PerformanceCounter.h">
       <Filter>beast_core\time</Filter>
     </ClInclude>
@@ -585,9 +576,6 @@
       <Filter>beast_core\threads</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FPUFlags.h">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\LeakChecked.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\Throw.h">
@@ -704,9 +692,6 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\MeasureFunctionCallTime.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\ReadWriteMutex.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\MutexTraits.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
@@ -799,12 +784,6 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\PointerToOther.h">
       <Filter>beast\mpl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\SharedPtr.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\SharedObject.h">
-      <Filter>beast_core\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h">
       <Filter>beast_asio\async</Filter>
@@ -938,9 +917,6 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FatalError.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\StaticObject.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedInteger.h">
       <Filter>beast_crypto\math</Filter>
     </ClInclude>
@@ -995,21 +971,6 @@
     <ClInclude Include="..\..\beast\mpl\IsCallPossible.h">
       <Filter>beast\mpl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\Thread.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\thread\LockGuard.h">
-      <Filter>beast\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\thread\SharedLockGuard.h">
-      <Filter>beast\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\thread\SharedData.h">
-      <Filter>beast\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\thread\SharedMutexAdapter.h">
-      <Filter>beast\thread</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\Uncopyable.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1036,9 +997,6 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\mpl\CopyConst.h">
       <Filter>beast\mpl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\Stoppable.h">
-      <Filter>beast_core\thread</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\http\impl\http-parser\http_parser.h">
       <Filter>beast\http\impl\http-parser</Filter>
@@ -1212,32 +1170,65 @@
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponseParser.h">
       <Filter>beast_asio\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\thread\RecursiveMutex.h">
-      <Filter>beast\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\thread\UnlockGuard.h">
-      <Filter>beast\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\thread\TryLockGuard.h">
-      <Filter>beast\thread</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\chrono\CPUMeter.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\thread\WaitableEvent.h">
-      <Filter>beast\thread</Filter>
+    <ClInclude Include="..\..\beast\smart_ptr\SharedObject.h">
+      <Filter>beast\smart_ptr</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\thread\ServiceQueue.h">
-      <Filter>beast\thread</Filter>
+    <ClInclude Include="..\..\beast\smart_ptr\SharedPtr.h">
+      <Filter>beast\smart_ptr</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\thread\ThreadLocalValue.h">
-      <Filter>beast\thread</Filter>
+    <ClInclude Include="..\..\beast\Threads.h">
+      <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\thread\SpinLock.h">
-      <Filter>beast\thread</Filter>
+    <ClInclude Include="..\..\beast\threads\LockGuard.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\RecursiveMutex.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\ServiceQueue.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\SharedData.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\SharedLockGuard.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\SharedMutexAdapter.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\SpinLock.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\Thread.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\ThreadLocalValue.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\TryLockGuard.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\UnlockGuard.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\WaitableEvent.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\utility\LeakChecked.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\utility\StaticObject.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\Stoppable.h">
+      <Filter>beast\threads</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1406,15 +1397,6 @@
     <ClCompile Include="..\..\modules\beast_core\threads\ReadWriteLock.cpp">
       <Filter>beast_core\threads</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\Thread.cpp">
-      <Filter>beast_core\threads</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\ThreadPool.cpp">
-      <Filter>beast_core\threads</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\TimeSliceThread.cpp">
-      <Filter>beast_core\threads</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\time\PerformanceCounter.cpp">
       <Filter>beast_core\time</Filter>
     </ClCompile>
@@ -1482,9 +1464,6 @@
       <Filter>beast_core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\FPUFlags.cpp">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\LeakChecked.cpp">
       <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\threads\SpinDelay.cpp">
@@ -1564,9 +1543,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\SemanticVersion.cpp">
       <Filter>beast_core\diagnostic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\ReadWriteMutex.cpp">
-      <Filter>beast_core\threads</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\impl\TrackedMutex.cpp">
       <Filter>beast_core\thread\impl</Filter>
@@ -1673,12 +1649,6 @@
     <ClCompile Include="..\..\modules\beast_core\diagnostic\FatalError.cpp">
       <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\memory\StaticObject.cpp">
-      <Filter>beast_core\memory</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\Assert.cpp">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_crypto\math\UnsignedInteger.cpp">
       <Filter>beast_crypto\math</Filter>
     </ClCompile>
@@ -1702,9 +1672,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPRequest.cpp">
       <Filter>beast_asio\http</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\Stoppable.cpp">
-      <Filter>beast_core\thread</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\impl\http-parser\http_parser.c">
       <Filter>beast\http\impl\http-parser</Filter>
@@ -1775,20 +1742,38 @@
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponseParser.cpp">
       <Filter>beast_asio\http</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\thread\impl\RecursiveMutex.cpp">
-      <Filter>beast\thread\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\thread\Thread.cpp">
-      <Filter>beast\thread</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\chrono\impl\CPUMeter.cpp">
       <Filter>beast\chrono\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\thread\impl\WaitableEvent.cpp">
-      <Filter>beast\thread\impl</Filter>
+    <ClCompile Include="..\..\beast\smart_ptr\SmartPtr.cpp">
+      <Filter>beast\smart_ptr</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\thread\impl\ServiceQueue.cpp">
-      <Filter>beast\thread\impl</Filter>
+    <ClCompile Include="..\..\beast\threads\impl\Atomic.cpp">
+      <Filter>beast\threads\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\impl\RecursiveMutex.cpp">
+      <Filter>beast\threads\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\impl\ServiceQueue.cpp">
+      <Filter>beast\threads\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\impl\WaitableEvent.cpp">
+      <Filter>beast\threads\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\Threads.cpp">
+      <Filter>beast\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\impl\Thread.cpp">
+      <Filter>beast\threads\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\LeakChecked.cpp">
+      <Filter>beast\utility\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\StaticObject.cpp">
+      <Filter>beast\utility\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\impl\Stoppable.cpp">
+      <Filter>beast\threads\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

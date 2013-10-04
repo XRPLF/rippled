@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
-#ifndef BEAST_STATICOBJECT_H_INCLUDED
-#define BEAST_STATICOBJECT_H_INCLUDED
+#ifndef BEAST_UTILITY_STATICOBJECT_H_INCLUDED
+#define BEAST_UTILITY_STATICOBJECT_H_INCLUDED
+
+namespace beast {
 
 // Spec: N2914=09-0104
 //
@@ -105,5 +107,7 @@ private:
         ~StaticData();
     };
 };
+
+}
 
 #endif

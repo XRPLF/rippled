@@ -22,7 +22,7 @@
 
 #include "RelativeTime.h"
 #include "ScopedTimeInterval.h"
-#include "../thread/SharedData.h"
+#include "../threads/SharedData.h"
 #include "../Atomic.h"
 
 namespace beast {

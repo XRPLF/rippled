@@ -17,18 +17,34 @@
 */
 //==============================================================================
 
-namespace detail
-{
+#ifndef BEAST_THREADS_LOCKGUARD_H_INCLUDED
+#define BEAST_THREADS_LOCKGUARD_H_INCLUDED
 
-// This is here so we don't need the Thread class declaration
-void staticObjectWait (std::size_t n)
+#include "../Uncopyable.h"
+
+namespace beast {
+
+template <typename Mutex>
+class LockGuard : public Uncopyable
 {
-    // Wait for initialization
-    Thread::yield ();
-    if (n > 10)
-        Thread::sleep (1);
-    else if (n > 100)
-        Thread::sleep (10);
+public:
+    typedef Mutex MutexType;
+
+    explicit LockGuard (Mutex const& mutex)
+        : m_mutex (mutex)
+    {
+        m_mutex.lock();
+    }
+
+    ~LockGuard ()
+    {
+        m_mutex.unlock();
+    }
+
+private:
+    Mutex const& m_mutex;
+};
+
 }
 
-}
+#endif

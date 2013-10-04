@@ -17,34 +17,20 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_LOCKGUARD_H_INCLUDED
-#define BEAST_THREAD_LOCKGUARD_H_INCLUDED
+#ifndef BEAST_THREADS_H_INCLUDED
+#define BEAST_THREADS_H_INCLUDED
 
-#include "../Uncopyable.h"
-
-namespace beast {
-
-template <typename Mutex>
-class LockGuard : public Uncopyable
-{
-public:
-    typedef Mutex MutexType;
-
-    explicit LockGuard (Mutex const& mutex)
-        : m_mutex (mutex)
-    {
-        m_mutex.lock();
-    }
-
-    ~LockGuard ()
-    {
-        m_mutex.unlock();
-    }
-
-private:
-    Mutex const& m_mutex;
-};
-
-}
+#include "threads/LockGuard.h"
+#include "threads/UnlockGuard.h"
+#include "threads/TryLockGuard.h"
+#include "threads/SharedLockGuard.h"
+#include "threads/SharedMutexAdapter.h"
+#include "threads/SharedData.h"
+#include "threads/ServiceQueue.h"
+#include "threads/SpinLock.h"
+#include "threads/Stoppable.h"
+#include "threads/Thread.h"
+#include "threads/ThreadLocalValue.h"
+#include "threads/WaitableEvent.h"
 
 #endif

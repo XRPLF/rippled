@@ -17,18 +17,36 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_H_INCLUDED
-#define BEAST_THREAD_H_INCLUDED
+#ifndef BEAST_THREADS_SHAREDLOCKGUARD_H_INCLUDED
+#define BEAST_THREADS_SHAREDLOCKGUARD_H_INCLUDED
 
-#include "thread/LockGuard.h"
-#include "thread/UnlockGuard.h"
-#include "thread/TryLockGuard.h"
-#include "thread/SharedLockGuard.h"
-#include "thread/SharedMutexAdapter.h"
-#include "thread/SharedData.h"
-#include "thread/ServiceQueue.h"
-#include "thread/SpinLock.h"
-#include "thread/ThreadLocalValue.h"
-#include "thread/WaitableEvent.h"
+#include "../Uncopyable.h"
+
+namespace beast
+{
+
+/** A scoped container that acquires a shared lock. */   
+template <typename Mutex>
+class SharedLockGuard : public Uncopyable
+{
+public:
+    typedef Mutex MutexType;
+
+    explicit SharedLockGuard (Mutex const& mutex)
+        : m_mutex (mutex)
+    {
+        m_mutex.lock_shared();
+    }
+
+    ~SharedLockGuard ()
+    {
+        m_mutex.unlock_shared();
+    }
+
+private:
+    Mutex const& m_mutex;
+};
+
+}
 
 #endif

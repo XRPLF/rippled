@@ -137,7 +137,6 @@ namespace beast
 
 #include "diagnostic/FatalError.cpp"
 #include "diagnostic/FPUFlags.cpp"
-#include "diagnostic/LeakChecked.cpp"
 #include "diagnostic/SemanticVersion.cpp"
 #include "diagnostic/UnitTest.cpp"
 #include "diagnostic/UnitTestUtilities.cpp"
@@ -161,7 +160,6 @@ namespace beast
 #include "maths/Random.cpp"
 
 #include "memory/MemoryBlock.cpp"
-#include "memory/StaticObject.cpp"
 
 #include "misc/Main.cpp"
 #include "misc/Result.cpp"
@@ -192,17 +190,12 @@ namespace beast
 
 #include "thread/impl/TrackedMutex.cpp"
 #include "thread/DeadlineTimer.cpp"
-#include "thread/Stoppable.cpp"
 #include "thread/Semaphore.cpp"
 #include "thread/Workers.cpp"
 
 #include "threads/ChildProcess.cpp"
 #include "threads/ReadWriteLock.cpp"
-#include "threads/ReadWriteMutex.cpp"
 #include "threads/SpinDelay.cpp"
-#include "threads/Thread.cpp"
-#include "threads/ThreadPool.cpp"
-#include "threads/TimeSliceThread.cpp"
 
 #include "time/PerformanceCounter.cpp"
 #include "time/AtExitHook.cpp"

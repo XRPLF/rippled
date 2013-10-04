@@ -21,8 +21,13 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_SHAREDPTR_H_INCLUDED
-#define BEAST_CORE_SHAREDPTR_H_INCLUDED
+#ifndef BEAST_SMARTPTR_SHAREDPTR_H_INCLUDED
+#define BEAST_SMARTPTR_SHAREDPTR_H_INCLUDED
+
+#include "../Config.h"
+#include "SharedObject.h"
+
+namespace beast {
 
 // Visual Studio doesn't seem to do very well when it comes
 // to templated constructors and assignments so we provide
@@ -316,5 +321,7 @@ bool operator!= (T const* lhs, SharedPtr <U> const& rhs) noexcept
     return lhs != rhs.get();
 }
 /** @} */
+
+}
 
 #endif

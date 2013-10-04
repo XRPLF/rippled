@@ -24,6 +24,12 @@
 #ifndef BEAST_SHAREDOBJECT_H_INCLUDED
 #define BEAST_SHAREDOBJECT_H_INCLUDED
 
+#include "../Config.h"
+#include "../Atomic.h"
+#include "../Uncopyable.h"
+
+namespace beast {
+
 //==============================================================================
 /**
     Adds reference-counting to an object.
@@ -193,5 +199,7 @@ private:
     //==============================================================================
     int refCount;
 };
+
+}
 
 #endif

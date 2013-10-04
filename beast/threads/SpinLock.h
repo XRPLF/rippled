@@ -21,8 +21,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_SPINLOCK_H_INCLUDED
-#define BEAST_THREAD_SPINLOCK_H_INCLUDED
+#ifndef BEAST_THREADS_SPINLOCK_H_INCLUDED
+#define BEAST_THREADS_SPINLOCK_H_INCLUDED
 
 #include "../Atomic.h"
 #include "LockGuard.h"

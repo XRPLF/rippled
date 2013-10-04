@@ -17,8 +17,16 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_STOPPABLE_H_INCLUDED
-#define BEAST_CORE_STOPPABLE_H_INCLUDED
+#ifndef BEAST_THREADS_STOPPABLE_H_INCLUDED
+#define BEAST_THREADS_STOPPABLE_H_INCLUDED
+
+#include "../Atomic.h"
+#include "../intrusive/LockFreeStack.h"
+#include "../utility/Journal.h"
+
+#include "WaitableEvent.h"
+
+namespace beast {
 
 class RootStoppable;
 
@@ -313,5 +321,7 @@ private:
     Atomic <int> m_calledStopAsync;
 };
 /** @} */
+
+}
 
 #endif
