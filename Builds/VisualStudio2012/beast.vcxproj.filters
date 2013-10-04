@@ -1224,9 +1224,6 @@
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponseParser.h">
       <Filter>beast_asio\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\CPUUsage.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\thread\RecursiveMutex.h">
       <Filter>beast\thread</Filter>
     </ClInclude>
@@ -1235,6 +1232,12 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\thread\TryLockGuard.h">
       <Filter>beast\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\CPUMeter.h">
+      <Filter>beast\chrono</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1775,14 +1778,14 @@
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponseParser.cpp">
       <Filter>beast_asio\http</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\chrono\impl\CPUUsage.cpp">
-      <Filter>beast\chrono\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\thread\impl\RecursiveMutex.cpp">
       <Filter>beast\thread\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\thread\Thread.cpp">
       <Filter>beast\thread</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\impl\CPUMeter.cpp">
+      <Filter>beast\chrono\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

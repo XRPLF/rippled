@@ -17,27 +17,45 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CHRONO_CPUUSAGE_H_INCLUDED
-#define BEAST_CHRONO_CPUUSAGE_H_INCLUDED
+#ifndef BEAST_CHRONO_SCOPEDTIMEINTERVAL_H_INCLUDED
+#define BEAST_CHRONO_SCOPEDTIMEINTERVAL_H_INCLUDED
 
+#include "../Uncopyable.h"
 #include "RelativeTime.h"
 
 namespace beast {
 
-/** Measurements of CPU utilization. */
-
-#if 0
-/** Scoped lifetime measurement. */
-class ScopedTimeInterval
+/** Time measurement using scoped RAII container. 
+    UnaryFunction will be called with this signature:
+        void (RelativeTime const& interval);
+*/
+template <class UnaryFunction>
+class ScopedTimeInterval : public Uncopyable
 {
 public:
-    ScopedTimeInterval ();
-    ~ScopedTimeInterval ();
+    /** Create the measurement with a default-constructed UnaryFunction. */
+    ScopedTimeInterval ()
+        : m_start (RelativeTime::fromStartup())
+    {
+    }
+
+    /** Create the measurement with UnaryFunction constructed from one argument. */
+    template <typename Arg>
+    explicit ScopedTimeInterval (Arg arg)
+        : m_func (arg)
+        , m_start (RelativeTime::fromStartup ())
+    {
+    }
+
+    ~ScopedTimeInterval ()
+    {
+        m_func (RelativeTime::fromStartup() - m_start);
+    }
 
 private:
+    UnaryFunction m_func;
     RelativeTime m_start;
 };
-#endif
 
 }
 
