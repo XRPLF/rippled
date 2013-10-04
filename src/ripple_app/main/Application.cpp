@@ -117,9 +117,8 @@ public:
 
         , m_txQueue (TxQueue::New ())
 
-        , m_validators (m_rpcServiceManager->add (
-            Validators::Manager::New (*this, LogJournal::get <ValidatorsLog> ())
-            ))
+        , m_validators (Validators::Manager::New (
+            *this, LogJournal::get <ValidatorsLog> ()))
 
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
 
@@ -643,6 +642,8 @@ public:
 
     void onPrepare ()
     {
+        m_rpcServiceManager->add (*m_validators);
+
         prepareValidators ();
     }
 

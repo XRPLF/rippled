@@ -88,14 +88,14 @@ bool Utilities::parseInfoLine (
         std::string const encodedKey (match [1]);
         std::string const commentText (match [2]);
 
-        RippleAddress deprecatedPublicKey;
+        std::pair <RipplePublicKey, bool> result (
+            RipplePublicKey::from_string (encodedKey));
 
-        if (deprecatedPublicKey.setNodePublic (encodedKey))
+        if (result.second)
         {
             // We got a public key.
-            RipplePublicKey publicKey (deprecatedPublicKey);
             info.label = commentText;
-            info.publicKey = publicKey;
+            info.publicKey = result.first;
             success = true;
         }
         else

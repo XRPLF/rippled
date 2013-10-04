@@ -23,202 +23,12 @@
 namespace ripple {
 namespace Validators {
 
-// Tunable constants
-enum
-{
-#if 0
-    // We will fetch a source at this interval
-    hoursBetweenFetches = 24
-    ,secondsBetweenFetches = hoursBetweenFetches * 60 * 60
-    // We check Source expirations on this time interval
-    ,checkEverySeconds = 60 * 60
-#else
-     secondsBetweenFetches = 59
-    ,checkEverySeconds = 60
-#endif
-
-    // This tunes the preallocated arrays
-    ,expectedNumberOfResults = 1000
-};
-
-//------------------------------------------------------------------------------
-
-enum
-{
-    maxSizeBeforeSwap    = 100
-};
-
-//------------------------------------------------------------------------------
-
-struct Ledger
-{
-    Ledger() : when (Time::getCurrentTime())
-    {
-    }
-
-    Time when;
-};
-
-typedef AgedHistory <boost::unordered_map <
-    RippleLedgerHash, Ledger, RippleLedgerHash::hasher> > Ledgers;
-
-// Information associated with each distinguishable validator
-struct Validator
-{
-    Validator ()
-        : refCount (0)
-    {
-    }
-
-    void receiveValidation (RippleLedgerHash const& ledgerHash)
-    {
-        typedef Ledgers::container_type::iterator iterator;
-
-        ++count->seen;
-
-        // If we already have it in the expected list, close it out
-        //
-        iterator iter (expected->find (ledgerHash));
-        if (iter != expected->end())
-        {
-            expected->erase (iter);
-            expected.back().erase (ledgerHash);
-            return;
-        }
-        else if ((iter = expected.back().find(ledgerHash)) !=
-            expected.back().end())
-        {
-            expected.back().erase (iter);
-            return;
-        }
-
-        // Ledger hasn't closed yet so put it in the received list
-        //
-        std::pair <iterator, bool> result (
-            received->emplace (ledgerHash, Ledger()));
-        bassert (result.second);
-        if (received->size() >= maxSizeBeforeSwap)
-            swap();
-    }
-
-    void ledgerClosed (RippleLedgerHash const& ledgerHash)
-    {
-        typedef Ledgers::container_type::iterator iterator;
-
-        ++count->closed;
-
-        // If the Validator already gave us the ledger
-        // then count it and remove it from both tables.
-        //
-        iterator iter (received->find (ledgerHash));
-        if (iter != received->end())
-        {
-            received->erase (iter);
-            received.back().erase (ledgerHash);
-            return;
-        }
-        else if ((iter = received.back().find (ledgerHash)) !=
-            received.back().end())
-        {
-            received.back().erase (iter);
-            return;
-        }
-
-        // We haven't seen this ledger hash from the
-        // validator yet so put it on the expected list
-        //
-        std::pair <iterator, bool> result (
-            expected->emplace (ledgerHash, Ledger ()));
-        bassert (result.second);
-        if (expected->size() >= maxSizeBeforeSwap)
-            swap();
-    }
-
-    void swap()
-    {
-        // Count anything in the old expected list as missing
-        count->missing += expected.back().size();
-
-        // Count anything in the old received list as orphaned
-        count->orphans += received.back().size();
-
-        // Rotate and clear
-        count.swap();
-        expected.swap();
-        received.swap();
-        count->clear();
-        expected->clear();
-        received->clear();
-    }
-
-    struct Count
-    {
-        Count()
-            : closed (0)
-            , seen (0)
-            , missing (0)
-            , orphans (0)
-        {
-        }
-
-        void clear ()
-        {
-            *this = Count();
-        }
-
-        // How many ledgers we've seen
-        std::size_t closed;
-
-        // How many validation's we've seen
-        std::size_t seen;
-
-        // Estimate of validation's that were missed
-        std::size_t missing;
-
-        // Estimate of validations not belonging to any ledger
-        std::size_t orphans;
-    };
-
-    int refCount;
-
-    AgedHistory <Count> count;
-    Ledgers received;
-    Ledgers expected;
-};
-
-//------------------------------------------------------------------------------
-
 // Encapsulates the logic for creating the chosen validators.
 // This is a separate class to facilitate the unit tests.
 //
 class Logic
 {
 public:
-    //--------------------------------------------------------------------------
-
-    typedef boost::unordered_map <
-        RipplePublicKey, Validator,
-            RipplePublicKey::hasher> MapType;
-
-    // The master in-memory database of Validator, indexed by all the
-    // possible things that we need to care about, and even some that we don't.
-    //
-    /*
-    typedef boost::multi_index_container <
-        Validator, boost::multi_index::indexed_by <
-            
-            boost::multi_index::hashed_unique <
-                BOOST_MULTI_INDEX_MEMBER(Logic::Validator,UniqueID,uniqueID)>,
-
-            boost::multi_index::hashed_unique <
-                BOOST_MULTI_INDEX_MEMBER(Logic::Validator,IPEndpoint,endpoint),
-                Connectible::HashAddress>
-        >
-    > ValidationsMap;
-    */
-
-    //--------------------------------------------------------------------------
-
     struct State
     {
         State ()
@@ -226,7 +36,7 @@ public:
             //sources.reserve (64);
         }
 
-        MapType map;
+        ValidatorMap validators;
         SourcesType sources;
     };
 
@@ -238,12 +48,6 @@ public:
     ChosenList::Ptr m_chosenList;
     SharedState m_state;
 
-    // Used to filter duplicate public keys
-    //
-    typedef AgedHistory <boost::unordered_set <
-        RipplePublicKey, RipplePublicKey::hasher> > SeenPublicKeys;
-    SeenPublicKeys m_seenPublicKeys;
-
     // Used to filter duplicate ledger hashes
     //
     typedef AgedHistory <boost::unordered_set <
@@ -252,7 +56,7 @@ public:
 
     //----------------------------------------------------------------------
 
-    Logic (Store& store, Journal journal = Journal ())
+    explicit Logic (Store& store, Journal journal = Journal ())
         : m_store (store)
         , m_journal (journal)
         , m_rebuildChosenList (false)
@@ -279,10 +83,8 @@ public:
     // Add a one-time static source.
     // Fetch is called right away, this call blocks.
     //
-    void addStatic (Source* source)
+    void addStatic (SharedPtr <Source> source)
     {
-        ScopedPointer <Source> object (source);
-
         if (findSourceByID (source->uniqueID()))
         {
             m_journal.error << "Duplicate static " << source->name();
@@ -310,7 +112,7 @@ public:
 
     // Add a live source to the list of sources.
     //
-    void add (Source* source)
+    void add (SharedPtr <Source> source)
     {
         if (findSourceByID (source->uniqueID()))
         {
@@ -341,8 +143,8 @@ public:
         for (std::size_t i = 0; i < list.size (); ++i)
         {
             Source::Info const& info (list [i]);
-            std::pair <MapType::iterator, bool> result (
-                state->map.emplace (info.publicKey, Validator ()));
+            std::pair <ValidatorMap::iterator, bool> result (
+                state->validators.emplace (info.publicKey, Validator ()));
             Validator& validatorInfo (result.first->second);
             ++validatorInfo.refCount;
             if (result.second)
@@ -366,14 +168,14 @@ public:
         for (std::size_t i = 0; i < list.size (); ++i)
         {
             Source::Info const& info (list [i]);
-            MapType::iterator iter (state->map.find (info.publicKey));
-            bassert (iter != state->map.end ());
+            ValidatorMap::iterator iter (state->validators.find (info.publicKey));
+            bassert (iter != state->validators.end ());
             Validator& validatorInfo (iter->second);
             if (--validatorInfo.refCount == 0)
             {
                 // Last reference removed
                 ++numRemoved;
-                state->map.erase (iter);
+                state->validators.erase (iter);
                 dirtyChosen ();
             }
         }
@@ -390,10 +192,10 @@ public:
     void buildChosen ()
     {
         SharedState::ConstAccess state (m_state);
-        ChosenList::Ptr list (new ChosenList (state->map.size ()));
+        ChosenList::Ptr list (new ChosenList (state->validators.size ()));
 
-        for (MapType::const_iterator iter = state->map.begin ();
-            iter != state->map.end (); ++iter)
+        for (ValidatorMap::const_iterator iter = state->validators.begin ();
+            iter != state->validators.end (); ++iter)
         {
             ChosenList::Info info;
             list->insert (iter->first, info);
@@ -569,13 +371,13 @@ public:
         ChosenList::Ptr list (m_chosenList);
         if (list != nullptr)
         {
-            for (ChosenList::MapType::const_iterator iter (list->map().begin());
+            for (ChosenList::ValidatorMap::const_iterator iter (list->map().begin());
                 iter != list->map().end(); ++iter)
             {
                 Json::Value entry (Json::objectValue);
-                ChosenList::MapType::key_type const& key (iter->first);
+                ChosenList::ValidatorMap::key_type const& key (iter->first);
                 entry ["key"] = key.to_string();
-                //ChosenList::MapType::mapped_type const& value (iter->second);
+                //ChosenList::ValidatorMap::mapped_type const& value (iter->second);
                 //entry ["value"] = value.to_string();
                 entries.append (entry);
             }
@@ -585,9 +387,9 @@ public:
        {
             SharedState::ConstAccess state (m_state);
             std::size_t count (0);
-            result ["validators"] = state->map.size();
-            for (MapType::const_iterator iter (state->map.begin());
-                iter != state->map.end(); ++iter)
+            result ["validators"] = state->validators.size();
+            for (ValidatorMap::const_iterator iter (state->validators.begin());
+                iter != state->validators.end(); ++iter)
                 count += iter->second.map.size();
             result ["signatures"] = count;
         }
@@ -595,9 +397,9 @@ public:
         Json::Value entries (Json::arrayValue);
         {
             SharedState::ConstAccess state (m_state);
-            result ["count"] = int(state->map.size());
-            for (MapType::const_iterator iter (state->map.begin());
-                iter != state->map.end(); ++iter)
+            result ["count"] = int(state->validators.size());
+            for (ValidatorMap::const_iterator iter (state->validators.begin());
+                iter != state->validators.end(); ++iter)
             {
                 Validator const& v (iter->second);
                 Json::Value entry (Json::objectValue);
@@ -681,6 +483,13 @@ public:
 
     // Called when we receive a signed validation
     //
+    // Used to filter duplicate public keys
+    //
+    typedef AgedCache <RipplePublicKey, 
+    typedef AgedHistory <boost::unordered_set <
+        RipplePublicKey, RipplePublicKey::hasher> > SeenPublicKeys;
+    SeenPublicKeys m_seenPublicKeys;
+
     void receiveValidation (ReceivedValidation const& rv)
     {
         // Filter duplicates
@@ -697,16 +506,18 @@ public:
         }
 
         SharedState::Access state (m_state);
-#if 0
-        MapType::iterator iter (state->map.find (rv.publicKey));
-        if (iter != state->map.end ())
+#if 1
+        // Accept validation from the trusted list
+        ValidatorMap::iterator iter (state->validators.find (rv.publicKey));
+        if (iter != state->validators.end ())
         {
             Validator& v (iter->second);
             v.receiveValidation (rv.ledgerHash);
         }
 #else
-        std::pair <MapType::iterator, bool> result (
-            state->map.emplace (rv.publicKey, Validator()));
+        // Accept any validation (for testing)
+        std::pair <ValidatorMap::iterator, bool> result (
+            state->validators.emplace (rv.publicKey, Validator()));
         Validator& v (result.first->second);
         v.receiveValidation (rv.ledgerHash);
 #endif
@@ -730,8 +541,8 @@ public:
         }
 
         SharedState::Access state (m_state);
-        for (MapType::iterator iter (state->map.begin());
-            iter != state->map.end(); ++iter)
+        for (ValidatorMap::iterator iter (state->validators.begin());
+            iter != state->validators.end(); ++iter)
         {
             Validator& v (iter->second);
             v.ledgerClosed (ledgerHash);

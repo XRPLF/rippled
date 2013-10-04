@@ -1694,6 +1694,7 @@
     <ClInclude Include="..\..\src\ripple\validators\api\Types.h" />
     <ClInclude Include="..\..\src\ripple\validators\api\Manager.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\ChosenList.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\Ledger.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\SourceDesc.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\SourceFile.h" />
@@ -1701,7 +1702,9 @@
     <ClInclude Include="..\..\src\ripple\validators\impl\SourceURL.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\Store.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\StoreSqdb.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\Tuning.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\Utilities.h" />
+    <ClInclude Include="..\..\src\ripple\validators\impl\Validator.h" />
     <ClInclude Include="..\..\src\ripple\validators\ripple_validators.h" />
     <ClInclude Include="..\..\src\ripple_app\consensus\DisputedTx.h" />
     <ClInclude Include="..\..\src\ripple_app\consensus\LedgerConsensus.h" />

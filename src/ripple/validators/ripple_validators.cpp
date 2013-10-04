@@ -23,6 +23,7 @@
 
 #include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/regex.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
@@ -33,14 +34,13 @@
 #include "beast/modules/beast_asio/beast_asio.h"
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
 
-#include "../ripple_data/ripple_data.h" // for RippleAddress REMOVE ASAP
-
 #include "../testoverlay/ripple_testoverlay.h" // for unit test
 
 namespace ripple {
 using namespace beast;
 }
 
+#  include "impl/Tuning.h"
 # include "impl/ChosenList.h"
 # include "impl/SourceFile.h"
 # include "impl/SourceStrings.h"
@@ -49,6 +49,8 @@ using namespace beast;
 #  include "impl/SourceDesc.h"
 # include "impl/Store.h"
 # include "impl/StoreSqdb.h"
+#  include "impl/Ledger.h"
+# include "impl/Validator.h"
 #include "impl/Logic.h"
 
 #include "impl/Manager.cpp"
