@@ -143,12 +143,12 @@ public:
     std::string content()
     {
         std::string s;
-        ContentBodyBuffer const& body (
+        DynamicBuffer const& body (
             m_parser.request()->body ());
         s.resize (body.size ());
         boost::asio::buffer_copy (
             boost::asio::buffer (&s[0],
-                s.size()), body.data());
+                s.size()), body.data <boost::asio::const_buffer>());
         return s;
     }
 

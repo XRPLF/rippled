@@ -902,9 +902,6 @@
     <ClInclude Include="..\..\modules\beast_asio\protocol\PrefilledReadStream.h">
       <Filter>beast_asio\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.h">
-      <Filter>beast_asio\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponse.h">
       <Filter>beast_asio\http</Filter>
     </ClInclude>
@@ -933,9 +930,6 @@
       <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\basics\BuffersType.h">
-      <Filter>beast_asio\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\basics\BufferType.h">
       <Filter>beast_asio\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\SharedSingleton.h">
@@ -1214,6 +1208,12 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\SmartPtr.h">
       <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\net\DynamicBuffer.h">
+      <Filter>beast\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\net\BufferType.h">
+      <Filter>beast\net</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1610,9 +1610,6 @@
     <ClCompile Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicPROXY.cpp">
       <Filter>beast_asio\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.cpp">
-      <Filter>beast_asio\basics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponse.cpp">
       <Filter>beast_asio\http</Filter>
     </ClCompile>
@@ -1747,6 +1744,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\impl\Error.cpp">
       <Filter>beast\utility\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\DynamicBuffer.cpp">
+      <Filter>beast\net\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

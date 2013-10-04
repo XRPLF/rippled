@@ -131,6 +131,8 @@
     <ClInclude Include="..\..\beast\mpl\RemoveReference.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h" />
     <ClInclude Include="..\..\beast\Net.h" />
+    <ClInclude Include="..\..\beast\net\BufferType.h" />
+    <ClInclude Include="..\..\beast\net\DynamicBuffer.h" />
     <ClInclude Include="..\..\beast\net\IPEndpoint.h" />
     <ClInclude Include="..\..\beast\SafeBool.h" />
     <ClInclude Include="..\..\beast\SmartPtr.h" />
@@ -174,8 +176,6 @@
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerPtr.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\BufferType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\BuffersType.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\PeerRole.h" />
@@ -466,6 +466,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\DynamicBuffer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -506,12 +512,6 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\Utility.cpp" />
     <ClCompile Include="..\..\modules\beast_asio\async\SharedHandler.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

@@ -7,7 +7,6 @@ Vinnie's List: Changes day to day, descending priority
 - Fix and tidy up broken beast classes
 - Validators work
   * Parse Validator line using cribbed code
-- Parse ContentBodyBuffer from HTTPResponse
 - HTTPMessage improvements
 - HTTPClient improvements based on HTTPServer
 - Ditch old HTTPClient so I can take the name

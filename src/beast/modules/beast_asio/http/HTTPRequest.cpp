@@ -20,7 +20,7 @@
 HTTPRequest::HTTPRequest (
     HTTPVersion const& version_,
     StringPairArray& fields,
-    ContentBodyBuffer& body,
+    DynamicBuffer& body,
     unsigned short method_)
     : HTTPMessage (version_, fields, body)
     , m_method (method_)

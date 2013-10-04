@@ -17,8 +17,12 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_BASICS_BUFFERTYPE_H_INCLUDED
-#define BEAST_ASIO_BASICS_BUFFERTYPE_H_INCLUDED
+#ifndef BEAST_NET_BASICS_BUFFERTYPE_H_INCLUDED
+#define BEAST_NET_BASICS_BUFFERTYPE_H_INCLUDED
+
+#include "../mpl/IfCond.h"
+
+namespace beast {
 
 /** General linear memory buffer.
     This wraps the underlying buffer type and provides additional methods
@@ -98,5 +102,7 @@ private:
     std::size_t m_size;
 };
 /** @} */
+
+}
 
 #endif
