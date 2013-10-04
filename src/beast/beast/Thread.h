@@ -21,6 +21,8 @@
 #define BEAST_THREAD_H_INCLUDED
 
 #include "thread/LockGuard.h"
+#include "thread/UnlockGuard.h"
+#include "thread/TryLockGuard.h"
 #include "thread/SharedLockGuard.h"
 #include "thread/SharedMutexAdapter.h"
 #include "thread/SharedData.h"

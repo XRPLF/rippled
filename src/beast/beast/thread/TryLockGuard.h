@@ -17,32 +17,37 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_LOCKGUARD_H_INCLUDED
-#define BEAST_THREAD_LOCKGUARD_H_INCLUDED
+#ifndef BEAST_THREAD_TRYLOCKGUARD_H_INCLUDED
+#define BEAST_THREAD_TRYLOCKGUARD_H_INCLUDED
 
 #include "../Uncopyable.h"
 
 namespace beast {
 
 template <typename Mutex>
-class LockGuard : public Uncopyable
+class TryLockGuard : public Uncopyable
 {
 public:
     typedef Mutex MutexType;
 
-    explicit LockGuard (Mutex const& mutex)
+    explicit TryLockGuard (Mutex const& mutex)
         : m_mutex (mutex)
+        , m_owns_lock (m_mutex.try_lock())
     {
-        m_mutex.lock();
     }
 
-    ~LockGuard ()
+    ~TryLockGuard ()
     {
-        m_mutex.unlock();
+        if (m_owns_lock)
+            m_mutex.unlock();
     }
+
+    bool owns_lock() const
+        { return m_owns_lock; }
 
 private:
     Mutex const& m_mutex;
+    bool m_owns_lock;
 };
 
 }

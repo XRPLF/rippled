@@ -19,4 +19,5 @@
 
 #include "BeastConfig.h"
 
+#include "impl/CPUUsage.cpp"
 #include "impl/RelativeTime.cpp"

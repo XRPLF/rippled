@@ -17,34 +17,5 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_LOCKGUARD_H_INCLUDED
-#define BEAST_THREAD_LOCKGUARD_H_INCLUDED
+#include "../CPUUsage.h"
 
-#include "../Uncopyable.h"
-
-namespace beast {
-
-template <typename Mutex>
-class LockGuard : public Uncopyable
-{
-public:
-    typedef Mutex MutexType;
-
-    explicit LockGuard (Mutex const& mutex)
-        : m_mutex (mutex)
-    {
-        m_mutex.lock();
-    }
-
-    ~LockGuard ()
-    {
-        m_mutex.unlock();
-    }
-
-private:
-    Mutex const& m_mutex;
-};
-
-}
-
-#endif

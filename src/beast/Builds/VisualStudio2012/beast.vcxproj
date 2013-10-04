@@ -84,6 +84,7 @@
     <ClInclude Include="..\..\beast\Arithmetic.h" />
     <ClInclude Include="..\..\beast\Atomic.h" />
     <ClInclude Include="..\..\beast\ByteOrder.h" />
+    <ClInclude Include="..\..\beast\chrono\CPUUsage.h" />
     <ClInclude Include="..\..\beast\chrono\RelativeTime.h" />
     <ClInclude Include="..\..\beast\Config.h" />
     <ClInclude Include="..\..\beast\config\CompilerConfig.h" />
@@ -151,10 +152,13 @@
     <ClInclude Include="..\..\beast\strings\StringFromNumber.h" />
     <ClInclude Include="..\..\beast\Thread.h" />
     <ClInclude Include="..\..\beast\thread\LockGuard.h" />
+    <ClInclude Include="..\..\beast\thread\RecursiveMutex.h" />
     <ClInclude Include="..\..\beast\thread\SharedData.h" />
     <ClInclude Include="..\..\beast\thread\SharedLockGuard.h" />
     <ClInclude Include="..\..\beast\thread\SharedMutexAdapter.h" />
     <ClInclude Include="..\..\beast\Chrono.h" />
+    <ClInclude Include="..\..\beast\thread\TryLockGuard.h" />
+    <ClInclude Include="..\..\beast\thread\UnlockGuard.h" />
     <ClInclude Include="..\..\beast\TypeTraits.h" />
     <ClInclude Include="..\..\beast\type_traits\IntegralConstant.h" />
     <ClInclude Include="..\..\beast\type_traits\IsIntegral.h" />
@@ -394,6 +398,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\beast\chrono\Chrono.cpp" />
+    <ClCompile Include="..\..\beast\chrono\impl\CPUUsage.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\beast\chrono\impl\RelativeTime.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -494,6 +504,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\strings\Strings.cpp" />
+    <ClCompile Include="..\..\beast\thread\impl\RecursiveMutex.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\thread\Thread.cpp" />
     <ClCompile Include="..\..\beast\utility\impl\Debug.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

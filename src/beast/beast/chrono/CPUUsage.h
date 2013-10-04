@@ -17,33 +17,27 @@
 */
 //==============================================================================
 
-#ifndef BEAST_THREAD_LOCKGUARD_H_INCLUDED
-#define BEAST_THREAD_LOCKGUARD_H_INCLUDED
+#ifndef BEAST_CHRONO_CPUUSAGE_H_INCLUDED
+#define BEAST_CHRONO_CPUUSAGE_H_INCLUDED
 
-#include "../Uncopyable.h"
+#include "RelativeTime.h"
 
 namespace beast {
 
-template <typename Mutex>
-class LockGuard : public Uncopyable
+/** Measurements of CPU utilization. */
+
+#if 0
+/** Scoped lifetime measurement. */
+class ScopedTimeInterval
 {
 public:
-    typedef Mutex MutexType;
-
-    explicit LockGuard (Mutex const& mutex)
-        : m_mutex (mutex)
-    {
-        m_mutex.lock();
-    }
-
-    ~LockGuard ()
-    {
-        m_mutex.unlock();
-    }
+    ScopedTimeInterval ();
+    ~ScopedTimeInterval ();
 
 private:
-    Mutex const& m_mutex;
+    RelativeTime m_start;
 };
+#endif
 
 }
 
