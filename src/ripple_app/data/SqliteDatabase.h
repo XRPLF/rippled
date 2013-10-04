@@ -23,10 +23,12 @@
 
 class SqliteDatabase
     : public Database
-    , LeakChecked <SqliteDatabase>
+    , private Thread
+    , private LeakChecked <SqliteDatabase>
 {
 public:
     explicit SqliteDatabase (char const* host);
+    ~SqliteDatabase ();
 
     void connect ();
     void disconnect ();
@@ -66,18 +68,18 @@ public:
         return this;
     }
 
-    void runWal ();
     void doHook (const char* db, int walSize);
 
     int getKBUsedDB ();
     int getKBUsedAll ();
 
 private:
+    void run ();
+    void runWal ();
+
     typedef RippleMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
     LockType m_walMutex;
-
-    ThreadWithCallQueue m_thread;
 
     sqlite3* mConnection;
     // VFALCO TODO Why do we need an "aux" connection? Should just use a second SqliteDatabase object.
@@ -88,6 +90,8 @@ private:
     JobQueue*               mWalQ;
     bool                    walRunning;
 };
+
+//------------------------------------------------------------------------------
 
 class SqliteStatement
 {

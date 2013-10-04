@@ -51,16 +51,22 @@ SqliteStatement::~SqliteStatement ()
 
 SqliteDatabase::SqliteDatabase (const char* host)
     : Database (host)
+    , Thread ("sqlitedb")
     , m_walMutex (this, "SqliteDB", __FILE__, __LINE__)
-    , m_thread ("sqlitedb")
     , mWalQ (NULL)
     , walRunning (false)
 {
-    m_thread.start ();
+    startThread ();
 
     mConnection     = NULL;
     mAuxConnection  = NULL;
     mCurrentStmt    = NULL;
+}
+
+SqliteDatabase::~SqliteDatabase ()
+{
+    // Blocks until the thread exits in an orderly fashion
+    stopThread ();
 }
 
 void SqliteDatabase::connect ()
@@ -317,7 +323,22 @@ void SqliteDatabase::doHook (const char* db, int pages)
     }
     else
     {
-        m_thread.call (&SqliteDatabase::runWal, this);
+        notify();
+    }
+}
+
+void SqliteDatabase::run ()
+{
+    // Simple thread loop runs Wal every time it wakes up via
+    // the call to Thread::notify, unless Thread::threadShouldExit returns
+    // true in which case we simply break.
+    //
+    for (;;)
+    {
+        wait ();
+        if (threadShouldExit())
+            break;
+        runWal();
     }
 }
 
