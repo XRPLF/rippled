@@ -160,6 +160,7 @@
     <ClInclude Include="..\..\beast\Chrono.h" />
     <ClInclude Include="..\..\beast\thread\TryLockGuard.h" />
     <ClInclude Include="..\..\beast\thread\UnlockGuard.h" />
+    <ClInclude Include="..\..\beast\thread\WaitableEvent.h" />
     <ClInclude Include="..\..\beast\TypeTraits.h" />
     <ClInclude Include="..\..\beast\type_traits\IntegralConstant.h" />
     <ClInclude Include="..\..\beast\type_traits\IsIntegral.h" />
@@ -333,7 +334,6 @@
     <ClInclude Include="..\..\modules\beast_core\threads\ThreadLocalValue.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\ThreadPool.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\TimeSliceThread.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\WaitableEvent.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\DeadlineTimer.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\Semaphore.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\ServiceQueue.h" />
@@ -506,6 +506,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\strings\Strings.cpp" />
     <ClCompile Include="..\..\beast\thread\impl\RecursiveMutex.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\thread\impl\WaitableEvent.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

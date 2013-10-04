@@ -73,21 +73,6 @@ bool CriticalSection::tryEnter() const noexcept { return TryEnterCriticalSection
 void CriticalSection::exit() const noexcept { LeaveCriticalSection ((CRITICAL_SECTION*) section); }
 
 //==============================================================================
-
-WaitableEvent::WaitableEvent (const bool manualReset, bool initiallySignaled) noexcept
-    : handle (CreateEvent (0, manualReset ? TRUE : FALSE, initiallySignaled ? TRUE : FALSE, 0)) {}
-
-WaitableEvent::~WaitableEvent() noexcept { CloseHandle (handle); }
-
-void WaitableEvent::signal() const noexcept { SetEvent (handle); }
-void WaitableEvent::reset() const noexcept { ResetEvent (handle); }
-
-bool WaitableEvent::wait (const int timeOutMs) const noexcept
-{
-    return WaitForSingleObject (handle, (DWORD) timeOutMs) == WAIT_OBJECT_0;
-}
-
-//==============================================================================
 void BEAST_API beast_threadEntryPoint (void*);
 
 static unsigned int __stdcall threadEntryProc (void* userData)

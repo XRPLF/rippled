@@ -512,9 +512,6 @@
     <ClInclude Include="..\..\modules\beast_core\threads\TimeSliceThread.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\WaitableEvent.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\time\PerformanceCounter.h">
       <Filter>beast_core\time</Filter>
     </ClInclude>
@@ -1239,6 +1236,9 @@
     <ClInclude Include="..\..\beast\chrono\CPUMeter.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\thread\WaitableEvent.h">
+      <Filter>beast\thread</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1786,6 +1786,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\chrono\impl\CPUMeter.cpp">
       <Filter>beast\chrono\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\thread\impl\WaitableEvent.cpp">
+      <Filter>beast\thread\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
