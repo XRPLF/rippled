@@ -61,3 +61,5 @@ namespace beast {
 }
 
 #include "http/HTTPParser.cpp"
+#include "http/HTTPRequestParser.cpp"
+#include "http/HTTPResponseParser.cpp"

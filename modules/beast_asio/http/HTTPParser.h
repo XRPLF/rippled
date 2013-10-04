@@ -77,7 +77,7 @@ public:
     */
     SharedPtr <HTTPResponse> const& response ();
 
-private:
+protected:
     Type m_type;
     ScopedPointer <HTTPParserImpl> m_impl;
     SharedPtr <HTTPRequest> m_request;

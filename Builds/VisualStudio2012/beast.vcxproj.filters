@@ -1215,6 +1215,12 @@
     <ClInclude Include="..\..\beast\net\BufferType.h">
       <Filter>beast\net</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPRequestParser.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponseParser.h">
+      <Filter>beast_asio\http</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1747,6 +1753,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\net\impl\DynamicBuffer.cpp">
       <Filter>beast\net\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPRequestParser.cpp">
+      <Filter>beast_asio\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponseParser.cpp">
+      <Filter>beast_asio\http</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

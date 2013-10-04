@@ -189,7 +189,9 @@
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPParserImpl.h" />
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPParser.h" />
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPRequest.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPRequestParser.h" />
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponse.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponseParser.h" />
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPVersion.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogic.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicPROXY.h" />
@@ -564,7 +566,19 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPRequestParser.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponse.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponseParser.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
