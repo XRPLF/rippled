@@ -109,6 +109,7 @@ public:
     SHAMapItem::pointer peekNextItem (uint256 const& );
     SHAMapItem::pointer peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type);
     SHAMapItem::pointer peekPrevItem (uint256 const& );
+    void visitLeaves(FUNCTION_TYPE<void (SHAMapItem::ref)>);
 
     // comparison/sync functions
     void getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,

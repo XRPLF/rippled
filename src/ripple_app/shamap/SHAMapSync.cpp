@@ -24,6 +24,60 @@ static const uint256 uZero;
 
 KeyCache <uint256, UptimeTimerAdapter> SHAMap::fullBelowCache ("fullBelowCache", 524288, 240);
 
+void SHAMap::visitLeaves (FUNCTION_TYPE<void (SHAMapItem::ref item)> function)
+{
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+    assert (root->isValid ());
+
+    if (!root || root->isEmpty ())
+        return;
+
+    if (!root->isInner ())
+    {
+        function (root->peekItem ());
+        return;
+    }
+
+    typedef std::pair<int, SHAMapTreeNode*> posPair;
+
+    std::stack<posPair> stack;
+    SHAMapTreeNode* node = root.get ();
+    int pos = 0;
+
+    while (1)
+    {
+        while (pos < 16)
+        {
+            if (node->isEmptyBranch (pos))
+                ++pos;
+	    else
+            {
+                SHAMapTreeNode* child = getNodePointerNT (node->getChildNodeID (pos), node->getChildHash (pos));
+                if (child->isLeaf ())
+                {
+                    function (child->peekItem ());
+                    ++pos;
+                }
+                else
+                {
+                    if (pos != 15)
+                        stack.push (posPair (pos + 1, node)); // save next position
+
+                    node = child;
+                    pos = 0;
+                }
+            }
+        }
+
+        if (stack.empty ())
+            break;
+        pos = stack.top ().first;
+	node = stack.top ().second;
+	stack.pop ();
+    }
+}
+
 void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
                               SHAMapSyncFilter* filter)
 {

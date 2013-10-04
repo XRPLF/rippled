@@ -990,6 +990,16 @@ void Ledger::addJson (Json::Value& ret, int options)
     ret["ledger"] = getJson (options);
 }
 
+static void stateItemTagAppender(Json::Value& value, SHAMapItem::ref smi)
+{
+    value.append (smi->getTag ().GetHex ());
+}
+
+static void stateItemFullAppender(Json::Value& value, SLE::ref sle)
+{
+    value.append (sle->getJson (0));
+}
+
 Json::Value Ledger::getJson (int options)
 {
     Json::Value ledger (Json::objectValue);
@@ -1077,23 +1087,11 @@ Json::Value Ledger::getJson (int options)
 
     if (mAccountStateMap && (bFull || isSetBit (options, LEDGER_JSON_DUMP_STATE)))
     {
-        Json::Value state (Json::arrayValue);
-        SHAMap::ScopedLockType l (mAccountStateMap->peekMutex (), __FILE__, __LINE__);
-
-        for (SHAMapItem::pointer item = mAccountStateMap->peekFirstItem (); !!item;
-                item = mAccountStateMap->peekNextItem (item->getTag ()))
-        {
-            if (bFull || isSetBit (options, LEDGER_JSON_EXPAND))
-            {
-                SerializerIterator sit (item->peekSerializer ());
-                SerializedLedgerEntry sle (sit, item->getTag ());
-                state.append (sle.getJson (0));
-            }
-            else
-                state.append (item->getTag ().GetHex ());
-        }
-
-        ledger["accountState"] = state;
+        Json::Value& state = (ledger["accountState"] = Json::arrayValue);
+        if (bFull || isSetBit (options, LEDGER_JSON_EXPAND))
+            visitStateItems(BIND_TYPE(stateItemFullAppender, beast::ref(state), P_1));
+        else
+            mAccountStateMap->visitLeaves(BIND_TYPE(stateItemTagAppender, beast::ref(state), P_1));
     }
 
     return ledger;
@@ -1234,6 +1232,17 @@ void Ledger::visitAccountItems (const uint160& accountID, FUNCTION_TYPE<void (SL
         currentIndex    = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
     }
 
+}
+
+static void visitHelper (FUNCTION_TYPE<void (SLE::ref)>& function, SHAMapItem::ref item)
+{
+    function (boost::make_shared<SLE> (item->peekSerializer (), item->getTag ()));
+}
+
+void Ledger::visitStateItems (FUNCTION_TYPE<void (SLE::ref)> function)
+{
+    if (mAccountStateMap)
+        mAccountStateMap->visitLeaves(BIND_TYPE(&visitHelper, beast::ref(function), P_1));
 }
 
 /*
