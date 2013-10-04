@@ -29,8 +29,8 @@ class NodeStoreScheduler
 public:
     NodeStoreScheduler (Stoppable& parent, JobQueue& jobQueue);
 
-    void onStop (Journal);
-    void onChildrenStopped (Journal);
+    void onStop ();
+    void onChildrenStopped ();
     void scheduleTask (NodeStore::Task& task);
 
 private:

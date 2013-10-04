@@ -376,7 +376,7 @@ public:
     //
     // Stoppable
     
-    void onStop (Journal)
+    void onStop ()
     {
         m_heartbeatTimer.cancel();
         m_clusterTimer.cancel();

@@ -641,22 +641,22 @@ public:
     // Stoppable
     //
 
-    void onPrepare (Journal)
+    void onPrepare ()
     {
         prepareValidators ();
     }
 
-    void onStart (Journal journal)
+    void onStart ()
     {
-        journal.debug << "Application starting";
+        m_journal.debug << "Application starting";
 
         m_sweepTimer.setExpiration (10);
     }
 
     // Called to indicate shutdown.
-    void onStop (Journal journal)
+    void onStop ()
     {
-        journal.debug << "Application stopping";
+        m_journal.debug << "Application stopping";
 
         m_sweepTimer.cancel();
 
@@ -679,8 +679,8 @@ public:
         //             crash), the run() function will not get called and we will
         //             avoid doing silly things like contacting the SNTP server, or
         //             running the various logic threads like Validators, PeerFinder, etc.
-        prepare (m_journal);
-        start (m_journal);
+        prepare ();
+        start ();
     
 
         {

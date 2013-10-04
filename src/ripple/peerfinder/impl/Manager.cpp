@@ -270,16 +270,16 @@ public:
     // Stoppable
     //
 
-    void onPrepare (Journal journal)
+    void onPrepare ()
     {
     }
 
-    void onStart (Journal journal)
+    void onStart ()
     {
         startThread();
     }
 
-    void onStop (Journal journal)
+    void onStop ()
     {
         if (this->Thread::isThreadRunning ())
         {

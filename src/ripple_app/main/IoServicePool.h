@@ -31,8 +31,8 @@ public:
     boost::asio::io_service& getService ();
     operator boost::asio::io_service& ();
 
-    void onStop (Journal);
-    void onChildrenStopped (Journal);
+    void onStop ();
+    void onChildrenStopped ();
 
 private:
     class ServiceThread;

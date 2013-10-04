@@ -351,7 +351,7 @@ Json::Value InboundLedgers::getInfo()
     return ret;
 }
 
-void InboundLedgers::onStop (Journal)
+void InboundLedgers::onStop ()
 {
     ScopedLockType lock (mLock, __FILE__, __LINE__);
 

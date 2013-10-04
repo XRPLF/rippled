@@ -202,20 +202,20 @@ public:
     // Stoppable
     //
 
-    void onPrepare (Journal)
+    void onPrepare ()
     {
         preparePeerFinder();
     }
 
-    void onStart (Journal)
+    void onStart ()
     {
     }
 
-    void onStop (Journal)
+    void onStop ()
     {
     }
 
-    void onChildrenStopped (Journal)
+    void onChildrenStopped ()
     {
         // VFALCO TODO Clean this up and do it right, based on sockets
         stopped();

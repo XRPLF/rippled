@@ -155,21 +155,21 @@ public:
     // Stoppable
     //
 
-    void onPrepare (Journal)
+    void onPrepare ()
     {
     }
 
-    void onStart (Journal journal)
+    void onStart ()
     {
-        journal.debug << "Starting";
+        m_journal.debug << "Starting";
         startThread ();
     }
 
-    void onStop (Journal journal)
+    void onStop ()
     {
         if (isThreadRunning ())
         {
-            journal.debug << "Stopping";
+            m_journal.debug << "Stopping";
             stopThreadAsync ();
         }
         else

@@ -65,47 +65,47 @@ void Stoppable::stopped ()
     m_stoppedEvent.signal();
 }
 
-void Stoppable::onPrepare (Journal journal)
+void Stoppable::onPrepare ()
 {
 }
 
-void Stoppable::onStart (Journal journal)
+void Stoppable::onStart ()
 {
 }
 
-void Stoppable::onStop (Journal journal)
+void Stoppable::onStop ()
 {
     stopped();
 }
 
-void Stoppable::onChildrenStopped (Journal journal)
+void Stoppable::onChildrenStopped ()
 {
 }
 
 //------------------------------------------------------------------------------
 
-void Stoppable::prepareRecursive (Journal journal)
+void Stoppable::prepareRecursive ()
 {
-    onPrepare (journal);
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
-        iter->stoppable->prepareRecursive (journal);
+        iter->stoppable->prepareRecursive ();
+    onPrepare ();
 }
 
-void Stoppable::startRecursive (Journal journal)
+void Stoppable::startRecursive ()
 {
-    onStart (journal);
+    onStart ();
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
-        iter->stoppable->startRecursive (journal);
+        iter->stoppable->startRecursive ();
 }
 
-void Stoppable::stopAsyncRecursive (Journal journal)
+void Stoppable::stopAsyncRecursive ()
 {
-    onStop (journal);
+    onStop ();
     for (Children::const_iterator iter (m_children.cbegin ());
         iter != m_children.cend(); ++iter)
-        iter->stoppable->stopAsyncRecursive (journal);
+        iter->stoppable->stopAsyncRecursive ();
 }
 
 void Stoppable::stopRecursive (Journal journal)
@@ -120,7 +120,7 @@ void Stoppable::stopRecursive (Journal journal)
     //
     memoryBarrier ();
     m_childrenStopped = true;
-    onChildrenStopped (journal);
+    onChildrenStopped ();
 
     // Now block on this Stoppable.
     //
@@ -151,30 +151,24 @@ bool RootStoppable::isStopping() const
     return m_calledStopAsync.get() != 0;
 }
 
-void RootStoppable::prepare (Journal journal)
+void RootStoppable::prepare ()
 {
     if (! m_prepared.compareAndSetBool (1, 0))
-    {
-        journal.warning << "Stoppable::prepare called again";
         return;
-    }
 
-    prepareRecursive (journal);
+    prepareRecursive ();
 }
 
-void RootStoppable::start (Journal journal)
+void RootStoppable::start ()
 {
     // Courtesy call to prepare.
     if (m_prepared.compareAndSetBool (1, 0))
-        prepareRecursive (journal);
+        prepareRecursive ();
 
     if (! m_started.compareAndSetBool (1, 0))
-    {
-        journal.warning << "Stoppable::start called again";
         return;
-    }
 
-    startRecursive (journal);
+    startRecursive ();
 }
 
 void RootStoppable::stop (Journal journal)
@@ -185,14 +179,14 @@ void RootStoppable::stop (Journal journal)
         return;
     }
 
-    stopAsync (journal);
+    stopAsync ();
     stopRecursive (journal);
 }
 
-void RootStoppable::stopAsync (Journal journal)
+void RootStoppable::stopAsync ()
 {
     if (! m_calledStopAsync.compareAndSetBool (1, 0))
         return;
 
-    stopAsyncRecursive (journal);
+    stopAsyncRecursive ();
 }

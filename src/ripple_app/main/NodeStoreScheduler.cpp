@@ -25,13 +25,13 @@ NodeStoreScheduler::NodeStoreScheduler (Stoppable& parent, JobQueue& jobQueue)
 {
 }
 
-void NodeStoreScheduler::onStop (Journal)
+void NodeStoreScheduler::onStop ()
 {
     if (--m_taskCount == 0)
         stopped();
 }
 
-void NodeStoreScheduler::onChildrenStopped (Journal)
+void NodeStoreScheduler::onChildrenStopped ()
 {
 }
 

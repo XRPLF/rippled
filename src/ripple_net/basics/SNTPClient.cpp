@@ -114,7 +114,7 @@ public:
         stopped ();
     }
 
-    void onStop (Journal)
+    void onStop ()
     {
         // HACK!
         m_io_service.stop ();

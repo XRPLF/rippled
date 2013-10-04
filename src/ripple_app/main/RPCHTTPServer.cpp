@@ -92,12 +92,12 @@ public:
     // Stoppable
     //
 
-    void onStop (Journal)
+    void onStop ()
     {
         m_server.stopAsync();
     }
 
-    void onChildrenStopped (Journal)
+    void onChildrenStopped ()
     {
     }
 

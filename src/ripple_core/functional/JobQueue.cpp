@@ -645,7 +645,7 @@ private:
 
     //--------------------------------------------------------------------------
 
-    void onStop (Journal)
+    void onStop ()
     {
         // VFALCO NOTE I wanted to remove all the jobs that are skippable
         //             but then the Workers count of tasks to process
@@ -697,7 +697,7 @@ private:
         */
     }
 
-    void onChildrenStopped (Journal)
+    void onChildrenStopped ()
     {
         ScopedLock lock (m_mutex);
 

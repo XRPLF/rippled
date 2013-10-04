@@ -107,7 +107,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void onStop (Journal)
+    void onStop ()
     {
         {
             boost::system::error_code ec;
