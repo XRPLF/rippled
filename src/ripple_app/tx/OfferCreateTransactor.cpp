@@ -728,9 +728,6 @@ TER OfferCreateTransactor::doApply ()
 
     CondLog (tesSUCCESS != terResult, lsINFO, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: final terResult=%s") % transToken (terResult));
 
-    if (isTesSuccess (terResult))
-        getApp().getOrderBookDB ().invalidate ();
-
     return terResult;
 }
 
