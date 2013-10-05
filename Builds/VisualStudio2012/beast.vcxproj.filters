@@ -294,6 +294,9 @@
     <Filter Include="beast\threads\detail">
       <UniqueIdentifier>{b116764e-1ad5-4854-a549-73c5beb5ae37}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\boost">
+      <UniqueIdentifier>{d7ec873a-d1e7-4341-9d20-a1be8f8ddd88}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1236,6 +1239,12 @@
     <ClInclude Include="..\..\beast\threads\detail\BindHandler.h">
       <Filter>beast\threads\detail</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\boost\ErrorCode.h">
+      <Filter>beast\boost</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\Boost.h">
+      <Filter>beast</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1780,6 +1789,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\threads\impl\Stoppable.cpp">
       <Filter>beast\threads\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\boost\Boost.cpp">
+      <Filter>beast\boost</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
