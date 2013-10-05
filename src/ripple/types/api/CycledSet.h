@@ -53,7 +53,7 @@ public:
     typedef typename ContainerType::const_pointer           const_pointer;
 
     explicit CycledSet (
-        size_type item_max,
+        size_type item_max = 0, // 0 means no limit
         Hash hash = Hash(),
         KeyEqual equal = KeyEqual(),
         Allocator alloc = Allocator())
@@ -69,7 +69,7 @@ public:
     // Returns `true` if the next real insert would swap
     bool full() const
     {
-        return m_front.size() >= m_max;
+        return (m_max != 0) && m_front.size() >= m_max;
     }
 
     // Adds the key to the front if its not in either map
