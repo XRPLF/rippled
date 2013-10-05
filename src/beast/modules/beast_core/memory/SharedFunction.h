@@ -20,89 +20,48 @@
 #ifndef BEAST_CORE_SHAREDFUNCTION_H_INCLUDED
 #define BEAST_CORE_SHAREDFUNCTION_H_INCLUDED
 
-/** A reference counted, abstract function object.
-*/
+/** A reference counted, abstract function object. */
 template <typename Signature, class Allocator = std::allocator <char> >
 class SharedFunction;
 
 //------------------------------------------------------------------------------
 
-// nullary function
-//
-template <typename R, class A>
+template <class R, class A>
 class SharedFunction <R (void), A>
 {
 public:
-    class Call : public SharedObject
-    {
-    public:
-        virtual R operator() () = 0;
-    };
+    struct Call : SharedObject
+        { virtual R operator() () = 0; };
 
     template <typename F>
-    class CallType : public Call
+    struct CallType : Call
     {
-    public:
         typedef typename A:: template rebind <CallType <F> >::other Allocator;
-
         CallType (BEAST_MOVE_ARG(F) f, A a = A ())
-            : m_f (BEAST_MOVE_CAST(F)(f))
-            , m_a (a)
-        {
-        }
-
+            : m_f (BEAST_MOVE_CAST(F)(f)), m_a (a)
+            { }
         R operator() ()
-        {
-            return (m_f)();
-        }
-
+            { return (m_f)(); }
     private:
         F m_f;
         Allocator m_a;
     };
 
-    //--------------------------------------------------------------------------
-
-    SharedFunction ()
-    {
-    }
-
+    typedef R result_type;
     template <typename F>
-    SharedFunction (F f, A a = A ())
-        : m_ptr (new (
-            typename CallType <F>::Allocator (a)
-                .allocate (sizeof (CallType <F>)))
-                    CallType <F> (BEAST_MOVE_CAST(F)(f), a))
-    {
-    }
-
-    SharedFunction (SharedFunction const& other)
-        : m_ptr (other.m_ptr)
-    {
-    }
-
+    explicit SharedFunction (F f, A a = A ())
+        : m_ptr (new (typename CallType <F>::Allocator (a).allocate (1))
+            CallType <F> (BEAST_MOVE_CAST(F)(f), a))
+        { }
     SharedFunction (SharedFunction const& other, A)
         : m_ptr (other.m_ptr)
-    {
-    }
-
-    SharedFunction& operator= (SharedFunction const& other)
-    {
-        m_ptr = other.m_ptr;
-        return *this;
-    }
-
+        { }
+    SharedFunction ()
+        { }
     bool empty () const
-    {
-        return m_ptr == nullptr;
-    }
-
+        { return m_ptr == nullptr; }
     R operator() () const
-    {
-        bassert (! empty());
-
-        return (*m_ptr)();
-    }
+        { return (*m_ptr)(); }
 
 private:
     SharedPtr <Call> m_ptr;
@@ -110,86 +69,266 @@ private:
 
 //------------------------------------------------------------------------------
 
-// unary function (arity 1)
-//
-template <typename R, typename P1, class A>
+template <class R, class P1, class A>
 class SharedFunction <R (P1), A>
 {
 public:
-    class Call : public SharedObject
-    {
-    public:
-        virtual R operator() (P1 p1) = 0;
-    };
+    struct Call : public SharedObject
+        { virtual R operator() (P1 const& p1) = 0; };
 
     template <typename F>
-    class CallType : public Call
+    struct CallType : Call
     {
-    public:
         typedef typename A:: template rebind <CallType <F> >::other Allocator;
-
         CallType (BEAST_MOVE_ARG(F) f, A a = A ())
-            : m_f (BEAST_MOVE_CAST(F)(f))
-            , m_a (a)
-        {
-        }
-
-        R operator() (P1 p1)
-        {
-            return (m_f)(p1);
-        }
-
+            : m_f (BEAST_MOVE_CAST(F)(f)), m_a (a)
+            { }
+        R operator() (P1 const& p1)
+            { return (m_f)(p1); }
     private:
         F m_f;
         Allocator m_a;
     };
 
-    //--------------------------------------------------------------------------
-
-    SharedFunction ()
-    {
-    }
-
+    typedef R result_type;
     template <typename F>
     SharedFunction (F f, A a = A ())
-        : m_ptr (new (
-            typename CallType <F>::Allocator (a)
-                .allocate (sizeof (CallType <F>)))
-                    CallType <F> (BEAST_MOVE_CAST(F)(f), a))
-    {
-    }
-
-    SharedFunction (SharedFunction const& other)
-        : m_ptr (other.m_ptr)
-    {
-    }
-
+        : m_ptr (new (typename CallType <F>::Allocator (a).allocate (1))
+            CallType <F> (BEAST_MOVE_CAST(F)(f), a))
+        { }
     SharedFunction (SharedFunction const& other, A)
         : m_ptr (other.m_ptr)
-    {
-    }
-
-    SharedFunction& operator= (SharedFunction const& other)
-    {
-        m_ptr = other.m_ptr;
-        return *this;
-    }
-
+        { }
+    SharedFunction ()
+        { }
     bool empty () const
-    {
-        return m_ptr == nullptr;
-    }
-
-    R operator() (P1 p1) const
-    {
-        bassert (! empty());
-
-        return (*m_ptr)(p1);
-    }
+        { return m_ptr == nullptr; }
+    R operator() (P1 const& p1) const
+        { return (*m_ptr)(p1); }
 
 private:
     SharedPtr <Call> m_ptr;
 };
 
+//------------------------------------------------------------------------------
+
+template <class R, class P1, class P2, class A>
+class SharedFunction <R (P1, P2), A>
+{
+public:
+    struct Call : public SharedObject
+        { virtual R operator() (P1 const& p1, P2 const& p2) = 0; };
+
+    template <typename F>
+    struct CallType : Call
+    {
+        typedef typename A:: template rebind <CallType <F> >::other Allocator;
+        CallType (BEAST_MOVE_ARG(F) f, A a = A ())
+            : m_f (BEAST_MOVE_CAST(F)(f)), m_a (a)
+            { }
+        R operator() (P1 const& p1, P2 const& p2)
+            { return (m_f)(p1, p2); }
+    private:
+        F m_f;
+        Allocator m_a;
+    };
+
+    typedef R result_type;
+    template <typename F>
+    SharedFunction (F f, A a = A ())
+        : m_ptr (new (typename CallType <F>::Allocator (a).allocate (1))
+            CallType <F> (BEAST_MOVE_CAST(F)(f), a))
+        { }
+    SharedFunction (SharedFunction const& other, A)
+        : m_ptr (other.m_ptr)
+        { }
+    SharedFunction ()
+        { }
+    bool empty () const
+        { return m_ptr == nullptr; }
+    R operator() (P1 const& p1, P2 const& p2) const
+        { return (*m_ptr)(p1, p2); }
+
+private:
+    SharedPtr <Call> m_ptr;
+};
+
+//------------------------------------------------------------------------------
+
+template <class R, class P1, class P2, class P3, class A>
+class SharedFunction <R (P1, P2, P3), A>
+{
+public:
+    struct Call : public SharedObject
+        { virtual R operator() (P1 const& p1, P2 const& p2, P3 const& p3) = 0; };
+
+    template <typename F>
+    struct CallType : Call
+    {
+        typedef typename A:: template rebind <CallType <F> >::other Allocator;
+        CallType (BEAST_MOVE_ARG(F) f, A a = A ())
+            : m_f (BEAST_MOVE_CAST(F)(f)), m_a (a)
+            { }
+        R operator() (P1 const& p1, P2 const& p2, P3 const& p3)
+            { return (m_f)(p1, p2, p3); }
+    private:
+        F m_f;
+        Allocator m_a;
+    };
+
+    typedef R result_type;
+    template <typename F>
+    SharedFunction (F f, A a = A ())
+        : m_ptr (new (typename CallType <F>::Allocator (a).allocate (1))
+            CallType <F> (BEAST_MOVE_CAST(F)(f), a))
+        { }
+    SharedFunction (SharedFunction const& other, A)
+        : m_ptr (other.m_ptr)
+        { }
+    SharedFunction ()
+        { }
+    bool empty () const
+        { return m_ptr == nullptr; }
+    R operator() (P1 const& p1, P2 const& p2, P3 const& p3) const
+        { return (*m_ptr)(p1, p2, p3); }
+
+private:
+    SharedPtr <Call> m_ptr;
+};
+
+//------------------------------------------------------------------------------
+
+template <class R, class P1, class P2, class P3, class P4, class A>
+class SharedFunction <R (P1, P2, P3, P4), A>
+{
+public:
+    struct Call : public SharedObject
+        { virtual R operator() (P1 const& p1, P2 const& p2, P3 const& p3, P4 const& p4) = 0; };
+
+    template <typename F>
+    struct CallType : Call
+    {
+        typedef typename A:: template rebind <CallType <F> >::other Allocator;
+        CallType (BEAST_MOVE_ARG(F) f, A a = A ())
+            : m_f (BEAST_MOVE_CAST(F)(f)), m_a (a)
+            { }
+        R operator() (P1 const& p1, P2 const& p2, P3 const& p3, P4 const& p4)
+            { return (m_f)(p1, p2, p3, p4); }
+    private:
+        F m_f;
+        Allocator m_a;
+    };
+
+    typedef R result_type;
+    template <typename F>
+    SharedFunction (F f, A a = A ())
+        : m_ptr (new (typename CallType <F>::Allocator (a).allocate (1))
+            CallType <F> (BEAST_MOVE_CAST(F)(f), a))
+        { }
+    SharedFunction (SharedFunction const& other, A)
+        : m_ptr (other.m_ptr)
+        { }
+    SharedFunction ()
+        { }
+    bool empty () const
+        { return m_ptr == nullptr; }
+    R operator() (P1 const& p1, P2 const& p2, P3 const& p3, P4 const& p4) const
+        { return (*m_ptr)(p1, p2, p3, p4); }
+
+private:
+    SharedPtr <Call> m_ptr;
+};
+
+//------------------------------------------------------------------------------
+
+template <class R, class P1, class P2, class P3, class P4, class P5, class A>
+class SharedFunction <R (P1, P2, P3, P4, P5), A>
+{
+public:
+    struct Call : public SharedObject
+        { virtual R operator() (P1 const& p1, P2 const& p2, P3 const& p3,
+                                P4 const& p4, P5 const& p5) = 0; };
+
+    template <typename F>
+    struct CallType : Call
+    {
+        typedef typename A:: template rebind <CallType <F> >::other Allocator;
+        CallType (BEAST_MOVE_ARG(F) f, A a = A ())
+            : m_f (BEAST_MOVE_CAST(F)(f)), m_a (a)
+            { }
+        R operator() (P1 const& p1, P2 const& p2, P3 const& p3,
+                      P4 const& p4, P5 const& p5)
+            { return (m_f)(p1, p2, p3, p4, p5); }
+    private:
+        F m_f;
+        Allocator m_a;
+    };
+
+    typedef R result_type;
+    template <typename F>
+    SharedFunction (F f, A a = A ())
+        : m_ptr (new (typename CallType <F>::Allocator (a).allocate (1))
+            CallType <F> (BEAST_MOVE_CAST(F)(f), a))
+        { }
+    SharedFunction (SharedFunction const& other, A)
+        : m_ptr (other.m_ptr)
+        { }
+    SharedFunction ()
+        { }
+    bool empty () const
+        { return m_ptr == nullptr; }
+    R operator() (P1 const& p1, P2 const& p2, P3 const& p3,
+                  P4 const& p4, P5 const& p5) const
+        { return (*m_ptr)(p1, p2, p3, p4, p5); }
+
+private:
+    SharedPtr <Call> m_ptr;
+};
+
+//------------------------------------------------------------------------------
+
+template <class R, class P1, class P2, class P3, class P4, class P5, class P6, class A>
+class SharedFunction <R (P1, P2, P3, P4, P5, P6), A>
+{
+public:
+    struct Call : public SharedObject
+        { virtual R operator() (P1 const& p1, P2 const& p2, P3 const& p3,
+                                P4 const& p4, P5 const& p5, P6 const& p6) = 0; };
+
+    template <typename F>
+    struct CallType : Call
+    {
+        typedef typename A:: template rebind <CallType <F> >::other Allocator;
+        CallType (BEAST_MOVE_ARG(F) f, A a = A ())
+            : m_f (BEAST_MOVE_CAST(F)(f)), m_a (a)
+            { }
+        R operator() (P1 const& p1, P2 const& p2, P3 const& p3,
+                      P4 const& p4, P5 const& p5, P6 const& p6)
+            { return (m_f)(p1, p2, p3, p4, p5, p6); }
+    private:
+        F m_f;
+        Allocator m_a;
+    };
+
+    typedef R result_type;
+    template <typename F>
+    SharedFunction (F f, A a = A ())
+        : m_ptr (new (typename CallType <F>::Allocator (a).allocate (1))
+            CallType <F> (BEAST_MOVE_CAST(F)(f), a))
+        { }
+    SharedFunction (SharedFunction const& other, A)
+        : m_ptr (other.m_ptr)
+        { }
+    SharedFunction ()
+        { }
+    bool empty () const
+        { return m_ptr == nullptr; }
+    R operator() (P1 const& p1, P2 const& p2, P3 const& p3,
+                  P4 const& p4, P5 const& p5, P6 const& p6) const
+        { return (*m_ptr)(p1, p2, p3, p4, p5, p6); }
+
+private:
+    SharedPtr <Call> m_ptr;
+};
 
 #endif
