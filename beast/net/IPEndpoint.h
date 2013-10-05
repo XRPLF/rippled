@@ -324,6 +324,8 @@ public:
         }
     };
 
+    struct key_equal;
+
 private:
     Type m_type;
     uint16 m_port;
@@ -362,6 +364,14 @@ std::istream& operator>> (std::istream& is, IPEndpoint::V4& addr);
 std::istream& operator>> (std::istream& is, IPEndpoint& ep);
 //std::istream& operator>> (std::istream &is, IPEndpoint::V6&);
 /** @} */
+
+struct IPEndpoint::key_equal
+{
+    bool operator() (IPEndpoint const& lhs, IPEndpoint const& rhs) const
+    {
+        return lhs == rhs;
+    }
+};
 
 }
 
