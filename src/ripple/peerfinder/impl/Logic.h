@@ -92,7 +92,7 @@ public:
     // Our view of the current set of connected peers.
     Peers m_peers;
 
-    EndpointCache m_cache;
+    Cache m_cache;
 
     LegacyEndpointCache m_legacyCache;
 
@@ -204,9 +204,14 @@ public:
         m_sources.push_back (source);
     }
 
-    void onUpdate ()
+    // Called periodically to cycle and age the varioous caches.
+    //
+    void cycleCache()
     {
-        m_journal.debug << "Processing Update";
+        m_cache.cycle();
+        for (Peers::iterator iter (m_peers.begin());
+            iter != m_peers.end(); ++iter)
+            iter->received.cycle();
     }
 
     // Called when a peer connection is established.
@@ -301,7 +306,7 @@ public:
     {
         if (! m_peers.empty())
         {
-            m_journal.debug << "Sending mtENDPOINTS";
+            m_journal.trace << "Sending mtENDPOINTS";
 
             RelativeTime const now (RelativeTime::fromStartup());
 
@@ -313,7 +318,7 @@ public:
                 {
                     sendEndpoints (peer);
                     peer.whenSendEndpoints = now +
-                        RelativeTime (secondsPerEndpoints);
+                        RelativeTime (secondsPerMessage);
                 }
             }
         }
@@ -387,43 +392,64 @@ public:
         {
             m_journal.warning << "Charging peer " << peer.address <<
                 " for sending too many endpoints";
-                        
+
             m_callback.chargePeerLoadPenalty(id);
         }
 
-        // process the list
+        // Process each entry
+        //
+        int neighborCount (0);
+        for (std::vector <Endpoint>::const_iterator iter (list.begin());
+            iter != list.end(); ++iter)
         {
-            bool foundNeighbor (false);
-            bool chargedPenalty (false);
-            for (std::vector <Endpoint>::const_iterator iter (list.begin());
-                iter != list.end(); ++iter)
+            Endpoint const& message (*iter);
+
+            // Remember that this peer gave us this address
+            peer.received.insert (message.address);
+
+            if (message.hops == 0)
             {
-                Endpoint const& endpoint (*iter);
-                if (endpoint.hops == 0)
+                ++neighborCount;
+                if (neighborCount == 1)
                 {
-                    if (! foundNeighbor)
+                    if (! peer.checked)
                     {
-                        foundNeighbor = true;
-                        // Test the peer's listening port if its the first time
-                        if (! peer.checked)
-                            m_checker.async_test (endpoint.address, bind (
-                                &Logic::onCheckEndpoint, this, id,
-                                    endpoint.address, _1));
+                        // Test the peer's listening port before
+                        // adding it to the cache for the first time.
+                        //
+                        m_checker.async_test (message.address, bind (
+                            &Logic::onCheckEndpoint, this, id,
+                                message.address, _1));
+
+                        // Note that we simply discard the first Endpoint
+                        // that the neighbor sends when we perform the
+                        // listening test. They will just send us another
+                        // one in a few seconds.
                     }
-                    else if (! chargedPenalty)
+                    else if (peer.canAccept)
                     {
-                        // Only charge them once (?)
-                        chargedPenalty = true;
-                        // More than one zero-hops message?!
-                        m_journal.warning << "Charging peer " << peer.address <<
-                            " for sending more than one hops==0 endpoint";
-                        m_callback.chargePeerLoadPenalty (id);
+                        // We only add to the cache if the neighbor passed the
+                        // listening test, else we silently drop their message
+                        // since their listening port is misconfigured.
+                        //
+                        m_cache.insert (message);
                     }
                 }
             }
+            else
+            {
+                m_cache.insert (message);
+            }
         }
 
-        peer.whenAcceptEndpoints = now + secondsPerEndpoints;
+        if (neighborCount > 1)
+        {
+            m_journal.warning << "Peer " << peer.address <<
+            " sent " << neighborCount << " entries with hops=0";
+            // VFALCO TODO Should we apply load charges?
+        }
+
+        peer.whenAcceptEndpoints = now + secondsPerMessage;
     }
 
     //--------------------------------------------------------------------------

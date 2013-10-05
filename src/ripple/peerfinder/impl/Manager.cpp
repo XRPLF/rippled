@@ -188,7 +188,8 @@ public:
     CheckerAdapter m_checker;
     Logic m_logic;
     DeadlineTimer m_connectTimer;
-    DeadlineTimer m_endpointsTimer;
+    DeadlineTimer m_messageTimer;
+    DeadlineTimer m_cacheTimer;
 
     //--------------------------------------------------------------------------
 
@@ -200,7 +201,8 @@ public:
         , m_checker (m_queue)
         , m_logic (callback, m_store, m_checker, journal)
         , m_connectTimer (this)
-        , m_endpointsTimer (this)
+        , m_messageTimer (this)
+        , m_cacheTimer (this)
     {
 #if 1
 #if BEAST_MSVC
@@ -283,7 +285,8 @@ public:
         m_checker.cancel ();
         m_logic.stop ();
         m_connectTimer.cancel();
-        m_endpointsTimer.cancel();
+        m_messageTimer.cancel();
+        m_cacheTimer.cancel();
         m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
     }
 
@@ -296,10 +299,15 @@ public:
             m_queue.dispatch (bind (&Logic::makeOutgoingConnections, &m_logic));
             m_connectTimer.setExpiration (secondsPerConnect);
         }
-        else if (timer == m_endpointsTimer)
+        else if (timer == m_messageTimer)
         {
             m_queue.dispatch (bind (&Logic::sendEndpoints, &m_logic));
-            m_endpointsTimer.setExpiration (secondsPerEndpoints);
+            m_messageTimer.setExpiration (secondsPerMessage);
+        }
+        else if (timer == m_cacheTimer)
+        {
+            m_queue.dispatch (bind (&Logic::cycleCache, &m_logic));
+            m_cacheTimer.setExpiration (cacheSecondsToLive);
         }
     }
 
@@ -326,8 +334,9 @@ public:
         }
 
         m_connectTimer.setExpiration (secondsPerConnect);
-        m_endpointsTimer.setExpiration (secondsPerEndpoints);
-
+        m_messageTimer.setExpiration (secondsPerMessage);
+        m_cacheTimer.setExpiration (cacheSecondsToLive);
+    
         m_queue.post (bind (&Logic::makeOutgoingConnections, &m_logic));
     }
 

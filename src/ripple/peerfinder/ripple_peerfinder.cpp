@@ -21,7 +21,7 @@
 
 #include "ripple_peerfinder.h"
 
-#include "../../ripple/types/api/AgedHistory.h"
+#include "../../ripple/types/ripple_types.h"
 
 #include <set>
 
@@ -45,8 +45,8 @@ using namespace beast;
 #  include "impl/Tuning.h"
 # include "impl/Checker.h"
 #include "impl/CheckerAdapter.h"
-#  include "impl/CachedEndpoint.h"
-#include "impl/EndpointCache.h"
+# include "impl/CachedEndpoint.h"
+#include "impl/Cache.h"
 #include "impl/Slots.h"
 #include "impl/Source.h"
 #include "impl/SourceStrings.h"
@@ -60,7 +60,7 @@ using namespace beast;
 #include "impl/Checker.cpp"
 #include "impl/Config.cpp"
 #include "impl/Endpoint.cpp"
-#include "impl/EndpointCache.cpp"
+#include "impl/Cache.cpp"
 #include "impl/Manager.cpp"
 #include "impl/Slots.cpp"
 #include "impl/SourceStrings.cpp"

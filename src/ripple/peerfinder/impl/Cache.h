@@ -25,7 +25,7 @@ namespace PeerFinder {
 
 /** The Endpoint cache holds the short-lived relayed Endpoint messages.
 */
-class EndpointCache
+class Cache
 {
 private:
     typedef boost::unordered_map <
@@ -36,21 +36,52 @@ private:
     Table m_now;
     Table m_prev;
 
+    // Refresh the existing entry with a new message
+    void refresh (CachedEndpoint& entry, Endpoint const& message)
+    {
+        entry.message.hops = std::min (entry.message.hops, message.hops);
+
+        // Copy the other fields based on uptime
+        if (entry.message.uptimeMinutes < message.uptimeMinutes)
+        {
+            entry.message.incomingSlotsAvailable    = message.incomingSlotsAvailable;
+            entry.message.incomingSlotsMax          = message.incomingSlotsMax;
+            entry.message.uptimeMinutes             = message.uptimeMinutes;
+            entry.message.featureList               = message.featureList;
+        }
+    }
+
 public:
-    explicit EndpointCache (Journal journal)
+    explicit Cache (Journal journal)
         : m_journal (journal)
     {
     }
 
-    ~EndpointCache ()
+    ~Cache ()
     {
     }
 
-    // Insert or update an existing entry with the new message
-    //
-    void update (Endpoint const& ep)
+    // Cycle the tables
+    void cycle()
     {
-        
+        std::swap (m_now, m_prev);
+        m_now.clear();
+    }
+
+    // Insert or update an existing entry with the new message
+    void insert (Endpoint const& message)
+    {
+        Table::iterator iter (m_prev.find (message.address));
+        if (iter != m_prev.end())
+        {
+        }
+        else
+        {
+            std::pair <Table::iterator, bool> result (
+                m_now.emplace (message.address, message));
+            if (!result.second)
+                refresh (result.first->second, message);
+        }
     }
 };
 

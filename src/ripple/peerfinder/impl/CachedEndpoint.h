@@ -25,23 +25,12 @@ namespace PeerFinder {
 
 struct CachedEndpoint
 {
-    CachedEndpoint (Endpoint const& endpoint)
-        : hops (endpoint.hops)
-        , incomingSlotsAvailable (endpoint.incomingSlotsAvailable)
-        , incomingSlotsMax (endpoint.incomingSlotsMax)
-        , uptimeMinutes (endpoint.uptimeMinutes)
-        , featureList (endpoint.featureList)
+    CachedEndpoint (Endpoint const& message_)
+        : message (message_)
     {
     }
 
-    int hops;
-    uint32 incomingSlotsAvailable;
-    uint32 incomingSlotsMax;
-    uint32 uptimeMinutes;
-    std::string featureList;
-
-    // The peer closest to the endpoint, measured in hops.
-    PeerID origin;
+    Endpoint message;
 };
 
 }

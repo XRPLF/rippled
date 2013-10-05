@@ -90,7 +90,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\EndpointCache.cpp">
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Cache.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1644,7 +1644,7 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\CachedEndpoint.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h" />
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\EndpointCache.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Cache.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpoint.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpointCache.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h" />

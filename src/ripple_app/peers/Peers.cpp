@@ -112,8 +112,10 @@ public:
     void preparePeerFinder()
     {
         PeerFinder::Config config;
-        
-        // config.maxPeerCount = ?
+
+#if RIPPLE_USE_PEERFINDER
+        config.maxPeerCount = 100;
+#endif
 
         config.wantIncoming =
             (! getConfig ().PEER_PRIVATE) &&

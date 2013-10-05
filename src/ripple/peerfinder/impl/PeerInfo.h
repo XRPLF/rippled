@@ -23,7 +23,7 @@
 namespace ripple {
 namespace PeerFinder {
 
-typedef AgedHistory <std::set <Endpoint> > Endpoints;
+//typedef AgedHistory <std::set <Endpoint> > Endpoints;
 
 //--------------------------------------------------------------------------
 
@@ -64,8 +64,12 @@ struct PeerInfo
     //
     RelativeTime mutable whenAcceptEndpoints;
 
-    // All the Endpoint records we have received from this peer
-    Endpoints mutable endpoints;
+    // The set of all recent IPEndpoint that we have seen from this peer.
+    // We try to avoid sending a peer the same addresses they gave us.
+    //
+    CycledSet <IPEndpoint,
+               IPEndpoint::hasher,
+               IPEndpoint::key_equal> mutable received;
 };
 
 }

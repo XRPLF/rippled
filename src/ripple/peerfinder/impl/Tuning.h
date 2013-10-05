@@ -43,7 +43,7 @@ enum
     //
 
     // How often we send or accept mtENDPOINTS messages per peer
-    ,secondsPerEndpoints             = 5
+    ,secondsPerMessage             = 5
 
     // How many Endpoint to send in each mtENDPOINTS
     ,numberOfEndpoints               = 10
@@ -53,7 +53,7 @@ enum
 
     // How long an Endpoint will stay in the cache
     // This should be a small multiple of the broadcast frequency
-    ,cachedEndpointSecondsToLive     = 60
+    ,cacheSecondsToLive     = 60
 
     //---------------------------------------------------------
     //
