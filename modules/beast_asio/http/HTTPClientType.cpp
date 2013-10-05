@@ -68,7 +68,7 @@ public:
         return result;
     }
 
-    void abstract_async_get (boost::asio::io_service& io_service, URL const& url,
+    void async_get (boost::asio::io_service& io_service, URL const& url,
         AbstractHandler <void (result_type)> handler)
     {
         new Session (*this, io_service, url,

@@ -45,15 +45,20 @@ public:
 
     virtual result_type get (URL const& url) = 0;
 
-    template <typename GetHandler>
+    /** Perform an asynchronous get on the specified URL.
+        Handler will be called with this signature:
+            void (result_type)
+    */
+    template <typename Handler>
     void async_get (boost::asio::io_service& io_service,
-        URL const& url, GetHandler handler)
+        URL const& url, BEAST_MOVE_ARG(Handler) handler)
     {
-        abstract_async_get (io_service, url,
-            AbstractHandler <void (result_type)> (handler));
+        async_get (io_service, url,
+            AbstractHandler <void (result_type)> (
+                BEAST_MOVE_CAST(Handler)(handler)));
     }
 
-    virtual void abstract_async_get (boost::asio::io_service& io_service,
+    virtual void async_get (boost::asio::io_service& io_service,
         URL const& url, AbstractHandler <void (result_type)> handler) = 0;
 
     /** Cancel all pending asynchronous operations. */
