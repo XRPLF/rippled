@@ -307,8 +307,15 @@ private:
                 boost::asio::ip::address_v4::bytes_type bytes (addr.to_v4().to_bytes());
                 m_remoteAddress = IPEndpoint (IPEndpoint::V4 (
                     bytes[0], bytes[1], bytes[2], bytes[3]), 0);
+                if (! m_isInbound)
+                    m_remoteAddress = m_remoteAddress.withPort (
+                        getNativeSocket().remote_endpoint().port());
             }
-
+            else
+            {
+                // TODO: Support ipv6
+                bassertfalse;
+            }
             m_remoteAddressSet = true;
 
             if (m_socket->getFlags ().set (MultiSocket::Flag::proxy) && m_isInbound)
@@ -1683,8 +1690,7 @@ void PeerImp::recvEndpoints (protocol::TMEndpoints& packet)
             in_addr addr;
             addr.s_addr = tm.ipv4().ipv4();
             IPEndpoint::V4 v4 (ntohl (addr.s_addr));
-            endpoint.address = IPEndpoint (v4, 0);
-            endpoint.port = tm.ipv4().ipv4port ();
+            endpoint.address = IPEndpoint (v4, tm.ipv4().ipv4port ());
         }
         else
         {
@@ -1695,8 +1701,8 @@ void PeerImp::recvEndpoints (protocol::TMEndpoints& packet)
             // by performing a connectivity test.
             //
             bassert (m_remoteAddressSet);
-            endpoint.address = m_remoteAddress.withPort (0);
-            endpoint.port = tm.ipv4().ipv4port ();
+            endpoint.address = m_remoteAddress.withPort (
+                tm.ipv4().ipv4port ());
         }
         
         // slots

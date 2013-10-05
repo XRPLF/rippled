@@ -23,17 +23,31 @@
 namespace ripple {
 namespace PeerFinder {
 
-/** A source of IPEndpoint for peers. */
-class Source
+/** A static or dynamic source of peer addresses.
+    These are used as fallbacks when we are bootstrapping and don't have
+    a local cache, or when none of our addresses are functioning. Typically
+    sources will represent things like static text in the config file, a
+    separate local file with addresses, or a remote HTTPS URL that can
+    be updated automatically. Another solution is to use a custom DNS server
+    that hands out peer IP addresses when name lookups are performed.
+*/
+class Source : public SharedObject
 {
 public:
-    typedef std::vector <IPEndpoint> IPEndpoints;
+    /** The results of a fetch. */
+    struct Results
+    {
+        // error_code on a failure
+        ErrorCode error;
+
+        // list of fetched endpoints
+        std::vector <IPEndpoint> list;
+    };
 
     virtual ~Source () { }
     virtual std::string const& name () = 0;
-
     virtual void cancel () { }
-    virtual void fetch (IPEndpoints& list, Journal journal) = 0;
+    virtual void fetch (Results& results, Journal journal) = 0;
 };
 
 }

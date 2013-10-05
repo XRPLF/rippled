@@ -38,18 +38,17 @@ public:
         return m_name;
     }
 
-    void fetch (IPEndpoints& list, Journal journal)
+    void fetch (Results& results, Journal journal)
     {
-        list.resize (0);
-        list.reserve (m_strings.size());
-
+        results.list.resize (0);
+        results.list.reserve (m_strings.size());
         for (int i = 0; i < m_strings.size (); ++i)
         {
             IPEndpoint ep (
                 IPEndpoint::from_string_altform (
                     m_strings [i]));
             if (! ep.empty())
-                list.push_back (ep);
+                results.list.push_back (ep);
         }
     }
 
@@ -60,7 +59,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-SourceStrings* SourceStrings::New (std::string const& name, Strings const& strings)
+SharedPtr <Source> SourceStrings::New (std::string const& name, Strings const& strings)
 {
     return new SourceStringsImp (name, strings);
 }

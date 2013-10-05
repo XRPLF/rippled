@@ -39,7 +39,7 @@ struct PeerInfo
         , checked (inbound_ ? false : true)
         , canAccept (inbound_ ? false : true)
         , whenSendEndpoints (RelativeTime::fromStartup())
-        , whenReceiveEndpoints (RelativeTime::fromStartup())
+        , whenAcceptEndpoints (RelativeTime::fromStartup())
     {
     }
 
@@ -62,7 +62,7 @@ struct PeerInfo
     // This is to prevent flooding or spamming. Receipt of mtENDPOINTS
     // sooner than the allotted time should impose a load charge.
     //
-    RelativeTime mutable whenReceiveEndpoints;
+    RelativeTime mutable whenAcceptEndpoints;
 
     // All the Endpoint records we have received from this peer
     Endpoints mutable endpoints;

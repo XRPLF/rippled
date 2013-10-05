@@ -1641,6 +1641,7 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Endpoint.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Manager.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Types.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\CachedEndpoint.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\EndpointCache.h" />

@@ -29,7 +29,6 @@ struct Endpoint
     Endpoint ();
 
     IPEndpoint address;
-    uint16 port;
     int hops;
     uint32 incomingSlotsAvailable;
     uint32 incomingSlotsMax;

@@ -28,13 +28,15 @@
 #include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
-#include <boost/unordered_set.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/key_extractors.hpp>
 
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
 #include "beast/modules/beast_asio/beast_asio.h"
+
+#include "beast/beast/boost/ErrorCode.h"
 
 namespace ripple {
 using namespace beast;
@@ -43,6 +45,7 @@ using namespace beast;
 #  include "impl/Tuning.h"
 # include "impl/Checker.h"
 #include "impl/CheckerAdapter.h"
+#  include "impl/CachedEndpoint.h"
 #include "impl/EndpointCache.h"
 #include "impl/Slots.h"
 #include "impl/Source.h"

@@ -51,6 +51,10 @@ enum
     // The most Endpoint we will accept in mtENDPOINTS
     ,numberOfEndpointsMax            = 20
 
+    // How long an Endpoint will stay in the cache
+    // This should be a small multiple of the broadcast frequency
+    ,cachedEndpointSecondsToLive     = 60
+
     //---------------------------------------------------------
     //
     // LegacyEndpoint Settings

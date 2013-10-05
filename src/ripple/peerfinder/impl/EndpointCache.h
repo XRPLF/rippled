@@ -23,17 +23,35 @@
 namespace ripple {
 namespace PeerFinder {
 
-/** This container holds the master set of Endpoints. */
+/** The Endpoint cache holds the short-lived relayed Endpoint messages.
+*/
 class EndpointCache
 {
-public:
-    EndpointCache ();
-    ~EndpointCache ();
-
-    // Informs the cache we've received an endpoint.
-    void update (Endpoint const& ep);
-
 private:
+    typedef boost::unordered_map <
+        IPEndpoint, CachedEndpoint, IPEndpoint::hasher> Table;
+
+    Journal m_journal;
+
+    Table m_now;
+    Table m_prev;
+
+public:
+    explicit EndpointCache (Journal journal)
+        : m_journal (journal)
+    {
+    }
+
+    ~EndpointCache ()
+    {
+    }
+
+    // Insert or update an existing entry with the new message
+    //
+    void update (Endpoint const& ep)
+    {
+        
+    }
 };
 
 }

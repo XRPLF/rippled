@@ -56,6 +56,10 @@ private:
     /** Increments the mutation count and updates the database if needed. */
     void mutate ()
     {
+        // This flag keeps us from updating while we are loading
+        if (m_mutationCount == -1)
+            return;
+        
         if (++m_mutationCount >= legacyEndpointMutationsPerUpdate)
         {
             update();
@@ -146,7 +150,7 @@ public:
     LegacyEndpointCache (Store& store, Journal journal)
         : m_store (store)
         , m_journal (journal)
-        , m_mutationCount (0)
+        , m_mutationCount (-1)
     {
     }
 
@@ -164,11 +168,12 @@ public:
         for (List::const_iterator iter (list.begin());
             iter != list.end(); ++iter)
         {
-            std::pair <LegacyEndpoint&, bool> result (insert (*iter));
+            std::pair <LegacyEndpoint const&, bool> result (insert (*iter));
             if (result.second)
                 ++n;
         }
         m_journal.debug << "Loaded " << n << " legacy endpoints";
+        m_mutationCount = 0;
     }
 
     /** Attempt to insert the endpoint.
@@ -176,7 +181,7 @@ public:
         The return value provides a reference to the new or existing endpoint.
         The bool indicates whether or not the insertion took place.
     */
-    std::pair <LegacyEndpoint&, bool> insert (IPEndpoint const& address)
+    std::pair <LegacyEndpoint const&, bool> insert (IPEndpoint const& address)
     {
         std::pair <MapType::iterator, bool> result (
             m_map.insert (LegacyEndpoint (address)));

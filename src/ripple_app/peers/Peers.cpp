@@ -149,7 +149,7 @@ public:
                     toNetworkByteOrder (ep.address.v4().value));
             else
                 tme.mutable_ipv4()->set_ipv4(0);
-            tme.mutable_ipv4()->set_ipv4port (ep.port);
+            tme.mutable_ipv4()->set_ipv4port (ep.address.port());
 
             tme.set_hops (ep.hops);
             tme.set_slots (ep.incomingSlotsAvailable);
@@ -718,8 +718,12 @@ bool PeersImp::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
             mConnectedMap[naPeer]   = peer;
             bNew                    = true;
 
-            // Notify peerfinder since this is a connection that we didn't know about and are keeping
-            getPeerFinder ().onPeerConnected (RipplePublicKey (peer->getNodePublic()), peer->getPeerEndpoint(), peer->isInbound());
+            // Notify peerfinder since this is a connection that we didn't
+            // know about and are keeping
+            //
+            getPeerFinder ().onPeerConnected (RipplePublicKey (
+                peer->getNodePublic()), peer->getPeerEndpoint(),
+                    peer->isInbound());
 
             assert (peer->getPeerId () != 0);
             mPeerIdMap.insert (std::make_pair (peer->getPeerId (), peer));

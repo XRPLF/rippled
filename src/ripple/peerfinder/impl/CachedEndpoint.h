@@ -17,18 +17,34 @@
 */
 //==============================================================================
 
-#include "../api/Endpoint.h"
+#ifndef RIPPLE_PEERFINDER_CACHEDENDPOINT_H_INCLUDED
+#define RIPPLE_PEERFINDER_CACHEDENDPOINT_H_INCLUDED
 
 namespace ripple {
 namespace PeerFinder {
 
-Endpoint::Endpoint ()
-    : hops (0)
-    , incomingSlotsAvailable (0)
-    , incomingSlotsMax (0)
-    , uptimeMinutes (0)
+struct CachedEndpoint
 {
-}
+    CachedEndpoint (Endpoint const& endpoint)
+        : hops (endpoint.hops)
+        , incomingSlotsAvailable (endpoint.incomingSlotsAvailable)
+        , incomingSlotsMax (endpoint.incomingSlotsMax)
+        , uptimeMinutes (endpoint.uptimeMinutes)
+        , featureList (endpoint.featureList)
+    {
+    }
+
+    int hops;
+    uint32 incomingSlotsAvailable;
+    uint32 incomingSlotsMax;
+    uint32 uptimeMinutes;
+    std::string featureList;
+
+    // The peer closest to the endpoint, measured in hops.
+    PeerID origin;
+};
 
 }
 }
+
+#endif

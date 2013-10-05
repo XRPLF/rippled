@@ -23,13 +23,13 @@
 namespace ripple {
 namespace PeerFinder {
 
-/** Provides an IPEndpoint list from a set of strings. */
+/** Provides addresses from a static set of strings. */
 class SourceStrings : public Source
 {
 public:
     typedef std::vector <std::string> Strings;
 
-    static SourceStrings* New (std::string const& name, Strings const& strings);
+    static SharedPtr <Source> New (std::string const& name, Strings const& strings);
 };
 
 }

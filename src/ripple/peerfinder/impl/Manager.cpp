@@ -279,19 +279,12 @@ public:
 
     void onStop ()
     {
+        m_journal.debug << "Stopping";
         m_checker.cancel ();
-
-        if (this->Thread::isThreadRunning ())
-        {
-            m_journal.debug << "Stopping";
-            m_connectTimer.cancel();
-            m_endpointsTimer.cancel();
-            m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
-        }
-        else
-        {
-            stopped();
-        }
+        m_logic.stop ();
+        m_connectTimer.cancel();
+        m_endpointsTimer.cancel();
+        m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
     }
 
     //--------------------------------------------------------------------------
