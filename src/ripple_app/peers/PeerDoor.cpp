@@ -132,7 +132,7 @@ private:
 //------------------------------------------------------------------------------
 
 PeerDoor::PeerDoor (Stoppable& parent)
-    : AsyncService ("PeerDoor", parent)
+    : Stoppable ("PeerDoor", parent)
 {
 }
 

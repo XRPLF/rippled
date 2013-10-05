@@ -33,7 +33,6 @@
 namespace ripple
 {
 
-#include "basics/AsyncService.h"
 #include "basics/RippleSSLContext.h"
 #include "basics/MultiSocket.h"
 #include "basics/HTTPRequest.h"

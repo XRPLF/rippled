@@ -46,7 +46,6 @@
 namespace ripple
 {
 
-#include "basics/AsyncService.cpp"
 #include "basics/HTTPRequest.cpp"
 #include "basics/HTTPClient.cpp"
 

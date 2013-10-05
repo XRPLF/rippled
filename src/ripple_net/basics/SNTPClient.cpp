@@ -360,7 +360,7 @@ private:
 //------------------------------------------------------------------------------
 
 SNTPClient::SNTPClient (Stoppable& parent)
-    : AsyncService ("SNTPClient", parent)
+    : Stoppable ("SNTPClient", parent)
 {
 }
 

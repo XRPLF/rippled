@@ -909,9 +909,6 @@
     <ClCompile Include="..\..\src\ripple_app\main\IoServicePool.cpp">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_net\basics\AsyncService.cpp">
-      <Filter>[2] Old Ripple\ripple_net\basics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\sophia\ripple_sophia.c">
       <Filter>[1] Ripple\sophia</Filter>
     </ClCompile>
@@ -1889,9 +1886,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\IoServicePool.h">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_net\basics\AsyncService.h">
-      <Filter>[2] Old Ripple\ripple_net\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\sophia\ripple_sophia.h">
       <Filter>[1] Ripple\sophia</Filter>

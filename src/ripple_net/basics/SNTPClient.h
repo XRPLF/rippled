@@ -21,7 +21,7 @@
 #ifndef RIPPLE_NET_BASICS_SNTPCLIENT_H_INCLUDED
 #define RIPPLE_NET_BASICS_SNTPCLIENT_H_INCLUDED
 
-class SNTPClient : public AsyncService
+class SNTPClient : public Stoppable
 {
 protected:
     explicit SNTPClient (Stoppable& parent);

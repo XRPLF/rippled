@@ -22,7 +22,7 @@
 #define RIPPLE_PEERDOOR_H_INCLUDED
 
 /** Handles incoming connections from peers. */
-class PeerDoor : public AsyncService
+class PeerDoor : public Stoppable
 {
 protected:
     explicit PeerDoor (Stoppable& parent);
