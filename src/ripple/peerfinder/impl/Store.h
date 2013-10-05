@@ -32,8 +32,8 @@ public:
     virtual void loadLegacyEndpoints (
         std::vector <IPEndpoint>& list) = 0;
 
-    virtual void storeLegacyEndpoints (
-        std::vector <IPEndpoint> const& list) = 0;
+    virtual void updateLegacyEndpoints (
+        std::vector <LegacyEndpoint const*> const& list) = 0;
 };
 
 }

@@ -100,10 +100,10 @@ public:
         }
     }
 
-    void storeLegacyEndpoints (
-        std::vector <IPEndpoint> const& list)
+    void updateLegacyEndpoints (
+        std::vector <LegacyEndpoint const*> const& list)
     {
-        typedef std::vector <IPEndpoint> List;
+        typedef std::vector <LegacyEndpoint const*> List;
 
         Error error;
 
@@ -127,7 +127,7 @@ public:
             for (List::const_iterator iter (list.begin());
                 !error && iter != list.end(); ++iter)
             {
-                IPEndpoint const& ep (*iter);
+                IPEndpoint const& ep ((*iter)->address);
                 s = ep.to_string();
                 st.execute_and_fetch (error);
             }

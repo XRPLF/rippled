@@ -32,11 +32,15 @@ struct LegacyEndpoint
 
     LegacyEndpoint (IPEndpoint const& address_)
         : address (address_)
+        , whenInserted (RelativeTime::fromStartup())
         { }
 
     IPEndpoint address;
 
-    // When we last gave the endpoint out for connection attempts
+    // When we inserted the endpoint into the cache
+    RelativeTime mutable whenInserted;
+
+    // When we last used the endpoint for outging connection attempts
     RelativeTime mutable lastGet;
 
     // True if we ever tried to connect

@@ -189,7 +189,6 @@ public:
     Logic m_logic;
     DeadlineTimer m_connectTimer;
     DeadlineTimer m_endpointsTimer;
-    RelativeTime m_whenStoreLegacyEndpoints;
 
     //--------------------------------------------------------------------------
 
@@ -311,18 +310,6 @@ public:
         }
     }
 
-    // Checks to see if its time to update legacy endpoints
-    void storeLegacyEndpoints()
-    {
-        RelativeTime const now (RelativeTime::fromStartup());
-        if (now >= m_whenStoreLegacyEndpoints)
-        {
-            m_logic.storeLegacyEndpoints ();
-            m_whenStoreLegacyEndpoints = now
-                + RelativeTime (legacyEndpointUpdateSeconds);
-        }
-    }
-
     void init ()
     {
         m_journal.debug << "Initializing";
@@ -355,14 +342,10 @@ public:
     {
         m_journal.debug << "Started";
 
-        m_whenStoreLegacyEndpoints = RelativeTime::fromStartup()
-            + RelativeTime (legacyEndpointUpdateSeconds);
-
         init ();
 
         while (! this->threadShouldExit())
         {
-            storeLegacyEndpoints();
             m_queue.run_one();
         }
 

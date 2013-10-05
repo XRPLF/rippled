@@ -26,23 +26,41 @@ namespace PeerFinder {
 // Tunable constants
 enum
 {
+    //---------------------------------------------------------
+    //
+    // Connection policy settings
+    //
+
     // How often we will try to make outgoing connections
-    secondsPerConnect               = 10,
+    secondsPerConnect               = 10
+
+    // The largest connections we will attempt simultaneously
+    ,maxAddressesPerAttempt         = 30
+
+    //---------------------------------------------------------
+    //
+    // Endpoint settings
+    //
 
     // How often we send or accept mtENDPOINTS messages per peer
-    secondsPerEndpoints             = 5,
+    ,secondsPerEndpoints             = 5
 
     // How many Endpoint to send in each mtENDPOINTS
-    numberOfEndpoints               = 10,
+    ,numberOfEndpoints               = 10
 
     // The most Endpoint we will accept in mtENDPOINTS
-    numberOfEndpointsMax            = 20,
+    ,numberOfEndpointsMax            = 20
+
+    //---------------------------------------------------------
+    //
+    // LegacyEndpoint Settings
+    //
 
     // How many legacy endpoints to keep in our cache
-    numberOfLegacyEndpoints         = 1000,
+    ,legacyEndpointCacheSize            = 1000
 
-    // How often legacy endpoints are updated in the database
-    legacyEndpointUpdateSeconds     = 60 * 60
+    // How many cache mutations between each database update
+    ,legacyEndpointMutationsPerUpdate   = 50
 };
 
 }

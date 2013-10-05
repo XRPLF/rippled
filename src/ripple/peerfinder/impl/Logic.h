@@ -23,38 +23,6 @@
 namespace ripple {
 namespace PeerFinder {
 
-//--------------------------------------------------------------------------
-
-/*
-typedef boost::multi_index_container <
-    Endpoint, boost::multi_index::indexed_by <
-            
-        boost::multi_index::hashed_unique <
-            BOOST_MULTI_INDEX_MEMBER(PeerFinder::Endpoint,IPEndpoint,address)>
-    >
-> EndpointCache;
-*/
-
-// Describes an Endpoint in the global Endpoint table
-// This includes the Endpoint as well as some additional information
-//
-struct EndpointInfo
-{
-    Endpoint endpoint;
-};
-
-inline bool operator< (EndpointInfo const& lhs, EndpointInfo const& rhs)
-{
-    return lhs.endpoint < rhs.endpoint;
-}
-
-inline bool operator== (EndpointInfo const& lhs, EndpointInfo const& rhs)
-{
-    return lhs.endpoint == rhs.endpoint;
-}
-
-//--------------------------------------------------------------------------
-
 typedef boost::multi_index_container <
     PeerInfo, boost::multi_index::indexed_by <
         boost::multi_index::hashed_unique <
@@ -105,6 +73,7 @@ public:
     Config m_config;
 
     // A list of dynamic sources consulted as a fallback
+    // VFALCO TODO Replace with SharedPtr <Source>
     std::vector <ScopedPointer <Source> > m_sources;
 
     // The current tally of peer slot statistics
@@ -114,7 +83,6 @@ public:
     Peers m_peers;
 
     LegacyEndpointCache m_legacyCache;
-    bool m_legacyCacheDirty;
 
     //----------------------------------------------------------------------
 
@@ -127,7 +95,7 @@ public:
         , m_store (store)
         , m_checker (checker)
         , m_journal (journal)
-        , m_legacyCacheDirty (false)
+        , m_legacyCache (store, journal)
     {
     }
 
@@ -137,20 +105,7 @@ public:
     //
     void load ()
     {
-        typedef std::vector <IPEndpoint> List;
-        List list;
-        m_store.loadLegacyEndpoints (list);
-        for (List::const_iterator iter (list.begin());
-            iter != list.end(); ++iter)
-            m_legacyCache.insert (*iter);
-        m_journal.debug << "Loaded " << list.size() << " legacy endpoints";
-    }
-
-    // Called when a peer's id is unexpectedly not found
-    //
-    void peerNotFound (PeerID const& id)
-    {
-        m_journal.fatal << "Missing peer " << id;
+        m_legacyCache.load();
     }
 
     // Returns a suitable Endpoint representing us.
@@ -171,15 +126,23 @@ public:
         return ep;
     }
 
+    // Returns true if the IPEndpoint contains no invalid data.
+    //
+    bool validIPEndpoint (IPEndpoint const& address)
+    {
+        if (! address.isPublic())
+            return false;
+        if (address.port() == 0)
+            return false;
+        return true;
+    }
+
     // Returns true if the Endpoint contains no invalid data.
     //
     bool validEndpoint (Endpoint const& endpoint)
     {
-        if (! endpoint.address.isPublic())
-            return false;
-        if (endpoint.port == 0)
-            return false;
-        return false;
+        return validIPEndpoint (
+            endpoint.address.withPort (endpoint.port));
     }
 
     // Prunes invalid endpoints from a list
@@ -228,7 +191,9 @@ public:
     {
         if (m_slots.outDesired > m_slots.outboundCount)
         {
-            int const needed (m_slots.outDesired - m_slots.outboundCount);
+            int const needed (std::min (
+                m_slots.outDesired - m_slots.outboundCount,
+                    int (maxAddressesPerAttempt)));
             std::vector <IPEndpoint> list;
             m_legacyCache.get (needed, list);
 
@@ -242,9 +207,9 @@ public:
     //
     void fetch (Source& source)
     {
-#if 0
         m_journal.debug << "Fetching " << source.name();
 
+#if 0
         Source::IPEndpoints endpoints;
         source.fetch (endpoints, m_journal);
 
@@ -254,18 +219,19 @@ public:
                 iter != endpoints.end(); ++iter)
                 m_legacyCache->insert (*iter);
 
-            if (m_legacyCache->size() > (numberOfLegacyEndpoints/2))
+            if (m_legacyCache->size() > (legacyEndpointCacheSize/2))
             {
                 m_legacyCache.swap();
                 m_legacyCache->clear();
             }
-
-            m_legacyCacheDirty = true;
         }
 #endif
     }
 
     //----------------------------------------------------------------------
+    //
+    // Logic
+    //
 
     void setConfig (Config const& config)
     {
@@ -288,6 +254,59 @@ public:
     {
         m_journal.debug << "Processing Update";
     }
+
+    //--------------------------------------------------------------------------
+    //
+    // LegacyEndpoint
+    //
+
+    // Completion handler for a LegacyEndpoint listening test.
+    //
+    void onCheckLegacyEndpoint (IPEndpoint const& endpoint,
+        Checker::Result const& result)
+    {
+        if (result.error == boost::asio::error::operation_aborted)
+            return;
+
+        RelativeTime const now (RelativeTime::fromStartup());
+
+        if (! result.error)
+        {
+            if (result.canAccept)
+                m_journal.info << "Legacy address " << endpoint <<
+                    " passed listening test";
+            else
+                m_journal.warning << "Legacy address " << endpoint <<
+                    " cannot accept incoming connections";
+        }
+        else
+        {
+            m_journal.error << "Listening test for legacy address " <<
+                endpoint << " failed: " << result.error.message();
+        }
+    }
+
+    void onPeerLegacyEndpoint (IPEndpoint const& address)
+    {
+        if (! validIPEndpoint (address))
+            return;
+        std::pair <LegacyEndpoint&, bool> result (
+            m_legacyCache.insert (address));
+        if (result.second)
+        {
+            // its new
+            m_journal.trace << "New legacy endpoint: " << address;
+
+            // VFALCO NOTE Temporarily we are doing a check on each
+            //             legacy endpoint to test the async code
+            //
+            m_checker.async_test (address, bind (
+                &Logic::onCheckLegacyEndpoint,
+                    this, address, _1));
+        }
+    }
+
+    //--------------------------------------------------------------------------
 
     // Send mtENDPOINTS for each peer as needed
     //
@@ -313,48 +332,41 @@ public:
         }
     }
 
+    // Called when a peer connection is established.
+    // We are guaranteed that the PeerID is not already in our map.
+    //
     void onPeerConnected (PeerID const& id,
         IPEndpoint const& address, bool inbound)
     {
         m_journal.debug << "Peer connected: " << address;
-
+        // If this is outgoing, record the success
+        if (! inbound)
+            m_legacyCache.checked (address, true);
         std::pair <Peers::iterator, bool> result (
             m_peers.insert (
                 PeerInfo (id, address, inbound)));
-        if (result.second)
-        {
-            //PeerInfo const& peer (*result.first);
-            m_slots.addPeer (m_config, inbound);
-        }
-        else
-        {
-            // already exists!
-            m_journal.error << "Duplicate peer " << id;
-            //m_callback.disconnectPeer (id);
-        }
+        bassert (result.second);
+        m_slots.addPeer (m_config, inbound);
     }
 
+    // Called when a peer is disconnected.
+    // We are guaranteed to get this exactly once for each
+    // corresponding call to onPeerConnected.
+    //
     void onPeerDisconnected (PeerID const& id)
     {
         Peers::iterator iter (m_peers.find (id));
-        if (iter != m_peers.end())
-        {
-            // found
-            PeerInfo const& peer (*iter);
-            m_journal.debug << "Peer disconnected: " << peer.address;
-            m_slots.dropPeer (m_config, peer.inbound);
-            m_peers.erase (iter);
-        }
-        else
-        {
-            m_journal.debug << "Peer disconnected: " << id;
-            peerNotFound (id);
-        }
+        bassert (iter != m_peers.end());
+        PeerInfo const& peer (*iter);
+        m_journal.debug << "Peer disconnected: " << peer.address;
+        m_slots.dropPeer (m_config, peer.inbound);
+        m_peers.erase (iter);
     }
 
     // Called when the Checker completes a connectivity test
     //
-    void onCheckEndpoint (PeerID const& id, Checker::Result const& result)
+    void onCheckEndpoint (PeerID const& id,
+        IPEndpoint address, Checker::Result const& result)
     {
         if (result.error == boost::asio::error::operation_aborted)
             return;
@@ -395,146 +407,72 @@ public:
         }
     }
 
-    // Called when the Checker completes a connectivity test for a legacy address
-    //
-    void onCheckLegacyEndpoint (IPEndpoint const& endpoint,
-        Checker::Result const& result)
-    {
-        if (result.error == boost::asio::error::operation_aborted)
-            return;
-
-        RelativeTime const now (RelativeTime::fromStartup());
-
-        if (! result.error)
-        {
-            if (result.canAccept)
-                m_journal.info << "Legacy address " << endpoint <<
-                    " passed listening test";
-            else
-                m_journal.warning << "Legacy address " << endpoint <<
-                    " cannot accept incoming connections";
-        }
-        else
-        {
-            m_journal.error << "Listening test for legacy address " <<
-                endpoint << " failed: " << result.error.message();
-        }
-    }
-
     // Processes a list of Endpoint received from a peer.
     //
     void onPeerEndpoints (PeerID const& id, std::vector <Endpoint> endpoints)
     {
-        pruneEndpoints (endpoints);        
-                
+        pruneEndpoints (endpoints);
+
         Peers::iterator iter (m_peers.find (id));
-        if (iter != m_peers.end())
+        bassert (iter != m_peers.end());
+
+        RelativeTime const now (RelativeTime::fromStartup());
+        PeerInfo const& peer (*iter);
+
+        if (now >= peer.whenReceiveEndpoints)
         {
-            RelativeTime const now (RelativeTime::fromStartup());
-            PeerInfo const& peer (*iter);
+            m_journal.debug << "Received " << endpoints.size() <<
+                "Endpoint descriptors from " << peer.address;
 
-            if (now >= peer.whenReceiveEndpoints)
+            // We charge a load penalty if the peer sends us more than 
+            // numberOfEndpoints peers in a single message
+            if (endpoints.size() > numberOfEndpoints)
             {
-                m_journal.debug << "Received " << endpoints.size() <<
-                    "Endpoint descriptors from " << peer.address;
-
-                // We charge a load penalty if the peer sends us more than 
-                // numberOfEndpoints peers in a single message
-                if (endpoints.size() > numberOfEndpoints)
-                {
-                    m_journal.warning << "Charging peer " << peer.address <<
-                        " for sending too many endpoints";
+                m_journal.warning << "Charging peer " << peer.address <<
+                    " for sending too many endpoints";
                         
-                    m_callback.chargePeerLoadPenalty(id);
-                }
+                m_callback.chargePeerLoadPenalty(id);
+            }
 
-                // process the list
+            // process the list
+            {
+                bool foundZeroHops (false);
+                bool chargedPenalty (false);
+                for (std::vector <Endpoint>::const_iterator iter (endpoints.begin());
+                    iter != endpoints.end(); ++iter)
                 {
-                    bool foundZeroHops (false);
-                    bool chargedPenalty (false);
-                    for (std::vector <Endpoint>::const_iterator iter (endpoints.begin());
-                        iter != endpoints.end(); ++iter)
+                    Endpoint const& endpoint (*iter);
+                    if (endpoint.hops == 0)
                     {
-                        Endpoint const& endpoint (*iter);
-                        if (endpoint.hops == 0)
+                        if (! foundZeroHops)
                         {
-                            if (! foundZeroHops)
-                            {
-                                foundZeroHops = true;
-                                m_checker.async_test (endpoint.address.withPort (
-                                    endpoint.port), bind (&Logic::onCheckEndpoint,
-                                        this, id, _1));
-                            }
-                            else if (! chargedPenalty)
-                            {
-                                // Only charge them once (?)
-                                chargedPenalty = true;
-                                // More than one zero-hops message?!
-                                m_journal.warning << "Charging peer " << peer.address <<
-                                    " for sending more than one hops==0 endpoint";
-                                m_callback.chargePeerLoadPenalty (id);
-                            }
+                            foundZeroHops = true;
+                            IPEndpoint const address (
+                                endpoint.address.withPort (endpoint.port));
+                            m_checker.async_test (address, bind (&Logic::onCheckEndpoint,
+                                this, id, address, _1));
+                        }
+                        else if (! chargedPenalty)
+                        {
+                            // Only charge them once (?)
+                            chargedPenalty = true;
+                            // More than one zero-hops message?!
+                            m_journal.warning << "Charging peer " << peer.address <<
+                                " for sending more than one hops==0 endpoint";
+                            m_callback.chargePeerLoadPenalty (id);
                         }
                     }
                 }
+            }
 
-                peer.whenReceiveEndpoints = now + secondsPerEndpoints;
-            }
-            else
-            {
-                m_journal.warning << "Charging peer " << peer.address <<
-                    " for sending too quickly";
-                m_callback.chargePeerLoadPenalty (id);
-            }
+            peer.whenReceiveEndpoints = now + secondsPerEndpoints;
         }
         else
         {
-            peerNotFound (id);
+            m_journal.warning << "Charging peer " << peer.address <<
+                " for sending too quickly";
+            m_callback.chargePeerLoadPenalty (id);
         }
-    }
-
-    void onPeerLegacyEndpoint (IPEndpoint const& ep)
-    {
-        // filter invalid addresses
-        if (! ep.isPublic())
-            return;
-
-        if (ep.port() == 0)
-            return;
-
-        std::pair <LegacyEndpoint&, bool> result (
-            m_legacyCache.insert (ep));
-
-        if (result.second)
-        {
-            // its new
-            m_legacyCacheDirty = true;
-            m_journal.trace << "Legacy endpoint: " << ep;
-
-            m_checker.async_test (ep, bind (
-                &Logic::onCheckLegacyEndpoint,
-                    this, ep, _1));
-        }
-    }
-
-    // Updates the Store with the current set of legacy endpoints
-    //
-    void storeLegacyEndpoints ()
-    {
-        if (!m_legacyCacheDirty)
-            return;
-
-#if 0
-        std::vector <IPEndpoint> list;
-
-        createLegacyEndpointList (list);
-
-        m_journal.debug << "Updating " << list.size() << " legacy endpoints";
-
-        m_store.storeLegacyEndpoints (list);
-
-        m_legacyCacheDirty = false;
-#endif
     }
 };
 

@@ -40,18 +40,17 @@ namespace ripple {
 using namespace beast;
 }
 
+#  include "impl/Tuning.h"
 # include "impl/Checker.h"
 #include "impl/CheckerAdapter.h"
 #include "impl/EndpointCache.h"
 #include "impl/Slots.h"
 #include "impl/Source.h"
 #include "impl/SourceStrings.h"
-
 #  include "impl/LegacyEndpoint.h"
+#  include "impl/Store.h"
 # include "impl/LegacyEndpointCache.h"
 # include "impl/PeerInfo.h"
-# include "impl/Store.h"
-# include "impl/Tuning.h"
 #include "impl/StoreSqdb.h"
 #include "impl/Logic.h"
 
