@@ -27,6 +27,8 @@
 #include "ThreadLocalValue.h"
 #include "WaitableEvent.h"
 
+#include "detail/DispatchedHandler.h"
+
 namespace beast {
 
 namespace detail {
@@ -516,6 +518,15 @@ public:
         typename Allocator::template rebind <ItemType <Handler> >::other a (m_alloc);
         enqueue (new (a.allocate (1))
             ItemType <Handler> (BEAST_MOVE_CAST(Handler)(handler)));
+    }
+
+    /** Return a new handler that dispatches the wrapped handler on the queue. */
+    template <typename Handler>
+    detail::DispatchedHandler <ServiceQueueType&, Handler> wrap (
+        BEAST_MOVE_ARG(Handler) handler)
+    {
+        return detail::DispatchedHandler <ServiceQueueType&, Handler> (
+            *this, BEAST_MOVE_CAST(Handler)(handler));
     }
 
     /** Run the event loop to execute ready handlers.

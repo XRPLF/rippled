@@ -155,6 +155,8 @@
     <ClInclude Include="..\..\beast\strings\StringFromNumber.h" />
     <ClInclude Include="..\..\beast\Threads.h" />
     <ClInclude Include="..\..\beast\Chrono.h" />
+    <ClInclude Include="..\..\beast\threads\detail\BindHandler.h" />
+    <ClInclude Include="..\..\beast\threads\detail\DispatchedHandler.h" />
     <ClInclude Include="..\..\beast\threads\LockGuard.h" />
     <ClInclude Include="..\..\beast\threads\RecursiveMutex.h" />
     <ClInclude Include="..\..\beast\threads\ServiceQueue.h" />
