@@ -26,6 +26,7 @@
 
 #include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/functional/hash.hpp>
+#include <boost/unordered_set.hpp>
 
 // For ByteOrder
 #if BEAST_WIN32
@@ -43,6 +44,7 @@ using namespace beast;
 }
 
 #include "api/AgedHistory.h"
+#include "api/CycledSet.h"
 #  include "api/Blob.h"
 # include "api/Base58.h"
 #  include "api/ByteOrder.h"

@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include "Logic.h"
-
 namespace ripple {
 namespace PeerFinder {
 

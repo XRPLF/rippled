@@ -17,15 +17,35 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_TUNING_H_INCLUDED
+#define RIPPLE_PEERFINDER_TUNING_H_INCLUDED
+
 namespace ripple {
 namespace PeerFinder {
 
-Config::Config ()
-    : maxPeerCount (20)
-    , wantIncoming (false)
-    , listeningPort (0)
+// Tunable constants
+enum
 {
-}
+    // How often we will try to make outgoing connections
+    secondsPerConnect               = 10,
+
+    // How often we send or accept mtENDPOINTS messages per peer
+    secondsPerEndpoints             = 5,
+
+    // How many Endpoint to send in each mtENDPOINTS
+    numberOfEndpoints               = 10,
+
+    // The most Endpoint we will accept in mtENDPOINTS
+    numberOfEndpointsMax            = 20,
+
+    // How many legacy endpoints to keep in our cache
+    numberOfLegacyEndpoints         = 1000,
+
+    // How often legacy endpoints are updated in the database
+    legacyEndpointUpdateSeconds     = 60 * 60
+};
 
 }
 }
+
+#endif

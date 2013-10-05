@@ -28,10 +28,10 @@ using namespace beast;
 
 #include "../types/api/RipplePublicKey.h"
 
-#include "api/Types.h"
-#include "api/Endpoint.h"
-#include "api/Config.h"
+# include "api/Endpoint.h"
+# include "api/Types.h"
 #include "api/Callback.h"
+#include "api/Config.h"
 #include "api/Manager.h"
 
 #endif

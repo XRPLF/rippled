@@ -20,12 +20,6 @@
 #ifndef RIPPLE_PEERFINDER_PEERINFO_H_INCLUDED
 #define RIPPLE_PEERFINDER_PEERINFO_H_INCLUDED
 
-#include "../../ripple/types/api/AgedHistory.h"
-
-#include "../api/Types.h"
-
-#include <set>
-
 namespace ripple {
 namespace PeerFinder {
 
@@ -42,6 +36,8 @@ struct PeerInfo
         : id (id_)
         , address (address_)
         , inbound (inbound_)
+        , checked (inbound_ ? false : true)
+        , canAccept (inbound_ ? false : true)
         , whenSendEndpoints (RelativeTime::fromStartup())
         , whenReceiveEndpoints (RelativeTime::fromStartup())
     {
@@ -50,6 +46,14 @@ struct PeerInfo
     PeerID id;
     IPEndpoint address;
     bool inbound;
+
+    // Tells us if we checked the connection. Outbound connections
+    // are always considered checked since we successfuly connected.
+    bool mutable checked;
+
+    // Set to indicate if the connection can receive incoming at the
+    // address advertised in mtENDPOINTS. Only valid if checked is true
+    bool mutable canAccept;
 
     // The time after which we will send the peer mtENDPOINTS
     RelativeTime mutable whenSendEndpoints;

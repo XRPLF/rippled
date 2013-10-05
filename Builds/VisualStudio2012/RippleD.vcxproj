@@ -72,6 +72,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\ripple_json.cpp" />
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Checker.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Config.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1635,7 +1641,11 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Endpoint.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Manager.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Types.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\EndpointCache.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpoint.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpointCache.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\PeerInfo.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Slots.h" />
@@ -1643,6 +1653,7 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\SourceStrings.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Store.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\StoreSqdb.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\ripple_peerfinder.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Manager.h" />
@@ -1672,6 +1683,7 @@
     <ClInclude Include="..\..\src\ripple\types\api\base_uint.h" />
     <ClInclude Include="..\..\src\ripple\types\api\Blob.h" />
     <ClInclude Include="..\..\src\ripple\types\api\ByteOrder.h" />
+    <ClInclude Include="..\..\src\ripple\types\api\CycledSet.h" />
     <ClInclude Include="..\..\src\ripple\types\api\IdentifierStorage.h" />
     <ClInclude Include="..\..\src\ripple\types\api\IdentifierType.h" />
     <ClInclude Include="..\..\src\ripple\types\api\HashMaps.h" />

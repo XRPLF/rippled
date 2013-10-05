@@ -17,21 +17,49 @@
 */
 //==============================================================================
 
-
 #include "BeastConfig.h"
 
 #include "ripple_peerfinder.h"
+
+#include "../../ripple/types/api/AgedHistory.h"
+
+#include <set>
+
+#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include <boost/optional.hpp>
+#include <boost/regex.hpp>
+#include <boost/unordered_set.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/key_extractors.hpp>
+
+#include "beast/modules/beast_sqdb/beast_sqdb.h"
+#include "beast/modules/beast_asio/beast_asio.h"
 
 namespace ripple {
 using namespace beast;
 }
 
-#  include "impl/Source.h"
-# include "impl/SourceStrings.h"
-#include "impl/SourceStrings.cpp"
+# include "impl/Checker.h"
+#include "impl/CheckerAdapter.h"
+#include "impl/EndpointCache.h"
+#include "impl/Slots.h"
+#include "impl/Source.h"
+#include "impl/SourceStrings.h"
+
+#  include "impl/LegacyEndpoint.h"
+# include "impl/LegacyEndpointCache.h"
+# include "impl/PeerInfo.h"
+# include "impl/Store.h"
+# include "impl/Tuning.h"
+#include "impl/StoreSqdb.h"
+#include "impl/Logic.h"
+
+#include "impl/Checker.cpp"
 #include "impl/Config.cpp"
 #include "impl/Endpoint.cpp"
 #include "impl/EndpointCache.cpp"
 #include "impl/Manager.cpp"
 #include "impl/Slots.cpp"
+#include "impl/SourceStrings.cpp"
 #include "impl/Tests.cpp"

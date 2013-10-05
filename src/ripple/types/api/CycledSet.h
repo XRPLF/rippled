@@ -17,56 +17,26 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_TUNING_H_INCLUDED
-#define RIPPLE_VALIDATORS_TUNING_H_INCLUDED
-
-#include <boost/version.hpp>
+#ifndef RIPPLE_TYPES_CYCLEDSET_H_INCLUDED
+#define RIPPLE_TYPES_CYCLEDSET_H_INCLUDED
 
 namespace ripple {
-namespace Validators {
 
-// Tunable constants
-//
-enum
-{
-#if 0
-    // We will fetch a source at this interval
-    hoursBetweenFetches = 24
-    ,secondsBetweenFetches = hoursBetweenFetches * 60 * 60
-    // We check Source expirations on this time interval
-    ,checkEverySeconds = 60 * 60
-#else
-     secondsBetweenFetches = 59
-    ,checkEverySeconds = 60
-#endif
-
-    // This tunes the preallocated arrays
-    ,expectedNumberOfResults = 1000
-
-    // NUmber of entries in the seen validations cache
-    ,seenValidationsCacheSize       = 1000
-
-    // Number of entries in the seen ledgers cache
-    ,seenLedgersCacheSize           = 1000 // about half an hour at 2/sec
-
-    // Number of closed Ledger entries per Validator
-    ,ledgersPerValidator            = 100  // this shouldn't be too large
-};
-
-//------------------------------------------------------------------------------
-
-/** Cycled associative map of unique keys. */
+/** Cycled set of unique keys.
+    This provides a system of remembering a set of keys, with aging. Two
+    containers are kept. When one container fills, the other is cleared
+    and a swap is performed. A key is considered present if it is in either
+    container.
+*/
 template <class Key,
-          class T,
-          class Info, // per-container info
           class Hash = typename Key::hasher,
           class KeyEqual = std::equal_to <Key>,
           class Allocator = std::allocator <Key> >
-class CycledMap
+class CycledSet
 {
 private:
-    typedef boost::unordered_map <
-        Key, T, Hash, KeyEqual, Allocator>                  ContainerType;
+    typedef boost::unordered_set<
+        Key, Hash, KeyEqual, Allocator>                     ContainerType;
     typedef typename ContainerType::iterator                iterator;
 
 public:
@@ -82,7 +52,7 @@ public:
     typedef typename ContainerType::pointer                 pointer;
     typedef typename ContainerType::const_pointer           const_pointer;
 
-    explicit CycledMap (
+    explicit CycledSet (
         size_type item_max,
         Hash hash = Hash(),
         KeyEqual equal = KeyEqual(),
@@ -96,50 +66,34 @@ public:
     {
     }
 
-    Info& front()
-        { return m_front_info; }
-
-    Info const & front() const
-        { return m_front_info; }
-
-    Info& back ()
-        { return m_back_info; }
-
-    Info const& back () const
-        { return m_back_info; }
-
-    /** Returns `true` if the next real insert would swap. */
+    // Returns `true` if the next real insert would swap
     bool full() const
     {
         return m_front.size() >= m_max;
     }
 
-    /** Insert the value if it doesn't already exist. */
-    std::pair <T&, Info&> insert (value_type const& value)
+    // Adds the key to the front if its not in either map
+    bool insert (key_type const& key)
     {
         if (full())
             cycle ();
-        iterator iter (m_back.find (value.first));
-        if (iter != m_back.end())
-            return std::make_pair (
-            boost::ref (iter->second),
-            boost::ref (m_back_info));
+        if (m_back.find (key) != m_back.end())
+            return false;
         std::pair <iterator, bool> result (
-            m_front.insert (value));
-        return std::make_pair (
-            boost::ref (result.first->second),
-            boost::ref (m_front_info));
+            m_front.insert (key));
+        if (result.second)
+            return true;
+        return false;
     }
 
     void cycle ()
     {
         std::swap (m_front, m_back);
         m_front.clear ();
+
 #if BOOST_VERSION > 105400
         m_front.reserve (m_max);
 #endif
-        std::swap (m_front_info, m_back_info);
-        m_front_info.clear();
     }
 
 private:
@@ -149,11 +103,8 @@ private:
     allocator_type m_alloc;
     ContainerType m_front;
     ContainerType m_back;
-    Info m_front_info;
-    Info m_back_info;
 };
 
-}
 }
 
 #endif

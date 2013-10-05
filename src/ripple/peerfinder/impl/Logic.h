@@ -20,44 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
-#include "../../ripple/types/api/AgedHistory.h"
-
-#include "PeerInfo.h"
-#include "Slots.h"
-#include "Store.h"
-
-#include <set>
-#include "beast/modules/beast_core/system/BeforeBoost.h"
-#include <boost/regex.hpp>
-#include <boost/unordered_set.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/key_extractors.hpp>
-
 namespace ripple {
 namespace PeerFinder {
-
-// Tunable constants
-enum
-{
-    // How often we will try to make outgoing connections
-    secondsPerConnect               = 10,
-
-    // How often we send or accept mtENDPOINTS messages per peer
-    secondsPerEndpoints             = 5,
-
-    // How many Endpoint to send in each mtENDPOINTS
-    numberOfEndpoints               = 10,
-
-    // The most Endpoint we will accept in mtENDPOINTS
-    numberOfEndpointsMax            = 20,
-
-    // How many legacy endpoints to keep in our cache
-    numberOfLegacyEndpoints         = 1000,
-
-    // How often legacy endpoints are updated in the database
-    legacyEndpointUpdateSeconds     = 60 * 60
-};
 
 //--------------------------------------------------------------------------
 
@@ -88,8 +52,6 @@ inline bool operator== (EndpointInfo const& lhs, EndpointInfo const& rhs)
 {
     return lhs.endpoint == rhs.endpoint;
 }
-
-typedef AgedHistory <std::set <IPEndpoint> > LegacyEndpoints;
 
 //--------------------------------------------------------------------------
 
@@ -138,6 +100,7 @@ public:
 
     Callback& m_callback;
     Store& m_store;
+    Checker& m_checker;
     Journal m_journal;
     Config m_config;
 
@@ -150,16 +113,21 @@ public:
     // Our view of the current set of connected peers.
     Peers m_peers;
 
-    LegacyEndpoints m_legacyEndpoints;
-    bool m_legacyEndpointsDirty;
+    LegacyEndpointCache m_legacyCache;
+    bool m_legacyCacheDirty;
 
     //----------------------------------------------------------------------
 
-    Logic (Callback& callback, Store& store, Journal journal)
+    Logic (
+        Callback& callback,
+        Store& store,
+        Checker& checker,
+        Journal journal)
         : m_callback (callback)
         , m_store (store)
+        , m_checker (checker)
         , m_journal (journal)
-        , m_legacyEndpointsDirty (false)
+        , m_legacyCacheDirty (false)
     {
     }
 
@@ -174,8 +142,7 @@ public:
         m_store.loadLegacyEndpoints (list);
         for (List::const_iterator iter (list.begin());
             iter != list.end(); ++iter)
-            m_legacyEndpoints->insert (*iter);
-        m_legacyEndpoints.swap();
+            m_legacyCache.insert (*iter);
         m_journal.debug << "Loaded " << list.size() << " legacy endpoints";
     }
 
@@ -253,17 +220,6 @@ public:
     //
     void createLegacyEndpointList (std::vector <IPEndpoint>& list)
     {
-        list.clear ();
-        list.reserve (m_legacyEndpoints.front().size() +
-                      m_legacyEndpoints.back().size());
-
-        for (LegacyEndpoints::container_type::const_iterator iter (
-            m_legacyEndpoints.front().begin()); iter != m_legacyEndpoints.front().end(); ++iter)
-            list.push_back (*iter);
-
-        for (LegacyEndpoints::container_type::const_iterator iter (
-            m_legacyEndpoints.back().begin()); iter != m_legacyEndpoints.back().end(); ++iter)
-            list.push_back (*iter);
     }
 
     // Make outgoing connections to bring us up to desired out count
@@ -272,13 +228,9 @@ public:
     {
         if (m_slots.outDesired > m_slots.outboundCount)
         {
+            int const needed (m_slots.outDesired - m_slots.outboundCount);
             std::vector <IPEndpoint> list;
-            createLegacyEndpointList (list);
-            std::random_shuffle (list.begin(), list.end());
-
-            int needed = m_slots.outDesired - m_slots.outboundCount;
-            if (needed > list.size())
-                needed = list.size();
+            m_legacyCache.get (needed, list);
 
 #if RIPPLE_USE_PEERFINDER
             m_callback.connectPeerEndpoints (list);
@@ -290,6 +242,7 @@ public:
     //
     void fetch (Source& source)
     {
+#if 0
         m_journal.debug << "Fetching " << source.name();
 
         Source::IPEndpoints endpoints;
@@ -299,16 +252,17 @@ public:
         {
             for (Source::IPEndpoints::const_iterator iter (endpoints.begin());
                 iter != endpoints.end(); ++iter)
-                m_legacyEndpoints->insert (*iter);
+                m_legacyCache->insert (*iter);
 
-            if (m_legacyEndpoints->size() > (numberOfLegacyEndpoints/2))
+            if (m_legacyCache->size() > (numberOfLegacyEndpoints/2))
             {
-                m_legacyEndpoints.swap();
-                m_legacyEndpoints->clear();
+                m_legacyCache.swap();
+                m_legacyCache->clear();
             }
 
-            m_legacyEndpointsDirty = true;
+            m_legacyCacheDirty = true;
         }
+#endif
     }
 
     //----------------------------------------------------------------------
@@ -398,6 +352,75 @@ public:
         }
     }
 
+    // Called when the Checker completes a connectivity test
+    //
+    void onCheckEndpoint (PeerID const& id, Checker::Result const& result)
+    {
+        if (result.error == boost::asio::error::operation_aborted)
+            return;
+
+        Peers::iterator iter (m_peers.find (id));
+        if (iter != m_peers.end())
+        {
+            PeerInfo const& peer (*iter);
+
+            if (! result.error)
+            {
+                peer.checked = true;
+                peer.canAccept = result.canAccept;
+
+                if (peer.canAccept)
+                    m_journal.info << "Peer " << peer.address <<
+                        " passed listening test";
+                else
+                    m_journal.warning << "Peer " << peer.address <<
+                        " cannot accept incoming connections";
+            }
+            else
+            {
+                // VFALCO TODO Should we retry depending on the error?
+                peer.checked = true;
+                peer.canAccept = false;
+
+                m_journal.error << "Listening test for " <<
+                    peer.address << " failed: " <<
+                    result.error.message();
+            }
+        }
+        else
+        {
+            // The peer disconnected before we finished the check
+            m_journal.debug << "Finished listening test for " <<
+                id << " but the peer disconnected. ";
+        }
+    }
+
+    // Called when the Checker completes a connectivity test for a legacy address
+    //
+    void onCheckLegacyEndpoint (IPEndpoint const& endpoint,
+        Checker::Result const& result)
+    {
+        if (result.error == boost::asio::error::operation_aborted)
+            return;
+
+        RelativeTime const now (RelativeTime::fromStartup());
+
+        if (! result.error)
+        {
+            if (result.canAccept)
+                m_journal.info << "Legacy address " << endpoint <<
+                    " passed listening test";
+            else
+                m_journal.warning << "Legacy address " << endpoint <<
+                    " cannot accept incoming connections";
+        }
+        else
+        {
+            m_journal.error << "Listening test for legacy address " <<
+                endpoint << " failed: " << result.error.message();
+        }
+    }
+
     // Processes a list of Endpoint received from a peer.
     //
     void onPeerEndpoints (PeerID const& id, std::vector <Endpoint> endpoints)
@@ -424,17 +447,43 @@ public:
                         
                     m_callback.chargePeerLoadPenalty(id);
                 }
-                
+
                 // process the list
-                    
+                {
+                    bool foundZeroHops (false);
+                    bool chargedPenalty (false);
+                    for (std::vector <Endpoint>::const_iterator iter (endpoints.begin());
+                        iter != endpoints.end(); ++iter)
+                    {
+                        Endpoint const& endpoint (*iter);
+                        if (endpoint.hops == 0)
+                        {
+                            if (! foundZeroHops)
+                            {
+                                foundZeroHops = true;
+                                m_checker.async_test (endpoint.address.withPort (
+                                    endpoint.port), bind (&Logic::onCheckEndpoint,
+                                        this, id, _1));
+                            }
+                            else if (! chargedPenalty)
+                            {
+                                // Only charge them once (?)
+                                chargedPenalty = true;
+                                // More than one zero-hops message?!
+                                m_journal.warning << "Charging peer " << peer.address <<
+                                    " for sending more than one hops==0 endpoint";
+                                m_callback.chargePeerLoadPenalty (id);
+                            }
+                        }
+                    }
+                }
+
                 peer.whenReceiveEndpoints = now + secondsPerEndpoints;
             }
             else
             {
                 m_journal.warning << "Charging peer " << peer.address <<
                     " for sending too quickly";
-
-                // Peer sent mtENDPOINTS too often
                 m_callback.chargePeerLoadPenalty (id);
             }
         }
@@ -446,28 +495,25 @@ public:
 
     void onPeerLegacyEndpoint (IPEndpoint const& ep)
     {
-        if (ep.isPublic())
+        // filter invalid addresses
+        if (! ep.isPublic())
+            return;
+
+        if (ep.port() == 0)
+            return;
+
+        std::pair <LegacyEndpoint&, bool> result (
+            m_legacyCache.insert (ep));
+
+        if (result.second)
         {
-            // insert into front container
-            std::pair <LegacyEndpoints::container_type::iterator, bool> result (
-                m_legacyEndpoints->insert (ep));
+            // its new
+            m_legacyCacheDirty = true;
+            m_journal.trace << "Legacy endpoint: " << ep;
 
-            // erase from back container if its new
-            if (result.second)
-            {
-                std::size_t const n (m_legacyEndpoints.back().erase (ep));
-                if (n == 0)
-                {
-                    m_legacyEndpointsDirty = true;
-                    m_journal.trace << "Legacy endpoint: " << ep;
-                }
-            }
-
-            if (m_legacyEndpoints->size() > (numberOfLegacyEndpoints/2))
-            {
-                m_legacyEndpoints.swap();
-                m_legacyEndpoints->clear();
-            }
+            m_checker.async_test (ep, bind (
+                &Logic::onCheckLegacyEndpoint,
+                    this, ep, _1));
         }
     }
 
@@ -475,9 +521,10 @@ public:
     //
     void storeLegacyEndpoints ()
     {
-        if (!m_legacyEndpointsDirty)
+        if (!m_legacyCacheDirty)
             return;
 
+#if 0
         std::vector <IPEndpoint> list;
 
         createLegacyEndpointList (list);
@@ -486,7 +533,8 @@ public:
 
         m_store.storeLegacyEndpoints (list);
 
-        m_legacyEndpointsDirty = false;
+        m_legacyCacheDirty = false;
+#endif
     }
 };
 

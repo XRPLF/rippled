@@ -20,10 +20,6 @@
 #ifndef RIPPLE_PEERFINDER_ENDPOINTCACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_ENDPOINTCACHE_H_INCLUDED
 
-#include "../../ripple/types/api/AgedHistory.h"
-
-#include "../api/Types.h"
-
 namespace ripple {
 namespace PeerFinder {
 

@@ -20,8 +20,6 @@
 #ifndef RIPPLE_PEERFINDER_SOURCESTRINGS_H_INCLUDED
 #define RIPPLE_PEERFINDER_SOURCESTRINGS_H_INCLUDED
 
-#include "Source.h"
-
 namespace ripple {
 namespace PeerFinder {
 

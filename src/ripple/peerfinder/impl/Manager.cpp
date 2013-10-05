@@ -172,9 +172,6 @@ Revised Gnutella Ping Pong Scheme
     http://rfc-gnutella.sourceforge.net/src/pong-caching.html
 */
 
-#include "Logic.h"
-#include "StoreSqdb.h"
-
 namespace ripple {
 namespace PeerFinder {
 
@@ -188,6 +185,7 @@ public:
     ServiceQueue m_queue;
     Journal m_journal;
     StoreSqdb m_store;
+    CheckerAdapter m_checker;
     Logic m_logic;
     DeadlineTimer m_connectTimer;
     DeadlineTimer m_endpointsTimer;
@@ -200,11 +198,12 @@ public:
         , Thread ("PeerFinder")
         , m_journal (journal)
         , m_store (journal)
-        , m_logic (callback, m_store, journal)
+        , m_checker (m_queue)
+        , m_logic (callback, m_store, m_checker, journal)
         , m_connectTimer (this)
         , m_endpointsTimer (this)
     {
-#if 0
+#if 1
 #if BEAST_MSVC
         if (beast_isRunningUnderDebugger())
         {
@@ -281,6 +280,8 @@ public:
 
     void onStop ()
     {
+        m_checker.cancel ();
+
         if (this->Thread::isThreadRunning ())
         {
             m_journal.debug << "Stopping";

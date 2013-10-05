@@ -20,8 +20,6 @@
 #ifndef RIPPLE_PEERFINDER_SLOTS_H_INCLUDED
 #define RIPPLE_PEERFINDER_SLOTS_H_INCLUDED
 
-#include "../api/Config.h"
-
 namespace ripple {
 namespace PeerFinder {
 

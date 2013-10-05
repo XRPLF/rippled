@@ -20,8 +20,6 @@
 #ifndef RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
 #define RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
 
-#include "Types.h"
-
 namespace ripple {
 namespace PeerFinder {
 

@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include "SourceStrings.h"
-
 namespace ripple {
 namespace PeerFinder {
 

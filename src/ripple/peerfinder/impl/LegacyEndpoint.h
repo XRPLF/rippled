@@ -17,15 +17,36 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_LEGACYENDPOINT_H_INCLUDED
+#define RIPPLE_PEERFINDER_LEGACYENDPOINT_H_INCLUDED
+
 namespace ripple {
 namespace PeerFinder {
 
-Config::Config ()
-    : maxPeerCount (20)
-    , wantIncoming (false)
-    , listeningPort (0)
+struct LegacyEndpoint
 {
-}
+    LegacyEndpoint ()
+        : checked (false)
+        , canAccept (false)
+        { }
+
+    LegacyEndpoint (IPEndpoint const& address_)
+        : address (address_)
+        { }
+
+    IPEndpoint address;
+
+    // When we last gave the endpoint out for connection attempts
+    RelativeTime mutable lastGet;
+
+    // True if we ever tried to connect
+    bool mutable checked;
+
+    // The result of the last connect attempt
+    bool mutable canAccept;
+};
 
 }
 }
+
+#endif
