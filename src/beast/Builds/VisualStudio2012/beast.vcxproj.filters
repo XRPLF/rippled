@@ -282,9 +282,6 @@
     <Filter Include="beast\config\stdlib">
       <UniqueIdentifier>{7243e5e5-ad7e-4d81-8444-d545919e850c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\asio">
-      <UniqueIdentifier>{549430fc-36f6-450e-9d8d-38f4b9e72fb5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\smart_ptr">
       <UniqueIdentifier>{4e9c54da-1581-41d7-ac75-48140e4a13d4}</UniqueIdentifier>
     </Filter>
@@ -293,6 +290,9 @@
     </Filter>
     <Filter Include="beast\threads\impl">
       <UniqueIdentifier>{386a8cd8-6be3-4cac-9bca-7a01fdb5327a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\threads\detail">
+      <UniqueIdentifier>{b116764e-1ad5-4854-a549-73c5beb5ae37}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1229,6 +1229,12 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\threads\Stoppable.h">
       <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\detail\DispatchedHandler.h">
+      <Filter>beast\threads\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\threads\detail\BindHandler.h">
+      <Filter>beast\threads\detail</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
