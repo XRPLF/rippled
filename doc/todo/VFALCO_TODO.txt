@@ -4,19 +4,12 @@ RIPPLE TODO
 
 Vinnie's List: Changes day to day, descending priority
 - PeerFinder work
-- Fix and tidy up broken beast classes
 - Validators work
-  * Parse Validator line using cribbed code
-- HTTPMessage improvements
 - HTTPClient improvements based on HTTPServer
+- HTTPMessage improvements
 - Ditch old HTTPClient so I can take the name
 - Finish RPCAsyncServer, RPCService and RPCService::Manager
 - Fix RPCDoor to respect config setting for [rpc_secure]
-- Validators should delay the application of newly downloaded lists from
-  sources, to mitigate the effects of attacks. Unless there's no validators
-  in the list.
-- Validators RPC options to immediately apply UNL,
-  manually revisit sources, etc...
 - Clean up calculation of COnfig file location.
 - Remove TESTNET and all related code and settings.
 - Remove addRpcSub, findRpcSub, and notify the appropriate partner(s)
@@ -26,6 +19,13 @@ David Features:
 - change config via RPC, this is for debugging
 
 --------------------------------------------------------------------------------
+
+- Validators should delay the application of newly downloaded lists from
+  sources, to mitigate the effects of attacks. Unless there's no validators
+  in the list.
+
+- Validators RPC options to immediately apply UNL,
+  manually revisit sources, etc...
 
 - Look into using CMake
 
@@ -86,8 +86,6 @@ David Features:
 - Add "skipped" field to beginTestCase() to disable a test but still record
   that it was skipped in the output. Like for mdb import.
 
-- use beast DeadlineTimer for sweep in Application
-
 - Get rid of 'ref' typedefs that really mean const&
 
 - Use secp256k1 from beast
@@ -121,10 +119,6 @@ David Features:
 
 - Rename RPCHandler to CallHandler
 
-- Profile/VTune the application to identify hot spots
-  * Determine why rippled has a slow startup on Windows
-  * Improve the performance when running all unit tests on Windows
-
 - Rename "fullBelow" to something like haveAllDescendants or haveAllChildren.
 
 - Rewrite Sustain to use Beast and work on Windows as well
@@ -132,17 +126,9 @@ David Features:
 
 - Make sure the leak detector output appears on Linux and FreeBSD debug builds.
 
-- Create SharedData <LoadState>, move all load related state variables currently
-  protected by separated mutexes in different classes into the LoadState, and
-  use read/write locking semantics to update the values. Later, use Listeners
-  to notify dependent code to resolve the dependency inversion.
-
 - Rename LoadMonitor to LoadMeter, change LoadEvent to LoadMeter::ScopedSample
 
 - Rename LedgerMaster to Ledgers, create ILedgers interface.
-
-- Figure out where previous ledgers go after a call to LedgerMaster::pushLedger()
-  and see if it is possible to clean up the leaks on exit.
 
 - Replace all NULL with nullptr
 
@@ -151,16 +137,12 @@ David Features:
            singleton. It might have to remain a singleton. At the very least,
            it should be a SharedSingleton to resolve ordering issues.
 
-- Rename include guards to boost style, e.g. RIPPLE_LOG_H_INCLUDED
-
 - Replace C11X with BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
 
 - Remove "ENABLE_INSECURE" when the time is right.
 
 - lift unique_ptr / auto_ptr into ripple namespace,
   or replace with ScopedPointer (preferred)
-
-- Make LevelDB and Ripple code work with both Unicode and non-Unicode Windows APIs
 
 - Go searching through VFALCO notes and fix everything
 
@@ -172,29 +154,7 @@ David Features:
     STObject
     SerializedLedgerEntry
 
-- Replace uint160, uint256 in argument lists, template parameter lists, and
-  data members with tyepdefs from ripple_ProtocolTypes.h
-
 - Consolidate SQLite database classes: DatabaseCon, Database, SqliteDatabase.
-
---------------------------------------------------------------------------------
-HYPERLEVELDB TODO
---------------------------------------------------------------------------------
-
-- Port to Windows
-
---------------------------------------------------------------------------------
-LEVELDB TODO
---------------------------------------------------------------------------------
-
-- Add VisualStudio 2012 project file to our fork
-
-- Add LevelDB unity .cpp and .h to our fork
-
-- Replace Beast specific platform macros with universal macros so that the
-  unity doesn't require Beast
-
-- Submit LevelDB fork changes to Bitcoin upstream
 
 --------------------------------------------------------------------------------
 WEBSOCKET TODO
@@ -211,65 +171,6 @@ PROTOCOL BUFFERS TODO
 - Update the subtree
 
 - Make a Visual Studio 2012 Project for source browsing
-
---------------------------------------------------------------------------------
-NOTES
---------------------------------------------------------------------------------
-
-LoadEvent
-
-    Is referenced with both a shared pointer and an auto pointer.
-    Should be named LoadMeter::ScopedSample. Or possibly ScopedLoadSample
-
-JobQueue
-
-    getLoadEvent and getLoadEventAP differ only in the style of pointer
-    container which is returned. Unnecessary complexity.
-
-Naming: Some names don't make sense.
-
-  Index
-    Stop using Index to refer to keys in tables. Replace with "Key" ?
-    Index implies a small integer, or a data structure.
-
-    This is all over the place in the Ledger API, "Index" of this and
-    "Index" of that, the terminology is imprecise and helps neither
-    understanding nor recall.
-    
-Inconsistent names
-
-  We have full names like SerializedType and then acronyms like STObject
-  Two names for some things, e.g. SerializedLedgerEntry and SLE
-
-  Shared/Smart pointer typedefs in classes have a variety of different names
-  for the same thing. e.g. "pointer", "ptr", "ptr_t", "wptr"
-
-Verbose names
-
-  The prefix "Flat" is more appealing than "Serialized" because its shorter and
-    easier to pronounce.
-
-Ledger "Skip List"
-
-  Is not really a skip list data structure. This is more appropriately
-  called an "index" although that name is currently used to identify hashes
-  used as keys.
-
-Interfaces
-
-  Serializer
-
-    Upon analysis this class does two incompatible things. Flattening, and
-    unflattening. The interface should be reimplemented as two distinct
-    abstract classes, InputStream and OutputStream with suitable implementations
-    such as to and from a block of memory or dynamically allocated buffer.
-
-    The name and conflation of dual roles serves to confuse code at the point
-    of call. Does set(Serializer& s) flatten or unflatten the data? This
-    would be more clear:
-        bool write (OutputStream& stream);
-
-    We have beast for InputStream and OutputStream, we can use those now.
 
 --------------------------------------------------------------------------------
 Davidisms
@@ -299,31 +200,3 @@ A node is "full below" if we believe we have (either in the database or
 
 The fullBelowCache is a cache of hashes of nodes that are full below. Which means
   there are no missing children
-
-
-What we want from the unique node list:
-  - Some number of trusted roots (known by domain)
-    probably organizations whose job is to provide a list of validators
-  - We imagine the IRGA for example would establish some group whose job is to
-    maintain a list of validators. There would be a public list of criteria
-    that they would use to vet the validator. Things like:
-    * Not anonymous
-    * registered business
-    * Physical location
-    * Agree not to cease operations without notice / arbitrarily
-    * Responsive to complaints
-  - Identifiable jurisdiction
-    * Homogeneity in the jurisdiction is a business risk
-    * If all validators are in the same jurisdiction this is a business risk
-  - OpenCoin sets criteria for the organizations
-  - Rippled will ship with a list of trusted root "certificates"
-    In other words this is a list of trusted domains from which the software
-      can contact each trusted root and retrieve a list of "good" validators
-      and then do something with that information
-  - All the validation information would be public, including the broadcast
-    messages.
-  - The goal is to easily identify bad actors and assess network health
-    * Malicious intent
-    * Or, just hardware problems (faulty drive or memory)
-
-

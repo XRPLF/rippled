@@ -93,6 +93,33 @@
         * Measurements of constructive/destructive behavior is
           calculated in units of percentage of ledgers for which
           the behavior is measured.
+          
+    What we want from the unique node list:
+      - Some number of trusted roots (known by domain)
+        probably organizations whose job is to provide a list of validators
+      - We imagine the IRGA for example would establish some group whose job is to
+        maintain a list of validators. There would be a public list of criteria
+        that they would use to vet the validator. Things like:
+        * Not anonymous
+        * registered business
+        * Physical location
+        * Agree not to cease operations without notice / arbitrarily
+        * Responsive to complaints
+      - Identifiable jurisdiction
+        * Homogeneity in the jurisdiction is a business risk
+        * If all validators are in the same jurisdiction this is a business risk
+      - OpenCoin sets criteria for the organizations
+      - Rippled will ship with a list of trusted root "certificates"
+        In other words this is a list of trusted domains from which the software
+          can contact each trusted root and retrieve a list of "good" validators
+          and then do something with that information
+      - All the validation information would be public, including the broadcast
+        messages.
+      - The goal is to easily identify bad actors and assess network health
+        * Malicious intent
+        * Or, just hardware problems (faulty drive or memory)
+
+
 */
 
 namespace ripple {
