@@ -142,7 +142,7 @@ public:
 
     template <typename Value>
     PropertyStream const& operator<< (Value value) const
-        { append (value); return &this; }
+        { append (value); return *this; }
     /** @} */
 
 private:
