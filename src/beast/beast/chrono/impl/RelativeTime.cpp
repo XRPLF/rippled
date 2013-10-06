@@ -35,7 +35,7 @@
 
 namespace beast {
 
-RelativeTime::RelativeTime (const double secs) noexcept
+RelativeTime::RelativeTime (const RelativeTime::value_type secs) noexcept
     : numSeconds (secs)
 {
 }
@@ -59,27 +59,27 @@ RelativeTime RelativeTime::milliseconds (const int64 milliseconds) noexcept
     return RelativeTime (milliseconds * 0.001);
 }
 
-RelativeTime RelativeTime::seconds (double s) noexcept
+RelativeTime RelativeTime::seconds (RelativeTime::value_type s) noexcept
 {
     return RelativeTime (s);
 }
 
-RelativeTime RelativeTime::minutes (const double numberOfMinutes) noexcept  
+RelativeTime RelativeTime::minutes (const RelativeTime::value_type numberOfMinutes) noexcept
 {
     return RelativeTime (numberOfMinutes * 60.0);
 }
 
-RelativeTime RelativeTime::hours (const double numberOfHours) noexcept      
+RelativeTime RelativeTime::hours (const RelativeTime::value_type numberOfHours) noexcept
 {
     return RelativeTime (numberOfHours * (60.0 * 60.0));
 }
 
-RelativeTime RelativeTime::days (const double numberOfDays) noexcept        
+RelativeTime RelativeTime::days (const RelativeTime::value_type numberOfDays) noexcept
 {
     return RelativeTime (numberOfDays  * (60.0 * 60.0 * 24.0));
 }
 
-RelativeTime RelativeTime::weeks (const double numberOfWeeks) noexcept      
+RelativeTime RelativeTime::weeks (const RelativeTime::value_type numberOfWeeks) noexcept
 {
     return RelativeTime (numberOfWeeks * (60.0 * 60.0 * 24.0 * 7.0));
 }
@@ -91,22 +91,22 @@ int64 RelativeTime::inMilliseconds() const noexcept
     return (int64) (numSeconds * 1000.0);
 }
 
-double RelativeTime::inMinutes() const noexcept
+RelativeTime::value_type RelativeTime::inMinutes() const noexcept
 {
     return numSeconds / 60.0;
 }
 
-double RelativeTime::inHours() const noexcept
+RelativeTime::value_type RelativeTime::inHours() const noexcept
 {
     return numSeconds / (60.0 * 60.0);
 }
 
-double RelativeTime::inDays() const noexcept
+RelativeTime::value_type RelativeTime::inDays() const noexcept
 {
     return numSeconds / (60.0 * 60.0 * 24.0);
 }
 
-double RelativeTime::inWeeks() const noexcept
+RelativeTime::value_type RelativeTime::inWeeks() const noexcept
 {
     return numSeconds / (60.0 * 60.0 * 24.0 * 7.0);
 }
@@ -125,12 +125,12 @@ RelativeTime RelativeTime::operator-= (RelativeTime t) noexcept
     numSeconds -= t.numSeconds; return *this;
 }
 
-RelativeTime RelativeTime::operator+= (const double secs) noexcept
+RelativeTime RelativeTime::operator+= (const RelativeTime::value_type secs) noexcept
 {
     numSeconds += secs; return *this;
 }
 
-RelativeTime RelativeTime::operator-= (const double secs) noexcept
+RelativeTime RelativeTime::operator-= (const RelativeTime::value_type secs) noexcept
 {
     numSeconds -= secs; return *this;
 }
