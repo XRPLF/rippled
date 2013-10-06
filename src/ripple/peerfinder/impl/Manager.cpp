@@ -297,6 +297,8 @@ public:
 
     void onWrite (PropertyStream stream)
     {
+        // VFALCO NOTE this is not thread safe (yet)
+
         stream ["peers"]        = m_logic.m_slots.peerCount;
         stream ["in"]           = m_logic.m_slots.inboundCount;
         stream ["out"]          = m_logic.m_slots.outboundCount;
@@ -305,6 +307,8 @@ public:
         stream ["in_max"]       = m_logic.m_slots.inboundSlotsMaximum;
         stream ["minutes"]      = m_logic.m_slots.uptimeMinutes();
         stream ["round"]        = m_logic.m_slots.roundUpwards();
+        stream ["cache"]        = uint32(m_logic.m_cache.size());
+        stream ["legacy"]       = uint32(m_logic.m_legacyCache.size());
     }
 
     //--------------------------------------------------------------------------
@@ -375,8 +379,8 @@ public:
 //------------------------------------------------------------------------------
 
 Manager::Manager (Stoppable& parent)
-    : PropertyStream::Source ("peerfinder")
-    , Stoppable ("PeerFinder", parent)
+    : Stoppable ("PeerFinder", parent)
+    , PropertyStream::Source ("peerfinder")
 {
 }
 

@@ -61,6 +61,11 @@ public:
     {
     }
 
+    std::size_t size() const
+    {
+        return m_now.size() + m_prev.size();
+    }
+
     // Cycle the tables
     void cycle()
     {

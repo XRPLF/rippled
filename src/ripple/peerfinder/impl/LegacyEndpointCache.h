@@ -158,6 +158,11 @@ public:
     {
     }
 
+    std::size_t size() const
+    {
+        return m_map.size();
+    }
+
     /** Load the legacy endpoints cache from the database. */
     void load ()
     {
