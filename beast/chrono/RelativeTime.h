@@ -44,12 +44,21 @@ class BEAST_API  RelativeTime
 {
 public:
     //==============================================================================
+    /** The underlying data type used by RelativeTime.
+
+        If you need to get to the underlying time and manipulate it
+        you can use this to declare a type that is guaranteed to
+        work cleanly.
+    */
+    typedef double value_type;
+
+    //==============================================================================
     /** Creates a RelativeTime.
 
         @param seconds  the number of seconds, which may be +ve or -ve.
         @see milliseconds, minutes, hours, days, weeks
     */
-    explicit RelativeTime (double seconds = 0.0) noexcept;
+    explicit RelativeTime (value_type seconds = 0.0) noexcept;
 
     /** Copies another relative time. */
     RelativeTime (const RelativeTime& other) noexcept;
@@ -83,27 +92,27 @@ public:
     /** Creates a new RelativeTime object representing a number of seconds.
         @see milliseconds, minutes, hours, days, weeks
     */
-    static RelativeTime seconds (double seconds) noexcept;
+    static RelativeTime seconds (value_type seconds) noexcept;
 
     /** Creates a new RelativeTime object representing a number of minutes.
         @see milliseconds, hours, days, weeks
     */
-    static RelativeTime minutes (double numberOfMinutes) noexcept;
+    static RelativeTime minutes (value_type numberOfMinutes) noexcept;
 
     /** Creates a new RelativeTime object representing a number of hours.
         @see milliseconds, minutes, days, weeks
     */
-    static RelativeTime hours (double numberOfHours) noexcept;
+    static RelativeTime hours (value_type numberOfHours) noexcept;
 
     /** Creates a new RelativeTime object representing a number of days.
         @see milliseconds, minutes, hours, weeks
     */
-    static RelativeTime days (double numberOfDays) noexcept;
+    static RelativeTime days (value_type numberOfDays) noexcept;
 
     /** Creates a new RelativeTime object representing a number of weeks.
         @see milliseconds, minutes, hours, days
     */
-    static RelativeTime weeks (double numberOfWeeks) noexcept;
+    static RelativeTime weeks (value_type numberOfWeeks) noexcept;
 
     //==============================================================================
     /** Returns the number of milliseconds this time represents.
@@ -114,27 +123,27 @@ public:
     /** Returns the number of seconds this time represents.
         @see inMilliseconds, inMinutes, inHours, inDays, inWeeks
     */
-    double inSeconds() const noexcept       { return numSeconds; }
+    value_type inSeconds() const noexcept       { return numSeconds; }
 
     /** Returns the number of minutes this time represents.
         @see inMilliseconds, inSeconds, inHours, inDays, inWeeks
     */
-    double inMinutes() const noexcept;
+    value_type inMinutes() const noexcept;
 
     /** Returns the number of hours this time represents.
         @see inMilliseconds, inSeconds, inMinutes, inDays, inWeeks
     */
-    double inHours() const noexcept;
+    value_type inHours() const noexcept;
 
     /** Returns the number of days this time represents.
         @see inMilliseconds, inSeconds, inMinutes, inHours, inWeeks
     */
-    double inDays() const noexcept;
+    value_type inDays() const noexcept;
 
     /** Returns the number of weeks this time represents.
         @see inMilliseconds, inSeconds, inMinutes, inHours, inDays
     */
-    double inWeeks() const noexcept;
+    value_type inWeeks() const noexcept;
 
     /** Returns a readable textual description of the time.
 
@@ -169,13 +178,13 @@ public:
     RelativeTime operator-= (RelativeTime timeToSubtract) noexcept;
 
     /** Adds a number of seconds to this time. */
-    RelativeTime operator+= (double secondsToAdd) noexcept;
+    RelativeTime operator+= (value_type secondsToAdd) noexcept;
 
     /** Subtracts a number of seconds from this time. */
-    RelativeTime operator-= (double secondsToSubtract) noexcept;
+    RelativeTime operator-= (value_type secondsToSubtract) noexcept;
 
 private:
-    double numSeconds;
+    value_type numSeconds;
 };
 
 //------------------------------------------------------------------------------
