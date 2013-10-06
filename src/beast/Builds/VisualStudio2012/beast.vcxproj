@@ -184,6 +184,7 @@
     <ClInclude Include="..\..\beast\utility\Error.h" />
     <ClInclude Include="..\..\beast\utility\Journal.h" />
     <ClInclude Include="..\..\beast\utility\LeakChecked.h" />
+    <ClInclude Include="..\..\beast\utility\PropertyStream.h" />
     <ClInclude Include="..\..\beast\utility\StaticObject.h" />
     <ClInclude Include="..\..\beast\Version.h" />
     <ClInclude Include="..\..\config\BeastConfig.h" />
@@ -564,6 +565,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\impl\LeakChecked.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\PropertyStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

@@ -849,15 +849,16 @@ public:
             {   "ledger_accept",        &RPCParser::parseAsIs,                  0,  0   },
             {   "ledger_closed",        &RPCParser::parseAsIs,                  0,  0   },
             {   "ledger_current",       &RPCParser::parseAsIs,                  0,  0   },
-            //      {   "ledger_entry",         &RPCParser::parseLedgerEntry,          -1, -1   },
+    //      {   "ledger_entry",         &RPCParser::parseLedgerEntry,          -1, -1   },
             {   "ledger_header",        &RPCParser::parseLedgerId,              1,  1   },
             {   "log_level",            &RPCParser::parseLogLevel,              0,  2   },
             {   "logrotate",            &RPCParser::parseAsIs,                  0,  0   },
-            //      {   "nickname_info",        &RPCParser::parseNicknameInfo,          1,  1   },
+    //      {   "nickname_info",        &RPCParser::parseNicknameInfo,          1,  1   },
             {   "owner_info",           &RPCParser::parseAccountItems,          1,  2   },
             {   "peers",                &RPCParser::parseAsIs,                  0,  0   },
             {   "ping",                 &RPCParser::parseAsIs,                  0,  0   },
-            //      {   "profile",              &RPCParser::parseProfile,               1,  9   },
+            {   "print",                &RPCParser::parseAsIs,                  0,  1   },
+    //      {   "profile",              &RPCParser::parseProfile,               1,  9   },
             {   "proof_create",         &RPCParser::parseProofCreate,           0,  2   },
             {   "proof_solve",          &RPCParser::parseProofSolve,            1,  1   },
             {   "proof_verify",         &RPCParser::parseProofVerify,           2,  4   },
@@ -869,11 +870,10 @@ public:
             {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },
             {   "server_state",         &RPCParser::parseAsIs,                  0,  0   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },
-            //      {   "transaction_entry",    &RPCParser::parseTransactionEntry,     -1,  -1  },
+    //      {   "transaction_entry",    &RPCParser::parseTransactionEntry,     -1,  -1  },
             {   "tx",                   &RPCParser::parseTx,                    1,  2   },
             {   "tx_account",           &RPCParser::parseTxAccount,             1,  7   },
             {   "tx_history",           &RPCParser::parseTxHistory,             1,  1   },
-
             {   "unl_add",              &RPCParser::parseUnlAdd,                1,  2   },
             {   "unl_delete",           &RPCParser::parseUnlDelete,             1,  1   },
             {   "unl_list",             &RPCParser::parseAsIs,                  0,  0   },
@@ -881,14 +881,11 @@ public:
             {   "unl_network",          &RPCParser::parseAsIs,                  0,  0   },
             {   "unl_reset",            &RPCParser::parseAsIs,                  0,  0   },
             {   "unl_score",            &RPCParser::parseAsIs,                  0,  0   },
-
             {   "validation_create",    &RPCParser::parseValidationCreate,      0,  1   },
             {   "validation_seed",      &RPCParser::parseValidationSeed,        0,  1   },
-
             {   "wallet_accounts",      &RPCParser::parseWalletAccounts,        1,  1   },
             {   "wallet_propose",       &RPCParser::parseWalletPropose,         0,  1   },
             {   "wallet_seed",          &RPCParser::parseWalletSeed,            0,  1   },
-
             {   "internal",             &RPCParser::parseInternal,              1,  -1  },
 
     #if ENABLE_INSECURE

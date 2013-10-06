@@ -2214,6 +2214,9 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\CachedEndpoint.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\json\api\JsonPropertyStreamSink.h">
+      <Filter>[1] Ripple\json\api</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\ripple_data\protocol\ripple.proto">

@@ -169,42 +169,6 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // RPC::Service
-    //
-
-    Json::Value rpcPrint (Json::Value const& args)
-    {
-        int const cpuPercent (std::ceil (m_queue.getUtilizaton() * 100));
-        return m_logic.rpcPrint (args, cpuPercent);
-    }
-
-    Json::Value rpcRebuild (Json::Value const& args)
-    {
-        m_queue.dispatch (bind (&Logic::buildChosen, &m_logic));
-        Json::Value result;
-        result ["chosen_list"] = "rebuilding";
-        return result;
-    }
-
-    Json::Value rpcSources (Json::Value const& args)
-    {
-        return m_logic.rpcSources(args);
-    }
-
-    void addRPCHandlers()
-    {
-        addRPCHandler ("validators_print", beast::bind (
-            &ManagerImp::rpcPrint, this, beast::_1));
-
-        addRPCHandler ("validators_rebuild", beast::bind (
-            &ManagerImp::rpcRebuild, this, beast::_1));
-
-        addRPCHandler ("validators_sources", beast::bind (
-            &ManagerImp::rpcSources, this, beast::_1));
-    }
-
-    //--------------------------------------------------------------------------
-    //
     // Manager
     //
 
@@ -234,7 +198,7 @@ public:
         addStaticSource (SourceFile::New (file));
     }
 
-    void addStaticSource (Source* source)
+    void addStaticSource (Validators::Source* source)
     {
 #if RIPPLE_USE_VALIDATORS
         m_queue.dispatch (bind (&Logic::addStatic, &m_logic, source));
@@ -248,7 +212,7 @@ public:
         addSource (SourceURL::New (url));
     }
 
-    void addSource (Source* source)
+    void addSource (Validators::Source* source)
     {
 #if RIPPLE_USE_VALIDATORS
         m_queue.dispatch (bind (&Logic::add, &m_logic, source));
@@ -286,8 +250,6 @@ public:
     {
 #if RIPPLE_USE_VALIDATORS
         m_journal.info << "Validators preparing";
-
-        addRPCHandlers();
 #endif
     }
 
@@ -401,6 +363,11 @@ public:
 };
 
 //------------------------------------------------------------------------------
+
+Manager::Manager ()
+    : PropertyStream::Source ("validators")
+{
+}
 
 Validators::Manager* Validators::Manager::New (Stoppable& parent, Journal journal)
 {

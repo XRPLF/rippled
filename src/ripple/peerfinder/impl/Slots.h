@@ -31,10 +31,9 @@ public:
     void update (Config const& config);
     void addPeer (Config const& config, bool inbound);
     void dropPeer (Config const& config, bool inbound);
-    uint32 uptimeMinutes () const;
 
     // Most recent time when we went from 0 to 1 peers
-    Time startTime;
+    RelativeTime startTime;
 
     // Current total of connected peers that have HELLOed
     int peerCount;
@@ -53,6 +52,16 @@ public:
 
     // The maximum number of incoming slots (calculated)
     int inboundSlotsMaximum;
+
+    // Returns the uptime in minutes
+    // Uptime is measured from the last we transitioned from not
+    // being connected to the network, to being connected.
+    //
+    uint32 uptimeMinutes () const;
+
+    // Returns `true` if we round fractional slot availability upwards
+    bool roundUpwards () const
+        { return m_roundUpwards; }
 
 private:
     bool m_roundUpwards;

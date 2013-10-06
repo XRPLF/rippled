@@ -28,14 +28,17 @@ namespace Validators {
     the list of chosen validators is critical to the health of the network.
     All operations are performed asynchronously on an internal thread.
 */
-class Manager : public RPC::Service
+class Manager : public PropertyStream::Source
 {
+protected:
+    Manager();
+
 public:
     /** Create a new Manager object.
         @param parent The parent Stoppable.
         @param journal Where to send log output.
     */
-    static Manager* New (Stoppable& parent, Journal journal);
+    static Manager* New (Stoppable& stoppableParent, Journal journal);
 
     /** Destroy the object.
         Any pending source fetch operations are aborted. This will block
@@ -59,7 +62,7 @@ public:
     virtual void addStrings (String name,
                              StringArray const& stringArray) = 0;
     virtual void addFile (File const& file) = 0;
-    virtual void addStaticSource (Source* source) = 0;
+    virtual void addStaticSource (Validators::Source* source) = 0;
     /** @} */
 
     /** Add a live source of validators from a trusted URL.
@@ -76,7 +79,7 @@ public:
         Thread safety:
             Can be called from any thread.
     */
-    virtual void addSource (Source* source) = 0;
+    virtual void addSource (Validators::Source* source) = 0;
 
     //--------------------------------------------------------------------------
 

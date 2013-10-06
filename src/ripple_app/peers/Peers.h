@@ -25,12 +25,14 @@ class Manager;
 }
 
 /** Manages the set of connected peers. */
-class Peers
+class Peers : public PropertyStream::Source
 {
 public:
     static Peers* New (Stoppable& parent,
         boost::asio::io_service& io_service,
             boost::asio::ssl::context& context);
+
+    Peers ();
 
     virtual ~Peers () { }
 

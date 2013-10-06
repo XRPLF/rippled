@@ -63,7 +63,7 @@ void Slots::update (Config const& config)
 void Slots::addPeer (Config const& config, bool inbound)
 {
     if (peerCount == 0)
-        startTime = Time::getCurrentTime();
+        startTime = RelativeTime::fromStartup();
 
     ++peerCount;
     if (inbound)
@@ -83,15 +83,15 @@ void Slots::dropPeer (Config const& config, bool inbound)
         --outboundCount;
 
     if (peerCount == 0)
-        startTime = Time (0);
+        startTime = RelativeTime(0);
 
     update (config);
 }
 
 uint32 Slots::uptimeMinutes () const
 {
-    if (startTime.isNotNull())
-        return (Time::getCurrentTime()-startTime).inMinutes();
+    if (startTime.isNotZero())
+        return (RelativeTime::fromStartup()-startTime).inMinutes();
     return 0;
 }
 

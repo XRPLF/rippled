@@ -1621,6 +1621,7 @@
     <ClInclude Include="..\..\src\ripple\http\impl\ServerImpl.h" />
     <ClInclude Include="..\..\src\ripple\http\impl\Types.h" />
     <ClInclude Include="..\..\src\ripple\http\ripple_http.h" />
+    <ClInclude Include="..\..\src\ripple\json\api\JsonPropertyStreamSink.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_config.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_features.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_forwards.h" />

@@ -291,6 +291,23 @@ public:
     }
 
     //--------------------------------------------------------------------------
+    //
+    // PropertyStream
+    //
+
+    void onWrite (PropertyStream stream)
+    {
+        stream ["peers"]        = m_logic.m_slots.peerCount;
+        stream ["in"]           = m_logic.m_slots.inboundCount;
+        stream ["out"]          = m_logic.m_slots.outboundCount;
+        stream ["out_desired"]  = m_logic.m_slots.outDesired;
+        stream ["in_avail"]     = m_logic.m_slots.inboundSlots;
+        stream ["in_max"]       = m_logic.m_slots.inboundSlotsMaximum;
+        stream ["minutes"]      = m_logic.m_slots.uptimeMinutes();
+        stream ["round"]        = m_logic.m_slots.roundUpwards();
+    }
+
+    //--------------------------------------------------------------------------
 
     void onDeadlineTimer (DeadlineTimer& timer)
     {
@@ -358,7 +375,8 @@ public:
 //------------------------------------------------------------------------------
 
 Manager::Manager (Stoppable& parent)
-    : Stoppable ("PeerFinder", parent)
+    : PropertyStream::Source ("peerfinder")
+    , Stoppable ("PeerFinder", parent)
 {
 }
 

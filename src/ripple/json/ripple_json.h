@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_JSON_H_INCLUDED
 #define RIPPLE_JSON_H_INCLUDED
 
@@ -45,5 +44,7 @@
 #include "api/json_value.h"
 #include "api/json_reader.h"
 #include "api/json_writer.h"
+
+#include "api/JsonPropertyStreamSink.h"
 
 #endif

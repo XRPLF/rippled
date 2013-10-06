@@ -122,6 +122,7 @@ private:
     Json::Value doPathFind              (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doPeers                 (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doPing                  (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
+    Json::Value doPrint                 (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doProfile               (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doProofCreate           (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doProofSolve            (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);

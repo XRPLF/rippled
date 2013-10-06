@@ -24,7 +24,9 @@ namespace ripple {
 namespace PeerFinder {
 
 /** Maintains a set of IP addresses used for getting into the network. */
-class Manager : public Stoppable
+class Manager
+    : public Stoppable
+    , public PropertyStream::Source
 {
 protected:
     explicit Manager (Stoppable& parent);

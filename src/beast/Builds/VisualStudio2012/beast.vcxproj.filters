@@ -1245,6 +1245,9 @@
     <ClInclude Include="..\..\beast\Boost.h">
       <Filter>beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\utility\PropertyStream.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1792,6 +1795,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\boost\Boost.cpp">
       <Filter>beast\boost</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\PropertyStream.cpp">
+      <Filter>beast\utility\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -91,8 +91,8 @@ public:
         boost::asio::io_service& io_service,
             boost::asio::ssl::context& ssl_context)
         : Stoppable ("Peers", parent)
-        , m_peerFinder (PeerFinder::Manager::New (
-            *this, *this, LogJournal::get <PeerFinderLog> ()))
+        , m_peerFinder (add (PeerFinder::Manager::New (
+            *this, *this, LogJournal::get <PeerFinderLog> ())))
         , m_io_service (io_service)
         , m_ssl_context (ssl_context)
         , mPeerLock (this, "PeersImp", __FILE__, __LINE__)
@@ -221,6 +221,15 @@ public:
     {
         // VFALCO TODO Clean this up and do it right, based on sockets
         stopped();
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // PropertyStream
+    //
+
+    void onWrite (PropertyStream stream)
+    {
     }
 
     //--------------------------------------------------------------------------
@@ -1077,6 +1086,11 @@ void PeersImp::scanRefresh ()
 }
 
 //------------------------------------------------------------------------------
+
+Peers::Peers ()
+    : PropertyStream::Source ("peers")
+{
+}
 
 Peers* Peers::New (Stoppable& parent,
     boost::asio::io_service& io_service,

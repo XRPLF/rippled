@@ -49,7 +49,7 @@ class DatabaseCon;
 typedef TaggedCacheType <uint256, Blob , UptimeTimerAdapter> NodeCache;
 typedef TaggedCacheType <uint256, SerializedLedgerEntry, UptimeTimerAdapter> SLECache;
 
-class Application
+class Application : public PropertyStream::Source
 {
 public:
     /* VFALCO NOTE
@@ -69,22 +69,9 @@ public:
     virtual LockType& getMasterLock () = 0;
 
 public:
-    struct State
-    {
-        // Stuff in here is accessed concurrently and requires a Access
-    };
-    
-    typedef SharedData <State> SharedState;
-
-    SharedState& getSharedState () noexcept { return m_sharedState; }
-
-    SharedState const& getSharedState () const noexcept { return m_sharedState; }
-
-private:
-    SharedState m_sharedState;
-
-public:
     static Application* New ();
+
+    Application ();
 
     virtual ~Application () { }
 
@@ -97,7 +84,7 @@ public:
     virtual IFeatures&              getFeatureTable () = 0;
     virtual IFeeVote&               getFeeVote () = 0;
     virtual IHashRouter&            getHashRouter () = 0;
-    virtual LoadFeeTrack&          getFeeTrack () = 0;
+    virtual LoadFeeTrack&           getFeeTrack () = 0;
     virtual LoadManager&            getLoadManager () = 0;
     virtual Peers&                  getPeers () = 0;
     virtual ProofOfWorkFactory&     getProofOfWorkFactory () = 0;

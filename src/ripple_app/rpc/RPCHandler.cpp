@@ -810,6 +810,24 @@ Json::Value RPCHandler::doPing (Json::Value, LoadType* loadType, Application::Sc
     return Json::Value (Json::objectValue);
 }
 
+Json::Value RPCHandler::doPrint (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
+{
+    masterLockHolder.unlock ();
+
+    Json::Value result (Json::objectValue);
+    JsonPropertyStreamSink sink (result);
+    if (params.isObject() && params["params"].isArray() && params["params"][0u].isString ())
+    {
+        getApp().write (params["params"][0u].asString(), sink);
+    }
+    else
+    {
+        getApp().write (sink, true);
+    }
+
+    return result;
+}
+
 // profile offers <pass_a> <account_a> <currency_offer_a> <account_b> <currency_offer_b> <count> [submit]
 // profile 0:offers 1:pass_a 2:account_a 3:currency_offer_a 4:account_b 5:currency_offer_b 6:<count> 7:[submit]
 // issuer is the offering account
@@ -3822,12 +3840,13 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {   "ledger_header",        &RPCHandler::doLedgerHeader,        false,  optCurrent  },
         {   "log_level",            &RPCHandler::doLogLevel,            true,   optNone     },
         {   "logrotate",            &RPCHandler::doLogRotate,           true,   optNone     },
-        //      {   "nickname_info",        &RPCHandler::doNicknameInfo,        false,  optCurrent  },
+//      {   "nickname_info",        &RPCHandler::doNicknameInfo,        false,  optCurrent  },
         {   "owner_info",           &RPCHandler::doOwnerInfo,           false,  optCurrent  },
         {   "peers",                &RPCHandler::doPeers,               true,   optNone     },
         {   "path_find",            &RPCHandler::doPathFind,            false,  optCurrent  },
         {   "ping",                 &RPCHandler::doPing,                false,  optNone     },
-        //      {   "profile",              &RPCHandler::doProfile,             false,  optCurrent  },
+        {   "print",                &RPCHandler::doPrint,               true,   optNone     },
+//      {   "profile",              &RPCHandler::doProfile,             false,  optCurrent  },
         {   "proof_create",         &RPCHandler::doProofCreate,         true,   optNone     },
         {   "proof_solve",          &RPCHandler::doProofSolve,          true,   optNone     },
         {   "proof_verify",         &RPCHandler::doProofVerify,         true,   optNone     },
@@ -3842,7 +3861,6 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {   "transaction_entry",    &RPCHandler::doTransactionEntry,    false,  optCurrent  },
         {   "tx",                   &RPCHandler::doTx,                  false,  optNetwork  },
         {   "tx_history",           &RPCHandler::doTxHistory,           false,  optNone     },
-
         {   "unl_add",              &RPCHandler::doUnlAdd,              true,   optNone     },
         {   "unl_delete",           &RPCHandler::doUnlDelete,           true,   optNone     },
         {   "unl_list",             &RPCHandler::doUnlList,             true,   optNone     },
@@ -3850,10 +3868,8 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
         {   "unl_network",          &RPCHandler::doUnlNetwork,          true,   optNone     },
         {   "unl_reset",            &RPCHandler::doUnlReset,            true,   optNone     },
         {   "unl_score",            &RPCHandler::doUnlScore,            true,   optNone     },
-
         {   "validation_create",    &RPCHandler::doValidationCreate,    true,   optNone     },
         {   "validation_seed",      &RPCHandler::doValidationSeed,      true,   optNone     },
-
         {   "wallet_accounts",      &RPCHandler::doWalletAccounts,      false,  optCurrent  },
         {   "wallet_propose",       &RPCHandler::doWalletPropose,       true,   optNone     },
         {   "wallet_seed",          &RPCHandler::doWalletSeed,          true,   optNone     },

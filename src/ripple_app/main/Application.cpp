@@ -117,8 +117,8 @@ public:
 
         , m_txQueue (TxQueue::New ())
 
-        , m_validators (Validators::Manager::New (
-            *this, LogJournal::get <ValidatorsLog> ()))
+        , m_validators (add (Validators::Manager::New (
+            *this, LogJournal::get <ValidatorsLog> ())))
 
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
 
@@ -472,7 +472,7 @@ public:
         //             the creation of the peer SSL context and Peers object into
         //             the conditional.
         //
-        m_peers = Peers::New (m_mainIoPool, m_mainIoPool, m_peerSSLContext->get ());
+        m_peers = add (Peers::New (m_mainIoPool, m_mainIoPool, m_peerSSLContext->get ()));
 
         // If we're not in standalone mode,
         // prepare ourselves for  networking
@@ -642,8 +642,6 @@ public:
 
     void onPrepare ()
     {
-        m_rpcServiceManager->add (*m_validators);
-
         prepareValidators ();
     }
 
@@ -670,7 +668,15 @@ public:
         stopped ();
     }
 
+    //------------------------------------------------------------------------------
     //
+    // PropertyStream
+    //
+
+    void onWrite (PropertyStream stream)
+    {
+    }
+
     //------------------------------------------------------------------------------
 
     void run ()
@@ -1200,6 +1206,11 @@ void ApplicationImp::onAnnounceAddress ()
 ApplicationImp* ApplicationImp::s_instance;
 
 //------------------------------------------------------------------------------
+
+Application::Application ()
+    : PropertyStream::Source ("app")
+{
+}
 
 Application* Application::New ()
 {
