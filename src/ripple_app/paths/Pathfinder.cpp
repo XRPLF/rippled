@@ -816,8 +816,8 @@ void Pathfinder::initPathTable()
     { // XRP to XRP
         CostedPathList_t& list = mPathTable[pt_XRP_to_XRP];
 
-        list.push_back(CostedPath_t(8, makePath("sbxd")));   // source -> book -> book_to_XRP -> destination
-        list.push_back(CostedPath_t(9, makePath("sbaxd")));  // source -> book -> gateway -> to_XRP ->destination
+//        list.push_back(CostedPath_t(8, makePath("sbxd")));   // source -> book -> book_to_XRP -> destination
+//        list.push_back(CostedPath_t(9, makePath("sbaxd")));  // source -> book -> gateway -> to_XRP ->destination
     }
 
     { // XRP to non-XRP
