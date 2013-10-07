@@ -228,7 +228,7 @@ public:
     // PropertyStream
     //
 
-    void onWrite (PropertyStream stream)
+    void onWrite (PropertyStream& stream)
     {
     }
 

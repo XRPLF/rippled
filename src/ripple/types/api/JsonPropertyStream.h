@@ -17,26 +17,39 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_JSONPROPERTYSTREAM_H_INCLUDED
+#define RIPPLE_JSONPROPERTYSTREAM_H_INCLUDED
 
-#include "BeastConfig.h"
+namespace ripple {
 
-#include "ripple_types.h"
-#include "../ripple/sslutil/ripple_sslutil.h"
+/** A PropertyStream::Sink which produces a Json::Value. */
+class JsonPropertyStream : public PropertyStream
+{
+public:
+    Json::Value m_top;
+    std::vector <Json::Value*> m_stack;
 
-#ifdef BEAST_WIN32
-# include <Winsock2.h> // for ByteOrder.cpp
-// <Winsock2.h> defines 'max' and does other stupid things
-# ifdef max
-# undef max
-# endif
+public:
+    JsonPropertyStream ();
+    Json::Value const& top() const;
+
+protected:
+
+    void map_begin ();
+    void map_begin (std::string const& key);
+    void map_end ();
+    void add (std::string const& key, int32 v);
+    void add (std::string const& key, uint32 v);
+    void add (std::string const& key, std::string const& v);
+    void array_begin ();
+    void array_begin (std::string const& key);
+    void array_end ();
+    void add (int32 v);
+    void add (uint32 v);
+    void add (std::string const& v);
+};
+
+}
+
 #endif
 
-#include "impl/Base58.cpp"
-#include "impl/ByteOrder.cpp"
-#include "impl/RandomNumbers.cpp"
-#include "impl/strHex.cpp"
-#include "impl/UInt128.cpp"
-#include "impl/UInt160.cpp"
-#include "impl/UInt256.cpp"
-#include "impl/RippleIdentifierTests.cpp"
-#include "impl/JsonPropertyStream.cpp"

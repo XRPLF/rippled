@@ -139,6 +139,11 @@ public:
     DeadlineTimer m_checkTimer;
     ServiceQueue m_queue;
 
+    typedef ScopedWrapperContext <
+        RecursiveMutex, RecursiveMutex::ScopedLockType> Context;
+
+    Context m_context;
+
     // True if we should call check on idle.
     // This gets set to false once we make it through the whole list.
     //
@@ -289,25 +294,28 @@ public:
     // PropertyStream
     //
 
-    void writeSources (PropertyStream stream)
+    void onWrite (PropertyStream::Map& map)
     {
-        PropertyStream::ScopedArray sources ("sources", stream);
+        Context::Scope scope (m_context);
 
-        for (Logic::SourceTable::const_iterator iter (m_logic.m_sources.begin());
-            iter != m_logic.m_sources.end(); ++iter)
+        map ["trusted"] = uint32 (
+            m_logic.m_chosenList ?
+                m_logic.m_chosenList->size() : 0);
+
         {
-            stream.append (iter->source->name().toStdString());
+            PropertyStream::Set items ("sources", map);
+            for (Logic::SourceTable::const_iterator iter (m_logic.m_sources.begin());
+                iter != m_logic.m_sources.end(); ++iter)
+                items.add (iter->source->name().toStdString());
         }
-    }
 
-    void onWrite (PropertyStream stream)
-    {
-        // VFALCO NOTE this is not thread safe (yet)
-
-        stream ["trusted"]      = uint32 (
-            m_logic.m_chosenList ? m_logic.m_chosenList->size() : 0);
-
-        writeSources (stream);
+        {
+            PropertyStream::Set items ("validators", map);
+            for (Logic::ValidatorTable::iterator iter (m_logic.m_validators.begin());
+                iter != m_logic.m_validators.end(); ++iter)
+            {
+            }
+        }
     }
 
     //--------------------------------------------------------------------------

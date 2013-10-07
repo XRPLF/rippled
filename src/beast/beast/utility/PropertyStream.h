@@ -26,182 +26,184 @@
 #include "../threads/SharedData.h"
 
 #include <string>
+#include <utility>
 
 namespace beast {
 
-/** An output stream to procedurally generate an abstract property tree. */
+//------------------------------------------------------------------------------
+
+/** Abstract stream with RAII containers that produce a property tree. */
 class PropertyStream
 {
-private:
-    class Proxy;
-
 public:
-    class ScopedArray;
-    class ScopedObject;
+    class Map;
+    class Set;
     class Source;
 
-private:
-    class Item : public List <Item>::Node
-    {
-    public:
-        explicit Item (Source* source);
-        Source& source() const;
-        Source* operator-> () const;
-        Source& operator* () const;
-    private:
-        Source* m_source;
-    };
-
-public:
-    //--------------------------------------------------------------------------
-
-    class Sink : Uncopyable
-    {
-    public:
-        // Object output
-        //
-        // Default implementations convert to string
-        // Json doesn't support 64 bit so we convert these to string
-        // if they are outside the range of the corresponding 32 bit int
-        virtual void begin_object (std::string const& key) = 0;
-        virtual void end_object () = 0;
-        template <typename Value>
-        void lexical_write (std::string const &key, Value value)
-        {
-            std::stringstream ss;
-            ss << value;
-            write (key, ss.str());
-        }
-        virtual void write (std::string const& key,  int32 value);
-        virtual void write (std::string const& key, uint32 value);
-        virtual void write (std::string const& key,  int64 value);
-        virtual void write (std::string const& key, uint64 value);
-        virtual void write (std::string const& key, std::string const& value) = 0;
-
-        // Array output
-        //
-        virtual void begin_array (std::string const& key) = 0;
-        virtual void end_array () = 0;
-        template <typename Value>
-        void lexical_write (Value value)
-        {
-            std::stringstream ss;
-            ss << value;
-            write (ss.str());
-        }
-        virtual void write ( int32 value);
-        virtual void write (uint32 value);
-        virtual void write ( int64 value);
-        virtual void write (uint64 value);
-        virtual void write (std::string const& value) = 0;
-    };
-
-    //--------------------------------------------------------------------------
-
     PropertyStream ();
-    PropertyStream (Sink& sink);
-    PropertyStream (PropertyStream const& other);
-    PropertyStream& operator= (PropertyStream const& other);
+    virtual ~PropertyStream ();
 
-    /** Object output.
-    */
-    /** @{ */
-    void begin_object (std::string const& key) const;
-    void end_object () const;
+protected:
+    virtual void map_begin () = 0;
+    virtual void map_begin (std::string const& key) = 0;
+    virtual void map_end () = 0;
+
+    virtual void add (std::string const& key, std::string const& value) = 0;
 
     template <typename Value>
-    void write (std::string const& key, Value value) const
-    {
-        m_sink->write (key, value);
-    }
-
-    template <typename Key, typename Value>
-    void write (Key key, Value value) const
+    void lexical_add (std::string const &key, Value value)
     {
         std::stringstream ss;
-        ss << key;
-        write (ss.str(), value);
+        ss << value;
+        add (key, ss.str());
     }
+    virtual void add (std::string const& key,   int32 value);
+    virtual void add (std::string const& key,  uint32 value);
+    virtual void add (std::string const& key,   int64 value);
+    virtual void add (std::string const& key,  uint64 value);
 
-    Proxy operator[] (std::string const& key) const;
+    virtual void array_begin () = 0;
+    virtual void array_begin (std::string const& key) = 0;
+    virtual void array_end () = 0;
 
-    template <typename Key>
-    Proxy operator[] (Key key) const;
-
-    /** @} */
-
-    /** Array output.
-    */
-    /** @{ */
-    void begin_array (std::string const& key) const;
-    void end_array () const;
+    virtual void add (std::string const& value) = 0;
 
     template <typename Value>
-    void append (Value value) const
-        { m_sink->write (value); }
-
-    template <typename Value>
-    PropertyStream const& operator<< (Value value) const
-        { append (value); return *this; }
-    /** @} */
+    void lexical_add (Value value)
+    {
+        std::stringstream ss;
+        ss << value;
+        add (ss.str());
+    }
+    virtual void add ( int32 value);
+    virtual void add (uint32 value);
+    virtual void add ( int64 value);
+    virtual void add (uint64 value);
 
 private:
-    static Sink& nullSink();
-
-    Sink* m_sink;
+    class Item;
+    class Proxy;
 };
 
 //------------------------------------------------------------------------------
+//
+// Item
+//
+
+class PropertyStream::Item : public List <Item>::Node
+{
+public:
+    explicit Item (Source* source);
+    Source& source() const;
+    Source* operator-> () const;
+    Source& operator* () const;
+private:
+    Source* m_source;
+};
+
+//------------------------------------------------------------------------------
+//
+// Proxy
+//
 
 class PropertyStream::Proxy
 {
 private:
-    PropertyStream m_stream;
+    Map* m_map;
     std::string m_key;
 
 public:
-    Proxy (PropertyStream stream, std::string const& key);
+    Proxy (Map& map, std::string const& key);
 
     template <typename Value>
-    Proxy& operator= (Value value)
-        { m_stream.write (m_key, value); return *this; }
+    Proxy& operator= (Value value);
 };
 
 //------------------------------------------------------------------------------
+//
+// Map
+//
 
-template <typename Key>
-PropertyStream::Proxy PropertyStream::operator[] (Key key) const
+class PropertyStream::Map : public Uncopyable
 {
-    std::stringstream ss;
-    ss << key;
-    return operator[] (ss.str());
+private:
+    PropertyStream& m_stream;
+
+public:
+    explicit Map (PropertyStream& stream);
+    explicit Map (Set& parent);
+    Map (std::string const& key, Map& parent);
+    Map (std::string const& key, PropertyStream& stream);
+    ~Map ();
+
+    PropertyStream& stream();
+    PropertyStream const& stream() const;
+
+    template <typename Value>
+    void add (std::string const& key, Value value) const
+    {
+        m_stream.add (key, value);
+    }
+
+    template <typename Key, typename Value>
+    void add (Key key, Value value) const
+    {
+        std::stringstream ss;
+        ss << key;
+        add (ss.str(), value);
+    }
+
+    Proxy operator[] (std::string const& key);    
+
+    Proxy operator[] (char const* key)
+        { return Proxy (*this, key); }
+
+    template <typename Key>
+    Proxy operator[] (Key key) const
+    {
+        std::stringstream ss;
+        ss << key;
+        return Proxy (*this, ss.str());
+    }
+};
+
+//--------------------------------------------------------------------------
+
+template <typename Value>
+PropertyStream::Proxy& PropertyStream::Proxy::operator= (Value value)
+{
+    m_map->add (m_key, value);
+    return *this;
 }
 
-//------------------------------------------------------------------------------
+//--------------------------------------------------------------------------
+//
+// Set
+//
 
-class PropertyStream::ScopedObject
+class PropertyStream::Set : public Uncopyable
 {
 private:
-    PropertyStream m_stream;
+    PropertyStream& m_stream;
 
 public:
-    ScopedObject (std::string const& key, PropertyStream stream);
-    ~ScopedObject ();
+    explicit Set (Set& set);
+    Set (std::string const& key, Map& map);
+    Set (std::string const& key, PropertyStream& stream);
+    ~Set ();
+
+    PropertyStream& stream();
+    PropertyStream const& stream() const;
+
+    template <typename Value>
+    void add (Value value) const
+        { m_stream.add (value); }
 };
 
 //------------------------------------------------------------------------------
-
-class PropertyStream::ScopedArray
-{
-private:
-    PropertyStream m_stream;
-
-public:
-    ScopedArray (std::string const& key, PropertyStream stream);
-    ~ScopedArray ();
-};
-
-//------------------------------------------------------------------------------
+//
+// Source
+//
 
 /** Subclasses can be called to write to a stream and have children. */
 class PropertyStream::Source : public Uncopyable
@@ -213,6 +215,7 @@ private:
             : item (source)
             , parent (nullptr)
             { }
+
         Item item;
         Source* parent;
         List <Item> children;
@@ -223,19 +226,27 @@ private:
     std::string const m_name;
     SharedState m_state;
 
-    void remove (SharedState::Access& state, SharedState::Access& childState);
+    //--------------------------------------------------------------------------
+
+    void remove    (SharedState::Access& state,
+                    SharedState::Access& childState);
+
     void removeAll (SharedState::Access& state);
+
+    void write     (SharedState::Access& state, PropertyStream& stream);
 
 public:
     explicit Source (std::string const& name);
     ~Source ();
 
+    /** Returns the name of this source. */
+    std::string const& name() const;
+
     /** Add a child source. */
     void add (Source& source);
 
     /** Add a child source by pointer.
-        This returns the passed source so it can be conveniently chained
-        in ctor-initializer lists.
+        The source pointer is returned so it can be used in ctor-initializers.
     */
     template <class Derived>
     Derived* add (Derived* child)
@@ -244,19 +255,41 @@ public:
         return child;
     }
 
-    /** Remove a child source. */
+    /** Remove a child source from this Source. */
     void remove (Source& child);
 
-    /** Remove all child sources. */
+    /** Remove all child sources of this Source. */
     void removeAll ();
 
-    void write (PropertyStream stream, bool includeChildren);
-    void write (std::string const& path, PropertyStream stream);
+    /** Write only this Source to the stream. */
+    void write_one  (PropertyStream& stream);
 
-    virtual void onWrite (PropertyStream) { }
+    /** write this source and all its children recursively to the stream. */
+    void write      (PropertyStream& stream);
+
+    /** Parse the path and write the corresponding Source and optional children.
+        If the source is found, it is written. If the wildcard character '*'
+        exists as the last character in the path, then all the children are
+        written recursively.
+    */
+    void write      (PropertyStream& stream, std::string const& path);
+
+    /** Parse the dot-delimited Source path and return the result.
+        The first value will be a pointer to the Source object corresponding
+        to the given path. If no Source object exists, then the first value
+        will be nullptr and the second value will be undefined.
+        The second value is a boolean indicating whether or not the path string
+        specifies the wildcard character '*' as the last character.
+    */
+    std::pair <Source*, bool> find (std::string const& path);
+
+    //--------------------------------------------------------------------------
+
+    /** Subclass override.
+        The default version does nothing.
+    */
+    virtual void onWrite (Map&);
 };
-
-//------------------------------------------------------------------------------
 
 }
 

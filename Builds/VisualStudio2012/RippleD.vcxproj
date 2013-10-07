@@ -179,6 +179,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\JsonPropertyStream.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\RandomNumbers.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1621,7 +1627,6 @@
     <ClInclude Include="..\..\src\ripple\http\impl\ServerImpl.h" />
     <ClInclude Include="..\..\src\ripple\http\impl\Types.h" />
     <ClInclude Include="..\..\src\ripple\http\ripple_http.h" />
-    <ClInclude Include="..\..\src\ripple\json\api\JsonPropertyStreamSink.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_config.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_features.h" />
     <ClInclude Include="..\..\src\ripple\json\api\json_forwards.h" />
@@ -1683,6 +1688,7 @@
     <ClInclude Include="..\..\src\ripple\types\api\IdentifierStorage.h" />
     <ClInclude Include="..\..\src\ripple\types\api\IdentifierType.h" />
     <ClInclude Include="..\..\src\ripple\types\api\HashMaps.h" />
+    <ClInclude Include="..\..\src\ripple\types\api\JsonPropertyStream.h" />
     <ClInclude Include="..\..\src\ripple\types\api\RandomNumbers.h" />
     <ClInclude Include="..\..\src\ripple\types\api\RippleAccountID.h" />
     <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPrivateKey.h" />

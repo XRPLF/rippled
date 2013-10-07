@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 //
 // Carries out the RPC.
 //
@@ -814,18 +813,13 @@ Json::Value RPCHandler::doPrint (Json::Value params, LoadType* loadType, Applica
 {
     masterLockHolder.unlock ();
 
-    Json::Value result (Json::objectValue);
-    JsonPropertyStreamSink sink (result);
+    JsonPropertyStream stream;
     if (params.isObject() && params["params"].isArray() && params["params"][0u].isString ())
-    {
-        getApp().write (params["params"][0u].asString(), sink);
-    }
+        getApp().write (stream, params["params"][0u].asString());
     else
-    {
-        getApp().write (sink, true);
-    }
+        getApp().write (stream);
 
-    return result;
+    return stream.top();
 }
 
 // profile offers <pass_a> <account_a> <currency_offer_a> <account_b> <currency_offer_b> <count> [submit]

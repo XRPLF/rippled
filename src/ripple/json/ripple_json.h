@@ -22,6 +22,9 @@
 
 #include "beast/beast/Config.h"
 
+#include "beast/beast/strings/String.h"
+#include "beast/beast/utility/PropertyStream.h"
+
 #include <deque>
 #include <stack>
 #include <vector>
@@ -44,7 +47,5 @@
 #include "api/json_value.h"
 #include "api/json_reader.h"
 #include "api/json_writer.h"
-
-#include "api/JsonPropertyStreamSink.h"
 
 #endif

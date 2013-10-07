@@ -31,6 +31,7 @@
 
 #include <set>
 
+#include "beast/beast/threads/ScopedWrapperContext.h"
 #include "beast/modules/beast_asio/beast_asio.h"
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
 

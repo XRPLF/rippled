@@ -317,22 +317,20 @@ public:
     // PropertyStream
     //
 
-    void onWrite (PropertyStream stream)
+    void onWrite (PropertyStream::Map& map)
     {
         SerializedContext::Scope scope (m_context);
 
-        // VFALCO NOTE this is not thread safe (yet)
-
-        stream ["peers"]        = m_logic.m_slots.peerCount;
-        stream ["in"]           = m_logic.m_slots.inboundCount;
-        stream ["out"]          = m_logic.m_slots.outboundCount;
-        stream ["out_desired"]  = m_logic.m_slots.outDesired;
-        stream ["in_avail"]     = m_logic.m_slots.inboundSlots;
-        stream ["in_max"]       = m_logic.m_slots.inboundSlotsMaximum;
-        stream ["minutes"]      = m_logic.m_slots.uptimeMinutes();
-        stream ["round"]        = m_logic.m_slots.roundUpwards();
-        stream ["cache"]        = uint32(m_logic.m_cache.size());
-        stream ["legacy"]       = uint32(m_logic.m_legacyCache.size());
+        map ["peers"]        = m_logic.m_slots.peerCount;
+        map ["in"]           = m_logic.m_slots.inboundCount;
+        map ["out"]          = m_logic.m_slots.outboundCount;
+        map ["out_desired"]  = m_logic.m_slots.outDesired;
+        map ["in_avail"]     = m_logic.m_slots.inboundSlots;
+        map ["in_max"]       = m_logic.m_slots.inboundSlotsMaximum;
+        map ["minutes"]      = m_logic.m_slots.uptimeMinutes();
+        map ["round"]        = m_logic.m_slots.roundUpwards();
+        map ["cache"]        = uint32(m_logic.m_cache.size());
+        map ["legacy"]       = uint32(m_logic.m_legacyCache.size());
     }
 
     //--------------------------------------------------------------------------

@@ -20,15 +20,6 @@
 
 #include "BeastConfig.h"
 
-#include "beast/modules/beast_core/beast_core.h"
-
-#include "ripple_json.h"
-
-#include <cassert>
-#include <iomanip>
-#include <sstream>
-#include <string>
-
 // For json/
 //
 #ifdef JSON_USE_CPPTL
@@ -37,6 +28,15 @@
 #ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
 #include "impl/json_batchallocator.h"
 #endif
+
+#include "beast/modules/beast_core/beast_core.h"
+
+#include "ripple_json.h"
+
+#include <cassert>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
 #define JSON_ASSERT_UNREACHABLE assert( false )
 #define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw

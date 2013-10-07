@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_TYPES_H_INCLUDED
 #define RIPPLE_TYPES_H_INCLUDED
+
+#include "../json/ripple_json.h"
 
 #include "beast/modules/beast_core/beast_core.h"
 #include "beast/modules/beast_crypto/beast_crypto.h" // for UnsignedInteger, Remove ASAP!
@@ -66,5 +67,6 @@ using namespace beast;
 # include "api/SimpleIdentifier.h"
 #include "api/RippleLedgerHash.h"
 #include "api/RipplePublicKeyHash.h"
+#include "api/JsonPropertyStream.h"
 
 #endif
