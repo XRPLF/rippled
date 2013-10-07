@@ -25,6 +25,7 @@
 #include "../intrusive/List.h"
 #include "../threads/SharedData.h"
 
+#include <sstream>
 #include <string>
 #include <utility>
 
