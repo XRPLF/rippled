@@ -1248,6 +1248,9 @@
     <ClInclude Include="..\..\beast\utility\PropertyStream.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\threads\ScopedWrapperContext.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">

@@ -32,5 +32,6 @@
 #include "threads/Thread.h"
 #include "threads/ThreadLocalValue.h"
 #include "threads/WaitableEvent.h"
+#include "threads/ScopedWrapperContext.h"
 
 #endif
