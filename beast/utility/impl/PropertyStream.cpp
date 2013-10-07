@@ -140,6 +140,19 @@ PropertyStream::ScopedObject::~ScopedObject ()
 
 //------------------------------------------------------------------------------
 
+PropertyStream::ScopedArray::ScopedArray (std::string const& key, PropertyStream stream)
+    : m_stream (stream)
+{
+    m_stream.begin_array (key);
+}
+       
+PropertyStream::ScopedArray::~ScopedArray ()
+{
+    m_stream.end_array ();
+}
+
+//------------------------------------------------------------------------------
+
 PropertyStream::Source::Source (std::string const& name)
     : m_name (name)
     , m_state (this)
@@ -319,6 +332,16 @@ void PropertyStream::begin_object (std::string const& key) const
 void PropertyStream::end_object () const
 {
     m_sink->end_object ();
+}
+
+void PropertyStream::begin_array (std::string const& key) const
+{
+    m_sink->begin_array (key);
+}
+
+void PropertyStream::end_array () const
+{
+    m_sink->end_array ();
 }
 
 PropertyStream::Sink& PropertyStream::nullSink()
