@@ -172,6 +172,7 @@
     <ClInclude Include="..\..\beast\threads\TryLockGuard.h" />
     <ClInclude Include="..\..\beast\threads\UnlockGuard.h" />
     <ClInclude Include="..\..\beast\threads\WaitableEvent.h" />
+    <ClInclude Include="..\..\beast\threads\ScopedWrapperContext.h" />
     <ClInclude Include="..\..\beast\TypeTraits.h" />
     <ClInclude Include="..\..\beast\type_traits\IntegralConstant.h" />
     <ClInclude Include="..\..\beast\type_traits\IsIntegral.h" />

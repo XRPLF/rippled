@@ -191,6 +191,14 @@ public:
     DeadlineTimer m_messageTimer;
     DeadlineTimer m_cacheTimer;
 
+    // Ensures that all Logic member function entry points are
+    // called while holding a lock on the recursive mutex.
+    //
+    typedef ScopedWrapperContext <
+        RecursiveMutex, RecursiveMutex::ScopedLockType> SerializedContext;
+
+    SerializedContext m_context;
+
     //--------------------------------------------------------------------------
 
     ManagerImp (Stoppable& stoppable, Callback& callback, Journal journal)
@@ -226,14 +234,20 @@ public:
 
     void setConfig (Config const& config)
     {
-        m_queue.dispatch (bind (&Logic::setConfig, &m_logic, config));
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::setConfig, &m_logic,
+                    config)));
     }
 
     void addStrings (std::string const& name,
         std::vector <std::string> const& strings)
     {
-        m_queue.dispatch (bind (&Logic::addStaticSource, &m_logic,
-            SourceStrings::New (name, strings)));
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (
+                    &Logic::addStaticSource, &m_logic,
+                        SourceStrings::New (name, strings))));
     }
 
     void addURL (std::string const& name, std::string const& url)
@@ -243,26 +257,34 @@ public:
     void onPeerConnected (PeerID const& id,
         IPEndpoint const& address, bool incoming)
     {
-        m_queue.dispatch (bind (&Logic::onPeerConnected, &m_logic,
-            id, address, incoming));
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::onPeerConnected, &m_logic,
+                    id, address, incoming)));;
     }
 
     void onPeerDisconnected (const PeerID& id)
     {
-        m_queue.dispatch (bind (&Logic::onPeerDisconnected, &m_logic, id));
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::onPeerDisconnected, &m_logic,
+                    id)));
     }
 
     void onPeerLegacyEndpoint (IPEndpoint const& ep)
     {
-        m_queue.dispatch (bind (&Logic::onPeerLegacyEndpoint, &m_logic,
-            ep));
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::onPeerLegacyEndpoint, &m_logic,
+                    ep)));
     }
 
     void onPeerEndpoints (PeerID const& id,
         std::vector <Endpoint> const& endpoints)
     {
-        m_queue.dispatch (beast::bind (&Logic::onPeerEndpoints, &m_logic,
-            id, endpoints));
+        m_queue.dispatch (
+            beast::bind (&Logic::onPeerEndpoints, &m_logic,
+                id, endpoints));
     }
 
     //--------------------------------------------------------------------------
@@ -297,6 +319,8 @@ public:
 
     void onWrite (PropertyStream stream)
     {
+        SerializedContext::Scope scope (m_context);
+
         // VFALCO NOTE this is not thread safe (yet)
 
         stream ["peers"]        = m_logic.m_slots.peerCount;
@@ -317,17 +341,26 @@ public:
     {
         if (timer == m_connectTimer)
         {
-            m_queue.dispatch (bind (&Logic::makeOutgoingConnections, &m_logic));
+            m_queue.dispatch (
+                m_context.wrap (
+                    bind (&Logic::makeOutgoingConnections, &m_logic)));
+
             m_connectTimer.setExpiration (secondsPerConnect);
         }
         else if (timer == m_messageTimer)
         {
-            m_queue.dispatch (bind (&Logic::sendEndpoints, &m_logic));
+            m_queue.dispatch (
+                m_context.wrap (
+                    bind (&Logic::sendEndpoints, &m_logic)));
+
             m_messageTimer.setExpiration (secondsPerMessage);
         }
         else if (timer == m_cacheTimer)
         {
-            m_queue.dispatch (bind (&Logic::cycleCache, &m_logic));
+            m_queue.dispatch (
+                m_context.wrap (
+                    bind (&Logic::cycleCache, &m_logic)));
+
             m_cacheTimer.setExpiration (cacheSecondsToLive);
         }
     }
