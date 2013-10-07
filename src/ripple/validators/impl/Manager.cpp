@@ -286,6 +286,31 @@ public:
 
     //--------------------------------------------------------------------------
     //
+    // PropertyStream
+    //
+
+    void writeSources (PropertyStream stream)
+    {
+        PropertyStream::ScopedArray sources ("sources", stream);
+
+        for (Logic::SourceTable::const_iterator iter (m_logic.m_sources.begin());
+            iter != m_logic.m_sources.end(); ++iter)
+        {
+            stream.append (iter->source->name().toStdString());
+        }
+    }
+
+    void onWrite (PropertyStream stream)
+    {
+        // VFALCO NOTE this is not thread safe (yet)
+
+        stream ["trusted"]      = m_logic.m_chosenList ? m_logic.m_chosenList->size() : 0;
+
+        writeSources (stream);
+    }
+
+    //--------------------------------------------------------------------------
+    //
     // ManagerImp
     //
 
