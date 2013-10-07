@@ -23,6 +23,12 @@
 
 namespace beast {
 
+//------------------------------------------------------------------------------
+//
+// Item
+//
+//------------------------------------------------------------------------------
+
 PropertyStream::Item::Item (Source* source)
     : m_source (source)
 {
@@ -44,113 +50,110 @@ PropertyStream::Source& PropertyStream::Item::operator* () const
 }
 
 //------------------------------------------------------------------------------
-
-void PropertyStream::Sink::write (std::string const& key, int32 value)
-{
-    lexical_write (key, value);
-}
-
-void PropertyStream::Sink::write (std::string const& key, uint32 value)
-{
-    lexical_write (key, value);
-}
-
-void PropertyStream::Sink::write (std::string const& key, int64 value)
-{
-    if (value <= std::numeric_limits <int32>::max() &&
-        value >= std::numeric_limits <int32>::min())
-    {
-        write (key, int32(value));
-    }
-    else
-    {
-        lexical_write (key, value);
-    }
-}
-
-void PropertyStream::Sink::write (std::string const& key, uint64 value)
-{
-    if (value <= std::numeric_limits <uint32>::max() &&
-        value >= std::numeric_limits <uint32>::min())
-    {
-        write (key, uint32(value));
-    }
-    else
-    {
-        lexical_write (key, value);
-    }
-}
-
-void PropertyStream::Sink::write (int32 value)
-{
-    lexical_write (value);
-}
-
-void PropertyStream::Sink::write (uint32 value)
-{
-    lexical_write (value);
-}
-
-void PropertyStream::Sink::write (int64 value)
-{
-    if (value <= std::numeric_limits <int32>::max() &&
-        value >= std::numeric_limits <int32>::min())
-    {
-        write (int32(value));
-    }
-    else
-    {
-        lexical_write (value);
-    }
-}
-
-void PropertyStream::Sink::write (uint64 value)
-{
-    if (value <= std::numeric_limits <uint32>::max() &&
-        value >= std::numeric_limits <uint32>::min())
-    {
-        write (uint32(value));
-    }
-    else
-    {
-        lexical_write (value);
-    }
-}
-
+//
+// Proxy
+//
 //------------------------------------------------------------------------------
 
-PropertyStream::Proxy::Proxy (PropertyStream stream, std::string const& key)
-    : m_stream (stream)
+PropertyStream::Proxy::Proxy (
+    Map& map, std::string const& key)
+    : m_map (&map)
     , m_key (key)
 {
 }
 
 //------------------------------------------------------------------------------
+//
+// Map
+//
+//------------------------------------------------------------------------------
 
-PropertyStream::ScopedObject::ScopedObject (std::string const& key, PropertyStream stream)
+PropertyStream::Map::Map (PropertyStream& stream)
     : m_stream (stream)
 {
-    m_stream.begin_object (key);
 }
-       
-PropertyStream::ScopedObject::~ScopedObject ()
+
+PropertyStream::Map::Map (Set& parent)
+    : m_stream (parent.stream())
 {
-    m_stream.end_object ();
+    m_stream.map_begin ();
+}
+
+PropertyStream::Map::Map (std::string const& key, Map& map)
+    : m_stream (map.stream())
+{
+    m_stream.map_begin (key);
+}
+
+PropertyStream::Map::Map (std::string const& key, PropertyStream& stream)
+    : m_stream (stream)
+{
+    m_stream.map_begin (key);
+}
+
+PropertyStream::Map::~Map ()
+{
+    m_stream.map_end ();
+}
+
+PropertyStream& PropertyStream::Map::stream()
+{
+    return m_stream;
+}
+
+PropertyStream const& PropertyStream::Map::stream() const
+{
+    return m_stream;
+}
+
+PropertyStream::Proxy PropertyStream::Map::operator[] (std::string const& key)
+{
+    return Proxy (*this, key);
 }
 
 //------------------------------------------------------------------------------
+//
+// Set
+//
+//------------------------------------------------------------------------------
 
-PropertyStream::ScopedArray::ScopedArray (std::string const& key, PropertyStream stream)
+PropertyStream::Set::Set (Set& set)
+    : m_stream (set.m_stream)
+{
+    m_stream.array_begin ();
+}
+
+PropertyStream::Set::Set (std::string const& key, Map& map)
+    : m_stream (map.stream())
+{
+    m_stream.array_begin (key);
+}
+
+PropertyStream::Set::Set (std::string const& key, PropertyStream& stream)
     : m_stream (stream)
 {
-    m_stream.begin_array (key);
-}
-       
-PropertyStream::ScopedArray::~ScopedArray ()
-{
-    m_stream.end_array ();
+    m_stream.array_begin (key);
 }
 
+PropertyStream::Set::~Set ()
+{
+    m_stream.array_end ();
+}
+
+PropertyStream& PropertyStream::Set::stream()
+{
+    return m_stream;
+}
+
+PropertyStream const& PropertyStream::Set::stream() const
+{
+    return m_stream;
+}
+
+//------------------------------------------------------------------------------
+//
+// Source
+//
 //------------------------------------------------------------------------------
 
 PropertyStream::Source::Source (std::string const& name)
@@ -167,24 +170,9 @@ PropertyStream::Source::~Source ()
     removeAll (state);
 }
 
-void PropertyStream::Source::remove (
-    SharedState::Access& state, SharedState::Access& childState)
+std::string const& PropertyStream::Source::name () const
 {
-    bassert (childState->parent == this);
-    state->children.erase (
-        state->children.iterator_to (
-            childState->item));
-    childState->parent = nullptr;
-}
-
-void PropertyStream::Source::removeAll (SharedState::Access& state)
-{
-    for (List <Item>::iterator iter (state->children.begin());
-        iter != state->children.end();)
-    {
-        SharedState::Access childState ((*iter)->m_state);
-        remove (state, childState);
-    }
+    return m_name;
 }
 
 void PropertyStream::Source::add (Source& source)
@@ -209,23 +197,57 @@ void PropertyStream::Source::removeAll ()
     removeAll (state);
 }
 
-void PropertyStream::Source::write (PropertyStream stream, bool includeChildren)
-{
-    ScopedObject child (m_name, stream);
-    onWrite (stream);
+//------------------------------------------------------------------------------
 
-    if (includeChildren)
+void PropertyStream::Source::write (
+    SharedState::Access& state, PropertyStream &stream)
+{
+    for (List <Item>::iterator iter (state->children.begin());
+        iter != state->children.end(); ++iter)
     {
-        SharedState::Access state (m_state);
-        for (List <Item>::iterator iter (state->children.begin());
-            iter != state->children.end(); ++iter)
-        {
-            (*iter)->write (stream, true);
-        }
+        Source& source (iter->source());
+        Map map (source.name(), stream);
+        source.write (stream);
     }
 }
 
-void PropertyStream::Source::write (std::string const& path, PropertyStream stream)
+//------------------------------------------------------------------------------
+
+void PropertyStream::Source::write_one (PropertyStream& stream)
+{
+    Map map (m_name, stream);
+    //onWrite (map);
+}
+
+void PropertyStream::Source::write (PropertyStream& stream)
+{
+    Map map (m_name, stream);
+    onWrite (map);
+
+    SharedState::Access state (m_state);
+
+    for (List <Item>::iterator iter (state->children.begin());
+        iter != state->children.end(); ++iter)
+    {
+        Source& source (iter->source());
+        source.write (stream);
+    }
+}
+
+void PropertyStream::Source::write (PropertyStream& stream, std::string const& path)
+{
+    std::pair <Source*, bool> result (find (path));
+
+    if (result.first == nullptr)
+        return;
+
+    if (result.second)
+        result.first->write (stream);
+    else
+        result.first->write_one (stream);
+}
+
+std::pair <PropertyStream::Source*, bool> PropertyStream::Source::find (std::string const& path)
 {
     struct Parser
     {
@@ -251,114 +273,150 @@ void PropertyStream::Source::write (std::string const& path, PropertyStream stre
         std::string::const_iterator m_last;
     };
 
-    //-----------------------------------------
-
     if (path.empty ())
-    {
-        write (stream, true);
-        return;
-    }
+        return std::make_pair (this, false);
 
     Parser p (path);
     Source* source (this);
-    if (p.next() != source->m_name)
-        return;
+    if (p.next() != this->m_name)
+        return std::make_pair (nullptr, false);
 
     for (;;)
     {
         std::string const s (p.next());
 
         if (s.empty())
-        {
-            source->write (stream, false);
-            break;
-        }
-        else if (s == "*")
-        {
-            source->write (stream, true);
-            break;
-        }
-        else
-        {
-            SharedState::Access state (source->m_state);
-            for (List <Item>::iterator iter (state->children.begin());;)
-            {
-                if (iter->source().m_name == s)
-                {
-                    source = &iter->source();
-                    break;
-                }
+            return std::make_pair (source, false);
 
-                if (++iter == state->children.end())
-                    return;
+        if (s == "*")
+            return std::make_pair (source, true);
+
+        SharedState::Access state (source->m_state);
+        for (List <Item>::iterator iter (state->children.begin());;)
+        {
+            if (iter->source().m_name == s)
+            {
+                source = &iter->source();
+                break;
             }
+
+            if (++iter == state->children.end())
+                return std::make_pair (nullptr, false);
         }
     }
 }
 
+void PropertyStream::Source::onWrite (Map&)
+{
+}
+
+//------------------------------------------------------------------------------
+
+void PropertyStream::Source::remove (
+    SharedState::Access& state, SharedState::Access& childState)
+{
+    bassert (childState->parent == this);
+    state->children.erase (
+        state->children.iterator_to (
+            childState->item));
+    childState->parent = nullptr;
+}
+
+void PropertyStream::Source::removeAll (SharedState::Access& state)
+{
+    for (List <Item>::iterator iter (state->children.begin());
+        iter != state->children.end();)
+    {
+        SharedState::Access childState ((*iter)->m_state);
+        remove (state, childState);
+    }
+}
+
+//------------------------------------------------------------------------------
+//
+// PropertyStream
+//
 //------------------------------------------------------------------------------
 
 PropertyStream::PropertyStream ()
-    : m_sink (&nullSink())
 {
 }
 
-PropertyStream::PropertyStream (Sink& sink)
-    : m_sink (&sink)
+PropertyStream::~PropertyStream ()
 {
 }
 
-PropertyStream::PropertyStream (PropertyStream const& other)
-    : m_sink (other.m_sink)
+void PropertyStream::add (std::string const& key, int32 value)
 {
+    lexical_add (key, value);
 }
 
-PropertyStream& PropertyStream::operator= (PropertyStream const& other)
+void PropertyStream::add (std::string const& key, uint32 value)
 {
-    m_sink = other.m_sink;
-    return *this;
+    lexical_add (key, value);
 }
 
-PropertyStream::Proxy PropertyStream::operator[] (std::string const& key) const
+void PropertyStream::add (std::string const& key, int64 value)
 {
-    return Proxy (*this, key);
-}
-
-void PropertyStream::begin_object (std::string const& key) const
-{
-    m_sink->begin_object (key);
-}
-
-void PropertyStream::end_object () const
-{
-    m_sink->end_object ();
-}
-
-void PropertyStream::begin_array (std::string const& key) const
-{
-    m_sink->begin_array (key);
-}
-
-void PropertyStream::end_array () const
-{
-    m_sink->end_array ();
-}
-
-PropertyStream::Sink& PropertyStream::nullSink()
-{
-    struct NullSink : Sink
+    if (value <= std::numeric_limits <int32>::max() &&
+        value >= std::numeric_limits <int32>::min())
     {
-        void begin_object (std::string const&) { }
-        void end_object () { }
-        void write (std::string const&, std::string const&) { }
-        void begin_array (std::string const&) { }
-        void end_array () { }
-        void write (std::string const&) { }
-    };
-
-    static NullSink sink;
-
-    return sink;
+        add (key, int32(value));
+    }
+    else
+    {
+        lexical_add(key, value);
+    }
 }
+
+void PropertyStream::add (std::string const& key, uint64 value)
+{
+    if (value <= std::numeric_limits <uint32>::max() &&
+        value >= std::numeric_limits <uint32>::min())
+    {
+        add (key, uint32(value));
+    }
+    else
+    {
+        lexical_add (key, value);
+    }
+}
+
+void PropertyStream::add (int32 value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (uint32 value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (int64 value)
+{
+    if (value <= std::numeric_limits <int32>::max() &&
+        value >= std::numeric_limits <int32>::min())
+    {
+        add (int32(value));
+    }
+    else
+    {
+        lexical_add (value);
+    }
+}
+
+void PropertyStream::add (uint64 value)
+{
+    if (value <= std::numeric_limits <uint32>::max() &&
+        value >= std::numeric_limits <uint32>::min())
+    {
+        add (uint32(value));
+    }
+    else
+    {
+        lexical_add (value);
+    }
+}
+
 
 }
