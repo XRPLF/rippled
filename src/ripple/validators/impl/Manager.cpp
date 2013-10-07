@@ -304,7 +304,8 @@ public:
     {
         // VFALCO NOTE this is not thread safe (yet)
 
-        stream ["trusted"]      = m_logic.m_chosenList ? m_logic.m_chosenList->size() : 0;
+        stream ["trusted"]      = uint32 (
+            m_logic.m_chosenList ? m_logic.m_chosenList->size() : 0);
 
         writeSources (stream);
     }
