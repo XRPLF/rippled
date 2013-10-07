@@ -17,8 +17,12 @@
 */
 //==============================================================================
 
-
 #include "BeastConfig.h"
+
+#include <cassert>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
 // For json/
 //
@@ -32,11 +36,6 @@
 #include "beast/modules/beast_core/beast_core.h"
 
 #include "ripple_json.h"
-
-#include <cassert>
-#include <iomanip>
-#include <sstream>
-#include <string>
 
 #define JSON_ASSERT_UNREACHABLE assert( false )
 #define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw
