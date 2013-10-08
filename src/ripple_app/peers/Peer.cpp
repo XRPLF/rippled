@@ -2005,7 +2005,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
     if (packet.itype () == protocol::liTS_CANDIDATE)
     {
         // Request is for a transaction candidate set
-        WriteLog (lsDEBUG, Peer) << "Received request for TX candidate set data " << getIP ();
+        WriteLog (lsTRACE, Peer) << "Received request for TX candidate set data " << getIP ();
 
         if ((!packet.has_ledgerhash () || packet.ledgerhash ().size () != 32))
         {

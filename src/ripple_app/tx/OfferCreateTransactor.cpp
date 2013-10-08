@@ -251,17 +251,17 @@ TER OfferCreateTransactor::takeOffers (
                 STAmount    saOfferIssuerFee;
                 STAmount    saOfferRate = STAmount::setRate (uTipQuality);
 
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
+                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText ();
 
                 bool    bOfferDelete    = STAmount::applyOffer (
                                               bSell,
@@ -705,7 +705,7 @@ TER OfferCreateTransactor::doApply ()
             if (bSell)
                 sleOffer->setFlag (lsfSell);
 
-            WriteLog (lsINFO, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: final terResult=%s sleOffer=%s")
+            WriteLog (lsTRACE, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: final terResult=%s sleOffer=%s")
                     % transToken (terResult)
                     % sleOffer->getJson (0));
         }

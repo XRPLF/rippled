@@ -1929,7 +1929,7 @@ void RippleCalc::pathNext (PathState::ref psrCur, const bool bMultiQuality, cons
 
     psrCur->terStatus   = calcNodeRev (uLast, *psrCur, bMultiQuality);
 
-    WriteLog (lsDEBUG, RippleCalc) << "pathNext: Path after reverse: " << psrCur->getJson ();
+    WriteLog (lsTRACE, RippleCalc) << "pathNext: Path after reverse: " << psrCur->getJson ();
 
     if (tesSUCCESS == psrCur->terStatus)
     {
@@ -1951,7 +1951,7 @@ void RippleCalc::pathNext (PathState::ref psrCur, const bool bMultiQuality, cons
 
         psrCur->uQuality    = STAmount::getRate (psrCur->saOutPass, psrCur->saInPass);  // Calculate relative quality.
 
-        WriteLog (lsDEBUG, RippleCalc) << "pathNext: Path after forward: " << psrCur->getJson ();
+        WriteLog (lsTRACE, RippleCalc) << "pathNext: Path after forward: " << psrCur->getJson ();
     }
     else
     {
