@@ -418,10 +418,7 @@ void STAmount::canonicalize ()
         }
 
         if (mValue > cMaxNative)
-        {
-            assert (false);
             throw std::runtime_error ("Native currency amount out of range");
-        }
 
         return;
     }
