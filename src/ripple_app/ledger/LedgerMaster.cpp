@@ -553,7 +553,7 @@ void LedgerMaster::checkAccept (uint256 const& hash)
     if (!ledger)
     {
         InboundLedger::pointer l = getApp().getInboundLedgers().findCreate(hash, 0, false);
-        if (l->isComplete() && !l->isFailed())
+        if (l && l->isComplete() && !l->isFailed())
             ledger = l->getLedger();
         else
         {
