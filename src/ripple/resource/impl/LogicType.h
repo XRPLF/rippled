@@ -17,33 +17,34 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_RESOURCE_LOGICTYPE_H_INCLUDED
+#define RIPPLE_RESOURCE_LOGICTYPE_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+namespace ripple {
+namespace Resource {
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
-
-#include "beast/beast/http/URL.h" // for Config
-
-#include "../ripple/resource/api/LegacyFees.h"
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** Provides the Clock required by Logic's get_now().
+    This allows the unit tests to provide its own manual clock.
+*/
+template <typename Clock>
+class LogicType : public Logic
 {
+public:
+    explicit LogicType (Journal journal)
+        : Logic (journal)
+    {
+    }
 
-// Order matters
+    DiscreteTime get_now ()
+    {
+        return m_clock();
+    }
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-#include "functional/LoadSource.h"
+private:
+    Clock m_clock;
+};
 
+}
 }
 
 #endif

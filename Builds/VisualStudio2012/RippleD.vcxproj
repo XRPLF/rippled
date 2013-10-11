@@ -121,6 +121,43 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\ripple_peerfinder.cpp" />
+    <ClCompile Include="..\..\src\ripple\resource\impl\Charge.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\resource\impl\Consumer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\resource\impl\Fees.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\resource\impl\LegacyFees.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\resource\impl\Manager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\resource\impl\Tests.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\resource\ripple_resource.cpp" />
     <ClCompile Include="..\..\src\ripple\rpc\impl\Handler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1656,6 +1693,24 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\StoreSqdb.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\ripple_peerfinder.h" />
+    <ClInclude Include="..\..\src\ripple\resource\api\Charge.h" />
+    <ClInclude Include="..\..\src\ripple\resource\api\Consumer.h" />
+    <ClInclude Include="..\..\src\ripple\resource\api\Disposition.h" />
+    <ClInclude Include="..\..\src\ripple\resource\api\Gossip.h" />
+    <ClInclude Include="..\..\src\ripple\resource\api\Fees.h" />
+    <ClInclude Include="..\..\src\ripple\resource\api\LegacyFees.h" />
+    <ClInclude Include="..\..\src\ripple\resource\api\Manager.h" />
+    <ClInclude Include="..\..\src\ripple\resource\api\Types.h" />
+    <ClInclude Include="..\..\src\ripple\resource\impl\DecayingSample.h" />
+    <ClInclude Include="..\..\src\ripple\resource\impl\Entry.h" />
+    <ClInclude Include="..\..\src\ripple\resource\impl\Import.h" />
+    <ClInclude Include="..\..\src\ripple\resource\impl\Key.h" />
+    <ClInclude Include="..\..\src\ripple\resource\impl\Kind.h" />
+    <ClInclude Include="..\..\src\ripple\resource\impl\Logic.h" />
+    <ClInclude Include="..\..\src\ripple\resource\impl\LogicType.h" />
+    <ClInclude Include="..\..\src\ripple\resource\impl\SimpleMonotonicClock.h" />
+    <ClInclude Include="..\..\src\ripple\resource\impl\Tuning.h" />
+    <ClInclude Include="..\..\src\ripple\resource\ripple_resource.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Manager.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Service.h" />
@@ -1836,7 +1891,6 @@
     <ClInclude Include="..\..\src\ripple_basics\utility\Time.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\UptimeTimer.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadSource.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\LoadType.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\Config.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\ConfigSections.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h" />

@@ -22,8 +22,7 @@
 
 #include "ripple_app.h"
 
-namespace ripple
-{
+namespace ripple {
 
 #include "shamap/SHAMap.cpp" // Uses theApp
 #include "shamap/SHAMapItem.cpp"

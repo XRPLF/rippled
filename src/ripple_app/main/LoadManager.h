@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-
-#ifndef RIPPLE_LOADMANAGER_H_INCLUDEd
-#define RIPPLE_LOADMANAGER_H_INCLUDEd
+#ifndef RIPPLE_LOADMANAGER_H_INCLUDED
+#define RIPPLE_LOADMANAGER_H_INCLUDED
 
 /** Manages load sources.
 

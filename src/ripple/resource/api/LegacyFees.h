@@ -17,36 +17,11 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_RESOURCE_LEGACYFEES_H_INCLUDED
+#define RIPPLE_RESOURCE_LEGACYFEES_H_INCLUDED
 
-#ifndef RIPPLE_CORE_FUNCTIONAL_LOADTYPE_H_INCLUDED
-#define RIPPLE_CORE_FUNCTIONAL_LOADTYPE_H_INCLUDED
+namespace ripple {
 
-// types of load that can be placed on the server
-/** The type of load placed on the server.
-*/
-/* VFALCO TODO
-        - Remove LT_ from each enum
-        - Put LoadType into a struct like this:
-            (Note this is modeled after boost::system::error_code::err_c)
-
-    struct LoadType
-    {
-        enum load_c
-        {
-            invalidRequest,
-            //...
-        }
-    };
-
-    // For parameters
-    typedef LoadType::load_c LoadTypeParam;
-
-    // Example of passing a LoadType:
-    peer->applyLoadCharge (LoadType::newTransaction);
-
-    // Example function prototype
-    void applyLoadCharge (LoadTypeParam loadType);
-*/
 enum LoadType
 {
     // Bad things
@@ -74,5 +49,7 @@ enum LoadType
 
     LT_MAX                      // MUST BE LAST
 };
+
+}
 
 #endif

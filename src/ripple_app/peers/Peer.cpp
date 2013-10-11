@@ -35,8 +35,9 @@ class PeerImp : public Peer
     , public CountedObject <PeerImp>
 {
 private:
-    // This is up here to prevent warnings about order of initializations
+    // These is up here to prevent warnings about order of initializations
     //
+    Resource::Manager& m_resourceManager;
     bool m_isInbound;
 
 public:
@@ -59,12 +60,13 @@ public:
         return *m_socket;
     }
 
-    PeerImp (boost::asio::io_service& io_service,
-                      boost::asio::ssl::context& ssl_context,
-                      uint64 peerID,
-                      bool inbound,
-                      MultiSocket::Flag flags)
-        : m_isInbound (inbound)
+    PeerImp (Resource::Manager& resourceManager,
+        boost::asio::io_service& io_service,
+            boost::asio::ssl::context& ssl_context,
+                uint64 peerID, bool inbound,
+                    MultiSocket::Flag flags)
+        : m_resourceManager (resourceManager)
+        , m_isInbound (inbound)
         , m_socket (MultiSocket::New (
             io_service, ssl_context, flags.asBits ()))
         , m_strand (io_service)
@@ -118,7 +120,8 @@ private:
 
     bool            m_remoteAddressSet;
     IPEndpoint      m_remoteAddress;
-    
+    Resource::Consumer m_usage;
+
 public:
     static char const* getCountedObjectName () { return "Peer"; }
 
@@ -159,6 +162,11 @@ public:
     void sendPacket (const PackedMessage::pointer & packet, bool onStrand);
 
     void sendGetPeers ();
+
+    void charge (Resource::Charge const& fee)
+    {
+        m_usage.charge (fee);
+    }
 
     void applyLoadCharge (LoadType);
 
@@ -300,24 +308,6 @@ private:
         }
         else
         {
-            boost::asio::ip::address addr (getNativeSocket().remote_endpoint().address());
-
-            if (addr.is_v4())
-            {
-                boost::asio::ip::address_v4::bytes_type bytes (addr.to_v4().to_bytes());
-                m_remoteAddress = IPEndpoint (IPEndpoint::V4 (
-                    bytes[0], bytes[1], bytes[2], bytes[3]), 0);
-                if (! m_isInbound)
-                    m_remoteAddress = m_remoteAddress.withPort (
-                        getNativeSocket().remote_endpoint().port());
-            }
-            else
-            {
-                // TODO: Support ipv6
-                bassertfalse;
-            }
-            m_remoteAddressSet = true;
-
             if (m_socket->getFlags ().set (MultiSocket::Flag::proxy) && m_isInbound)
             {
                 MultiSocket::ProxyInfo const proxyInfo (m_socket->getProxyInfo ());
@@ -335,6 +325,11 @@ private:
                     // Set remote IP and port number from PROXY handshake
                     mIpPort.first = proxyInfo.sourceAddress.toString ().toStdString ();
                     mIpPort.second = proxyInfo.sourcePort;
+
+                    if (m_isInbound)
+                        m_usage = m_resourceManager.newInboundEndpoint (m_remoteAddress);
+                    else
+                        m_usage = m_resourceManager.newOutboundEndpoint (m_remoteAddress);
 
                     // Must compute mCookieHash before receiving a hello.
                     sendHello ();
@@ -359,6 +354,29 @@ private:
             }
             else
             {
+                boost::asio::ip::address addr (getNativeSocket().remote_endpoint().address());
+
+                if (addr.is_v4())
+                {
+                    boost::asio::ip::address_v4::bytes_type bytes (addr.to_v4().to_bytes());
+                    m_remoteAddress = IPEndpoint (IPEndpoint::V4 (
+                        bytes[0], bytes[1], bytes[2], bytes[3]), 0);
+                    if (! m_isInbound)
+                        m_remoteAddress = m_remoteAddress.withPort (
+                            getNativeSocket().remote_endpoint().port());
+                }
+                else
+                {
+                    // TODO: Support ipv6
+                    bassertfalse;
+                }
+                m_remoteAddressSet = true;
+
+                if (m_isInbound)
+                    m_usage = m_resourceManager.newInboundEndpoint (m_remoteAddress);
+                else
+                    m_usage = m_resourceManager.newOutboundEndpoint (m_remoteAddress);
+
                 // Must compute mCookieHash before receiving a hello.
                 sendHello ();
                 startReadHeader ();
@@ -1221,6 +1239,7 @@ static void checkTransaction (Job&, int flags, SerializedTransaction::pointer st
         if (tx->getStatus () == INVALID)
         {
             getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
+            Peer::charge (peer, Resource::feeInvalidSignature);
             Peer::applyLoadCharge (peer, LT_InvalidSignature);
             return;
         }
@@ -1234,6 +1253,7 @@ static void checkTransaction (Job&, int flags, SerializedTransaction::pointer st
     catch (...)
     {
         getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
+        Peer::charge (peer, Resource::feeInvalidRequest);
         Peer::applyLoadCharge (peer, LT_InvalidRequest);
     }
 
@@ -1261,6 +1281,7 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, Application::Sco
             // we have seen this transaction recently
             if (isSetBit (flags, SF_BAD))
             {
+                charge (Resource::feeInvalidSignature);
                 applyLoadCharge (LT_InvalidSignature);
                 return;
             }
@@ -1325,6 +1346,7 @@ static void checkPropose (Job& job, boost::shared_ptr<protocol::TMProposeSet> pa
             Peer::pointer p = peer.lock ();
             WriteLog (lsWARNING, Peer) << "proposal with previous ledger fails signature check: " <<
                                        (p ? p->getIP () : std::string ("???"));
+            Peer::charge (peer, Resource::feeInvalidSignature);
             Peer::applyLoadCharge (peer, LT_InvalidSignature);
             return;
         }
@@ -1369,6 +1391,7 @@ void PeerImp::recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& pack
             (set.signature ().size () < 56) || (set.nodepubkey ().size () > 128) || (set.signature ().size () > 128))
     {
         WriteLog (lsWARNING, Peer) << "Received proposal is malformed";
+        charge (Resource::feeInvalidSignature);
         applyLoadCharge (LT_InvalidSignature);
         return;
     }
@@ -1376,6 +1399,7 @@ void PeerImp::recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& pack
     if (set.has_previousledger () && (set.previousledger ().size () != 32))
     {
         WriteLog (lsWARNING, Peer) << "Received proposal is malformed";
+        charge (Resource::feeInvalidRequest);
         applyLoadCharge (LT_InvalidRequest);
         return;
     }
@@ -1437,6 +1461,7 @@ void PeerImp::recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
 
     if (packet.hash ().size () != (256 / 8))
     {
+        charge (Resource::feeInvalidRequest);
         applyLoadCharge (LT_InvalidRequest);
         return;
     }
@@ -1452,7 +1477,10 @@ void PeerImp::recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
         addTxSet (hash);
 
     if (!getApp().getOPs ().hasTXSet (shared_from_this (), hash, packet.status ()))
+    {
+        charge (Resource::feeUnwantedData);
         applyLoadCharge (LT_UnwantedData);
+    }
 }
 
 static void checkValidation (Job&, SerializedValidation::pointer val, bool isTrusted, bool isCluster,
@@ -1467,6 +1495,7 @@ static void checkValidation (Job&, SerializedValidation::pointer val, bool isTru
         if (!isCluster && !val->isValid (signingHash))
         {
             WriteLog (lsWARNING, Peer) << "Validation is invalid";
+            Peer::charge (peer, Resource::feeInvalidRequest);
             Peer::applyLoadCharge (peer, LT_InvalidRequest);
             return;
         }
@@ -1505,6 +1534,7 @@ static void checkValidation (Job&, SerializedValidation::pointer val, bool isTru
     catch (...)
     {
         WriteLog (lsWARNING, Peer) << "Exception processing validation";
+        Peer::charge (peer, Resource::feeInvalidRequest);
         Peer::applyLoadCharge (peer, LT_InvalidRequest);
     }
 
@@ -1519,6 +1549,7 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
     if (packet->validation ().size () < 50)
     {
         WriteLog (lsWARNING, Peer) << "Too small validation from peer";
+        charge (Resource::feeInvalidRequest);
         applyLoadCharge (LT_InvalidRequest);
         return;
     }
@@ -1535,6 +1566,7 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
         if (closeTime > (120 + val->getFieldU32(sfSigningTime)))
         {
             WriteLog (lsTRACE, Peer) << "Validation is more than two minutes old";
+            charge (Resource::feeUnwantedData);
             applyLoadCharge (LT_UnwantedData);
             return;
         }
@@ -1558,6 +1590,7 @@ void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& p
     catch (...)
     {
         WriteLog (lsWARNING, Peer) << "Exception processing validation";
+        charge (Resource::feeInvalidRequest);
         applyLoadCharge (LT_InvalidRequest);
     }
 
@@ -1568,6 +1601,7 @@ void PeerImp::recvCluster (protocol::TMCluster& packet)
 {
     if (!mCluster)
     {
+        charge (Resource::feeUnwantedData);
         applyLoadCharge(LT_UnwantedData);
         return;
     }
@@ -1863,6 +1897,7 @@ void PeerImp::recvProofWork (protocol::TMProofWork& packet)
         // this is an answer to a proof of work we requested
         if (packet.response ().size () != (256 / 8))
         {
+            charge (Resource::feeInvalidRequest);
             applyLoadCharge (LT_InvalidRequest);
             return;
         }
@@ -1881,7 +1916,10 @@ void PeerImp::recvProofWork (protocol::TMProofWork& packet)
         // return error message
         // WRITEME
         if (r != powTOOEASY)
+        {
+            charge (Resource::feeBadProofOfWork);
             applyLoadCharge (LT_BadPoW);
+        }
 
         return;
     }
@@ -1901,6 +1939,7 @@ void PeerImp::recvProofWork (protocol::TMProofWork& packet)
 
         if ((packet.challenge ().size () != (256 / 8)) || (packet.target ().size () != (256 / 8)))
         {
+            charge (Resource::feeInvalidRequest);
             applyLoadCharge (LT_InvalidRequest);
             return;
         }
@@ -1912,6 +1951,7 @@ void PeerImp::recvProofWork (protocol::TMProofWork& packet)
 
         if (!pow->isValid ())
         {
+            charge (Resource::feeInvalidRequest);
             applyLoadCharge (LT_InvalidRequest);
             return;
         }
@@ -2009,6 +2049,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
 
         if ((!packet.has_ledgerhash () || packet.ledgerhash ().size () != 32))
         {
+            charge (Resource::feeInvalidRequest);
             applyLoadCharge (LT_InvalidRequest);
             WriteLog (lsWARNING, Peer) << "invalid request for TX candidate set data";
             return;
@@ -2045,6 +2086,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
             }
 
             WriteLog (lsERROR, Peer) << "We do not have the map our peer wants " << getIP ();
+            charge (Resource::feeInvalidRequest);
             applyLoadCharge (LT_InvalidRequest);
             return;
         }
@@ -2073,6 +2115,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
 
             if (packet.ledgerhash ().size () != 32)
             {
+                charge (Resource::feeInvalidRequest);
                 applyLoadCharge (LT_InvalidRequest);
                 WriteLog (lsWARNING, Peer) << "Invalid request";
                 return;
@@ -2129,6 +2172,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
         }
         else
         {
+            charge (Resource::feeInvalidRequest);
             applyLoadCharge (LT_InvalidRequest);
             WriteLog (lsWARNING, Peer) << "Can't figure out what ledger they want";
             return;
@@ -2136,6 +2180,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
 
         if ((!ledger) || (packet.has_ledgerseq () && (packet.ledgerseq () != ledger->getLedgerSeq ())))
         {
+            charge (Resource::feeInvalidRequest);
             applyLoadCharge (LT_InvalidRequest);
 
             if (ShouldLog (lsWARNING, Peer))
@@ -2216,6 +2261,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
     if ((!map) || (packet.nodeids_size () == 0))
     {
         WriteLog (lsWARNING, Peer) << "Can't find map or empty request";
+        charge (Resource::feeInvalidRequest);
         applyLoadCharge (LT_InvalidRequest);
         return;
     }
@@ -2229,6 +2275,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
         if (!mn.isValid ())
         {
             WriteLog (lsWARNING, Peer) << "Request for invalid node: " << logMe;
+            charge (Resource::feeInvalidRequest);
             applyLoadCharge (LT_InvalidRequest);
             return;
         }
@@ -2290,6 +2337,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
     if (packet.nodes ().size () <= 0)
     {
         WriteLog (lsWARNING, Peer) << "Ledger/TXset data with no nodes";
+        charge (Resource::feeInvalidRequest);
         applyLoadCharge (LT_InvalidRequest);
         return;
     }
@@ -2306,6 +2354,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
         else
         {
             WriteLog (lsINFO, Peer) << "Unable to route TX/ledger data reply";
+            charge (Resource::feeUnwantedData);
             applyLoadCharge (LT_UnwantedData);
         }
 
@@ -2317,6 +2366,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
     if (packet.ledgerhash ().size () != 32)
     {
         WriteLog (lsWARNING, Peer) << "TX candidate reply with invalid hash size";
+        charge (Resource::feeInvalidRequest);
         applyLoadCharge (LT_InvalidRequest);
         return;
     }
@@ -2336,6 +2386,7 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
             if (!node.has_nodeid () || !node.has_nodedata () || (node.nodeid ().size () != 33))
             {
                 WriteLog (lsWARNING, Peer) << "LedgerData request with invalid node ID";
+                charge (Resource::feeInvalidRequest);
                 applyLoadCharge (LT_InvalidRequest);
                 return;
             }
@@ -2347,17 +2398,25 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
         SHAMapAddNode san =  getApp().getOPs ().gotTXData (shared_from_this (), hash, nodeIDs, nodeData);
 
         if (san.isInvalid ())
+        {
+            charge (Resource::feeUnwantedData);
             applyLoadCharge (LT_UnwantedData);
+        }
 
         return;
     }
 
     if (getApp().getInboundLedgers ().awaitLedgerData (hash))
+    {
         getApp().getJobQueue ().addJob (jtLEDGER_DATA, "gotLedgerData",
                                        BIND_TYPE (&InboundLedgers::gotLedgerData, &getApp().getInboundLedgers (),
                                                P_1, hash, packet_ptr, boost::weak_ptr<Peer> (shared_from_this ())));
+    }
     else
+    {
+        charge (Resource::feeUnwantedData);
         applyLoadCharge (LT_UnwantedData);
+    }
 }
 
 void PeerImp::ledgerRange (uint32& minSeq, uint32& maxSeq) const
@@ -2570,6 +2629,7 @@ void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>&
     if (packet->ledgerhash ().size () != 32)
     {
         WriteLog (lsWARNING, Peer) << "FetchPack hash size malformed";
+        charge (Resource::feeInvalidRequest);
         applyLoadCharge (LT_InvalidRequest);
         return;
     }
@@ -2582,6 +2642,7 @@ void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>&
     if (!haveLedger)
     {
         WriteLog (lsINFO, Peer) << "Peer requests fetch pack for ledger we don't have: " << hash;
+        charge (Resource::feeRequestNoReply);
         applyLoadCharge (LT_RequestNoReply);
         return;
     }
@@ -2589,6 +2650,7 @@ void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>&
     if (!haveLedger->isClosed ())
     {
         WriteLog (lsWARNING, Peer) << "Peer requests fetch pack from open ledger: " << hash;
+        charge (Resource::feeInvalidRequest);
         applyLoadCharge (LT_InvalidRequest);
         return;
     }
@@ -2598,6 +2660,7 @@ void PeerImp::doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>&
     if (!wantLedger)
     {
         WriteLog (lsINFO, Peer) << "Peer requests fetch pack for ledger whose predecessor we don't have: " << hash;
+        charge (Resource::feeRequestNoReply);
         applyLoadCharge (LT_RequestNoReply);
         return;
     }
@@ -2692,9 +2755,10 @@ Json::Value PeerImp::getJson ()
 
 //------------------------------------------------------------------------------
 
-Peer::pointer Peer::New (boost::asio::io_service& io_service,
-    boost::asio::ssl::context& ssl_context, uint64 id,
-        bool inbound, bool requirePROXYHandshake)
+Peer::pointer Peer::New (Resource::Manager& resourceManager,
+    boost::asio::io_service& io_service,
+        boost::asio::ssl::context& ssl_context, uint64 id,
+            bool inbound, bool requirePROXYHandshake)
 {
     MultiSocket::Flag flags;
 
@@ -2714,11 +2778,18 @@ Peer::pointer Peer::New (boost::asio::io_service& io_service,
         bassert (! requirePROXYHandshake);
     }
 
-    return Peer::pointer (new PeerImp (
+    return Peer::pointer (new PeerImp (resourceManager,
         io_service, ssl_context, id, inbound, flags));
 }
 
 //------------------------------------------------------------------------------
+
+void Peer::charge (boost::weak_ptr <Peer>& peer, Resource::Charge const& fee)
+{
+    Peer::pointer p (peer.lock());
+    if (p != nullptr)
+        p->charge (fee);
+}
 
 void Peer::applyLoadCharge (boost::weak_ptr <Peer>& peerToPunish,
                             LoadType loadThatWasImposed)
@@ -2730,3 +2801,4 @@ void Peer::applyLoadCharge (boost::weak_ptr <Peer>& peerToPunish,
         p->applyLoadCharge (loadThatWasImposed);
     }
 }
+

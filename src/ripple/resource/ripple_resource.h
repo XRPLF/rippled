@@ -17,33 +17,22 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_RESOURCE_H_INCLUDED
+#define RIPPLE_RESOURCE_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#include "beast/modules/beast_core/beast_core.h"
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
-
-#include "beast/beast/http/URL.h" // for Config
-
-#include "../ripple/resource/api/LegacyFees.h"
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
-{
-
-// Order matters
-
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-#include "functional/LoadSource.h"
-
+namespace ripple {
+using namespace beast;
 }
+
+# include "api/Types.h"
+# include "api/Disposition.h"
+#  include "api/Charge.h"
+# include "api/LegacyFees.h"
+# include "api/Fees.h"
+# include "api/Consumer.h"
+# include "api/Gossip.h"
+#include "api/Manager.h"
 
 #endif

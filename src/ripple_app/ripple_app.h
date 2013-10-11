@@ -62,8 +62,7 @@
 //
 #include "peers/PackedMessage.h"
 
-namespace ripple
-{
+namespace ripple {
 
 // Order matters here. If you get compile errors,
 // reorder the include lines until the order is correct.

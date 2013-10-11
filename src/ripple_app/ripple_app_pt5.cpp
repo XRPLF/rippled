@@ -24,10 +24,10 @@
 #include "../ripple_net/ripple_net.h"
 
 #include "../ripple/peerfinder/ripple_peerfinder.h"
+#include "../ripple/resource/ripple_resource.h"
 #include "../ripple/validators/ripple_validators.h"
 
-namespace ripple
-{
+namespace ripple {
 
 #include "ledger/LedgerTiming.cpp"
 #include "ledger/AcceptedLedgerTx.cpp"

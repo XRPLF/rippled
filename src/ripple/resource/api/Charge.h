@@ -17,33 +17,44 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_RESOURCE_CHARGE_H_INCLUDED
+#define RIPPLE_RESOURCE_CHARGE_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#include <ios>
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+namespace ripple {
+namespace Resource {
 
-#include "beast/beast/http/URL.h" // for Config
-
-#include "../ripple/resource/api/LegacyFees.h"
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** A consumption charge. */
+class Charge
 {
+public:
+    /** The type used to hold a consumption charge. */
+    typedef int value_type;
 
-// Order matters
+    /** Create a new charge with no cost (yet). */
+    Charge ();
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-#include "functional/LoadSource.h"
+    /** Create a charge with the specified cost and name. */
+    Charge (value_type cost, std::string const& label = std::string());
 
+    /** Return the human readable label associated with the charge. */
+    std::string const& label() const;
+
+    /** Return the cost of the charge in Resource::Manager units. */
+    value_type cost () const;
+
+    /** Converts this charge into a human readable string. */
+    std::string to_string () const;
+
+private:
+    value_type m_cost;
+    std::string m_label;
+};
+
+std::ostream& operator<< (std::ostream& os, Charge const& v);
+
+}
 }
 
 #endif

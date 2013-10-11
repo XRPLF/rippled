@@ -30,8 +30,9 @@ protected:
 public:
     virtual ~WSDoor () { }
 
-    static WSDoor* New (InfoSub::Source& source, std::string const& strIp,
-        int iPort, bool bPublic, boost::asio::ssl::context& ssl_context);
+    static WSDoor* New (Resource::Manager& resourceManager,
+        InfoSub::Source& source, std::string const& strIp,
+            int iPort, bool bPublic, boost::asio::ssl::context& ssl_context);
 };
 
 #endif

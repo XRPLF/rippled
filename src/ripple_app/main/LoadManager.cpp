@@ -102,6 +102,16 @@ public:
         , mDeadLock (0)
         , mCosts (LT_MAX)
     {
+#if 0
+#if BEAST_MSVC
+        if (beast_isRunningUnderDebugger())
+        {
+            m_journal.sink().set_console (true);
+            m_journal.sink().set_severity (Journal::kLowestSeverity);
+        }
+#endif
+#endif
+
         /** Flags indicating the type of load.
 
             Utilization may include any combination of:

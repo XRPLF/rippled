@@ -17,33 +17,36 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_RESOURCE_TUNING_H_INCLUDED
+#define RIPPLE_RESOURCE_TUNING_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+namespace ripple {
+namespace Resource {
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
-
-#include "beast/beast/http/URL.h" // for Config
-
-#include "../ripple/resource/api/LegacyFees.h"
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** Tunable constants. */
+enum
 {
+    // Balance at which a warning is issued
+     warningThreshold           = 1000
 
-// Order matters
+    // Balance at which the consumer is disconnected
+    ,dropThreshold              = 5000
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-#include "functional/LoadSource.h"
+    // The number of seconds until an inactive table item is removed
+    ,secondsUntilExpiration     = 300
 
+    // The number of seconds in the exponential decay window
+    // (This should be a power of two)
+    ,decayWindowSeconds         = 32
+
+    // The minimum balance required in order to include a load source in gossip
+    ,minimumGossipBalance       = 100
+
+    // Number of seconds until imported gossip expires
+    ,gossipExpirationSeconds    = 30
+};
+
+}
 }
 
 #endif

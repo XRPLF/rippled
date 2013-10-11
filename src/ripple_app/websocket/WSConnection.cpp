@@ -28,9 +28,12 @@ static std::string trimIP(const std::string& ip)
 
 //------------------------------------------------------------------------------
 
-WSConnection::WSConnection (InfoSub::Source& source, bool isPublic,
-    std::string const& remoteIP, boost::asio::io_service& io_service)
+WSConnection::WSConnection (Resource::Manager& resourceManager,
+    Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
+        std::string const& remoteIP, boost::asio::io_service& io_service)
     : InfoSub (source)
+    , m_resourceManager (resourceManager)
+    , m_usage (usage)
     , m_isPublic (isPublic)
     , m_remoteIP (remoteIP)
     , m_receiveQueueMutex (this, "WSConnection", __FILE__, __LINE__)
@@ -110,12 +113,19 @@ void WSConnection::returnMessage (message_ptr ptr)
 
 Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
 {
-    // VFALCO TODO Make LoadManager a ctor argument
+#if RIPPLE_USE_RESOURCE_MANAGER
+    if (m_usage.disconnect ())
+    {
+        disconnect ();
+        return rpcError (rpcSLOW_DOWN);
+    }
+#else
     if (getApp().getLoadManager ().shouldCutoff (m_loadSource))
     {
         disconnect ();
         return rpcError (rpcSLOW_DOWN);
     }
+#endif
 
     // Requests without "command" are invalid.
     //
@@ -133,7 +143,11 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
             jvResult["id"]  = jvRequest["id"];
         }
 
+#if RIPPLE_USE_RESOURCE_MANAGER
+        m_usage.charge (Resource::feeInvalidRPC);
+#else
         getApp().getLoadManager ().applyLoadCharge (m_loadSource, LT_RPCInvalid);
+#endif
 
         return jvResult;
     }
@@ -155,6 +169,13 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
         jvResult["result"] = mRPCHandler.doCommand (jvRequest, role, &loadType);
     }
 
+#if RIPPLE_USE_RESOURCE_MANAGER
+    m_usage.charge (Resource::legacyFee (loadType));
+    if (m_usage.warn ())
+    {
+        jvResult["warning"] = "load";
+    }
+#else
     // Debit/credit the load and see if we should include a warning.
     //
     if (getApp().getLoadManager ().applyLoadCharge (m_loadSource, loadType) &&
@@ -162,6 +183,7 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     {
         jvResult["warning"] = "load";
     }
+#endif
 
     // Currently we will simply unwrap errors returned by the RPC
     // API, in the future maybe we can make the responses

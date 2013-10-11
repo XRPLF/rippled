@@ -42,6 +42,8 @@ class HTTPServerLog;
 template <> char const* LogPartition::getPartitionName <HTTPServerLog> () { return "RPCServer"; }
 class LoadManagerLog;
 template <> char const* LogPartition::getPartitionName <LoadManagerLog> () { return "LoadManager"; }
+class ResourceManagerLog;
+template <> char const* LogPartition::getPartitionName <ResourceManagerLog> () { return "ResourceManager"; }
 
 //
 //------------------------------------------------------------------------------
@@ -71,6 +73,9 @@ public:
         , m_tempNodeCache ("NodeCache", 16384, 90)
         , m_sleCache ("LedgerEntryCache", 4096, 120)
         
+        , m_resourceManager (add (Resource::Manager::New (
+            LogJournal::get <ResourceManagerLog> ())))
+
         , m_rpcServiceManager (RPC::Manager::New (
             LogJournal::get <RPCServiceManagerLog> ()))
 
@@ -472,7 +477,8 @@ public:
         //             the creation of the peer SSL context and Peers object into
         //             the conditional.
         //
-        m_peers = add (Peers::New (m_mainIoPool, m_mainIoPool, m_peerSSLContext->get ()));
+        m_peers = add (Peers::New (m_mainIoPool, *m_resourceManager,
+            m_mainIoPool, m_peerSSLContext->get ()));
 
         // If we're not in standalone mode,
         // prepare ourselves for  networking
@@ -483,6 +489,7 @@ public:
             //
             m_peerDoors.add (PeerDoor::New (
                 m_mainIoPool,
+                *m_resourceManager,
                 PeerDoor::sslRequired,
                 getConfig ().PEER_IP,
                 getConfig ().peerListeningPort,
@@ -494,6 +501,7 @@ public:
                 // Also listen on a PROXY-only port.
                 m_peerDoors.add (PeerDoor::New (
                     m_mainIoPool,
+                    *m_resourceManager,
                     PeerDoor::sslAndPROXYRequired,
                     getConfig ().PEER_IP,
                     getConfig ().peerPROXYListeningPort,
@@ -523,8 +531,10 @@ public:
         //
         if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
         {
-            m_wsPrivateDoor = WSDoor::New (getOPs(), getConfig ().WEBSOCKET_IP,
-                getConfig ().WEBSOCKET_PORT, false, m_wsSSLContext->get ());
+            m_wsPrivateDoor = WSDoor::New (*m_resourceManager,
+                getOPs(), getConfig ().WEBSOCKET_IP,
+                    getConfig ().WEBSOCKET_PORT, false,
+                        m_wsSSLContext->get ());
 
             if (m_wsPrivateDoor == nullptr)
             {
@@ -541,8 +551,10 @@ public:
         //
         if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
         {
-            m_wsPublicDoor = WSDoor::New (getOPs(), getConfig ().WEBSOCKET_PUBLIC_IP,
-                getConfig ().WEBSOCKET_PUBLIC_PORT, true, m_wsSSLContext->get ());
+            m_wsPublicDoor = WSDoor::New (*m_resourceManager,
+                getOPs(), getConfig ().WEBSOCKET_PUBLIC_IP,
+                    getConfig ().WEBSOCKET_PUBLIC_PORT, true,
+                        m_wsSSLContext->get ());
 
             if (m_wsPublicDoor == nullptr)
             {
@@ -839,6 +851,7 @@ private:
     LocalCredentials m_localCredentials;
     TransactionMaster m_txMaster;
     
+    ScopedPointer <Resource::Manager> m_resourceManager;
     ScopedPointer <RPC::Manager> m_rpcServiceManager;
 
     // These are Stoppable-related

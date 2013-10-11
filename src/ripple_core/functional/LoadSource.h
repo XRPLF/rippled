@@ -47,16 +47,6 @@
 class LoadSource
 {
 public:
-    // VFALCO TODO Use these dispositions
-    /*
-    enum Disposition
-    {
-        none,
-        shouldWarn,
-        shouldDrop,
-    };
-    */
-
     /** Construct a load source.
 
         Sources with admin privileges have relaxed or no restrictions

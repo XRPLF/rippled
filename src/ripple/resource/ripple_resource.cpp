@@ -17,33 +17,25 @@
 */
 //==============================================================================
 
+#include "BeastConfig.h"
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#include "ripple_resource.h"
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include <boost/unordered_map.hpp>
 
-#include "beast/beast/http/URL.h" // for Config
-
-#include "../ripple/resource/api/LegacyFees.h"
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
-{
-
-// Order matters
-
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-#include "functional/LoadSource.h"
-
-}
-
-#endif
+#include "impl/Fees.cpp"
+#  include "impl/Kind.h"
+# include "impl/Key.h"
+#  include "impl/DecayingSample.h"
+#  include "impl/Tuning.h"
+# include "impl/Entry.h"
+# include "impl/Import.h"
+#include "impl/SimpleMonotonicClock.h"
+#include "impl/Charge.cpp"
+#  include "impl/Logic.h"
+# include "impl/LogicType.h"
+#include "impl/Consumer.cpp"
+#include "impl/LegacyFees.cpp"
+#include "impl/Manager.cpp"
+#include "impl/Tests.cpp"

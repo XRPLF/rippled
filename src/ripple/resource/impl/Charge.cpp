@@ -17,33 +17,44 @@
 */
 //==============================================================================
 
+#include <sstream>
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+namespace ripple {
+namespace Resource {
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
-
-#include "beast/beast/http/URL.h" // for Config
-
-#include "../ripple/resource/api/LegacyFees.h"
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+Charge::Charge ()
+    : m_cost (0)
 {
-
-// Order matters
-
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-#include "functional/LoadSource.h"
-
 }
 
-#endif
+Charge::Charge (value_type cost, std::string const& label)
+    : m_cost (cost)
+    , m_label (label)
+{
+}
+
+std::string const& Charge::label () const
+{
+    return m_label;
+}
+
+Charge::value_type Charge::cost() const
+{
+    return m_cost;
+}
+
+std::string Charge::to_string () const
+{
+    std::stringstream ss;
+    ss << m_label << " ($" << m_cost << ")";
+    return ss.str();
+}
+
+std::ostream& operator<< (std::ostream& os, Charge const& v)
+{
+    os << v.to_string();
+    return os;
+}
+
+}
+}

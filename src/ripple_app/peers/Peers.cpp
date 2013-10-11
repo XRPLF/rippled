@@ -42,6 +42,7 @@ public:
     typedef std::map<IPAndPortNumber, Peer::pointer>::value_type vtPeer;
     typedef boost::unordered_map<RippleAddress, Peer::pointer>::value_type vtConMap;
 
+    Resource::Manager& m_resourceManager;
     ScopedPointer <PeerFinder::Manager> m_peerFinder;
 
     boost::asio::io_service& m_io_service;
@@ -88,9 +89,11 @@ public:
     //--------------------------------------------------------------------------
 
     PeersImp (Stoppable& parent,
-        boost::asio::io_service& io_service,
-            boost::asio::ssl::context& ssl_context)
+        Resource::Manager& resourceManager,
+            boost::asio::io_service& io_service,
+                boost::asio::ssl::context& ssl_context)
         : Stoppable ("Peers", parent)
+        , m_resourceManager (resourceManager)
         , m_peerFinder (add (PeerFinder::Manager::New (
             *this, *this, LogJournal::get <PeerFinderLog> ())))
         , m_io_service (io_service)
@@ -193,6 +196,7 @@ public:
             if (peer->isConnected() &&
                 PeerFinder::PeerID (peer->getNodePublic()) == id)
             {
+                peer->charge (Resource::feeUnwantedData);
                 peer->applyLoadCharge (LT_UnwantedData);
                 break;
             }
@@ -639,7 +643,7 @@ Peer::pointer PeersImp::peerConnect (const std::string& strIp, int iPort)
             bool const isInbound (false);
             bool const requirePROXYHandshake (false);
 
-            ppResult = Peer::New (m_io_service, m_ssl_context,
+            ppResult = Peer::New (m_resourceManager, m_io_service, m_ssl_context,
                 ++mLastPeer, isInbound, requirePROXYHandshake);
 
             mIpMap [pipPeer] = ppResult;
@@ -1093,9 +1097,10 @@ Peers::Peers ()
 }
 
 Peers* Peers::New (Stoppable& parent,
+    Resource::Manager& resourceManager,
     boost::asio::io_service& io_service,
         boost::asio::ssl::context& ssl_context)
 {
-    return new PeersImp (parent, io_service, ssl_context);
+    return new PeersImp (parent, resourceManager, io_service, ssl_context);
 }
 

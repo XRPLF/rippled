@@ -17,33 +17,19 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_RESOURCE_TYPES_H_INCLUDED
+#define RIPPLE_RESOURCE_TYPES_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+namespace ripple {
+namespace Resource {
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+struct Key;
+struct Entry;
 
-#include "beast/beast/http/URL.h" // for Config
+/** Measures seconds from an unspecified fixed reference event in the past. */
+typedef int DiscreteTime;
 
-#include "../ripple/resource/api/LegacyFees.h"
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
-{
-
-// Order matters
-
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-#include "functional/LoadSource.h"
-
+}
 }
 
 #endif

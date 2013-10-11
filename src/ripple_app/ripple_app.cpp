@@ -36,6 +36,7 @@
 // material in Ripple since it holds the Application object.
 
 #include "../ripple/http/ripple_http.h"
+#include "../ripple/resource/ripple_resource.h"
 #include "../ripple/rpc/ripple_rpc.h"
 #include "../ripple/validators/ripple_validators.h"
 

@@ -17,9 +17,13 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_PEER_H_INCLUDED
 #define RIPPLE_PEER_H_INCLUDED
+
+namespace Resource {
+class Charge;
+class Manager;
+}
 
 // VFALCO TODO Couldn't this be a struct?
 typedef std::pair <std::string, int> IPAndPortNumber;
@@ -35,7 +39,8 @@ public:
     typedef pointer const& ref;
 
 public:
-    static pointer New (boost::asio::io_service& io_service,
+    static pointer New (Resource::Manager& resourceManager,
+                        boost::asio::io_service& io_service,
                         boost::asio::ssl::context& ctx,
                         uint64 id,
                         bool inbound,
@@ -63,14 +68,15 @@ public:
 
     virtual void sendGetPeers () = 0;
 
-    virtual void applyLoadCharge (LoadType) = 0;
-
     // VFALCO NOTE what's with this odd parameter passing? Why the static member?
     //
     /** Adjust this peer's load balance based on the type of load imposed.
 
         @note Formerly named punishPeer
     */
+    virtual void charge (Resource::Charge const& fee) = 0;
+    static  void charge (boost::weak_ptr <Peer>& peer, Resource::Charge const& fee);
+    virtual void applyLoadCharge (LoadType) = 0;
     static void applyLoadCharge (boost::weak_ptr <Peer>& peerTOCharge, LoadType loadThatWasImposed);
 
     virtual Json::Value getJson () = 0;

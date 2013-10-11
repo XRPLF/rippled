@@ -56,6 +56,7 @@ public:
     };
 
 private:
+    Resource::Manager& m_resourceManager;
     InfoSub::Source& m_source;
 
 protected:
@@ -74,8 +75,10 @@ protected:
     bool const mPublic;
 
 public:
-    WSServerHandler (InfoSub::Source& source, boost::asio::ssl::context& ssl_context, bool bPublic)
-        : m_source (source)
+    WSServerHandler (Resource::Manager& resourceManager,
+        InfoSub::Source& source, boost::asio::ssl::context& ssl_context, bool bPublic)
+        : m_resourceManager (resourceManager)
+        , m_source (source)
         , mLock (static_cast <WSServerHandlerBase*> (this), "WSServerHandler", __FILE__, __LINE__)
         , m_ssl_context (ssl_context)
         , mPublic (bPublic)
@@ -181,7 +184,9 @@ public:
         {
             mMap [cpClient] = boost::make_shared <
                 WSConnectionType <endpoint_type>
-                    > (boost::ref (m_source), boost::ref(*this), boost::cref(cpClient));
+                    > (boost::ref(m_resourceManager),
+                        boost::ref (m_source),
+                            boost::ref(*this), boost::cref(cpClient));
         }
         catch (...)
         {

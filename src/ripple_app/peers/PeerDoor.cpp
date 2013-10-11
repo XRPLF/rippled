@@ -25,9 +25,11 @@ class PeerDoorImp
     , public LeakChecked <PeerDoorImp>
 {
 public:
-    PeerDoorImp (Stoppable& parent, Kind kind, std::string const& ip, int port,
-        boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
+    PeerDoorImp (Stoppable& parent, Resource::Manager& resourceManager,
+        Kind kind, std::string const& ip, int port,
+            boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
         : PeerDoor (parent)
+        , m_resourceManager (resourceManager)
         , m_kind (kind)
         , m_ssl_context (ssl_context)
         , mAcceptor (io_service, boost::asio::ip::tcp::endpoint (
@@ -56,8 +58,8 @@ public:
         bool const requirePROXYHandshake (m_kind == sslAndPROXYRequired);
 
         Peer::pointer new_connection (Peer::New (
-            mAcceptor.get_io_service (), m_ssl_context,
-                getApp().getPeers ().assignPeerId (),
+            m_resourceManager, mAcceptor.get_io_service (),
+                m_ssl_context, getApp().getPeers ().assignPeerId (),
                     isInbound, requirePROXYHandshake));
 
         mAcceptor.async_accept (new_connection->getNativeSocket (),
@@ -123,6 +125,7 @@ public:
     }
 
 private:
+    Resource::Manager& m_resourceManager;
     Kind m_kind;
     boost::asio::ssl::context& m_ssl_context;
     boost::asio::ip::tcp::acceptor  mAcceptor;
@@ -138,8 +141,12 @@ PeerDoor::PeerDoor (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-PeerDoor* PeerDoor::New (Stoppable& parent, Kind kind, std::string const& ip, int port,
-    boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
+PeerDoor* PeerDoor::New (Stoppable& parent,
+    Resource::Manager& resourceManager,
+        Kind kind, std::string const& ip, int port,
+            boost::asio::io_service& io_service,
+                boost::asio::ssl::context& ssl_context)
 {
-    return new PeerDoorImp (parent, kind, ip, port, io_service, ssl_context);
+    return new PeerDoorImp (parent, resourceManager,
+        kind, ip, port, io_service, ssl_context);
 }

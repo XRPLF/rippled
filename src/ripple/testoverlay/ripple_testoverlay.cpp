@@ -17,13 +17,11 @@
 */
 //==============================================================================
 
-
 #include "BeastConfig.h"
 
 #include "ripple_testoverlay.h"
 
-namespace ripple
-{
+namespace ripple {
 
 #include "impl/TestOverlay.cpp"
 

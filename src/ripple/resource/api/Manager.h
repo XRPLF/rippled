@@ -17,33 +17,42 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_RESOURCE_MANAGER_H_INCLUDED
+#define RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+namespace ripple {
+namespace Resource {
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
-
-#include "beast/beast/http/URL.h" // for Config
-
-#include "../ripple/resource/api/LegacyFees.h"
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** Tracks load and resource consumption. */
+class Manager : public PropertyStream::Source
 {
+protected:
+    Manager ();
 
-// Order matters
+public:
+    static Manager* New (Journal journal);
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-#include "functional/LoadSource.h"
+    virtual ~Manager() { }
 
+    /** Create a new endpoint keyed by inbound IP address. */
+    virtual Consumer newInboundEndpoint (IPEndpoint const& address) = 0;
+
+    /** Create a new endpoint keyed by outbound IP address and port. */
+    virtual Consumer newOutboundEndpoint (IPEndpoint const& address) = 0;
+
+    /** Create a new endpoint keyed by name. */
+    virtual Consumer newAdminEndpoint (std::string const& name) = 0;
+
+    /** Extract packaged consumer information for export. */
+    virtual Gossip exportConsumers () = 0;
+
+    /** Import packaged consumer information.
+        @param origin An identifier that unique labels the origin.
+    */
+    virtual void importConsumers (std::string const& origin, Gossip const& gossip) = 0;
+};
+
+}
 }
 
 #endif

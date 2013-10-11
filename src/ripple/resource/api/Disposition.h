@@ -17,33 +17,26 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_RESOURCE_DISPOSITION_H_INCLUDED
+#define RIPPLE_RESOURCE_DISPOSITION_H_INCLUDED
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+namespace ripple {
+namespace Resource {
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
-
-#include "beast/beast/http/URL.h" // for Config
-
-#include "../ripple/resource/api/LegacyFees.h"
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** The disposition of a consumer after applying a load charge. */
+enum Disposition
 {
+    /** No action required. */
+    ok
 
-// Order matters
+    /** Consumer should be warned that consumption is high. */
+    ,warn
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
-#include "functional/LoadSource.h"
+    /** Consumer should be disconnected for excess consumption. */
+    ,drop
+};
 
+}
 }
 
 #endif

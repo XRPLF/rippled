@@ -22,6 +22,8 @@
 
 #include "ripple_app.h"
 
+#include "../ripple/resource/ripple_resource.h"
+
 namespace ripple
 {
 

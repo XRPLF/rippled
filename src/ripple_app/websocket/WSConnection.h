@@ -38,8 +38,9 @@ public:
 protected:
     typedef websocketpp::message::data::ptr message_ptr;
 
-    WSConnection (InfoSub::Source& source, bool isPublic,
-        std::string const& remoteIP, boost::asio::io_service& io_service);
+    WSConnection (Resource::Manager& resourceManager,
+        Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
+            std::string const& remoteIP, boost::asio::io_service& io_service);
 
     virtual ~WSConnection ();
 
@@ -54,6 +55,8 @@ public:
     Json::Value invokeCommand (Json::Value& jvRequest);
 
 protected:
+    Resource::Manager& m_resourceManager;
+    Resource::Consumer m_usage;
     bool const m_isPublic;
     std::string const m_remoteIP;
     LockType m_receiveQueueMutex;
@@ -89,9 +92,21 @@ public:
     typedef WSServerHandler <endpoint_type> server_type;
 
 public:
-    WSConnectionType (InfoSub::Source& source, server_type& serverHandler,
-        connection_ptr const& cpConnection)
-        : WSConnection (source,
+    static IPEndpoint from_address (boost::asio::ip::address const& addr)
+    {
+        boost::asio::ip::address_v4::bytes_type bytes (addr.to_v4().to_bytes());
+        IPEndpoint ep (IPEndpoint::V4 (bytes[0], bytes[1], bytes[2], bytes[3]), 0);
+        return ep;
+    }
+
+    WSConnectionType (Resource::Manager& resourceManager,
+        InfoSub::Source& source, server_type& serverHandler,
+            connection_ptr const& cpConnection)
+        : WSConnection (
+            resourceManager,
+            resourceManager.newInboundEndpoint (from_address (
+                cpConnection->get_socket ().lowest_layer ().remote_endpoint ().address ())),
+            source,
             serverHandler.getPublic (),
             cpConnection->get_socket ().lowest_layer ().remote_endpoint ().address ().to_string (),
             cpConnection->get_io_service ())
