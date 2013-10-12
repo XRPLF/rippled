@@ -40,10 +40,7 @@ typedef boost::multi_index_container <
     PeerInfo, boost::multi_index::indexed_by <
         boost::multi_index::hashed_unique <
             BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,PeerID,id),
-                PeerID::hasher>,
-        boost::multi_index::hashed_unique <
-            BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,beast::IPEndpoint,address),
-                IPEndpoint::hasher>
+                PeerID::hasher>
     >
 > Peers;
 
@@ -216,7 +213,8 @@ public:
 
     // Called when a peer connection is established.
     // We are guaranteed that the PeerID is not already in our map.
-    //
+    // but we are *NOT* guaranteed that the IP isn't. So we need
+    // to be careful.
     void onPeerConnected (PeerID const& id,
         IPEndpoint const& address, bool inbound)
     {
@@ -224,6 +222,7 @@ public:
         // If this is outgoing, record the success
         if (! inbound)
             m_legacyCache.checked (address, true);
+
         std::pair <Peers::iterator, bool> result (
             m_peers.insert (
                 PeerInfo (id, address, inbound)));
