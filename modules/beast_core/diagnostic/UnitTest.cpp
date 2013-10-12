@@ -54,6 +54,11 @@ String const& UnitTest::getPackageName() const noexcept
     return m_packageName;
 }
 
+Journal UnitTest::journal () const
+{
+    return m_runner->journal();
+}
+
 UnitTest::TestList& UnitTest::getAllTests()
 {
     static TestList s_tests;
@@ -224,8 +229,39 @@ void UnitTest::finishCase ()
 
 //==============================================================================
 
+UnitTests::JournalSink::JournalSink (UnitTests& tests)
+    : m_tests (tests)
+{
+}
+
+void UnitTests::JournalSink::write (Journal::Severity, std::string const& text)
+{
+    m_tests.logMessage (text);
+}
+
+bool UnitTests::JournalSink::active (Journal::Severity)
+{
+    return true;
+}
+
+bool UnitTests::JournalSink::console ()
+{
+    return false;
+}
+
+void UnitTests::JournalSink::set_severity (Journal::Severity)
+{
+}
+
+void UnitTests::JournalSink::set_console (bool)
+{
+}
+
+//==============================================================================
+
 UnitTests::UnitTests()
     : m_assertOnFailure (false)
+    , m_sink (*this)
 {
 }
 

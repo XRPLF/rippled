@@ -210,6 +210,9 @@ public:
     /** Returns the run option of the test. */
     When getWhen () const noexcept { return m_when; }
 
+    /** Returns a Journal that logs to the UnitTests. */
+    Journal journal () const;
+
     /** Runs the test, using the specified UnitTests.
         You shouldn't need to call this method directly - use
         UnitTests::runTests() instead.
@@ -479,6 +482,11 @@ public:
     */
     void runTests (TestList const& tests, int64 randomSeed = 0);
 
+    Journal journal ()
+    {
+        return Journal (m_sink);
+    }
+
 protected:
     friend class UnitTest;
 
@@ -505,9 +513,24 @@ private:
     void runTest (UnitTest& test);
 
 private:
+    class JournalSink : public Journal::Sink, public Uncopyable
+    {
+    public:
+        explicit JournalSink (UnitTests& tests);
+        void write (Journal::Severity severity, std::string const& text);
+        bool active (Journal::Severity severity);
+        bool console ();
+        void set_severity (Journal::Severity severity);
+        void set_console (bool);
+
+    private:
+        UnitTests& m_tests;
+    };
+
     bool m_assertOnFailure;
     ScopedPointer <Results> m_results;
     Random m_random;
+    JournalSink m_sink;
 };
 
 #endif
