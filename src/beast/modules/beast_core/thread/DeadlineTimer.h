@@ -22,7 +22,9 @@
 
 /** Provides periodic or one time notifications at a specified time interval.
 */
-class DeadlineTimer : public List <DeadlineTimer>::Node
+class DeadlineTimer
+    : public List <DeadlineTimer>::Node
+    , public Uncopyable
 {
 public:
     /** Listener for a deadline timer.

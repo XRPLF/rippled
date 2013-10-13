@@ -41,7 +41,7 @@ namespace detail
 // concurrently is required.
 //
 template <typename T, typename Tag>
-class ListNode : public Uncopyable
+class ListNode
 {
 private:
     typedef T value_type;
