@@ -344,6 +344,7 @@ public:
     std::string                 VALIDATORS_URI;         // URI of validators.txt.
     std::string                 VALIDATORS_BASE;        // Name with testnet-, if needed.
     std::vector<std::string>    IPS;                    // Peer IPs from rippled.cfg.
+    std::vector<std::string>    IPS_FIXED;              // Fixed Peer IPs from rippled.cfg.
     std::vector<std::string>    SNTP_SERVERS;           // SNTP servers from rippled.cfg.
 
     enum StartUpType

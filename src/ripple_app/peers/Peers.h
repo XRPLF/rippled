@@ -97,7 +97,7 @@ public:
     virtual void policyEnforce () = 0; // VFALCO This and others can be made private
 
     // configured connections
-    virtual void makeConfigured () = 0;
+    virtual void legacyConnectFixedIPs () = 0;
 };
 
 // VFALCO TODO Put this in some group of utilities

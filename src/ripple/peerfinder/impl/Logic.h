@@ -40,7 +40,10 @@ typedef boost::multi_index_container <
     PeerInfo, boost::multi_index::indexed_by <
         boost::multi_index::hashed_unique <
             BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,PeerID,id),
-                PeerID::hasher>
+                PeerID::hasher>,
+        boost::multi_index::hashed_non_unique <
+            BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,IPEndpoint,address),
+                IPEndpoint::hasher>
     >
 > Peers;
 
@@ -80,6 +83,13 @@ public:
     Journal m_journal;
     Config m_config;
 
+    // The number of fixed peers that are currently connected
+    int m_fixedPeersConnected;
+
+    // A list of peers that should always be connected
+    typedef std::set <IPEndpoint> FixedPeers;
+    FixedPeers m_fixedPeers;
+
     // A list of dynamic sources to consult as a fallback
     std::vector <SharedPtr <Source> > m_sources;
 
@@ -104,6 +114,7 @@ public:
         , m_store (store)
         , m_checker (checker)
         , m_journal (journal)
+        , m_fixedPeersConnected (0)
         , m_cache (journal)
         , m_legacyCache (store, journal)
     {
@@ -165,18 +176,34 @@ public:
     //
     void makeOutgoingConnections ()
     {
+        std::vector <IPEndpoint> list;
+
         if (m_slots.outDesired > m_slots.outboundCount)
         {
             int const needed (std::min (
                 m_slots.outDesired - m_slots.outboundCount,
                     int (maxAddressesPerAttempt)));
-            std::vector <IPEndpoint> list;
             m_legacyCache.get (needed, list);
+        }
+
+        if (m_fixedPeersConnected < m_fixedPeers.size())
+        {
+            list.reserve (list.size() + m_fixedPeers.size() - m_fixedPeersConnected);
+
+            for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
+                iter != m_fixedPeers.end(); ++iter)
+            {
+                if (m_peers.get<1>().find (*iter) != m_peers.get<1>().end())
+                {
+                    list.push_back (*iter);
+                }
+            }
+        }
 
 #if RIPPLE_USE_PEERFINDER
+        if (! list.empty())
             m_callback.connectPeerEndpoints (list);
 #endif
-        }
     }
 
     //--------------------------------------------------------------------------
@@ -189,6 +216,23 @@ public:
     {
         m_config = config;
         m_slots.update (m_config);
+    }
+
+    void addFixedPeers (std::vector <std::string> const& strings)
+    {
+        for (std::vector <std::string>::const_iterator iter (strings.begin());
+            iter != strings.end(); ++iter)
+        {
+            IPEndpoint ep (IPEndpoint::from_string (*iter));
+            if (! ep.empty ())
+            {
+                m_fixedPeers.insert (ep);
+            }
+            else
+            {
+                // VFALCO TODO Attempt name resolution
+            }
+        }
     }
 
     void addStaticSource (SharedPtr <Source> const& source)

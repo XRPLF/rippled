@@ -253,7 +253,6 @@ void Config::load ()
             if (smtTmp)
             {
                 validators  = *smtTmp;
-                // SectionEntriesPrint(&validators, SECTION_VALIDATORS);
             }
 
             smtTmp = SectionEntries (secConfig, SECTION_CLUSTER_NODES);
@@ -261,7 +260,6 @@ void Config::load ()
             if (smtTmp)
             {
                 CLUSTER_NODES = *smtTmp;
-                // SectionEntriesPrint(&CLUSTER_NODES, SECTION_CLUSTER_NODES);
             }
 
             smtTmp  = SectionEntries (secConfig, SECTION_IPS);
@@ -269,7 +267,13 @@ void Config::load ()
             if (smtTmp)
             {
                 IPS = *smtTmp;
-                // SectionEntriesPrint(&IPS, SECTION_IPS);
+            }
+
+            smtTmp  = SectionEntries (secConfig, SECTION_IPS_FIXED);
+
+            if (smtTmp)
+            {
+                IPS_FIXED = *smtTmp;
             }
 
             smtTmp = SectionEntries (secConfig, SECTION_SNTP);

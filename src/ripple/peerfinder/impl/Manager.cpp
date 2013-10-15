@@ -240,7 +240,19 @@ public:
                     config)));
     }
 
-    void addStrings (std::string const& name,
+    void addFixedPeers (
+        std::vector <std::string> const& strings)
+    {
+#if 1
+        m_logic.addFixedPeers (strings);
+#else
+        m_queue.dispatch (m_context.wrap (
+            bind (&Logic::addFixedPeers, &m_logic,
+                std::vector <std::string> (strings))));
+#endif
+    }
+
+    void addFallbackStrings (std::string const& name,
         std::vector <std::string> const& strings)
     {
         m_queue.dispatch (
@@ -250,8 +262,9 @@ public:
                         SourceStrings::New (name, strings))));
     }
 
-    void addURL (std::string const& name, std::string const& url)
+    void addFallbackURL (std::string const& name, std::string const& url)
     {
+        // VFALCO TODO This needs to be implemented
     }
 
     void onPeerConnected (PeerID const& id,
