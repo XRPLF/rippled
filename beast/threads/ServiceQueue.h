@@ -449,7 +449,9 @@ public:
         SharedState::Access state (m_state);
 
         // Must be empty
-        bassert (state->handlers.empty());
+        //bassert (state->handlers.empty());
+
+        // Cannot destroy while threads are waiting
         bassert (state->waiting.empty());
 
         typename Allocator::template rebind <Waiter>::other a (m_alloc);
