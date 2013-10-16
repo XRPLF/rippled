@@ -17,16 +17,37 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_LOGICTYPE_H_INCLUDED
+#define RIPPLE_PEERFINDER_LOGICTYPE_H_INCLUDED
+
 namespace ripple {
 namespace PeerFinder {
 
-Config::Config ()
-    : maxPeerCount (20)
-    , wantIncoming (false)
-    , connectAutomatically (false)
-    , listeningPort (0)
+/** Provides the Clock required by Logic's get_now().
+    This allows the unit tests to provide its own manual clock.
+*/
+template <typename Clock>
+class LogicType : public Logic
 {
-}
+public:
+    explicit LogicType (Callback& callback,
+                        Store& store,
+                        Checker& checker,
+                        Journal journal)
+        : Logic (callback, store, checker, journal)
+    {
+    }
+
+    DiscreteTime get_now ()
+    {
+        return m_clock();
+    }
+
+private:
+    Clock m_clock;
+};
 
 }
 }
+
+#endif

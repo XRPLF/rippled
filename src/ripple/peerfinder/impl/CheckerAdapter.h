@@ -23,6 +23,12 @@
 namespace ripple {
 namespace PeerFinder {
 
+// Ensures that all Logic member function entry points are
+// called while holding a lock on the recursive mutex.
+//
+typedef ScopedWrapperContext <
+    RecursiveMutex, RecursiveMutex::ScopedLockType> SerializedContext;
+
 /** Adapts a ServiceQueue to dispatch Checker handler completions.
     This lets the Logic have its Checker handler get dispatched
     on the ServiceQueue instead of an io_service thread. Otherwise,
@@ -31,30 +37,40 @@ namespace PeerFinder {
 class CheckerAdapter : public Checker
 {
 private:
+    SerializedContext& m_context;
     ServiceQueue& m_queue;
     ScopedPointer <Checker> m_checker;
 
     struct Handler
     {
-        ServiceQueue* m_queue;
+        SerializedContext& m_context;
+        ServiceQueue& m_queue;
         AbstractHandler <void (Checker::Result)> m_handler;
 
         Handler (
+            SerializedContext& context,
             ServiceQueue& queue,
             AbstractHandler <void (Checker::Result)> handler)
-            : m_queue (&queue)
+            : m_context (context)
+            , m_queue (queue)
             , m_handler (handler)
             { }
 
         void operator() (Checker::Result result)
         {
-            m_queue->wrap (m_handler) (result);
+            // VFALCO TODO Fix this, it is surely wrong but
+            //             this supposedly correct line doesn't compile
+            //m_queue.wrap (m_context.wrap (m_handler)) (result);
+
+            // WRONG
+            m_queue.wrap (m_handler) (result);
         }
     };
 
 public:
-    explicit CheckerAdapter (ServiceQueue& queue)
-        : m_queue (queue)
+    CheckerAdapter (SerializedContext& context, ServiceQueue& queue)
+        : m_context (context)
+        , m_queue (queue)
         , m_checker (Checker::New())
     {
     }
@@ -73,7 +89,8 @@ public:
     void async_test (IPEndpoint const& endpoint,
         AbstractHandler <void (Checker::Result)> handler)
     {
-        m_checker->async_test (endpoint, Handler (m_queue, handler));
+        m_checker->async_test (endpoint, Handler (
+            m_context, m_queue, handler));
     }
 };
 

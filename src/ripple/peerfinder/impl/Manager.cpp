@@ -185,19 +185,12 @@ public:
     ServiceQueue m_queue;
     Journal m_journal;
     StoreSqdb m_store;
+    SerializedContext m_context;
     CheckerAdapter m_checker;
-    Logic m_logic;
+    LogicType <SimpleMonotonicClock> m_logic;
     DeadlineTimer m_connectTimer;
     DeadlineTimer m_messageTimer;
     DeadlineTimer m_cacheTimer;
-
-    // Ensures that all Logic member function entry points are
-    // called while holding a lock on the recursive mutex.
-    //
-    typedef ScopedWrapperContext <
-        RecursiveMutex, RecursiveMutex::ScopedLockType> SerializedContext;
-
-    SerializedContext m_context;
 
     //--------------------------------------------------------------------------
 
@@ -206,7 +199,7 @@ public:
         , Thread ("PeerFinder")
         , m_journal (journal)
         , m_store (journal)
-        , m_checker (m_queue)
+        , m_checker (m_context, m_queue)
         , m_logic (callback, m_store, m_checker, journal)
         , m_connectTimer (this)
         , m_messageTimer (this)
@@ -267,13 +260,20 @@ public:
         // VFALCO TODO This needs to be implemented
     }
 
+    void onPeerConnecting ()
+    {
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::onPeerConnecting, &m_logic)));
+    }
+
     void onPeerConnected (PeerID const& id,
         IPEndpoint const& address, bool incoming)
     {
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerConnected, &m_logic,
-                    id, address, incoming)));;
+                    id, address, incoming)));
     }
 
     void onPeerDisconnected (const PeerID& id)
@@ -383,8 +383,6 @@ public:
         File const file (File::getSpecialLocation (
             File::userDocumentsDirectory).getChildFile ("PeerFinder.sqlite"));
 
-        m_journal.debug << "Opening database at '" << file.getFullPathName() << "'";
-
         Error error (m_store.open (file));
 
         if (error)
@@ -402,7 +400,9 @@ public:
         m_messageTimer.setExpiration (secondsPerMessage);
         m_cacheTimer.setExpiration (cacheSecondsToLive);
     
-        m_queue.post (bind (&Logic::makeOutgoingConnections, &m_logic));
+        m_queue.post (
+            m_context.wrap (
+                bind (&Logic::makeOutgoingConnections, &m_logic)));
     }
 
     void run ()

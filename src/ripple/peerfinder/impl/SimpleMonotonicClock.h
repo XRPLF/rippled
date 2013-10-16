@@ -17,16 +17,24 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_SIMPLEMONOTONICCLOCK_H_INCLUDED
+#define RIPPLE_PEERFINDER_SIMPLEMONOTONICCLOCK_H_INCLUDED
+
 namespace ripple {
 namespace PeerFinder {
 
-Config::Config ()
-    : maxPeerCount (20)
-    , wantIncoming (false)
-    , connectAutomatically (false)
-    , listeningPort (0)
+/** Monotonically increasing time value. */
+struct SimpleMonotonicClock
 {
-}
+    typedef int value_type;
+
+    value_type operator() () const
+    {
+        return value_type (RelativeTime::fromStartup().inSeconds());
+    }
+};
 
 }
 }
+
+#endif

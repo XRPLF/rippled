@@ -34,30 +34,25 @@ Slots::Slots ()
 
 void Slots::update (Config const& config)
 {
-    if (! config.wantIncoming)
-    {
-        inboundSlots = 0;
-        inboundSlotsMaximum = 0;
-    }
+    double outDesiredFraction = 1;
+
+    if (config.wantIncoming)
+        outDesiredFraction = config.maxPeerCount * (Config::outPercent * .01);
+
+    if (m_roundUpwards)
+        outDesired = int (std::ceil (outDesiredFraction));
     else
-    {
-        double outDesiredFraction (
-            config.maxPeerCount * (Config::outPercent * .01));
+        outDesired = int (std::floor (outDesiredFraction));
 
-        if (m_roundUpwards)
-            outDesired = int (std::ceil (outDesiredFraction));
-        else
-            outDesired = int (std::floor (outDesiredFraction));
-        if (outDesired < Config::minOutCount)
-            outDesired = Config::minOutCount;
+    if (outDesired < Config::minOutCount)
+        outDesired = Config::minOutCount;
 
-        if (config.maxPeerCount >= outDesired)
-            inboundSlotsMaximum = config.maxPeerCount - outDesired;
-        else
-            inboundSlotsMaximum = 0;
+    if (config.maxPeerCount >= outDesired)
+        inboundSlotsMaximum = config.maxPeerCount - outDesired;
+    else
+        inboundSlotsMaximum = 0;
 
-        inboundSlots = std::max (inboundSlotsMaximum - inboundCount, 0);
-    }
+    inboundSlots = std::max (inboundSlotsMaximum - inboundCount, 0);
 }
 
 void Slots::addPeer (Config const& config, bool inbound)

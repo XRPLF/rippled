@@ -140,7 +140,7 @@ public:
     //
     void load ()
     {
-        m_legacyCache.load();
+        m_legacyCache.load (get_now());
     }
 
     // Returns a suitable Endpoint representing us.
@@ -172,10 +172,14 @@ public:
         return true;
     }
 
-    // Make outgoing connections to bring us up to desired out count
+    // If configured to make outgoing connections, do us in order
+    // to bring us up to desired out count.
     //
     void makeOutgoingConnections ()
     {
+        if (m_config.connectAutomatically)
+            return;
+
         std::vector <IPEndpoint> list;
 
         if (m_slots.outDesired > m_slots.outboundCount)
@@ -183,7 +187,7 @@ public:
             int const needed (std::min (
                 m_slots.outDesired - m_slots.outboundCount,
                     int (maxAddressesPerAttempt)));
-            m_legacyCache.get (needed, list);
+            m_legacyCache.get (needed, list, get_now());
         }
 
         if (m_fixedPeersConnected < m_fixedPeers.size())
@@ -200,10 +204,16 @@ public:
             }
         }
 
-#if RIPPLE_USE_PEERFINDER
         if (! list.empty())
             m_callback.connectPeerEndpoints (list);
-#endif
+    }
+
+    // Returns the number of seconds that have elapsed since some baseline
+    // event.
+    //
+    virtual DiscreteTime get_now()
+    {
+            return 0;
     }
 
     //--------------------------------------------------------------------------
@@ -245,14 +255,19 @@ public:
         m_sources.push_back (source);
     }
 
-    // Called periodically to cycle and age the varioous caches.
+    // Called periodically to cycle and age the various caches.
     //
     void cycleCache()
     {
-        m_cache.cycle();
+        m_cache.cycle(get_now());
+
         for (Peers::iterator iter (m_peers.begin());
             iter != m_peers.end(); ++iter)
             iter->received.cycle();
+    }
+
+    void onPeerConnecting ()
+    {
     }
 
     // Called when a peer connection is established.
@@ -269,7 +284,7 @@ public:
 
         std::pair <Peers::iterator, bool> result (
             m_peers.insert (
-                PeerInfo (id, address, inbound)));
+                PeerInfo (id, address, inbound, get_now())));
         bassert (result.second);
         m_slots.addPeer (m_config, inbound);
     }
@@ -349,9 +364,9 @@ public:
     {
         if (! m_peers.empty())
         {
-            m_journal.trace << "Sending mtENDPOINTS";
+            m_journal.trace << "Sending endpoints to our peers";
 
-            RelativeTime const now (RelativeTime::fromStartup());
+            DiscreteTime const now (get_now());
 
             for (Peers::iterator iter (m_peers.begin());
                 iter != m_peers.end(); ++iter)
@@ -361,7 +376,7 @@ public:
                 {
                     sendEndpoints (peer);
                     peer.whenSendEndpoints = now +
-                        RelativeTime (secondsPerMessage);
+                        secondsPerMessage;
                 }
             }
         }
@@ -379,6 +394,9 @@ public:
         if (iter != m_peers.end())
         {
             PeerInfo const& peer (*iter);
+
+            // Mark that a check for this peer is finished.
+            peer.connectivityCheckInProgress = false;
 
             if (! result.error)
             {
@@ -418,13 +436,13 @@ public:
         Peers::iterator iter (m_peers.find (id));
         bassert (iter != m_peers.end());
 
-        RelativeTime const now (RelativeTime::fromStartup());
+        DiscreteTime const now (get_now());
         PeerInfo const& peer (*iter);
 
         pruneEndpoints (peer.address.to_string(), list);
 
         // Log at higher severity if this is the first time
-        m_journal.stream (peer.whenAcceptEndpoints.isZero() ?
+        m_journal.stream (peer.whenAcceptEndpoints == 0 ?
             Journal::kInfo : Journal::kTrace) <<
             "Received " << list.size() <<
             " endpoints from " << peer.address;
@@ -439,6 +457,9 @@ public:
             m_callback.chargePeerLoadPenalty(id);
         }
 
+        m_journal.debug << "Peer " << peer.address <<
+            " sent us " << list.size() << " endpoints.";
+
         // Process each entry
         //
         int neighborCount (0);
@@ -450,16 +471,27 @@ public:
             // Remember that this peer gave us this address
             peer.received.insert (message.address);
 
+            m_journal.debug << "Received peer " << message.address <<
+                " at " << message.hops << " hops.";
+
             if (message.hops == 0)
             {
                 ++neighborCount;
                 if (neighborCount == 1)
                 {
-                    if (! peer.checked)
+                    if (peer.connectivityCheckInProgress)
                     {
+                        m_journal.warning << "Connectivity check for " <<
+                            message.address << "already in progress.";
+                    }
+                    else if (! peer.checked)
+                    {
+                        // Mark that a check for this peer is now in progress.
+                        peer.connectivityCheckInProgress = true;
+
                         // Test the peer's listening port before
                         // adding it to the cache for the first time.
-                        //
+                        //                     
                         m_checker.async_test (message.address, bind (
                             &Logic::onCheckEndpoint, this, id,
                                 message.address, _1));
@@ -475,20 +507,20 @@ public:
                         // listening test, else we silently drop their message
                         // since their listening port is misconfigured.
                         //
-                        m_cache.insert (message);
+                        m_cache.insert (message, get_now());
                     }
                 }
             }
             else
             {
-                m_cache.insert (message);
+                m_cache.insert (message, get_now());
             }
         }
 
         if (neighborCount > 1)
         {
             m_journal.warning << "Peer " << peer.address <<
-            " sent " << neighborCount << " entries with hops=0";
+                " sent " << neighborCount << " entries with hops=0";
             // VFALCO TODO Should we apply load charges?
         }
 
@@ -528,11 +560,13 @@ public:
         if (! results.error)
         {
             std::size_t newEntries (0);
+            DiscreteTime now (get_now());
+
             for (std::vector <IPEndpoint>::const_iterator iter (results.list.begin());
                 iter != results.list.end(); ++iter)
             {
                 std::pair <LegacyEndpoint const&, bool> result (
-                    m_legacyCache.insert (*iter));
+                    m_legacyCache.insert (*iter, now));
                 if (result.second)
                     ++newEntries;
             }
@@ -558,8 +592,6 @@ public:
         if (result.error == boost::asio::error::operation_aborted)
             return;
 
-        RelativeTime const now (RelativeTime::fromStartup());
-
         if (! result.error)
         {
             if (result.canAccept)
@@ -581,7 +613,7 @@ public:
         if (! validIPEndpoint (address))
             return;
         std::pair <LegacyEndpoint const&, bool> result (
-            m_legacyCache.insert (address));
+            m_legacyCache.insert (address, get_now()));
         if (result.second)
         {
             // its new

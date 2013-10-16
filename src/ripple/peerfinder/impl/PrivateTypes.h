@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_PRIVATE_TYPES_H_INCLUDED
+#define RIPPLE_PEERFINDER_PRIVATE_TYPES_H_INCLUDED
+
 namespace ripple {
 namespace PeerFinder {
 
-Config::Config ()
-    : maxPeerCount (20)
-    , wantIncoming (false)
-    , connectAutomatically (false)
-    , listeningPort (0)
-{
-}
+/** Time in seconds since some baseline event in the past. */
+typedef int DiscreteTime;
 
 }
 }
+
+#endif

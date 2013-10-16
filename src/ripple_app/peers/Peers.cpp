@@ -127,6 +127,12 @@ public:
         if (config.wantIncoming)
             config.listeningPort = getConfig().peerListeningPort;
 
+        // if it's a private peer or we are running as standalone
+        // automatic connections would defeat the purpose.
+        config.connectAutomatically = 
+            !getConfig().RUN_STANDALONE &&
+            !getConfig().PEER_PRIVATE;
+
         config.featureList = "";
 
         m_peerFinder->setConfig (config);

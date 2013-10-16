@@ -32,14 +32,16 @@ struct PeerInfo
 {
     PeerInfo (PeerID const& id_,
               IPEndpoint const& address_,
-              bool inbound_)
+              bool inbound_,
+              DiscreteTime now)
         : id (id_)
         , address (address_)
         , inbound (inbound_)
         , checked (inbound_ ? false : true)
         , canAccept (inbound_ ? false : true)
-        , whenSendEndpoints (RelativeTime::fromStartup())
-        , whenAcceptEndpoints (RelativeTime::fromStartup())
+        , connectivityCheckInProgress (false)
+        , whenSendEndpoints (now)
+        , whenAcceptEndpoints (now)
     {
     }
 
@@ -52,17 +54,21 @@ struct PeerInfo
     bool mutable checked;
 
     // Set to indicate if the connection can receive incoming at the
-    // address advertised in mtENDPOINTS. Only valid if checked is true
+    // address advertised in mtENDPOINTS. Only valid if checked is true.
     bool mutable canAccept;
 
+    // Set to indicate that a connection check for this peer is in
+    // progress. Valid always.
+    bool mutable connectivityCheckInProgress;
+
     // The time after which we will send the peer mtENDPOINTS
-    RelativeTime mutable whenSendEndpoints;
+    DiscreteTime mutable whenSendEndpoints;
 
     // The time after which we will accept mtENDPOINTS from the peer
     // This is to prevent flooding or spamming. Receipt of mtENDPOINTS
     // sooner than the allotted time should impose a load charge.
     //
-    RelativeTime mutable whenAcceptEndpoints;
+    DiscreteTime mutable whenAcceptEndpoints;
 
     // The set of all recent IPEndpoint that we have seen from this peer.
     // We try to avoid sending a peer the same addresses they gave us.

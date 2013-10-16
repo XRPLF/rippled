@@ -42,6 +42,8 @@ namespace ripple {
 using namespace beast;
 }
 
+#include "impl/SimpleMonotonicClock.h"
+#include "impl/PrivateTypes.h"
 #  include "impl/Tuning.h"
 # include "impl/Checker.h"
 #include "impl/CheckerAdapter.h"
@@ -56,6 +58,7 @@ using namespace beast;
 # include "impl/PeerInfo.h"
 #include "impl/StoreSqdb.h"
 #include "impl/Logic.h"
+#include "impl/LogicType.h"
 
 #include "impl/Checker.cpp"
 #include "impl/Config.cpp"

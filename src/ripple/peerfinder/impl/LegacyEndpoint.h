@@ -26,22 +26,25 @@ namespace PeerFinder {
 struct LegacyEndpoint
 {
     LegacyEndpoint ()
-        : checked (false)
+        : whenInserted (0)
+        , lastGet(0)
+        ,checked (false)
         , canAccept (false)
         { }
 
-    LegacyEndpoint (IPEndpoint const& address_)
+    LegacyEndpoint (IPEndpoint const& address_, DiscreteTime now)
         : address (address_)
-        , whenInserted (RelativeTime::fromStartup())
+        , whenInserted (now)
+        , lastGet(0)
         { }
 
     IPEndpoint address;
 
     // When we inserted the endpoint into the cache
-    RelativeTime mutable whenInserted;
+    DiscreteTime mutable whenInserted;
 
     // When we last used the endpoint for outging connection attempts
-    RelativeTime mutable lastGet;
+    DiscreteTime mutable lastGet;
 
     // True if we ever tried to connect
     bool mutable checked;

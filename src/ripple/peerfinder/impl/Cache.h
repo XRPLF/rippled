@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_ENDPOINTCACHE_H_INCLUDED
-#define RIPPLE_PEERFINDER_ENDPOINTCACHE_H_INCLUDED
+#ifndef RIPPLE_PEERFINDER_CACHE_H_INCLUDED
+#define RIPPLE_PEERFINDER_CACHE_H_INCLUDED
 
 namespace ripple {
 namespace PeerFinder {
@@ -33,23 +33,11 @@ private:
 
     Journal m_journal;
 
-    Table m_now;
-    Table m_prev;
+    Table m_endpoints;
 
-    // Refresh the existing entry with a new message
-    void refresh (CachedEndpoint& entry, Endpoint const& message)
-    {
-        entry.message.hops = std::min (entry.message.hops, message.hops);
-
-        // Copy the other fields based on uptime
-        if (entry.message.uptimeMinutes < message.uptimeMinutes)
-        {
-            entry.message.incomingSlotsAvailable    = message.incomingSlotsAvailable;
-            entry.message.incomingSlotsMax          = message.incomingSlotsMax;
-            entry.message.uptimeMinutes             = message.uptimeMinutes;
-            entry.message.featureList               = message.featureList;
-        }
-    }
+    // Tracks all the cached endpoints stored in the endpoint table
+    // in oldest-to-newest order. The oldest item is at the head.
+    List <CachedEndpoint> m_list;
 
 public:
     explicit Cache (Journal journal)
@@ -63,30 +51,67 @@ public:
 
     std::size_t size() const
     {
-        return m_now.size() + m_prev.size();
+        return m_endpoints.size();
     }
 
     // Cycle the tables
-    void cycle()
+    void cycle(DiscreteTime now)
     {
-        std::swap (m_now, m_prev);
-        m_now.clear();
+        List <CachedEndpoint>::iterator iter (m_list.begin());
+
+        while (iter != m_list.end())
+        {
+            if (iter->whenExpires > now)
+                break;
+
+            CachedEndpoint &ep (*iter);
+
+            // We need to remove the entry from the list before
+            // we remove it from the table.
+            iter = m_list.erase(iter);
+
+            m_journal.debug << "Cache entry for " <<
+                ep.message.address << " expired.";
+
+            m_endpoints.erase (ep.message.address);
+        }
     }
 
     // Insert or update an existing entry with the new message
-    void insert (Endpoint const& message)
+    void insert (Endpoint const& message, DiscreteTime now)
     {
-        Table::iterator iter (m_prev.find (message.address));
-        if (iter != m_prev.end())
-        {
+        std::pair <Table::iterator, bool> result (
+            m_endpoints.emplace (message.address, CachedEndpoint(message, now)));
+
+        if (!result.second)
+        { // There was already an entry for this endpoint. Update it.
+            CachedEndpoint& entry (result.first->second);
+
+            entry.message.hops = std::min (entry.message.hops, message.hops);
+
+            // Copy the other fields based on uptime
+            if (entry.message.uptimeMinutes < message.uptimeMinutes)
+            {
+                entry.message.incomingSlotsAvailable    = message.incomingSlotsAvailable;
+                entry.message.incomingSlotsMax          = message.incomingSlotsMax;
+                entry.message.uptimeMinutes             = message.uptimeMinutes;
+                entry.message.featureList               = message.featureList;
+            }
+
+            entry.whenExpires = now + cacheSecondsToLive;
+
+            // It must already be in the list. Remove it in preparation.
+            m_list.erase (m_list.iterator_to(entry));
         }
-        else
-        {
-            std::pair <Table::iterator, bool> result (
-                m_now.emplace (message.address, message));
-            if (!result.second)
-                refresh (result.first->second, message);
-        }
+
+        CachedEndpoint& entry (result.first->second);
+
+        m_journal.debug << "Cache entry for " << message.address <<
+            " is valid until " << entry.whenExpires <<
+            " (" << entry.message.incomingSlotsAvailable <<
+            "/" << entry.message.incomingSlotsMax << ")";
+
+        m_list.push_back (entry);
     }
 };
 

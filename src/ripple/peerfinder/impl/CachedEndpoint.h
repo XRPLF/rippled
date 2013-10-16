@@ -23,14 +23,16 @@
 namespace ripple {
 namespace PeerFinder {
 
-struct CachedEndpoint
+struct CachedEndpoint : public List<CachedEndpoint>::Node
 {
-    CachedEndpoint (Endpoint const& message_)
+    CachedEndpoint (Endpoint const& message_, DiscreteTime now)
         : message (message_)
+        , whenExpires(now + cacheSecondsToLive)
     {
     }
 
     Endpoint message;
+    DiscreteTime whenExpires;
 };
 
 }

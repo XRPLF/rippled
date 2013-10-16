@@ -35,6 +35,9 @@ struct Config
     /** True if we want to accept incoming connections. */
     bool wantIncoming;
 
+    /** True if we want to establish connections automatically */
+    bool connectAutomatically;
+
     uint16 listeningPort;
     std::string featureList;
 };
