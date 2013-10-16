@@ -281,6 +281,7 @@ int RippleMain::run (int argc, char const* const* argv)
     ("net", "Get the initial ledger from the network.")
     ("fg", "Run in the foreground.")
     ("import", importDescription.toStdString ().c_str ())
+    ("version", "Display the build version.")
     ;
 
     // Interpret positional arguments as --parameters.
@@ -332,6 +333,13 @@ int RippleMain::run (int argc, char const* const* argv)
     else if (vm.count ("help"))
     {
         iResult = 1;
+    }
+
+    if (vm.count ("version"))
+    {
+        String const& s (BuildInfo::getVersionString ());
+        std::cout << "rippled version " << s.toStdString() << std::endl;
+        return 0;
     }
 
     // Use a watchdog process unless we're invoking a stand alone type of mode
