@@ -1,4 +1,4 @@
 #!/bin/bash
 
-mocha test/*-test.{js,coffee}
+mocha --ui tdd --reporter spec --timeout 10000 test/*-test.js
 
