@@ -1,1 +1,1 @@
---reporter spec --compilers coffee:coffee-script  --ui tdd --timeout 3000 --slow 600 
+--reporter spec --compilers coffee:coffee-script  --ui tdd --timeout 10000 --slow 600 
