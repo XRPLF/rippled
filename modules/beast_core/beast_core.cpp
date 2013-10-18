@@ -168,7 +168,6 @@ namespace beast
 #include "network/MACAddress.cpp"
 #include "network/NamedPipe.cpp"
 #include "network/Socket.cpp"
-#include "network/IPAddress.cpp"
 
 #include "streams/BufferedInputStream.cpp"
 #include "streams/FileInputSource.cpp"

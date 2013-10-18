@@ -416,9 +416,6 @@
     <ClInclude Include="..\..\modules\beast_core\native\win32_ComSmartPtr.h">
       <Filter>beast_core\native</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\network\IPAddress.h">
-      <Filter>beast_core\network</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\network\MACAddress.h">
       <Filter>beast_core\network</Filter>
     </ClInclude>
@@ -932,9 +929,6 @@
     <ClInclude Include="..\..\modules\beast_core\memory\SharedFunction.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\net\IPEndpoint.h">
-      <Filter>beast\net</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\Config.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1254,6 +1248,9 @@
     <ClInclude Include="..\..\beast\utility\BaseFromMember.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\net\IPAddress.h">
+      <Filter>beast\net</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1360,9 +1357,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\win32_Threads.cpp">
       <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\IPAddress.cpp">
-      <Filter>beast_core\network</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\network\MACAddress.cpp">
       <Filter>beast_core\network</Filter>
@@ -1682,9 +1676,6 @@
     <ClCompile Include="..\..\modules\beast_extras\beast_extras.cpp">
       <Filter>beast_extras</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
-      <Filter>beast\net\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\net\Net.cpp">
       <Filter>beast\net</Filter>
     </ClCompile>
@@ -1804,6 +1795,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\impl\PropertyStream.cpp">
       <Filter>beast\utility\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\IPAddress.cpp">
+      <Filter>beast\net\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

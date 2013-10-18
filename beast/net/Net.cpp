@@ -24,4 +24,4 @@
 #include "../../modules/beast_core/beast_core.h" // for UnitTest
 
 #include "impl/DynamicBuffer.cpp"
-#include "impl/IPEndpoint.cpp"
+#include "impl/IPAddress.cpp"

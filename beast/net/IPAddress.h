@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NET_IPENDPOINT_H_INCLUDED
-#define BEAST_NET_IPENDPOINT_H_INCLUDED
+#ifndef BEAST_NET_IPADDRESS_H_INCLUDED
+#define BEAST_NET_IPADDRESS_H_INCLUDED
 
 #include <string>
 #include <ios>
@@ -27,11 +27,10 @@
 #include "../CStdInt.h"
 #include "../mpl/IfCond.h"
 
-namespace beast
-{
+namespace beast {
 
 /** Represents an IP address (v4 or v6) and port combination. */
-class IPEndpoint
+class IPAddress
 {
 public:
     enum Type
@@ -216,62 +215,62 @@ public:
     //--------------------------------------------------------------------------
 
     /** Create an empty address. */
-    IPEndpoint ();
+    IPAddress ();
 
     /** Create an IPv4 address with optional port. */
-    IPEndpoint (V4 const& v4, uint16 port = 0);
+    IPAddress (V4 const& v4, uint16 port = 0);
 
     /** Create an IPv6 address with optional port. */
-    IPEndpoint (V6 const& v6, uint16 port = 0);
+    IPAddress (V6 const& v6, uint16 port = 0);
 
-    /** Create a copy of another IPEndpoint. */
-    IPEndpoint (IPEndpoint const& other);
+    /** Create a copy of another IPAddress. */
+    IPAddress (IPAddress const& other);
 
-    /** Copy assign another IPEndpoint. */
-    IPEndpoint& operator= (IPEndpoint const& other);
+    /** Copy assign another IPAddress. */
+    IPAddress& operator= (IPAddress const& other);
 
-    /** Create an IPEndpoint from a string.
+    /** Create an IPAddress from a string.
         If a parsing error occurs, the endpoint will be empty.
     */
-    static IPEndpoint from_string (std::string const& s);
+    static IPAddress from_string (std::string const& s);
 
-    /** Create an IPEndpoint from a string.
+    /** Create an IPAddress from a string.
         If a parsing error occurs, the endpoint will be empty.
         This recognizes an alternate form of the text. Instead of a colon
         separating the optional port specification, any amount of whitespace
         is allowed.
     */
-    static IPEndpoint from_string_altform (std::string const& s);
+    static IPAddress from_string_altform (std::string const& s);
 
     /** Copy assign an IPv4 address.
         The port is set to zero.
     */
-    IPEndpoint& operator= (V4 const& address);
+    IPAddress& operator= (V4 const& address);
 
     /** Copy assign an IPv6 address.
         The port is set to zero.
     */
-    IPEndpoint& operator= (V6 const& address);
+    IPAddress& operator= (V6 const& address);
 
-    /** Returns a new IPEndpoint with this address, and the given port. */
-    IPEndpoint withPort (uint16 port) const;
+    /** Returns a new IPAddress with this address, and the given port. */
+    IPAddress withPort (uint16 port) const;
 
-    /** Returns `true` if this IPEndpoint refers to nothing. */
+    /** Returns `true` if this IPAddress refers to nothing. */
     bool empty () const;
 
-    /** Returns `true` if this IPEndpoint refers to nothing. */
+    /** Returns `true` if this IPAddress refers to nothing. */
     bool isNull () const;
 
-    /** Returns `true` if this IPEndpoint refers to something. */
+    /** Returns `true` if this IPAddress refers to something. */
     bool isNotNull () const;
 
-    /** Returns the type of this IPEndpoint. */
+    /** Returns the type of this IPAddress. */
     Type type () const;
 
-    /** Returns `true` if this IPEndpoint represents an IPv4 address. */
+    /** Returns `true` if this IPAddress represents an IPv4 address. */
     bool isV4 () const;
 
-    /** Returns `true` if this IPEndpoint represents an IPv6 address. */
+    /** Returns `true` if this IPAddress represents an IPv6 address. */
     bool isV6 () const;
 
     /** Returns the IPv4 address.
@@ -312,7 +311,7 @@ public:
 
     struct hasher
     {
-        std::size_t operator() (IPEndpoint const& value) const
+        std::size_t operator() (IPAddress const& value) const
         {
             std::size_t hash (0);
             if (value.isV4())
@@ -335,39 +334,39 @@ private:
 
 /** Comparison. */
 /** @{ */
-int  compare    (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
-bool operator== (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
-bool operator!= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
-bool operator<  (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
-bool operator<= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
-bool operator>  (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
-bool operator>= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs);
+int  compare    (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
+bool operator== (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
+bool operator!= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
+bool operator<  (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
+bool operator<= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
+bool operator>  (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
+bool operator>= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
 
-int  compare    (IPEndpoint const& lhs, IPEndpoint const& rhs);
-bool operator== (IPEndpoint const& lhs, IPEndpoint const& rhs);
-bool operator!= (IPEndpoint const& lhs, IPEndpoint const& rhs);
-bool operator<  (IPEndpoint const& lhs, IPEndpoint const& rhs);
-bool operator<= (IPEndpoint const& lhs, IPEndpoint const& rhs);
-bool operator>  (IPEndpoint const& lhs, IPEndpoint const& rhs);
-bool operator>= (IPEndpoint const& lhs, IPEndpoint const& rhs);
+int  compare    (IPAddress const& lhs, IPAddress const& rhs);
+bool operator== (IPAddress const& lhs, IPAddress const& rhs);
+bool operator!= (IPAddress const& lhs, IPAddress const& rhs);
+bool operator<  (IPAddress const& lhs, IPAddress const& rhs);
+bool operator<= (IPAddress const& lhs, IPAddress const& rhs);
+bool operator>  (IPAddress const& lhs, IPAddress const& rhs);
+bool operator>= (IPAddress const& lhs, IPAddress const& rhs);
 
 /** Output stream conversions. */
 /** @{ */
-std::ostream& operator<< (std::ostream& os, IPEndpoint::V4 const& addr);
-std::ostream& operator<< (std::ostream& os, IPEndpoint::V6 const& addr);
-std::ostream& operator<< (std::ostream& os, IPEndpoint const& ep);
+std::ostream& operator<< (std::ostream& os, IPAddress::V4 const& addr);
+std::ostream& operator<< (std::ostream& os, IPAddress::V6 const& addr);
+std::ostream& operator<< (std::ostream& os, IPAddress const& ep);
 /** @} */
 
 /** Input stream conversions. */
 /** @{ */
-std::istream& operator>> (std::istream& is, IPEndpoint::V4& addr);
-std::istream& operator>> (std::istream& is, IPEndpoint& ep);
-//std::istream& operator>> (std::istream &is, IPEndpoint::V6&);
+std::istream& operator>> (std::istream& is, IPAddress::V4& addr);
+std::istream& operator>> (std::istream& is, IPAddress& ep);
+//std::istream& operator>> (std::istream &is, IPAddress::V6&);
 /** @} */
 
-struct IPEndpoint::key_equal
+struct IPAddress::key_equal
 {
-    bool operator() (IPEndpoint const& lhs, IPEndpoint const& rhs) const
+    bool operator() (IPAddress const& lhs, IPAddress const& rhs) const
     {
         return lhs == rhs;
     }
