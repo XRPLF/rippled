@@ -85,7 +85,7 @@ public:
         state->table.clear();
     }
 
-    Consumer newInboundEndpoint (IPEndpoint const& address)
+    Consumer newInboundEndpoint (IPAddress const& address)
     {
         if (isWhitelisted (address))
             return newAdminEndpoint (address.to_string());
@@ -117,7 +117,7 @@ public:
         return Consumer (*this, *entry);
     }
 
-    Consumer newOutboundEndpoint (IPEndpoint const& address)
+    Consumer newOutboundEndpoint (IPAddress const& address)
     {
         if (isWhitelisted (address))
             return newAdminEndpoint (address.to_string());
@@ -294,7 +294,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool isWhitelisted (IPEndpoint const& address)
+    bool isWhitelisted (IPAddress const& address)
     {
         if (! address.isPublic())
             return true;

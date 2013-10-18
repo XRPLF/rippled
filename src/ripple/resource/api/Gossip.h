@@ -30,7 +30,7 @@ struct Gossip
     struct Item
     {
         int balance;
-        IPEndpoint address;
+        IPAddress address;
     };
 
     std::vector <Item> items;

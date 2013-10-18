@@ -41,7 +41,7 @@ public:
         ErrorCode error;
 
         // list of fetched endpoints
-        std::vector <IPEndpoint> list;
+        std::vector <IPAddress> list;
     };
 
     virtual ~Source () { }

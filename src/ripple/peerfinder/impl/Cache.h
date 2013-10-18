@@ -29,7 +29,7 @@ class Cache
 {
 private:
     typedef boost::unordered_map <
-        IPEndpoint, CachedEndpoint, IPEndpoint::hasher> Table;
+        IPAddress, CachedEndpoint, IPAddress::hasher> Table;
 
     Journal m_journal;
 

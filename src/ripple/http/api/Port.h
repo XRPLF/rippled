@@ -39,11 +39,11 @@ struct Port
     Port ();
     Port (Port const& other);
     Port& operator= (Port const& other);
-    Port (uint16 port_, IPEndpoint const& addr_,
+    Port (uint16 port_, IPAddress const& addr_,
             Security security_, SSLContext* context_);
 
     uint16 port;
-    IPEndpoint addr;
+    IPAddress addr;
     Security security;
     SSLContext* context;
 };

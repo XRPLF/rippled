@@ -28,7 +28,7 @@ struct Endpoint
 {
     Endpoint ();
 
-    IPEndpoint address;
+    IPAddress address;
     int hops;
     uint32 incomingSlotsAvailable;
     uint32 incomingSlotsMax;

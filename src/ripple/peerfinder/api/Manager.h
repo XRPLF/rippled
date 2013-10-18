@@ -58,13 +58,13 @@ public:
     virtual void addFixedPeers (
         std::vector <std::string> const& strings) = 0;
 
-    /** Add a set of strings as fallback IPEndpoint sources.
+    /** Add a set of strings as fallback IPAddress sources.
         @param name A label used for diagnostics.
     */
     virtual void addFallbackStrings (std::string const& name,
         std::vector <std::string> const& strings) = 0;
 
-    /** Add a URL as a fallback location to obtain IPEndpoint sources.
+    /** Add a URL as a fallback location to obtain IPAddress sources.
         @param name A label used for diagnostics.
     */
     virtual void addFallbackURL (std::string const& name,
@@ -76,7 +76,7 @@ public:
 		we are sure that its connection is stable.
 	*/
 	virtual void onPeerConnected (PeerID const& id,
-                                  IPEndpoint const& address,
+                                  IPAddress const& address,
                                   bool inbound) = 0;
 
 	/** Called when an existing peer connection drops for whatever reason.
@@ -91,7 +91,7 @@ public:
         std::vector <Endpoint> const& endpoints) = 0;
 
     /** Called when a legacy IP/port address is received (from mtPEER). */
-    virtual void onPeerLegacyEndpoint (IPEndpoint const& ep) = 0;
+    virtual void onPeerLegacyEndpoint (IPAddress const& ep) = 0;
 };
 
 }

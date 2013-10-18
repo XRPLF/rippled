@@ -92,10 +92,10 @@ public:
     typedef WSServerHandler <endpoint_type> server_type;
 
 public:
-    static IPEndpoint from_address (boost::asio::ip::address const& addr)
+    static IPAddress from_address (boost::asio::ip::address const& addr)
     {
         boost::asio::ip::address_v4::bytes_type bytes (addr.to_v4().to_bytes());
-        IPEndpoint ep (IPEndpoint::V4 (bytes[0], bytes[1], bytes[2], bytes[3]), 0);
+        IPAddress ep (IPAddress::V4 (bytes[0], bytes[1], bytes[2], bytes[3]), 0);
         return ep;
     }
 

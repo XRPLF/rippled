@@ -268,7 +268,7 @@ public:
     }
 
     void onPeerConnected (PeerID const& id,
-        IPEndpoint const& address, bool incoming)
+        IPAddress const& address, bool incoming)
     {
         m_queue.dispatch (
             m_context.wrap (
@@ -284,7 +284,7 @@ public:
                     id)));
     }
 
-    void onPeerLegacyEndpoint (IPEndpoint const& ep)
+    void onPeerLegacyEndpoint (IPAddress const& ep)
     {
         m_queue.dispatch (
             m_context.wrap (

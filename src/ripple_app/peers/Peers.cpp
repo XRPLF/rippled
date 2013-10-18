@@ -189,9 +189,9 @@ public:
         }
     }
 
-    void connectPeerEndpoints (std::vector <IPEndpoint> const& list)
+    void connectPeerEndpoints (std::vector <IPAddress> const& list)
     {
-        typedef std::vector <IPEndpoint> List;
+        typedef std::vector <IPAddress> List;
 
         for (List::const_iterator iter (list.begin());
             iter != list.end(); ++iter)

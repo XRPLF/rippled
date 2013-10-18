@@ -30,7 +30,7 @@ public:
     virtual ~Store () { }
 
     virtual void loadLegacyEndpoints (
-        std::vector <IPEndpoint>& list) = 0;
+        std::vector <IPAddress>& list) = 0;
 
     virtual void updateLegacyEndpoints (
         std::vector <LegacyEndpoint const*> const& list) = 0;

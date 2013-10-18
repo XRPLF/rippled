@@ -137,7 +137,7 @@
     <ClInclude Include="..\..\beast\Net.h" />
     <ClInclude Include="..\..\beast\net\BufferType.h" />
     <ClInclude Include="..\..\beast\net\DynamicBuffer.h" />
-    <ClInclude Include="..\..\beast\net\IPEndpoint.h" />
+    <ClInclude Include="..\..\beast\net\IPAddress.h" />
     <ClInclude Include="..\..\beast\SafeBool.h" />
     <ClInclude Include="..\..\beast\SmartPtr.h" />
     <ClInclude Include="..\..\beast\smart_ptr\ContainerDeletePolicy.h" />
@@ -303,7 +303,6 @@
     <ClInclude Include="..\..\modules\beast_core\native\osx_ObjCHelpers.h" />
     <ClInclude Include="..\..\modules\beast_core\native\posix_SharedCode.h" />
     <ClInclude Include="..\..\modules\beast_core\native\win32_ComSmartPtr.h" />
-    <ClInclude Include="..\..\modules\beast_core\network\IPAddress.h" />
     <ClInclude Include="..\..\modules\beast_core\network\MACAddress.h" />
     <ClInclude Include="..\..\modules\beast_core\network\NamedPipe.h" />
     <ClInclude Include="..\..\modules\beast_core\network\Socket.h" />
@@ -490,7 +489,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
+    <ClCompile Include="..\..\beast\net\impl\IPAddress.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1028,12 +1027,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\win32_Threads.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\IPAddress.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

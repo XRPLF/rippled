@@ -32,13 +32,13 @@ struct LegacyEndpoint
         , canAccept (false)
         { }
 
-    LegacyEndpoint (IPEndpoint const& address_, DiscreteTime now)
+    LegacyEndpoint (IPAddress const& address_, DiscreteTime now)
         : address (address_)
         , whenInserted (now)
         , lastGet(0)
         { }
 
-    IPEndpoint address;
+    IPAddress address;
 
     // When we inserted the endpoint into the cache
     DiscreteTime mutable whenInserted;

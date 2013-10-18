@@ -32,7 +32,7 @@ public:
         {
             Gossip::Item item;
             item.balance = 100 + random().nextInt (500);
-            item.address = IPEndpoint (IPEndpoint::V4 (
+            item.address = IPAddress (IPAddress::V4 (
                 207, 127, 82, v + i));
             gossip.items.push_back (item);
         }
@@ -64,7 +64,7 @@ public:
         Gossip g;
         Gossip::Item item;
         item.balance = 100;
-        item.address = IPEndpoint (IPEndpoint::V4 (207, 127, 82, 1));
+        item.address = IPAddress (IPAddress::V4 (207, 127, 82, 1));
         g.items.push_back (item);
 
         logic.importConsumers ("g", g);
@@ -79,7 +79,7 @@ public:
         LogicType <ManualClock> logic (journal());
 
         {
-            IPEndpoint address (IPEndpoint::from_string ("207.127.82.1"));
+            IPAddress address (IPAddress::from_string ("207.127.82.1"));
             Consumer c (logic.newInboundEndpoint (address));
             logMessage ("Charging " + c.label() + " 10,000 units");
             c.charge (10000);
@@ -93,7 +93,7 @@ public:
         }
 
         {
-            IPEndpoint address (IPEndpoint::from_string ("207.127.82.2"));
+            IPAddress address (IPAddress::from_string ("207.127.82.2"));
             Consumer c (logic.newInboundEndpoint (address));
             logMessage ("Charging " + c.label() + " 1000 units per second");
             for (int i = 0; i < 128; ++i)

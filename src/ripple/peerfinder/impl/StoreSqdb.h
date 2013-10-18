@@ -64,7 +64,7 @@ public:
     }
 
     void loadLegacyEndpoints (
-        std::vector <IPEndpoint>& list)
+        std::vector <IPAddress>& list)
     {
         list.clear ();
 
@@ -99,7 +99,7 @@ public:
             {
                 do
                 {
-                    IPEndpoint ep (IPEndpoint::from_string (s));
+                    IPAddress ep (IPAddress::from_string (s));
                     if (! ep.empty())
                         list.push_back (ep);
                 }
@@ -140,7 +140,7 @@ public:
             for (List::const_iterator iter (list.begin());
                 !error && iter != list.end(); ++iter)
             {
-                IPEndpoint const& ep ((*iter)->address);
+                IPAddress const& ep ((*iter)->address);
                 s = ep.to_string();
                 st.execute_and_fetch (error);
             }

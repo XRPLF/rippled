@@ -31,7 +31,7 @@ namespace PeerFinder {
 struct PeerInfo
 {
     PeerInfo (PeerID const& id_,
-              IPEndpoint const& address_,
+              IPAddress const& address_,
               bool inbound_,
               DiscreteTime now)
         : id (id_)
@@ -46,7 +46,7 @@ struct PeerInfo
     }
 
     PeerID id;
-    IPEndpoint address;
+    IPAddress address;
     bool inbound;
 
     // Tells us if we checked the connection. Outbound connections
@@ -70,12 +70,12 @@ struct PeerInfo
     //
     DiscreteTime mutable whenAcceptEndpoints;
 
-    // The set of all recent IPEndpoint that we have seen from this peer.
+    // The set of all recent IPAddress that we have seen from this peer.
     // We try to avoid sending a peer the same addresses they gave us.
     //
-    CycledSet <IPEndpoint,
-               IPEndpoint::hasher,
-               IPEndpoint::key_equal> mutable received;
+    CycledSet <IPAddress,
+               IPAddress::hasher,
+               IPAddress::key_equal> mutable received;
 };
 
 }

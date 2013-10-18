@@ -42,8 +42,8 @@ typedef boost::multi_index_container <
             BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,PeerID,id),
                 PeerID::hasher>,
         boost::multi_index::hashed_non_unique <
-            BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,IPEndpoint,address),
-                IPEndpoint::hasher>
+            BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,IPAddress,address),
+                IPAddress::hasher>
     >
 > Peers;
 
@@ -87,7 +87,7 @@ public:
     int m_fixedPeersConnected;
 
     // A list of peers that should always be connected
-    typedef std::set <IPEndpoint> FixedPeers;
+    typedef std::set <IPAddress> FixedPeers;
     FixedPeers m_fixedPeers;
 
     // A list of dynamic sources to consult as a fallback
@@ -151,8 +151,8 @@ public:
         bassert (m_config.wantIncoming);
 
         Endpoint ep;
-        ep.address = IPEndpoint (
-            IPEndpoint::V4 ()).withPort (m_config.listeningPort);
+        ep.address = IPAddress (
+            IPAddress::V4 ()).withPort (m_config.listeningPort);
         ep.hops = 0;
         ep.incomingSlotsAvailable = m_slots.inboundSlots;
         ep.incomingSlotsMax = m_slots.inboundSlotsMaximum;
@@ -161,9 +161,9 @@ public:
         return ep;
     }
 
-    // Returns true if the IPEndpoint contains no invalid data.
+    // Returns true if the IPAddress contains no invalid data.
     //
-    bool validIPEndpoint (IPEndpoint const& address)
+    bool validIPAddress (IPAddress const& address)
     {
         if (! address.isPublic())
             return false;
@@ -180,7 +180,7 @@ public:
         if (m_config.connectAutomatically)
             return;
 
-        std::vector <IPEndpoint> list;
+        std::vector <IPAddress> list;
 
         if (m_slots.outDesired > m_slots.outboundCount)
         {
@@ -233,7 +233,7 @@ public:
         for (std::vector <std::string>::const_iterator iter (strings.begin());
             iter != strings.end(); ++iter)
         {
-            IPEndpoint ep (IPEndpoint::from_string (*iter));
+            IPAddress ep (IPAddress::from_string (*iter));
             if (! ep.empty ())
             {
                 m_fixedPeers.insert (ep);
@@ -275,7 +275,7 @@ public:
     // but we are *NOT* guaranteed that the IP isn't. So we need
     // to be careful.
     void onPeerConnected (PeerID const& id,
-        IPEndpoint const& address, bool inbound)
+        IPAddress const& address, bool inbound)
     {
         m_journal.debug << "Peer connected: " << address;
         // If this is outgoing, record the success
@@ -316,7 +316,7 @@ public:
         // This function is here in case we add more stuff
         // we want to validate to the Endpoint struct.
         //
-        return validIPEndpoint (endpoint.address);
+        return validIPAddress (endpoint.address);
     }
 
     // Prunes invalid endpoints from a list.
@@ -385,7 +385,7 @@ public:
     // Called when the Checker completes a connectivity test
     //
     void onCheckEndpoint (PeerID const& id,
-        IPEndpoint address, Checker::Result const& result)
+        IPAddress address, Checker::Result const& result)
     {
         if (result.error == boost::asio::error::operation_aborted)
             return;
@@ -562,7 +562,7 @@ public:
             std::size_t newEntries (0);
             DiscreteTime now (get_now());
 
-            for (std::vector <IPEndpoint>::const_iterator iter (results.list.begin());
+            for (std::vector <IPAddress>::const_iterator iter (results.list.begin());
                 iter != results.list.end(); ++iter)
             {
                 std::pair <LegacyEndpoint const&, bool> result (
@@ -586,7 +586,7 @@ public:
 
     // Completion handler for a LegacyEndpoint listening test.
     //
-    void onCheckLegacyEndpoint (IPEndpoint const& endpoint,
+    void onCheckLegacyEndpoint (IPAddress const& endpoint,
         Checker::Result const& result)
     {
         if (result.error == boost::asio::error::operation_aborted)
@@ -608,9 +608,9 @@ public:
         }
     }
 
-    void onPeerLegacyEndpoint (IPEndpoint const& address)
+    void onPeerLegacyEndpoint (IPAddress const& address)
     {
-        if (! validIPEndpoint (address))
+        if (! validIPAddress (address))
             return;
         std::pair <LegacyEndpoint const&, bool> result (
             m_legacyCache.insert (address, get_now()));

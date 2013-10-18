@@ -47,7 +47,7 @@ Port& Port::operator= (Port const& other)
 
 Port::Port (
     uint16 port_,
-    IPEndpoint const& addr_,
+    IPAddress const& addr_,
     Security security_,
     SSLContext* context_)
     : port (port_)
