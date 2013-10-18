@@ -212,7 +212,7 @@ public:
         , m_messageTimer (this)
         , m_cacheTimer (this)
     {
-#if 1
+#if 0
 #if BEAST_MSVC
         if (beast_isRunningUnderDebugger())
         {

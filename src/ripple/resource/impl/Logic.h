@@ -62,7 +62,7 @@ public:
         : m_clock (source)
         , m_journal (journal)
     {
-#if 1
+#if 0
 #if BEAST_MSVC
         if (beast_isRunningUnderDebugger())
         {
