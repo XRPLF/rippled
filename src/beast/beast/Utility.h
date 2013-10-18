@@ -20,6 +20,7 @@
 #ifndef BEAST_UTILITY_H_INCLUDED
 #define BEAST_UTILITY_H_INCLUDED
 
+#include "utility/BaseFromMember.h"
 #include "utility/Debug.h"
 #include "utility/EnableIf.h"
 #include "utility/Error.h"
