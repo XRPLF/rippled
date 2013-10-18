@@ -90,11 +90,11 @@ public:
             entry.message.hops = std::min (entry.message.hops, message.hops);
 
             // Copy the other fields based on uptime
-            if (entry.message.uptimeMinutes < message.uptimeMinutes)
+            if (entry.message.uptimeSeconds < message.uptimeSeconds)
             {
                 entry.message.incomingSlotsAvailable    = message.incomingSlotsAvailable;
                 entry.message.incomingSlotsMax          = message.incomingSlotsMax;
-                entry.message.uptimeMinutes             = message.uptimeMinutes;
+                entry.message.uptimeSeconds             = message.uptimeSeconds;
                 entry.message.featureList               = message.featureList;
             }
 

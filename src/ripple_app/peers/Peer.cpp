@@ -1752,8 +1752,8 @@ void PeerImp::recvEndpoints (protocol::TMEndpoints& packet)
         // maxSlots
         endpoint.incomingSlotsMax = tm.maxslots();
 
-        // uptimeMinutes
-        endpoint.uptimeMinutes = tm.uptimeminutes();
+        // uptimeSeconds
+        endpoint.uptimeSeconds = tm.uptimeseconds();
 
         endpoints.push_back (endpoint);
     }

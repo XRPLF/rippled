@@ -1654,6 +1654,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h" />
     <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Server.h" />
@@ -1686,6 +1687,7 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpoint.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpointCache.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LogicType.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\PeerInfo.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Slots.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Source.h" />
@@ -1739,7 +1741,6 @@
     <ClInclude Include="..\..\src\ripple\types\api\base_uint.h" />
     <ClInclude Include="..\..\src\ripple\types\api\Blob.h" />
     <ClInclude Include="..\..\src\ripple\types\api\ByteOrder.h" />
-    <ClInclude Include="..\..\src\ripple\types\api\CycledSet.h" />
     <ClInclude Include="..\..\src\ripple\types\api\IdentifierStorage.h" />
     <ClInclude Include="..\..\src\ripple\types\api\IdentifierType.h" />
     <ClInclude Include="..\..\src\ripple\types\api\HashMaps.h" />

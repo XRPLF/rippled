@@ -32,7 +32,7 @@ struct Endpoint
     int hops;
     uint32 incomingSlotsAvailable;
     uint32 incomingSlotsMax;
-    uint32 uptimeMinutes;
+    uint32 uptimeSeconds;
     std::string featureList;
 };
 

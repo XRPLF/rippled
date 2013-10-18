@@ -340,7 +340,7 @@ public:
         map ["out_desired"]  = m_logic.m_slots.outDesired;
         map ["in_avail"]     = m_logic.m_slots.inboundSlots;
         map ["in_max"]       = m_logic.m_slots.inboundSlotsMaximum;
-        map ["minutes"]      = m_logic.m_slots.uptimeMinutes();
+        map ["uptime"]       = m_logic.m_slots.uptimeSeconds();
         map ["round"]        = m_logic.m_slots.roundUpwards();
         map ["cache"]        = uint32(m_logic.m_cache.size());
         map ["legacy"]       = uint32(m_logic.m_legacyCache.size());

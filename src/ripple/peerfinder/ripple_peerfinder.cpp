@@ -21,7 +21,8 @@
 
 #include "ripple_peerfinder.h"
 
-#include "../../ripple/types/ripple_types.h"
+#include "../../ripple/algorithm/api/CycledSet.h"
+#include "../../ripple/algorithm/api/DiscreteClock.h"
 
 #include <set>
 
@@ -42,7 +43,6 @@ namespace ripple {
 using namespace beast;
 }
 
-#include "impl/SimpleMonotonicClock.h"
 #include "impl/PrivateTypes.h"
 #  include "impl/Tuning.h"
 # include "impl/Checker.h"
@@ -57,8 +57,8 @@ using namespace beast;
 # include "impl/LegacyEndpointCache.h"
 # include "impl/PeerInfo.h"
 #include "impl/StoreSqdb.h"
+# include "impl/LogicType.h"
 #include "impl/Logic.h"
-#include "impl/LogicType.h"
 
 #include "impl/Checker.cpp"
 #include "impl/Config.cpp"

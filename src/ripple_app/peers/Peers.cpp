@@ -169,7 +169,7 @@ public:
             tme.set_hops (ep.hops);
             tme.set_slots (ep.incomingSlotsAvailable);
             tme.set_maxslots (ep.incomingSlotsMax);
-            tme.set_uptimeminutes (ep.uptimeMinutes);
+            tme.set_uptimeseconds (ep.uptimeSeconds);
             tme.set_features (ep.featureList);
         }
 

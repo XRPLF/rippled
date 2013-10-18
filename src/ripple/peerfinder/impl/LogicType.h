@@ -23,28 +23,32 @@
 namespace ripple {
 namespace PeerFinder {
 
-/** Provides the Clock required by Logic's get_now().
-    This allows the unit tests to provide its own manual clock.
-*/
-template <typename Clock>
-class LogicType : public Logic
+template <class DiscreteClockSourceType>
+class LogicType
+    : private BaseFromMember <DiscreteClockSourceType>
+    , public Logic
 {
 public:
-    explicit LogicType (Callback& callback,
-                        Store& store,
-                        Checker& checker,
-                        Journal journal)
-        : Logic (callback, store, checker, journal)
+    typedef typename DiscreteClockSourceType::DiscreteClockType DiscreteClockType;
+
+    LogicType (
+        Callback& callback,
+        Store& store,
+        Checker& checker,
+        Journal journal)
+        : Logic (
+            BaseFromMember <DiscreteClockSourceType>::member(),
+            callback,
+            store,
+            checker,
+            journal)
     {
     }
 
-    DiscreteTime get_now ()
+    DiscreteClockSourceType& get_clock()
     {
-        return m_clock();
+        return BaseFromMember <DiscreteClockSourceType>::member();
     }
-
-private:
-    Clock m_clock;
 };
 
 }

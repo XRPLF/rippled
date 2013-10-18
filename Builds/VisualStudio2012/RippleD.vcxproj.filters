@@ -1104,9 +1104,6 @@
     <ClCompile Include="..\..\src\ripple\types\impl\JsonPropertyStream.cpp">
       <Filter>[1] Ripple\types\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\BlackList.cpp">
-      <Filter>[2] Old Ripple\ripple_app\main</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\resource\ripple_resource.cpp">
       <Filter>[1] Ripple\resource</Filter>
     </ClCompile>
@@ -2232,9 +2229,6 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpoint.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\CycledSet.h">
-      <Filter>[1] Ripple\types\api</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpointCache.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
@@ -2249,9 +2243,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\JsonPropertyStream.h">
       <Filter>[1] Ripple\types\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\main\BlackList.h">
-      <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\ripple_resource.h">
       <Filter>[1] Ripple\resource</Filter>
@@ -2306,6 +2297,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\impl\LogicType.h">
       <Filter>[1] Ripple\resource\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h">
+      <Filter>[1] Ripple\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LogicType.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

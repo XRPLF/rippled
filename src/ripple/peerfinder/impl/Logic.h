@@ -77,10 +77,12 @@ public:
 
     //--------------------------------------------------------------------------
 
+    DiscreteClock <DiscreteTime> m_clock;
     Callback& m_callback;
     Store& m_store;
     Checker& m_checker;
     Journal m_journal;
+
     Config m_config;
 
     // The number of fixed peers that are currently connected
@@ -106,18 +108,26 @@ public:
     //--------------------------------------------------------------------------
 
     Logic (
+        DiscreteClock <DiscreteTime> clock,
         Callback& callback,
         Store& store,
         Checker& checker,
         Journal journal)
-        : m_callback (callback)
+        : m_clock (clock)
+        , m_callback (callback)
         , m_store (store)
         , m_checker (checker)
         , m_journal (journal)
         , m_fixedPeersConnected (0)
+        , m_slots (clock)
         , m_cache (journal)
         , m_legacyCache (store, journal)
     {
+    }
+
+    DiscreteTime get_now()
+    {
+        return m_clock();
     }
 
     /** Stop the logic.
@@ -156,7 +166,7 @@ public:
         ep.hops = 0;
         ep.incomingSlotsAvailable = m_slots.inboundSlots;
         ep.incomingSlotsMax = m_slots.inboundSlotsMaximum;
-        ep.uptimeMinutes = m_slots.uptimeMinutes();
+        ep.uptimeSeconds = m_slots.uptimeSeconds();
 
         return ep;
     }
@@ -208,14 +218,6 @@ public:
             m_callback.connectPeerEndpoints (list);
     }
 
-    // Returns the number of seconds that have elapsed since some baseline
-    // event.
-    //
-    virtual DiscreteTime get_now()
-    {
-            return 0;
-    }
-
     //--------------------------------------------------------------------------
     //
     // Logic
@@ -259,7 +261,7 @@ public:
     //
     void cycleCache()
     {
-        m_cache.cycle(get_now());
+        m_cache.cycle (get_now());
 
         for (Peers::iterator iter (m_peers.begin());
             iter != m_peers.end(); ++iter)
