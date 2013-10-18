@@ -208,7 +208,8 @@ public:
     void addStaticSource (Validators::Source* source)
     {
 #if RIPPLE_USE_VALIDATORS
-        m_queue.dispatch (bind (&Logic::addStatic, &m_logic, source));
+        m_queue.dispatch (m_context.wrap (bind (
+            &Logic::addStatic, &m_logic, source)));
 #else
         delete source;
 #endif
@@ -222,7 +223,8 @@ public:
     void addSource (Validators::Source* source)
     {
 #if RIPPLE_USE_VALIDATORS
-        m_queue.dispatch (bind (&Logic::add, &m_logic, source));
+        m_queue.dispatch (m_context.wrap (bind (
+            &Logic::add, &m_logic, source)));
 #else
         delete source;
 #endif
@@ -234,8 +236,8 @@ public:
     {
 #if RIPPLE_USE_VALIDATORS
         if (! isStopping())
-            m_queue.dispatch (bind (
-                &Logic::receiveValidation, &m_logic, rv));
+            m_queue.dispatch (m_context.wrap (bind (
+                &Logic::receiveValidation, &m_logic, rv)));
 #endif
     }
 
@@ -243,8 +245,8 @@ public:
     {
 #if RIPPLE_USE_VALIDATORS
         if (! isStopping())
-            m_queue.dispatch (bind (
-                &Logic::ledgerClosed, &m_logic, ledgerHash));
+            m_queue.dispatch (m_context.wrap (bind (
+                &Logic::ledgerClosed, &m_logic, ledgerHash)));
 #endif
     }
 
@@ -266,7 +268,8 @@ public:
         m_journal.info << "Validators starting";
 
         // Do this late so the sources have a chance to be added.
-        m_queue.dispatch (bind (&ManagerImp::setCheckSources, this));
+        m_queue.dispatch (m_context.wrap (bind (
+            &ManagerImp::setCheckSources, this)));
 
         startThread();
 #endif
@@ -283,7 +286,8 @@ public:
         if (this->Thread::isThreadRunning())
         {
             m_journal.debug << "Signaling thread exit";
-            m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
+            m_queue.dispatch (m_context.wrap (bind (
+                &Thread::signalThreadShouldExit, this)));
         }
         else
         {
@@ -353,7 +357,8 @@ public:
         if (timer == m_checkTimer)
         {
             m_journal.debug << "Check timer expired";
-            m_queue.dispatch (bind (&ManagerImp::setCheckSources, this));
+            m_queue.dispatch (m_context.wrap (bind (
+                &ManagerImp::setCheckSources, this)));
         }
     }
 
