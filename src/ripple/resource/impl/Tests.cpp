@@ -23,22 +23,6 @@ namespace Resource {
 class Tests : public UnitTest
 {
 public:
-    // A manually operated clock
-    class TestClock
-    {
-    public:
-        static int& now()
-        {
-            static int when (0);
-            return when;
-        }
-
-        int operator() () const
-        {
-            return now();
-        }
-    };
-
     void createGossip (Gossip& gossip)
     {
         int const v (10 + random().nextInt (10));
@@ -58,8 +42,7 @@ public:
     {
         beginTestCase ("Imports");
 
-        ScopedPointer <Logic> logic (
-            new LogicType <TestClock> (journal()));
+        LogicType <ManualClock> logic (journal());
 
         Gossip g[5];
 
@@ -67,7 +50,7 @@ public:
             createGossip (g[i]);
 
         for (int i = 0; i < 5; ++i)
-            logic->importConsumers (String::fromNumber (i).toStdString(), g[i]);
+            logic.importConsumers (String::fromNumber (i).toStdString(), g[i]);
 
         pass();
     }
@@ -76,8 +59,7 @@ public:
     {
         beginTestCase ("Import");
 
-        ScopedPointer <Logic> logic (
-            new LogicType <TestClock> (journal()));
+        LogicType <ManualClock> logic (journal());
 
         Gossip g;
         Gossip::Item item;
@@ -85,7 +67,7 @@ public:
         item.address = IPEndpoint (IPEndpoint::V4 (207, 127, 82, 1));
         g.items.push_back (item);
 
-        logic->importConsumers ("g", g);
+        logic.importConsumers ("g", g);
 
         pass();
     }
@@ -93,34 +75,34 @@ public:
     void testCharges ()
     {
         beginTestCase ("Charge");
-        ScopedPointer <Logic> logic (
-            new LogicType <TestClock> (journal()));
+
+        LogicType <ManualClock> logic (journal());
 
         {
             IPEndpoint address (IPEndpoint::from_string ("207.127.82.1"));
-            Consumer c (logic->newInboundEndpoint (address));
+            Consumer c (logic.newInboundEndpoint (address));
             logMessage ("Charging " + c.label() + " 10,000 units");
             c.charge (10000);
             for (int i = 0; i < 128; ++i)
             {
                 logMessage (
-                    "Time = " + String::fromNumber (TestClock::now()) +
+                    "Time = " + String::fromNumber (logic.clock().now()) +
                     ", Balance = " + String::fromNumber (c.balance()));
-                ++TestClock::now();
+                ++logic.clock().now();
             }
         }
 
         {
             IPEndpoint address (IPEndpoint::from_string ("207.127.82.2"));
-            Consumer c (logic->newInboundEndpoint (address));
+            Consumer c (logic.newInboundEndpoint (address));
             logMessage ("Charging " + c.label() + " 1000 units per second");
             for (int i = 0; i < 128; ++i)
             {
                 c.charge (1000);
                 logMessage (
-                    "Time = " + String::fromNumber (TestClock::now()) +
+                    "Time = " + String::fromNumber (logic.clock().now()) +
                     ", Balance = " + String::fromNumber (c.balance()));
-                ++TestClock::now();
+                ++logic.clock().now();
             }
         }
 
@@ -129,9 +111,9 @@ public:
 
     void runTest ()
     {
-        //testCharges();
+        testCharges();
         testImports();
-        //testImport();
+        testImport();
     }
 
     Tests () : UnitTest ("ResourceManager", "ripple", runManual)

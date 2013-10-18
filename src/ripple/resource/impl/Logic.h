@@ -53,12 +53,14 @@ public:
     typedef SharedData <State> SharedState;
 
     SharedState m_state;
+    DiscreteClock <DiscreteTime> m_clock;
     Journal m_journal;
 
     //--------------------------------------------------------------------------
 
-    Logic (Journal journal)
-        : m_journal (journal)
+    Logic (DiscreteClock <DiscreteTime>::Source& source, Journal journal)
+        : m_clock (source)
+        , m_journal (journal)
     {
 #if 1
 #if BEAST_MSVC
@@ -81,11 +83,6 @@ public:
         SharedState::UnlockedAccess state (m_state);
         state->import_table.clear();
         state->table.clear();
-    }
-
-    virtual DiscreteTime get_now ()
-    {
-        return 0;
     }
 
     Consumer newInboundEndpoint (IPEndpoint const& address)
@@ -216,7 +213,7 @@ public:
 
     Gossip exportConsumers ()
     {
-        DiscreteTime const now (get_now());
+        DiscreteTime const now (m_clock());
 
         Gossip gossip;
         SharedState::Access state (m_state);
@@ -242,7 +239,7 @@ public:
 
     void importConsumers (std::string const& origin, Gossip const& gossip)
     {
-        DiscreteTime const now (get_now());
+        DiscreteTime const now (m_clock());
 
         {
             SharedState::Access state (m_state);
@@ -311,7 +308,7 @@ public:
     {
         SharedState::Access state (m_state);
 
-        DiscreteTime const now (get_now());
+        DiscreteTime const now (m_clock());
 
         for (List <Entry>::iterator iter (
             state->inactive.begin()); iter != state->inactive.end();)
@@ -390,7 +387,7 @@ public:
                 break;
             }
             state->inactive.push_back (entry);
-            entry.whenExpires = get_now() + secondsUntilExpiration;
+            entry.whenExpires = m_clock() + secondsUntilExpiration;
         }
     }
 
@@ -405,7 +402,7 @@ public:
 
     Disposition charge (Entry& entry, Charge const& fee, SharedState::Access& state)
     {
-        DiscreteTime const now (get_now());
+        DiscreteTime const now (m_clock());
         int const balance (entry.add (fee.cost(), now));
         m_journal.info << "Charging " << entry.label() << " for " << fee;
         return disposition (balance);
@@ -414,7 +411,7 @@ public:
     bool warn (Entry& entry, SharedState::Access& state)
     {
         bool notify (false);
-        DiscreteTime const now (get_now());
+        DiscreteTime const now (m_clock());
         if (entry.balance (now) >= warningThreshold && now != entry.lastWarningTime)
         {
             charge (entry, feeWarning, state);
@@ -431,7 +428,7 @@ public:
     bool disconnect (Entry& entry, SharedState::Access& state)
     {
         bool drop (false);
-        DiscreteTime const now (get_now());
+        DiscreteTime const now (m_clock());
         if (entry.balance (now) >= dropThreshold)
         {
             charge (entry, feeDrop, state);
@@ -442,7 +439,7 @@ public:
 
     int balance (Entry& entry, SharedState::Access& state)
     {
-        return entry.balance (get_now());
+        return entry.balance (m_clock());
     }
 
     //--------------------------------------------------------------------------
@@ -511,7 +508,7 @@ public:
 
     void onWrite (PropertyStream::Map& map)
     {
-        DiscreteTime const now (get_now());
+        DiscreteTime const now (m_clock());
 
         SharedState::Access state (m_state);
 

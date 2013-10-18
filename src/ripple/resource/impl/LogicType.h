@@ -23,25 +23,23 @@
 namespace ripple {
 namespace Resource {
 
-/** Provides the Clock required by Logic's get_now().
-    This allows the unit tests to provide its own manual clock.
-*/
-template <typename Clock>
-class LogicType : public Logic
+template <class DiscreteClockSourceType>
+class LogicType
+    : private BaseFromMember <DiscreteClockSourceType>
+    , public Logic
 {
 public:
+    typedef typename DiscreteClockSourceType::DiscreteClockType DiscreteClockType;
+
     explicit LogicType (Journal journal)
-        : Logic (journal)
+        : Logic (BaseFromMember <DiscreteClockSourceType>::member(), journal)
     {
     }
 
-    DiscreteTime get_now ()
+    DiscreteClockSourceType& clock()
     {
-        return m_clock();
+        return BaseFromMember <DiscreteClockSourceType>::member();
     }
-
-private:
-    Clock m_clock;
 };
 
 }

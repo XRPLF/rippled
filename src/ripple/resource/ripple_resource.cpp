@@ -21,6 +21,8 @@
 
 #include "ripple_resource.h"
 
+#include "../algorithm/api/DiscreteClock.h"
+
 #include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/unordered_map.hpp>
 
@@ -31,7 +33,6 @@
 #  include "impl/Tuning.h"
 # include "impl/Entry.h"
 # include "impl/Import.h"
-#include "impl/SimpleMonotonicClock.h"
 #include "impl/Charge.cpp"
 #  include "impl/Logic.h"
 # include "impl/LogicType.h"

@@ -1654,6 +1654,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Server.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Port.h" />
@@ -1708,7 +1709,6 @@
     <ClInclude Include="..\..\src\ripple\resource\impl\Kind.h" />
     <ClInclude Include="..\..\src\ripple\resource\impl\Logic.h" />
     <ClInclude Include="..\..\src\ripple\resource\impl\LogicType.h" />
-    <ClInclude Include="..\..\src\ripple\resource\impl\SimpleMonotonicClock.h" />
     <ClInclude Include="..\..\src\ripple\resource\impl\Tuning.h" />
     <ClInclude Include="..\..\src\ripple\resource\ripple_resource.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Handler.h" />

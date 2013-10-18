@@ -247,6 +247,9 @@
     <Filter Include="[1] Ripple\resource\impl">
       <UniqueIdentifier>{28a8ede0-743b-4a9a-bae1-5b2bc03ee44e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\algorithm">
+      <UniqueIdentifier>{d7d4123e-3fb2-4f85-9596-1ae26b6c14fd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -1715,9 +1718,6 @@
     <ClInclude Include="..\..\src\ripple_core\functional\LoadSource.h">
       <Filter>[1] Ripple\ripple_core\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\LoadType.h">
-      <Filter>[1] Ripple\ripple_core\functional</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\LoadManager.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
@@ -2283,9 +2283,6 @@
     <ClInclude Include="..\..\src\ripple\resource\impl\Entry.h">
       <Filter>[1] Ripple\resource\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\resource\impl\SimpleMonotonicClock.h">
-      <Filter>[1] Ripple\resource\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\api\Fees.h">
       <Filter>[1] Ripple\resource\api</Filter>
     </ClInclude>
@@ -2293,9 +2290,6 @@
       <Filter>[1] Ripple\resource\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\impl\Logic.h">
-      <Filter>[1] Ripple\resource\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\resource\impl\LogicType.h">
       <Filter>[1] Ripple\resource\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\api\Gossip.h">
@@ -2306,6 +2300,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\api\LegacyFees.h">
       <Filter>[1] Ripple\resource\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h">
+      <Filter>[1] Ripple\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\resource\impl\LogicType.h">
+      <Filter>[1] Ripple\resource\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

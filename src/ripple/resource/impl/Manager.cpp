@@ -30,8 +30,7 @@ public:
 
     ManagerImp (Journal journal)
         : Thread ("Resource::Manager")
-        , 
-        m_journal (journal)
+        , m_journal (journal)
         , m_logic (journal)
     {
         startThread ();
