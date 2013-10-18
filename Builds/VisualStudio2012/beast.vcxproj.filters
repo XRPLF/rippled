@@ -1251,6 +1251,9 @@
     <ClInclude Include="..\..\beast\threads\ScopedWrapperContext.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\utility\BaseFromMember.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">

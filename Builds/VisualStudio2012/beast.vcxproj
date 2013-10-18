@@ -180,6 +180,7 @@
     <ClInclude Include="..\..\beast\type_traits\RemoveSigned.h" />
     <ClInclude Include="..\..\beast\Uncopyable.h" />
     <ClInclude Include="..\..\beast\Utility.h" />
+    <ClInclude Include="..\..\beast\utility\BaseFromMember.h" />
     <ClInclude Include="..\..\beast\utility\Debug.h" />
     <ClInclude Include="..\..\beast\utility\EnableIf.h" />
     <ClInclude Include="..\..\beast\utility\Error.h" />
