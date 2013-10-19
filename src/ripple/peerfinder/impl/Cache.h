@@ -70,8 +70,7 @@ public:
             // we remove it from the table.
             iter = m_list.erase(iter);
 
-            m_journal.debug << "Cache entry for " <<
-                ep.message.address << " expired.";
+            m_journal.debug << ep.message.address << " expired.";
 
             m_endpoints.erase (ep.message.address);
         }
@@ -106,12 +105,28 @@ public:
 
         CachedEndpoint& entry (result.first->second);
 
-        m_journal.debug << "Cache entry for " << message.address <<
-            " is valid until " << entry.whenExpires <<
+        m_journal.debug << message.address <<
+            "valid " << entry.whenExpires <<
             " (" << entry.message.incomingSlotsAvailable <<
             "/" << entry.message.incomingSlotsMax << ")";
 
         m_list.push_back (entry);
+    }
+
+    // Returns all the known endpoints we have, sorted by distance (that is,
+    // by hop).
+    Giveaways getGiveawayList()
+    {
+        Giveaways giveaway;
+
+        for (List <CachedEndpoint>::iterator iter (m_list.begin());
+            iter != m_list.end(); iter++)
+        {
+            if (iter->message.hops < maxPeerHopCount)
+                giveaway.add (*iter);
+        }
+
+        return giveaway;
     }
 };
 

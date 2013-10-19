@@ -205,7 +205,7 @@ public:
         , m_messageTimer (this)
         , m_cacheTimer (this)
     {
-#if 0
+#if 1
 #if BEAST_MSVC
         if (beast_isRunningUnderDebugger())
         {
@@ -322,7 +322,9 @@ public:
         m_connectTimer.cancel();
         m_messageTimer.cancel();
         m_cacheTimer.cancel();
-        m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Thread::signalThreadShouldExit, this)));
     }
 
     //--------------------------------------------------------------------------
@@ -334,16 +336,7 @@ public:
     {
         SerializedContext::Scope scope (m_context);
 
-        map ["peers"]        = m_logic.m_slots.peerCount;
-        map ["in"]           = m_logic.m_slots.inboundCount;
-        map ["out"]          = m_logic.m_slots.outboundCount;
-        map ["out_desired"]  = m_logic.m_slots.outDesired;
-        map ["in_avail"]     = m_logic.m_slots.inboundSlots;
-        map ["in_max"]       = m_logic.m_slots.inboundSlotsMaximum;
-        map ["uptime"]       = m_logic.m_slots.uptimeSeconds();
-        map ["round"]        = m_logic.m_slots.roundUpwards();
-        map ["cache"]        = uint32(m_logic.m_cache.size());
-        map ["legacy"]       = uint32(m_logic.m_legacyCache.size());
+        m_logic.onWrite (map);
     }
 
     //--------------------------------------------------------------------------

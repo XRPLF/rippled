@@ -21,15 +21,15 @@ namespace ripple {
 namespace PeerFinder {
 
 Slots::Slots (DiscreteClock <DiscreteTime> clock, bool roundUpwards)
-    : m_clock (clock)
-    , m_startTime (0)
-    , peerCount (0)
+    : peerCount (0)
     , inboundCount (0)
     , outboundCount (0)
     , fixedCount (0)
     , outDesired (0)
     , inboundSlots (0)
     , inboundSlotsMaximum (0)
+    , m_clock (clock)
+    , m_startTime (0)
     , m_roundUpwards (roundUpwards)
 {
 }
@@ -117,6 +117,21 @@ void Slots::updateConnected ()
     {
         m_startTime = m_clock();
     }
+}
+
+void Slots::onWrite (PropertyStream::Map& map)
+{
+    map ["peers"]        = peerCount;
+    map ["in"]           = inboundCount;
+    map ["out"]          = outboundCount;
+    map ["fixed"]        = fixedCount;
+    map ["out_desired"]  = outDesired;
+    map ["in_avail"]     = inboundSlots;
+    map ["in_max"]       = inboundSlotsMaximum;
+    map ["round"]        = roundUpwards();
+    map ["connected"]    = connected();
+    map ["uptime"]       =
+        RelativeTime (uptimeSeconds()).getDescription ().toStdString();
 }
 
 }

@@ -40,6 +40,9 @@ struct Config
 
     uint16 listeningPort;
     std::string featureList;
+
+    /** Write the configuration into a property stream */
+    void onWrite(PropertyStream::Map& map);
 };
 
 }

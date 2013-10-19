@@ -70,11 +70,14 @@ public:
     //
     uint32 uptimeSeconds () const;
 
+    // Output statistics
+    void onWrite (PropertyStream::Map& map);
+
 private:
     void updateConnected();
 
-    DiscreteTime m_startTime;
     DiscreteClock <DiscreteTime> m_clock;
+    DiscreteTime m_startTime;
     bool m_roundUpwards;
 };
 

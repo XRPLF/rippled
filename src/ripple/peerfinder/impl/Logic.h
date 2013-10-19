@@ -85,9 +85,6 @@ public:
 
     Config m_config;
 
-    // The number of fixed peers that are currently connected
-    int m_fixedPeersConnected;
-
     // A list of peers that should always be connected
     typedef std::set <IPAddress> FixedPeers;
     FixedPeers m_fixedPeers;
@@ -118,7 +115,6 @@ public:
         , m_store (store)
         , m_checker (checker)
         , m_journal (journal)
-        , m_fixedPeersConnected (0)
         , m_slots (clock)
         , m_cache (journal)
         , m_legacyCache (store, journal)
@@ -142,6 +138,27 @@ public:
         state->stopping = true;
         if (state->fetchSource != nullptr)
             state->fetchSource->cancel ();
+    }
+
+    // Output statistics
+    void onWrite (PropertyStream::Map& map)
+    {
+        // VFALCO NOTE These ugly casts are needed because
+        //             of how std::size_t is declared on some linuxes
+        //
+        map ["cache"]   = uint32(m_cache.size());
+        map ["legacy"]  = uint32(m_legacyCache.size());
+        map ["fixed_desired"] = uint32 (m_fixedPeers.size());
+        
+        {
+            PropertyStream::Map child ("slots", map);
+            m_slots.onWrite (child);
+        }
+
+        {
+            PropertyStream::Map child ("config", map);
+            m_config.onWrite (child);
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -187,30 +204,29 @@ public:
     //
     void makeOutgoingConnections ()
     {
-        if (m_config.connectAutomatically)
-            return;
-
         std::vector <IPAddress> list;
 
-        if (m_slots.outDesired > m_slots.outboundCount)
+        if (m_config.connectAutomatically)
         {
-            int const needed (std::min (
-                m_slots.outDesired - m_slots.outboundCount,
-                    int (maxAddressesPerAttempt)));
-            m_legacyCache.get (needed, list, get_now());
+            if (m_slots.outDesired > m_slots.outboundCount)
+            {
+                int const needed (std::min (
+                                      m_slots.outDesired - m_slots.outboundCount,
+                                      int (maxAddressesPerAttempt)));
+                m_legacyCache.get (needed, list, get_now());
+            }
         }
 
-        if (m_fixedPeersConnected < m_fixedPeers.size())
+        if (m_slots.fixedCount < m_fixedPeers.size())
         {
-            list.reserve (list.size() + m_fixedPeers.size() - m_fixedPeersConnected);
+            list.reserve (list.size() + m_fixedPeers.size() - m_slots.fixedCount);
 
             for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
                 iter != m_fixedPeers.end(); ++iter)
             {
-                if (m_peers.get<1>().find (*iter) != m_peers.get<1>().end())
-                {
+                // Make sure the fixed peer is not already connected
+                if (m_peers.get<1>().find (*iter) == m_peers.get<1>().end())
                     list.push_back (*iter);
-                }
             }
         }
 
@@ -234,17 +250,26 @@ public:
     {
         for (std::vector <std::string>::const_iterator iter (strings.begin());
             iter != strings.end(); ++iter)
-        {
+        {            
             IPAddress ep (IPAddress::from_string (*iter));
+
+            if (ep.empty ())
+                ep = IPAddress::from_string_altform(*iter);
+
             if (! ep.empty ())
             {
                 m_fixedPeers.insert (ep);
+
+                m_journal.info << "Added fixed peer " << *iter;
             }
             else
             {
                 // VFALCO TODO Attempt name resolution
+                m_journal.error << "Failed to resolve: '" << *iter << "'";
             }
         }
+
+        m_journal.info << m_fixedPeers.size() << " fixed peers added.";
     }
 
     void addStaticSource (SharedPtr <Source> const& source)
@@ -289,6 +314,14 @@ public:
                 PeerInfo (id, address, inbound, get_now())));
         bassert (result.second);
         m_slots.addPeer (m_config, inbound);
+
+        // VFALCO NOTE Update fixed peers count (HACKED)
+        for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
+            iter != m_fixedPeers.end(); ++iter)
+        {
+            if (iter->withPort (0) == address.withPort (0))
+                ++m_slots.fixedCount;
+        }
     }
 
     // Called when a peer is disconnected.
@@ -302,6 +335,16 @@ public:
         PeerInfo const& peer (*iter);
         m_journal.debug << "Peer disconnected: " << peer.address;
         m_slots.dropPeer (m_config, peer.inbound);
+
+        // VFALCO NOTE Update fixed peers count (HACKED)
+        for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
+            iter != m_fixedPeers.end(); ++iter)
+        {
+            if (iter->withPort (0) == peer.address.withPort (0))
+                --m_slots.fixedCount;
+        }
+
+        // Must come last
         m_peers.erase (iter);
     }
 
@@ -345,16 +388,40 @@ public:
 
     // Send mtENDPOINTS for the specified peer
     //
-    void sendEndpoints (PeerInfo const& peer)
+    void sendEndpoints (PeerInfo const& peer, Giveaways &giveaway)
     {
         typedef std::vector <Endpoint> List;
         std::vector <Endpoint> endpoints;
 
-        // fill in endpoints
-
         // Add us to the list if we want incoming
-        if (m_slots.inboundSlots > 0)
+        // VFALCO TODO Reconsider this logic
+        //if (m_slots.inboundSlots > 0)
+        if (m_config.wantIncoming)
             endpoints.push_back (thisEndpoint ());
+
+        // We iterate over the hop list we have, adding one
+        // peer per hop (if possible) until we add the maximum
+        // number of peers we are allowed to send or we can't
+        // send anything else.
+        for (int i = 0; i != numberOfEndpoints; ++i)
+        {
+            for (Giveaways::iterator iter = giveaway.begin();
+                 iter != giveaway.end(); ++iter)
+            {
+                GiveawaysAtHop::iterator iter2 = iter->begin();
+
+                while(iter2 != iter->end())
+                {
+                    // FIXME NIKB check if the peer wants to receive this endpoint
+                    // and add it to the list of endpoints we will send if he does.
+
+                    if(false)
+                        iter->erase(iter2);
+                    else
+                        ++iter2;
+                }
+            }
+        }
 
         if (! endpoints.empty())
             m_callback.sendPeerEndpoints (peer.id, endpoints);
@@ -370,13 +437,20 @@ public:
 
             DiscreteTime const now (get_now());
 
+            // fill in endpoints
+            Giveaways giveaway(m_cache.getGiveawayList());
+
             for (Peers::iterator iter (m_peers.begin());
                 iter != m_peers.end(); ++iter)
             {
                 PeerInfo const& peer (*iter);
+
+                // Reset the giveaway to begin a fresh iteration.
+                giveaway.reset ();
+
                 if (peer.whenSendEndpoints <= now)
                 {
-                    sendEndpoints (peer);
+                    sendEndpoints (peer, giveaway);
                     peer.whenSendEndpoints = now +
                         secondsPerMessage;
                 }

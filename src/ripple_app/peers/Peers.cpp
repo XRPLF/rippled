@@ -117,15 +117,14 @@ public:
         PeerFinder::Config config;
 
 #if RIPPLE_USE_PEERFINDER
-        config.maxPeerCount = 100;
+        config.maxPeerCount = getConfig ().PEERS_MAX;
 #endif
 
         config.wantIncoming =
             (! getConfig ().PEER_PRIVATE) &&
             (getConfig().peerListeningPort != 0);
 
-        if (config.wantIncoming)
-            config.listeningPort = getConfig().peerListeningPort;
+        config.listeningPort = getConfig().peerListeningPort;
 
         // if it's a private peer or we are running as standalone
         // automatic connections would defeat the purpose.

@@ -53,6 +53,9 @@ const int SYSTEM_WEBSOCKET_PUBLIC_PORT  = 6563; // XXX Going away.
 // Might connect with fewer for testing.
 #define DEFAULT_PEER_CONNECT_LOW_WATER  10
 
+// The maximum number of peers to allow.
+#define DEFAULT_PEERS_MAX               100
+
 #define DEFAULT_PATH_SEARCH_OLD         7
 #define DEFAULT_PATH_SEARCH             7
 #define DEFAULT_PATH_SEARCH_FAST        2
@@ -395,6 +398,7 @@ public:
     int                         PEER_START_MAX;
     unsigned int                PEER_CONNECT_LOW_WATER;
     bool                        PEER_PRIVATE;           // True to ask peers not to relay current IP.
+    unsigned int                PEERS_MAX;
 
     // Websocket networking parameters
     std::string                 WEBSOCKET_PUBLIC_IP;        // XXX Going away. Merge with the inbound peer connction.

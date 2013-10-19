@@ -55,6 +55,10 @@ enum
     // This should be a small multiple of the broadcast frequency
     ,cacheSecondsToLive     = 60
 
+    // The maximum number of hops that we allow. Peers farther
+    // away than this are dropped.
+    ,maxPeerHopCount        = 10
+
     //---------------------------------------------------------
     //
     // LegacyEndpoint Settings

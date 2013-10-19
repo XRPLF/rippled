@@ -23,6 +23,10 @@ namespace PeerFinder {
 class PeerFinderTests : public UnitTest
 {
 public:
+
+
+    //--------------------------------------------------------------------------
+
     // Complete Logic used for tests
     //
     class TestLogic
