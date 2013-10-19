@@ -1171,20 +1171,26 @@ void PeerImp::recvHello (protocol::TMHello& packet)
             }
             else
             {
-                // Take a guess at remotes address.
-                std::string strIP   = getNativeSocket ().remote_endpoint ().address ().to_string ();
-                int         iPort   = packet.ipv4port ();
+                try
+                {
+                    // Take a guess at remotes address.
+                    std::string strIP   = getNativeSocket ().remote_endpoint ().address ().to_string ();
+                    int         iPort   = packet.ipv4port ();
 
-                if (mHello.nodeprivate ())
-                {
-                    WriteLog (lsINFO, Peer) << boost::str (boost::format ("Recv(Hello): Private connection: %s %s") % strIP % iPort);
+                    if (mHello.nodeprivate ())
+                    {
+                        WriteLog (lsINFO, Peer) << boost::str (boost::format ("Recv(Hello): Private connection: %s %s") % strIP % iPort);
+                    }
+                    else
+                    {
+                        // Don't save IP address if the node wants privacy.
+                        // Note: We don't go so far as to delete it.  If a node which has previously announced itself now wants
+                        // privacy, it should at least change its port.
+                        getApp().getPeers ().savePeer (strIP, iPort, UniqueNodeList::vsInbound);
+                    }
                 }
-                else
+                catch (boost::system::system_error const&)
                 {
-                    // Don't save IP address if the node wants privacy.
-                    // Note: We don't go so far as to delete it.  If a node which has previously announced itself now wants
-                    // privacy, it should at least change its port.
-                    getApp().getPeers ().savePeer (strIP, iPort, UniqueNodeList::vsInbound);
                 }
             }
 
