@@ -257,70 +257,93 @@ std::string RelativeTime::to_string () const
 
 }
 
+namespace beast {
+	
+namespace detail {
+	
 #if BEAST_WINDOWS
 
-#include <Windows.h>
+#include <windows.h>
 
-namespace beast {
-
-RelativeTime RelativeTime::fromStartup ()
+uint32 millisecondsSinceStartup()
 {
-    ULONGLONG ticks (GetTickCount64());
-
-    return RelativeTime (ticks / 1000.0);
+	return (uint32) GetTickCount64();
 }
-
-}
-
-#else
+	
+#elif BEAST_MAC || BEAST_IOS
 
 #include <time.h>
-
-namespace beast {
-
-namespace detail {
-
-// Converts a timespec to a RelativeTme
-static RelativeTime toRelativeTime (timespec const& ts)
+	
+uint32 millisecondsSinceStartup()
 {
-    return RelativeTime (ts.tv_sec +
-        ts.tv_nsec / 1000000000.0);
+	uint64 numerator, denominator;
+	
+	mach_timebase_info_data_t timebase;
+	(void) mach_timebase_info (&timebase);
+	
+	if (timebase.numer % 1000000 == 0)
+	{
+		numerator   = timebase.numer / 1000000;
+		denominator = timebase.denom;
+	}
+	else
+	{
+		numerator   = timebase.numer;
+		denominator = timebase.denom * (uint64) 1000000;
+	}
+	
+	return (uint32) ((mach_absolute_time() * numerator) / denominator);
+}
+	
+#else
+	
+#include <time.h>
+
+uint32 millisecondsSinceStartup()
+{
+	timespec t;
+	clock_gettime (CLOCK_MONOTONIC, &t);
+	return t.tv_sec * 1000 + t.tv_nsec / 1000000;
+}
+	
+#endif
+
+// Converts milliseconds to a RelativeTme
+static RelativeTime toRelativeTime (uint32 ms)
+{
+	return RelativeTime (ms / 1000.0);
 }
 
 // Records and returns the time from process startup
 static RelativeTime getStartupTime()
 {
-    struct StartupTime
-    {
-        StartupTime ()
-            { clock_gettime (CLOCK_MONOTONIC, &ts); }
-        timespec ts;
-    };
-
-    static StartupTime startupTime;
-
-    return toRelativeTime (startupTime.ts);
+	struct StartupTime
+	{
+		StartupTime ()
+		{ s = toRelativeTime (detail::millisecondsSinceStartup()); }
+		RelativeTime s;
+	};
+	
+	static StartupTime startupTime;
+	
+	return startupTime.s;
 }
 
 // Used to call getStartupTime as early as possible
 struct StartupTimeStaticInitializer
 {
-    StartupTimeStaticInitializer ()
-        { getStartupTime(); }
+	StartupTimeStaticInitializer ()
+	{ getStartupTime(); }
 };
 
 static StartupTimeStaticInitializer startupTimeStaticInitializer;
-
+	
 }
 
 RelativeTime RelativeTime::fromStartup ()
 {
-    timespec ts;
-    clock_gettime (CLOCK_MONOTONIC, &ts);
-
-    return detail::toRelativeTime (ts) - detail::getStartupTime();
+	return detail::toRelativeTime (detail::millisecondsSinceStartup()) - detail::getStartupTime();
 }
 
 }
 
-#endif
