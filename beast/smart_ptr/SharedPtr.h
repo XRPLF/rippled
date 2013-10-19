@@ -164,7 +164,7 @@ public:
 
     template <class U>
     SharedPtr (SharedPtr <U>&& sp) noexcept
-        : m_p (sp.swap <U> (nullptr))
+        : m_p (sp.template swap <U> (nullptr))
     {
     }
     /** @} */
@@ -185,7 +185,7 @@ public:
     template <class U>
     SharedPtr& operator= (SharedPtr <U>&& sp)
     {
-        return assign (sp.swap <U> (nullptr));
+        return assign (sp.template swap <U> (nullptr));
     }
     /** @} */
 #endif

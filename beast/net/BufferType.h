@@ -53,7 +53,7 @@ public:
 
     template <bool OtherIsConst>
     BufferType (BufferType <OtherIsConst> const& other)
-        : m_data (other.cast <pointer_type> ())
+        : m_data (other.template cast <pointer_type> ())
         , m_size (other.size ())
     {
     }
@@ -75,7 +75,7 @@ public:
     BufferType& operator= (
         BufferType <OtherIsConst> const& other) noexcept
     {
-        m_data = other.cast <pointer_type> ();
+        m_data = other.template cast <pointer_type> ();
         m_size = other.size ();
         return *this;
     }
