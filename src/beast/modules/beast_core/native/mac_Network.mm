@@ -21,6 +21,8 @@
 */
 //==============================================================================
 
+#include "../network/URL.h"
+
 void MACAddress::findAllAddresses (Array<MACAddress>& result)
 {
     ifaddrs* addrs = nullptr;

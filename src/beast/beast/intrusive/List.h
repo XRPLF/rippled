@@ -46,8 +46,7 @@ class ListNode
 private:
     typedef T value_type;
 
-    template <typename, typename>
-    friend class List;
+    friend class List<T, Tag>;
 
     template <typename>
     friend class ListIterator;

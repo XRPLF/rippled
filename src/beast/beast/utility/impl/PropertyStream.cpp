@@ -56,7 +56,7 @@ PropertyStream::Source& PropertyStream::Item::operator* () const
 //------------------------------------------------------------------------------
 
 PropertyStream::Proxy::Proxy (
-    Map& map, std::string const& key)
+    Map const& map, std::string const& key)
     : m_map (&map)
     , m_key (key)
 {
