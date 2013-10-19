@@ -160,7 +160,7 @@ public:
         { return Proxy (*this, key); }
 
     template <typename Key>
-    Proxy operator[] (Key key) const
+    Proxy operator[] (Key key)
     {
         std::stringstream ss;
         ss << key;
