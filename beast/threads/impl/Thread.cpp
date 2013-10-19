@@ -438,6 +438,8 @@ void Thread::yield()
 #include <time.h>
 #if BEAST_BSD
  // ???
+#elif BEAST_MAC || BEAST_IOS
+// Compiles fine without prctl.h
 #else
 # include <sys/prctl.h>
 #endif
