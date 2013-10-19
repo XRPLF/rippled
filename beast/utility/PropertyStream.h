@@ -110,11 +110,11 @@ private:
 class PropertyStream::Proxy
 {
 private:
-    Map* m_map;
+	Map const* m_map;
     std::string m_key;
 
 public:
-    Proxy (Map& map, std::string const& key);
+    Proxy (Map const& map, std::string const& key);
 
     template <typename Value>
     Proxy& operator= (Value value);
@@ -160,7 +160,7 @@ public:
         { return Proxy (*this, key); }
 
     template <typename Key>
-    Proxy operator[] (Key key)
+    Proxy operator[] (Key key) const
     {
         std::stringstream ss;
         ss << key;
