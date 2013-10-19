@@ -20,6 +20,8 @@
 #ifndef BEAST_INTRUSIVE_POINTERTRAITS_H_INCLUDED
 #define BEAST_INTRUSIVE_POINTERTRAITS_H_INCLUDED
 
+#include <cstddef>
+
 namespace beast {
 namespace intrusive {
 

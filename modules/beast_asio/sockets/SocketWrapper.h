@@ -51,12 +51,6 @@ namespace detail
 
 namespace SocketWrapperMemberChecks
 {
-    template <bool Enable>
-    struct EnableIf : boost::false_type { };
-
-    template <>
-    struct EnableIf <true> : boost::true_type { };
-
     BEAST_DEFINE_IS_CALL_POSSIBLE(has_get_io_service, get_io_service);
 
     BEAST_DEFINE_IS_CALL_POSSIBLE(has_lowest_layer, lowest_layer);
@@ -133,6 +127,12 @@ class SocketWrapper
     , public Uncopyable
 {
 public:
+    // Converts a static bool constexpr member named 'value' into
+    // an IntegralConstant for SFINAE overload resolution.
+    //
+    template <class Cond>
+    struct Enabled : public IntegralConstant <bool, Cond::value> { };
+
     template <typename Arg>
     explicit SocketWrapper (Arg& arg)
         : m_object (arg)
@@ -232,11 +232,11 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return native_handle (type_name, dest,
-            EnableIf <has_type_native_handle_type <this_layer_type>::value> ());
+            Enabled <has_type_native_handle_type <this_layer_type> > ());
     }
 
     bool native_handle (char const* type_name, void* dest,
-        boost::true_type)
+        TrueType)
     {
         char const* const name (typeid (typename this_layer_type::native_handle_type).name ());
         if (strcmp (name, type_name) == 0)
@@ -249,7 +249,7 @@ public:
     }
 
     bool native_handle (char const*, void*,
-        boost::false_type)
+        FalseType)
     {
         pure_virtual_called (__FILE__, __LINE__);
         return false;
@@ -266,21 +266,21 @@ public:
         // Apparently has_get_io_service always results in false
         using namespace detail::SocketWrapperMemberChecks;
         return get_io_service (
-            EnableIf <has_get_io_service <this_layer_type,
-                boost::asio::io_service&()>::value> ());
+            Enabled <has_get_io_service <this_layer_type,
+                boost::asio::io_service&()> > ());
 #else
-        return get_io_service (boost::true_type ());
+        return get_io_service (TrueType ());
 #endif
     }
 
     boost::asio::io_service& get_io_service (
-        boost::true_type)
+        TrueType)
     {
         return m_object.get_io_service ();
     }
 
     boost::asio::io_service& get_io_service (
-        boost::false_type)
+        FalseType)
     {
         pure_virtual_called (__FILE__, __LINE__);
         return *static_cast <boost::asio::io_service*>(nullptr);
@@ -334,11 +334,11 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return lowest_layer_ptr (type_name,
-            EnableIf <has_type_lowest_layer_type <this_layer_type>::value> ());
+            Enabled <has_type_lowest_layer_type <this_layer_type> > ());
     }
 
     void* lowest_layer_ptr (char const* type_name,
-        boost::true_type) const
+        TrueType) const
     {
         char const* const name (typeid (typename this_layer_type::lowest_layer_type).name ());
         if (strcmp (name, type_name) == 0)
@@ -347,7 +347,7 @@ public:
     }
 
     void* lowest_layer_ptr (char const*,
-        boost::false_type) const
+        FalseType) const
     {
         pure_virtual_called (__FILE__, __LINE__);
         return nullptr;
@@ -359,18 +359,18 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return cancel (ec,
-            EnableIf <has_cancel <this_layer_type,
-                error_code (error_code&)>::value> ());
+            Enabled <has_cancel <this_layer_type,
+                error_code (error_code&)> > ());
     }
    
     error_code cancel (error_code& ec,
-        boost::true_type)
+        TrueType)
     {
         return m_object.cancel (ec);
     }
 
     error_code cancel (error_code& ec,
-        boost::false_type)
+        FalseType)
     {
         return pure_virtual_error (ec, __FILE__, __LINE__);
     }
@@ -381,19 +381,19 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return shutdown (what, ec,
-            EnableIf <has_shutdown <this_layer_type,
-                error_code (shutdown_type, error_code&)>::value> ());
+            Enabled <has_shutdown <this_layer_type,
+                error_code (shutdown_type, error_code&)> > ());
     }
 
 
     error_code shutdown (shutdown_type what, error_code& ec,
-        boost::true_type)
+        TrueType)
     {
         return m_object.shutdown (what, ec);
     }
 
     error_code shutdown (shutdown_type, error_code& ec,
-        boost::false_type)
+        FalseType)
     {
         return pure_virtual_error (ec, __FILE__, __LINE__);
     }
@@ -404,18 +404,18 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return close (ec,
-            EnableIf <has_close <this_layer_type,
-                error_code (error_code&)>::value> ());
+            Enabled <has_close <this_layer_type,
+                error_code (error_code&)> > ());
     }
 
     error_code close (error_code& ec,
-        boost::true_type)
+        TrueType)
     {
         return m_object.close (ec);
     }
 
     error_code close (error_code& ec,
-        boost::false_type)
+        FalseType)
     {
         return pure_virtual_error (ec, __FILE__, __LINE__);
     }
@@ -430,12 +430,12 @@ public:
         using namespace detail::SocketWrapperMemberChecks;
         typedef typename native_socket <this_layer_type>::socket_type socket_type;
         return accept (peer, ec,
-            EnableIf <has_accept <this_layer_type,
-                error_code (socket_type&, error_code&)>::value> ());
+            Enabled <has_accept <this_layer_type,
+                error_code (socket_type&, error_code&)> > ());
     }
 
     error_code accept (Socket& peer, error_code& ec,
-        boost::true_type)
+        TrueType)
     {
         using namespace detail::SocketWrapperMemberChecks;
         return m_object.accept (
@@ -443,7 +443,7 @@ public:
     }
 
     error_code accept (Socket&, error_code& ec,
-        boost::false_type)
+        FalseType)
     {
         return pure_virtual_error (ec, __FILE__, __LINE__);
     }
@@ -455,12 +455,12 @@ public:
         using namespace detail::SocketWrapperMemberChecks;
         typedef typename native_socket <this_layer_type>::socket_type socket_type;
         async_accept (peer, BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
-            EnableIf <has_async_accept <this_layer_type,
-                void (socket_type&, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))>::value> ());
+            Enabled <has_async_accept <this_layer_type,
+                void (socket_type&, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))> > ());
     }
 
     void async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-        boost::true_type)
+        TrueType)
     {
         using namespace detail::SocketWrapperMemberChecks;
         m_object.async_accept (
@@ -469,7 +469,7 @@ public:
     }
 
     void async_accept (Socket&, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-        boost::false_type)
+        FalseType)
     {
         get_io_service ().wrap (
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
@@ -485,20 +485,20 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return read_some (buffers, ec,
-            EnableIf <has_read_some <this_layer_type,
-                std::size_t (MutableBuffers const&, error_code&)>::value> ());
+            Enabled <has_read_some <this_layer_type,
+                std::size_t (MutableBuffers const&, error_code&)> > ());
     }
 
     template <typename MutableBufferSequence>
     std::size_t read_some (MutableBufferSequence const& buffers, error_code& ec,
-        boost::true_type)
+        TrueType)
     {
         return m_object.read_some (buffers, ec);
     }
 
     template <typename MutableBufferSequence>
     std::size_t read_some (MutableBufferSequence const&, error_code& ec,
-        boost::false_type)
+        FalseType)
     {
         pure_virtual_called (__FILE__, __LINE__);
         ec = pure_virtual_error ();
@@ -511,20 +511,20 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return write_some (buffers, ec,
-            EnableIf <has_write_some <this_layer_type,
-                std::size_t (ConstBuffers const&, error_code&)>::value> ());
+            Enabled <has_write_some <this_layer_type,
+                std::size_t (ConstBuffers const&, error_code&)> > ());
     }
 
     template <typename ConstBufferSequence>
     std::size_t write_some (ConstBufferSequence const& buffers, error_code& ec,
-        boost::true_type)
+        TrueType)
     {
         return m_object.write_some (buffers, ec);
     }
 
     template <typename ConstBufferSequence>
     std::size_t write_some (ConstBufferSequence const&, error_code& ec,
-        boost::false_type)
+        FalseType)
     {
         pure_virtual_called (__FILE__, __LINE__);
         ec = pure_virtual_error ();
@@ -537,13 +537,13 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         async_read_some (buffers, BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
-            EnableIf <has_async_read_some <this_layer_type,
-                void (MutableBuffers const&, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))>::value> ());
+            Enabled <has_async_read_some <this_layer_type,
+                void (MutableBuffers const&, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))> > ());
     }
 
     void async_read_some (MutableBuffers const& buffers,
             BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-                boost::true_type)
+                TrueType)
     {
         m_object.async_read_some (buffers,
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler));
@@ -551,7 +551,7 @@ public:
 
     void async_read_some (MutableBuffers const&,
         BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-            boost::false_type)
+            FalseType)
     {
         get_io_service ().wrap (
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
@@ -564,13 +564,13 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         async_write_some (buffers, BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
-            EnableIf <has_async_write_some <this_layer_type,
-                void (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))>::value> ());
+            Enabled <has_async_write_some <this_layer_type,
+                void (ConstBuffers const&, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))> > ());
     }
 
     void async_write_some (ConstBuffers const& buffers,
         BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-            boost::true_type)
+            TrueType)
     {
         m_object.async_write_some (buffers,
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler));
@@ -578,7 +578,7 @@ public:
 
     void async_write_some (ConstBuffers const&,
         BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-            boost::false_type)
+            FalseType)
     {
         get_io_service ().wrap (
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
@@ -624,11 +624,11 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return next_layer_ptr (type_name,
-            EnableIf <has_type_next_layer_type <this_layer_type>::value> ());
+            Enabled <has_type_next_layer_type <this_layer_type> > ());
     }
 
     void* next_layer_ptr (char const* type_name,
-        boost::true_type) const
+        TrueType) const
     {
         char const* const name (typeid (typename this_layer_type::next_layer_type).name ());
         if (strcmp (name, type_name) == 0)
@@ -637,7 +637,7 @@ public:
     }
 
     void* next_layer_ptr (char const*,
-        boost::false_type) const
+        FalseType) const
     {
         pure_virtual_called (__FILE__, __LINE__);
         return nullptr;
@@ -661,19 +661,19 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         set_verify_mode (verify_mode,
-            EnableIf <has_set_verify_mode <this_layer_type,
-                void (int)>::value> ());
+            Enabled <has_set_verify_mode <this_layer_type,
+                void (int)> > ());
  
     }
 
     void set_verify_mode (int verify_mode,
-        boost::true_type)
+        TrueType)
     {
         m_object.set_verify_mode (verify_mode);
     }
 
     void set_verify_mode (int,
-        boost::false_type)
+        FalseType)
     {
         pure_virtual_called (__FILE__, __LINE__);
     }
@@ -684,18 +684,18 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return handshake (type, ec,
-            EnableIf <has_handshake <this_layer_type,
-                error_code (handshake_type, error_code&)>::value> ());
+            Enabled <has_handshake <this_layer_type,
+                error_code (handshake_type, error_code&)> > ());
     }
 
     error_code handshake (handshake_type type, error_code& ec,
-        boost::true_type)
+        TrueType)
     {
         return m_object.handshake (type, ec);
     }
 
     error_code handshake (handshake_type, error_code& ec,
-        boost::false_type)
+        FalseType)
     {
         return pure_virtual_error (ec, __FILE__, __LINE__);
     }
@@ -706,20 +706,20 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         async_handshake (type, BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
-            EnableIf <has_async_handshake <this_layer_type,
-                void (handshake_type, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))>::value> ());
+            Enabled <has_async_handshake <this_layer_type,
+                void (handshake_type, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))> > ());
     }
 
     void async_handshake (handshake_type type,
         BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-            boost::true_type)
+            TrueType)
     {
         m_object.async_handshake (type,
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler));
     }
 
     void async_handshake (handshake_type, BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-        boost::false_type)
+        FalseType)
     {
         get_io_service ().wrap (
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
@@ -735,19 +735,19 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return handshake (type, buffers, ec,
-            EnableIf <has_handshake <this_layer_type,
-                error_code (handshake_type, ConstBuffers const&, error_code&)>::value> ());
+            Enabled <has_handshake <this_layer_type,
+                error_code (handshake_type, ConstBuffers const&, error_code&)> > ());
     }
 
     error_code handshake (handshake_type type,
         ConstBuffers const& buffers, error_code& ec,
-            boost::true_type)
+            TrueType)
     {
         return m_object.handshake (type, buffers, ec);
     }
 
     error_code handshake (handshake_type, ConstBuffers const&, error_code& ec,
-        boost::false_type)
+        FalseType)
     {
         return pure_virtual_error (ec, __FILE__, __LINE__);
     }
@@ -760,14 +760,14 @@ public:
         using namespace detail::SocketWrapperMemberChecks;
         async_handshake (type, buffers,
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
-                EnableIf <has_async_handshake <this_layer_type,
+                Enabled <has_async_handshake <this_layer_type,
                     void (handshake_type, ConstBuffers const&,
-                        BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))>::value> ());
+                        BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))> > ());
     }
 
     void async_handshake (handshake_type type, ConstBuffers const& buffers,
         BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-            boost::true_type)
+            TrueType)
     {
         m_object.async_handshake (type, buffers,
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler));
@@ -775,7 +775,7 @@ public:
 
     void async_handshake (handshake_type, ConstBuffers const&,
         BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-            boost::false_type)
+            FalseType)
     {
         get_io_service ().wrap (
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
@@ -790,18 +790,18 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         return shutdown (ec,
-            EnableIf <has_shutdown <this_layer_type,
-                error_code (error_code&)>::value> ());
+            Enabled <has_shutdown <this_layer_type,
+                error_code (error_code&)> > ());
     }
 
     error_code shutdown (error_code& ec,
-        boost::true_type)
+        TrueType)
     {
         return m_object.shutdown (ec);
     }
 
     error_code shutdown (error_code& ec,
-        boost::false_type)
+        FalseType)
     {
         return pure_virtual_error (ec, __FILE__, __LINE__);
     }
@@ -812,19 +812,19 @@ public:
     {
         using namespace detail::SocketWrapperMemberChecks;
         async_shutdown (BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler),
-            EnableIf <has_async_shutdown <this_layer_type,
-                void (BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))>::value> ());
+            Enabled <has_async_shutdown <this_layer_type,
+                void (BOOST_ASIO_MOVE_ARG(SharedHandlerPtr))> > ());
     }
 
     void async_shutdown (BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-        boost::true_type)
+        TrueType)
     {
         m_object.async_shutdown (
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler));
     }
 
     void async_shutdown (BOOST_ASIO_MOVE_ARG(SharedHandlerPtr) handler,
-        boost::false_type)
+        FalseType)
     {
         get_io_service ().wrap (
             BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))

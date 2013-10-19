@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace beast {
+
 HTTPParser::HTTPParser (Type type)
     : m_type (type)
     , m_impl (new HTTPParserImpl (
@@ -44,7 +46,15 @@ std::size_t HTTPParser::process (void const* buf, std::size_t bytes)
 
     if (m_impl->finished ())
     {
-        if (m_type == typeResponse)
+        if (m_type == typeRequest)
+        {
+            m_request = new HTTPRequest (
+                m_impl->version (),
+                m_impl->fields (),
+                m_impl->body (),
+                m_impl->method ());
+        }
+        else if (m_type == typeResponse)
         {
             m_response = new HTTPResponse (
                 m_impl->version (),
@@ -54,7 +64,7 @@ std::size_t HTTPParser::process (void const* buf, std::size_t bytes)
         }
         else
         {
-            // m_request = new HTTPRequest (
+            bassertfalse;
         }
     }
 
@@ -71,9 +81,28 @@ bool HTTPParser::finished () const
     return m_impl->finished();
 }
 
+StringPairArray const& HTTPParser::fields () const
+{
+    return m_impl->fields();
+}
+
+bool HTTPParser::headersComplete () const
+{
+    return m_impl->headers_complete();
+}
+
+SharedPtr <HTTPRequest> const& HTTPParser::request ()
+{
+    bassert (m_type == typeRequest);
+
+    return m_request;
+}
+
 SharedPtr <HTTPResponse> const& HTTPParser::response ()
 {
     bassert (m_type == typeResponse);
 
     return m_response;
+}
+
 }

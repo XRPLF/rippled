@@ -19,7 +19,7 @@
 
 HTTPMessage::HTTPMessage (HTTPVersion const& version_,
                           StringPairArray& fields,
-                          ContentBodyBuffer& body)
+                          DynamicBuffer& body)
     : m_version (version_)
     , m_headers (fields)
 {
@@ -36,7 +36,15 @@ HTTPHeaders const& HTTPMessage::headers () const
     return m_headers;
 }
 
-ContentBodyBuffer const& HTTPMessage::body () const
+DynamicBuffer const& HTTPMessage::body () const
 {
     return m_body;
+}
+
+String HTTPMessage::toString () const
+{
+    String s;
+    s << "HTTP " << version().toString() << newLine;
+    s << m_headers.toString ();
+    return s;
 }

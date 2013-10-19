@@ -94,7 +94,7 @@ struct SharedHandlerAllocator
 
     void construct (pointer p, const_reference val) const
     {
-        ::new ((void *)p) value_type (val);
+        new ((void *)p) value_type (val);
     }
 
     void destroy (pointer p) const

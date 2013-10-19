@@ -25,8 +25,8 @@ namespace mpl {
 
 // Ideas based on boost
 
-/// Remove the reference qualifier from a type.
-/// @{
+/** Remove the reference qualifier from a type. */
+/** @{ */
 template <class T>
 struct RemoveReference
 {
@@ -38,7 +38,7 @@ struct RemoveReference <T&>
 {
    typedef T type;
 };
-/// @}
+/** @} */
 
 }
 }

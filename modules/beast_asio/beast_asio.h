@@ -53,8 +53,14 @@
 # define BEAST_SOCKET_VIRTUAL
 #endif
 
-namespace beast
-{
+#include "../../beast/MPL.h"
+#include "../../beast/Utility.h"
+#include "../../beast/HTTP.h"
+
+#include "async/AbstractHandler.h"
+#include "async/WrapHandler.h"
+
+namespace beast {
 
 // Order matters
 #  include "async/SharedHandler.h"
@@ -62,13 +68,13 @@ namespace beast
 # include "async/SharedHandlerPtr.h"
 # include "async/ComposedAsyncOperation.h"
 #include "async/SharedHandlerAllocator.h"
+#include "async/AsyncObject.h"
 
-#  include "basics/BufferType.h"
 # include "basics/BuffersType.h"
-#include "basics/ContentBodyBuffer.h"
 #include "basics/FixedInputBuffer.h"
 #include "basics/PeerRole.h"
 #include "basics/SSLContext.h"
+#include "basics/SharedArg.h"
 
 #   include "sockets/SocketBase.h"
 #  include "sockets/Socket.h"
@@ -79,10 +85,18 @@ namespace beast
 #   include "http/HTTPField.h"
 #   include "http/HTTPHeaders.h"
 #  include "http/HTTPMessage.h"
+# include "http/HTTPRequest.h"
 # include "http/HTTPResponse.h"
+
+}
+
 # include "http/HTTPParser.h"
-# include "http/UniformResourceLocator.h"
+#include "http/HTTPRequestParser.h"
+#include "http/HTTPResponseParser.h"
+
 #include "http/HTTPClientType.h"
+
+namespace beast {
 
 #  include "protocol/InputParser.h"
 # include "protocol/HandshakeDetectLogic.h"

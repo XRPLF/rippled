@@ -24,3 +24,5 @@ contents.xcworkspacedata
 profile
 Builds/VisualStudio2012/Debug
 Builds/VisualStudio2012/Release
+
+modules/beast_cryptopp

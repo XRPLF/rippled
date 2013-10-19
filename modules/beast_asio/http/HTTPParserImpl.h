@@ -31,6 +31,7 @@ public:
     explicit HTTPParserImpl (enum http_parser_type type)
         : m_finished (false)
         , m_was_value (false)
+        , m_headersComplete (false)
     {
         m_settings.on_message_begin     = &HTTPParserImpl::on_message_begin;
         m_settings.on_url               = &HTTPParserImpl::on_url;
@@ -119,7 +120,12 @@ public:
         return m_fields;
     }
 
-    ContentBodyBuffer& body ()
+    bool headers_complete () const
+    {
+        return m_headersComplete;
+    }
+
+    DynamicBuffer& body ()
     {
         return m_body;
     }
@@ -174,6 +180,7 @@ private:
 
     int onHeadersComplete ()
     {
+        m_headersComplete = true;
         int ec (0);
         addFieldValue ();
         return ec;
@@ -181,8 +188,9 @@ private:
 
     int onBody (char const* at, std::size_t length)
     {
-        m_body.commit (boost::asio::buffer_copy (m_body.prepare (length),
-            boost::asio::buffer (at, length)));
+        m_body.commit (boost::asio::buffer_copy (
+            m_body.prepare <boost::asio::mutable_buffer> (length),
+                boost::asio::buffer (at, length)));
         return 0;
     }
 
@@ -250,7 +258,8 @@ private:
     bool m_was_value;
     std::string m_field;
     std::string m_value;
-    ContentBodyBuffer m_body;
+    bool m_headersComplete;
+    DynamicBuffer m_body;
 };
 
 #endif

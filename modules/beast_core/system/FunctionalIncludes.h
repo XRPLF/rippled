@@ -23,7 +23,9 @@
 // Choose a source of bind, placeholders, and function
 
 #if !BEAST_FUNCTIONAL_USES_STD && !BEAST_FUNCTIONAL_USES_TR1 && !BEAST_FUNCTIONAL_USES_BOOST
-# if BEAST_MSVC
+# if BEAST_USE_BOOST_FEATURES
+#  define BEAST_FUNCTIONAL_USES_BOOST 1
+# elif BEAST_MSVC
 #  define BEAST_FUNCTIONAL_USES_STD 1
 # elif BEAST_IOS || BEAST_MAC
 #  include <ciso646>                        // detect version of std::lib

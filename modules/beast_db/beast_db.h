@@ -44,7 +44,7 @@
 namespace beast
 {
 
-#include "keyvalue/beast_KeyvaDB.h"
+#include "keyvalue/KeyvaDB.h"
 
 }
 

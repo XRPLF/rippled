@@ -87,8 +87,7 @@ inline T const& as(void const* v)
 {
     T const& val = *static_cast <T const*>(v);
 
-    if (val > T(std::numeric_limits<L>::max()))
-        Throw(Error().fail(__FILE__, __LINE__));
+    check_precondition (val <= T(std::numeric_limits<L>::max()));
 
     return val;
 }
@@ -203,7 +202,7 @@ void standard_use_type::do_use()
     case x_stdtm:
     case x_blob:
     default:
-        Throw(Error().fail(__FILE__, __LINE__, Error::badParameter));
+        fatal_error ("bad parameter");
     }
 
     if (result != SQLITE_OK)

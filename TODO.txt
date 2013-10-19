@@ -2,10 +2,6 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
-- Use new file naming convention
-
-- Rename ReadWriteMutex to SharedMutex
-
 - Use SemanticVersion for beast version numbers to replace BEAST_VERSION
 
 - add support for a __PRETTY_FUNCTION__ equivalent for all environments
@@ -13,13 +9,6 @@ BEAST TODO
 - add expectThrow() to UnitTest, where it expects an exception
 
 - Import secp256k1 from sipa
-
-- HashMap work:
-  - Add unit test
-  - Return size_t from hash function, take out upperLimit, move mod % to caller
-  - Make hash function a functor using operator()
-  - Implement HardenedHashFunctions
-  - Fix problem with assigning to the result of operator[] maybe use a proxy?
 
 - Set sqlite thread safety model to '2' in beast_sqlite
 
@@ -56,8 +45,6 @@ BEAST TODO
   host program do it.
 
 - Rename malloc/calloc JUCE members that conflict with the debug CRT from MSVC
-
-- Make beast::HashMap support assignment via operator[]
 
 - Reformat every Doxygen comment
 - Fix Doxygen metatags

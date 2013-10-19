@@ -87,7 +87,7 @@ protected:
 #endif
     }
 
-    void destroy ()
+    void destroy () const
     {
         delete this;
     }

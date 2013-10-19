@@ -20,16 +20,18 @@
 #ifndef BEAST_MPL_ADDCONST_H_INCLUDED
 #define BEAST_MPL_ADDCONST_H_INCLUDED
 
+#include "RemoveConst.h"
+
 // Ideas based on boost
 
 namespace beast {
 namespace mpl {
 
-/// Add the `const` qualifier to a type.
+/** Add the `const` qualifier to a type. */
 template <typename T>
 struct AddConst
 {
-    typedef T const type;
+    typedef typename RemoveConst<T>::type const type;
 };
 
 }

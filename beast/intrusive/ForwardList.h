@@ -20,10 +20,13 @@
 #ifndef BEAST_INTRUSIVE_FORWARDLIST_H_INCLUDED
 #define BEAST_INTRUSIVE_FORWARDLIST_H_INCLUDED
 
-#include <iterator>
+#include "../Config.h"
 
 #include "PointerTraits.h"
-#include "../mpl.h"
+
+#include "../MPL.h"
+
+#include <iterator>
 
 // Ideas based on boost
 

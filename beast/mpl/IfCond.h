@@ -25,8 +25,8 @@ namespace mpl {
 
 // Ideas based on boost
 
-/// Select between T1 or T2 depending on Condition.
-/// @{
+/** Select between T1 or T2 depending on Condition. */
+/** @{ */
 template <bool Condition, typename T1, typename T2>
 struct IfCond
 {
@@ -38,7 +38,7 @@ struct IfCond <false, T1, T2>
 {
     typedef T2 type;
 };
-/// @}
+/** @} */
 
 }
 }

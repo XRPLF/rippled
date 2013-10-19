@@ -44,16 +44,16 @@ HTTPVersion& HTTPVersion::operator= (HTTPVersion const& other)
 
 String HTTPVersion::toString () const
 {
-    return String::fromNumber (major ()) + "." +
-           String::fromNumber (minor ());
+    return String::fromNumber (vmajor ()) + "." +
+           String::fromNumber (vminor ());
 }
 
-unsigned short HTTPVersion::major () const
+unsigned short HTTPVersion::vmajor () const
 {
     return m_major;
 }
 
-unsigned short HTTPVersion::minor () const
+unsigned short HTTPVersion::vminor () const
 {
     return m_minor;
 }

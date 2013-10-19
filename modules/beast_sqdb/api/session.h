@@ -135,7 +135,7 @@ private:
 
 private:
     class Sqlite3;
-    SharedPtr <Sqlite3> m_instance;
+    SharedPtr <SharedSingleton <Sqlite3> > m_instance;
     bool m_bInTransaction;
     sqlite3* m_connection;
     String m_fileName;

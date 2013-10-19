@@ -21,6 +21,17 @@
   <ItemGroup>
     <None Include="..\..\.gitattributes" />
     <None Include="..\..\.gitignore" />
+    <None Include="..\..\beast\crypto\impl\sha2\README" />
+    <None Include="..\..\beast\crypto\impl\sha2\sha2test.pl" />
+    <None Include="..\..\beast\http\impl\http-parser\.gitignore" />
+    <None Include="..\..\beast\http\impl\http-parser\.mailmap" />
+    <None Include="..\..\beast\http\impl\http-parser\.travis.yml" />
+    <None Include="..\..\beast\http\impl\http-parser\AUTHORS" />
+    <None Include="..\..\beast\http\impl\http-parser\CONTRIBUTIONS" />
+    <None Include="..\..\beast\http\impl\http-parser\http_parser.gyp" />
+    <None Include="..\..\beast\http\impl\http-parser\LICENSE-MIT" />
+    <None Include="..\..\beast\http\impl\http-parser\Makefile" />
+    <None Include="..\..\beast\http\impl\http-parser\README.md" />
     <None Include="..\..\CodingStyle.md" />
     <None Include="..\..\Doxyfile" />
     <None Include="..\..\modules\beast_core\beast_core.mm">
@@ -29,31 +40,31 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="..\..\modules\beast_core\native\beast_mac_Files.mm">
+    <None Include="..\..\modules\beast_core\native\mac_Files.mm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="..\..\modules\beast_core\native\beast_mac_Network.mm">
+    <None Include="..\..\modules\beast_core\native\mac_Network.mm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="..\..\modules\beast_core\native\beast_mac_Strings.mm">
+    <None Include="..\..\modules\beast_core\native\mac_Strings.mm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="..\..\modules\beast_core\native\beast_mac_SystemStats.mm">
+    <None Include="..\..\modules\beast_core\native\mac_SystemStats.mm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="..\..\modules\beast_core\native\beast_mac_Threads.mm">
+    <None Include="..\..\modules\beast_core\native\mac_Threads.mm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -67,28 +78,130 @@
     </None>
     <None Include="..\..\modules\beast_core\zip\zlib\README" />
     <None Include="..\..\README.md" />
+    <None Include="..\..\scripts\compile.sh" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\beast\Arithmetic.h" />
+    <ClInclude Include="..\..\beast\Atomic.h" />
+    <ClInclude Include="..\..\beast\Boost.h" />
+    <ClInclude Include="..\..\beast\boost\ErrorCode.h" />
+    <ClInclude Include="..\..\beast\ByteOrder.h" />
+    <ClInclude Include="..\..\beast\chrono\CPUMeter.h" />
+    <ClInclude Include="..\..\beast\chrono\RelativeTime.h" />
+    <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h" />
+    <ClInclude Include="..\..\beast\Config.h" />
+    <ClInclude Include="..\..\beast\config\CompilerConfig.h" />
+    <ClInclude Include="..\..\beast\config\compiler\Clang.h" />
+    <ClInclude Include="..\..\beast\config\compiler\Gcc.h" />
+    <ClInclude Include="..\..\beast\config\compiler\Intel.h" />
+    <ClInclude Include="..\..\beast\config\compiler\VisualC.h" />
+    <ClInclude Include="..\..\beast\config\ConfigCheck.h" />
+    <ClInclude Include="..\..\beast\config\ContractChecks.h" />
+    <ClInclude Include="..\..\beast\config\PlatformConfig.h" />
+    <ClInclude Include="..\..\beast\config\platform\Android.h" />
+    <ClInclude Include="..\..\beast\config\platform\Bsd.h" />
+    <ClInclude Include="..\..\beast\config\platform\Linux.h" />
+    <ClInclude Include="..\..\beast\config\platform\MacOS.h" />
+    <ClInclude Include="..\..\beast\config\platform\Win32.h" />
+    <ClInclude Include="..\..\beast\config\SelectCompilerConfig.h" />
+    <ClInclude Include="..\..\beast\config\SelectPlatformConfig.h" />
+    <ClInclude Include="..\..\beast\config\SelectStdlibConfig.h" />
+    <ClInclude Include="..\..\beast\config\StandardConfig.h" />
+    <ClInclude Include="..\..\beast\Crypto.h" />
+    <ClInclude Include="..\..\beast\crypto\impl\sha2\sha2.h" />
+    <ClInclude Include="..\..\beast\crypto\Sha256.h" />
+    <ClInclude Include="..\..\beast\CStdInt.h" />
+    <ClInclude Include="..\..\beast\FixedArray.h" />
+    <ClInclude Include="..\..\beast\HeapBlock.h" />
+    <ClInclude Include="..\..\beast\HTTP.h" />
+    <ClInclude Include="..\..\beast\http\impl\http-parser\http_parser.h" />
+    <ClInclude Include="..\..\beast\http\ParsedURL.h" />
+    <ClInclude Include="..\..\beast\http\URL.h" />
+    <ClInclude Include="..\..\beast\Intrusive.h" />
     <ClInclude Include="..\..\beast\intrusive\ForwardList.h" />
+    <ClInclude Include="..\..\beast\intrusive\IntrusiveArray.h" />
+    <ClInclude Include="..\..\beast\intrusive\List.h" />
+    <ClInclude Include="..\..\beast\intrusive\LockFreeStack.h" />
     <ClInclude Include="..\..\beast\intrusive\PointerTraits.h" />
-    <ClInclude Include="..\..\beast\mpl.h" />
+    <ClInclude Include="..\..\beast\Memory.h" />
+    <ClInclude Include="..\..\beast\MPL.h" />
     <ClInclude Include="..\..\beast\mpl\AddConst.h" />
+    <ClInclude Include="..\..\beast\mpl\CopyConst.h" />
     <ClInclude Include="..\..\beast\mpl\IfCond.h" />
+    <ClInclude Include="..\..\beast\mpl\IsCallPossible.h" />
     <ClInclude Include="..\..\beast\mpl\PointerToOther.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveConst.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveReference.h" />
     <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h" />
+    <ClInclude Include="..\..\beast\Net.h" />
+    <ClInclude Include="..\..\beast\net\BufferType.h" />
+    <ClInclude Include="..\..\beast\net\DynamicBuffer.h" />
+    <ClInclude Include="..\..\beast\net\IPEndpoint.h" />
+    <ClInclude Include="..\..\beast\SafeBool.h" />
+    <ClInclude Include="..\..\beast\SmartPtr.h" />
+    <ClInclude Include="..\..\beast\smart_ptr\ContainerDeletePolicy.h" />
+    <ClInclude Include="..\..\beast\smart_ptr\ScopedPointer.h" />
+    <ClInclude Include="..\..\beast\smart_ptr\SharedObject.h" />
+    <ClInclude Include="..\..\beast\smart_ptr\SharedPtr.h" />
+    <ClInclude Include="..\..\beast\StaticAssert.h" />
+    <ClInclude Include="..\..\beast\Strings.h" />
+    <ClInclude Include="..\..\beast\strings\CharacterFunctions.h" />
+    <ClInclude Include="..\..\beast\strings\CharPointer_ASCII.h" />
+    <ClInclude Include="..\..\beast\strings\CharPointer_UTF16.h" />
+    <ClInclude Include="..\..\beast\strings\CharPointer_UTF32.h" />
+    <ClInclude Include="..\..\beast\strings\CharPointer_UTF8.h" />
+    <ClInclude Include="..\..\beast\strings\NewLine.h" />
+    <ClInclude Include="..\..\beast\strings\String.h" />
+    <ClInclude Include="..\..\beast\strings\StringCharPointerType.h" />
+    <ClInclude Include="..\..\beast\strings\StringFromNumber.h" />
+    <ClInclude Include="..\..\beast\Threads.h" />
+    <ClInclude Include="..\..\beast\Chrono.h" />
+    <ClInclude Include="..\..\beast\threads\detail\BindHandler.h" />
+    <ClInclude Include="..\..\beast\threads\detail\DispatchedHandler.h" />
+    <ClInclude Include="..\..\beast\threads\LockGuard.h" />
+    <ClInclude Include="..\..\beast\threads\RecursiveMutex.h" />
+    <ClInclude Include="..\..\beast\threads\ServiceQueue.h" />
+    <ClInclude Include="..\..\beast\threads\SharedData.h" />
+    <ClInclude Include="..\..\beast\threads\SharedLockGuard.h" />
+    <ClInclude Include="..\..\beast\threads\SharedMutexAdapter.h" />
+    <ClInclude Include="..\..\beast\threads\SpinLock.h" />
+    <ClInclude Include="..\..\beast\threads\Stoppable.h" />
+    <ClInclude Include="..\..\beast\threads\Thread.h" />
+    <ClInclude Include="..\..\beast\threads\ThreadLocalValue.h" />
+    <ClInclude Include="..\..\beast\threads\TryLockGuard.h" />
+    <ClInclude Include="..\..\beast\threads\UnlockGuard.h" />
+    <ClInclude Include="..\..\beast\threads\WaitableEvent.h" />
+    <ClInclude Include="..\..\beast\threads\ScopedWrapperContext.h" />
+    <ClInclude Include="..\..\beast\TypeTraits.h" />
+    <ClInclude Include="..\..\beast\type_traits\IntegralConstant.h" />
+    <ClInclude Include="..\..\beast\type_traits\IsIntegral.h" />
+    <ClInclude Include="..\..\beast\type_traits\IsSigned.h" />
+    <ClInclude Include="..\..\beast\type_traits\RemoveSigned.h" />
+    <ClInclude Include="..\..\beast\Uncopyable.h" />
+    <ClInclude Include="..\..\beast\Utility.h" />
+    <ClInclude Include="..\..\beast\utility\BaseFromMember.h" />
+    <ClInclude Include="..\..\beast\utility\Debug.h" />
+    <ClInclude Include="..\..\beast\utility\EnableIf.h" />
+    <ClInclude Include="..\..\beast\utility\Error.h" />
+    <ClInclude Include="..\..\beast\utility\Journal.h" />
+    <ClInclude Include="..\..\beast\utility\LeakChecked.h" />
+    <ClInclude Include="..\..\beast\utility\PropertyStream.h" />
+    <ClInclude Include="..\..\beast\utility\StaticObject.h" />
+    <ClInclude Include="..\..\beast\Version.h" />
+    <ClInclude Include="..\..\config\BeastConfig.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\AbstractHandler.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\AsyncObject.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h" />
+    <ClInclude Include="..\..\modules\beast_asio\async\WrapHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerPtr.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\BufferType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\BuffersType.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\PeerRole.h" />
+    <ClInclude Include="..\..\modules\beast_asio\basics\SharedArg.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\SSLContext.h" />
     <ClInclude Include="..\..\modules\beast_asio\beast_asio.h" />
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPClientType.h" />
@@ -97,10 +210,11 @@
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPMessage.h" />
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPParserImpl.h" />
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPParser.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPRequest.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPRequestParser.h" />
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponse.h" />
+    <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponseParser.h" />
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPVersion.h" />
-    <ClInclude Include="..\..\modules\beast_asio\http\UniformResourceLocator.h" />
-    <ClInclude Include="..\..\modules\beast_asio\parsehttp\http_parser.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogic.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicPROXY.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicSSL2.h" />
@@ -127,174 +241,108 @@
     <ClInclude Include="..\..\modules\beast_asio\tests\PeerTest.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerType.h" />
     <ClInclude Include="..\..\modules\beast_core\beast_core.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_AbstractFifo.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_Array.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_ArrayAllocationBase.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_DynamicObject.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_ElementComparator.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\detail\copyconst.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\detail\removecv.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\DynamicArray.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\HashMap.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_LinkedListPointer.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\List.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_LockFreeQueue.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_LockFreeStack.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_NamedValueSet.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_OwnedArray.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_PropertySet.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_SharedObjectArray.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_ScopedValueSetter.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_SharedTable.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_SortedLookupTable.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_SortedSet.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_SparseSet.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\DynamicList.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\beast_Variant.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Debug.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Error.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_FatalError.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_ProtectedCall.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_FPUFlags.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_LeakChecked.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_SafeBool.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_SemanticVersion.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_Throw.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\ContractChecks.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\AbstractFifo.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\Array.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\ArrayAllocationBase.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\DynamicObject.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\ElementComparator.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\LinkedListPointer.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\LockFreeQueue.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\NamedValueSet.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\OwnedArray.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\PropertySet.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\SharedObjectArray.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\ScopedValueSetter.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\SortedSet.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\SparseSet.h" />
+    <ClInclude Include="..\..\modules\beast_core\containers\Variant.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\FatalError.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\FPUFlags.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\SemanticVersion.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\Throw.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\UnitTest.h" />
+    <ClInclude Include="..\..\modules\beast_core\diagnostic\UnitTestUtilities.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\MeasureFunctionCallTime.h" />
-    <ClInclude Include="..\..\modules\beast_core\files\beast_DirectoryIterator.h" />
-    <ClInclude Include="..\..\modules\beast_core\files\beast_File.h" />
-    <ClInclude Include="..\..\modules\beast_core\files\beast_FileInputStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\files\beast_FileOutputStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\files\beast_FileSearchPath.h" />
-    <ClInclude Include="..\..\modules\beast_core\files\beast_MemoryMappedFile.h" />
-    <ClInclude Include="..\..\modules\beast_core\files\beast_RandomAccessFile.h" />
-    <ClInclude Include="..\..\modules\beast_core\files\beast_TemporaryFile.h" />
-    <ClInclude Include="..\..\modules\beast_core\functional\beast_Function.h" />
-    <ClInclude Include="..\..\modules\beast_core\functional\SharedFunction.h" />
-    <ClInclude Include="..\..\modules\beast_core\json\beast_JSON.h" />
-    <ClInclude Include="..\..\modules\beast_core\logging\beast_FileLogger.h" />
-    <ClInclude Include="..\..\modules\beast_core\logging\beast_Logger.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\beast_BigInteger.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\beast_Expression.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\beast_Interval.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\beast_Math.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\beast_MathsFunctions.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\beast_MurmurHash.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\beast_Random.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\beast_Range.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\beast_uint24.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_AllocatedBy.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_Atomic.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_AtomicCounter.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_AtomicFlag.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_AtomicPointer.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_AtomicState.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_ByteOrder.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_ByteSwap.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_CacheLine.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_ContainerDeletePolicy.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_FifoFreeStore.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_FifoFreeStoreWithoutTLS.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_FifoFreeStoreWithTLS.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_GlobalFifoFreeStore.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_GlobalPagedFreeStore.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_HeapBlock.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_Memory.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_MemoryAlignment.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_MemoryBlock.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_OptionalScopedPointer.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_PagedFreeStore.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_RecycledObjectPool.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\SharedObject.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_ScopedPointer.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_SharedSingleton.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_StaticObject.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_Uncopyable.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\beast_WeakReference.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\SharedPtr.h" />
-    <ClInclude Include="..\..\modules\beast_core\misc\beast_Main.h" />
-    <ClInclude Include="..\..\modules\beast_core\misc\beast_Result.h" />
-    <ClInclude Include="..\..\modules\beast_core\misc\beast_Uuid.h" />
-    <ClInclude Include="..\..\modules\beast_core\misc\beast_WindowsRegistry.h" />
-    <ClInclude Include="..\..\modules\beast_core\native\beast_android_JNIHelpers.h" />
-    <ClInclude Include="..\..\modules\beast_core\native\beast_BasicNativeHeaders.h" />
-    <ClInclude Include="..\..\modules\beast_core\native\beast_osx_ObjCHelpers.h" />
-    <ClInclude Include="..\..\modules\beast_core\native\beast_posix_SharedCode.h" />
-    <ClInclude Include="..\..\modules\beast_core\native\beast_win32_ComSmartPtr.h" />
-    <ClInclude Include="..\..\modules\beast_core\network\beast_IPAddress.h" />
-    <ClInclude Include="..\..\modules\beast_core\network\beast_MACAddress.h" />
-    <ClInclude Include="..\..\modules\beast_core\network\beast_NamedPipe.h" />
-    <ClInclude Include="..\..\modules\beast_core\network\beast_Socket.h" />
-    <ClInclude Include="..\..\modules\beast_core\network\beast_URL.h" />
-    <ClInclude Include="..\..\modules\beast_core\streams\beast_BufferedInputStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\streams\beast_FileInputSource.h" />
-    <ClInclude Include="..\..\modules\beast_core\streams\beast_InputSource.h" />
-    <ClInclude Include="..\..\modules\beast_core\streams\beast_InputStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\streams\beast_MemoryInputStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\streams\beast_MemoryOutputStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\streams\beast_OutputStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\streams\beast_SubregionStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\system\BeastConfigCheck.h" />
+    <ClInclude Include="..\..\modules\beast_core\files\DirectoryIterator.h" />
+    <ClInclude Include="..\..\modules\beast_core\files\File.h" />
+    <ClInclude Include="..\..\modules\beast_core\files\FileInputStream.h" />
+    <ClInclude Include="..\..\modules\beast_core\files\FileOutputStream.h" />
+    <ClInclude Include="..\..\modules\beast_core\files\FileSearchPath.h" />
+    <ClInclude Include="..\..\modules\beast_core\files\MemoryMappedFile.h" />
+    <ClInclude Include="..\..\modules\beast_core\files\RandomAccessFile.h" />
+    <ClInclude Include="..\..\modules\beast_core\files\TemporaryFile.h" />
+    <ClInclude Include="..\..\modules\beast_core\json\JSON.h" />
+    <ClInclude Include="..\..\modules\beast_core\logging\FileLogger.h" />
+    <ClInclude Include="..\..\modules\beast_core\logging\Logger.h" />
+    <ClInclude Include="..\..\modules\beast_core\maths\BigInteger.h" />
+    <ClInclude Include="..\..\modules\beast_core\maths\Expression.h" />
+    <ClInclude Include="..\..\modules\beast_core\maths\Interval.h" />
+    <ClInclude Include="..\..\modules\beast_core\maths\Math.h" />
+    <ClInclude Include="..\..\modules\beast_core\maths\MurmurHash.h" />
+    <ClInclude Include="..\..\modules\beast_core\maths\Random.h" />
+    <ClInclude Include="..\..\modules\beast_core\maths\Range.h" />
+    <ClInclude Include="..\..\modules\beast_core\maths\uint24.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\AtomicCounter.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\AtomicFlag.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\AtomicPointer.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\AtomicState.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\CacheLine.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\MemoryAlignment.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\MemoryBlock.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\OptionalScopedPointer.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\RecycledObjectPool.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedFunction.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\SharedSingleton.h" />
+    <ClInclude Include="..\..\modules\beast_core\memory\WeakReference.h" />
+    <ClInclude Include="..\..\modules\beast_core\misc\Main.h" />
+    <ClInclude Include="..\..\modules\beast_core\misc\Result.h" />
+    <ClInclude Include="..\..\modules\beast_core\misc\Uuid.h" />
+    <ClInclude Include="..\..\modules\beast_core\misc\WindowsRegistry.h" />
+    <ClInclude Include="..\..\modules\beast_core\native\android_JNIHelpers.h" />
+    <ClInclude Include="..\..\modules\beast_core\native\BasicNativeHeaders.h" />
+    <ClInclude Include="..\..\modules\beast_core\native\osx_ObjCHelpers.h" />
+    <ClInclude Include="..\..\modules\beast_core\native\posix_SharedCode.h" />
+    <ClInclude Include="..\..\modules\beast_core\native\win32_ComSmartPtr.h" />
+    <ClInclude Include="..\..\modules\beast_core\network\IPAddress.h" />
+    <ClInclude Include="..\..\modules\beast_core\network\MACAddress.h" />
+    <ClInclude Include="..\..\modules\beast_core\network\NamedPipe.h" />
+    <ClInclude Include="..\..\modules\beast_core\network\Socket.h" />
+    <ClInclude Include="..\..\modules\beast_core\streams\BufferedInputStream.h" />
+    <ClInclude Include="..\..\modules\beast_core\streams\FileInputSource.h" />
+    <ClInclude Include="..\..\modules\beast_core\streams\InputSource.h" />
+    <ClInclude Include="..\..\modules\beast_core\streams\InputStream.h" />
+    <ClInclude Include="..\..\modules\beast_core\streams\MemoryInputStream.h" />
+    <ClInclude Include="..\..\modules\beast_core\streams\MemoryOutputStream.h" />
+    <ClInclude Include="..\..\modules\beast_core\streams\OutputStream.h" />
+    <ClInclude Include="..\..\modules\beast_core\streams\SubregionStream.h" />
     <ClInclude Include="..\..\modules\beast_core\system\Functional.h" />
-    <ClInclude Include="..\..\modules\beast_core\system\PlatformDefs.h" />
-    <ClInclude Include="..\..\modules\beast_core\system\StandardHeader.h" />
+    <ClInclude Include="..\..\modules\beast_core\system\StandardIncludes.h" />
     <ClInclude Include="..\..\modules\beast_core\system\SystemStats.h" />
-    <ClInclude Include="..\..\modules\beast_core\system\TargetPlatform.h" />
     <ClInclude Include="..\..\modules\beast_core\system\BeforeBoost.h" />
     <ClInclude Include="..\..\modules\beast_core\system\BoostIncludes.h" />
     <ClInclude Include="..\..\modules\beast_core\system\BoostPlaceholdersFix.h" />
     <ClInclude Include="..\..\modules\beast_core\system\FunctionalIncludes.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_CharacterFunctions.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_CharPointer_ASCII.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_CharPointer_UTF16.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_CharPointer_UTF32.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_CharPointer_UTF8.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_Identifier.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_LexicalCast.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_LocalisedStrings.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_NewLine.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_String.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_StringArray.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_StringPairArray.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_StringPool.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\beast_TextDiff.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\StringCharPointerType.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\StringFromNumber.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_ChildProcess.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_CriticalSection.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_DynamicLibrary.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_HighResolutionTimer.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_InterProcessLock.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_Process.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_ReadWriteLock.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_ReadWriteMutex.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_ScopedLock.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_ScopedReadLock.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_ScopedWriteLock.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_SharedData.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_SpinDelay.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_SpinLock.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_Thread.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_ThreadLocalValue.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_ThreadPool.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_TimeSliceThread.h" />
-    <ClInclude Include="..\..\modules\beast_core\threads\beast_WaitableEvent.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_CallQueue.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ConcurrentObject.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_DeadlineTimer.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_GlobalThreadGroup.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_InterruptibleThread.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_Listeners.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ManualCallQueue.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ParallelFor.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_Semaphore.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_SerialFor.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ThreadGroup.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_ThreadWithCallQueue.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\beast_Workers.h" />
+    <ClInclude Include="..\..\modules\beast_core\text\Identifier.h" />
+    <ClInclude Include="..\..\modules\beast_core\text\LexicalCast.h" />
+    <ClInclude Include="..\..\modules\beast_core\text\LocalisedStrings.h" />
+    <ClInclude Include="..\..\modules\beast_core\text\StringArray.h" />
+    <ClInclude Include="..\..\modules\beast_core\text\StringPairArray.h" />
+    <ClInclude Include="..\..\modules\beast_core\text\StringPool.h" />
+    <ClInclude Include="..\..\modules\beast_core\text\TextDiff.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\ChildProcess.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\CriticalSection.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\DynamicLibrary.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\HighResolutionTimer.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\InterProcessLock.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\Process.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\ReadWriteLock.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\ScopedLock.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\ScopedReadLock.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\ScopedWriteLock.h" />
+    <ClInclude Include="..\..\modules\beast_core\threads\SpinDelay.h" />
+    <ClInclude Include="..\..\modules\beast_core\thread\DeadlineTimer.h" />
+    <ClInclude Include="..\..\modules\beast_core\thread\Semaphore.h" />
+    <ClInclude Include="..\..\modules\beast_core\thread\Workers.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\detail\ScopedLock.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\detail\TrackedMutex.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\impl\TrackedMutex.h" />
@@ -302,15 +350,14 @@
     <ClInclude Include="..\..\modules\beast_core\thread\impl\UntrackedMutexType.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\MutexTraits.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\TrackedMutex.h" />
-    <ClInclude Include="..\..\modules\beast_core\time\beast_PerformanceCounter.h" />
-    <ClInclude Include="..\..\modules\beast_core\time\beast_PerformedAtExit.h" />
-    <ClInclude Include="..\..\modules\beast_core\time\beast_RelativeTime.h" />
-    <ClInclude Include="..\..\modules\beast_core\time\beast_Time.h" />
-    <ClInclude Include="..\..\modules\beast_core\xml\beast_XmlDocument.h" />
-    <ClInclude Include="..\..\modules\beast_core\xml\beast_XmlElement.h" />
-    <ClInclude Include="..\..\modules\beast_core\zip\beast_GZIPCompressorOutputStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\zip\beast_GZIPDecompressorInputStream.h" />
-    <ClInclude Include="..\..\modules\beast_core\zip\beast_ZipFile.h" />
+    <ClInclude Include="..\..\modules\beast_core\time\PerformanceCounter.h" />
+    <ClInclude Include="..\..\modules\beast_core\time\AtExitHook.h" />
+    <ClInclude Include="..\..\modules\beast_core\time\Time.h" />
+    <ClInclude Include="..\..\modules\beast_core\xml\XmlDocument.h" />
+    <ClInclude Include="..\..\modules\beast_core\xml\XmlElement.h" />
+    <ClInclude Include="..\..\modules\beast_core\zip\GZIPCompressorOutputStream.h" />
+    <ClInclude Include="..\..\modules\beast_core\zip\GZIPDecompressorInputStream.h" />
+    <ClInclude Include="..\..\modules\beast_core\zip\ZipFile.h" />
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\crc32.h" />
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\deflate.h" />
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\inffast.h" />
@@ -323,11 +370,13 @@
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zlib.h" />
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zutil.h" />
     <ClInclude Include="..\..\modules\beast_crypto\beast_crypto.h" />
-    <ClInclude Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.h" />
+    <ClInclude Include="..\..\modules\beast_crypto\math\BinaryEncoding.h" />
+    <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedInteger.h" />
+    <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedIntegerCalc.h" />
     <ClInclude Include="..\..\modules\beast_db\beast_db.h" />
-    <ClInclude Include="..\..\modules\beast_db\keyvalue\beast_KeyvaDB.h" />
+    <ClInclude Include="..\..\modules\beast_db\keyvalue\KeyvaDB.h" />
     <ClInclude Include="..\..\modules\beast_extras\beast_extras.h" />
-    <ClInclude Include="..\..\modules\beast_extras\traits\beast_BoostLockableTraits.h" />
+    <ClInclude Include="..\..\modules\beast_extras\traits\BoostLockableTraits.h" />
     <ClInclude Include="..\..\modules\beast_sqdb\api\backend.h" />
     <ClInclude Include="..\..\modules\beast_sqdb\api\blob.h" />
     <ClInclude Include="..\..\modules\beast_sqdb\api\into.h" />
@@ -351,16 +400,192 @@
     <ClInclude Include="..\..\modules\beast_sqlite\beast_sqlite.h" />
     <ClInclude Include="..\..\modules\beast_sqlite\sqlite\sqlite3.h" />
     <ClInclude Include="..\..\modules\beast_sqlite\sqlite\sqlite3ext.h" />
-    <ClInclude Include="BeastConfig.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\modules\beast_asio\async\SharedHandler.cpp">
+    <ClCompile Include="..\..\beast\boost\Boost.cpp" />
+    <ClCompile Include="..\..\beast\chrono\Chrono.cpp" />
+    <ClCompile Include="..\..\beast\chrono\impl\CPUMeter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\basics\ContentBodyBuffer.cpp">
+    <ClCompile Include="..\..\beast\chrono\impl\RelativeTime.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\Crypto.cpp" />
+    <ClCompile Include="..\..\beast\crypto\impl\Sha256.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2prog.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2speed.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\HTTP.cpp" />
+    <ClCompile Include="..\..\beast\http\impl\http_parser.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\impl\http-parser\contrib\parsertrace.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\impl\http-parser\contrib\url_parser.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\impl\http-parser\http_parser.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\impl\http-parser\test.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\impl\ParsedURL.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\impl\URL.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\DynamicBuffer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\Net.cpp" />
+    <ClCompile Include="..\..\beast\smart_ptr\SmartPtr.cpp" />
+    <ClCompile Include="..\..\beast\strings\impl\CharacterFunctions.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\strings\impl\String.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\strings\Strings.cpp" />
+    <ClCompile Include="..\..\beast\threads\impl\Atomic.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\impl\RecursiveMutex.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\impl\ServiceQueue.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\impl\Stoppable.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\impl\Thread.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\impl\WaitableEvent.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\Threads.cpp" />
+    <ClCompile Include="..\..\beast\utility\impl\Debug.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\Error.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\Journal.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\LeakChecked.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\PropertyStream.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\StaticObject.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\Utility.cpp" />
+    <ClCompile Include="..\..\modules\beast_asio\async\SharedHandler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -407,25 +632,31 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPRequest.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPRequestParser.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponse.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponseParser.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPVersion.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\http\UniformResourceLocator.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\parsehttp\http_parser.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -510,431 +741,359 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp" />
-    <ClCompile Include="..\..\modules\beast_core\containers\beast_AbstractFifo.cpp">
+    <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\beast_DynamicObject.cpp">
+    <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\beast_NamedValueSet.cpp">
+    <ClCompile Include="..\..\modules\beast_core\containers\NamedValueSet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\beast_PropertySet.cpp">
+    <ClCompile Include="..\..\modules\beast_core\containers\PropertySet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\beast_Variant.cpp">
+    <ClCompile Include="..\..\modules\beast_core\containers\Variant.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\DynamicArray.cpp">
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\FatalError.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\DynamicList.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\HashMap.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_Debug.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_Error.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_FatalError.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_ProtectedCall.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_FPUFlags.cpp">
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\FPUFlags.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_LeakChecked.cpp">
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\SemanticVersion.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_SemanticVersion.cpp">
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\UnitTest.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_UnitTest.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\beast_UnitTestUtilities.cpp">
+    <ClCompile Include="..\..\modules\beast_core\diagnostic\UnitTestUtilities.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\files\beast_DirectoryIterator.cpp">
+    <ClCompile Include="..\..\modules\beast_core\files\DirectoryIterator.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\files\beast_File.cpp">
+    <ClCompile Include="..\..\modules\beast_core\files\File.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\files\beast_FileInputStream.cpp">
+    <ClCompile Include="..\..\modules\beast_core\files\FileInputStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\files\beast_FileOutputStream.cpp">
+    <ClCompile Include="..\..\modules\beast_core\files\FileOutputStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\files\beast_FileSearchPath.cpp">
+    <ClCompile Include="..\..\modules\beast_core\files\FileSearchPath.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\files\beast_RandomAccessFile.cpp">
+    <ClCompile Include="..\..\modules\beast_core\files\RandomAccessFile.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\files\beast_TemporaryFile.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\json\beast_JSON.cpp">
+    <ClCompile Include="..\..\modules\beast_core\files\TemporaryFile.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\logging\beast_FileLogger.cpp">
+    <ClCompile Include="..\..\modules\beast_core\json\JSON.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\logging\beast_Logger.cpp">
+    <ClCompile Include="..\..\modules\beast_core\logging\FileLogger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\maths\beast_BigInteger.cpp">
+    <ClCompile Include="..\..\modules\beast_core\logging\Logger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\maths\beast_Expression.cpp">
+    <ClCompile Include="..\..\modules\beast_core\maths\BigInteger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\maths\beast_MurmurHash.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\maths\beast_Random.cpp">
+    <ClCompile Include="..\..\modules\beast_core\maths\Expression.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\memory\beast_FifoFreeStoreWithoutTLS.cpp">
+    <ClCompile Include="..\..\modules\beast_core\maths\MurmurHash.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\memory\beast_FifoFreeStoreWithTLS.cpp">
+    <ClCompile Include="..\..\modules\beast_core\maths\Random.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\memory\beast_GlobalPagedFreeStore.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\memory\beast_MemoryBlock.cpp">
+    <ClCompile Include="..\..\modules\beast_core\memory\MemoryBlock.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\memory\beast_PagedFreeStore.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\misc\beast_Main.cpp">
+    <ClCompile Include="..\..\modules\beast_core\misc\Main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\misc\beast_Result.cpp">
+    <ClCompile Include="..\..\modules\beast_core\misc\Result.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\misc\beast_Uuid.cpp">
+    <ClCompile Include="..\..\modules\beast_core\misc\Uuid.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_android_Files.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\android_Files.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_android_Misc.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\android_Misc.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_android_Network.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\android_Network.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_android_SystemStats.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\android_SystemStats.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_android_Threads.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\android_Threads.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_bsd_Files.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\bsd_Files.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_bsd_Network.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\bsd_Network.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_bsd_SystemStats.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\bsd_SystemStats.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_bsd_Threads.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\bsd_Threads.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_linux_Files.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\linux_Files.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_linux_Network.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\linux_Network.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_linux_SystemStats.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\linux_SystemStats.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_linux_Threads.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\linux_Threads.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_posix_FPUFlags.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\posix_FPUFlags.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_posix_NamedPipe.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\posix_NamedPipe.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_win32_Files.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\win32_Files.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_win32_FPUFlags.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\win32_FPUFlags.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_win32_Network.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_win32_Registry.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\win32_Network.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_win32_SystemStats.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\win32_Registry.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\beast_win32_Threads.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\win32_SystemStats.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\beast_IPAddress.cpp">
+    <ClCompile Include="..\..\modules\beast_core\native\win32_Threads.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\beast_MACAddress.cpp">
+    <ClCompile Include="..\..\modules\beast_core\network\IPAddress.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\beast_NamedPipe.cpp">
+    <ClCompile Include="..\..\modules\beast_core\network\MACAddress.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\beast_Socket.cpp">
+    <ClCompile Include="..\..\modules\beast_core\network\NamedPipe.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\beast_URL.cpp">
+    <ClCompile Include="..\..\modules\beast_core\network\Socket.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\streams\beast_BufferedInputStream.cpp">
+    <ClCompile Include="..\..\modules\beast_core\streams\BufferedInputStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\streams\beast_FileInputSource.cpp">
+    <ClCompile Include="..\..\modules\beast_core\streams\FileInputSource.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\streams\beast_InputStream.cpp">
+    <ClCompile Include="..\..\modules\beast_core\streams\InputStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\streams\beast_MemoryInputStream.cpp">
+    <ClCompile Include="..\..\modules\beast_core\streams\MemoryInputStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\streams\beast_MemoryOutputStream.cpp">
+    <ClCompile Include="..\..\modules\beast_core\streams\MemoryOutputStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\streams\beast_OutputStream.cpp">
+    <ClCompile Include="..\..\modules\beast_core\streams\OutputStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\streams\beast_SubregionStream.cpp">
+    <ClCompile Include="..\..\modules\beast_core\streams\SubregionStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -952,169 +1111,85 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\beast_CharacterFunctions.cpp">
+    <ClCompile Include="..\..\modules\beast_core\text\Identifier.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\beast_Identifier.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\beast_LexicalCast.cpp">
+    <ClCompile Include="..\..\modules\beast_core\text\LexicalCast.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\beast_LocalisedStrings.cpp">
+    <ClCompile Include="..\..\modules\beast_core\text\LocalisedStrings.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\beast_String.cpp">
+    <ClCompile Include="..\..\modules\beast_core\text\StringArray.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\beast_StringArray.cpp">
+    <ClCompile Include="..\..\modules\beast_core\text\StringPairArray.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\beast_StringPairArray.cpp">
+    <ClCompile Include="..\..\modules\beast_core\text\StringPool.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\beast_StringPool.cpp">
+    <ClCompile Include="..\..\modules\beast_core\text\TextDiff.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\beast_TextDiff.cpp">
+    <ClCompile Include="..\..\modules\beast_core\threads\ChildProcess.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\beast_ChildProcess.cpp">
+    <ClCompile Include="..\..\modules\beast_core\threads\HighResolutionTimer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\beast_HighResolutionTimer.cpp">
+    <ClCompile Include="..\..\modules\beast_core\threads\ReadWriteLock.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\beast_ReadWriteLock.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\beast_ReadWriteMutex.cpp">
+    <ClCompile Include="..\..\modules\beast_core\threads\SpinDelay.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\beast_SpinDelay.cpp">
+    <ClCompile Include="..\..\modules\beast_core\thread\DeadlineTimer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\beast_Thread.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\beast_ThreadPool.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\beast_TimeSliceThread.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_CallQueue.cpp">
+    <ClCompile Include="..\..\modules\beast_core\thread\Semaphore.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ConcurrentObject.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_DeadlineTimer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_InterruptibleThread.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_Listeners.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ManualCallQueue.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ParallelFor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_Semaphore.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ThreadGroup.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_ThreadWithCallQueue.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\beast_Workers.cpp">
+    <ClCompile Include="..\..\modules\beast_core\thread\Workers.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1126,55 +1201,49 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\time\beast_PerformanceCounter.cpp">
+    <ClCompile Include="..\..\modules\beast_core\time\PerformanceCounter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\time\beast_PerformedAtExit.cpp">
+    <ClCompile Include="..\..\modules\beast_core\time\AtExitHook.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\time\beast_RelativeTime.cpp">
+    <ClCompile Include="..\..\modules\beast_core\time\Time.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\time\beast_Time.cpp">
+    <ClCompile Include="..\..\modules\beast_core\xml\XmlDocument.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\xml\beast_XmlDocument.cpp">
+    <ClCompile Include="..\..\modules\beast_core\xml\XmlElement.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\xml\beast_XmlElement.cpp">
+    <ClCompile Include="..\..\modules\beast_core\zip\GZIPCompressorOutputStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\beast_GZIPCompressorOutputStream.cpp">
+    <ClCompile Include="..\..\modules\beast_core\zip\GZIPDecompressorInputStream.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\beast_GZIPDecompressorInputStream.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\beast_ZipFile.cpp">
+    <ClCompile Include="..\..\modules\beast_core\zip\ZipFile.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1247,14 +1316,20 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_crypto\beast_crypto.cpp" />
-    <ClCompile Include="..\..\modules\beast_crypto\math\beast_UnsignedInteger.cpp">
+    <ClCompile Include="..\..\modules\beast_crypto\math\BinaryEncoding.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_crypto\math\UnsignedInteger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_db\beast_db.cpp" />
-    <ClCompile Include="..\..\modules\beast_db\keyvalue\beast_KeyvaDB.cpp">
+    <ClCompile Include="..\..\modules\beast_db\keyvalue\KeyvaDB.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

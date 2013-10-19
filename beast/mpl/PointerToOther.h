@@ -30,7 +30,7 @@ namespace mpl {
     parameters. More specializations can be added for containers with
     more than three template parameters.
 */
-/// @{
+/** @{ */
 template <class T, class U>
 struct PointerToOther;
 
@@ -60,7 +60,7 @@ struct PointerToOther <T*, U>
 {
    typedef U* type;
 };
-/// @}
+/** @} */
 
 }
 }

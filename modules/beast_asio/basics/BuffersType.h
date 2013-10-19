@@ -121,11 +121,9 @@ private:
 //------------------------------------------------------------------------------
 
 /** A single linear read-only buffer. */
-//typedef BufferType <true> ConstBuffer;
 typedef boost::asio::const_buffer ConstBuffer;
 
 /** A single linear writable buffer. */
-//typedef BufferType <false> MutableBuffer;
 typedef boost::asio::mutable_buffer MutableBuffer;
 
 /** Meets the requirements of ConstBufferSequence */

@@ -60,22 +60,20 @@
 namespace sqdb
 {
 
-class session::Sqlite3 : public SharedSingleton <Sqlite3>
+class session::Sqlite3
 {
 public:
-    friend class SharedSingleton <Sqlite3>;
-
-    Sqlite3() : SharedSingleton <Sqlite3> (SingletonLifetime::persistAfterCreation)
+    Sqlite3()
     {
         int threadSafe = sqlite3_threadsafe();
 
-        if (threadSafe == 0)
-            Throw(Error().fail(__FILE__, __LINE__, Error::assertFailed));
+        check_precondition (threadSafe != 0);
 
+#if 0
         int result = sqlite3_config(SQLITE_CONFIG_MULTITHREAD);
 
-        if (result != SQLITE_OK)
-            Throw(Error().fail(__FILE__, __LINE__, Error::assertFailed));
+        check_postcondition (result == SQLITE_OK);
+#endif
 
         sqlite3_initialize();
     }
@@ -84,30 +82,25 @@ public:
     {
         sqlite3_shutdown();
     }
-
-    static Sqlite3* createInstance()
-    {
-        return new Sqlite3;
-    }
 };
 
 //------------------------------------------------------------------------------
 
 session::session()
-    : prepare(this)
-    , m_instance(Sqlite3::getInstance())
-    , m_bInTransaction(false)
-    , m_connection(nullptr)
+    : prepare (this)
+    , m_instance (SharedSingleton <Sqlite3>::getInstance ())
+    , m_bInTransaction (false)
+    , m_connection (nullptr)
 {
 }
 
 session::session(const session& deferredClone)
-    : prepare(this)
-    , m_instance(Sqlite3::getInstance())
-    , m_bInTransaction(false)
-    , m_connection(nullptr)
-    , m_fileName(deferredClone.m_fileName)
-    , m_connectString(deferredClone.m_connectString)
+    : prepare (this)
+    , m_instance (SharedSingleton <Sqlite3>::getInstance ())
+    , m_bInTransaction (false)
+    , m_connection (nullptr)
+    , m_fileName (deferredClone.m_fileName)
+    , m_connectString (deferredClone.m_connectString)
 {
     // shouldn't be needed since deferredClone did it
     //Sqlite::initialize();
@@ -120,8 +113,7 @@ session::~session()
 
 Error session::clone()
 {
-    if (m_connection)
-        Throw(Error().fail(__FILE__, __LINE__));    // already open
+    check_precondition (! m_connection);
 
     return open(m_fileName, m_connectString);
 }
@@ -139,8 +131,7 @@ Error session::open(String fileName, std::string options)
     Error err;
 
     // can't open twice
-    if (m_connection)
-        Throw(err.fail(__FILE__, __LINE__, Error::fileInUse));
+    check_precondition (! m_connection);
 
     int mode = 0;
     int flags = 0;
@@ -188,13 +179,12 @@ Error session::open(String fileName, std::string options)
                 }
                 else
                 {
-                    Throw(err.fail(__FILE__, __LINE__, Error::badParameter));
+                    fatal_error ("bad parameter");
                 }
             }
             else
             {
-                // duplicate
-                Throw(err.fail(__FILE__, __LINE__, Error::badParameter));
+                fatal_error ("duplicate parameter");
             }
         }
 
@@ -215,13 +205,12 @@ Error session::open(String fileName, std::string options)
                 }
                 else
                 {
-                    Throw(err.fail(__FILE__, __LINE__, Error::badParameter));
+                    fatal_error ("bad parameter");
                 }
             }
             else
             {
-                // duplicate
-                Throw(err.fail(__FILE__, __LINE__, Error::badParameter));
+                fatal_error ("duplicate parameter");
             }
         }
 
@@ -240,19 +229,17 @@ Error session::open(String fileName, std::string options)
                 }
                 else
                 {
-                    Throw(err.fail(__FILE__, __LINE__, Error::badParameter));
+                    fatal_error ("bad parameter");
                 }
             }
             else
             {
-                // duplicate
-                Throw(err.fail(__FILE__, __LINE__, Error::badParameter));
+                fatal_error ("duplicate parameter");
             }
         }
         else
         {
-            // unknown option
-            Throw(err.fail(__FILE__, __LINE__, Error::badParameter));
+            fatal_error ("unknown parameter");
         }
     }
 

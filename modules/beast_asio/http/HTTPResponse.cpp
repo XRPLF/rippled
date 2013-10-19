@@ -20,7 +20,7 @@
 HTTPResponse::HTTPResponse (
     HTTPVersion const& version_,
     StringPairArray& fields,
-    ContentBodyBuffer& body,
+    DynamicBuffer& body,
     unsigned short status_)
     : HTTPMessage (version_, fields, body)
     , m_status (status_)
@@ -31,3 +31,12 @@ unsigned short HTTPResponse::status () const
 {
     return m_status;
 }
+
+String HTTPResponse::toString () const
+{
+    String s;
+    s << "Status: " << String::fromNumber (status ()) << newLine;
+    s << this->HTTPMessage::toString ();
+    return s;
+}
+

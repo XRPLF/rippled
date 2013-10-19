@@ -44,7 +44,9 @@
 namespace beast
 {
 
-#include "math/beast_UnsignedInteger.h"
+# include "math/UnsignedIntegerCalc.h"
+#include "math/UnsignedInteger.h"
+#include "math/BinaryEncoding.h"
 
 }
 

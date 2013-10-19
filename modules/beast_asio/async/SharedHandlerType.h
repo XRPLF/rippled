@@ -21,7 +21,6 @@
 #define BEAST_ASIO_ASYNC_SHAREDHANDLERTYPE_H_INCLUDED
 
 /** An instance of SharedHandler that wraps an existing Handler.
-
     The wrapped handler will meet all the execution guarantees of
     the original Handler object.
 */
@@ -85,31 +84,21 @@ protected:
     // the size from the original allocation, which we saved at
     // the time of construction.
     //
-    void destroy ()
+    void destroy () const
     {
         Handler local (BOOST_ASIO_MOVE_CAST(Handler)(m_handler));
         std::size_t const size (m_size);
-        SharedHandler* const shared (static_cast <SharedHandler*>(this));
+        SharedHandler* const shared (
+            const_cast <SharedHandler*> (
+                static_cast <SharedHandler const*>(this)));
         shared->~SharedHandler ();
         boost_asio_handler_alloc_helpers::
             deallocate <Handler> (shared, size, local);
     }
 
-    // If these somehow get called, bad things will happen
-    //
-    void* operator new (std::size_t)
-    {
-        return pure_virtual_called (__FILE__, __LINE__);
-    }
-
-    void operator delete (void*)
-    {
-        return pure_virtual_called (__FILE__, __LINE__);
-    }
-
 protected:
     std::size_t const m_size;
-    Handler m_handler;
+    Handler mutable m_handler;
 };
 
 //--------------------------------------------------------------------------
@@ -216,7 +205,7 @@ Container <Handler>* newSharedHandlerContainer (BOOST_ASIO_MOVE_ARG(Handler) han
     Handler local (BOOST_ASIO_MOVE_CAST(Handler)(handler));
     void* const p (boost_asio_handler_alloc_helpers::
         allocate <Handler> (size, local));
-    return ::new (p) ContainerType (size, BOOST_ASIO_MOVE_CAST(Handler)(local));
+    return new (p) ContainerType (size, BOOST_ASIO_MOVE_CAST(Handler)(local));
 }
 
 #endif

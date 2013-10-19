@@ -20,63 +20,13 @@
 #ifndef BEAST_CORE_SYSTEM_BEFOREBOOST_H_INCLUDED
 #define BEAST_CORE_SYSTEM_BEFOREBOOST_H_INCLUDED
 
+// TargetPlatform.h should not use anything from BeastConfig.h
+#include "../../../beast/Config.h"
+
 // This file should be included before including any boost headers.
 // If you don't include this file, and you include boost headers,
 // Beast will generate a compile error with an explanation of why.
 
-#include "TargetPlatform.h"
-
-#include "BeastConfigCheck.h"
-
-#if BEAST_USE_BOOST_FEATURES
-
-// Prevent <boost/bind/placeholders.hpp> from being included
-#ifdef BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
-# error "boost/bind.hpp must not be included before this file"
-#else
-# define BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
-#endif
-
-#include <boost/bind.hpp>
-#include <boost/bind/arg.hpp>
-#include <boost/config.hpp>
-#include <boost/function.hpp>
-#include <boost/thread/tss.hpp>         // for FifoFreeStoreWithTLS
-#include <boost/version.hpp>
-
-#if BOOST_VERSION > 105499
-# error "This hasnt been tested with boost versions above 1.54"
-#endif
-
-// This is a hack to fix boost's goofy placeholders going into the global
-// namespace. First we prevent the user from including boost/bind.hpp
-// before us. Then we define the include guard macro and include
-// boost/bind.hpp ourselves to get the declarations. Finally we repeat
-// the missing placeholder declarations but put them in a proper namespace.
-//
-// We put the placeholders in boost::placeholders so they can be accessed
-// explicitly to handle the common case of a "using namespace oost" directive
-// being in effect.
-//
-// Declarations based on boost/bind/placeholders.cpp
-//
-namespace boost {
-namespace placeholders {
-extern boost::arg<1> _1;
-extern boost::arg<2> _2;
-extern boost::arg<3> _3;
-extern boost::arg<4> _4;
-extern boost::arg<5> _5;
-extern boost::arg<6> _6;
-extern boost::arg<7> _7;
-extern boost::arg<8> _8;
-extern boost::arg<9> _9;
-}
-using namespace placeholders;
-}
-
-#endif
-
-//------------------------------------------------------------------------------
+#include "BoostPlaceholdersFix.h"
 
 #endif

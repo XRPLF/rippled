@@ -97,8 +97,7 @@ void standard_into_type::do_into()
     if (colType == SQLITE_NULL)
     {
         // null encountered with no indicator
-        if (!m_ind)
-            Throw(Error().fail(__FILE__, __LINE__));
+        check_precondition (m_ind != nullptr);
 
         *m_ind = i_null;
     }
@@ -164,7 +163,7 @@ void standard_into_type::do_into()
                 break;
 
             default:
-                Throw(Error().fail(__FILE__, __LINE__));
+                fatal_error ("unknown case");
             }
         }
         break;
@@ -188,7 +187,7 @@ void standard_into_type::do_into()
                 break;
 
             default:
-                Throw(Error().fail(__FILE__, __LINE__));
+                fatal_error ("unknown case");
             };
         }
         break;
@@ -208,7 +207,7 @@ void standard_into_type::do_into()
             break;
 
             case x_stdwstring:
-                Throw(Error().fail(__FILE__, __LINE__));
+                fatal_error ("invalid case");
                 break;
 
             case x_beastString:
@@ -276,7 +275,7 @@ void standard_into_type::do_into()
                     break;
 
                 default:
-                    Throw(Error().fail(__FILE__, __LINE__));
+                    fatal_error ("unknown case");
                 }
 
             }
@@ -286,10 +285,10 @@ void standard_into_type::do_into()
         break;
 
         case SQLITE_BLOB:
-            Throw(Error().fail(__FILE__, __LINE__));
+            fatal_error ("invalid case");
 
         default:
-            Throw(Error().fail(__FILE__, __LINE__));
+            fatal_error ("unknown case");
         };
     }
 

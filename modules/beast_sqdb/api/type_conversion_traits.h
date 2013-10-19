@@ -72,9 +72,7 @@ struct type_conversion
     static void from_base(base_type const& in, indicator ind, T& out)
     {
         // null not allowed
-        if (ind == i_null)
-            Throw(Error().fail(__FILE__, __LINE__));
-
+        check_precondition (ind != i_null);
         out = in;
     }
 

@@ -30,7 +30,7 @@ namespace beast
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
-#include "keyvalue/beast_KeyvaDB.cpp"
+#include "keyvalue/KeyvaDB.cpp"
 #if BEAST_GCC
 #pragma GCC diagnostic pop
 #endif

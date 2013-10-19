@@ -21,21 +21,12 @@
 */
 //==============================================================================
 
-#if defined BEAST_CORE_H_INCLUDED
- /* When you add this cpp file to your project, you mustn't include it in a file where you've
-    already included any other headers - just put it inside a file on its own, possibly with your config
-    flags preceding it, but don't include anything else. That also includes avoiding any automatic prefix
-    header files that the compiler may be using.
- */
- #error "Incorrect use of BEAST cpp file"
-#endif
-
 // Your project must contain a BeastConfig.h file with your project-specific settings in it,
 // and your header search path must make it accessible to the module's files.
 #include "BeastConfig.h"
 
 //==============================================================================
-#include "native/beast_BasicNativeHeaders.h"
+#include "native/BasicNativeHeaders.h"
 #include "beast_core.h"
 
 #include <locale>
@@ -138,168 +129,153 @@
 namespace beast
 {
 
-#include "containers/beast_AbstractFifo.cpp"
-#include "containers/beast_DynamicObject.cpp"
-#include "containers/beast_NamedValueSet.cpp"
-#include "containers/beast_PropertySet.cpp"
-#include "containers/beast_Variant.cpp"
-#include "containers/DynamicArray.cpp"
-#include "containers/DynamicList.cpp"
-#include "containers/HashMap.cpp"
+#include "containers/AbstractFifo.cpp"
+#include "containers/DynamicObject.cpp"
+#include "containers/NamedValueSet.cpp"
+#include "containers/PropertySet.cpp"
+#include "containers/Variant.cpp"
 
-#include "diagnostic/beast_Debug.cpp"
-#include "diagnostic/beast_Error.cpp"
-#include "diagnostic/beast_FatalError.cpp"
-#include "diagnostic/beast_FPUFlags.cpp"
-#include "diagnostic/beast_LeakChecked.cpp"
-#include "diagnostic/beast_ProtectedCall.cpp"
-#include "diagnostic/beast_SemanticVersion.cpp"
-#include "diagnostic/beast_UnitTest.cpp"
-#include "diagnostic/beast_UnitTestUtilities.cpp"
+#include "diagnostic/FatalError.cpp"
+#include "diagnostic/FPUFlags.cpp"
+#include "diagnostic/SemanticVersion.cpp"
+#include "diagnostic/UnitTest.cpp"
+#include "diagnostic/UnitTestUtilities.cpp"
 
-#include "files/beast_DirectoryIterator.cpp"
-#include "files/beast_File.cpp"
-#include "files/beast_FileInputStream.cpp"
-#include "files/beast_FileOutputStream.cpp"
-#include "files/beast_FileSearchPath.cpp"
-#include "files/beast_RandomAccessFile.cpp"
-#include "files/beast_TemporaryFile.cpp"
+#include "files/DirectoryIterator.cpp"
+#include "files/File.cpp"
+#include "files/FileInputStream.cpp"
+#include "files/FileOutputStream.cpp"
+#include "files/FileSearchPath.cpp"
+#include "files/RandomAccessFile.cpp"
+#include "files/TemporaryFile.cpp"
 
-#include "json/beast_JSON.cpp"
+#include "json/JSON.cpp"
 
-#include "logging/beast_FileLogger.cpp"
-#include "logging/beast_Logger.cpp"
+#include "logging/FileLogger.cpp"
+#include "logging/Logger.cpp"
 
-#include "maths/beast_BigInteger.cpp"
-#include "maths/beast_Expression.cpp"
-#include "maths/beast_MurmurHash.cpp"
-#include "maths/beast_Random.cpp"
+#include "maths/BigInteger.cpp"
+#include "maths/Expression.cpp"
+#include "maths/MurmurHash.cpp"
+#include "maths/Random.cpp"
 
-#include "memory/beast_MemoryBlock.cpp"
-#include "memory/beast_FifoFreeStoreWithTLS.cpp"
-#include "memory/beast_FifoFreeStoreWithoutTLS.cpp"
-#include "memory/beast_GlobalPagedFreeStore.cpp"
-#include "memory/beast_PagedFreeStore.cpp"
+#include "memory/MemoryBlock.cpp"
 
-#include "misc/beast_Main.cpp"
-#include "misc/beast_Result.cpp"
-#include "misc/beast_Uuid.cpp"
+#include "misc/Main.cpp"
+#include "misc/Result.cpp"
+#include "misc/Uuid.cpp"
 
-#include "network/beast_MACAddress.cpp"
-#include "network/beast_NamedPipe.cpp"
-#include "network/beast_Socket.cpp"
-#include "network/beast_URL.cpp"
-#include "network/beast_IPAddress.cpp"
+#include "network/MACAddress.cpp"
+#include "network/NamedPipe.cpp"
+#include "network/Socket.cpp"
+#include "network/IPAddress.cpp"
 
-#include "streams/beast_BufferedInputStream.cpp"
-#include "streams/beast_FileInputSource.cpp"
-#include "streams/beast_InputStream.cpp"
-#include "streams/beast_MemoryInputStream.cpp"
-#include "streams/beast_MemoryOutputStream.cpp"
-#include "streams/beast_OutputStream.cpp"
-#include "streams/beast_SubregionStream.cpp"
+#include "streams/BufferedInputStream.cpp"
+#include "streams/FileInputSource.cpp"
+#include "streams/InputStream.cpp"
+#include "streams/MemoryInputStream.cpp"
+#include "streams/MemoryOutputStream.cpp"
+#include "streams/OutputStream.cpp"
+#include "streams/SubregionStream.cpp"
 
 #include "system/SystemStats.cpp"
 
-#include "text/beast_CharacterFunctions.cpp"
-#include "text/beast_LexicalCast.cpp"
-#include "text/beast_Identifier.cpp"
-#include "text/beast_LocalisedStrings.cpp"
-#include "text/beast_String.cpp"
-#include "text/beast_StringArray.cpp"
-#include "text/beast_StringPairArray.cpp"
-#include "text/beast_StringPool.cpp"
-#include "text/beast_TextDiff.cpp"
+#include "text/LexicalCast.cpp"
+#include "text/Identifier.cpp"
+#include "text/LocalisedStrings.cpp"
+#include "text/StringArray.cpp"
+#include "text/StringPairArray.cpp"
+#include "text/StringPool.cpp"
+#include "text/TextDiff.cpp"
 
 #include "thread/impl/TrackedMutex.cpp"
-#include "thread/beast_DeadlineTimer.cpp"
-#include "thread/beast_InterruptibleThread.cpp"
-#include "thread/beast_Semaphore.cpp"
-#include "thread/beast_CallQueue.cpp"
-#include "thread/beast_Listeners.cpp"
-#include "thread/beast_ManualCallQueue.cpp"
-#include "thread/beast_ParallelFor.cpp"
-#include "thread/beast_ThreadGroup.cpp"
-#include "thread/beast_ThreadWithCallQueue.cpp"
-#include "thread/beast_Workers.cpp"
+#include "thread/DeadlineTimer.cpp"
+#include "thread/Semaphore.cpp"
+#include "thread/Workers.cpp"
 
-#include "threads/beast_ChildProcess.cpp"
-#include "threads/beast_ReadWriteLock.cpp"
-#include "threads/beast_ReadWriteMutex.cpp"
-#include "threads/beast_SpinDelay.cpp"
-#include "threads/beast_Thread.cpp"
-#include "threads/beast_ThreadPool.cpp"
-#include "threads/beast_TimeSliceThread.cpp"
+#include "threads/ChildProcess.cpp"
+#include "threads/ReadWriteLock.cpp"
+#include "threads/SpinDelay.cpp"
 
-#include "time/beast_PerformanceCounter.cpp"
-#include "time/beast_PerformedAtExit.cpp"
-#include "time/beast_RelativeTime.cpp"
-#include "time/beast_Time.cpp"
+#include "time/PerformanceCounter.cpp"
+#include "time/AtExitHook.cpp"
+#include "time/Time.cpp"
 
-#include "xml/beast_XmlDocument.cpp"
-#include "xml/beast_XmlElement.cpp"
+#include "xml/XmlDocument.cpp"
+#include "xml/XmlElement.cpp"
 
-#include "zip/beast_GZIPDecompressorInputStream.cpp"
-#include "zip/beast_GZIPCompressorOutputStream.cpp"
-#include "zip/beast_ZipFile.cpp"
+#include "zip/GZIPDecompressorInputStream.cpp"
+#include "zip/GZIPCompressorOutputStream.cpp"
+#include "zip/ZipFile.cpp"
 
 #if BEAST_MAC || BEAST_IOS
-#include "native/beast_osx_ObjCHelpers.h"
+#include "native/osx_ObjCHelpers.h"
 #endif
 
 #if BEAST_WINDOWS
-#include "native/beast_win32_FPUFlags.cpp"
+#include "native/win32_FPUFlags.cpp"
 #else
-#include "native/beast_posix_FPUFlags.cpp"
+#include "native/posix_FPUFlags.cpp"
 #endif
 
 #if BEAST_ANDROID
-#include "native/beast_android_JNIHelpers.h"
+#include "native/android_JNIHelpers.h"
 #endif
 
 #if ! BEAST_WINDOWS
-#include "native/beast_posix_SharedCode.h"
-#include "native/beast_posix_NamedPipe.cpp"
+#include "native/posix_SharedCode.h"
+#include "native/posix_NamedPipe.cpp"
 #endif
 
 #if BEAST_MAC || BEAST_IOS
-#include "native/beast_mac_Files.mm"
-#include "native/beast_mac_Network.mm"
-#include "native/beast_mac_Strings.mm"
-#include "native/beast_mac_SystemStats.mm"
-#include "native/beast_mac_Threads.mm"
+#include "native/mac_Files.mm"
+#include "native/mac_Network.mm"
+#include "native/mac_Strings.mm"
+#include "native/mac_SystemStats.mm"
+#include "native/mac_Threads.mm"
 
 #elif BEAST_WINDOWS
-#include "native/beast_win32_ComSmartPtr.h"
-#include "native/beast_win32_Files.cpp"
-#include "native/beast_win32_Network.cpp"
-#include "native/beast_win32_Registry.cpp"
-#include "native/beast_win32_SystemStats.cpp"
-#include "native/beast_win32_Threads.cpp"
+#include "native/win32_ComSmartPtr.h"
+#include "native/win32_Files.cpp"
+#include "native/win32_Network.cpp"
+#include "native/win32_Registry.cpp"
+#include "native/win32_SystemStats.cpp"
+#include "native/win32_Threads.cpp"
 
 #elif BEAST_LINUX
-#include "native/beast_linux_Files.cpp"
-#include "native/beast_linux_Network.cpp"
-#include "native/beast_linux_SystemStats.cpp"
-#include "native/beast_linux_Threads.cpp"
+#include "native/linux_Files.cpp"
+#include "native/linux_Network.cpp"
+#include "native/linux_SystemStats.cpp"
+#include "native/linux_Threads.cpp"
 
 #elif BEAST_BSD
-#include "native/beast_bsd_Files.cpp"
-#include "native/beast_bsd_Network.cpp"
-#include "native/beast_bsd_SystemStats.cpp"
-#include "native/beast_bsd_Threads.cpp"
+#include "native/bsd_Files.cpp"
+#include "native/bsd_Network.cpp"
+#include "native/bsd_SystemStats.cpp"
+#include "native/bsd_Threads.cpp"
 
 #elif BEAST_ANDROID
-#include "native/beast_android_Files.cpp"
-#include "native/beast_android_Misc.cpp"
-#include "native/beast_android_Network.cpp"
-#include "native/beast_android_SystemStats.cpp"
-#include "native/beast_android_Threads.cpp"
+#include "native/android_Files.cpp"
+#include "native/android_Misc.cpp"
+#include "native/android_Network.cpp"
+#include "native/android_SystemStats.cpp"
+#include "native/android_Threads.cpp"
 
 #endif
 
-#include "threads/beast_HighResolutionTimer.cpp"
+#include "threads/HighResolutionTimer.cpp"
 
+}
+
+// Has to be outside the beast namespace
+extern "C" {
+void beast_reportFatalError (char const* message, char const* fileName, int lineNumber)
+{
+    if (beast::beast_isRunningUnderDebugger())
+        beast_breakDebugger;
+    beast::FatalError (message, fileName, lineNumber);
+    BEAST_ANALYZER_NORETURN
+}
 }
 
 #ifdef _CRTDBG_MAP_ALLOC
@@ -319,6 +295,22 @@ namespace beast
 #endif
 
 //------------------------------------------------------------------------------
+
+// When we compile the static library, which is really just for browsing the
+// sources in the Visual Studio IDE, we want to compile each individual unity
+// .cpp in order to make sure that it builds by itself. An application that
+// uses beast will typically include all of these .cpp files in one of its
+// own unity .cpp
+#if ! BEAST_COMPILING_STATIC_LIBARARY
+/*
+#include "../../beast/chrono/Chrono.cpp"
+#include "../../beast/crypto/Crypto.cpp"
+#include "../../beast/http/HTTP.cpp"
+#include "../../beast/net/Net.cpp"
+#include "../../beast/strings/Strings.cpp"
+#include "../../beast/utility/Utility.cpp"
+*/
+#endif
 
 // Must be outside the namespace
 #include "system/BoostPlaceholdersFix.cpp"

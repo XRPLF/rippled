@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CORE_SYSTEM_BOOSTINCLUDES_H_INCLUDED
-#define BEAST_CORE_SYSTEM_BOOSTINCLUDES_H_INCLUDED
+#ifndef BEAST_CORE_BOOSTINCLUDES_H_INCLUDED
+#define BEAST_CORE_BOOSTINCLUDES_H_INCLUDED
 
 #if BEAST_USE_BOOST_FEATURES
 

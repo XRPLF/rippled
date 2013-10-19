@@ -43,7 +43,7 @@ public:
 
         @see isNull, isNotNull
     */
-    inline SharedHandlerPtr () noexcept
+    inline SharedHandlerPtr ()
     {
     }
 
@@ -55,15 +55,14 @@ public:
     {
     }
 
-    /** Construct a reference from an existing container.
-    */
-    inline SharedHandlerPtr (SharedHandlerPtr const& other) noexcept
+    /** Construct a reference from an existing container. */
+    inline SharedHandlerPtr (SharedHandlerPtr const& other)
         : m_ptr (other.m_ptr)
     {
     }
 
     /** Assign a reference from an existing container. */
-    inline SharedHandlerPtr& operator= (SharedHandlerPtr const& other) noexcept
+    inline SharedHandlerPtr& operator= (SharedHandlerPtr const& other)
     {
         m_ptr = other.m_ptr;
         return *this;
@@ -73,7 +72,7 @@ public:
     /** Move-construct a reference from an existing container.
         The other container is set to a null handler.
     */
-    inline SharedHandlerPtr (SharedHandlerPtr&& other) noexcept
+    inline SharedHandlerPtr (SharedHandlerPtr&& other)
         : m_ptr (other.m_ptr)
     {
         other.m_ptr = nullptr;
@@ -82,7 +81,7 @@ public:
     /** Move-assign a reference from an existing container.
         The other container is set to a null handler.
     */
-    inline SharedHandlerPtr& operator= (SharedHandlerPtr&& other) noexcept
+    inline SharedHandlerPtr& operator= (SharedHandlerPtr&& other)
     {
         m_ptr = other.m_ptr;
         other.m_ptr = nullptr;
@@ -91,13 +90,13 @@ public:
 #endif
 
     /** Returns true if the handler is a null handler. */
-    inline bool isNull () const noexcept
+    inline bool isNull () const
     {
         return m_ptr == nullptr;
     }
 
     /** Returns true if the handler is not a null handler. */
-    inline bool isNotNull () const noexcept
+    inline bool isNotNull () const
     {
         return m_ptr != nullptr;
     }
@@ -105,7 +104,7 @@ public:
     /** Dereference the container.
         This returns a reference to the underlying SharedHandler object.
     */
-    inline SharedHandler& operator* () const noexcept
+    inline SharedHandler& operator* () const
     {
         return *m_ptr;
     }
@@ -113,7 +112,7 @@ public:
     /** SharedHandler member access.
         This lets you call functions directly on the SharedHandler.
     */
-    inline SharedHandler* operator-> () const noexcept
+    inline SharedHandler* operator-> () const
     {
         return m_ptr.get ();
     }
@@ -132,7 +131,7 @@ public:
 
         @endcode
     */
-    inline SharedHandler* get () const noexcept
+    inline SharedHandler* get () const
     {
         return m_ptr.get ();
     }
@@ -144,7 +143,7 @@ public:
     {
         (*m_ptr)();
     }
-    
+
     /** Invoke the SharedHandler with signature void(error_code)
         Normally this is called by a dispatcher, you shouldn't call it directly.
     */
@@ -180,7 +179,7 @@ private:
 //
 
 template <class Function>
-inline void asio_handler_invoke (BOOST_ASIO_MOVE_ARG(Function) f, SharedHandlerPtr* ptr)
+void asio_handler_invoke (BOOST_ASIO_MOVE_ARG(Function) f, SharedHandlerPtr* ptr)
 {
     boost_asio_handler_invoke_helpers::
         invoke <Function, SharedHandler>

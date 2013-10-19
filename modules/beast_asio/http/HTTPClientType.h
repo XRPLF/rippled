@@ -20,46 +20,54 @@
 #ifndef BEAST_ASIO_HTTPCLIENTTYPE_H_INCLUDED
 #define BEAST_ASIO_HTTPCLIENTTYPE_H_INCLUDED
 
+#include <utility>
+
+namespace beast {
+
 class HTTPClientBase
 {
 public:
-    struct Result
-    {
-        boost::system::error_code error;
-        SharedPtr <HTTPResponse> response;
-    };
-
-    class Listener
-    {
-    public:
-        virtual void onHTTPRequestComplete (
-            HTTPClientBase const& client,
-                Result const& result) = 0;
-    };
+    typedef boost::system::error_code           error_type;
+    typedef SharedPtr <HTTPResponse>            value_type;
+    typedef std::pair <error_type, value_type>  result_type;
 
     static HTTPClientBase* New (
+        Journal journal = Journal(),
         double timeoutSeconds = 30,
         std::size_t messageLimitBytes = 256 * 1024,
         std::size_t bufferSize = 16 * 1024);
 
+    /** Destroy the client.
+        This will cancel any pending i/o and block until all completion
+        handlers have been called.
+    */
     virtual ~HTTPClientBase () { }
 
-    virtual Result const& result () const = 0;
+    virtual result_type get (URL const& url) = 0;
 
-    virtual Result const& get (
-        UniformResourceLocator const& url) = 0;
+    /** Perform an asynchronous get on the specified URL.
+        Handler will be called with this signature:
+            void (result_type)
+    */
+    template <typename Handler>
+    void async_get (boost::asio::io_service& io_service,
+        URL const& url, BEAST_MOVE_ARG(Handler) handler)
+    {
+        async_get (io_service, url,
+            AbstractHandler <void (result_type)> (
+                BEAST_MOVE_CAST(Handler)(handler)));
+    }
 
     virtual void async_get (boost::asio::io_service& io_service,
-                            Listener* listener,
-                            UniformResourceLocator const& url) = 0;
+        URL const& url, AbstractHandler <void (result_type)> handler) = 0;
 
-    /** Cancel any pending asynchronous operations.
-        This must be called before destroying the container if there are
-        any pending asynchronous operations. This routine does nothing if
-        there are no pending operations. The call will block until all
-        pending i/o is canceled.
-    */
-    virtual void cancel () = 0;
+    /** Cancel all pending asynchronous operations. */
+    virtual void cancel() = 0;
+
+    /** Block until all asynchronous i/o completes. */
+    virtual void wait() = 0;
 };
+
+}
 
 #endif
