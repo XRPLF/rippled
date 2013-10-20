@@ -267,32 +267,51 @@ namespace detail {
 
 double monotonicCurrentTimeInSeconds()
 {
-	return (uint32) GetTickCount64();
+	return (uint32) GetTickCount64() / 1000.0;
 }
 	
 #elif BEAST_MAC || BEAST_IOS
 
 #include <time.h>
+
+static double timebaseRatio()
+{
+	struct TimebaseRatio
+	{
+		TimebaseRatio ()
+		{
+			uint64 numerator;
+			double denominator;
+			
+			mach_timebase_info_data_t timebase;
+			(void) mach_timebase_info (&timebase);
+			
+			if (timebase.numer % 1000000 == 0)
+			{
+				numerator   = timebase.numer / 1000000;
+				denominator = timebase.denom * 1000.0;
+			}
+			else
+			{
+				numerator   = timebase.numer;
+				denominator = timebase.denom * (uint64) 1000000 * 1000.0;
+			}
+			
+			ratio = numerator / denominator;
+		}
+		
+		double ratio;
+	};
+	
+	static TimebaseRatio timebaseRatio;
+	
+	return timebaseRatio.ratio;
+	
+}
 	
 double monotonicCurrentTimeInSeconds()
 {
-	uint64 numerator, denominator;
-	
-	mach_timebase_info_data_t timebase;
-	(void) mach_timebase_info (&timebase);
-	
-	if (timebase.numer % 1000000 == 0)
-	{
-		numerator   = timebase.numer / 1000000;
-		denominator = timebase.denom;
-	}
-	else
-	{
-		numerator   = timebase.numer;
-		denominator = timebase.denom * (uint64) 1000000;
-	}
-	
-	return (uint32) ((mach_absolute_time() * numerator) / denominator);
+	return mach_absolute_time() * timebaseRatio();
 }
 	
 #else
@@ -303,7 +322,7 @@ double monotonicCurrentTimeInSeconds()
 {
 	timespec t;
 	clock_gettime (CLOCK_MONOTONIC, &t);
-	return t.tv_sec * 1000 + t.tv_nsec / 1000000;
+	return t.tv_sec + t.tv_nsec / 1000000000.0;
 }
 	
 #endif
