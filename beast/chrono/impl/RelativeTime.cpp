@@ -265,60 +265,56 @@ namespace detail {
 
 #include <windows.h>
 
-double monotonicCurrentTimeInSeconds()
+static double monotonicCurrentTimeInSeconds()
 {
-	return (uint32) GetTickCount64() / 1000.0;
+	return GetTickCount64() / 1000.0;
 }
 	
 #elif BEAST_MAC || BEAST_IOS
 
 #include <time.h>
-
-static double timebaseRatio()
+	
+static double monotonicCurrentTimeInSeconds()
 {
-	struct TimebaseRatio
+	struct StaticInitializer
 	{
-		TimebaseRatio ()
+		StaticInitializer ()
 		{
-			uint64 numerator;
+			double numerator;
 			double denominator;
-			
+
 			mach_timebase_info_data_t timebase;
 			(void) mach_timebase_info (&timebase);
 			
 			if (timebase.numer % 1000000 == 0)
 			{
-				numerator   = timebase.numer / 1000000;
+				numerator   = timebase.numer / 1000000.0;
 				denominator = timebase.denom * 1000.0;
 			}
 			else
 			{
 				numerator   = timebase.numer;
-				denominator = timebase.denom * (uint64) 1000000 * 1000.0;
+                // VFALCO NOTE I don't understand this code
+				//denominator = timebase.denom * (uint64) 1000000 * 1000.0;
+                denominator = timebase.denom * 1000000000.0;
 			}
 			
 			ratio = numerator / denominator;
 		}
-		
+
 		double ratio;
 	};
 	
-	static TimebaseRatio timebaseRatio;
-	
-	return timebaseRatio.ratio;
-	
+	static StaticInitializer const data;
+
+    return mach_absolute_time() * data.ratio;
 }
-	
-double monotonicCurrentTimeInSeconds()
-{
-	return mach_absolute_time() * timebaseRatio();
-}
-	
+
 #else
 	
 #include <time.h>
 
-double monotonicCurrentTimeInSeconds()
+static double monotonicCurrentTimeInSeconds()
 {
 	timespec t;
 	clock_gettime (CLOCK_MONOTONIC, &t);
@@ -327,32 +323,31 @@ double monotonicCurrentTimeInSeconds()
 	
 #endif
 
-// Converts milliseconds to a RelativeTme
-static RelativeTime toRelativeTime (uint32 ms)
-{
-	return RelativeTime (ms / 1000.0);
-}
-
 // Records and returns the time from process startup
-static RelativeTime getStartupTime()
+static double getStartupTime()
 {
-	struct StartupTime
+	struct StaticInitializer
 	{
-		StartupTime ()
-		{ s = toRelativeTime (detail::monotonicCurrentTimeInSeconds()); }
-		RelativeTime s;
+		StaticInitializer ()
+		{
+            when = detail::monotonicCurrentTimeInSeconds();
+        }
+		
+        double when;
 	};
-	
-	static StartupTime startupTime;
-	
-	return startupTime.s;
+
+	static StaticInitializer const data;
+
+	return data.when;
 }
 
 // Used to call getStartupTime as early as possible
 struct StartupTimeStaticInitializer
 {
 	StartupTimeStaticInitializer ()
-	{ getStartupTime(); }
+	{
+        getStartupTime();
+    }
 };
 
 static StartupTimeStaticInitializer startupTimeStaticInitializer;
@@ -361,7 +356,8 @@ static StartupTimeStaticInitializer startupTimeStaticInitializer;
 
 RelativeTime RelativeTime::fromStartup ()
 {
-	return detail::toRelativeTime (detail::monotonicCurrentTimeInSeconds()) - detail::getStartupTime();
+	return RelativeTime (
+        detail::monotonicCurrentTimeInSeconds() - detail::getStartupTime());
 }
 
 }
