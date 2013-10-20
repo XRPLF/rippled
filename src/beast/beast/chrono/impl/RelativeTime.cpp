@@ -265,7 +265,7 @@ namespace detail {
 
 #include <windows.h>
 
-uint32 millisecondsSinceStartup()
+double monotonicCurrentTimeInSeconds()
 {
 	return (uint32) GetTickCount64();
 }
@@ -274,7 +274,7 @@ uint32 millisecondsSinceStartup()
 
 #include <time.h>
 	
-uint32 millisecondsSinceStartup()
+double monotonicCurrentTimeInSeconds()
 {
 	uint64 numerator, denominator;
 	
@@ -299,7 +299,7 @@ uint32 millisecondsSinceStartup()
 	
 #include <time.h>
 
-uint32 millisecondsSinceStartup()
+double monotonicCurrentTimeInSeconds()
 {
 	timespec t;
 	clock_gettime (CLOCK_MONOTONIC, &t);
@@ -320,7 +320,7 @@ static RelativeTime getStartupTime()
 	struct StartupTime
 	{
 		StartupTime ()
-		{ s = toRelativeTime (detail::millisecondsSinceStartup()); }
+		{ s = toRelativeTime (detail::monotonicCurrentTimeInSeconds()); }
 		RelativeTime s;
 	};
 	
@@ -342,7 +342,7 @@ static StartupTimeStaticInitializer startupTimeStaticInitializer;
 
 RelativeTime RelativeTime::fromStartup ()
 {
-	return detail::toRelativeTime (detail::millisecondsSinceStartup()) - detail::getStartupTime();
+	return detail::toRelativeTime (detail::monotonicCurrentTimeInSeconds()) - detail::getStartupTime();
 }
 
 }
