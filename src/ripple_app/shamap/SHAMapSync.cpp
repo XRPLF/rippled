@@ -160,75 +160,14 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
 
 std::vector<uint256> SHAMap::getNeededHashes (int max, SHAMapSyncFilter* filter)
 {
-    std::vector<uint256> ret;
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    std::vector<uint256> nodeHashes;
+    nodeHashes.reserve(max);
 
-    assert (root->isValid ());
+    std::vector<SHAMapNode> nodeIDs;
+    nodeIDs.reserve(max);
 
-    if (root->isFullBelow () || !root->isInner ())
-    {
-        clearSynching ();
-        return ret;
-    }
-
-    std::stack<SHAMapTreeNode*> stack;
-    stack.push (root.get ());
-
-    while (!stack.empty ())
-    {
-        SHAMapTreeNode* node = stack.top ();
-        stack.pop ();
-
-        int base = rand () % 256;
-        bool have_all = true;
-
-        for (int ii = 0; ii < 16; ++ii)
-        {
-            // traverse in semi-random order
-            int branch = (base + ii) % 16;
-
-            if (!node->isEmptyBranch (branch))
-            {
-                uint256 const& childHash = node->getChildHash (branch);
-
-                if (!fullBelowCache.isPresent (childHash))
-                {
-                    SHAMapNode childID = node->getChildNodeID (branch);
-                    SHAMapTreeNode* d = getNodePointerNT (childID, childHash, filter);
-
-                    if (!d)
-                    {
-                        have_all = false;
-                        ret.push_back (childHash);
-
-                        if (--max <= 0)
-                            return ret;
-                    }
-                    else if (d->isInner () && !d->isFullBelow ())
-                    {
-                        have_all = false;
-                        stack.push (d);
-                    }
-                }
-            }
-        }
-
-        if (have_all)
-        {
-            node->setFullBelow ();
-            if (mType == smtSTATE)
-            {
-                fullBelowCache.add (node->getNodeHash ());
-                if (getConfig().NODE_SIZE <= 3)
-                    dropBelow(node);
-	    }
-        }
-    }
-
-    if (ret.empty ())
-        clearSynching ();
-
-    return ret;
+    getMissingNodes(nodeIDs, nodeHashes, max, filter);
+    return nodeHashes;
 }
 
 bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& nodeIDs,
