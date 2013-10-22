@@ -52,7 +52,7 @@ public:
     }
 
     void set_plain_only() {
-	m_plain_only = true;
+    	m_plain_only = true;
     }
 
     // should be private friended?

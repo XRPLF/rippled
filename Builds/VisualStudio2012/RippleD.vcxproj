@@ -2062,6 +2062,7 @@
     <ClInclude Include="..\..\src\websocket\src\sha1\sha1.h" />
     <ClInclude Include="..\..\src\websocket\src\shared_const_buffer.hpp" />
     <ClInclude Include="..\..\src\websocket\src\sockets\autotls.hpp" />
+    <ClInclude Include="..\..\src\websocket\src\sockets\multitls.hpp" />
     <ClInclude Include="..\..\src\websocket\src\sockets\plain.hpp" />
     <ClInclude Include="..\..\src\websocket\src\sockets\socket_base.hpp" />
     <ClInclude Include="..\..\src\websocket\src\sockets\tls.hpp" />

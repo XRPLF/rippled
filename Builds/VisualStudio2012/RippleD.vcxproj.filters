@@ -1736,9 +1736,6 @@
     <ClInclude Include="..\..\src\ripple_net\basics\RPCDoor.h">
       <Filter>[2] Old Ripple\ripple_net\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\LoadSource.h">
-      <Filter>[1] Ripple\ripple_core\functional</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\LoadManager.h">
       <Filter>[1] Ripple\ripple_app\main</Filter>
     </ClInclude>
@@ -2357,6 +2354,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\sitefiles\api\Listener.h">
       <Filter>[1] Ripple\sitefiles\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\websocket\src\sockets\multitls.hpp">
+      <Filter>[0] Libraries\websocket</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
