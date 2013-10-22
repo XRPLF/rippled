@@ -294,14 +294,16 @@ std::pair <PropertyStream::Source*, bool> PropertyStream::Source::find (std::str
         SharedState::Access state (source->m_state);
         for (List <Item>::iterator iter (state->children.begin());;)
         {
+            if (iter == state->children.end())
+                return std::make_pair (nullptr, false);
+
             if (iter->source().m_name == s)
             {
                 source = &iter->source();
                 break;
             }
 
-            if (++iter == state->children.end())
-                return std::make_pair (nullptr, false);
+            ++iter;
         }
     }
 }
