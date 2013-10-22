@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_H_INCLUDED
-#define BEAST_ASIO_H_INCLUDED
+#ifndef BEAST_ASIO_MODULE_H_INCLUDED
+#define BEAST_ASIO_MODULE_H_INCLUDED
 
 //------------------------------------------------------------------------------
 
@@ -53,6 +53,7 @@
 # define BEAST_SOCKET_VIRTUAL
 #endif
 
+#include "../../beast/Asio.h"
 #include "../../beast/MPL.h"
 #include "../../beast/Utility.h"
 #include "../../beast/HTTP.h"
