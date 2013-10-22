@@ -82,6 +82,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\beast\Arithmetic.h" />
+    <ClInclude Include="..\..\beast\Asio.h" />
+    <ClInclude Include="..\..\beast\asio\IPAddressConversion.h" />
     <ClInclude Include="..\..\beast\Atomic.h" />
     <ClInclude Include="..\..\beast\Boost.h" />
     <ClInclude Include="..\..\beast\boost\ErrorCode.h" />
@@ -401,6 +403,13 @@
     <ClInclude Include="..\..\modules\beast_sqlite\sqlite\sqlite3ext.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\beast\asio\Asio.cpp" />
+    <ClCompile Include="..\..\beast\asio\impl\IPAddressConversion.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\beast\boost\Boost.cpp" />
     <ClCompile Include="..\..\beast\chrono\Chrono.cpp" />
     <ClCompile Include="..\..\beast\chrono\impl\CPUMeter.cpp">

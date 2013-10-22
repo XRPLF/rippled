@@ -38,6 +38,7 @@
 #include "../beast/modules/beast_db/beast_db.cpp"
 #include "../beast/modules/beast_sqdb/beast_sqdb.cpp"
 
+#include "../beast/beast/asio/Asio.cpp"
 #include "../beast/beast/boost/Boost.cpp"
 #include "../beast/beast/chrono/Chrono.cpp"
 #include "../beast/beast/crypto/Crypto.cpp"
