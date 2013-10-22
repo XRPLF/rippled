@@ -27,6 +27,32 @@ template <class StreamSocket>
 class MultiSocketType
     : public MultiSocket
 {
+private:
+    // Tells us what to do next
+    //
+    enum State
+    {
+        stateNone,              // Uninitialized, unloved.
+        stateHandshake,         // We need a call to handshake() to proceed
+        stateExpectPROXY,       // We expect to see a proxy handshake
+        stateDetectSSL,         // We should detect SSL
+        stateHandshakeFinal,    // Final call to underlying stream handshake()
+        stateReady              // Stream is set and ready to go
+    };
+
+    Flag m_flags;
+    State m_state;
+    boost::asio::ssl::context& m_ssl_context;
+    int m_verify_mode;
+    ScopedPointer <Socket> m_stream;
+    ScopedPointer <Socket> m_ssl_stream; // the ssl portion of our stream if it exists
+    bool m_needsShutdown;
+    StreamSocket m_next_layer;
+    ProxyInfo m_proxyInfo;
+    bool m_proxyInfoSet;
+    SSL* m_native_ssl_handle;
+    Flag m_origFlags;
+
 protected:
     typedef boost::system::error_code error_code;
 
@@ -44,6 +70,7 @@ public:
         , m_stream (nullptr)
         , m_needsShutdown (false)
         , m_next_layer (arg)
+        , m_proxyInfoSet (false)
         , m_native_ssl_handle (nullptr)
         , m_origFlags (cleaned_flags (flags))
     {
@@ -53,18 +80,6 @@ public:
     }
 
 protected:
-    // Tells us what to do next
-    //
-    enum State
-    {
-        stateNone,              // Uninitialized, unloved.
-        stateHandshake,         // We need a call to handshake() to proceed
-        stateExpectPROXY,       // We expect to see a proxy handshake
-        stateDetectSSL,         // We should detect SSL
-        stateHandshakeFinal,    // Final call to underlying stream handshake()
-        stateReady              // Stream is set and ready to go
-    };
-
     //--------------------------------------------------------------------------
     //
     // MultiSocket
@@ -73,6 +88,36 @@ protected:
     Flag getFlags ()
     {
         return m_origFlags;
+    }
+
+    IPAddress local_endpoint()
+    {
+        return IPAddressConversion::from_asio (
+            m_next_layer.local_endpoint());
+    }
+
+    IPAddress remote_endpoint()
+    {
+        if (m_proxyInfoSet)
+        {
+            if (m_proxyInfo.protocol == "TCP4")
+            {
+                return IPAddress (
+                    IPAddress::V4 (
+                        m_proxyInfo.destAddress.value [0],
+                        m_proxyInfo.destAddress.value [1],
+                        m_proxyInfo.destAddress.value [2],
+                        m_proxyInfo.destAddress.value [4])
+                    , m_proxyInfo.destPort);
+            }
+
+            // VFALCO TODO IPv6 support
+            bassertfalse;
+            return IPAddress();
+        }
+
+        return IPAddressConversion::from_asio (
+            m_next_layer.remote_endpoint());
     }
 
     ProxyInfo getProxyInfo ()
@@ -689,6 +734,7 @@ protected:
                         if (op.getLogic ().success ())
                         {
                             m_proxyInfo = op.getLogic ().getInfo ();
+                            m_proxyInfoSet = true;
 
                             // Strip off the PROXY flag.
                             m_flags = m_flags.without (Flag::proxy);
@@ -775,6 +821,15 @@ protected:
     struct AsyncOp : ComposedAsyncOperation
     {
         typedef SharedHandlerAllocator <char> Allocator;
+
+        SharedHandlerPtr m_handler;
+        MultiSocketType <StreamSocket>& m_owner;
+        Stream& m_stream;
+        handshake_type const m_type;
+        boost::asio::basic_streambuf <Allocator> m_buffer;
+        HandshakeDetectorType <next_layer_type, HandshakeDetectLogicPROXY> m_proxy;
+        HandshakeDetectorType <next_layer_type, HandshakeDetectLogicSSL3> m_ssl;
+        bool m_running;
         
         AsyncOp (MultiSocketType <StreamSocket>& owner, Stream& stream,
             handshake_type type, ConstBuffers const& buffers,
@@ -865,6 +920,7 @@ protected:
                             if (m_proxy.getLogic ().success ())
                             {
                                 m_owner.m_proxyInfo = m_proxy.getLogic ().getInfo ();
+                                m_owner.m_proxyInfoSet = true;
 
                                 // Strip off the PROXY flag.
                                 m_owner.m_flags = m_owner.m_flags.without (Flag::proxy);
@@ -933,30 +989,7 @@ protected:
         {
             return m_running || m_handler->is_continuation ();
         }
-
-    private:
-        SharedHandlerPtr m_handler;
-        MultiSocketType <StreamSocket>& m_owner;
-        Stream& m_stream;
-        handshake_type const m_type;
-        boost::asio::basic_streambuf <Allocator> m_buffer;
-        HandshakeDetectorType <next_layer_type, HandshakeDetectLogicPROXY> m_proxy;
-        HandshakeDetectorType <next_layer_type, HandshakeDetectLogicSSL3> m_ssl;
-        bool m_running;
     };
-
-private:
-    Flag m_flags;
-    State m_state;
-    boost::asio::ssl::context& m_ssl_context;
-    int m_verify_mode;
-    ScopedPointer <Socket> m_stream;
-    ScopedPointer <Socket> m_ssl_stream; // the ssl portion of our stream if it exists
-    bool m_needsShutdown;
-    StreamSocket m_next_layer;
-    ProxyInfo m_proxyInfo;
-    SSL* m_native_ssl_handle;
-    Flag m_origFlags;
 };
 
 #endif
