@@ -41,22 +41,6 @@ private:
 
     //--------------------------------------------------------------------------
 
-    static boost::asio::ip::tcp::endpoint fromIPAddress (
-        IPAddress const& ipEndpoint)
-    {
-        if (ipEndpoint.isV4 ())
-        {
-            return boost::asio::ip::tcp::endpoint (
-                boost::asio::ip::address_v4 (
-                    ipEndpoint.v4().value),
-                        ipEndpoint.port ());
-        }
-        bassertfalse;
-        return boost::asio::ip::tcp::endpoint ();
-    }
-
-    //--------------------------------------------------------------------------
-
     class Request
         : public SharedObject
         , public List <Request>::Node
@@ -88,9 +72,10 @@ private:
         {
             m_owner.add (*this);
 
-            m_socket.async_connect (fromIPAddress (m_address),
-                wrapHandler (boost::bind (&Request::handle_connect, Ptr(this),
-                    boost::asio::placeholders::error), m_handler));
+            m_socket.async_connect (IPAddressConversion::to_asio_endpoint (
+                m_address), wrapHandler (boost::bind (
+                    &Request::handle_connect, Ptr(this),
+                        boost::asio::placeholders::error), m_handler));
         }
 
         ~Request ()
