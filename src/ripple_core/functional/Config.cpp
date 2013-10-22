@@ -78,7 +78,7 @@ Config::Config ()
     PEER_CONNECT_LOW_WATER  = DEFAULT_PEER_CONNECT_LOW_WATER;
 
     PEER_PRIVATE            = false;
-    PEERS_MAX               = DEFAULT_PEERS_MAX;
+    PEERS_MAX               = 0;    // indicates "use default"
 
     TRANSACTION_FEE_BASE    = DEFAULT_FEE_DEFAULT;
 
@@ -314,7 +314,7 @@ void Config::load ()
                 PEER_PRIVATE        = lexicalCastThrow <bool> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_PEERS_MAX, strTemp))
-                PEERS_MAX           = std::max (1, lexicalCastThrow <int> (strTemp));
+                PEERS_MAX           = lexicalCastThrow <int> (strTemp);
 
             smtTmp = SectionEntries (secConfig, SECTION_RPC_ADMIN_ALLOW);
 

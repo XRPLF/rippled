@@ -119,6 +119,8 @@ public:
         , m_cache (journal)
         , m_legacyCache (store, journal)
     {
+        /* assign sensible default values */
+        m_config.fillInDefaultValues();
     }
 
     DiscreteTime get_now()
@@ -243,6 +245,10 @@ public:
     void setConfig (Config const& config)
     {
         m_config = config;
+        
+        /* give sensible defaults to any uninitialized fields */
+        m_config.fillInDefaultValues();
+          
         m_slots.update (m_config);
     }
 

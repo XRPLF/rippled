@@ -43,6 +43,11 @@ struct Config
 
     /** Write the configuration into a property stream */
     void onWrite(PropertyStream::Map& map);
+
+    /** Called to set sensible default values for anything
+        that hasn't been initialized.
+    */
+    void fillInDefaultValues();
 };
 
 }
