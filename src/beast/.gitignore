@@ -15,6 +15,7 @@ Docs
 *.manifest
 *.manifest.res
 *.o
+*.opensdf
 *.d
 *.sdf
 xcuserdata
@@ -24,5 +25,5 @@ contents.xcworkspacedata
 profile
 Builds/VisualStudio2012/Debug
 Builds/VisualStudio2012/Release
-
+project.xcworkspace
 modules/beast_cryptopp
