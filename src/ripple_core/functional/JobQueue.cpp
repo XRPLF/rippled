@@ -265,6 +265,7 @@ public:
         Json::Value ret (Json::objectValue);
 
         ret["threads"] = m_workers.getNumberOfThreads ();
+        ret["cpu"] = String::fromNumber <int> (m_workers.getUtilization() * 100) + "%";
 
         Json::Value priorities = Json::arrayValue;
 
