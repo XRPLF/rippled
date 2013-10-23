@@ -143,9 +143,10 @@ public:
     typedef ScopedTimeInterval <MeasureActive>  ScopedActiveTime;
 
     /** Returns the fraction of time that the CPU is being used. */
-    double getUtilizaton () const
+    double getUtilization () const
     {
         SharedState::ConstAccess state (m_state);
+
         double const seconds (state->usage.seconds());
         if (seconds > 0)
             return (state->usage.active.inSeconds() / seconds);

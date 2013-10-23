@@ -466,8 +466,8 @@ public:
     }
 
     /** Returns the percentage of time the queue is using the CPU. */
-    double getUtilizaton () const
-        { return m_cpuMeter.getUtilizaton(); }
+    double getUtilization () const
+        { return m_cpuMeter.getUtilization(); }
 
     /** Returns the allocator associated with the container. */
     allocator_type get_allocator() const

@@ -111,6 +111,11 @@ int Workers::numberOfCurrentlyRunningTasks () const noexcept
     return m_runningTaskCount.get ();
 }
 
+double Workers::getUtilization () const
+{
+    return m_usage.getUtilization();
+}
+
 void Workers::deleteWorkers (LockFreeStack <Worker>& stack)
 {
     for (;;)
@@ -157,36 +162,44 @@ void Workers::Worker::run ()
         {
             // Acquire a task or "internal task."
             //
-            m_workers.m_semaphore.wait ();
-
-            // See if there's a pause request. This
-            // counts as an "internal task."
-            //
-            int pauseCount = m_workers.m_pauseCount.get ();
-
-            if (pauseCount > 0)
             {
-                // Try to decrement
-                pauseCount = --m_workers.m_pauseCount;
+                CPUMeter::ScopedIdleTime elapsed (m_workers.m_usage);
 
-                if (pauseCount >= 0)
-                {
-                    // We got paused
-                    break;
-                }
-                else
-                {
-                    // Undo our decrement
-                    ++m_workers.m_pauseCount;
-                }
+                m_workers.m_semaphore.wait ();
             }
 
-            // We couldn't pause so we must have gotten
-            // unblocked in order to process a task.
-            //
-            ++m_workers.m_runningTaskCount;
-            m_workers.m_callback.processTask ();
-            --m_workers.m_runningTaskCount;
+            {
+                CPUMeter::ScopedActiveTime elapsed (m_workers.m_usage);
+
+                // See if there's a pause request. This
+                // counts as an "internal task."
+                //
+                int pauseCount = m_workers.m_pauseCount.get ();
+
+                if (pauseCount > 0)
+                {
+                    // Try to decrement
+                    pauseCount = --m_workers.m_pauseCount;
+
+                    if (pauseCount >= 0)
+                    {
+                        // We got paused
+                        break;
+                    }
+                    else
+                    {
+                        // Undo our decrement
+                        ++m_workers.m_pauseCount;
+                    }
+                }
+
+                // We couldn't pause so we must have gotten
+                // unblocked in order to process a task.
+                //
+                ++m_workers.m_runningTaskCount;
+                m_workers.m_callback.processTask ();
+                --m_workers.m_runningTaskCount;
+            }
 
             // Put the name back in case the callback changed it
             Thread::setCurrentThreadName (m_threadName);
