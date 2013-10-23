@@ -119,9 +119,9 @@ private:
     protocol::TMHello                     mHello;
 
     bool            m_remoteAddressSet;
-    IPEndpoint      m_remoteAddress;
+    IPAddress      m_remoteAddress;
     Resource::Consumer m_usage;
-
+    
 public:
     static char const* getCountedObjectName () { return "Peer"; }
 
@@ -215,7 +215,7 @@ public:
         return (uMin >= mMinLedger) && (uMax <= mMaxLedger);
     }
 
-    IPEndpoint getPeerEndpoint() const
+    IPAddress getPeerEndpoint() const
     {
         return m_remoteAddress;
     }
@@ -308,6 +308,7 @@ private:
         }
         else
         {
+
             if (m_socket->getFlags ().set (MultiSocket::Flag::proxy) && m_isInbound)
             {
                 MultiSocket::ProxyInfo const proxyInfo (m_socket->getProxyInfo ());
@@ -315,7 +316,7 @@ private:
                 if (proxyInfo.protocol == "TCP4")
                 {
                     m_remoteAddressSet = true;
-                    m_remoteAddress = IPEndpoint (IPEndpoint::V4 (
+                    m_remoteAddress = IPAddress (IPAddress::V4 (
                         proxyInfo.sourceAddress.value [0],
                         proxyInfo.sourceAddress.value [1],
                         proxyInfo.sourceAddress.value [2],
@@ -359,7 +360,7 @@ private:
                 if (addr.is_v4())
                 {
                     boost::asio::ip::address_v4::bytes_type bytes (addr.to_v4().to_bytes());
-                    m_remoteAddress = IPEndpoint (IPEndpoint::V4 (
+                    m_remoteAddress = IPAddress (IPAddress::V4 (
                         bytes[0], bytes[1], bytes[2], bytes[3]), 0);
                     if (! m_isInbound)
                         m_remoteAddress = m_remoteAddress.withPort (
@@ -1693,8 +1694,8 @@ void PeerImp::recvPeers (protocol::TMPeers& packet)
         addr.s_addr = packet.nodes (i).ipv4 ();
 
         {
-            IPEndpoint::V4 v4 (ntohl (addr.s_addr));
-            IPEndpoint ep (v4, packet.nodes (i).ipv4port ());
+            IPAddress::V4 v4 (ntohl (addr.s_addr));
+            IPAddress ep (v4, packet.nodes (i).ipv4port ());
             getApp().getPeers().getPeerFinder().onPeerLegacyEndpoint (ep);
         }
 
@@ -1729,8 +1730,8 @@ void PeerImp::recvEndpoints (protocol::TMEndpoints& packet)
         {
             in_addr addr;
             addr.s_addr = tm.ipv4().ipv4();
-            IPEndpoint::V4 v4 (ntohl (addr.s_addr));
-            endpoint.address = IPEndpoint (v4, tm.ipv4().ipv4port ());
+            IPAddress::V4 v4 (ntohl (addr.s_addr));
+            endpoint.address = IPAddress (v4, tm.ipv4().ipv4port ());
         }
         else
         {
@@ -1751,8 +1752,8 @@ void PeerImp::recvEndpoints (protocol::TMEndpoints& packet)
         // maxSlots
         endpoint.incomingSlotsMax = tm.maxslots();
 
-        // uptimeMinutes
-        endpoint.uptimeMinutes = tm.uptimeminutes();
+        // uptimeSeconds
+        endpoint.uptimeSeconds = tm.uptimeseconds();
 
         endpoints.push_back (endpoint);
     }

@@ -40,7 +40,10 @@ typedef boost::multi_index_container <
     PeerInfo, boost::multi_index::indexed_by <
         boost::multi_index::hashed_unique <
             BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,PeerID,id),
-                PeerID::hasher>
+                PeerID::hasher>,
+        boost::multi_index::hashed_non_unique <
+            BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,IPAddress,address),
+                IPAddress::hasher>
     >
 > Peers;
 
@@ -74,11 +77,17 @@ public:
 
     //--------------------------------------------------------------------------
 
+    DiscreteClock <DiscreteTime> m_clock;
     Callback& m_callback;
     Store& m_store;
     Checker& m_checker;
     Journal m_journal;
+
     Config m_config;
+
+    // A list of peers that should always be connected
+    typedef std::set <IPAddress> FixedPeers;
+    FixedPeers m_fixedPeers;
 
     // A list of dynamic sources to consult as a fallback
     std::vector <SharedPtr <Source> > m_sources;
@@ -96,17 +105,27 @@ public:
     //--------------------------------------------------------------------------
 
     Logic (
+        DiscreteClock <DiscreteTime> clock,
         Callback& callback,
         Store& store,
         Checker& checker,
         Journal journal)
-        : m_callback (callback)
+        : m_clock (clock)
+        , m_callback (callback)
         , m_store (store)
         , m_checker (checker)
         , m_journal (journal)
+        , m_slots (clock)
         , m_cache (journal)
         , m_legacyCache (store, journal)
     {
+        /* assign sensible default values */
+        m_config.fillInDefaultValues();
+    }
+
+    DiscreteTime get_now()
+    {
+        return m_clock();
     }
 
     /** Stop the logic.
@@ -123,13 +142,34 @@ public:
             state->fetchSource->cancel ();
     }
 
+    // Output statistics
+    void onWrite (PropertyStream::Map& map)
+    {
+        // VFALCO NOTE These ugly casts are needed because
+        //             of how std::size_t is declared on some linuxes
+        //
+        map ["cache"]   = uint32(m_cache.size());
+        map ["legacy"]  = uint32(m_legacyCache.size());
+        map ["fixed_desired"] = uint32 (m_fixedPeers.size());
+        
+        {
+            PropertyStream::Map child ("slots", map);
+            m_slots.onWrite (child);
+        }
+
+        {
+            PropertyStream::Map child ("config", map);
+            m_config.onWrite (child);
+        }
+    }
+
     //--------------------------------------------------------------------------
 
     // Load persistent state information from the Store
     //
     void load ()
     {
-        m_legacyCache.load();
+        m_legacyCache.load (get_now());
     }
 
     // Returns a suitable Endpoint representing us.
@@ -140,19 +180,19 @@ public:
         bassert (m_config.wantIncoming);
 
         Endpoint ep;
-        ep.address = IPEndpoint (
-            IPEndpoint::V4 ()).withPort (m_config.listeningPort);
+        ep.address = IPAddress (
+            IPAddress::V4 ()).withPort (m_config.listeningPort);
         ep.hops = 0;
         ep.incomingSlotsAvailable = m_slots.inboundSlots;
         ep.incomingSlotsMax = m_slots.inboundSlotsMaximum;
-        ep.uptimeMinutes = m_slots.uptimeMinutes();
+        ep.uptimeSeconds = m_slots.uptimeSeconds();
 
         return ep;
     }
 
-    // Returns true if the IPEndpoint contains no invalid data.
+    // Returns true if the IPAddress contains no invalid data.
     //
-    bool validIPEndpoint (IPEndpoint const& address)
+    bool validIPAddress (IPAddress const& address)
     {
         if (! address.isPublic())
             return false;
@@ -161,22 +201,39 @@ public:
         return true;
     }
 
-    // Make outgoing connections to bring us up to desired out count
+    // If configured to make outgoing connections, do us in order
+    // to bring us up to desired out count.
     //
     void makeOutgoingConnections ()
     {
-        if (m_slots.outDesired > m_slots.outboundCount)
-        {
-            int const needed (std::min (
-                m_slots.outDesired - m_slots.outboundCount,
-                    int (maxAddressesPerAttempt)));
-            std::vector <IPEndpoint> list;
-            m_legacyCache.get (needed, list);
+        std::vector <IPAddress> list;
 
-#if RIPPLE_USE_PEERFINDER
-            m_callback.connectPeerEndpoints (list);
-#endif
+        if (m_config.connectAutomatically)
+        {
+            if (m_slots.outDesired > m_slots.outboundCount)
+            {
+                int const needed (std::min (
+                                      m_slots.outDesired - m_slots.outboundCount,
+                                      int (maxAddressesPerAttempt)));
+                m_legacyCache.get (needed, list, get_now());
+            }
         }
+
+        if (m_slots.fixedCount < m_fixedPeers.size())
+        {
+            list.reserve (list.size() + m_fixedPeers.size() - m_slots.fixedCount);
+
+            for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
+                iter != m_fixedPeers.end(); ++iter)
+            {
+                // Make sure the fixed peer is not already connected
+                if (m_peers.get<1>().find (*iter) == m_peers.get<1>().end())
+                    list.push_back (*iter);
+            }
+        }
+
+        if (! list.empty())
+            m_callback.connectPeerEndpoints (list);
     }
 
     //--------------------------------------------------------------------------
@@ -188,7 +245,37 @@ public:
     void setConfig (Config const& config)
     {
         m_config = config;
+        
+        /* give sensible defaults to any uninitialized fields */
+        m_config.fillInDefaultValues();
+          
         m_slots.update (m_config);
+    }
+
+    void addFixedPeers (std::vector <std::string> const& strings)
+    {
+        for (std::vector <std::string>::const_iterator iter (strings.begin());
+            iter != strings.end(); ++iter)
+        {            
+            IPAddress ep (IPAddress::from_string (*iter));
+
+            if (ep.empty ())
+                ep = IPAddress::from_string_altform(*iter);
+
+            if (! ep.empty ())
+            {
+                m_fixedPeers.insert (ep);
+
+                m_journal.info << "Added fixed peer " << *iter;
+            }
+            else
+            {
+                // VFALCO TODO Attempt name resolution
+                m_journal.error << "Failed to resolve: '" << *iter << "'";
+            }
+        }
+
+        m_journal.info << m_fixedPeers.size() << " fixed peers added.";
     }
 
     void addStaticSource (SharedPtr <Source> const& source)
@@ -201,14 +288,19 @@ public:
         m_sources.push_back (source);
     }
 
-    // Called periodically to cycle and age the varioous caches.
+    // Called periodically to cycle and age the various caches.
     //
     void cycleCache()
     {
-        m_cache.cycle();
+        m_cache.cycle (get_now());
+
         for (Peers::iterator iter (m_peers.begin());
             iter != m_peers.end(); ++iter)
             iter->received.cycle();
+    }
+
+    void onPeerConnecting ()
+    {
     }
 
     // Called when a peer connection is established.
@@ -216,7 +308,7 @@ public:
     // but we are *NOT* guaranteed that the IP isn't. So we need
     // to be careful.
     void onPeerConnected (PeerID const& id,
-        IPEndpoint const& address, bool inbound)
+        IPAddress const& address, bool inbound)
     {
         m_journal.debug << "Peer connected: " << address;
         // If this is outgoing, record the success
@@ -225,9 +317,17 @@ public:
 
         std::pair <Peers::iterator, bool> result (
             m_peers.insert (
-                PeerInfo (id, address, inbound)));
+                PeerInfo (id, address, inbound, get_now())));
         bassert (result.second);
         m_slots.addPeer (m_config, inbound);
+
+        // VFALCO NOTE Update fixed peers count (HACKED)
+        for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
+            iter != m_fixedPeers.end(); ++iter)
+        {
+            if (iter->withPort (0) == address.withPort (0))
+                ++m_slots.fixedCount;
+        }
     }
 
     // Called when a peer is disconnected.
@@ -241,6 +341,16 @@ public:
         PeerInfo const& peer (*iter);
         m_journal.debug << "Peer disconnected: " << peer.address;
         m_slots.dropPeer (m_config, peer.inbound);
+
+        // VFALCO NOTE Update fixed peers count (HACKED)
+        for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
+            iter != m_fixedPeers.end(); ++iter)
+        {
+            if (iter->withPort (0) == peer.address.withPort (0))
+                --m_slots.fixedCount;
+        }
+
+        // Must come last
         m_peers.erase (iter);
     }
 
@@ -257,7 +367,7 @@ public:
         // This function is here in case we add more stuff
         // we want to validate to the Endpoint struct.
         //
-        return validIPEndpoint (endpoint.address);
+        return validIPAddress (endpoint.address);
     }
 
     // Prunes invalid endpoints from a list.
@@ -284,16 +394,40 @@ public:
 
     // Send mtENDPOINTS for the specified peer
     //
-    void sendEndpoints (PeerInfo const& peer)
+    void sendEndpoints (PeerInfo const& peer, Giveaways &giveaway)
     {
         typedef std::vector <Endpoint> List;
         std::vector <Endpoint> endpoints;
 
-        // fill in endpoints
-
         // Add us to the list if we want incoming
-        if (m_slots.inboundSlots > 0)
+        // VFALCO TODO Reconsider this logic
+        //if (m_slots.inboundSlots > 0)
+        if (m_config.wantIncoming)
             endpoints.push_back (thisEndpoint ());
+
+        // We iterate over the hop list we have, adding one
+        // peer per hop (if possible) until we add the maximum
+        // number of peers we are allowed to send or we can't
+        // send anything else.
+        for (int i = 0; i != numberOfEndpoints; ++i)
+        {
+            for (Giveaways::iterator iter = giveaway.begin();
+                 iter != giveaway.end(); ++iter)
+            {
+                GiveawaysAtHop::iterator iter2 = iter->begin();
+
+                while(iter2 != iter->end())
+                {
+                    // FIXME NIKB check if the peer wants to receive this endpoint
+                    // and add it to the list of endpoints we will send if he does.
+
+                    if(false)
+                        iter->erase(iter2);
+                    else
+                        ++iter2;
+                }
+            }
+        }
 
         if (! endpoints.empty())
             m_callback.sendPeerEndpoints (peer.id, endpoints);
@@ -305,19 +439,26 @@ public:
     {
         if (! m_peers.empty())
         {
-            m_journal.trace << "Sending mtENDPOINTS";
+            m_journal.trace << "Sending endpoints to our peers";
 
-            RelativeTime const now (RelativeTime::fromStartup());
+            DiscreteTime const now (get_now());
+
+            // fill in endpoints
+            Giveaways giveaway(m_cache.getGiveawayList());
 
             for (Peers::iterator iter (m_peers.begin());
                 iter != m_peers.end(); ++iter)
             {
                 PeerInfo const& peer (*iter);
+
+                // Reset the giveaway to begin a fresh iteration.
+                giveaway.reset ();
+
                 if (peer.whenSendEndpoints <= now)
                 {
-                    sendEndpoints (peer);
+                    sendEndpoints (peer, giveaway);
                     peer.whenSendEndpoints = now +
-                        RelativeTime (secondsPerMessage);
+                        secondsPerMessage;
                 }
             }
         }
@@ -326,7 +467,7 @@ public:
     // Called when the Checker completes a connectivity test
     //
     void onCheckEndpoint (PeerID const& id,
-        IPEndpoint address, Checker::Result const& result)
+        IPAddress address, Checker::Result const& result)
     {
         if (result.error == boost::asio::error::operation_aborted)
             return;
@@ -335,6 +476,9 @@ public:
         if (iter != m_peers.end())
         {
             PeerInfo const& peer (*iter);
+
+            // Mark that a check for this peer is finished.
+            peer.connectivityCheckInProgress = false;
 
             if (! result.error)
             {
@@ -374,13 +518,13 @@ public:
         Peers::iterator iter (m_peers.find (id));
         bassert (iter != m_peers.end());
 
-        RelativeTime const now (RelativeTime::fromStartup());
+        DiscreteTime const now (get_now());
         PeerInfo const& peer (*iter);
 
         pruneEndpoints (peer.address.to_string(), list);
 
         // Log at higher severity if this is the first time
-        m_journal.stream (peer.whenAcceptEndpoints.isZero() ?
+        m_journal.stream (peer.whenAcceptEndpoints == 0 ?
             Journal::kInfo : Journal::kTrace) <<
             "Received " << list.size() <<
             " endpoints from " << peer.address;
@@ -395,6 +539,9 @@ public:
             m_callback.chargePeerLoadPenalty(id);
         }
 
+        m_journal.debug << "Peer " << peer.address <<
+            " sent us " << list.size() << " endpoints.";
+
         // Process each entry
         //
         int neighborCount (0);
@@ -406,16 +553,27 @@ public:
             // Remember that this peer gave us this address
             peer.received.insert (message.address);
 
+            m_journal.debug << "Received peer " << message.address <<
+                " at " << message.hops << " hops.";
+
             if (message.hops == 0)
             {
                 ++neighborCount;
                 if (neighborCount == 1)
                 {
-                    if (! peer.checked)
+                    if (peer.connectivityCheckInProgress)
                     {
+                        m_journal.warning << "Connectivity check for " <<
+                            message.address << "already in progress.";
+                    }
+                    else if (! peer.checked)
+                    {
+                        // Mark that a check for this peer is now in progress.
+                        peer.connectivityCheckInProgress = true;
+
                         // Test the peer's listening port before
                         // adding it to the cache for the first time.
-                        //
+                        //                     
                         m_checker.async_test (message.address, bind (
                             &Logic::onCheckEndpoint, this, id,
                                 message.address, _1));
@@ -431,20 +589,20 @@ public:
                         // listening test, else we silently drop their message
                         // since their listening port is misconfigured.
                         //
-                        m_cache.insert (message);
+                        m_cache.insert (message, get_now());
                     }
                 }
             }
             else
             {
-                m_cache.insert (message);
+                m_cache.insert (message, get_now());
             }
         }
 
         if (neighborCount > 1)
         {
             m_journal.warning << "Peer " << peer.address <<
-            " sent " << neighborCount << " entries with hops=0";
+                " sent " << neighborCount << " entries with hops=0";
             // VFALCO TODO Should we apply load charges?
         }
 
@@ -484,11 +642,13 @@ public:
         if (! results.error)
         {
             std::size_t newEntries (0);
-            for (std::vector <IPEndpoint>::const_iterator iter (results.list.begin());
+            DiscreteTime now (get_now());
+
+            for (std::vector <IPAddress>::const_iterator iter (results.list.begin());
                 iter != results.list.end(); ++iter)
             {
                 std::pair <LegacyEndpoint const&, bool> result (
-                    m_legacyCache.insert (*iter));
+                    m_legacyCache.insert (*iter, now));
                 if (result.second)
                     ++newEntries;
             }
@@ -508,13 +668,11 @@ public:
 
     // Completion handler for a LegacyEndpoint listening test.
     //
-    void onCheckLegacyEndpoint (IPEndpoint const& endpoint,
+    void onCheckLegacyEndpoint (IPAddress const& endpoint,
         Checker::Result const& result)
     {
         if (result.error == boost::asio::error::operation_aborted)
             return;
-
-        RelativeTime const now (RelativeTime::fromStartup());
 
         if (! result.error)
         {
@@ -532,12 +690,12 @@ public:
         }
     }
 
-    void onPeerLegacyEndpoint (IPEndpoint const& address)
+    void onPeerLegacyEndpoint (IPAddress const& address)
     {
-        if (! validIPEndpoint (address))
+        if (! validIPAddress (address))
             return;
         std::pair <LegacyEndpoint const&, bool> result (
-            m_legacyCache.insert (address));
+            m_legacyCache.insert (address, get_now()));
         if (result.second)
         {
             // its new

@@ -185,19 +185,12 @@ public:
     ServiceQueue m_queue;
     Journal m_journal;
     StoreSqdb m_store;
+    SerializedContext m_context;
     CheckerAdapter m_checker;
-    Logic m_logic;
+    LogicType <SimpleMonotonicClock> m_logic;
     DeadlineTimer m_connectTimer;
     DeadlineTimer m_messageTimer;
     DeadlineTimer m_cacheTimer;
-
-    // Ensures that all Logic member function entry points are
-    // called while holding a lock on the recursive mutex.
-    //
-    typedef ScopedWrapperContext <
-        RecursiveMutex, RecursiveMutex::ScopedLockType> SerializedContext;
-
-    SerializedContext m_context;
 
     //--------------------------------------------------------------------------
 
@@ -206,13 +199,13 @@ public:
         , Thread ("PeerFinder")
         , m_journal (journal)
         , m_store (journal)
-        , m_checker (m_queue)
+        , m_checker (m_context, m_queue)
         , m_logic (callback, m_store, m_checker, journal)
         , m_connectTimer (this)
         , m_messageTimer (this)
         , m_cacheTimer (this)
     {
-#if 0
+#if 1
 #if BEAST_MSVC
         if (beast_isRunningUnderDebugger())
         {
@@ -240,7 +233,19 @@ public:
                     config)));
     }
 
-    void addStrings (std::string const& name,
+    void addFixedPeers (
+        std::vector <std::string> const& strings)
+    {
+#if 1
+        m_logic.addFixedPeers (strings);
+#else
+        m_queue.dispatch (m_context.wrap (
+            bind (&Logic::addFixedPeers, &m_logic,
+                std::vector <std::string> (strings))));
+#endif
+    }
+
+    void addFallbackStrings (std::string const& name,
         std::vector <std::string> const& strings)
     {
         m_queue.dispatch (
@@ -250,17 +255,25 @@ public:
                         SourceStrings::New (name, strings))));
     }
 
-    void addURL (std::string const& name, std::string const& url)
+    void addFallbackURL (std::string const& name, std::string const& url)
     {
+        // VFALCO TODO This needs to be implemented
+    }
+
+    void onPeerConnecting ()
+    {
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::onPeerConnecting, &m_logic)));
     }
 
     void onPeerConnected (PeerID const& id,
-        IPEndpoint const& address, bool incoming)
+        IPAddress const& address, bool incoming)
     {
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerConnected, &m_logic,
-                    id, address, incoming)));;
+                    id, address, incoming)));
     }
 
     void onPeerDisconnected (const PeerID& id)
@@ -271,7 +284,7 @@ public:
                     id)));
     }
 
-    void onPeerLegacyEndpoint (IPEndpoint const& ep)
+    void onPeerLegacyEndpoint (IPAddress const& ep)
     {
         m_queue.dispatch (
             m_context.wrap (
@@ -309,7 +322,9 @@ public:
         m_connectTimer.cancel();
         m_messageTimer.cancel();
         m_cacheTimer.cancel();
-        m_queue.dispatch (bind (&Thread::signalThreadShouldExit, this));
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Thread::signalThreadShouldExit, this)));
     }
 
     //--------------------------------------------------------------------------
@@ -321,16 +336,7 @@ public:
     {
         SerializedContext::Scope scope (m_context);
 
-        map ["peers"]        = m_logic.m_slots.peerCount;
-        map ["in"]           = m_logic.m_slots.inboundCount;
-        map ["out"]          = m_logic.m_slots.outboundCount;
-        map ["out_desired"]  = m_logic.m_slots.outDesired;
-        map ["in_avail"]     = m_logic.m_slots.inboundSlots;
-        map ["in_max"]       = m_logic.m_slots.inboundSlotsMaximum;
-        map ["minutes"]      = m_logic.m_slots.uptimeMinutes();
-        map ["round"]        = m_logic.m_slots.roundUpwards();
-        map ["cache"]        = uint32(m_logic.m_cache.size());
-        map ["legacy"]       = uint32(m_logic.m_legacyCache.size());
+        m_logic.onWrite (map);
     }
 
     //--------------------------------------------------------------------------
@@ -370,8 +376,6 @@ public:
         File const file (File::getSpecialLocation (
             File::userDocumentsDirectory).getChildFile ("PeerFinder.sqlite"));
 
-        m_journal.debug << "Opening database at '" << file.getFullPathName() << "'";
-
         Error error (m_store.open (file));
 
         if (error)
@@ -389,7 +393,9 @@ public:
         m_messageTimer.setExpiration (secondsPerMessage);
         m_cacheTimer.setExpiration (cacheSecondsToLive);
     
-        m_queue.post (bind (&Logic::makeOutgoingConnections, &m_logic));
+        m_queue.post (
+            m_context.wrap (
+                bind (&Logic::makeOutgoingConnections, &m_logic)));
     }
 
     void run ()

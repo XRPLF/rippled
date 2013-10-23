@@ -44,8 +44,8 @@ public:
         results.list.reserve (m_strings.size());
         for (int i = 0; i < m_strings.size (); ++i)
         {
-            IPEndpoint ep (
-                IPEndpoint::from_string_altform (
+            IPAddress ep (
+                IPAddress::from_string_altform (
                     m_strings [i]));
             if (! ep.empty())
                 results.list.push_back (ep);

@@ -23,14 +23,22 @@
 namespace ripple {
 namespace PeerFinder {
 
-struct CachedEndpoint
+struct CachedEndpoint : public List<CachedEndpoint>::Node
 {
-    CachedEndpoint (Endpoint const& message_)
+    CachedEndpoint (Endpoint const& message_, DiscreteTime now)
         : message (message_)
+        , whenExpires (now + cacheSecondsToLive)
+        , color (true)
     {
     }
 
     Endpoint message;
+    DiscreteTime whenExpires;
+
+    // The color indicates whether this peer was recently sent out or not. It
+    // is recently sent out if the color of the peer matches the color assigned
+    // in PeerFinder tables.
+    bool color;
 };
 
 }

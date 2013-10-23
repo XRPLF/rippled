@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,36 +17,34 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
-#define RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
+#ifndef BEAST_ASIO_IPADDRESSCONVERSION_H_INCLUDED
+#define BEAST_ASIO_IPADDRESSCONVERSION_H_INCLUDED
 
-namespace ripple {
-namespace PeerFinder {
+#include "../net/IPAddress.h"
 
-/** Describes a connectible peer address along with some metadata. */
-struct Endpoint
+#include <boost/asio.hpp>
+
+namespace beast {
+
+struct IPAddressConversion
 {
-    Endpoint ();
+    /** Convert to IPAddress.
+        The port is set to zero.
+    */
+    static IPAddress from_asio (boost::asio::ip::address const& address);
 
-    IPAddress address;
-    int hops;
-    uint32 incomingSlotsAvailable;
-    uint32 incomingSlotsMax;
-    uint32 uptimeSeconds;
-    std::string featureList;
+    /** Convert to IPAddress, including port. */
+    static IPAddress from_asio (boost::asio::ip::tcp::endpoint const& endpoint);
+
+    /** Convert to asio::ip::address.
+        The port is ignored.
+    */
+    static boost::asio::ip::address to_asio_address (IPAddress const& address);
+
+    /** Convert to asio::ip::tcp::endpoint. */
+    static boost::asio::ip::tcp::endpoint to_asio_endpoint (IPAddress const& address);
 };
 
-inline bool operator< (Endpoint const& lhs, Endpoint const& rhs)
-{
-    return lhs.address < rhs.address;
-}
-
-inline bool operator== (Endpoint const& lhs, Endpoint const& rhs)
-{
-    return lhs.address == rhs.address;
-}
-
-}
 }
 
 #endif

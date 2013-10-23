@@ -17,43 +17,42 @@
 */
 //==============================================================================
 
-#include "../IPEndpoint.h"
+#include "../IPAddress.h"
 
-namespace beast
-{
+namespace beast {
 
-IPEndpoint::V4::V4 ()
+IPAddress::V4::V4 ()
     : value (0)
 {
 }
 
-IPEndpoint::V4::V4 (uint32 value_)
+IPAddress::V4::V4 (uint32 value_)
     : value (value_)
 {
 }
 
-IPEndpoint::V4::V4 (uint8 a, uint8 b, uint8 c, uint8 d)
+IPAddress::V4::V4 (uint8 a, uint8 b, uint8 c, uint8 d)
     : value ((a<<24)|(b<<16)|(c<<8)|d)
 {
 }
 
-IPEndpoint::V4::V4 (V4 const& other)
+IPAddress::V4::V4 (V4 const& other)
     : value (other.value)
 {
 }
 
-IPEndpoint::V4& IPEndpoint::V4::operator= (V4 const& other)
+IPAddress::V4& IPAddress::V4::operator= (V4 const& other)
 {
     value = other.value;
     return *this;
 }
 
-IPEndpoint::V4 IPEndpoint::V4::localBroadcastAddress ()
+IPAddress::V4 IPAddress::V4::localBroadcastAddress ()
 {
     return V4 (0xffffffff);
 }
 
-IPEndpoint::V4 IPEndpoint::V4::broadcastAddress () const
+IPAddress::V4 IPAddress::V4::broadcastAddress () const
 {
     switch (getClass())
     {
@@ -68,18 +67,18 @@ IPEndpoint::V4 IPEndpoint::V4::broadcastAddress () const
     return V4();
 }
 
-char IPEndpoint::V4::getClass () const
+char IPAddress::V4::getClass () const
 {
     static char const* table = "AAAABBCD";
     return table[(value&0xE0000000)>>29];
 }
 
-bool IPEndpoint::V4::isPublic () const
+bool IPAddress::V4::isPublic () const
 {
     return !isPrivate() && !isBroadcast() && !isMulticast();
 }
 
-bool IPEndpoint::V4::isPrivate () const
+bool IPAddress::V4::isPrivate () const
 {
     return
         ((value&0xff000000)==0x0a000000) || // Prefix /8,    10.##.#.#
@@ -88,22 +87,22 @@ bool IPEndpoint::V4::isPrivate () const
         isLoopback();
 }
 
-bool IPEndpoint::V4::isBroadcast () const
+bool IPAddress::V4::isBroadcast () const
 {
     return (value == broadcastAddress().value);
 }
 
-bool IPEndpoint::V4::isMulticast () const
+bool IPAddress::V4::isMulticast () const
 {
     return getClass() == 'D';
 }
 
-bool IPEndpoint::V4::isLoopback () const
+bool IPAddress::V4::isLoopback () const
 {
     return (value&0xff000000)==0x7f000000;
 }
 
-IPEndpoint::V4::Proxy <true> IPEndpoint::V4::operator[] (std::size_t index) const
+IPAddress::V4::Proxy <true> IPAddress::V4::operator[] (std::size_t index) const
 {
     switch (index)
     {
@@ -116,7 +115,7 @@ IPEndpoint::V4::Proxy <true> IPEndpoint::V4::operator[] (std::size_t index) cons
     };
 };
 
-IPEndpoint::V4::Proxy <false> IPEndpoint::V4::operator[] (std::size_t index)
+IPAddress::V4::Proxy <false> IPAddress::V4::operator[] (std::size_t index)
 {
     switch (index)
     {
@@ -129,7 +128,7 @@ IPEndpoint::V4::Proxy <false> IPEndpoint::V4::operator[] (std::size_t index)
     };
 };
 
-std::string IPEndpoint::V4::to_string () const
+std::string IPAddress::V4::to_string () const
 {
     std::string s;
     s.reserve (15);
@@ -140,33 +139,33 @@ std::string IPEndpoint::V4::to_string () const
     return s;
 }
 
-IPEndpoint::V4::operator std::string () const
+IPAddress::V4::operator std::string () const
 {
     return to_string();
 }
 
 //------------------------------------------------------------------------------
 
-IPEndpoint::IPEndpoint ()
+IPAddress::IPAddress ()
     : m_type (none)
 {
 }
 
-IPEndpoint::IPEndpoint (V4 const& v4, uint16 port)
+IPAddress::IPAddress (V4 const& v4, uint16 port)
     : m_type (ipv4)
     , m_port (port)
     , m_v4 (v4)
 {
 }
 
-IPEndpoint::IPEndpoint (V6 const& v6, uint16 port)
+IPAddress::IPAddress (V6 const& v6, uint16 port)
     : m_type (ipv6)
     , m_port (port)
     , m_v6 (v6)
 {
 }
 
-IPEndpoint::IPEndpoint (IPEndpoint const& other)
+IPAddress::IPAddress (IPAddress const& other)
     : m_type (other.m_type)
     , m_port (other.m_port)
 {
@@ -180,7 +179,7 @@ IPEndpoint::IPEndpoint (IPEndpoint const& other)
     };
 }
 
-IPEndpoint& IPEndpoint::operator= (IPEndpoint const& other)
+IPAddress& IPAddress::operator= (IPAddress const& other)
 {
     m_type = other.m_type;
     m_port = other.m_port;
@@ -195,17 +194,17 @@ IPEndpoint& IPEndpoint::operator= (IPEndpoint const& other)
     return *this;
 }
 
-IPEndpoint IPEndpoint::from_string (std::string const& s)
+IPAddress IPAddress::from_string (std::string const& s)
 {
     std::stringstream is (s);
-    IPEndpoint ep;
+    IPAddress ep;
     is >> ep;
     if (! is.fail() && is.rdbuf()->in_avail() == 0)
         return ep;
-    return IPEndpoint();
+    return IPAddress();
 }
 
-IPEndpoint& IPEndpoint::operator= (V4 const& address)
+IPAddress& IPAddress::operator= (V4 const& address)
 {
     m_type = ipv4;
     m_port = 0;
@@ -213,7 +212,7 @@ IPEndpoint& IPEndpoint::operator= (V4 const& address)
     return *this;
 }
 
-IPEndpoint& IPEndpoint::operator= (V6 const& address)
+IPAddress& IPAddress::operator= (V6 const& address)
 {
     m_type = ipv6;
     m_port = 0;
@@ -221,66 +220,66 @@ IPEndpoint& IPEndpoint::operator= (V6 const& address)
     return *this;
 }
 
-IPEndpoint IPEndpoint::withPort (uint16 port) const
+IPAddress IPAddress::withPort (uint16 port) const
 {
     switch (m_type)
     {
-    case ipv4: return IPEndpoint (m_v4, port);
-    case ipv6: return IPEndpoint (m_v6, port);
+    case ipv4: return IPAddress (m_v4, port);
+    case ipv6: return IPAddress (m_v6, port);
     default:
     case none:
         bassertfalse;
         break;
     };
-    return IPEndpoint();
+    return IPAddress();
 }
 
-bool IPEndpoint::empty () const
+bool IPAddress::empty () const
 {
     return m_type == none;
 }
 
-bool IPEndpoint::isNull () const
+bool IPAddress::isNull () const
 {
     return empty ();
 }
 
-bool IPEndpoint::isNotNull () const
+bool IPAddress::isNotNull () const
 {
     return ! empty ();
 }
 
-IPEndpoint::Type IPEndpoint::type () const
+IPAddress::Type IPAddress::type () const
 {
     return m_type;
 }
 
-bool IPEndpoint::isV4 () const
+bool IPAddress::isV4 () const
 {
     return m_type == ipv4;
 }
 
-bool IPEndpoint::isV6 () const
+bool IPAddress::isV6 () const
 {
     return m_type == ipv6;
 }
 
-IPEndpoint::V4 const& IPEndpoint::v4 () const
+IPAddress::V4 const& IPAddress::v4 () const
 {
     return m_v4;
 }
 
-IPEndpoint::V6 const& IPEndpoint::v6 () const
+IPAddress::V6 const& IPAddress::v6 () const
 {
     return m_v6;
 }
 
-uint16 IPEndpoint::port () const
+uint16 IPAddress::port () const
 {
     return m_port;
 }
 
-bool IPEndpoint::isPublic () const
+bool IPAddress::isPublic () const
 {
     switch (m_type)
     {
@@ -294,7 +293,7 @@ bool IPEndpoint::isPublic () const
     return false;
 }
 
-bool IPEndpoint::isPrivate () const
+bool IPAddress::isPrivate () const
 {
     switch (m_type)
     {
@@ -308,7 +307,7 @@ bool IPEndpoint::isPrivate () const
     return false;
 }
 
-bool IPEndpoint::isBroadcast () const
+bool IPAddress::isBroadcast () const
 {
     switch (m_type)
     {
@@ -322,7 +321,7 @@ bool IPEndpoint::isBroadcast () const
     return false;
 }
 
-bool IPEndpoint::isMulticast () const
+bool IPAddress::isMulticast () const
 {
     switch (m_type)
     {
@@ -336,7 +335,7 @@ bool IPEndpoint::isMulticast () const
     return false;
 }
 
-bool IPEndpoint::isLoopback () const
+bool IPAddress::isLoopback () const
 {
     switch (m_type)
     {
@@ -350,7 +349,7 @@ bool IPEndpoint::isLoopback () const
     return false;
 }
 
-std::string IPEndpoint::to_string () const
+std::string IPAddress::to_string () const
 {
     switch (m_type)
     {
@@ -376,7 +375,7 @@ std::string IPEndpoint::to_string () const
     return std::string();
 }
 
-IPEndpoint::operator std::string () const
+IPAddress::operator std::string () const
 {
     return to_string();
 }
@@ -446,7 +445,7 @@ detail::integer_holder <IntType> integer (IntType& i)
 }
 
 /** Parse IPv4 address. */
-std::istream& operator>> (std::istream &is, IPEndpoint::V4& addr)
+std::istream& operator>> (std::istream &is, IPAddress::V4& addr)
 {
     uint8 octets [4];
     is >> parse::integer (octets [0]);
@@ -458,16 +457,16 @@ std::istream& operator>> (std::istream &is, IPEndpoint::V4& addr)
         if (!is)
             return is;
     }
-    addr = IPEndpoint::V4 (octets[0], octets[1], octets[2], octets[3]);
+    addr = IPAddress::V4 (octets[0], octets[1], octets[2], octets[3]);
     return is;
 }
 
-/** Parse an IPEndpoint.
+/** Parse an IPAddress.
     @note Currently only IPv4 addresses are supported.
 */
-std::istream& operator>> (std::istream &is, IPEndpoint& ep)
+std::istream& operator>> (std::istream &is, IPAddress& ep)
 {
-    IPEndpoint::V4 v4;
+    IPAddress::V4 v4;
     is >> v4;
     if (is.fail())
         return is;
@@ -479,7 +478,7 @@ std::istream& operator>> (std::istream &is, IPEndpoint& ep)
         if (c != ':')
         {
             is.unget();
-            ep = IPEndpoint (v4);
+            ep = IPAddress (v4);
             return is;
         }
 
@@ -488,11 +487,11 @@ std::istream& operator>> (std::istream &is, IPEndpoint& ep)
         if (is.fail())
             return is;
 
-        ep = IPEndpoint (v4, port);
+        ep = IPAddress (v4, port);
     }
     else
     {
-        ep = IPEndpoint (v4);
+        ep = IPAddress (v4);
     }
     
     return is;
@@ -500,11 +499,11 @@ std::istream& operator>> (std::istream &is, IPEndpoint& ep)
 
 //------------------------------------------------------------------------------
 
-IPEndpoint IPEndpoint::from_string_altform (std::string const& s)
+IPAddress IPAddress::from_string_altform (std::string const& s)
 {
     // Accept the regular form if it parses
     {
-        IPEndpoint ep (IPEndpoint::from_string (s));
+        IPAddress ep (IPAddress::from_string (s));
         if (! ep.empty())
             return ep;
     }
@@ -512,16 +511,16 @@ IPEndpoint IPEndpoint::from_string_altform (std::string const& s)
     // Now try the alt form
     std::stringstream is (s);
 
-    IPEndpoint::V4 v4;
+    IPAddress::V4 v4;
     is >> v4;
     if (! is.fail())
     {
-        IPEndpoint ep (v4);
+        IPAddress ep (v4);
 
         if (is.rdbuf()->in_avail()>0)
         {
             if (! parse::expect (is, ' '))
-                return IPEndpoint();
+                return IPAddress();
 
             while (is.rdbuf()->in_avail()>0)
             {
@@ -537,7 +536,7 @@ IPEndpoint IPEndpoint::from_string_altform (std::string const& s)
             uint16 port;
             is >> port;
             if (is.fail())
-                return IPEndpoint();
+                return IPAddress();
 
             return ep.withPort (port);
         }
@@ -550,12 +549,12 @@ IPEndpoint IPEndpoint::from_string_altform (std::string const& s)
 
     // Could be V6 here...
 
-    return IPEndpoint();
+    return IPAddress();
 }
 
 //------------------------------------------------------------------------------
 
-int compare (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs)
+int compare (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
 {
     if (lhs.value < rhs.value)
         return -1;
@@ -564,14 +563,14 @@ int compare (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs)
     return 0;
 }
 
-bool operator== (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return compare (lhs, rhs) == 0; }
-bool operator!= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return compare (lhs, rhs) != 0; }
-bool operator<  (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return compare (lhs, rhs) <  0; }
-bool operator<= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return compare (lhs, rhs) <= 0; }
-bool operator>  (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return compare (lhs, rhs) >  0; }
-bool operator>= (IPEndpoint::V4 const& lhs, IPEndpoint::V4 const& rhs) { return compare (lhs, rhs) >= 0; }
+bool operator== (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) == 0; }
+bool operator!= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) != 0; }
+bool operator<  (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) <  0; }
+bool operator<= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) <= 0; }
+bool operator>  (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) >  0; }
+bool operator>= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) >= 0; }
 
-static int type_compare (IPEndpoint const& lhs, IPEndpoint const& rhs)
+static int type_compare (IPAddress const& lhs, IPAddress const& rhs)
 {
     if (lhs.type() < rhs.type())
         return -1;
@@ -580,7 +579,7 @@ static int type_compare (IPEndpoint const& lhs, IPEndpoint const& rhs)
     return 0;
 }
 
-int compare (IPEndpoint const& lhs, IPEndpoint const& rhs)
+int compare (IPAddress const& lhs, IPAddress const& rhs)
 {
     int const tc (type_compare (lhs, rhs));
 
@@ -591,36 +590,36 @@ int compare (IPEndpoint const& lhs, IPEndpoint const& rhs)
 
     switch (lhs.type())
     {
-    case IPEndpoint::none: return 0;
-    case IPEndpoint::ipv4: return compare (lhs.v4(), rhs.v4());
+    case IPAddress::none: return 0;
+    case IPAddress::ipv4: return compare (lhs.v4(), rhs.v4());
     default:
-    case IPEndpoint::ipv6:
+    case IPAddress::ipv6:
         break;
     };
     bassertfalse;
     return 0;
 }
 
-bool operator== (IPEndpoint const& lhs, IPEndpoint const& rhs) { return compare (lhs, rhs) == 0; }
-bool operator!= (IPEndpoint const& lhs, IPEndpoint const& rhs) { return compare (lhs, rhs) != 0; }
-bool operator<  (IPEndpoint const& lhs, IPEndpoint const& rhs) { return compare (lhs, rhs) <  0; }
-bool operator<= (IPEndpoint const& lhs, IPEndpoint const& rhs) { return compare (lhs, rhs) <= 0; }
-bool operator>  (IPEndpoint const& lhs, IPEndpoint const& rhs) { return compare (lhs, rhs) >  0; }
-bool operator>= (IPEndpoint const& lhs, IPEndpoint const& rhs) { return compare (lhs, rhs) >= 0; }
+bool operator== (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) == 0; }
+bool operator!= (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) != 0; }
+bool operator<  (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) <  0; }
+bool operator<= (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) <= 0; }
+bool operator>  (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) >  0; }
+bool operator>= (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) >= 0; }
 
-std::ostream& operator<< (std::ostream &os, IPEndpoint::V4 const& addr)
+std::ostream& operator<< (std::ostream &os, IPAddress::V4 const& addr)
 {
     os << addr.to_string();
     return os;
 }
 
-std::ostream& operator<< (std::ostream &os, IPEndpoint::V6 const& addr)
+std::ostream& operator<< (std::ostream &os, IPAddress::V6 const& addr)
 {
     os << addr.to_string();
     return os;
 }
 
-std::ostream& operator<< (std::ostream &os, IPEndpoint const& ep)
+std::ostream& operator<< (std::ostream &os, IPAddress const& ep)
 {
     os << ep.to_string();
     return os;
@@ -628,10 +627,10 @@ std::ostream& operator<< (std::ostream &os, IPEndpoint const& ep)
 
 //------------------------------------------------------------------------------
 
-class IPEndpointTests : public UnitTest
+class IPAddressTests : public UnitTest
 {
 public:
-    bool parse (char const* text, IPEndpoint& ep)
+    bool parse (char const* text, IPAddress& ep)
     {
         std::string input (text);
         std::istringstream stream (input);
@@ -641,14 +640,14 @@ public:
 
     void shouldPass (char const* text)
     {
-        IPEndpoint ep;
+        IPAddress ep;
         expect (parse (text, ep));
         expect (ep.to_string() == std::string(text));
     }
 
     void shouldFail (char const* text)
     {
-        IPEndpoint ep;
+        IPAddress ep;
         unexpected (parse (text, ep));
     }
 
@@ -673,9 +672,9 @@ public:
     {
         beginTestCase ("addresses");
 
-        IPEndpoint ep;
+        IPAddress ep;
 
-        ep = IPEndpoint(IPEndpoint::V4(127,0,0,1)).withPort (80);
+        ep = IPAddress(IPAddress::V4(127,0,0,1)).withPort (80);
         expect (!ep.isPublic());
         expect ( ep.isPrivate());
         expect (!ep.isBroadcast());
@@ -683,7 +682,7 @@ public:
         expect ( ep.isLoopback());
         expect (ep.to_string() == "127.0.0.1:80");
 
-        ep = IPEndpoint::V4(10,0,0,1);
+        ep = IPAddress::V4(10,0,0,1);
         expect ( ep.v4().getClass() == 'A');
         expect (!ep.isPublic());
         expect ( ep.isPrivate());
@@ -692,7 +691,7 @@ public:
         expect (!ep.isLoopback());
         expect (ep.to_string() == "10.0.0.1");
 
-        ep = IPEndpoint::V4(166,78,151,147);
+        ep = IPAddress::V4(166,78,151,147);
         expect ( ep.isPublic());
         expect (!ep.isPrivate());
         expect (!ep.isBroadcast());
@@ -707,11 +706,11 @@ public:
         testParse();
     }
 
-    IPEndpointTests () : UnitTest ("IPEndpoint", "beast")
+    IPAddressTests () : UnitTest ("IPAddress", "beast")
     {
     }
 };
 
-static IPEndpointTests ipEndpointTests;
+static IPAddressTests ipEndpointTests;
 
 }

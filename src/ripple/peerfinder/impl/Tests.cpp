@@ -23,9 +23,82 @@ namespace PeerFinder {
 class PeerFinderTests : public UnitTest
 {
 public:
+
+
+    //--------------------------------------------------------------------------
+
+    // Complete Logic used for tests
+    //
+    class TestLogic
+        : public LogicType <ManualClock>
+        , public Callback
+        , public Store
+        , public Checker
+    {
+    public:
+        Journal m_journal;
+
+        explicit TestLogic (Journal journal)
+            : LogicType <ManualClock> (*this, *this, *this, journal)
+            , m_journal (journal)
+        {
+        }
+
+        //
+        // Callback
+        //
+
+        void sendPeerEndpoints (PeerID const& id,
+            std::vector <Endpoint> const& endpoints)
+        {
+        }
+
+        void connectPeerEndpoints (std::vector <IPAddress> const& list)
+        {
+        }
+
+        void chargePeerLoadPenalty (PeerID const& id)
+        {
+        }
+      
+        //
+        // Store
+        //
+
+        void loadLegacyEndpoints (std::vector <IPAddress>& list)
+        {
+        }
+
+        void updateLegacyEndpoints (std::vector <LegacyEndpoint const*> const& list)
+        {
+        }
+
+        //
+        // Checker
+        //
+
+        void cancel ()
+        {
+        }
+
+        void async_test (IPAddress const& address,
+            AbstractHandler <void (Result)> handler)
+        {
+            Checker::Result result;
+            result.address = address;
+            result.canAccept = false;
+            handler (result);
+        }
+    };
+
+    //--------------------------------------------------------------------------
+
     void runTest ()
     {
         beginTestCase ("logic");
+
+        TestLogic logic (journal());
+
         pass ();
     }
 

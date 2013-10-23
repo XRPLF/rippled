@@ -117,7 +117,7 @@ public:
         return m_impl.journal();
     }
 
-    IPEndpoint remoteAddress()
+    IPAddress remoteAddress()
     {
         return from_asio (get_socket().remote_endpoint());
     }

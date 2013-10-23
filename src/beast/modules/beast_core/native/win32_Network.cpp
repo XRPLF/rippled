@@ -112,24 +112,6 @@ void MACAddress::findAllAddresses (Array<MACAddress>& result)
     MACAddressHelpers::getViaNetBios (result);
 }
 
-void IPAddress::findAllAddresses (Array<IPAddress>& result)
-{
-    result.addIfNotAlreadyThere (IPAddress::local());
-
-    GetAdaptersInfoHelper gah;
-
-    if (gah.callGetAdaptersInfo())
-    {
-        for (PIP_ADAPTER_INFO adapter = gah.adapterInfo; adapter != nullptr; adapter = adapter->Next)
-        {
-            IPAddress ip (adapter->IpAddressList.IpAddress.String);
-
-            if (ip != IPAddress::any())
-                result.addIfNotAlreadyThere (ip);
-        }
-    }
-}
-
 //==============================================================================
 bool Process::openEmailWithAttachments (const String& targetEmailAddress,
                                         const String& emailSubject,

@@ -24,13 +24,21 @@ namespace ripple {
 namespace PeerFinder {
 
 /** Database persistence for PeerFinder using SQLite */
-class StoreSqdb : public Store
+class StoreSqdb
+    : public Store
+    , public LeakChecked <StoreSqdb>
 {
 private:
     Journal m_journal;
     sqdb::session m_session;
 
 public:
+    enum
+    {
+        // This determines the on-database format of the data
+        currentSchemaVersion = 2
+    };
+
     explicit StoreSqdb (Journal journal = Journal())
         : m_journal (journal)
     {
@@ -44,14 +52,19 @@ public:
     {
         Error error (m_session.open (file.getFullPathName ()));
 
+        m_journal.info << "Opening database at '" << file.getFullPathName() << "'";
+
         if (!error)
             error = init ();
+
+        if (!error)
+            error = update ();
 
         return error;
     }
 
     void loadLegacyEndpoints (
-        std::vector <IPEndpoint>& list)
+        std::vector <IPAddress>& list)
     {
         list.clear ();
 
@@ -62,7 +75,7 @@ public:
         if (! error)
         {
             m_session.once (error) <<
-                "SELECT COUNT(*) FROM LegacyEndpoints "
+                "SELECT COUNT(*) FROM PeerFinder_LegacyEndpoints "
                 ,sqdb::into (count)
                 ;
         }
@@ -78,7 +91,7 @@ public:
         {
             std::string s;
             sqdb::statement st = (m_session.prepare <<
-                "SELECT ipv4 FROM LegacyEndpoints "
+                "SELECT ipv4 FROM PeerFinder_LegacyEndpoints "
                 ,sqdb::into (s)
                 );
 
@@ -86,7 +99,7 @@ public:
             {
                 do
                 {
-                    IPEndpoint ep (IPEndpoint::from_string (s));
+                    IPAddress ep (IPAddress::from_string (s));
                     if (! ep.empty())
                         list.push_back (ep);
                 }
@@ -110,13 +123,13 @@ public:
         sqdb::transaction tr (m_session);
 
         m_session.once (error) <<
-            "DELETE FROM LegacyEndpoints";
+            "DELETE FROM PeerFinder_LegacyEndpoints";
 
         if (! error)
         {
             std::string s;
             sqdb::statement st = (m_session.prepare <<
-                "INSERT INTO LegacyEndpoints ( "
+                "INSERT INTO PeerFinder_LegacyEndpoints ( "
                 "  ipv4 "
                 ") VALUES ( "
                 "  ? "
@@ -127,7 +140,7 @@ public:
             for (List::const_iterator iter (list.begin());
                 !error && iter != list.end(); ++iter)
             {
-                IPEndpoint const& ep ((*iter)->address);
+                IPAddress const& ep ((*iter)->address);
                 s = ep.to_string();
                 st.execute_and_fetch (error);
             }
@@ -145,6 +158,79 @@ public:
         }
     }
 
+    // Convert any existing entries from an older schema to the
+    // current one, if approrpriate.
+    //
+    Error update ()
+    {
+        Error error;
+
+        sqdb::transaction tr (m_session);
+
+        // get version
+        int version (0);
+        if (!error)
+        {
+            m_session.once (error) <<
+                "SELECT "
+                "  version "
+                "FROM SchemaVersion WHERE "
+                "  name = 'PeerFinder'"
+                ,sqdb::into (version)
+                ;
+
+            if (! error)
+            {
+                if (!m_session.got_data())
+                    version = 0;
+
+                m_journal.info << "Opened version " << version << " database";
+            }
+        }
+
+        if (!error && version != currentSchemaVersion)
+        {
+            m_journal.info <<
+                "Updateding database to version " << currentSchemaVersion;
+        }
+
+        if (!error && (version < 2))
+        {
+            if (!error)
+                m_session.once (error) <<
+                    "DROP TABLE IF EXISTS LegacyEndpoints";
+
+            if (!error)
+                m_session.once (error) <<
+                    "DROP TABLE IF EXISTS PeerFinderLegacyEndpoints";
+        }
+
+        if (!error)
+        {
+            int const version (currentSchemaVersion);
+            m_session.once (error) <<
+                "INSERT OR REPLACE INTO SchemaVersion ("
+                "   name "
+                "  ,version "
+                ") VALUES ( "
+                "  'PeerFinder', ? "
+                ")"
+                ,sqdb::use(version);
+        }
+
+        if (!error)
+            error = tr.commit();
+
+        if (error)
+        {
+            tr.rollback();
+            report (error, __FILE__, __LINE__);
+        }
+
+        return error;
+    }
+
+
 private:
     Error init ()
     {
@@ -160,10 +246,31 @@ private:
         if (! error)
         {
             m_session.once (error) <<
-                "CREATE TABLE IF NOT EXISTS LegacyEndpoints ( "
+                "CREATE TABLE IF NOT EXISTS SchemaVersion ( "
+                "  name             TEXT PRIMARY KEY, "
+                "  version          INTEGER"
+                ");"
+                ;
+        }
+
+        if (! error)
+        {
+            m_session.once (error) <<
+                "CREATE TABLE IF NOT EXISTS PeerFinder_LegacyEndpoints ( "
                 "  id    INTEGER PRIMARY KEY AUTOINCREMENT, "
                 "  ipv4  TEXT UNIQUE NOT NULL   "
                 ");"
+                ;
+        }
+
+        if (! error)
+        {
+            m_session.once (error) <<
+                "CREATE INDEX IF NOT EXISTS "
+                "  PeerFinder_LegacyEndpoints_Index ON PeerFinder_LegacyEndpoints "
+                "  (  "
+                "    ipv4 "
+                "  ); "
                 ;
         }
 

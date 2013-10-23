@@ -344,6 +344,7 @@ public:
     std::string                 VALIDATORS_URI;         // URI of validators.txt.
     std::string                 VALIDATORS_BASE;        // Name with testnet-, if needed.
     std::vector<std::string>    IPS;                    // Peer IPs from rippled.cfg.
+    std::vector<std::string>    IPS_FIXED;              // Fixed Peer IPs from rippled.cfg.
     std::vector<std::string>    SNTP_SERVERS;           // SNTP servers from rippled.cfg.
 
     enum StartUpType
@@ -394,6 +395,7 @@ public:
     int                         PEER_START_MAX;
     unsigned int                PEER_CONNECT_LOW_WATER;
     bool                        PEER_PRIVATE;           // True to ask peers not to relay current IP.
+    unsigned int                PEERS_MAX;
 
     // Websocket networking parameters
     std::string                 WEBSOCKET_PUBLIC_IP;        // XXX Going away. Merge with the inbound peer connction.

@@ -21,10 +21,28 @@ namespace ripple {
 namespace PeerFinder {
 
 Config::Config ()
-    : maxPeerCount (20)
+    : maxPeerCount (0)
     , wantIncoming (false)
+    , connectAutomatically (false)
     , listeningPort (0)
 {
+}
+
+void Config::onWrite(PropertyStream::Map &map)
+{
+    map ["min_out_count"]         = minOutCount;
+    map ["out_percent"]           = outPercent;
+    map ["max_peer_count"]        = maxPeerCount;
+    map ["want_incoming"]         = wantIncoming;
+    map ["connect_automatically"] = connectAutomatically;
+    map ["listening_port"]        = listeningPort;
+    map ["feature_list"]          = featureList;
+}
+
+void Config::fillInDefaultValues()
+{
+    if (maxPeerCount == 0)
+        maxPeerCount = defaultMaxPeerCount;
 }
 
 }

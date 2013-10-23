@@ -26,14 +26,13 @@ namespace PeerFinder {
 class Slots
 {
 public:
-    Slots ();
+    explicit Slots (
+        DiscreteClock <DiscreteTime> clock,
+        bool roundUpwards = Random::getSystemRandom().nextBool());
 
     void update (Config const& config);
     void addPeer (Config const& config, bool inbound);
     void dropPeer (Config const& config, bool inbound);
-
-    // Most recent time when we went from 0 to 1 peers
-    RelativeTime startTime;
 
     // Current total of connected peers that have HELLOed
     int peerCount;
@@ -44,6 +43,10 @@ public:
     // The portion of peers which are outgoing connections
     int outboundCount;
 
+    // The portion of peers which are the fixed peers.
+    // Fixed peers don't count towards connection limits.
+    int fixedCount;
+
     // The number of outgoing peer connections we want (calculated)
     int outDesired;
 
@@ -53,17 +56,28 @@ public:
     // The maximum number of incoming slots (calculated)
     int inboundSlotsMaximum;
 
-    // Returns the uptime in minutes
+    // Returns `true` if we round fractional slot availability upwards
+    bool roundUpwards () const;
+
+    // Returns `true` if we meet the criteria of
+    // "connected to the network based on the current values of slots.
+    //
+    bool connected () const;
+
+    // Returns the uptime in seconds
     // Uptime is measured from the last we transitioned from not
     // being connected to the network, to being connected.
     //
-    uint32 uptimeMinutes () const;
+    uint32 uptimeSeconds () const;
 
-    // Returns `true` if we round fractional slot availability upwards
-    bool roundUpwards () const
-        { return m_roundUpwards; }
+    // Output statistics
+    void onWrite (PropertyStream::Map& map);
 
 private:
+    void updateConnected();
+
+    DiscreteClock <DiscreteTime> m_clock;
+    DiscreteTime m_startTime;
     bool m_roundUpwards;
 };
 

@@ -49,19 +49,19 @@ inline endpoint_t to_asio (Port const& port)
 {
     if (port.addr.isV4())
     {
-        IPEndpoint::V4 v4 (port.addr.v4());
+        IPAddress::V4 v4 (port.addr.v4());
         std::string const& s (v4.to_string());
         return endpoint_t (address().from_string (s), port.port);
     }
 
-    //IPEndpoint::V6 v6 (ep.v6());
+    //IPAddress::V6 v6 (ep.v6());
     return endpoint_t ();
 }
 
-inline IPEndpoint from_asio (endpoint_t const& endpoint)
+inline IPAddress from_asio (endpoint_t const& endpoint)
 {
     std::stringstream ss (to_string (endpoint));
-    IPEndpoint ep;
+    IPAddress ep;
     ss >> ep;
     return ep;
 }

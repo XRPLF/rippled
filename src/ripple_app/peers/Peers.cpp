@@ -117,22 +117,31 @@ public:
         PeerFinder::Config config;
 
 #if RIPPLE_USE_PEERFINDER
-        config.maxPeerCount = 100;
+        config.maxPeerCount = getConfig ().PEERS_MAX;
 #endif
 
         config.wantIncoming =
             (! getConfig ().PEER_PRIVATE) &&
             (getConfig().peerListeningPort != 0);
 
-        if (config.wantIncoming)
-            config.listeningPort = getConfig().peerListeningPort;
+        config.listeningPort = getConfig().peerListeningPort;
+
+        // if it's a private peer or we are running as standalone
+        // automatic connections would defeat the purpose.
+        config.connectAutomatically = 
+            !getConfig().RUN_STANDALONE &&
+            !getConfig().PEER_PRIVATE;
 
         config.featureList = "";
 
         m_peerFinder->setConfig (config);
 
         // Add the static IPs from the rippled.cfg file
-        m_peerFinder->addStrings ("rippled.cfg", getConfig().IPS);
+        m_peerFinder->addFallbackStrings ("rippled.cfg", getConfig().IPS);
+
+        // Add the ips_fixed from the rippled.cfg file
+        if (! getConfig().RUN_STANDALONE)
+            m_peerFinder->addFixedPeers (getConfig().IPS_FIXED);
     }
 
     void sendPeerEndpoints (PeerFinder::PeerID const& id,
@@ -159,7 +168,7 @@ public:
             tme.set_hops (ep.hops);
             tme.set_slots (ep.incomingSlotsAvailable);
             tme.set_maxslots (ep.incomingSlotsMax);
-            tme.set_uptimeminutes (ep.uptimeMinutes);
+            tme.set_uptimeseconds (ep.uptimeSeconds);
             tme.set_features (ep.featureList);
         }
 
@@ -179,9 +188,9 @@ public:
         }
     }
 
-    void connectPeerEndpoints (std::vector <IPEndpoint> const& list)
+    void connectPeerEndpoints (std::vector <IPAddress> const& list)
     {
-        typedef std::vector <IPEndpoint> List;
+        typedef std::vector <IPAddress> List;
 
         for (List::const_iterator iter (list.begin());
             iter != list.end(); ++iter)
@@ -297,7 +306,7 @@ public:
     void policyEnforce ();
 
     // configured connections
-    void makeConfigured ();
+    void legacyConnectFixedIPs ();
 };
 
 void splitIpPort (const std::string& strIpPort, std::string& strIp, int& iPort)
@@ -525,7 +534,7 @@ void PeersImp::policyEnforce ()
     if (((++mPhase) % 12) == 0)
     {
         WriteLog (lsTRACE, Peers) << "Making configured connections";
-        makeConfigured ();
+        legacyConnectFixedIPs ();
     }
 
     // Schedule next enforcement.
@@ -974,12 +983,16 @@ void PeersImp::scanHandler (const boost::system::error_code& ecResult)
     }
 }
 
-void PeersImp::makeConfigured ()
+// Legacy policy enforcement: Maintain peer connections
+// to the configured set of fixed IP addresses. Note that this
+// is replaced by the new PeerFinder.
+//
+void PeersImp::legacyConnectFixedIPs ()
 {
     if (getConfig ().RUN_STANDALONE)
         return;
 
-    BOOST_FOREACH (const std::string & strPeer, getConfig ().IPS)
+    BOOST_FOREACH (const std::string & strPeer, getConfig ().IPS_FIXED)
     {
         std::string strIP;
         int iPort;

@@ -297,6 +297,12 @@
     <Filter Include="beast\boost">
       <UniqueIdentifier>{d7ec873a-d1e7-4341-9d20-a1be8f8ddd88}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\asio">
+      <UniqueIdentifier>{f73fedee-2efb-431b-9f4f-d2fd405454f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\asio\impl">
+      <UniqueIdentifier>{30b0fdfb-02b6-47dd-bdd9-ffc1f57e1f2c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -415,9 +421,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\native\win32_ComSmartPtr.h">
       <Filter>beast_core\native</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\network\IPAddress.h">
-      <Filter>beast_core\network</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\network\MACAddress.h">
       <Filter>beast_core\network</Filter>
@@ -932,9 +935,6 @@
     <ClInclude Include="..\..\modules\beast_core\memory\SharedFunction.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\net\IPEndpoint.h">
-      <Filter>beast\net</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\Config.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1254,6 +1254,15 @@
     <ClInclude Include="..\..\beast\utility\BaseFromMember.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\net\IPAddress.h">
+      <Filter>beast\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\Asio.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\asio\IPAddressConversion.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1360,9 +1369,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\win32_Threads.cpp">
       <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\IPAddress.cpp">
-      <Filter>beast_core\network</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\network\MACAddress.cpp">
       <Filter>beast_core\network</Filter>
@@ -1682,9 +1688,6 @@
     <ClCompile Include="..\..\modules\beast_extras\beast_extras.cpp">
       <Filter>beast_extras</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
-      <Filter>beast\net\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\net\Net.cpp">
       <Filter>beast\net</Filter>
     </ClCompile>
@@ -1804,6 +1807,15 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\impl\PropertyStream.cpp">
       <Filter>beast\utility\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\IPAddress.cpp">
+      <Filter>beast\net\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\Asio.cpp">
+      <Filter>beast\asio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\impl\IPAddressConversion.cpp">
+      <Filter>beast\asio\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

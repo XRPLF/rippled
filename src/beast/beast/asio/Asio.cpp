@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,36 +17,6 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
-#define RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
+#include "BeastConfig.h"
 
-namespace ripple {
-namespace PeerFinder {
-
-/** Describes a connectible peer address along with some metadata. */
-struct Endpoint
-{
-    Endpoint ();
-
-    IPAddress address;
-    int hops;
-    uint32 incomingSlotsAvailable;
-    uint32 incomingSlotsMax;
-    uint32 uptimeSeconds;
-    std::string featureList;
-};
-
-inline bool operator< (Endpoint const& lhs, Endpoint const& rhs)
-{
-    return lhs.address < rhs.address;
-}
-
-inline bool operator== (Endpoint const& lhs, Endpoint const& rhs)
-{
-    return lhs.address == rhs.address;
-}
-
-}
-}
-
-#endif
+#include "impl/IPAddressConversion.cpp"

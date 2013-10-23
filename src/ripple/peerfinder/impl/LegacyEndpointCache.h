@@ -33,8 +33,8 @@ private:
     typedef boost::multi_index_container <
         LegacyEndpoint, boost::multi_index::indexed_by <
             boost::multi_index::hashed_unique <
-                BOOST_MULTI_INDEX_MEMBER(PeerFinder::LegacyEndpoint,IPEndpoint,address),
-                IPEndpoint::hasher>
+                BOOST_MULTI_INDEX_MEMBER(PeerFinder::LegacyEndpoint,IPAddress,address),
+                IPAddress::hasher>
         >
     > MapType;
 
@@ -164,16 +164,16 @@ public:
     }
 
     /** Load the legacy endpoints cache from the database. */
-    void load ()
+    void load (DiscreteTime now)
     {
-        typedef std::vector <IPEndpoint> List;
+        typedef std::vector <IPAddress> List;
         List list;
         m_store.loadLegacyEndpoints (list);
         std::size_t n (0);
         for (List::const_iterator iter (list.begin());
             iter != list.end(); ++iter)
         {
-            std::pair <LegacyEndpoint const&, bool> result (insert (*iter));
+            std::pair <LegacyEndpoint const&, bool> result (insert (*iter, now));
             if (result.second)
                 ++n;
         }
@@ -186,10 +186,10 @@ public:
         The return value provides a reference to the new or existing endpoint.
         The bool indicates whether or not the insertion took place.
     */
-    std::pair <LegacyEndpoint const&, bool> insert (IPEndpoint const& address)
+    std::pair <LegacyEndpoint const&, bool> insert (IPAddress const& address, DiscreteTime now)
     {
         std::pair <MapType::iterator, bool> result (
-            m_map.insert (LegacyEndpoint (address)));
+            m_map.insert (LegacyEndpoint (address, now)));
         if (m_map.size() > legacyEndpointCacheSize)
             prune();
         if (result.second)
@@ -198,7 +198,7 @@ public:
     }
 
     /** Returns a pointer to the legacy endpoint if it exists, else nullptr. */
-    LegacyEndpoint const* find (IPEndpoint const& address)
+    LegacyEndpoint const* find (IPAddress const& address)
     {
         MapType::iterator iter (m_map.find (address));
         if (iter != m_map.end())
@@ -209,7 +209,7 @@ public:
     /** Updates the metadata following a connection attempt.
         @param canAccept A flag indicating if the connection succeeded.
     */
-    void checked (IPEndpoint const& address, bool canAccept)
+    void checked (IPAddress const& address, bool canAccept)
     {
         LegacyEndpoint const* endpoint (find (address));
         if (endpoint != nullptr)
@@ -224,13 +224,12 @@ public:
         Also updates the lastGet field of the LegacyEndpoint so we will avoid
         re-using the address until we have tried all the others.
     */
-    void get (std::size_t n, std::vector <IPEndpoint>& result) const
+    void get (std::size_t n, std::vector <IPAddress>& result, DiscreteTime now) const
     {
         FlattenedList list (flatten());
         std::random_shuffle (list.begin(), list.end());
         std::sort (list.begin(), list.end(), GetLess());
         n = std::min (n, list.size());
-        RelativeTime const now (RelativeTime::fromStartup());
         for (FlattenedList::iterator iter (list.begin());
             n-- && iter!=list.end(); ++iter)
         {

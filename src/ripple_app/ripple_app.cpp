@@ -40,8 +40,9 @@
 #include "../ripple/rpc/ripple_rpc.h"
 #include "../ripple/validators/ripple_validators.h"
 
-namespace ripple
-{
+#include "beast/beast/Asio.h"
+
+namespace ripple {
 
 //
 // Application

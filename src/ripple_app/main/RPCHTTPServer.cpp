@@ -65,7 +65,7 @@ public:
         if (! getConfig ().getRpcIP().empty () &&
               getConfig ().getRpcPort() != 0)
         {
-            IPEndpoint ep (IPEndpoint::from_string (getConfig().getRpcIP()));
+            IPAddress ep (IPAddress::from_string (getConfig().getRpcIP()));
             if (! ep.empty())
             {
                 HTTP::Port port;

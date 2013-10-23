@@ -503,13 +503,18 @@ public:
             nodeNetwork ();
         }
 
-        if (!getConfig ().IPS.empty ())
+        // Take the set of entries in IPS_FIXED and insert them into the
+        // "legacy endpoint" database so they will be served as IP addresses
+        // in the legacy mtPEERS message. Note that this is all replaced by
+        // the new PeerFinder.
+        //
+        if (!getConfig ().IPS_FIXED.empty ())
         {
             std::vector<std::string>    vstrValues;
 
-            vstrValues.reserve (getConfig ().IPS.size ());
+            vstrValues.reserve (getConfig ().IPS_FIXED.size ());
 
-            BOOST_FOREACH (const std::string & strPeer, getConfig ().IPS)
+            BOOST_FOREACH (const std::string & strPeer, getConfig ().IPS_FIXED)
             {
                 std::string     strIP;
                 int             iPort;

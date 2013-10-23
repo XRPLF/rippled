@@ -20,50 +20,47 @@
 namespace ripple {
 namespace PeerFinder {
 
-Slots::Slots ()
-    : startTime (0)
-    , peerCount (0)
+Slots::Slots (DiscreteClock <DiscreteTime> clock, bool roundUpwards)
+    : peerCount (0)
     , inboundCount (0)
     , outboundCount (0)
+    , fixedCount (0)
     , outDesired (0)
     , inboundSlots (0)
     , inboundSlotsMaximum (0)
-    , m_roundUpwards (Random::getSystemRandom().nextBool())
+    , m_clock (clock)
+    , m_startTime (0)
+    , m_roundUpwards (roundUpwards)
 {
 }
 
 void Slots::update (Config const& config)
 {
-    if (! config.wantIncoming)
-    {
-        inboundSlots = 0;
-        inboundSlotsMaximum = 0;
-    }
+    double outDesiredFraction = 1;
+
+    if (config.wantIncoming)
+        outDesiredFraction = config.maxPeerCount * (Config::outPercent * .01);
+
+    if (m_roundUpwards)
+        outDesired = int (std::ceil (outDesiredFraction));
     else
-    {
-        double outDesiredFraction (
-            config.maxPeerCount * (Config::outPercent * .01));
+        outDesired = int (std::floor (outDesiredFraction));
 
-        if (m_roundUpwards)
-            outDesired = int (std::ceil (outDesiredFraction));
-        else
-            outDesired = int (std::floor (outDesiredFraction));
-        if (outDesired < Config::minOutCount)
-            outDesired = Config::minOutCount;
+    if (outDesired < Config::minOutCount)
+        outDesired = Config::minOutCount;
 
-        if (config.maxPeerCount >= outDesired)
-            inboundSlotsMaximum = config.maxPeerCount - outDesired;
-        else
-            inboundSlotsMaximum = 0;
+    if (config.maxPeerCount >= outDesired)
+        inboundSlotsMaximum = config.maxPeerCount - outDesired;
+    else
+        inboundSlotsMaximum = 0;
 
-        inboundSlots = std::max (inboundSlotsMaximum - inboundCount, 0);
-    }
+    inboundSlots = std::max (inboundSlotsMaximum - inboundCount, 0);
 }
 
 void Slots::addPeer (Config const& config, bool inbound)
 {
     if (peerCount == 0)
-        startTime = RelativeTime::fromStartup();
+        m_startTime = m_clock();
 
     ++peerCount;
     if (inbound)
@@ -76,23 +73,65 @@ void Slots::addPeer (Config const& config, bool inbound)
 
 void Slots::dropPeer (Config const& config, bool inbound)
 {
+    bool const wasConnected (connected ());
+
     --peerCount;
     if (inbound)
         --inboundCount;
     else
         --outboundCount;
 
-    if (peerCount == 0)
-        startTime = RelativeTime(0);
+    if (wasConnected && ! connected())
+        m_startTime = 0;
 
     update (config);
 }
 
-uint32 Slots::uptimeMinutes () const
+bool Slots::roundUpwards () const
 {
-    if (startTime.isNotZero())
-        return (RelativeTime::fromStartup()-startTime).inMinutes();
+    return m_roundUpwards;
+}
+
+bool Slots::connected () const
+{
+    return (peerCount-fixedCount) >= Config::minOutCount;
+}
+
+uint32 Slots::uptimeSeconds () const
+{
+    if (m_startTime != 0)
+        return m_clock() - m_startTime;
     return 0;
+}
+
+void Slots::updateConnected ()
+{
+    bool const wasConnected (m_startTime != 0);
+    bool const isConnected (connected());
+
+    if (wasConnected && !isConnected)
+    {
+        m_startTime = 0;
+    }
+    else if (! wasConnected && isConnected)
+    {
+        m_startTime = m_clock();
+    }
+}
+
+void Slots::onWrite (PropertyStream::Map& map)
+{
+    map ["peers"]        = peerCount;
+    map ["in"]           = inboundCount;
+    map ["out"]          = outboundCount;
+    map ["fixed"]        = fixedCount;
+    map ["out_desired"]  = outDesired;
+    map ["in_avail"]     = inboundSlots;
+    map ["in_max"]       = inboundSlotsMaximum;
+    map ["round"]        = roundUpwards();
+    map ["connected"]    = connected();
+    map ["uptime"]       =
+        RelativeTime (uptimeSeconds()).getDescription ().toStdString();
 }
 
 }

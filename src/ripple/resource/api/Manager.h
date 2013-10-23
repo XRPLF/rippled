@@ -35,10 +35,10 @@ public:
     virtual ~Manager() { }
 
     /** Create a new endpoint keyed by inbound IP address. */
-    virtual Consumer newInboundEndpoint (IPEndpoint const& address) = 0;
+    virtual Consumer newInboundEndpoint (IPAddress const& address) = 0;
 
     /** Create a new endpoint keyed by outbound IP address and port. */
-    virtual Consumer newOutboundEndpoint (IPEndpoint const& address) = 0;
+    virtual Consumer newOutboundEndpoint (IPAddress const& address) = 0;
 
     /** Create a new endpoint keyed by name. */
     virtual Consumer newAdminEndpoint (std::string const& name) = 0;

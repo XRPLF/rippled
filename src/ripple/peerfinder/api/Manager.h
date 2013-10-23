@@ -50,16 +50,24 @@ public:
     */
     virtual void setConfig (Config const& config) = 0;
 
-    /** Add a set of strings as fallback IPEndpoint sources.
-        @param name A label used for diagnostics.
+    /** Add a set of strings for peers that should always be connected.
+        This is useful for maintaining a private cluster of peers.
+        If a string is not parseable as a numeric IP address it will
+        be passed to a DNS resolver to perform a lookup.
     */
-    virtual void addStrings (std::string const& name,
+    virtual void addFixedPeers (
         std::vector <std::string> const& strings) = 0;
 
-    /** Add a URL as a fallback location to obtain IPEndpoint sources.
+    /** Add a set of strings as fallback IPAddress sources.
         @param name A label used for diagnostics.
     */
-    virtual void addURL (std::string const& name,
+    virtual void addFallbackStrings (std::string const& name,
+        std::vector <std::string> const& strings) = 0;
+
+    /** Add a URL as a fallback location to obtain IPAddress sources.
+        @param name A label used for diagnostics.
+    */
+    virtual void addFallbackURL (std::string const& name,
         std::string const& url) = 0;
 
 	/** Called when a new peer connection is established. 
@@ -68,7 +76,7 @@ public:
 		we are sure that its connection is stable.
 	*/
 	virtual void onPeerConnected (PeerID const& id,
-                                  IPEndpoint const& address,
+                                  IPAddress const& address,
                                   bool inbound) = 0;
 
 	/** Called when an existing peer connection drops for whatever reason.
@@ -83,7 +91,7 @@ public:
         std::vector <Endpoint> const& endpoints) = 0;
 
     /** Called when a legacy IP/port address is received (from mtPEER). */
-    virtual void onPeerLegacyEndpoint (IPEndpoint const& ep) = 0;
+    virtual void onPeerLegacyEndpoint (IPAddress const& ep) = 0;
 };
 
 }

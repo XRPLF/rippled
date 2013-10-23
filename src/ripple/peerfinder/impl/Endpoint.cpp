@@ -26,7 +26,7 @@ Endpoint::Endpoint ()
     : hops (0)
     , incomingSlotsAvailable (0)
     , incomingSlotsMax (0)
-    , uptimeMinutes (0)
+    , uptimeSeconds (0)
 {
 }
 

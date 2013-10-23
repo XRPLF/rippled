@@ -239,7 +239,7 @@ message TMEndpoint
     required uint32         hops = 2;
     required uint32         slots = 3;         // the number of available incoming slots
     required uint32         maxSlots = 4;      // the maximum number of incoming slots
-    required uint32         uptimeMinutes = 5; // uptime in minutes
+    required uint32         uptimeSeconds = 5; // uptime in seconds
     required string         features = 6;
 }
 

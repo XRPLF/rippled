@@ -35,8 +35,19 @@ struct Config
     /** True if we want to accept incoming connections. */
     bool wantIncoming;
 
+    /** True if we want to establish connections automatically */
+    bool connectAutomatically;
+
     uint16 listeningPort;
     std::string featureList;
+
+    /** Write the configuration into a property stream */
+    void onWrite(PropertyStream::Map& map);
+
+    /** Called to set sensible default values for anything
+        that hasn't been initialized.
+    */
+    void fillInDefaultValues();
 };
 
 }

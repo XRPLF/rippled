@@ -109,7 +109,7 @@ public:
 
     virtual bool hasRange (uint32 uMin, uint32 uMax) = 0;
 
-    virtual IPEndpoint getPeerEndpoint() const = 0;
+    virtual IPAddress getPeerEndpoint() const = 0;
 
     //--------------------------------------------------------------------------
 

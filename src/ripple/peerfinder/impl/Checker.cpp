@@ -41,8 +41,8 @@ private:
 
     //--------------------------------------------------------------------------
 
-    static boost::asio::ip::tcp::endpoint fromIPEndpoint (
-        IPEndpoint const& ipEndpoint)
+    static boost::asio::ip::tcp::endpoint fromIPAddress (
+        IPAddress const& ipEndpoint)
     {
         if (ipEndpoint.isV4 ())
         {
@@ -71,14 +71,14 @@ private:
 
         CheckerImp& m_owner;
         boost::asio::io_service& m_io_service;
-        IPEndpoint m_address;
+        IPAddress m_address;
         AbstractHandler <void (Result)> m_handler;
         socket_type m_socket;
         boost::system::error_code m_error;
         bool m_canAccept;
 
         Request (CheckerImp& owner, boost::asio::io_service& io_service,
-            IPEndpoint const& address, AbstractHandler <void (Result)> handler)
+            IPAddress const& address, AbstractHandler <void (Result)> handler)
             : m_owner (owner)
             , m_io_service (io_service)
             , m_address (address)
@@ -88,7 +88,7 @@ private:
         {
             m_owner.add (*this);
 
-            m_socket.async_connect (fromIPEndpoint (m_address),
+            m_socket.async_connect (fromIPAddress (m_address),
                 wrapHandler (boost::bind (&Request::handle_connect, Ptr(this),
                     boost::asio::placeholders::error), m_handler));
         }
@@ -165,7 +165,7 @@ public:
             iter->cancel();
     }
 
-    void async_test (IPEndpoint const& endpoint,
+    void async_test (IPAddress const& endpoint,
         AbstractHandler <void (Result)> handler)
     {
         new Request (*this, m_io_service, endpoint, handler);

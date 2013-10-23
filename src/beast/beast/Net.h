@@ -23,6 +23,6 @@
 #include "net/BufferType.h"
 #include "net/DynamicBuffer.h"
 
-#include "net/IPEndpoint.h"
+#include "net/IPAddress.h"
 
 #endif

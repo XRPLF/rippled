@@ -168,7 +168,7 @@
 // messages as needed, and collect legacy IP endpoint information.
 //
 #ifndef RIPPLE_USE_PEERFINDER
-#define RIPPLE_USE_PEERFINDER 0
+#define RIPPLE_USE_PEERFINDER 1
 #endif
 
 // Here temporarily

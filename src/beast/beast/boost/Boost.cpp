@@ -20,3 +20,11 @@
 #include "BeastConfig.h"
 
 #include "ErrorCode.h"
+
+namespace detail {
+
+// to squelch linker warnings
+int boostUnusedVariable = 0;
+
+}
+

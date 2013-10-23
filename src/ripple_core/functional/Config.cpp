@@ -78,6 +78,7 @@ Config::Config ()
     PEER_CONNECT_LOW_WATER  = DEFAULT_PEER_CONNECT_LOW_WATER;
 
     PEER_PRIVATE            = false;
+    PEERS_MAX               = 0;    // indicates "use default"
 
     TRANSACTION_FEE_BASE    = DEFAULT_FEE_DEFAULT;
 
@@ -253,7 +254,6 @@ void Config::load ()
             if (smtTmp)
             {
                 validators  = *smtTmp;
-                // SectionEntriesPrint(&validators, SECTION_VALIDATORS);
             }
 
             smtTmp = SectionEntries (secConfig, SECTION_CLUSTER_NODES);
@@ -261,7 +261,6 @@ void Config::load ()
             if (smtTmp)
             {
                 CLUSTER_NODES = *smtTmp;
-                // SectionEntriesPrint(&CLUSTER_NODES, SECTION_CLUSTER_NODES);
             }
 
             smtTmp  = SectionEntries (secConfig, SECTION_IPS);
@@ -269,7 +268,13 @@ void Config::load ()
             if (smtTmp)
             {
                 IPS = *smtTmp;
-                // SectionEntriesPrint(&IPS, SECTION_IPS);
+            }
+
+            smtTmp  = SectionEntries (secConfig, SECTION_IPS_FIXED);
+
+            if (smtTmp)
+            {
+                IPS_FIXED = *smtTmp;
             }
 
             smtTmp = SectionEntries (secConfig, SECTION_SNTP);
@@ -307,6 +312,9 @@ void Config::load ()
 
             if (SectionSingleB (secConfig, SECTION_PEER_PRIVATE, strTemp))
                 PEER_PRIVATE        = lexicalCastThrow <bool> (strTemp);
+
+            if (SectionSingleB (secConfig, SECTION_PEERS_MAX, strTemp))
+                PEERS_MAX           = lexicalCastThrow <int> (strTemp);
 
             smtTmp = SectionEntries (secConfig, SECTION_RPC_ADMIN_ALLOW);
 

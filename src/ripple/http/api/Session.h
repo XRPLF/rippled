@@ -46,7 +46,7 @@ public:
     virtual Journal journal() = 0;
 
     /** Returns the remote address of the connection. */
-    virtual IPEndpoint remoteAddress() = 0;
+    virtual IPAddress remoteAddress() = 0;
 
     /** Returns `true` if the full HTTP headers have been received. */
     virtual bool headersComplete() = 0;

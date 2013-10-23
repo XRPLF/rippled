@@ -35,7 +35,7 @@ struct Callback
         std::vector <Endpoint> const& endpoints) = 0;
 
     /** Initiate outgoing Peer connections to the specified set of endpoints. */
-    virtual void connectPeerEndpoints (std::vector <IPEndpoint> const& list) = 0;
+    virtual void connectPeerEndpoints (std::vector <IPAddress> const& list) = 0;
 
     /** Impose a load charge on the specified peer. */
     virtual void chargePeerLoadPenalty (PeerID const& id) = 0;
