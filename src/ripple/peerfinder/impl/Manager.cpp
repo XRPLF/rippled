@@ -31,7 +31,7 @@ Introduction
 Each Peer (a computer running rippled) on the Ripple network requires a certain
 number of connections to other peers. These connections form an "overlay
 network." When a new peer wants to join the network, they need a robust source
-of network addresses (IP adresses) in order to establish outgoing connections.
+of network addresses (IP addresses) in order to establish outgoing connections.
 Once they have joined the network, they need a method of announcing their
 availaibility of accepting incoming connections.
 
@@ -62,13 +62,52 @@ reaches its desired number of peer connections, but may still want to inform
 the network that it will service clients. It may also be desired to indicate
 the number of free client slots.
 
-Pong
-----
-
 Once a peer is connected to the network we need a way both to inform our
 neighbors of our status with respect to accepting connections, and also to
-learn about new fresh addresses to connect to. For this we will define the "Pong"
-message.
+learn about new fresh addresses to connect to. For this we will define the
+mtENDPOINTS message.
+
+"Bootstrap Strategy"
+--------------------
+
+Nouns:
+
+    bootstrap_ip
+        numeric IPAddress
+    
+    bootstrap_domain
+        domain name / port combinations, resolution only
+
+    bootstrap_url
+        URL leading to a text file, with a series of entries.
+
+    ripple.txt
+        Separately parsed entity outside of PeerFinder that can provide
+        bootstrap_ip, bootstrap_domain, and bootstrap_url items.
+
+The process of obtaining the initial peer connections for accessing the Ripple
+peer to peer network, when there are no current connections, is called
+"bootstrapping." The algorithm is as follows:
+
+1. If (    unusedLiveEndpoints.count() > 0
+        OR activeConnectionAttempts.count() > 0)
+        Try addresses from unusedLiveEndpoints
+        return;
+2. If (    domainNames.count() > 0 AND (
+               unusedBootstrapIPs.count() == 0
+            OR activeNameResolutions.count() > 0) )
+        ForOneOrMore (DomainName that hasn't been resolved recently)
+            Contact DomainName and add entries to the unusedBootstrapIPs
+        return;
+3. If (unusedBootstrapIPs.count() > 0)
+        Try addresses from unusedBootstrapIPs
+        return;
+4. Try entries from [ips]
+5. Try entries from [ips_urls]
+6. Increment generation number and go to 1
+
+    - Keep a map of all current outgoing connection attempts
+
 
 "Connection Strategy"
 ---------------------
