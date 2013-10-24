@@ -28,7 +28,7 @@ suite('WebSocket connection', function() {
     }
   });
 
-  test('WebSocket connect and disconnect', function() {
+  test('WebSocket connect and disconnect', function(done) {
     var alpha = Remote.from_config("alpha");
 
     alpha.on('connected', function () {
