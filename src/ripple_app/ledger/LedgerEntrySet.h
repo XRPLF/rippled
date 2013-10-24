@@ -212,6 +212,7 @@ public:
         uint256 const &  uIndex,
         SLE::ref        sleAccount,
         const bool      bAuth,
+        const bool      bNoRipple,
         const STAmount & saSrcBalance,
         const STAmount & saSrcLimit,
         const uint32    uSrcQualityIn = 0,

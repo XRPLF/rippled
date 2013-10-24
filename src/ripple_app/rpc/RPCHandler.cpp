@@ -48,7 +48,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
 
     WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: %s") % params);
 
-    if (!bOffline && (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
+    if (!bOffline && !getConfig ().RUN_STANDALONE && (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
     {
         return rpcError (rpcNO_CURRENT);
     }

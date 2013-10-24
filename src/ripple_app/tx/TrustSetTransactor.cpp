@@ -349,6 +349,7 @@ TER TrustSetTransactor::doApply ()
                           Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID),
                           mTxnAccount,
                           bSetAuth,
+                          bSetNoRipple && !bClearNoRipple,
                           saBalance,
                           saLimitAllow,       // Limit for who is being charged.
                           uQualityIn,
