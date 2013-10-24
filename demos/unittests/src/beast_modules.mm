@@ -17,17 +17,4 @@
 */
 //==============================================================================
 
-#ifndef UNITTESTS_BEAST_H_INCLUDED
-#define UNITTESTS_BEAST_H_INCLUDED
-
-#include "BeastConfig.h"
-
-#include "modules/beast_core/beast_core.h"
-#include "modules/beast_vflib/beast_vflib.h"
-
-#include "beast/Strings.h"
-#include "beast/Threads.h"
-#include "beast/SmartPtr.h"
-#include "beast/Chrono.h"
-
-#endif
+#include "beast_modules.cpp"

@@ -20,7 +20,7 @@
 #ifndef UNITTESTS_BEASTUNITTESTS_H_INCLUDED
 #define UNITTESTS_BEASTUNITTESTS_H_INCLUDED
 
-#include "beast.h"
+#include "beast_modules.h"
 
 int runUnitTests (beast::String const& match, beast::String const& format);
 

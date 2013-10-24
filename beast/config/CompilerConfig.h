@@ -107,7 +107,7 @@ extern void beast_reportFatalError (char const* message, char const* fileName, i
     This is only compiled in a debug build.
     @see Logger::outputDebugString
 */
-#define DBG(dbgtext)          { beast::String tempDbgBuf; tempDbgBuf << dbgtext; beast::Logger::outputDebugString (tempDbgBuf); }
+#define BDBG(dbgtext)          { beast::String tempDbgBuf; tempDbgBuf << dbgtext; beast::Logger::outputDebugString (tempDbgBuf); }
 
 /** This will always cause an assertion failure.
     It is only compiled in a debug build, (unless BEAST_LOG_ASSERTIONS is enabled for your build).
@@ -127,7 +127,7 @@ extern void beast_reportFatalError (char const* message, char const* fileName, i
 
 // If debugging is disabled, these dummy debug and assertion macros are used..
 
-#define DBG(dbgtext)
+#define BDBG(dbgtext)
 #define bassertfalse              { beast_LogCurrentAssertion }
 
 # if BEAST_LOG_ASSERTIONS

@@ -47,10 +47,10 @@
 # ifdef _VARIADIC_MAX
 #  define BEAST_VARIADIC_MAX _VARIADIC_MAX
 # else
-#  define BEAST_VARIADIC_MAX 9
+#  define BEAST_VARIADIC_MAX 10
 # endif
 #else
-# define BEAST_VARIADIC_MAX 9
+# define BEAST_VARIADIC_MAX 10
 #endif
 
 //------------------------------------------------------------------------------

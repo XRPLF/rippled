@@ -47,7 +47,7 @@ FileLogger::~FileLogger() {}
 void FileLogger::logMessage (const String& message)
 {
     const ScopedLock sl (logLock);
-    DBG (message);
+    BDBG (message);
     FileOutputStream out (logFile, 256);
     out << message << newLine;
 }

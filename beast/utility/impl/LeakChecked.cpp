@@ -85,7 +85,7 @@ void LeakCheckedBase::LeakCounterBase::checkForLeaks ()
             always use ScopedPointers, OwnedArrays, SharedObjects,
             etc, and avoid the 'delete' operator at all costs!
         */
-        DBG ("Leaked objects: " << count << " of " << getClassName ());
+        BDBG ("Leaked objects: " << count << " of " << getClassName ());
 
         //bassertfalse;
     }
@@ -115,7 +115,7 @@ void LeakCheckedBase::reportDanglingPointer (char const*)
         SharedObjects, etc, and avoid the 'delete' operator
         at all costs!
     */
-    DBG ("Dangling pointer deletion: " << objectName);
+    BDBG ("Dangling pointer deletion: " << objectName);
 
     bassertfalse;
 }

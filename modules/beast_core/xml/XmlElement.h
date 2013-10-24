@@ -43,7 +43,7 @@
 
     @see forEachXmlChildElementWithTagName
 */
-#define forEachXmlChildElement(parentXmlElement, childElementVariableName) \
+#define beast_forEachXmlChildElement(parentXmlElement, childElementVariableName) \
 \
     for (beast::XmlElement* childElementVariableName = (parentXmlElement).getFirstChildElement(); \
          childElementVariableName != nullptr; \
@@ -72,7 +72,7 @@
 
     @see forEachXmlChildElement
 */
-#define forEachXmlChildElementWithTagName(parentXmlElement, childElementVariableName, requiredTagName) \
+#define beast_forEachXmlChildElementWithTagName(parentXmlElement, childElementVariableName, requiredTagName) \
 \
     for (beast::XmlElement* childElementVariableName = (parentXmlElement).getChildByName (requiredTagName); \
          childElementVariableName != nullptr; \

@@ -2,6 +2,7 @@
 /*
 	This file is part of Beast: https://github.com/vinniefalco/Beast
 	Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+    Copyright Patrick Dehne <patrick@mysonicweb.de> (www.sonicweb-radio.de)
 
 	Permission to use, copy, modify, and/or distribute this software for any
 	purpose  with  or without fee is hereby granted, provided that the above
@@ -22,104 +23,63 @@
 namespace beast {
 
 ThreadWithServiceQueue::ThreadWithServiceQueue (const String& name)
-: Thread (name)
+: CallQueue(name)
+, m_thread(name, this)
 , m_entryPoints(nullptr)
 , m_calledStart(false)
 , m_calledStop(false)
-, m_interrupted(false)
 {
 }
 
-ThreadWithServiceQueue::~ThreadWithServiceQueue()
+ThreadWithServiceQueue::~ThreadWithServiceQueue ()
 {
 	stop(true);
 }
 
 void ThreadWithServiceQueue::start (EntryPoints* const entryPoints)
 {
-	{
-		CriticalSection::ScopedLockType lock (m_mutex);
-		
-		// start() MUST be called.
-		bassert (!m_calledStart);
-		m_calledStart = true;
-	}
+	// start() MUST be called.
+	bassert (!m_calledStart);
+	m_calledStart = true;
 	
 	m_entryPoints = entryPoints;
 	
-	startThread();
+	m_thread.startThread ();
 }
 
 void ThreadWithServiceQueue::stop (bool const wait)
 {
+	// start() MUST be called.
+	bassert (m_calledStart);
+	
+	if (!m_calledStop)
 	{
-		CriticalSection::ScopedLockType lock (m_mutex);
+		m_calledStop = true;
 		
-		// start() MUST be called.
-		bassert (m_calledStart);
+		m_thread.signalThreadShouldExit();
 		
-		if (!m_calledStop)
-		{
-			m_calledStop = true;
-			
-			{
-				CriticalSection::ScopedUnlockType unlock (m_mutex);
-				
-				call (&Thread::signalThreadShouldExit, this);
-				
-				// something could slip in here
-				
-				// m_queue.close();
-			}
-		}
+		// something could slip in here
+		
+		close ();
 	}
 	
 	if (wait)
-		waitForThreadToExit();
-}
-	
-void ThreadWithServiceQueue::interrupt ()
-{
-	call (&ThreadWithServiceQueue::doInterrupt, this);
+		m_thread.waitForThreadToExit ();
 }
 
-bool ThreadWithServiceQueue::interruptionPoint ()
+void ThreadWithServiceQueue::runThread ()
 {
-	return m_interrupted;
-}
-
-void ThreadWithServiceQueue::run ()
-{
-	m_entryPoints->threadInit();
+	m_entryPoints->threadInit ();
 	
-	while (! this->threadShouldExit())
-	{
-		run_one();
-		
-		bool isInterrupted = m_entryPoints->threadIdle();
-		
-		isInterrupted |= interruptionPoint();
-		
-		if(isInterrupted)
-		{
-			// We put this call into the service queue to make
-			// sure we get through to threadIdle without
-			// waiting
-			call (&ThreadWithServiceQueue::doWakeUp, this);
-		}
-	}
+	while (! m_thread.threadShouldExit ())
+        run ();
+    
+    // Perform the remaining calls in the queue
+    
+    reset ();
+    poll ();
 	
 	m_entryPoints->threadExit();
-}
-
-void ThreadWithServiceQueue::doInterrupt ()
-{
-	m_interrupted = true;
-}
-
-void ThreadWithServiceQueue::doWakeUp ()
-{
-	m_interrupted = false;
 }
 
 //------------------------------------------------------------------------------
@@ -129,22 +89,27 @@ namespace detail
 
 //------------------------------------------------------------------------------
 
-class BindableServiceQueueTests
+class ThreadWithServiceQueueTests
 : public UnitTest
 {
 public:
 	
-	struct BindableServiceQueueRunner
+	struct ThreadWithServiceQueueRunner
 	: public ThreadWithServiceQueue::EntryPoints
 	{
 		ThreadWithServiceQueue m_worker;
-		int cCallCount, c1CallCount, idleInterruptedCount;
+		int cCallCount, c1CallCount;
+		int qCallCount, q1CallCount;
+		int initCalled, exitCalled;
 		
-		BindableServiceQueueRunner()
-		: m_worker("BindableServiceQueueRunner")
+		ThreadWithServiceQueueRunner()
+		: m_worker("ThreadWithServiceQueueRunner")
 		, cCallCount(0)
 		, c1CallCount(0)
-		, idleInterruptedCount(0)
+		, qCallCount(0)
+		, q1CallCount(0)
+		, initCalled(0)
+		, exitCalled(0)
 		{
 		}
 		
@@ -158,14 +123,9 @@ public:
 			m_worker.stop(true);
 		}
 		
-		void interrupt()
-		{
-			m_worker.interrupt();
-		}
-		
 		void c()
 		{
-			m_worker.queue(&BindableServiceQueueRunner::cImpl, this);
+			m_worker.call(&ThreadWithServiceQueueRunner::cImpl, this);
 		}
 		
 		void cImpl()
@@ -175,38 +135,66 @@ public:
 		
 		void c1(int p1)
 		{
-			m_worker.queue(&BindableServiceQueueRunner::c1Impl, this, p1);
+			m_worker.call(&ThreadWithServiceQueueRunner::c1Impl, this, p1);
 		}
 		
 		void c1Impl(int p1)
 		{
 			c1CallCount++;
 		}
-		
-		bool threadIdle ()
+
+		void q()
 		{
-			bool interrupted = m_worker.interruptionPoint ();
-			
-			if(interrupted)
-				idleInterruptedCount++;
-			
-			return interrupted;
+			m_worker.queue(&ThreadWithServiceQueueRunner::qImpl, this);
+		}
+		
+		void qImpl()
+		{
+			qCallCount++;
+		}
+		
+		void q1(int p1)
+		{
+			m_worker.queue(&ThreadWithServiceQueueRunner::q1Impl, this, p1);
+		}
+		
+		void q1Impl(int p1)
+		{
+			q1CallCount++;
+		}
+
+		void threadInit ()
+		{
+			initCalled++;
+		}
+        
+		void threadExit ()
+		{
+			exitCalled++;
 		}
 	};
 		
-	static int const calls = 10000;
+	static int const calls = 1000;
 	
 	void performCalls()
 	{
 		Random r;
 		r.setSeedRandomly();
 		
-		BindableServiceQueueRunner runner;
-		
-		beginTestCase("Calls and interruptions");
+		ThreadWithServiceQueueRunner runner;
 								
 		runner.start();
 		
+		for(std::size_t i=0; i<calls; i++)
+		{
+			int wait = r.nextLargeNumber(10).toInteger();
+			
+			if(wait % 2)
+				runner.q();
+			else
+				runner.q1Impl(wait);
+		}
+
 		for(std::size_t i=0; i<calls; i++)
 		{
 			int wait = r.nextLargeNumber(10).toInteger();
@@ -216,31 +204,32 @@ public:
 			else
 				runner.c1Impl(wait);
 		}
-						
-		for(std::size_t i=0; i<calls; i++)
-			runner.interrupt();
 		
 		runner.stop();
 		
-		// We can only reason that the idle method must have been interrupted
-		// at least once
 		expect ((runner.cCallCount + runner.c1CallCount) == calls);
-		expect (runner.idleInterruptedCount > 0);
+		expect ((runner.qCallCount + runner.q1CallCount) == calls);
+		expect (runner.initCalled == 1);
+		expect (runner.exitCalled == 1);
 	}
 	
 	void runTest()
 	{
-		performCalls ();
+		beginTestCase("Calls");
+        
+        for(int i=0; i<100; i++)
+            performCalls ();
 	}
 	
-	BindableServiceQueueTests () : UnitTest ("BindableServiceQueue", "beast")
+	ThreadWithServiceQueueTests () : UnitTest ("ThreadWithServiceQueue", "beast")
 	{
 	}
 };
 
-static BindableServiceQueueTests bindableServiceQueueTests;
-	
-}
+static CallQueueTests callQueueTests;
 
+static ThreadWithServiceQueueTests bindableServiceQueueTests;
+
+}
 
 }
