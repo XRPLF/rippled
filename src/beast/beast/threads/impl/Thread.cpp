@@ -456,8 +456,8 @@ void BEAST_CALLTYPE Thread::sleep (int millisecs)
 
 void BEAST_API beast_threadEntryPoint (void*);
 
-extern "C" void* threadEntryProc (void*);
-extern "C" void* threadEntryProc (void* userData)
+extern "C" void* threadEntryProcBeast (void*);
+extern "C" void* threadEntryProcBeast (void* userData)
 {
     BEAST_AUTORELEASEPOOL
     {
@@ -482,7 +482,7 @@ void Thread::launchThread()
     threadHandle = 0;
     pthread_t handle = 0;
 
-    if (pthread_create (&handle, 0, threadEntryProc, this) == 0)
+    if (pthread_create (&handle, 0, threadEntryProcBeast, this) == 0)
     {
         pthread_detach (handle);
         threadHandle = (void*) handle;

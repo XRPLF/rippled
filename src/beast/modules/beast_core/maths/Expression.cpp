@@ -93,7 +93,7 @@ struct Expression::Helpers
     public:
         EvaluationError (const String& desc)  : description (desc)
         {
-            DBG ("Expression::EvaluationError: " + description);
+            BDBG ("Expression::EvaluationError: " + description);
         }
 
         String description;
@@ -1086,7 +1086,7 @@ SharedPtr<Expression::Term> Expression::Term::negated()
 Expression::ParseError::ParseError (const String& message)
     : description (message)
 {
-    DBG ("Expression::ParseError: " + message);
+    BDBG ("Expression::ParseError: " + message);
 }
 
 //==============================================================================

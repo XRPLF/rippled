@@ -52,7 +52,7 @@ void logAssertion (const char* const filename, const int lineNum) noexcept
    #if BEAST_LOG_ASSERTIONS
     Logger::writeToLog (m);
    #else
-    DBG (m);
+    BDBG (m);
    #endif
 }
 #endif

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-	This file is part of BeastUtils: https://github.com/pdehne/BeastUtils
-	Copyright 2013, Patrick Dehne <patrick@sonicweb.de>
+	This file is part of Beast: https://github.com/vinniefalco/Beast
+	Copyright Patrick Dehne <patrick@mysonicweb.de> (www.sonicweb-radio.de)
 
 	Permission to use, copy, modify, and/or distribute this software for any
 	purpose  with  or without fee is hereby granted, provided that the above
@@ -21,7 +21,9 @@
 #define BEAST_VFLIB_H_INCLUDED
 
 #include "functor/BindHelper.h"
-#include "threads/BindableServiceQueue.h"
+#include "threads/CallQueue.h"
 #include "threads/ThreadWithServiceQueue.h"
+#include "threads/ManualServiceQueue.h"
+#include "threads/GuiServiceQueue.h"
 
 #endif

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "beast.h"
+#include "beast_modules.h"
 
 #include "modules/beast_core/beast_core.cpp"
 #include "modules/beast_vflib/beast_vflib.cpp"
@@ -26,6 +26,6 @@
 #include "beast/crypto/Crypto.cpp"
 #include "beast/strings/Strings.cpp"
 #include "beast/threads/Threads.cpp"
-// #include "beast/http/HTTP.cpp"
+//#include "beast/http/HTTP.cpp"
 #include "beast/net/Net.cpp"
 #include "beast/utility/Utility.cpp"

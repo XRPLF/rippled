@@ -9,9 +9,10 @@
 /* Begin PBXBuildFile section */
 		CD0A5B3F181707F700DA0342 /* mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD0A5B3E181707F700DA0342 /* mac.cpp */; };
 		CD0A5B421817097800DA0342 /* BeastUnitTests.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CD0A5B401817097800DA0342 /* BeastUnitTests.cpp */; };
-		CD0A5B4918170DC300DA0342 /* beast.mm in Sources */ = {isa = PBXBuildFile; fileRef = CD0A5B4818170DC300DA0342 /* beast.mm */; };
+		CD0A5B4918170DC300DA0342 /* beast_modules.mm in Sources */ = {isa = PBXBuildFile; fileRef = CD0A5B4818170DC300DA0342 /* beast_modules.mm */; };
 		CD0A5B4B18170EBC00DA0342 /* CoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CD0A5B4A18170EBC00DA0342 /* CoreServices.framework */; };
 		CD0A5B4E18170F0D00DA0342 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CD0A5B4D18170F0D00DA0342 /* AppKit.framework */; };
+		CD1CBE68181B2D99002CCC0C /* juce_modules.mm in Sources */ = {isa = PBXBuildFile; fileRef = CD1CBE64181B2689002CCC0C /* juce_modules.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -31,13 +32,16 @@
 		CD0A5B3E181707F700DA0342 /* mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mac.cpp; path = ../../src/mac.cpp; sourceTree = "<group>"; };
 		CD0A5B401817097800DA0342 /* BeastUnitTests.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = BeastUnitTests.cpp; path = ../../src/BeastUnitTests.cpp; sourceTree = "<group>"; };
 		CD0A5B411817097800DA0342 /* BeastUnitTests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BeastUnitTests.h; path = ../../src/BeastUnitTests.h; sourceTree = "<group>"; };
-		CD0A5B4318170A5100DA0342 /* beast.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = beast.cpp; path = ../../src/beast.cpp; sourceTree = "<group>"; };
-		CD0A5B4418170A5100DA0342 /* beast.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = beast.h; path = ../../src/beast.h; sourceTree = "<group>"; };
-		CD0A5B4818170DC300DA0342 /* beast.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = beast.mm; path = ../../src/beast.mm; sourceTree = "<group>"; };
+		CD0A5B4318170A5100DA0342 /* beast_modules.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = beast_modules.cpp; path = ../../src/beast_modules.cpp; sourceTree = "<group>"; };
+		CD0A5B4418170A5100DA0342 /* beast_modules.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = beast_modules.h; path = ../../src/beast_modules.h; sourceTree = "<group>"; };
+		CD0A5B4818170DC300DA0342 /* beast_modules.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = beast_modules.mm; path = ../../src/beast_modules.mm; sourceTree = "<group>"; };
 		CD0A5B4A18170EBC00DA0342 /* CoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreServices.framework; path = System/Library/Frameworks/CoreServices.framework; sourceTree = SDKROOT; };
 		CD0A5B4D18170F0D00DA0342 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		CD0A5B4F181714A000DA0342 /* beast */ = {isa = PBXFileReference; lastKnownFileType = folder; name = beast; path = ../../../../beast; sourceTree = "<group>"; };
 		CD0A5B50181714B800DA0342 /* modules */ = {isa = PBXFileReference; lastKnownFileType = folder; name = modules; path = ../../../../modules; sourceTree = "<group>"; };
+		CD1CBE62181B2689002CCC0C /* juce_modules.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = juce_modules.cpp; path = ../../src/juce_modules.cpp; sourceTree = "<group>"; };
+		CD1CBE63181B2689002CCC0C /* juce_modules.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = juce_modules.h; path = ../../src/juce_modules.h; sourceTree = "<group>"; };
+		CD1CBE64181B2689002CCC0C /* juce_modules.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = juce_modules.mm; path = ../../src/juce_modules.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,11 +62,14 @@
 			children = (
 				CD0A5B50181714B800DA0342 /* modules */,
 				CD0A5B4F181714A000DA0342 /* beast */,
-				CD0A5B4818170DC300DA0342 /* beast.mm */,
-				CD0A5B4318170A5100DA0342 /* beast.cpp */,
-				CD0A5B4418170A5100DA0342 /* beast.h */,
+				CD0A5B4318170A5100DA0342 /* beast_modules.cpp */,
+				CD0A5B4418170A5100DA0342 /* beast_modules.h */,
+				CD0A5B4818170DC300DA0342 /* beast_modules.mm */,
 				CD0A5B401817097800DA0342 /* BeastUnitTests.cpp */,
 				CD0A5B411817097800DA0342 /* BeastUnitTests.h */,
+				CD1CBE62181B2689002CCC0C /* juce_modules.cpp */,
+				CD1CBE63181B2689002CCC0C /* juce_modules.h */,
+				CD1CBE64181B2689002CCC0C /* juce_modules.mm */,
 				CD0A5B3E181707F700DA0342 /* mac.cpp */,
 				CD0A5B4C18170EC600DA0342 /* Frameworks */,
 				CD0A5B331817074500DA0342 /* Products */,
@@ -139,7 +146,8 @@
 			files = (
 				CD0A5B3F181707F700DA0342 /* mac.cpp in Sources */,
 				CD0A5B421817097800DA0342 /* BeastUnitTests.cpp in Sources */,
-				CD0A5B4918170DC300DA0342 /* beast.mm in Sources */,
+				CD1CBE68181B2D99002CCC0C /* juce_modules.mm in Sources */,
+				CD0A5B4918170DC300DA0342 /* beast_modules.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -180,9 +188,10 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../../../../../../JUCE",
 					"$(SRCROOT)/../../../../config",
 					"$(SRCROOT)/../../../..",
-					"$(SRCROOT)/../../../../beast",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				ONLY_ACTIVE_ARCH = YES;
@@ -219,9 +228,10 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../../../../../../JUCE",
 					"$(SRCROOT)/../../../../config",
 					"$(SRCROOT)/../../../..",
-					"$(SRCROOT)/../../../../beast",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				SDKROOT = macosx;

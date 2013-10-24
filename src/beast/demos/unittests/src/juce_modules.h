@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
 	This file is part of Beast: https://github.com/vinniefalco/Beast
-	Copyright Patrick Dehne <patrick@mysonicweb.de> (www.sonicweb-radio.de)
+	Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
 	Permission to use, copy, modify, and/or distribute this software for any
 	purpose  with  or without fee is hereby granted, provided that the above
@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include "beast_vflib.h"
+#ifndef UNITTESTS_JUCEMODULES_H_INCLUDED
+#define UNITTESTS_JUCEMODULES_H_INCLUDED
 
-#include "threads/ThreadWithServiceQueue.cpp"
+#include "AppConfig.h"
 
-/** Unit tests for header only classes
-*/
+#include "modules/juce_core/juce_core.h"
+#include "modules/juce_events/juce_events.h"
 
-static beast::detail::CallQueueTests callQueueTests;
-static beast::detail::ManualServiceQueueTests manualServiceQueueTests;
+#endif
