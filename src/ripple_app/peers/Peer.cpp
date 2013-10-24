@@ -1307,7 +1307,7 @@ void PeerImp::recvTransaction (protocol::TMTransaction& packet, Application::Sco
         else if (getApp().getLedgerMaster().getValidatedLedgerAge() > 240)
             WriteLog(lsINFO, Peer) << "No new transactions until synchronized";
         else
-            getApp().getJobQueue ().addJob (jtTRANSACTION, "recvTransction->checkTransaction",
+            getApp().getJobQueue ().addJob (jtTRANSACTION, "recvTransaction->checkTransaction",
                                        BIND_TYPE (&checkTransaction, P_1, flags, stx, boost::weak_ptr<Peer> (shared_from_this ())));
 
 #ifndef TRUST_NETWORK
