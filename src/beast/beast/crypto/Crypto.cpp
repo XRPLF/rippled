@@ -19,4 +19,5 @@
 
 #include "BeastConfig.h"
 
+#include "impl/MurmurHash.cpp"
 #include "impl/Sha256.cpp"

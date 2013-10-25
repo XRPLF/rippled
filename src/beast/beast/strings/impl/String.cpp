@@ -404,26 +404,42 @@ beast_wchar String::operator[] (int index) const noexcept
     return text [index];
 }
 
+//------------------------------------------------------------------------------
+
+namespace detail {
+
+template <typename Type>
+struct HashGenerator
+{
+    template <typename CharPointer>
+    static Type calculate (CharPointer t) noexcept
+    {
+        Type result = Type();
+
+        while (! t.isEmpty())
+            result = multiplier * result + t.getAndAdvance();
+
+        return result;
+    }
+
+    enum { multiplier = sizeof (Type) > 4 ? 101 : 31 };
+};
+
+}
+
 int String::hashCode() const noexcept
 {
-    CharPointerType t (text);
-    int result = 0;
-
-    while (! t.isEmpty())
-        result = 31 * result + (int) t.getAndAdvance();
-
-    return result;
+    return detail::HashGenerator<int> ::calculate (text);
 }
 
 int64 String::hashCode64() const noexcept
 {
-    CharPointerType t (text);
-    int64 result = 0;
+    return detail::HashGenerator<int64> ::calculate (text);
+}
 
-    while (! t.isEmpty())
-        result = 101 * result + t.getAndAdvance();
-
-    return result;
+std::size_t String::hash() const noexcept
+{
+    return detail::HashGenerator<std::size_t>::calculate (text);
 }
 
 //==============================================================================

@@ -19,8 +19,12 @@
 
 // http://code.google.com/p/smhasher/
 
-namespace Murmur
-{
+#include "../MurmurHash.h"
+
+#include <cstdint>
+
+namespace beast {
+namespace Murmur {
 
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros
@@ -484,4 +488,5 @@ void MurmurHash3_x64_128 ( const void* key, const int len,
     ((uint64_t*)out)[1] = h2;
 }
 
+}
 }

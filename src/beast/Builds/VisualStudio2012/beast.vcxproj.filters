@@ -683,9 +683,6 @@
     <ClInclude Include="..\..\modules\beast_sqdb\detail\use_type.h">
       <Filter>beast_sqdb\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\maths\MurmurHash.h">
-      <Filter>beast_core\maths</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\text\LexicalCast.h">
       <Filter>beast_core\text</Filter>
     </ClInclude>
@@ -1263,6 +1260,9 @@
     <ClInclude Include="..\..\beast\asio\IPAddressConversion.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\crypto\MurmurHash.h">
+      <Filter>beast\crypto</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1565,9 +1565,6 @@
     <ClCompile Include="..\..\modules\beast_sqdb\source\use_type.cpp">
       <Filter>beast_sqdb\source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\maths\MurmurHash.cpp">
-      <Filter>beast_core\maths</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\text\LexicalCast.cpp">
       <Filter>beast_core\text</Filter>
     </ClCompile>
@@ -1816,6 +1813,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\asio\impl\IPAddressConversion.cpp">
       <Filter>beast\asio\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\impl\MurmurHash.cpp">
+      <Filter>beast\crypto\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

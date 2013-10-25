@@ -156,7 +156,6 @@ namespace beast
 
 #include "maths/BigInteger.cpp"
 #include "maths/Expression.cpp"
-#include "maths/MurmurHash.cpp"
 #include "maths/Random.cpp"
 
 #include "memory/MemoryBlock.cpp"

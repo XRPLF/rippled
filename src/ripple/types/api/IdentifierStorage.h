@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_TYPES_IDENTIFIERSTORAGE_H_INCLUDED
 #define RIPPLE_TYPES_IDENTIFIERSTORAGE_H_INCLUDED
 
 #include "beast/beast/FixedArray.h"
+#include "beast/beast/crypto/MurmurHash.h"
 
 namespace ripple {
 

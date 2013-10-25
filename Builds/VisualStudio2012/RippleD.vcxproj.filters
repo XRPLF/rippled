@@ -250,6 +250,9 @@
     <Filter Include="[1] Ripple\algorithm">
       <UniqueIdentifier>{d7d4123e-3fb2-4f85-9596-1ae26b6c14fd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\algorithm\api">
+      <UniqueIdentifier>{548e1020-e083-4e5f-b867-59f76ac02d5a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -2295,14 +2298,8 @@
     <ClInclude Include="..\..\src\ripple\resource\api\LegacyFees.h">
       <Filter>[1] Ripple\resource\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h">
-      <Filter>[1] Ripple\algorithm</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\impl\LogicType.h">
       <Filter>[1] Ripple\resource\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h">
-      <Filter>[1] Ripple\algorithm</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LogicType.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
@@ -2315,6 +2312,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\GiveawaysAtHop.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h">
+      <Filter>[1] Ripple\algorithm\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h">
+      <Filter>[1] Ripple\algorithm\api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
