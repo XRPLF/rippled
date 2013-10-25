@@ -351,7 +351,7 @@ protected:
     class ScopedServiceThread;
 
     void wait();
-    void enqueue (Item* item);
+    virtual void enqueue (Item* item);
 
     virtual std::size_t dequeue() = 0;
     virtual Waiter* new_waiter() = 0;
