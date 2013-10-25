@@ -195,6 +195,9 @@ public:
     /** Generates a probably-unique 64-bit hashcode from this string. */
     int64 hashCode64() const noexcept;
 
+    /** Returns a hash value suitable for use with std::hash. */
+    std::size_t hash() const noexcept;
+
     /** Returns the number of characters in the string. */
     int length() const noexcept;
 

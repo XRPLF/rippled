@@ -111,6 +111,7 @@
     <ClInclude Include="..\..\beast\config\StandardConfig.h" />
     <ClInclude Include="..\..\beast\Crypto.h" />
     <ClInclude Include="..\..\beast\crypto\impl\sha2\sha2.h" />
+    <ClInclude Include="..\..\beast\crypto\MurmurHash.h" />
     <ClInclude Include="..\..\beast\crypto\Sha256.h" />
     <ClInclude Include="..\..\beast\CStdInt.h" />
     <ClInclude Include="..\..\beast\FixedArray.h" />
@@ -280,7 +281,6 @@
     <ClInclude Include="..\..\modules\beast_core\maths\Expression.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\Interval.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\Math.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\MurmurHash.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\Random.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\Range.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\uint24.h" />
@@ -425,6 +425,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\Crypto.cpp" />
+    <ClCompile Include="..\..\beast\crypto\impl\MurmurHash.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\Sha256.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -877,12 +883,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\maths\MurmurHash.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\maths\Random.cpp">

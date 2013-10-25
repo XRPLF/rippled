@@ -20,6 +20,7 @@
 #ifndef BEAST_CRYPTO_H_INCLUDED
 #define BEAST_CRYPTO_H_INCLUDED
 
+#include "crypto/MurmurHash.h"
 #include "crypto/Sha256.h"
 
 #endif

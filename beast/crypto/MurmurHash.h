@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#ifndef BEAST_MURMURHASH_H_INCLUDED
-#define BEAST_MURMURHASH_H_INCLUDED
+#ifndef BEAST_CRYPTO_MURMURHASH_H_INCLUDED
+#define BEAST_CRYPTO_MURMURHASH_H_INCLUDED
+
+#include "../CStdInt.h"
 
 // Original source code links in .cpp file
 
-// This file depends on some Beast declarations and defines
-
-namespace Murmur
-{
+namespace beast {
+namespace Murmur {
 
 extern void MurmurHash3_x86_32  (const void* key, int len, uint32 seed, void* out);
 extern void MurmurHash3_x86_128 (const void* key, int len, uint32 seed, void* out);
@@ -77,6 +77,7 @@ inline void Hash (const void* key, int len, uint32 seed, HashType* out)
     };
 }
 
+}
 }
 
 #endif

@@ -38,11 +38,11 @@
 #endif
 
 #include "../beast_core/beast_core.h"
+#include "../../beast/crypto/MurmurHash.h"
 
 //------------------------------------------------------------------------------
 
-namespace beast
-{
+namespace beast {
 
 # include "math/UnsignedIntegerCalc.h"
 #include "math/UnsignedInteger.h"

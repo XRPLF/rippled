@@ -187,7 +187,6 @@ class FileOutputStream;
 #include "logging/Logger.h"
 #include "maths/Expression.h"
 #include "maths/Interval.h"
-#include "maths/MurmurHash.h"
 #include "memory/OptionalScopedPointer.h"
 #include "memory/SharedSingleton.h"
 #include "memory/WeakReference.h"
