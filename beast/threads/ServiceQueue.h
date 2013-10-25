@@ -328,6 +328,8 @@ private:
 
 #endif
 
+}
+
 //------------------------------------------------------------------------------
 
 class ServiceQueueBase
@@ -399,8 +401,6 @@ protected:
     static ThreadLocalValue <ServiceQueueBase*> s_service;
 };
 
-}
-
 //------------------------------------------------------------------------------
 
 /** A queue for disatching function calls on other threads.
@@ -408,7 +408,7 @@ protected:
     calling run, run_one, poll, or poll_one.
 */
 template <class Allocator = std::allocator <char> >
-class ServiceQueueType : public detail::ServiceQueueBase
+class ServiceQueueType : public ServiceQueueBase
 {
 private:
     using ServiceQueueBase::Item;

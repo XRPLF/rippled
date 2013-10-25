@@ -23,10 +23,6 @@
 
 namespace beast {
 
-namespace detail {
-
-//------------------------------------------------------------------------------
-
 class ServiceQueueBase::ScopedServiceThread : public List <ScopedServiceThread>::Node
 {
 public:
@@ -189,12 +185,9 @@ void ServiceQueueBase::enqueue (Item* item)
 //
 ThreadLocalValue <ServiceQueueBase*> ServiceQueueBase::s_service;
 
-}
-
 //------------------------------------------------------------------------------
 
-namespace detail
-{
+namespace detail {
 
 //------------------------------------------------------------------------------
 
