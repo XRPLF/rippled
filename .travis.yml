@@ -1,4 +1,11 @@
 language: cpp
 compiler:
   - gcc
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq libboost-all-dev protobuf-compiler libprotobuf-dev libssl-dev
 script: scons && npm install && npm test
+notifications:
+  irc:
+    channels:
+      - "chat.freenode.net#ripple-dev"
