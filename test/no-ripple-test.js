@@ -31,7 +31,7 @@ suite('TrustSet with NoRipple flag', function() {
       function (callback) {
         self.what = 'Check a non-existent credit limit';
 
-        $.remote.request_ripple_balance('alice', 'mtgox', 'USD', 'CURRENT', function(err) {
+        $.remote.request_ripple_balance('alice', 'root', 'USD', 'CURRENT', function(err) {
           assert.strictEqual('remoteError', err.error);
           assert.strictEqual('entryNotFound', err.remote.error);
           callback();
