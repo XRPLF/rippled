@@ -1,0 +1,4 @@
+language: cpp
+compiler:
+  - gcc
+script: scons && npm install && npm test
