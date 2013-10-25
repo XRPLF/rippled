@@ -25,7 +25,6 @@ URL::URL ()
     : m_port (0)
 {
 }
-
 URL::URL (
     String scheme_,
     String host_,
@@ -154,5 +153,14 @@ String URL::full () const
     return s;
 }
 
+//------------------------------------------------------------------------------
+
+std::size_t hash_value (URL const& v)
+{
+    return std::size_t (v.full().hash());
 }
 
+}
+
+
+// boost::hash support

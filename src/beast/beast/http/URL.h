@@ -103,6 +103,36 @@ private:
     String m_userinfo;
 };
 
+/** URL comparisons. */
+/** @{ */
+inline bool operator== (URL const& lhs, URL const& rhs) { return    lhs.full() == rhs.full(); }
+inline bool operator!= (URL const& lhs, URL const& rhs) { return ! (lhs.full() == rhs.full()); }
+inline bool operator<  (URL const& lhs, URL const& rhs) { return    lhs.full() <  rhs.full(); }
+inline bool operator>  (URL const& lhs, URL const& rhs) { return    rhs.full() <  lhs.full(); }
+inline bool operator<= (URL const& lhs, URL const& rhs) { return ! (rhs.full() <  lhs.full()); }
+inline bool operator>= (URL const& lhs, URL const& rhs) { return ! (lhs.full() <  rhs.full()); }
+/** @} */
+
+extern std::size_t hash_value (beast::URL const& url);
+
 }
+
+//------------------------------------------------------------------------------
+
+namespace std {
+
+template <typename T>
+struct hash;
+
+template <>
+struct hash <beast::URL>
+{
+    std::size_t operator() (beast::URL const& v) const
+        { return beast::hash_value (v); }
+};
+
+}
+
+//------------------------------------------------------------------------------
 
 #endif
