@@ -70,6 +70,7 @@ SOURCES += \
     ../../src/ripple/peerfinder/ripple_peerfinder.cpp \
     ../../src/ripple/resource/ripple_resource.cpp \
     ../../src/ripple/rpc/ripple_rpc.cpp \
+    ../../src/ripple/sitefiles/ripple_sitefiles.cpp \
     ../../src/ripple/sophia/ripple_sophia.c \
     ../../src/ripple/sslutil/ripple_sslutil.cpp \
     ../../src/ripple/testoverlay/ripple_testoverlay.cpp \

@@ -20,6 +20,8 @@ David Features:
 
 --------------------------------------------------------------------------------
 
+- std::priority_queue for DeadlineTimer
+
 - Change ProxyInfo to use IPAddress, get rid of IPv4Address from the parsing
   code
 

@@ -20,11 +20,15 @@
 #ifndef RIPPLE_PEERS_H_INCLUDED
 #define RIPPLE_PEERS_H_INCLUDED
 
+namespace PeerFinder {
+class Manager;
+}
+
 namespace Resource {
 class Manager;
 }
 
-namespace PeerFinder {
+namespace SiteFiles {
 class Manager;
 }
 
@@ -34,6 +38,7 @@ class Peers : public PropertyStream::Source
 public:
     static Peers* New (Stoppable& parent,
         Resource::Manager& resourceManager,
+            SiteFiles::Manager& siteFiles,
             boost::asio::io_service& io_service,
                 boost::asio::ssl::context& context);
 

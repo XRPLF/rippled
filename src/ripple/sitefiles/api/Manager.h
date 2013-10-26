@@ -17,23 +17,43 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_H_INCLUDED
-#define RIPPLE_PEERFINDER_H_INCLUDED
-
-#include "beast/modules/beast_core/beast_core.h"
-
-#include "../sitefiles/ripple_sitefiles.h"
+#ifndef RIPPLE_SITEFILES_MANAGER_H_INCLUDED
+#define RIPPLE_SITEFILES_MANAGER_H_INCLUDED
 
 namespace ripple {
-using namespace beast;
+namespace SiteFiles {
+
+/** Fetches and maintains a collection of ripple.txt files from domains. */
+class Manager
+    : public Stoppable
+    , public PropertyStream::Source
+{
+protected:
+    explicit Manager (Stoppable& parent);
+
+public:
+    /** Create a new Manager. */
+    static Manager* New (Stoppable& parent, Journal journal);
+
+    /** Destroy the object.
+        Any pending fetch operations are aborted.
+    */
+    virtual ~Manager () { }
+
+    /** Adds a listener. */
+    virtual void addListener (Listener& listener) = 0;
+
+    /** Remove a listener. */
+    virtual void removeListener (Listener& listener) = 0;
+
+    /** Add a URL leading to a ripple.txt file.
+        This call does not block. The URL will be fetched asynchronously.
+        Parsing errors are reported to the journal.
+    */
+    virtual void addURL (std::string const& urlstr) = 0;
+};
+
 }
-
-#include "../types/api/RipplePublicKey.h"
-
-# include "api/Endpoint.h"
-# include "api/Types.h"
-#include "api/Callback.h"
-#include "api/Config.h"
-#include "api/Manager.h"
+}
 
 #endif

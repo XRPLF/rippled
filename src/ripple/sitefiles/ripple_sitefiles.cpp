@@ -17,23 +17,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_H_INCLUDED
-#define RIPPLE_PEERFINDER_H_INCLUDED
+#include "BeastConfig.h"
 
-#include "beast/modules/beast_core/beast_core.h"
+#include "ripple_sitefiles.h"
 
-#include "../sitefiles/ripple_sitefiles.h"
+#include "beast/modules/beast_core/beast_core.h" // for DeadlineTimer, remove ASAP
+#include "beast/modules/beast_asio/beast_asio.h" // HTTPClientBase
 
-namespace ripple {
-using namespace beast;
-}
+#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include <boost/regex.hpp>
 
-#include "../types/api/RipplePublicKey.h"
+#include <set>
 
-# include "api/Endpoint.h"
-# include "api/Types.h"
-#include "api/Callback.h"
-#include "api/Config.h"
-#include "api/Manager.h"
-
-#endif
+#  include "impl/Site.h"
+# include "impl/Logic.h"
+#include "impl/Manager.cpp"
+#include "impl/Section.cpp"
+#include "impl/SiteFile.cpp"

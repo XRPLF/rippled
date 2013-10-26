@@ -17,23 +17,29 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_H_INCLUDED
-#define RIPPLE_PEERFINDER_H_INCLUDED
-
-#include "beast/modules/beast_core/beast_core.h"
-
-#include "../sitefiles/ripple_sitefiles.h"
+#ifndef RIPPLE_SITEFILES_LISTENER_H_INCLUDED
+#define RIPPLE_SITEFILES_LISTENER_H_INCLUDED
 
 namespace ripple {
-using namespace beast;
+namespace SiteFiles {
+
+/** SiteFiles listeners receive notifications on new files and sections.
+    Calls are made on an implementation-defined, unspecified thread.
+    Subclasses implementations should not perform blocking i/o or take
+    a long time.
+*/
+class Listener
+{
+public:
+    /** Called every time a new site file is retrieved.
+        Notifications for Site files retrieved before a listener was added will
+        be sent at the time the listener is added.
+    */
+    virtual void onSiteFileFetch (
+        std::string const& name, SiteFile const& siteFile) = 0;
+};
+
 }
-
-#include "../types/api/RipplePublicKey.h"
-
-# include "api/Endpoint.h"
-# include "api/Types.h"
-#include "api/Callback.h"
-#include "api/Config.h"
-#include "api/Manager.h"
+}
 
 #endif

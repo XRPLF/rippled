@@ -17,23 +17,33 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_H_INCLUDED
-#define RIPPLE_PEERFINDER_H_INCLUDED
-
-#include "beast/modules/beast_core/beast_core.h"
-
-#include "../sitefiles/ripple_sitefiles.h"
-
 namespace ripple {
-using namespace beast;
+namespace SiteFiles {
+
+SiteFile::SiteFile (int)
+{
 }
 
-#include "../types/api/RipplePublicKey.h"
+Section const& SiteFile::get (std::string const& name) const
+{
+    SectionsType::const_iterator iter (m_sections.find (name));
+    if (iter != m_sections.end())
+        return iter->second;
+    static Section const none;
+    return none;
+}
 
-# include "api/Endpoint.h"
-# include "api/Types.h"
-#include "api/Callback.h"
-#include "api/Config.h"
-#include "api/Manager.h"
+Section const& SiteFile::operator[] (std::string const& key) const
+{
+    return get (key);
+}
 
-#endif
+Section& SiteFile::insert (std::string const& name)
+{
+    std::pair <SectionsType::iterator, bool> result (
+        m_sections.emplace (name, 0));
+    return result.first->second;
+}
+
+}
+}

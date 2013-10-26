@@ -33,8 +33,11 @@ protected:
 
 public:
     /** Create a new Manager. */
-    static Manager* New (Stoppable& parent,
-        Callback& callback, Journal journal);
+    static Manager* New (
+        Stoppable& parent,
+        SiteFiles::Manager& siteFiles,
+        Callback& callback,
+        Journal journal);
 
     /** Destroy the object.
         Any pending source fetch operations are aborted.

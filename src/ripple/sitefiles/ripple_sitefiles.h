@@ -17,23 +17,25 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_H_INCLUDED
-#define RIPPLE_PEERFINDER_H_INCLUDED
+#ifndef RIPPLE_SITEFILES_H_INCLUDED
+#define RIPPLE_SITEFILES_H_INCLUDED
 
-#include "beast/modules/beast_core/beast_core.h"
+#include <vector>
 
-#include "../sitefiles/ripple_sitefiles.h"
+#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include <boost/unordered_map.hpp>
+
+#include "beast/beast/http/URL.h"
+#include "beast/beast/Threads.h"
+#include "beast/beast/Utility.h"
 
 namespace ripple {
 using namespace beast;
 }
 
-#include "../types/api/RipplePublicKey.h"
-
-# include "api/Endpoint.h"
-# include "api/Types.h"
-#include "api/Callback.h"
-#include "api/Config.h"
+#   include "api/Section.h"
+#  include "api/SiteFile.h"
+# include "api/Listener.h"
 #include "api/Manager.h"
 
 #endif

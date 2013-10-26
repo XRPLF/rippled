@@ -30,6 +30,8 @@ static bool volatile doShutdown = false;
 //
 class ApplicationLog;
 template <> char const* LogPartition::getPartitionName <ApplicationLog> () { return "Application"; }
+class SiteFilesLog;
+template <> char const* LogPartition::getPartitionName <SiteFilesLog> () { return "SiteFiles"; }
 class ValidatorsLog;
 template <> char const* LogPartition::getPartitionName <ValidatorsLog> () { return "Validators"; }
 class JobQueueLog;
@@ -72,7 +74,7 @@ public:
         , m_journal (LogJournal::get <ApplicationLog> ())
         , m_tempNodeCache ("NodeCache", 16384, 90)
         , m_sleCache ("LedgerEntryCache", 4096, 120)
-        
+
         , m_resourceManager (add (Resource::Manager::New (
             LogJournal::get <ResourceManagerLog> ())))
 
@@ -92,6 +94,9 @@ public:
         //
         // Anything which calls addJob must be a descendant of the JobQueue
         //
+
+        , m_siteFiles (SiteFiles::Manager::New (
+            *this, LogJournal::get <SiteFilesLog> ()))
 
         , m_orderBookDB (*m_jobQueue)
 
@@ -163,10 +168,20 @@ public:
     }
 
     //--------------------------------------------------------------------------
-
+    
     RPC::Manager& getRPCServiceManager()
     {
         return *m_rpcServiceManager;
+    }
+
+    JobQueue& getJobQueue ()
+    {
+        return *m_jobQueue;
+    }
+
+    SiteFiles::Manager& getSiteFiles()
+    {
+        return *m_siteFiles;
     }
 
     LocalCredentials& getLocalCredentials ()
@@ -207,11 +222,6 @@ public:
     NodeStore::Database& getNodeStore ()
     {
         return *m_nodeStore;
-    }
-
-    JobQueue& getJobQueue ()
-    {
-        return *m_jobQueue;
     }
 
     Application::LockType& getMasterLock ()
@@ -477,7 +487,7 @@ public:
         //             the creation of the peer SSL context and Peers object into
         //             the conditional.
         //
-        m_peers = add (Peers::New (m_mainIoPool, *m_resourceManager,
+        m_peers = add (Peers::New (m_mainIoPool, *m_resourceManager, *m_siteFiles,
             m_mainIoPool, m_peerSSLContext->get ()));
 
         // If we're not in standalone mode,
@@ -850,13 +860,14 @@ private:
     SLECache m_sleCache;
     LocalCredentials m_localCredentials;
     TransactionMaster m_txMaster;
-    
+
     ScopedPointer <Resource::Manager> m_resourceManager;
     ScopedPointer <RPC::Manager> m_rpcServiceManager;
 
     // These are Stoppable-related
     ScopedPointer <JobQueue> m_jobQueue;
     IoServicePool m_mainIoPool;
+    ScopedPointer <SiteFiles::Manager> m_siteFiles;
     OrderBookDB m_orderBookDB;
     LedgerMaster m_ledgerMaster;
     ScopedPointer <NetworkOPs> m_networkOPs;

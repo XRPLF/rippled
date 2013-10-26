@@ -183,6 +183,25 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\ripple_rpc.cpp" />
+    <ClCompile Include="..\..\src\ripple\sitefiles\impl\Manager.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sitefiles\impl\Section.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sitefiles\impl\SiteFile.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sitefiles\ripple_sitefiles.cpp" />
     <ClCompile Include="..\..\src\ripple\sophia\ripple_sophia.c" />
     <ClCompile Include="..\..\src\ripple\sslutil\impl\CBigNum.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1727,6 +1746,13 @@
     <ClInclude Include="..\..\src\ripple\rpc\api\Service.h" />
     <ClInclude Include="..\..\src\ripple\rpc\impl\ManagerImpl.h" />
     <ClInclude Include="..\..\src\ripple\rpc\ripple_rpc.h" />
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\Listener.h" />
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\Manager.h" />
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\Section.h" />
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\SiteFile.h" />
+    <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h" />
+    <ClInclude Include="..\..\src\ripple\sitefiles\impl\Site.h" />
+    <ClInclude Include="..\..\src\ripple\sitefiles\ripple_sitefiles.h" />
     <ClInclude Include="..\..\src\ripple\sophia\ripple_sophia.h" />
     <ClInclude Include="..\..\src\ripple\sslutil\api\bignum_error.h" />
     <ClInclude Include="..\..\src\ripple\sslutil\api\CAutoBN_CTX.h" />

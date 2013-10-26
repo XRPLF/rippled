@@ -90,12 +90,16 @@ public:
 
     PeersImp (Stoppable& parent,
         Resource::Manager& resourceManager,
-            boost::asio::io_service& io_service,
-                boost::asio::ssl::context& ssl_context)
+            SiteFiles::Manager& siteFiles,
+                boost::asio::io_service& io_service,
+                    boost::asio::ssl::context& ssl_context)
         : Stoppable ("Peers", parent)
         , m_resourceManager (resourceManager)
         , m_peerFinder (add (PeerFinder::Manager::New (
-            *this, *this, LogJournal::get <PeerFinderLog> ())))
+            *this,
+            siteFiles,
+            *this,
+            LogJournal::get <PeerFinderLog> ())))
         , m_io_service (io_service)
         , m_ssl_context (ssl_context)
         , mPeerLock (this, "PeersImp", __FILE__, __LINE__)
@@ -1123,9 +1127,10 @@ Peers::Peers ()
 
 Peers* Peers::New (Stoppable& parent,
     Resource::Manager& resourceManager,
-    boost::asio::io_service& io_service,
-        boost::asio::ssl::context& ssl_context)
+        SiteFiles::Manager& siteFiles,
+            boost::asio::io_service& io_service,
+                boost::asio::ssl::context& ssl_context)
 {
-    return new PeersImp (parent, resourceManager, io_service, ssl_context);
+    return new PeersImp (parent, resourceManager, siteFiles, io_service, ssl_context);
 }
 

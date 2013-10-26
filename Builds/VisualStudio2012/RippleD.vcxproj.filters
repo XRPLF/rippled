@@ -253,6 +253,15 @@
     <Filter Include="[1] Ripple\algorithm\api">
       <UniqueIdentifier>{548e1020-e083-4e5f-b867-59f76ac02d5a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\sitefiles">
+      <UniqueIdentifier>{c7fbf1f8-6a13-434a-b6b6-a621624092db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\sitefiles\api">
+      <UniqueIdentifier>{5d288f7c-6bce-450f-8f46-b2ab6bb898be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\sitefiles\impl">
+      <UniqueIdentifier>{5609ad93-0654-41db-8ecb-7dfcde58d2e6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -1130,6 +1139,18 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Resolver.cpp">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sitefiles\ripple_sitefiles.cpp">
+      <Filter>[1] Ripple\sitefiles</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sitefiles\impl\Section.cpp">
+      <Filter>[1] Ripple\sitefiles\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sitefiles\impl\SiteFile.cpp">
+      <Filter>[1] Ripple\sitefiles\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sitefiles\impl\Manager.cpp">
+      <Filter>[1] Ripple\sitefiles\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2318,6 +2339,27 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h">
       <Filter>[1] Ripple\algorithm\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\ripple_sitefiles.h">
+      <Filter>[1] Ripple\sitefiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h">
+      <Filter>[1] Ripple\sitefiles\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\impl\Site.h">
+      <Filter>[1] Ripple\sitefiles\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\Section.h">
+      <Filter>[1] Ripple\sitefiles\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\SiteFile.h">
+      <Filter>[1] Ripple\sitefiles\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\Manager.h">
+      <Filter>[1] Ripple\sitefiles\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\Listener.h">
+      <Filter>[1] Ripple\sitefiles\api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -17,23 +17,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_H_INCLUDED
-#define RIPPLE_PEERFINDER_H_INCLUDED
-
-#include "beast/modules/beast_core/beast_core.h"
-
-#include "../sitefiles/ripple_sitefiles.h"
+#ifndef RIPPLE_SITEFILES_SITE_H_INCLUDED
+#define RIPPLE_SITEFILES_SITE_H_INCLUDED
 
 namespace ripple {
-using namespace beast;
+namespace SiteFiles {
+
+struct Site
+{
+    Site (int) // dummy argument for emplace()
+    {
+    }
+};
+
 }
-
-#include "../types/api/RipplePublicKey.h"
-
-# include "api/Endpoint.h"
-# include "api/Types.h"
-#include "api/Callback.h"
-#include "api/Config.h"
-#include "api/Manager.h"
+}
 
 #endif

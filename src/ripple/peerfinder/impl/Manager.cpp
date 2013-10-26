@@ -217,11 +217,13 @@ namespace PeerFinder {
 class ManagerImp
     : public Manager
     , public Thread
+    , public SiteFiles::Listener
     , public DeadlineTimer::Listener
     , public LeakChecked <ManagerImp>
 {
 public:
     ServiceQueue m_queue;
+    SiteFiles::Manager& m_siteFiles;
     Journal m_journal;
     StoreSqdb m_store;
     SerializedContext m_context;
@@ -233,9 +235,14 @@ public:
 
     //--------------------------------------------------------------------------
 
-    ManagerImp (Stoppable& stoppable, Callback& callback, Journal journal)
+    ManagerImp (
+        Stoppable& stoppable,
+        SiteFiles::Manager& siteFiles,
+        Callback& callback,
+        Journal journal)
         : Manager (stoppable)
         , Thread ("PeerFinder")
+        , m_siteFiles (siteFiles)
         , m_journal (journal)
         , m_store (journal)
         , m_checker (m_context, m_queue)
@@ -263,6 +270,7 @@ public:
     //
     // PeerFinder
     //
+    //--------------------------------------------------------------------------
 
     void setConfig (Config const& config)
     {
@@ -358,8 +366,62 @@ public:
 
     //--------------------------------------------------------------------------
     //
+    // SiteFiles
+    //
+    //--------------------------------------------------------------------------
+
+    void parseBootstrapIPs (std::string const& name, SiteFiles::Section const& section)
+    {
+        std::size_t n (0);
+        for (SiteFiles::Section::DataType::const_iterator iter (
+            section.data().begin()); iter != section.data().end(); ++iter)
+        {
+            std::string const& s (*iter);
+            IPAddress addr (IPAddress::from_string (s));
+            if (addr.empty ())
+                addr = IPAddress::from_string_altform(s);
+            if (! addr.empty())
+            {
+                // add IPAddress to bootstrap cache
+                ++n;
+            }
+        }
+
+        m_journal.info <<
+            "Added " << n <<
+            " bootstrap IPs from " << name;
+    }
+
+    void parseFixedIPs (SiteFiles::Section const& section)
+    {
+        for (SiteFiles::Section::DataType::const_iterator iter (
+            section.data().begin()); iter != section.data().end(); ++iter)
+        {
+            std::string const& s (*iter);
+            IPAddress addr (IPAddress::from_string (s));
+            if (addr.empty ())
+                addr = IPAddress::from_string_altform(s);
+            if (! addr.empty())
+            {
+                // add IPAddress to fixed peers
+            }
+        }
+    }
+
+    void onSiteFileFetch (
+        std::string const& name, SiteFiles::SiteFile const& siteFile)
+    {
+        parseBootstrapIPs (name, siteFile["ips"]);
+
+        //if (name == "local")
+        //  parseFixedIPs (name, siteFile["ips_fixed"]);
+    }
+
+    //--------------------------------------------------------------------------
+    //
     // Stoppable
     //
+    //--------------------------------------------------------------------------
 
     void onPrepare ()
     {
@@ -387,6 +449,7 @@ public:
     //
     // PropertyStream
     //
+    //--------------------------------------------------------------------------
 
     void onWrite (PropertyStream::Map& map)
     {
@@ -460,10 +523,14 @@ public:
 
         init ();
 
+        m_siteFiles.addListener (*this);
+
         while (! this->threadShouldExit())
         {
             m_queue.run_one();
         }
+
+        m_siteFiles.removeListener (*this);
 
         stopped();
     }
@@ -477,9 +544,13 @@ Manager::Manager (Stoppable& parent)
 {
 }
 
-Manager* Manager::New (Stoppable& parent, Callback& callback, Journal journal)
+Manager* Manager::New (
+    Stoppable& parent,
+    SiteFiles::Manager& siteFiles,
+    Callback& callback,
+    Journal journal)
 {
-    return new ManagerImp (parent, callback, journal);
+    return new ManagerImp (parent, siteFiles, callback, journal);
 }
 
 }

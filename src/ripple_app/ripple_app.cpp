@@ -38,6 +38,7 @@
 #include "../ripple/http/ripple_http.h"
 #include "../ripple/resource/ripple_resource.h"
 #include "../ripple/rpc/ripple_rpc.h"
+#include "../ripple/sitefiles/ripple_sitefiles.h"
 #include "../ripple/validators/ripple_validators.h"
 
 #include "beast/beast/Asio.h"

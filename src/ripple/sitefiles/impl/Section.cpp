@@ -17,23 +17,46 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_H_INCLUDED
-#define RIPPLE_PEERFINDER_H_INCLUDED
-
-#include "beast/modules/beast_core/beast_core.h"
-
-#include "../sitefiles/ripple_sitefiles.h"
-
 namespace ripple {
-using namespace beast;
+namespace SiteFiles {
+
+Section::Section(int)
+{
 }
 
-#include "../types/api/RipplePublicKey.h"
+std::string const& Section::get (std::string const& key) const
+{
+    MapType::const_iterator iter (m_map.find (key));
+    if (iter != m_map.end())
+        return iter->second;
+    static std::string const none;
+    return none;
+}
 
-# include "api/Endpoint.h"
-# include "api/Types.h"
-#include "api/Callback.h"
-#include "api/Config.h"
-#include "api/Manager.h"
+std::string const& Section::operator[] (std::string const& key) const
+{
+    return get (key);
+}
 
-#endif
+std::vector <std::string> const& Section::data() const
+{
+    return m_data;
+}
+
+void Section::set (std::string const& key, std::string const& value)
+{
+    m_map [key] = value;
+}
+
+std::string& Section::operator[] (std::string const& key)
+{
+    return m_map [key];
+}
+
+void Section::push_back (std::string const& data)
+{
+    m_data.push_back (data);
+}
+
+}
+}
