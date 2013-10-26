@@ -6,6 +6,8 @@ before_install:
   - sudo apt-get install -qq libboost1.48-all-dev protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
 script: scons && npm install && npm test
 notifications:
+  email:
+    false
   irc:
     channels:
       - "chat.freenode.net#ripple-dev"
