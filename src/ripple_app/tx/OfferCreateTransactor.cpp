@@ -334,7 +334,15 @@ TER OfferCreateTransactor::takeOffers (
                     if (tesSUCCESS == terResult)
                         terResult   = lesActive.accountSend (uTakerAccountID, uOfferOwnerID, saSubTakerPaid);           // Taker pays offer owner.
 
-                    if (!bSell)
+                    if (bSell)
+                    {
+                        // Sell semantics:
+                        // Reduce amount considered received to original offer's rate.
+                        // Not by crossing rate, which is higher.
+                        STAmount saEffectiveGot = STAmount::divide(saSubTakerPaid, saTakerRate, saTakerGets);
+                        saSubTakerGot = std::min(saEffectiveGot, saSubTakerGot);
+                    }
+                    else
                     {
                         // Buy semantics: Reduce amount considered paid by taker's rate. Not by actual cost which is lower.
                         // That is, take less as to just satify our buy requirement.
