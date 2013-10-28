@@ -288,7 +288,7 @@ public:
             m_timer.cancel (ec);
             m_resolver.cancel ();
             m_socket.cancel (ec);
-            m_socket.shutdown (socket::shutdown_both);
+            m_socket.shutdown (socket::shutdown_both, ec);
         }
 
         // Called by a completion handler when error is not eof or aborted.
