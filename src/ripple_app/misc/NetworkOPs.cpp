@@ -1861,7 +1861,7 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int
     uint32 numberOfResults, queryLimit;
     if (limit <= 0)
         numberOfResults = NONBINARY_PAGE_LENGTH;
-    else if (bAdmin && (limit > NONBINARY_PAGE_LENGTH))
+    else if (!bAdmin && (limit > NONBINARY_PAGE_LENGTH))
         numberOfResults = NONBINARY_PAGE_LENGTH;
     else
         numberOfResults = limit;
@@ -1969,7 +1969,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, int32 minLedger, in
     uint32 numberOfResults, queryLimit;
     if (limit <= 0)
         numberOfResults = BINARY_PAGE_LENGTH;
-    else if (bAdmin && (limit > BINARY_PAGE_LENGTH))
+    else if (!bAdmin && (limit > BINARY_PAGE_LENGTH))
         numberOfResults = BINARY_PAGE_LENGTH;
     else
         numberOfResults = limit;
