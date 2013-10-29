@@ -63,25 +63,24 @@ private:
     // Apply exponential decay based on the specified time.
     void decay (elapsed_type now)
     {
-        if (m_value == value_type())
+        if (now == m_when)
             return;
 
-        elapsed_type n (now - m_when);
-
-        if (n == 0)
-            return;
-
-        // A span larger than four times the window decays the
-        // value to an insignificant amount so just reset it.
-        //
-        if (n > 4 * Window)
+        if (m_value != value_type())
         {
-            m_value = value_type();
-            return;
-        }
+            elapsed_type n (now - m_when);
 
-        while (n--)
-            m_value -= (m_value + Window - 1) / Window;
+            // A span larger than four times the window decays the
+            // value to an insignificant amount so just reset it.
+            //
+            if (n > 4 * Window)
+                m_value = value_type();
+            else
+            {
+                while (n--)
+                    m_value -= (m_value + Window - 1) / Window;
+            }
+        }
 
         m_when = now;
     }
