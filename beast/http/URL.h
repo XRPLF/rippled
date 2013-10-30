@@ -22,6 +22,8 @@
 
 #include "../strings/String.h"
 
+#include <ios>
+
 namespace beast {
 
 /** A URL.
@@ -90,7 +92,10 @@ public:
     String userinfo () const;
 
     /** Retrieve the full URL as a single string. */
-    String full () const;
+    /** @{ */
+    String toString () const;
+    std::string to_string() const;
+    /** @} */
 
 private:
     String m_scheme;
@@ -105,14 +110,18 @@ private:
 
 /** URL comparisons. */
 /** @{ */
-inline bool operator== (URL const& lhs, URL const& rhs) { return    lhs.full() == rhs.full(); }
-inline bool operator!= (URL const& lhs, URL const& rhs) { return ! (lhs.full() == rhs.full()); }
-inline bool operator<  (URL const& lhs, URL const& rhs) { return    lhs.full() <  rhs.full(); }
-inline bool operator>  (URL const& lhs, URL const& rhs) { return    rhs.full() <  lhs.full(); }
-inline bool operator<= (URL const& lhs, URL const& rhs) { return ! (rhs.full() <  lhs.full()); }
-inline bool operator>= (URL const& lhs, URL const& rhs) { return ! (lhs.full() <  rhs.full()); }
+inline bool operator== (URL const& lhs, URL const& rhs) { return    lhs.toString() == rhs.toString(); }
+inline bool operator!= (URL const& lhs, URL const& rhs) { return ! (lhs.toString() == rhs.toString()); }
+inline bool operator<  (URL const& lhs, URL const& rhs) { return    lhs.toString() <  rhs.toString(); }
+inline bool operator>  (URL const& lhs, URL const& rhs) { return    rhs.toString() <  lhs.toString(); }
+inline bool operator<= (URL const& lhs, URL const& rhs) { return ! (rhs.toString() <  lhs.toString()); }
+inline bool operator>= (URL const& lhs, URL const& rhs) { return ! (lhs.toString() <  rhs.toString()); }
 /** @} */
 
+/** Output stream conversion. */
+std::ostream& operator<< (std::ostream& os, URL const& url);
+
+/** boost::hash support */
 extern std::size_t hash_value (beast::URL const& url);
 
 }
