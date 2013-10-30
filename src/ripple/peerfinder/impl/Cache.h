@@ -31,6 +31,9 @@ private:
     typedef boost::unordered_map <
         IPAddress, CachedEndpoint, IPAddress::hasher> Table;
 
+    typedef std::set <
+        IPAddress*, PtrCompareFunctor <IPAddress> > AddressSet;
+
     Journal m_journal;
 
     Table m_endpoints;
@@ -39,9 +42,15 @@ private:
     // in oldest-to-newest order. The oldest item is at the head.
     List <CachedEndpoint> m_list;
 
+    // A set of IP addresses which we know about
+    AddressSet m_addresses;
+
+    unsigned int m_generation;
+
 public:
     explicit Cache (Journal journal)
         : m_journal (journal)
+        , m_generation(0)
     {
     }
 
@@ -54,8 +63,7 @@ public:
         return m_endpoints.size();
     }
 
-    // Cycle the tables
-    void cycle(DiscreteTime now)
+    void sweep (DiscreteTime now)
     {
         List <CachedEndpoint>::iterator iter (m_list.begin());
 
@@ -82,10 +90,16 @@ public:
         std::pair <Table::iterator, bool> result (
             m_endpoints.emplace (message.address, CachedEndpoint(message, now)));
 
-        if (!result.second)
-        { // There was already an entry for this endpoint. Update it.
-            CachedEndpoint& entry (result.first->second);
+        CachedEndpoint& entry (result.first->second);
 
+        // We ignore messages that we receive at a higher hop count. We should
+        // consider having a counter that monotonically increases per reboot
+        // so that we can detect a server restart.
+        if (!result.second && (entry.message.hops > message.hops))
+            return;
+
+        if (!result.second)
+        {
             entry.message.hops = std::min (entry.message.hops, message.hops);
 
             // Copy the other fields based on uptime
@@ -103,8 +117,6 @@ public:
             m_list.erase (m_list.iterator_to(entry));
         }
 
-        CachedEndpoint& entry (result.first->second);
-
         m_journal.debug << message.address <<
             "valid " << entry.whenExpires <<
             " (" << entry.message.incomingSlotsAvailable <<
@@ -113,8 +125,8 @@ public:
         m_list.push_back (entry);
     }
 
-    // Returns all the known endpoints we have, sorted by distance (that is,
-    // by hop).
+    // Get all known endpoints, sorted by distance (i.e. by hop).
+    //
     Giveaways getGiveawayList()
     {
         Giveaways giveaway;
@@ -122,8 +134,7 @@ public:
         for (List <CachedEndpoint>::iterator iter (m_list.begin());
             iter != m_list.end(); iter++)
         {
-            if (iter->message.hops < maxPeerHopCount)
-                giveaway.add (*iter);
+            giveaway.add (*iter);
         }
 
         return giveaway;

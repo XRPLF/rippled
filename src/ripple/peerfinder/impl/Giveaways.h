@@ -33,6 +33,7 @@ class Giveaways
 
 public:
     typedef std::vector <GiveawaysAtHop>::iterator iterator;
+    typedef std::vector <GiveawaysAtHop>::reverse_iterator reverse_iterator;
 
     Giveaways()
         : m_hopVector(maxPeerHopCount)
@@ -65,6 +66,8 @@ public:
         m_shuffled = true;
     }
 
+    // Provides an iterator that starts from hop 0 and goes all the way to
+    // the max hop.
     iterator begin ()
     {
         return m_hopVector.begin();
@@ -73,6 +76,18 @@ public:
     iterator end ()
     {
         return m_hopVector.end();
+    }
+
+    // Provides an iterator that starts from the max hop and goes all the way
+    // down to hop 0.
+    reverse_iterator rbegin ()
+    {
+        return m_hopVector.rbegin();
+    }
+
+    reverse_iterator rend ()
+    {
+        return m_hopVector.rend();
     }
 };
 

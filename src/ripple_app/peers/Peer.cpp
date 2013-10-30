@@ -332,6 +332,8 @@ private:
                     else
                         m_usage = m_resourceManager.newOutboundEndpoint (m_remoteAddress);
 
+                    getApp ().getPeers ().peerConnected(m_remoteAddress, m_isInbound);
+
                     // Must compute mCookieHash before receiving a hello.
                     sendHello ();
                     startReadHeader ();
@@ -377,6 +379,8 @@ private:
                     m_usage = m_resourceManager.newInboundEndpoint (m_remoteAddress);
                 else
                     m_usage = m_resourceManager.newOutboundEndpoint (m_remoteAddress);
+
+                getApp ().getPeers ().peerConnected(m_remoteAddress, m_isInbound);
 
                 // Must compute mCookieHash before receiving a hello.
                 sendHello ();
@@ -624,7 +628,13 @@ void PeerImp::connect (const std::string& strIp, int iPort)
 
     if (!err)
     {
-        WriteLog (lsINFO, Peer) << "Peer: Connect: Outbound: " << addressToString (this) << ": " << mIpPort.first << " " << mIpPort.second;
+        WriteLog (lsINFO, Peer) << "Peer: Connect: Outbound: " <<
+            addressToString (this) << ": " <<
+            mIpPort.first << " " << mIpPort.second;
+
+        // Notify peer finder that we have a connection attempt in-progress
+        getApp ().getPeers ().getPeerFinder ().onPeerConnectAttemptBegins(
+            IPAddress::from_string(strIp).withPort(iPortAct) );
 
         boost::asio::async_connect (
             getNativeSocket (),
@@ -640,14 +650,23 @@ void PeerImp::connect (const std::string& strIp, int iPort)
 // Connect ssl as client.
 void PeerImp::handleConnect (const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it)
 {
+    // Notify peer finder about the status of this in-progress connection attempt
+    getApp ().getPeers ().getPeerFinder ().onPeerConnectAttemptCompletes(
+        IPAddress::from_string(getIP()).withPort(getPort()), !error );
+
     if (error)
     {
-        WriteLog (lsINFO, Peer) << "Peer: Connect: Error: " << error.category ().name () << ": " << error.message () << ": " << error;
+        WriteLog (lsINFO, Peer) << "Peer: Connect: Error: " <<
+            getIP() << ":" << getPort() <<
+            " (" << error.category ().name () <<
+            ": " << error.message () <<
+            ": " << error << ")";
         detach ("hc", true);
     }
     else
     {
-        WriteLog (lsINFO, Peer) << "Connect peer: success.";
+        WriteLog (lsINFO, Peer) << "Peer: Connect: Success: " <<
+            getIP() << ":" << getPort();
 
         getHandshakeStream ().set_verify_mode (boost::asio::ssl::verify_none);
 
@@ -1158,7 +1177,7 @@ void PeerImp::recvHello (protocol::TMHello& packet)
             getApp().getPeers ().peerVerified (shared_from_this ());
         }
 
-        if (! getApp().getPeers ().peerConnected (shared_from_this (), mNodePublic, getIP (), getPort ()))
+        if (! getApp().getPeers ().peerHandshake (shared_from_this (), mNodePublic, getIP (), getPort ()))
         {
             // Already connected, self, or some other reason.
             WriteLog (lsINFO, Peer) << "Recv(Hello): Disconnect: Extraneous connection.";

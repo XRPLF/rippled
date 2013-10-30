@@ -116,9 +116,7 @@ public:
     {
         PeerFinder::Config config;
 
-#if RIPPLE_USE_PEERFINDER
         config.maxPeerCount = getConfig ().PEERS_MAX;
-#endif
 
         config.wantIncoming =
             (! getConfig ().PEER_PRIVATE) &&
@@ -271,9 +269,18 @@ public:
     bool getTopNAddrs (int n, std::vector<std::string>& addrs);
     bool savePeer (const std::string& strIp, int iPort, char code);
 
+    // disconnect the specified peer
+    void disconnectPeer (PeerFinder::PeerID const &id, bool graceful)
+    {
+        // NIKB TODO
+    }
+
+    // A peer connected but we only have the IP address so far.
+    void peerConnected (const IPAddress& address, bool incoming);
+
     // We know peers node public key.
     // <-- bool: false=reject
-    bool peerConnected (Peer::ref peer, const RippleAddress& naPeer, const std::string& strIP, int iPort);
+    bool peerHandshake (Peer::ref peer, const RippleAddress& naPeer, const std::string& strIP, int iPort);
 
     // No longer connected.
     void peerDisconnected (Peer::ref peer, const RippleAddress& naPeer);
@@ -641,7 +648,7 @@ void PeersImp::connectTo (const std::string& strIp, int iPort)
 // <-- true, if already connected.
 Peer::pointer PeersImp::peerConnect (const std::string& strIp, int iPort)
 {
-    IPAndPortNumber          pipPeer     = make_pair (strIp, iPort);
+    IPAndPortNumber pipPeer = make_pair (strIp, iPort);
     Peer::pointer   ppResult;
 
     {
@@ -716,9 +723,14 @@ uint64 PeersImp::assignPeerId ()
     return ++mLastPeer;
 }
 
+void PeersImp::peerConnected (const IPAddress& address, bool incoming)
+{
+    getPeerFinder ().onPeerConnected (address, incoming);
+}
+
 // Now know peer's node public key.  Determine if we want to stay connected.
 // <-- bNew: false = redundant
-bool PeersImp::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
+bool PeersImp::peerHandshake (Peer::ref peer, const RippleAddress& naPeer,
                            const std::string& strIP, int iPort)
 {
     bool    bNew    = false;
@@ -745,7 +757,7 @@ bool PeersImp::peerConnected (Peer::ref peer, const RippleAddress& naPeer,
             // Notify peerfinder since this is a connection that we didn't
             // know about and are keeping
             //
-            getPeerFinder ().onPeerConnected (RipplePublicKey (
+            getPeerFinder ().onPeerHandshake (RipplePublicKey (
                 peer->getNodePublic()), peer->getPeerEndpoint(),
                     peer->isInbound());
 

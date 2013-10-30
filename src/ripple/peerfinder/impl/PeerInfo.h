@@ -30,6 +30,24 @@ namespace PeerFinder {
 // we keep one of these for each connected peer
 struct PeerInfo
 {
+    enum State
+    {
+        // Some peculiar, unknown state
+        stateUnknown,
+
+        // A connection attempt is in progress
+        stateConnecting,
+
+        // A connection has been established but no handshake yet
+        stateConnected,
+
+        // A connection has been established and the handshake has completed
+        stateEstablished,
+
+        // A connection (of some kind) that is being torn down
+        stateDisconnecting
+    };
+
     PeerInfo (PeerID const& id_,
               IPAddress const& address_,
               bool inbound_,
@@ -37,9 +55,11 @@ struct PeerInfo
         : id (id_)
         , address (address_)
         , inbound (inbound_)
+        , fixed (false)
         , checked (inbound_ ? false : true)
         , canAccept (inbound_ ? false : true)
         , connectivityCheckInProgress (false)
+        , peerState (stateUnknown)
         , whenSendEndpoints (now)
         , whenAcceptEndpoints (now)
     {
@@ -48,6 +68,9 @@ struct PeerInfo
     PeerID id;
     IPAddress address;
     bool inbound;
+
+    // Set to indicate that this is a fixed peer.
+    bool fixed;
 
     // Tells us if we checked the connection. Outbound connections
     // are always considered checked since we successfuly connected.
@@ -60,6 +83,9 @@ struct PeerInfo
     // Set to indicate that a connection check for this peer is in
     // progress. Valid always.
     bool mutable connectivityCheckInProgress;
+
+    // Indicates the state for this peer
+    State peerState;
 
     // The time after which we will send the peer mtENDPOINTS
     DiscreteTime mutable whenSendEndpoints;

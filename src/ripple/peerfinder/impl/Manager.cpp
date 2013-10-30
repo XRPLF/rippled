@@ -299,19 +299,36 @@ public:
         // VFALCO TODO This needs to be implemented
     }
 
-    void onPeerConnecting ()
+    void onPeerConnectAttemptBegins (IPAddress const& address)
     {
         m_queue.dispatch (
             m_context.wrap (
-                bind (&Logic::onPeerConnecting, &m_logic)));
+                bind (&Logic::onPeerConnectAttemptBegins, &m_logic,
+                      address)));
     }
 
-    void onPeerConnected (PeerID const& id,
-        IPAddress const& address, bool incoming)
+    void onPeerConnectAttemptCompletes (IPAddress const& address, bool success)
+    {
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::onPeerConnectAttemptCompletes, &m_logic,
+                      address, success)));
+    }
+
+    void onPeerConnected (const IPAddress &address, bool incoming)
     {
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerConnected, &m_logic,
+                      address, incoming)));
+    }
+
+    void onPeerHandshake (PeerID const& id,
+        IPAddress const& address, bool incoming)
+    {
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::onPeerHandshake, &m_logic,
                     id, address, incoming)));
     }
 
@@ -402,7 +419,7 @@ public:
         {
             m_queue.dispatch (
                 m_context.wrap (
-                    bind (&Logic::cycleCache, &m_logic)));
+                    bind (&Logic::sweepCache, &m_logic)));
 
             m_cacheTimer.setExpiration (cacheSecondsToLive);
         }

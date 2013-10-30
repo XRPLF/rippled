@@ -102,6 +102,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Resolver.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Slots.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1684,11 +1690,14 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Cache.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Giveaways.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\GiveawaysAtHop.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpoint.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpointCache.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LogicType.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\PeerInfo.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Resolver.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Slots.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Source.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\SourceStrings.h" />

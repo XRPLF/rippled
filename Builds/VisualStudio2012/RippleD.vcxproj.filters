@@ -1125,6 +1125,9 @@
     <ClCompile Include="..\..\src\ripple\resource\impl\LegacyFees.cpp">
       <Filter>[1] Ripple\resource\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Resolver.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -2302,6 +2305,15 @@
       <Filter>[1] Ripple\algorithm</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LogicType.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Resolver.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Giveaways.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\GiveawaysAtHop.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
   </ItemGroup>

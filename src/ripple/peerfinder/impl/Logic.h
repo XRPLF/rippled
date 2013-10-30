@@ -55,7 +55,21 @@ typedef boost::multi_index_container <
 */
 class Logic
 {
+private:
+    typedef std::set < IPAddress > IPAddressSet;
+
 public:
+    template < class T, class C = std::less<T> >
+    struct PtrComparator
+    {
+        bool operator()(const T *x, const T *y) const
+        {
+            C comp;
+
+            return comp(*x, *y);
+        }
+    };
+
     struct State
     {
         State ()
@@ -101,6 +115,9 @@ public:
     Cache m_cache;
 
     LegacyEndpointCache m_legacyCache;
+
+    // Our set of connection attempts currently in-progress
+    IPAddressSet m_attemptsInProgress;
 
     //--------------------------------------------------------------------------
 
@@ -201,6 +218,40 @@ public:
         return true;
     }
 
+    // Return endpoints to which we want to try to make outgoing connections.
+    // We preferentially return endpoints which are far away from as to try to
+    // improve the algebraic connectivity of the network graph. For more see
+    // http://en.wikipedia.org/wiki/Algebraic_connectivity
+    //
+    void getNewOutboundEndpoints (int needed, std::vector <IPAddress>& list)
+    {
+        Giveaways giveaway (m_cache.getGiveawayList());
+        int count = 0;
+
+        for (Giveaways::reverse_iterator iter (giveaway.rbegin());
+             iter != giveaway.rend(); ++iter)
+        {
+            // Check whether we have anything at the current hop level.
+            iter->reset ();
+
+            for(GiveawaysAtHop::iterator iter2 (iter->begin());
+                iter2 != iter->end() && (count != needed); ++iter2)
+            {
+                CachedEndpoint *ep (*iter2);
+
+                // NIKB TODO we need to check whether this peer is already
+                // connected prior to just returning it and wasting time
+                // trying to establish a redundant connection.
+
+                if(ep->message.incomingSlotsAvailable != 0)
+                {
+                    list.push_back(ep->message.address);
+                    ++count;
+                }
+            }
+        }
+    }
+
     // If configured to make outgoing connections, do us in order
     // to bring us up to desired out count.
     //
@@ -215,7 +266,8 @@ public:
                 int const needed (std::min (
                                       m_slots.outDesired - m_slots.outboundCount,
                                       int (maxAddressesPerAttempt)));
-                m_legacyCache.get (needed, list, get_now());
+
+                getNewOutboundEndpoints (needed, list);
             }
         }
 
@@ -288,29 +340,69 @@ public:
         m_sources.push_back (source);
     }
 
-    // Called periodically to cycle and age the various caches.
+    // Called periodically to sweep the cache and remove aged out items.
     //
-    void cycleCache()
+    void sweepCache ()
     {
-        m_cache.cycle (get_now());
+        m_cache.sweep (get_now());
 
         for (Peers::iterator iter (m_peers.begin());
             iter != m_peers.end(); ++iter)
             iter->received.cycle();
     }
 
-    void onPeerConnecting ()
+    // Called when an outbound connection attempt is started
+    //
+    void onPeerConnectAttemptBegins (IPAddress const& address)
     {
+        std::pair <IPAddressSet::iterator, bool> ret =
+            m_attemptsInProgress.insert (address);
+
+        // We are always notified of connection attempts so if we think that
+        // something was in progress and a connection attempt begins then
+        // something is very wrong.
+
+        bassert (ret.second);
+
+        if (ret.second)
+            m_journal.debug << "Attempt for " << address << " is in progress";
+        else
+            m_journal.error << "Attempt for " << address << " was already in progress";
+    }
+
+    // Called when an outbound connection attempt completes
+    //
+    void onPeerConnectAttemptCompletes (IPAddress const& address, bool success)
+    {
+        IPAddressSet::size_type ret = m_attemptsInProgress.erase (address);
+
+        bassert (ret == 1);
+
+        if (ret == 1)
+            m_journal.debug << "Attempt for " << address <<
+                " completed: " << (success ? "success" : "failure");
+        else
+            m_journal.error << "Attempt for untracked " << address <<
+                " completed: " << (success ? "success" : "failure");
+    }
+
+    // Called when a peer connection is established but before a handshake
+    // occurs.
+    void onPeerConnected (IPAddress const& address, bool incoming)
+    {
+        m_journal.error << "Connected: " << address <<
+            (incoming ? " (incoming)" : " (outgoing)");
     }
 
     // Called when a peer connection is established.
     // We are guaranteed that the PeerID is not already in our map.
     // but we are *NOT* guaranteed that the IP isn't. So we need
     // to be careful.
-    void onPeerConnected (PeerID const& id,
+    void onPeerHandshake (PeerID const& id,
         IPAddress const& address, bool inbound)
     {
-        m_journal.debug << "Peer connected: " << address;
+        m_journal.debug << "Handshake: " << address;
+
         // If this is outgoing, record the success
         if (! inbound)
             m_legacyCache.checked (address, true);
@@ -332,14 +424,14 @@ public:
 
     // Called when a peer is disconnected.
     // We are guaranteed to get this exactly once for each
-    // corresponding call to onPeerConnected.
+    // corresponding call to onPeerHandshake.
     //
     void onPeerDisconnected (PeerID const& id)
     {
         Peers::iterator iter (m_peers.find (id));
         bassert (iter != m_peers.end());
         PeerInfo const& peer (*iter);
-        m_journal.debug << "Peer disconnected: " << peer.address;
+        m_journal.debug << "Disconnected: " << peer.address;
         m_slots.dropPeer (m_config, peer.inbound);
 
         // VFALCO NOTE Update fixed peers count (HACKED)
@@ -418,11 +510,12 @@ public:
 
                 while(iter2 != iter->end())
                 {
-                    // FIXME NIKB check if the peer wants to receive this endpoint
-                    // and add it to the list of endpoints we will send if he does.
+                    // FIXME NIKB check if the peer wants to receive this
+                    // endpoint and add it to the list of endpoints we will
+                    // send if he does.
 
                     if(false)
-                        iter->erase(iter2);
+                        iter2 = iter->erase(iter2);
                     else
                         ++iter2;
                 }
@@ -439,11 +532,11 @@ public:
     {
         if (! m_peers.empty())
         {
-            m_journal.trace << "Sending endpoints to our peers";
+            m_journal.trace << "Sending endpoints...";
 
             DiscreteTime const now (get_now());
 
-            // fill in endpoints
+            // fill in endpoints.
             Giveaways giveaway(m_cache.getGiveawayList());
 
             for (Peers::iterator iter (m_peers.begin());
@@ -486,10 +579,10 @@ public:
                 peer.canAccept = result.canAccept;
 
                 if (peer.canAccept)
-                    m_journal.info << "Peer " << peer.address <<
+                    m_journal.info << peer.address <<
                         " passed listening test";
                 else
-                    m_journal.warning << "Peer " << peer.address <<
+                    m_journal.warning << peer.address <<
                         " cannot accept incoming connections";
             }
             else
@@ -533,13 +626,13 @@ public:
         // numberOfEndpoints peers in a single message
         if (list.size() > numberOfEndpoints)
         {
-            m_journal.warning << "Charging peer " << peer.address <<
+            m_journal.warning << "Charging " << peer.address <<
                 " for sending too many endpoints";
 
             m_callback.chargePeerLoadPenalty(id);
         }
 
-        m_journal.debug << "Peer " << peer.address <<
+        m_journal.debug << peer.address <<
             " sent us " << list.size() << " endpoints.";
 
         // Process each entry
@@ -553,7 +646,7 @@ public:
             // Remember that this peer gave us this address
             peer.received.insert (message.address);
 
-            m_journal.debug << "Received peer " << message.address <<
+            m_journal.debug << message.address <<
                 " at " << message.hops << " hops.";
 
             if (message.hops == 0)
@@ -601,7 +694,7 @@ public:
 
         if (neighborCount > 1)
         {
-            m_journal.warning << "Peer " << peer.address <<
+            m_journal.warning << peer.address <<
                 " sent " << neighborCount << " entries with hops=0";
             // VFALCO TODO Should we apply load charges?
         }

@@ -70,12 +70,30 @@ public:
     virtual void addFallbackURL (std::string const& name,
         std::string const& url) = 0;
 
-	/** Called when a new peer connection is established. 
+    /** Called when an (outgoing) connection attempt to a particular address
+        is about to begin.
+    */
+    virtual void onPeerConnectAttemptBegins (IPAddress const& address) = 0;
+
+    /** Called when an (outgoing) connection attempt to a particular address
+        completes, whether it succeeds or fails.
+    */
+    virtual void onPeerConnectAttemptCompletes (IPAddress const& address,
+                                                bool success) = 0;
+
+    /** Called when a new peer connection is established but before get
+        we exchange hello messages.
+    */
+    virtual void onPeerConnected (IPAddress const& address,
+                                  bool inbound) = 0;
+
+    /** Called when a new peer connection is established after we exchange
+        hello messages.
 		Internally, we add the peer to our tracking table, validate that
 		we can connect to it, and begin advertising it to others after
 		we are sure that its connection is stable.
 	*/
-	virtual void onPeerConnected (PeerID const& id,
+    virtual void onPeerHandshake (PeerID const& id,
                                   IPAddress const& address,
                                   bool inbound) = 0;
 

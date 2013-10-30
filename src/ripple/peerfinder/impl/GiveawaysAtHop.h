@@ -47,13 +47,10 @@ public:
     // that we will be returning.
     void add (CachedEndpoint &endpoint)
     {
-        if (endpoint.message.hops < maxPeerHopCount)
-        {
-            if (endpoint.color)
-                m_list.push_back(&endpoint);
-            else
-                m_used.push_back(&endpoint);
-        }
+        if (endpoint.color)
+            m_list.push_back(&endpoint);
+        else
+            m_used.push_back(&endpoint);
     }
 
     // Shuffles the list of peers we are about to hand out.
@@ -63,7 +60,7 @@ public:
     }
 
     // Prepare to begin iterating over the entire set of peers again.
-    void reset ()
+    bool reset ()
     {
         // We need to add any entries from the stale vector in the tail
         // end of the fresh vector. We do not need to shuffle them.
@@ -73,8 +70,19 @@ public:
             m_used.clear();
         }
 
-        // We need to start from the beginning again.
+        // And start iterating the list from the beginning.
         m_position = m_list.begin();
+
+        // Return whether there is anything in this vector to iterate.
+        return !empty();
+    }
+
+    // Determines if we have any giveaways at the current hop could; if we
+    // do not you should not dereference the iterator returned from "begin" or
+    // "rbegin"
+    bool empty() const
+    {
+        return m_list.empty();
     }
 
     // This is somewhat counterintuitive, but it doesn't really "begin"
