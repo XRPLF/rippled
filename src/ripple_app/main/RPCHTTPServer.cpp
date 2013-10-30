@@ -24,6 +24,7 @@ class RPCHTTPServerImp
     , public HTTP::Handler
 {
 public:
+    Resource::Manager& m_resourceManager;
     Journal m_journal;
     JobQueue& m_jobQueue;
     NetworkOPs& m_networkOPs;
@@ -34,12 +35,14 @@ public:
     RPCHTTPServerImp (Stoppable& parent,
                       Journal journal,
                       JobQueue& jobQueue,
-                      NetworkOPs& networkOPs)
+                      NetworkOPs& networkOPs,
+                      Resource::Manager& resourceManager)
         : RPCHTTPServer (parent)
+        , m_resourceManager (resourceManager)
         , m_journal (journal)
         , m_jobQueue (jobQueue)
         , m_networkOPs (networkOPs)
-        , m_deprecatedHandler (networkOPs)
+        , m_deprecatedHandler (networkOPs, resourceManager)
         , m_server (*this, journal)
     {
         if (getConfig ().RPC_SECURE == 0)
@@ -186,6 +189,16 @@ public:
 
         Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteAddress));
 
+        Resource::Consumer usage;
+
+        if (role == Config::ADMIN)
+            usage = m_resourceManager.newAdminEndpoint(remoteAddress);
+        else
+            usage = m_resourceManager.newInboundEndpoint(IPAddress::from_string(remoteAddress));
+
+        if (usage.disconnect ())
+            return createResponse (503, "Server is overloaded");
+
         // Parse id now so errors from here on will have the id
         //
         // VFALCO NOTE Except that "id" isn't included in the following errors...
@@ -241,11 +254,12 @@ public:
 
         RPCHandler rpcHandler (&m_networkOPs);
 
-        LoadType loadType = LT_RPCReference;
+        Resource::Charge loadType = Resource::feeReferenceRPC;
 
         Json::Value const result (rpcHandler.doRpcCommand (
-            strMethod, params, role, &loadType));
-        // VFALCO NOTE We discard loadType since there is no endpoint to punish
+            strMethod, params, role, loadType));
+
+        usage.charge (loadType);
 
         m_journal.debug << "Reply: " << result;
 
@@ -267,8 +281,9 @@ RPCHTTPServer::RPCHTTPServer (Stoppable& parent)
 RPCHTTPServer* RPCHTTPServer::New (Stoppable& parent,
                                    Journal journal,
                                    JobQueue& jobQueue,
-                                   NetworkOPs& networkOPs)
+                                   NetworkOPs& networkOPs,
+                                   Resource::Manager& resourceManager)
 {
-    return new RPCHTTPServerImp (parent, journal, jobQueue, networkOPs);
+    return new RPCHTTPServerImp (parent, journal, jobQueue, networkOPs, resourceManager);
 }
 

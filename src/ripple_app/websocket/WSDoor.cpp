@@ -41,7 +41,7 @@ class WSDoorImp : public WSDoor, protected Thread, LeakChecked <WSDoorImp>
 public:
     WSDoorImp (Resource::Manager& resourceManager,
         InfoSub::Source& source, std::string const& strIp,
-            int iPort, bool bPublic, boost::asio::ssl::context& ssl_context)
+            int iPort, bool bPublic, bool bProxy, boost::asio::ssl::context& ssl_context)
         : WSDoor (source)
         , Thread ("websocket")
         , m_resourceManager (resourceManager)
@@ -49,6 +49,7 @@ public:
         , m_ssl_context (ssl_context)
         , m_endpointLock (this, "WSDoor", __FILE__, __LINE__)
         , mPublic (bPublic)
+        , mProxy (bProxy)
         , mIp (strIp)
         , mPort (iPort)
     {
@@ -67,14 +68,14 @@ private:
             boost::format ("Websocket: %s: Listening: %s %d ") %
                 (mPublic ? "Public" : "Private") % mIp % mPort);
 
-        websocketpp::server_autotls::handler::ptr handler (
-            new WSServerHandler <websocketpp::server_autotls> (
-                m_resourceManager, m_source, m_ssl_context, mPublic));
+        websocketpp::server_multitls::handler::ptr handler (
+            new WSServerHandler <websocketpp::server_multitls> (
+                m_resourceManager, m_source, m_ssl_context, mPublic, mProxy));
 
         {
             ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
 
-            m_endpoint = new websocketpp::server_autotls (handler);
+            m_endpoint = new websocketpp::server_multitls (handler);
         }
 
         // Call the main-event-loop of the websocket server.
@@ -137,8 +138,9 @@ private:
     boost::asio::ssl::context& m_ssl_context;
     LockType m_endpointLock;
 
-    ScopedPointer <websocketpp::server_autotls> m_endpoint;
+    ScopedPointer <websocketpp::server_multitls> m_endpoint;
     bool                            mPublic;
+    bool                            mProxy;
     std::string                     mIp;
     int                             mPort;
 };
@@ -154,14 +156,14 @@ WSDoor::WSDoor (Stoppable& parent)
 
 WSDoor* WSDoor::New (Resource::Manager& resourceManager,
     InfoSub::Source& source, std::string const& strIp,
-        int iPort, bool bPublic, boost::asio::ssl::context& ssl_context)
+        int iPort, bool bPublic, bool bProxy, boost::asio::ssl::context& ssl_context)
 {
     ScopedPointer <WSDoor> door;
 
     try
     {
         door = new WSDoorImp (resourceManager,
-            source, strIp, iPort, bPublic, ssl_context);
+            source, strIp, iPort, bPublic, bProxy, ssl_context);
     }
     catch (...)
     {

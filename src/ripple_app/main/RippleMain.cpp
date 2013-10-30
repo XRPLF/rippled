@@ -60,9 +60,8 @@ void startServer ()
 
             RPCHandler  rhHandler (&getApp().getOPs ());
 
-            // VFALCO TODO Clean up this magic number
-            LoadType loadType = LT_RPCReference;
-            Json::Value jvResult    = rhHandler.doCommand (jvCommand, Config::ADMIN, &loadType);
+            Resource::Charge loadType = Resource::feeReferenceRPC;
+            Json::Value jvResult    = rhHandler.doCommand (jvCommand, Config::ADMIN, loadType);
 
             if (!getConfig ().QUIET)
                 Log::out() << "Result: " << jvResult;

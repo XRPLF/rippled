@@ -68,6 +68,18 @@ public:
 
     //--------------------------------------------------------------------------
 
+    Json::Value getJson ()
+    {
+        return m_logic.getJson ();
+    }
+
+    Json::Value getJson (int threshold)
+    {
+        return m_logic.getJson (threshold);
+    }
+
+    //--------------------------------------------------------------------------
+
     void onWrite (PropertyStream::Map& map)
     {
         m_logic.onWrite (map);

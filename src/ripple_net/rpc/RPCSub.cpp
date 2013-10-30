@@ -195,7 +195,7 @@ private:
 //------------------------------------------------------------------------------
 
 RPCSub::RPCSub (InfoSub::Source& source)
-    : InfoSub (source)
+    : InfoSub (source, Consumer())
 {
 }
 

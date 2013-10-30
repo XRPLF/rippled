@@ -39,7 +39,7 @@ protected:
 
     WSConnection (Resource::Manager& resourceManager,
         Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
-            std::string const& remoteIP, boost::asio::io_service& io_service);
+            IPAddress const& remoteAddress, boost::asio::io_service& io_service);
 
     virtual ~WSConnection ();
 
@@ -57,11 +57,10 @@ protected:
     Resource::Manager& m_resourceManager;
     Resource::Consumer m_usage;
     bool const m_isPublic;
-    std::string const m_remoteIP;
+    IPAddress const m_remoteAddress;
     LockType m_receiveQueueMutex;
     std::deque <message_ptr> m_receiveQueue;
     NetworkOPs& m_netOPs;
-    LoadSource m_loadSource;
     boost::asio::deadline_timer m_pingTimer;
     bool m_sentPing;
     bool m_receiveQueueRunning;
@@ -96,11 +95,10 @@ public:
             connection_ptr const& cpConnection)
         : WSConnection (
             resourceManager,
-            resourceManager.newInboundEndpoint (IPAddressConversion::from_asio (
-                cpConnection->get_socket ().lowest_layer ().remote_endpoint ().address ())),
+            resourceManager.newInboundEndpoint (cpConnection->get_socket ().remote_endpoint ()),
             source,
             serverHandler.getPublic (),
-            cpConnection->get_socket ().lowest_layer ().remote_endpoint ().address ().to_string (),
+            cpConnection->get_socket ().remote_endpoint (),
             cpConnection->get_io_service ())
         , m_serverHandler (serverHandler)
         , m_connection (cpConnection)

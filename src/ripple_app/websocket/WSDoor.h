@@ -31,7 +31,7 @@ public:
 
     static WSDoor* New (Resource::Manager& resourceManager,
         InfoSub::Source& source, std::string const& strIp,
-            int iPort, bool bPublic, boost::asio::ssl::context& ssl_context);
+            int iPort, bool bPublic, bool bProxy, boost::asio::ssl::context& ssl_context);
 };
 
 #endif

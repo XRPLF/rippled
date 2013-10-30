@@ -18,8 +18,9 @@
 //==============================================================================
 
 
-RPCServerHandler::RPCServerHandler (NetworkOPs& networkOPs)
+RPCServerHandler::RPCServerHandler (NetworkOPs& networkOPs, Resource::Manager& resourceManager)
     : m_networkOPs (networkOPs)
+    , m_resourceManager (resourceManager)
 {
 }
 
@@ -51,6 +52,16 @@ std::string RPCServerHandler::processRequest (std::string const& request, std::s
     }
 
     Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteAddress));
+
+    Resource::Consumer usage;
+
+    if (role == Config::ADMIN)
+        usage = m_resourceManager.newAdminEndpoint (remoteAddress);
+    else
+        usage = m_resourceManager.newInboundEndpoint (IPAddress::from_string (remoteAddress));
+
+    if (usage.disconnect ())
+        return createResponse (503, "Server is overloaded");
 
     // Parse id now so errors from here on will have the id
     //
@@ -107,10 +118,11 @@ std::string RPCServerHandler::processRequest (std::string const& request, std::s
 
     RPCHandler rpcHandler (&m_networkOPs);
 
-    LoadType loadType = LT_RPCReference;
+    Resource::Charge loadType = Resource::feeReferenceRPC;
 
-    Json::Value const result = rpcHandler.doRpcCommand (strMethod, params, role, &loadType);
-    // VFALCO NOTE We discard loadType since there is no endpoint to punish
+    Json::Value const result = rpcHandler.doRpcCommand (strMethod, params, role, loadType);
+
+    usage.charge (loadType);
 
     WriteLog (lsDEBUG, RPCServer) << "Reply: " << result;
 

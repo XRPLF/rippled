@@ -102,6 +102,7 @@ public:
     virtual TransactionMaster&      getMasterTransaction () = 0;
     virtual TxQueue&                getTxQueue () = 0;
     virtual LocalCredentials&       getLocalCredentials () = 0;
+    virtual Resource::Manager&      getResourceManager () = 0;
 
     virtual DatabaseCon* getRpcDB () = 0;
     virtual DatabaseCon* getTxnDB () = 0;

@@ -197,11 +197,4 @@
 #define  RIPPLE_USE_RPC_SERVICE_MANAGER 0
 #endif
 
-// Here temporarily
-// Controls whether or not the new Resource manager replaces the BlackList
-// and LoadManager for measuring and controlling access to the server
-#ifndef RIPPLE_USE_RESOURCE_MANAGER
-#define RIPPLE_USE_RESOURCE_MANAGER 0
-#endif
-
 #endif

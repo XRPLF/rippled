@@ -27,7 +27,7 @@ protected:
 
 public:
     static RPCHTTPServer* New (Stoppable& parent,
-        Journal journal, JobQueue& jobQueue, NetworkOPs& networkOPs);
+        Journal journal, JobQueue& jobQueue, NetworkOPs& networkOPs, Resource::Manager& resourceManager);
 
     virtual ~RPCHTTPServer () { }
 

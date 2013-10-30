@@ -46,6 +46,10 @@ public:
     /** Extract packaged consumer information for export. */
     virtual Gossip exportConsumers () = 0;
 
+    /** Extract consumer information for reporting. */
+    virtual Json::Value getJson () = 0;
+    virtual Json::Value getJson (int threshold) = 0;
+
     /** Import packaged consumer information.
         @param origin An identifier that unique labels the origin.
     */

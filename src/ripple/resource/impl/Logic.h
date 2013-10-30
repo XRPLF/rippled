@@ -83,7 +83,7 @@ public:
 
         Key key;
         key.kind = kindInbound;
-        key.address = address;
+        key.address = address.withPort (0);
 
         Entry* entry (nullptr);
 
@@ -202,6 +202,61 @@ public:
         return *entry;
     }
 
+    Json::Value getJson ()
+    {
+        return getJson (warningThreshold);
+    }
+
+    Json::Value getJson (int threshold)
+    {
+        DiscreteTime const now (m_clock());
+
+        Json::Value ret (Json::objectValue);
+        SharedState::Access state (m_state);
+
+        for (List <Entry>::iterator iter (state->inbound.begin());
+            iter != state->inbound.end(); ++iter)
+        {
+            int localBalance = iter->local_balance.value (now);
+            if ((localBalance + iter->remote_balance) >= threshold)
+            {
+                Json::Value& entry = (ret[iter->to_string()] = Json::objectValue);
+                entry["local"] = localBalance;
+                entry["remote"] = iter->remote_balance;
+                entry["type"] = "outbound";
+            }
+
+        }
+        for (List <Entry>::iterator iter (state->outbound.begin());
+            iter != state->outbound.end(); ++iter)
+        {
+            int localBalance = iter->local_balance.value (now);
+            if ((localBalance + iter->remote_balance) >= threshold)
+            {
+                Json::Value& entry = (ret[iter->to_string()] = Json::objectValue);
+                entry["local"] = localBalance;
+                entry["remote"] = iter->remote_balance;
+                entry["type"] = "outbound";
+            }
+
+        }
+        for (List <Entry>::iterator iter (state->admin.begin());
+            iter != state->admin.end(); ++iter)
+        {
+            int localBalance = iter->local_balance.value (now);
+            if ((localBalance + iter->remote_balance) >= threshold)
+            {
+                Json::Value& entry = (ret[iter->to_string()] = Json::objectValue);
+                entry["local"] = localBalance;
+                entry["remote"] = iter->remote_balance;
+                entry["type"] = "admin";
+            }
+
+        }
+
+        return ret;
+    }
+
     Gossip exportConsumers ()
     {
         DiscreteTime const now (m_clock());
@@ -318,8 +373,8 @@ public:
             }
         }
 
-        for (Imports::iterator iter (state->import_table.begin());
-            iter != state->import_table.end(); ++iter)
+        Imports::iterator iter (state->import_table.begin());
+        while (iter != state->import_table.end())
         {
             Import& import (iter->second);
             if (iter->second.whenExpires <= now)
@@ -332,6 +387,8 @@ public:
 
                 iter = state->import_table.erase (iter);
             }
+            else
+                ++iter;
         }
     }
 

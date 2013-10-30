@@ -26,6 +26,8 @@ namespace ripple {
 using namespace beast;
 }
 
+#include "../json/ripple_json.h"
+
 # include "api/Types.h"
 # include "api/Disposition.h"
 #  include "api/Charge.h"

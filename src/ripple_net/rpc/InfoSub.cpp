@@ -38,8 +38,9 @@ InfoSub::Source::Source (char const* name, Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-InfoSub::InfoSub (Source& source)
+InfoSub::InfoSub (Source& source, Consumer consumer)
     : mLock (this, "InfoSub", __FILE__, __LINE__)
+    , m_consumer (consumer)
     , m_source (source)
 {
     static Atomic <int> s_seq_id;
@@ -54,6 +55,11 @@ InfoSub::~InfoSub ()
     m_source.unsubServer (mSeq);
     m_source.unsubAccount (mSeq, mSubAccountInfo, true);
     m_source.unsubAccount (mSeq, mSubAccountInfo, false);
+}
+
+Resource::Consumer& InfoSub::getConsumer()
+{
+    return m_consumer;
 }
 
 void InfoSub::send (const Json::Value& jvObj, const std::string& sObj, bool broadcast)

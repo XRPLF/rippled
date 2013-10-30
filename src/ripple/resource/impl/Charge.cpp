@@ -56,5 +56,15 @@ std::ostream& operator<< (std::ostream& os, Charge const& v)
     return os;
 }
 
+bool Charge::operator== (Charge const& c) const
+{
+    return c.m_cost == m_cost;
+}
+
+bool Charge::operator!= (Charge const& c) const
+{
+    return c.m_cost != m_cost;
+}
+
 }
 }

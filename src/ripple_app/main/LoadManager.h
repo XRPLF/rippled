@@ -72,23 +72,6 @@ public:
         time passes it will produce log warnings.
     */
     virtual void resetDeadlockDetector () = 0;
-
-    /** Update an endpoint to reflect an imposed load.
-
-        The balance of the endpoint is adjusted based on the heuristic cost
-        of the indicated load.
-
-        @return `true` if the endpoint should be warned or punished.
-    */
-    virtual bool applyLoadCharge (LoadSource& sourceToAdjust, LoadType loadToImpose) const = 0;
-
-    // VFALCO TODO Eliminate these two functions and just make applyLoadCharge()
-    //             return a LoadSource::Disposition
-    //
-    virtual bool shouldWarn (LoadSource&) = 0;
-    virtual bool shouldCutoff (LoadSource&) = 0;
-
-    virtual Json::Value getBlackList(int threshold = (BlackList<UptimeTimerAdapter>::mCreditLimit / 2)) = 0;
 };
 
 #endif

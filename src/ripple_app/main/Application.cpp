@@ -110,10 +110,10 @@ public:
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
 
         , m_rpcHTTPServer (RPCHTTPServer::New (*m_networkOPs,
-            LogJournal::get <HTTPServerLog> (), *m_jobQueue, *m_networkOPs))
+            LogJournal::get <HTTPServerLog> (), *m_jobQueue, *m_networkOPs, *m_resourceManager))
 
 #if ! RIPPLE_USE_RPC_SERVICE_MANAGER
-        , m_rpcServerHandler (*m_networkOPs) // passive object, not a Service
+        , m_rpcServerHandler (*m_networkOPs, *m_resourceManager) // passive object, not a Service
 #endif
 
         , m_nodeStoreScheduler (*m_jobQueue, *m_jobQueue)
@@ -226,6 +226,11 @@ public:
     LoadManager& getLoadManager ()
     {
         return *m_loadManager;
+    }
+
+    Resource::Manager& getResourceManager ()
+    {
+        return *m_resourceManager;
     }
 
     TxQueue& getTxQueue ()
@@ -537,7 +542,7 @@ public:
         {
             m_wsPrivateDoor = WSDoor::New (*m_resourceManager,
                 getOPs(), getConfig ().WEBSOCKET_IP,
-                    getConfig ().WEBSOCKET_PORT, false,
+                    getConfig ().WEBSOCKET_PORT, false, false,
                         m_wsSSLContext->get ());
 
             if (m_wsPrivateDoor == nullptr)
@@ -557,7 +562,7 @@ public:
         {
             m_wsPublicDoor = WSDoor::New (*m_resourceManager,
                 getOPs(), getConfig ().WEBSOCKET_PUBLIC_IP,
-                    getConfig ().WEBSOCKET_PUBLIC_PORT, true,
+                    getConfig ().WEBSOCKET_PUBLIC_PORT, true, false,
                         m_wsSSLContext->get ());
 
             if (m_wsPublicDoor == nullptr)
@@ -569,6 +574,19 @@ public:
         else
         {
             m_journal.info << "WebSocket public interface: disabled";
+        }
+        if (!getConfig ().WEBSOCKET_PROXY_IP.empty () && getConfig ().WEBSOCKET_PROXY_PORT)
+        {
+            m_wsProxyDoor = WSDoor::New (*m_resourceManager,
+                getOPs(), getConfig ().WEBSOCKET_PROXY_IP,
+                    getConfig ().WEBSOCKET_PROXY_PORT, true, true,
+                        m_wsSSLContext->get ());
+
+            if (m_wsProxyDoor == nullptr)
+            {
+                FatalError ("Could not open the WebSocket public interface.",
+                    __FILE__, __LINE__);
+            }
         }
 
         //
@@ -744,6 +762,7 @@ public:
             // once the WSDoor cancels its pending I/O correctly
             //m_wsPublicDoor = nullptr;
             //m_wsPrivateDoor = nullptr;
+            //m_wsProxyDoor = nullptr;
 
             // VFALCO TODO Try to not have to do this early, by using observers to
             //             eliminate LoadManager's dependency inversions.
@@ -898,6 +917,7 @@ private:
     ScopedPointer <RPCDoor>  m_rpcDoor;
     ScopedPointer <WSDoor> m_wsPublicDoor;
     ScopedPointer <WSDoor> m_wsPrivateDoor;
+    ScopedPointer <WSDoor> m_wsProxyDoor;
 
     WaitableEvent m_stop;
 };

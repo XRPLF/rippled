@@ -401,6 +401,10 @@ public:
     int                         WEBSOCKET_PUBLIC_PORT;
     int                         WEBSOCKET_PUBLIC_SECURE;
 
+    std::string                 WEBSOCKET_PROXY_IP;        // XXX Going away. Merge with the inbound peer connction.
+    int                         WEBSOCKET_PROXY_PORT;
+    int                         WEBSOCKET_PROXY_SECURE;
+
     std::string                 WEBSOCKET_IP;
     int                         WEBSOCKET_PORT;
     int                         WEBSOCKET_SECURE;

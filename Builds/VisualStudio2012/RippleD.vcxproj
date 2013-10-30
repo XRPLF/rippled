@@ -1926,7 +1926,6 @@
     <ClInclude Include="..\..\src\ripple_basics\utility\ThreadName.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\Time.h" />
     <ClInclude Include="..\..\src\ripple_basics\utility\UptimeTimer.h" />
-    <ClInclude Include="..\..\src\ripple_core\functional\LoadSource.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\Config.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\ConfigSections.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h" />

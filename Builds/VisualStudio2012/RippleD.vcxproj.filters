@@ -1706,9 +1706,6 @@
     <ClInclude Include="..\..\src\ripple_app\peers\Peers.h">
       <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\LoadSource.h">
-      <Filter>[2] Old Ripple\ripple_core\functional</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\LoadManager.h">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClInclude>

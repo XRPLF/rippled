@@ -90,10 +90,19 @@ message TMClusterNode
     optional string          address         = 5;
 }
 
+// Sources that are placing load on the server
+message TMLoadSource
+{
+    required string          name            = 1;
+    required uint32          cost            = 2;
+    optional uint32          count           = 3; // number of connections
+}
+
 // The status of all nodes in the cluster
 message TMCluster
 {
     repeated TMClusterNode   clusterNodes    = 1;
+    repeated TMLoadSource    loadSources     = 2;
 }
 
 

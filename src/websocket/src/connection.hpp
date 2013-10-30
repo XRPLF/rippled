@@ -900,7 +900,8 @@ public:
         {
             // TODO: read timeout timer?
 
-            socket_type::get_socket().async_read(
+            async_read(
+                socket_type::get_socket(),
                 m_buf,
                 boost::asio::transfer_at_least(std::min(
                     m_read_threshold,
@@ -1209,7 +1210,7 @@ public:
             
             //m_endpoint.alog().at(log::alevel::DEVEL) << "write header: " << zsutil::to_hex(m_write_queue.front()->get_header()) << log::endl;
             
-            socket_type::get_socket().async_write(
+            async_write(socket_type::get_socket(),
                 m_write_buf,
                 m_strand.wrap(boost::bind(
                     &type::handle_write,

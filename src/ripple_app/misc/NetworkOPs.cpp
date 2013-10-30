@@ -567,6 +567,14 @@ void NetworkOPsImp::processClusterTimer ()
             node.set_nodename(it->second.getName());
     }
 
+    Resource::Gossip gossip = getApp().getResourceManager().exportConsumers();
+    BOOST_FOREACH (Resource::Gossip::Item const& item, gossip.items)
+    {
+        protocol::TMLoadSource& node = *cluster.add_loadsources();
+        node.set_name (item.address);
+        node.set_cost (item.balance);
+    }
+
     PackedMessage::pointer message = boost::make_shared<PackedMessage>(cluster, protocol::mtCLUSTER);
     getApp().getPeers().relayMessageCluster (NULL, message);
 

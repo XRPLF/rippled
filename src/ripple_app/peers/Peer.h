@@ -76,8 +76,6 @@ public:
     */
     virtual void charge (Resource::Charge const& fee) = 0;
     static  void charge (boost::weak_ptr <Peer>& peer, Resource::Charge const& fee);
-    virtual void applyLoadCharge (LoadType) = 0;
-    static void applyLoadCharge (boost::weak_ptr <Peer>& peerTOCharge, LoadType loadThatWasImposed);
 
     virtual Json::Value getJson () = 0;
 

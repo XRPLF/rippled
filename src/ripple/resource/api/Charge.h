@@ -47,6 +47,9 @@ public:
     /** Converts this charge into a human readable string. */
     std::string to_string () const;
 
+    bool operator== (Charge const&) const;
+    bool operator!= (Charge const&) const;
+
 private:
     value_type m_cost;
     std::string m_label;

@@ -27,7 +27,7 @@ class NetworkOPs;
 class RPCServerHandler : public RPCServer::Handler
 {
 public:
-    explicit RPCServerHandler (NetworkOPs& networkOPs);
+    explicit RPCServerHandler (NetworkOPs& networkOPs, Resource::Manager& resourceManager);
 
     std::string createResponse (int statusCode, std::string const& description);
 
@@ -37,6 +37,7 @@ public:
 
 private:
     NetworkOPs& m_networkOPs;
+    Resource::Manager& m_resourceManager;
 };
 
 #endif

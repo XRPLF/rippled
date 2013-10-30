@@ -41,7 +41,6 @@ namespace ripple
 #  include "functional/LoadMonitor.h"
 # include "functional/Job.h"
 #include "functional/JobQueue.h"
-#include "functional/LoadSource.h"
 
 }
 

@@ -130,7 +130,6 @@ void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
         if (peer)
         {
             peer->charge (Resource::feeInvalidRequest);
-            peer->applyLoadCharge (LT_InvalidRequest);
         }
 
         return;
@@ -147,7 +146,6 @@ void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
         {
             WriteLog (lsWARNING, InboundLedger) << "Got empty base data";
             peer->charge (Resource::feeInvalidRequest);
-            peer->applyLoadCharge (LT_InvalidRequest);
             return;
         }
 
@@ -155,7 +153,6 @@ void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
         {
             WriteLog (lsWARNING, InboundLedger) << "Got invalid base data";
             peer->charge (Resource::feeInvalidRequest);
-            peer->applyLoadCharge (LT_InvalidRequest);
             return;
         }
 
@@ -191,7 +188,6 @@ void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
         {
             WriteLog (lsINFO, InboundLedger) << "Got response with no nodes";
             peer->charge (Resource::feeInvalidRequest);
-            peer->applyLoadCharge (LT_InvalidRequest);
             return;
         }
 
@@ -203,7 +199,6 @@ void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
             {
                 WriteLog (lsWARNING, InboundLedger) << "Got bad node";
                 peer->charge (Resource::feeInvalidRequest);
-                peer->applyLoadCharge (LT_InvalidRequest);
                 return;
             }
 
@@ -231,7 +226,6 @@ void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
 
     WriteLog (lsWARNING, InboundLedger) << "Not sure what ledger data we got";
     peer->charge (Resource::feeInvalidRequest);
-    peer->applyLoadCharge (LT_InvalidRequest);
 }
 
 void InboundLedgers::sweep ()

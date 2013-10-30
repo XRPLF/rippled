@@ -208,7 +208,6 @@ public:
                 PeerFinder::PeerID (peer->getNodePublic()) == id)
             {
                 peer->charge (Resource::feeUnwantedData);
-                peer->applyLoadCharge (LT_UnwantedData);
                 break;
             }
         }

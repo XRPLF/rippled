@@ -29,7 +29,7 @@
 #define WEBSOCKETPP_ENDPOINT_HPP
 
 #include "connection.hpp"
-#include "sockets/autotls.hpp" // should this be here?
+#include "sockets/multitls.hpp" // should this be here?
 #include "logger/logger.hpp"
 
 #include <boost/asio.hpp>
@@ -74,7 +74,7 @@ protected:
  */
 template <
     template <class> class role,
-    template <class> class socket = socket::autotls,
+    template <class> class socket = socket::multitls,
     template <class> class logger = log::logger>
 class endpoint 
  : public endpoint_base,

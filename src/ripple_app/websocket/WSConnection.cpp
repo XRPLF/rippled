@@ -17,35 +17,27 @@
 */
 //==============================================================================
 
-
 SETUP_LOGN (WSConnection, "WSConnection")
-
-static std::string trimIP(const std::string& ip)
-{ // Make sure there's no port
-    size_t pos = ip.find(':');
-    return (pos == std::string::npos) ? ip : ip.substr(0, pos - 1);
-}
 
 //------------------------------------------------------------------------------
 
 WSConnection::WSConnection (Resource::Manager& resourceManager,
     Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
-        std::string const& remoteIP, boost::asio::io_service& io_service)
-    : InfoSub (source)
+        IPAddress const& remoteAddress, boost::asio::io_service& io_service)
+    : InfoSub (source, usage)
     , m_resourceManager (resourceManager)
-    , m_usage (usage)
     , m_isPublic (isPublic)
-    , m_remoteIP (remoteIP)
+    , m_remoteAddress (remoteAddress)
     , m_receiveQueueMutex (this, "WSConnection", __FILE__, __LINE__)
     , m_netOPs (getApp ().getOPs ())
-    , m_loadSource (m_remoteIP, trimIP(m_remoteIP))
     , m_pingTimer (io_service)
     , m_sentPing (false)
     , m_receiveQueueRunning (false)
     , m_isDead (false)
     , m_io_service (io_service)
 {
-    WriteLog (lsDEBUG, WSConnection) << "Websocket connection from " << m_remoteIP;
+    WriteLog (lsDEBUG, WSConnection) <<
+        "Websocket connection from " << remoteAddress;
 }
 
 WSConnection::~WSConnection ()
@@ -113,19 +105,11 @@ void WSConnection::returnMessage (message_ptr ptr)
 
 Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
 {
-#if RIPPLE_USE_RESOURCE_MANAGER
-    if (m_usage.disconnect ())
+    if (getConsumer().disconnect ())
     {
         disconnect ();
         return rpcError (rpcSLOW_DOWN);
     }
-#else
-    if (getApp().getLoadManager ().shouldCutoff (m_loadSource))
-    {
-        disconnect ();
-        return rpcError (rpcSLOW_DOWN);
-    }
-#endif
 
     // Requests without "command" are invalid.
     //
@@ -143,22 +127,19 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
             jvResult["id"]  = jvRequest["id"];
         }
 
-#if RIPPLE_USE_RESOURCE_MANAGER
-        m_usage.charge (Resource::feeInvalidRPC);
-#else
-        getApp().getLoadManager ().applyLoadCharge (m_loadSource, LT_RPCInvalid);
-#endif
+        getConsumer().charge (Resource::feeInvalidRPC);
 
         return jvResult;
     }
 
-    LoadType loadType = LT_RPCReference;
+    Resource::Charge loadType = Resource::feeReferenceRPC;
     RPCHandler  mRPCHandler (&this->m_netOPs, boost::dynamic_pointer_cast<InfoSub> (this->shared_from_this ()));
     Json::Value jvResult (Json::objectValue);
 
     Config::Role const role = m_isPublic
             ? Config::GUEST     // Don't check on the public interface.
-            : getConfig ().getAdminRole (jvRequest, m_remoteIP);
+            : getConfig ().getAdminRole (
+                jvRequest, m_remoteAddress.withPort(0).to_string());
         
     if (Config::FORBID == role)
     {
@@ -166,24 +147,14 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     }
     else
     {
-        jvResult["result"] = mRPCHandler.doCommand (jvRequest, role, &loadType);
+        jvResult["result"] = mRPCHandler.doCommand (jvRequest, role, loadType);
     }
 
-#if RIPPLE_USE_RESOURCE_MANAGER
-    m_usage.charge (Resource::legacyFee (loadType));
-    if (m_usage.warn ())
+    getConsumer().charge (loadType);
+    if (getConsumer().warn ())
     {
         jvResult["warning"] = "load";
     }
-#else
-    // Debit/credit the load and see if we should include a warning.
-    //
-    if (getApp().getLoadManager ().applyLoadCharge (m_loadSource, loadType) &&
-        getApp().getLoadManager ().shouldWarn (m_loadSource))
-    {
-        jvResult["warning"] = "load";
-    }
-#endif
 
     // Currently we will simply unwrap errors returned by the RPC
     // API, in the future maybe we can make the responses

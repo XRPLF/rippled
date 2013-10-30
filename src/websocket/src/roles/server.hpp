@@ -410,7 +410,7 @@ void server<endpoint>::start_accept() {
     }
         
     m_acceptor.async_accept(
-        con->get_raw_socket(),
+        con->get_native_socket (),
         boost::bind(
             &type::handle_accept,
             this,
@@ -427,7 +427,7 @@ template <class endpoint>
 void server<endpoint>::handle_accept(connection_ptr con, 
                                      const boost::system::error_code& error)
 {
-	bool delay = false;
+    bool delay = false;
 
     boost::lock_guard<boost::recursive_mutex> lock(m_endpoint.m_lock);
 
@@ -554,18 +554,19 @@ void server<endpoint>::connection<connection_type>::async_init() {
     static boost::arg<1> pl1;
     static boost::arg<2> pl2;
 
-	boost::shared_ptr<std::string> stringPtr = boost::make_shared<std::string>();
-	m_connection.get_socket().async_read_until(
-		m_connection.buffer(),
-		boost::bind(&match_header, stringPtr, pl1, pl2),
-		m_connection.get_strand().wrap(boost::bind(
-			&type::handle_read_request,
-			m_connection.shared_from_this(),
-			stringPtr,
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::bytes_transferred
-		))
-	);
+    boost::shared_ptr<std::string> stringPtr = boost::make_shared<std::string>();
+    async_read_until(
+            m_connection.get_socket(),
+            m_connection.buffer(),
+            boost::bind(&match_header, stringPtr, pl1, pl2),
+            m_connection.get_strand().wrap(boost::bind(
+                &type::handle_read_request,
+                m_connection.shared_from_this(),
+                stringPtr,
+                boost::asio::placeholders::error,
+                boost::asio::placeholders::bytes_transferred
+            ))
+        );
 }
 
 /// processes the response from an async read for an HTTP header
@@ -598,13 +599,14 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
                 std::string reply =
                     "<?xml version=\"1.0\"?><cross-domain-policy>"
                     "<allow-access-from domain=\"*\" to-ports=\"";
-				reply += beast::lexicalCastThrow <std::string>(m_connection.get_raw_socket().local_endpoint().port());
-				reply += "\"/></cross-domain-policy>";
-				reply.append("\0", 1);
+                                reply += beast::lexicalCastThrow <std::string>(m_connection.get_native_socket().local_endpoint().port());
+                                reply += "\"/></cross-domain-policy>";
+                                reply.append("\0", 1);
 
                 m_version = -1;
                 shared_const_buffer buffer(reply);
-                m_connection.get_socket().async_write(
+                async_write(
+                    m_connection.get_socket(),
                     shared_const_buffer(reply),
                     boost::bind(
                         &type::handle_write_response,
@@ -862,7 +864,8 @@ void server<endpoint>::connection<connection_type>::write_response() {
     
     m_endpoint.m_alog->at(log::alevel::DEBUG_HANDSHAKE) << raw << log::endl;
 
-    m_connection.get_socket().async_write(
+    async_write(
+        m_connection.get_socket(),
         //boost::asio::buffer(raw),
         buffer,
 		boost::bind(
@@ -928,8 +931,8 @@ void server<endpoint>::connection<connection_type>::log_open_result() {
     version << "v" << m_version << " ";
     
     std::string remote;
-    boost::system::error_code ec;
-    boost::asio::ip::tcp::endpoint ep = m_connection.get_raw_socket().remote_endpoint(ec);
+    boost::system::error_code ec; // FIXME: proxy
+    boost::asio::ip::tcp::endpoint ep = m_connection.get_native_socket().remote_endpoint(ec);
     if (ec) {
         m_endpoint.m_elog->at(log::elevel::WARN) 
             << "Error getting remote endpoint. code: " << ec << log::endl;
