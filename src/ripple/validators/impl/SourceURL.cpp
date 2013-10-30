@@ -37,17 +37,17 @@ public:
 
     String name ()
     {
-        return "URL: '" + m_url.full() + "'";
+        return "URL: '" + m_url.toString() + "'";
     }
 
     String uniqueID ()
     {
-        return "URL," + m_url.full();
+        return "URL," + m_url.toString();
     }
 
     String createParam ()
     {
-        return m_url.full();
+        return m_url.toString();
     }
 
     void cancel ()
@@ -68,7 +68,7 @@ public:
         else
         {
             journal.error <<
-                "HTTP GET to " << m_url.full().toStdString() <<
+                "HTTP GET to " << m_url <<
                 " failed: '" << httpResult.first.message () << "'";
         }
     }

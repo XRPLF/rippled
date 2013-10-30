@@ -155,7 +155,7 @@ public:
     {
         ParsedURL result (url);
         expect (result.error () == 0);
-        expect (result.url ().full () == url);
+        expect (result.url ().toString () == url);
     }
 
     void testURL ()
