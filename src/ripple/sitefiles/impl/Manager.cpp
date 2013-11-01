@@ -38,7 +38,7 @@ public:
 
     ManagerImp (Stoppable& stoppable, Journal journal)
         : Manager (stoppable)
-        , Thread ("PeerFinder")
+        , Thread ("SiteFiles")
         , m_logic (journal)
         , m_journal (journal)
     {

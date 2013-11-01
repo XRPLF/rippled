@@ -160,6 +160,11 @@ public:
         setAssertOnFailure (false);
     }
 
+    ~RippleUnitTests ()
+    {
+        m_app = nullptr;
+    }
+
     void logMessage (String const& message)
     {
         if (m_shouldLog)
