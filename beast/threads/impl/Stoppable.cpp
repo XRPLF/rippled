@@ -46,7 +46,7 @@ Stoppable::Stoppable (char const* name, Stoppable& parent)
 Stoppable::~Stoppable ()
 {
     // Children must be stopped.
-    bassert (m_childrenStopped);
+    bassert (m_started.get() == 0 || m_childrenStopped);
 }
 
 bool Stoppable::isStopping() const
@@ -177,6 +177,9 @@ void RootStoppable::start ()
 
 void RootStoppable::stop (Journal journal)
 {
+    // Must have a prior call to start()
+    bassert (m_started.get() != 0);
+
     if (! m_calledStop.compareAndSetBool (1, 0))
     {
         journal.warning << "Stoppable::stop called again";
