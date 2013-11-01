@@ -51,7 +51,9 @@ public:
         }
 #endif
 #endif
-        addURL ("https://ripple.com/ripple.txt");
+
+        // Turned off for now, this is for testing
+        //addURL ("https://ripple.com/ripple.txt");
     }
 
     ~ManagerImp ()
