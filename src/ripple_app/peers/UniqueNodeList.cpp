@@ -383,32 +383,25 @@ public:
 
     uint32 getClusterFee ()
     {
-        int thresh = getApp().getOPs().getNetworkTimeNC() - 120;
-        uint32 a = 0, b = 0;
+        int thresh = getApp().getOPs().getNetworkTimeNC() - 90;
 
-        ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
+        std::vector<uint32> fees;
         {
-            for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
-                end = m_clusterNodes.end(); it != end; ++it)
+            ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
             {
-                if (it->second.getReportTime() >= thresh)
+                for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
+                    end = m_clusterNodes.end(); it != end; ++it)
                 {
-                    uint32 fee = it->second.getLoadFee();
-                    if (fee > b)
-                    {
-                        if (fee > a)
-                        {
-                            b = a;
-                            a = fee;
-                        }
-                        else
-                            b = fee;
-                    }
+                    if (it->second.getReportTime() >= thresh)
+                        fees.push_back(it->second.getLoadFee());
                 }
             }
         }
 
-        return (b == 0) ? a : ((a + b + 1) / 2);
+        if (fees.empty())
+            return 0;
+        std::sort (fees.begin(), fees.end());
+        return fees[fees.size() / 2];
     }
 
     //--------------------------------------------------------------------------
