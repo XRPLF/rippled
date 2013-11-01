@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 class IoServicePool::ServiceThread : private Thread
 {
 public:
@@ -62,17 +61,9 @@ IoServicePool::IoServicePool (Stoppable& parent, String const& name, int numberO
     , m_name (name)
     , m_service (numberOfThreads)
     , m_work (boost::ref (m_service))
+    , m_threadsDesired (numberOfThreads)
 {
-    bassert (numberOfThreads > 0);
-
-    m_threads.ensureStorageAllocated (numberOfThreads);
-
-    for (int i = 0; i < numberOfThreads; ++i)
-    {
-        ++m_threadsRunning;
-        m_threads.add (new ServiceThread (m_name, *this, m_service));
-        m_threads[i]->start ();
-    }
+    bassert (m_threadsDesired > 0);
 }
 
 IoServicePool::~IoServicePool ()
@@ -90,6 +81,17 @@ IoServicePool::operator boost::asio::io_service& ()
     return m_service;
 }
 
+void IoServicePool::onStart ()
+{
+    m_threads.ensureStorageAllocated (m_threadsDesired);
+    for (int i = 0; i < m_threadsDesired; ++i)
+    {
+        m_threads.add (new ServiceThread (m_name, *this, m_service));
+        ++m_threadsRunning;
+        m_threads[i]->start ();
+    }
+}
+
 void IoServicePool::onStop ()
 {
     // VFALCO NOTE This is a hack! We should gracefully
@@ -97,6 +99,7 @@ void IoServicePool::onStop ()
     //             object using boost::optional, and let run()
     //             just return naturally.
     //
+    //m_work = boost::none;
     m_service.stop ();
 }
 

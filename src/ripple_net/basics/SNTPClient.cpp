@@ -96,8 +96,6 @@ public:
 
         mTimer.expires_from_now (boost::posix_time::seconds (NTP_QUERY_FREQUENCY));
         mTimer.async_wait (boost::bind (&SNTPClientImp::timerEntry, this, boost::asio::placeholders::error));
-
-        startThread ();
     }
 
     ~SNTPClientImp ()
@@ -107,17 +105,22 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void run ()
+    void onStart ()
     {
-        m_io_service.run ();
-
-        stopped ();
+        startThread ();
     }
 
     void onStop ()
     {
         // HACK!
         m_io_service.stop ();
+    }
+
+    void run ()
+    {
+        m_io_service.run ();
+
+        stopped ();
     }
 
     //--------------------------------------------------------------------------

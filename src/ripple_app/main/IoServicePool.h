@@ -31,6 +31,7 @@ public:
     boost::asio::io_service& getService ();
     operator boost::asio::io_service& ();
 
+    void onStart ();
     void onStop ();
     void onChildrenStopped ();
 
@@ -43,6 +44,7 @@ private:
     boost::asio::io_service m_service;
     boost::optional <boost::asio::io_service::work> m_work;
     OwnedArray <ServiceThread> m_threads;
+    int m_threadsDesired;
     Atomic <int> m_threadsRunning;
 };
 

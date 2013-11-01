@@ -157,12 +157,6 @@ public:
 
     ~ApplicationImp ()
     {
-        stop();
-        //stop ();
-
-        // Why is this needed here?
-        //m_networkOPs = nullptr;
-
         bassert (s_instance == this);
         s_instance = nullptr;
     }

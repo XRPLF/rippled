@@ -265,6 +265,7 @@ protected:
     char const* m_name;
     RootStoppable& m_root;
     Child m_child;
+    Atomic <int> m_started;
     bool volatile m_stopped;
     bool volatile m_childrenStopped;
     Children m_children;
@@ -301,6 +302,8 @@ public:
     /** Notify a root stoppable and children to stop, and block until stopped.
         Has no effect if the stoppable was already notified.
         This blocks until the stoppable and all of its children have stopped.
+        Undefined behavior results if stop() is called without a previous call
+        to start().
         Thread safety:
             Safe to call from any thread not associated with a Stoppable.
     */
@@ -316,7 +319,6 @@ public:
 
 private:
     Atomic <int> m_prepared;
-    Atomic <int> m_started;
     Atomic <int> m_calledStop;
     Atomic <int> m_calledStopAsync;
 };
