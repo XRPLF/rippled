@@ -43,6 +43,7 @@ namespace ripple {
 using namespace beast;
 }
 
+#include "impl/BootstrapCache.h"
 #include "impl/PrivateTypes.h"
 #  include "impl/Tuning.h"
 # include "impl/Checker.h"
