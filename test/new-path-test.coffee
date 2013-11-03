@@ -74,6 +74,7 @@ The tests are written in a declarative style:
 #################################### HELPERS ###################################
 
 assert = simple_assert
+
 refute = (cond, msg) -> assert(!cond, msg)
 prettyj = pretty_json =  (v) -> JSON.stringify(v, undefined, 2)
 
@@ -131,7 +132,7 @@ expand_alternative = (alt) ->
         prev_issuer = hop.issuer
       else if hop.account?
         prev_issuer = hop.account
-  
+
   return alt
 
 create_shorthand = (alternatives) ->
@@ -268,7 +269,7 @@ test_alternatives_factory = (realias_pp, realias_text) ->
       [t_amt_txt, a_amt_txt] = amounts_text(t_amt, a_amt)
 
       # console.log typeof t_amt
-      
+
       assert t_amt.equals(a_amt),
              "Expecting alternative[#{ti}].amount: "+
              "#{t_amt_txt} == #{a_amt_txt}"
@@ -300,8 +301,6 @@ test_alternatives_factory = (realias_pp, realias_text) ->
 
 create_path_test = (pth) ->
   return (done) ->
-    propagates = propagater done
-    
     self    = this
     WHAT    = self.log_what
     ledger  = self.ledger
@@ -319,7 +318,11 @@ create_path_test = (pth) ->
     one_message (m) -> sent = m
 
     error_info = (m, more) ->
-      info = path_expected: pth, path_find_request: sent, path_find_updates: m
+      info = 
+        path_expected:     pth,
+        path_find_request: sent,
+        path_find_updates: messages
+      
       extend(info, more) if more?
       ledger.pretty_json(info)
 
@@ -336,6 +339,8 @@ create_path_test = (pth) ->
     updates  = 0
     max_seen = 0
     messages = {}
+
+    propagates = propagater done
 
     pf.on "error", propagates (m) ->                                       # <--
       assert false, "fail (error): #{error_info(m)}"
@@ -402,17 +407,16 @@ skip_or_only = (title, test_or_suite) ->
   else
     test_or_suite
 
+definer_factory = (group, title, path) ->
+  path.title = "#{[group, title].join('.')}"
+  test_func = skip_or_only path.title, test
+  ->
+    test_func(path.title, create_path_test(path) )
+
 gather_path_definers = (path_expected) ->
   tests = []
-
   for group, subgroup of path_expected
     for title, path of subgroup
-      definer_factory = (group, title, path) ->
-        path.title = "#{[group, title].join('.')}"
-        test_func = skip_or_only path.title, test
-        ->
-          test_func(path.title, create_path_test(path) )
-
       tests.push definer_factory(group, title, path)
   tests
 
@@ -425,9 +429,9 @@ suite_factory = (declaration) ->
       @log_what = ->
 
       testutils.build_setup().call @, ->
-        context.ledger = new LedgerState(declaration.ledger, 
-                                         assert, 
-                                         context.remote, 
+        context.ledger = new LedgerState(declaration.ledger,
+                                         assert,
+                                         context.remote,
                                          config)
 
         context.ledger.setup(context.log_what, done)
@@ -456,6 +460,142 @@ path_finding_cases = JSON.parse path_finding_cases_string
 # gateway and holds its currency, and a destination that trusts the other.
 
 extend path_finding_cases,
+  "CNY test":
+    paths_expected:
+      BS:
+        P101: src: "SRC", dst: "GATEWAY_DST", send: "10.1/CNY/GATEWAY_DST", via: "XRP", n_alternatives: 1
+
+    ledger:
+      accounts:
+        SRC:
+          balance: ["4999.999898"]
+          trusts: []
+          offers: []
+
+        GATEWAY_DST:
+          balance: ["10846.168060"]
+          trusts: []
+          offers: []
+
+        MONEY_MAKER_1:
+          balance: ["4291.430036"]
+          trusts: []
+          offers: []
+
+        MONEY_MAKER_2:
+          balance: [
+            "106839375770"
+            "0.0000000003599/CNY/MONEY_MAKER_1"
+            "137.6852546843001/CNY/GATEWAY_DST"
+          ]
+          trusts: [
+            "1001/CNY/MONEY_MAKER_1"
+            "1001/CNY/GATEWAY_DST"
+          ]
+          offers: [
+            [
+              "1000000"
+              "1/CNY/GATEWAY_DST"
+              # []
+            ]
+            [
+              "1/CNY/GATEWAY_DST"
+              "1000000"
+              # []
+            ]
+            [
+              "318000/CNY/GATEWAY_DST"
+              "53000000000"
+              # ["Sell"]
+            ]
+            [
+              "209000000"
+              "4.18/CNY/MONEY_MAKER_2"
+              # []
+            ]
+            [
+              "990000/CNY/MONEY_MAKER_1"
+              "10000000000"
+              # ["Sell"]
+            ]
+            [
+              "9990000/CNY/MONEY_MAKER_1"
+              "10000000000"
+              # ["Sell"]
+            ]
+            [
+              "8870000/CNY/GATEWAY_DST"
+              "10000000000"
+              # ["Sell"]
+            ]
+            [
+              "232000000"
+              "5.568/CNY/MONEY_MAKER_2"
+              # []
+            ]
+          ]
+
+        A1:
+          balance: [
+            # "240.997150"
+            "1240.997150"
+            "0.0000000119761/CNY/MONEY_MAKER_1"
+            "33.047994/CNY/GATEWAY_DST"
+          ]
+          trusts: [
+            "1000000/CNY/MONEY_MAKER_1"
+            "100000/USD/MONEY_MAKER_1"
+            "10000/BTC/MONEY_MAKER_1"
+            "1000/USD/GATEWAY_DST"
+            "1000/CNY/GATEWAY_DST"
+          ]
+          offers: []
+
+        A2:
+          balance: [
+            "14115.046893"
+            "209.3081873019994/CNY/MONEY_MAKER_1"
+            "694.6251706504019/CNY/GATEWAY_DST"
+          ]
+          trusts: [
+            "3000/CNY/MONEY_MAKER_1"
+            "3000/CNY/GATEWAY_DST"
+          ]
+          offers: [
+            [
+              "2000000000"
+              "66.8/CNY/MONEY_MAKER_1"
+              # []
+            ]
+            [
+              "1200000000"
+              "42/CNY/GATEWAY_DST"
+              # []
+            ]
+            [
+              "43.2/CNY/MONEY_MAKER_1"
+              "900000000"
+              # ["Sell"]
+            ]
+          ]
+
+        A3:
+          balance: [
+            "512087.883181"
+            "23.617050013581/CNY/MONEY_MAKER_1"
+            "70.999614649799/CNY/GATEWAY_DST"
+          ]
+          trusts: [
+            "10000/CNY/MONEY_MAKER_1"
+            "10000/CNY/GATEWAY_DST"
+          ]
+          offers: [[
+            "2240/CNY/MONEY_MAKER_1"
+            "50000000000"
+            # ["Sell"]
+          ]]
+
+
   "Path Tests (Bitstamp + SnapSwap account holders | liquidity provider with no offers)":
     ledger:
       accounts:
