@@ -27,6 +27,18 @@
 #include "../CStdInt.h"
 #include "../mpl/IfCond.h"
 
+namespace std {
+
+template <typename T>
+struct hash;
+
+//template <>
+//struct hash <beast::IPAddress>;
+
+}
+
+//------------------------------------------------------------------------------
+
 namespace beast {
 
 /** Represents an IP address (v4 or v6) and port combination. */
@@ -309,19 +321,7 @@ public:
     operator std::string () const;
     /** @} */
 
-    struct hasher
-    {
-        std::size_t operator() (IPAddress const& value) const
-        {
-            std::size_t hash (0);
-            if (value.isV4())
-                hash = V4::hasher() (value.v4());
-            else if (value.isV6())
-                hash = V6::hasher() (value.v6());
-            hash += value.port();
-            return hash;
-        }
-    };
+    typedef std::hash <IPAddress> hasher;
 
     struct key_equal;
 
@@ -369,6 +369,30 @@ struct IPAddress::key_equal
     bool operator() (IPAddress const& lhs, IPAddress const& rhs) const
     {
         return lhs == rhs;
+    }
+};
+
+}
+
+//------------------------------------------------------------------------------
+
+namespace std {
+
+template <typename T>
+struct hash;
+
+template <>
+struct hash <beast::IPAddress>
+{
+    std::size_t operator() (beast::IPAddress const& value) const
+    {
+        std::size_t hash (0);
+        if (value.isV4())
+            hash = beast::IPAddress::V4::hasher() (value.v4());
+        else if (value.isV6())
+            hash = beast::IPAddress::V6::hasher() (value.v6());
+        hash += value.port();
+        return hash;
     }
 };
 
