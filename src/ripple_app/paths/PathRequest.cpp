@@ -331,7 +331,8 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                        currIssuer.first, currIssuer.second, saDstAmount, valid);
         CondLog (!valid, lsINFO, PathRequest) << "PF request not valid";
 
-        if (valid && pf.findPaths (iLevel, 4, spsPaths))
+        STPath extraPath;
+        if (valid && pf.findPaths (iLevel, 4, spsPaths, extraPath))
         {
             LedgerEntrySet                      lesSandbox (cache->getLedger (), tapNONE);
             std::vector<PathState::pointer>     vpsExpanded;
@@ -343,8 +344,22 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             saMaxAmount.negate ();
             WriteLog (lsDEBUG, PathRequest) << "Paths found, calling rippleCalc";
             TER terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
-                                                    vpsExpanded, saMaxAmount, saDstAmount, raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
+                                                    vpsExpanded, saMaxAmount, saDstAmount,
+                                                    raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
                                                     spsPaths, false, false, false, true);
+
+
+            if ((extraPath.size() > 0) && ((terResult == terNO_LINE) || (terResult == tecPATH_PARTIAL)))
+            {
+                WriteLog (lsDEBUG, PathRequest) << "Trying with an extra path element";
+                spsPaths.addPath(extraPath);
+                vpsExpanded.clear ();
+                terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
+                                                    vpsExpanded, saMaxAmount, saDstAmount,
+                                                    raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
+                                                    spsPaths, false, false, false, true);
+                WriteLog (lsDEBUG, PathRequest) << "Extra path element gives " << transHuman (terResult);
+            }
 
             if (terResult == tesSUCCESS)
             {

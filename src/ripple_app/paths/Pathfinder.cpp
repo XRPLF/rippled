@@ -126,7 +126,7 @@ Pathfinder::Pathfinder (RippleLineCache::ref cache,
 
 }
 
-bool Pathfinder::findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet& pathsOut)
+bool Pathfinder::findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet& pathsOut, STPath& extraPath)
 { // pathsOut contains only non-default paths without source or destiation
 // On input, pathsOut contains any paths you want to ensure are included if still good
 
@@ -221,14 +221,14 @@ bool Pathfinder::findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet&
     WriteLog (lsDEBUG, Pathfinder) << mCompletePaths.size() << " paths to filter";
 
     if (mCompletePaths.size() > iMaxPaths)
-        pathsOut = filterPaths(iMaxPaths);
+        pathsOut = filterPaths(iMaxPaths, extraPath);
     else
         pathsOut = mCompletePaths;
 
     return true; // Even if we find no paths, default paths may work, and we don't check them currently
 }
 
-STPathSet Pathfinder::filterPaths(int iMaxPaths)
+STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
 {
     if (mCompletePaths.size() <= iMaxPaths)
         return mCompletePaths;
@@ -274,6 +274,9 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths)
 
     std::vector<path_LQ_t> vMap;
 
+    // Ignore paths that move only very small amounts
+    STAmount saMinDstAmount = STAmount::divide(mDstAmount, STAmount(iMaxPaths + 2), mDstAmount);
+
     // Build map of quality to entry.
     for (int i = mCompletePaths.size (); i--;)
     {
@@ -293,8 +296,8 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths)
 
             terResult   = RippleCalc::rippleCalc (
                               lesSandbox,
-                              saMaxAmountAct,
-                              saDstAmountAct,
+                              saMaxAmountAct,     // --> computed input
+                              saDstAmountAct,     // --> computed output
                               vpsExpanded,
                               mSrcAmount,         // --> amount to send max.
                               mDstAmount,         // --> amount to deliver.
@@ -313,7 +316,21 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths)
             terResult   = tefEXCEPTION;
         }
 
-        if (tesSUCCESS == terResult)
+        if (tesSUCCESS != terResult)
+        {
+            WriteLog (lsDEBUG, Pathfinder)
+                    << boost::str (boost::format ("findPaths: dropping: %s: %s")
+                                   % transToken (terResult)
+                                   % spCurrent.getJson (0));
+        }
+        else if (saDstAmountAct < saMinDstAmount)
+        {
+            WriteLog (lsDEBUG, Pathfinder)
+                    << boost::str (boost::format ("findPaths: dropping: outputs %s: %s")
+                                   % saDstAmountAct
+                                   % spCurrent.getJson (0));
+        }
+        else
         {
             uint64  uQuality    = STAmount::getRate (saDstAmountAct, saMaxAmountAct);
 
@@ -323,13 +340,6 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths)
                                    % spCurrent.getJson (0));
 
             vMap.push_back (path_LQ_t (uQuality, spCurrent.mPath.size (), saDstAmountAct, i));
-        }
-        else
-        {
-            WriteLog (lsDEBUG, Pathfinder)
-                    << boost::str (boost::format ("findPaths: dropping: %s: %s")
-                                   % transToken (terResult)
-                                   % spCurrent.getJson (0));
         }
     }
 
@@ -350,6 +360,12 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths)
                 --iPathsLeft;
                 remaining -= lqt.get<2> ();
                 spsDst.addPath (mCompletePaths[lqt.get<3> ()]);
+            }
+            else if ((iPathsLeft == 0) && (lqt.get<2>() >= mDstAmount) && (extraPath.size() == 0))
+            {
+                // found an extra path that can move the whole amount
+                extraPath = mCompletePaths[lqt.get<3>()];
+                WriteLog (lsDEBUG, Pathfinder) << "Found extra full path: " << extraPath.getJson(0);
             }
             else
                 WriteLog (lsDEBUG, Pathfinder) << "Skipping a non-filling path: " << mCompletePaths[lqt.get<3> ()].getJson (0);

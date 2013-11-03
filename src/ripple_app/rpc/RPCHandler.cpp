@@ -172,7 +172,8 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
                 Pathfinder pf (cache, raSrcAddressID, dstAccountID,
                                saSendMax.getCurrency (), saSendMax.getIssuer (), saSend, bValid);
 
-                if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_OLD, 4, spsPaths))
+                STPath extraPath;
+                if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_OLD, 4, spsPaths, extraPath))
                 {
                     WriteLog (lsDEBUG, RPCHandler) << "transactionSign: build_path: No paths found.";
 
@@ -1560,7 +1561,8 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, LoadType* loadType
             int level = getConfig().PATH_SEARCH_OLD;
             if ((getConfig().PATH_SEARCH_MAX > level) && !getApp().getFeeTrack().isLoadedLocal())
                 ++level;
-            if (!bValid || !pf.findPaths (level, 4, spsComputed))
+	    STPath extraPath;
+            if (!bValid || !pf.findPaths (level, 4, spsComputed, extraPath))
             {
                 WriteLog (lsWARNING, RPCHandler) << "ripple_path_find: No paths found.";
             }
@@ -1607,6 +1609,18 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, LoadType* loadType
                                        % saDstAmount
                                        % saMaxAmountAct
                                        % saDstAmountAct);
+
+                if ((extraPath.size() > 0) && ((terResult == terNO_LINE) || (terResult == tecPATH_PARTIAL)))
+                {
+                    WriteLog (lsDEBUG, PathRequest) << "Trying with an extra path element";
+                    spsComputed.addPath(extraPath);
+                    vpsExpanded.clear ();
+                    terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
+                                                        vpsExpanded, saMaxAmount, saDstAmount,
+                                                        raDst.getAccountID (), raSrc.getAccountID (),
+                                                        spsComputed, false, false, false, true);
+                    WriteLog (lsDEBUG, PathRequest) << "Extra path element gives " << transHuman (terResult);
+                }
 
                 if (tesSUCCESS == terResult)
                 {

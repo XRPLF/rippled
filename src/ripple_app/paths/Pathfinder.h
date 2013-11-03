@@ -62,7 +62,7 @@ public:
                 const uint160& srcCurrencyID, const uint160& srcIssuerID, const STAmount& dstAmount, bool& bValid);
 
     static void initPathTable();
-    bool findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet& spsDst);
+    bool findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet& spsDst, STPath& spExtraPath);
 
 private:
 
@@ -102,7 +102,7 @@ private:
     void addLink(const STPath& currentPath, STPathSet& incompletePaths, int addFlags);
     void addLink(const STPathSet& currentPaths, STPathSet& incompletePaths, int addFlags);
     STPathSet& getPaths(const PathType_t& type, bool addComplete = true);
-    STPathSet filterPaths(int iMaxPaths);
+    STPathSet filterPaths(int iMaxPaths, STPath& extraPath);
 
     // Our main table of paths
 
