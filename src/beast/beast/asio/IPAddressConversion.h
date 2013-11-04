@@ -22,6 +22,8 @@
 
 #include "../net/IPAddress.h"
 
+#include <sstream>
+
 #include <boost/asio.hpp>
 
 namespace beast {
@@ -43,6 +45,16 @@ struct IPAddressConversion
 
     /** Convert to asio::ip::tcp::endpoint. */
     static boost::asio::ip::tcp::endpoint to_asio_endpoint (IPAddress const& address);
+
+    /** Conversions to string. */
+    /** @{ */
+    static std::string to_string (boost::asio::ip::tcp::endpoint const& endpoint)
+    {
+        std::stringstream ss;
+        ss << endpoint;
+        return ss.str();
+    }
+    /** @} */
 };
 
 }
