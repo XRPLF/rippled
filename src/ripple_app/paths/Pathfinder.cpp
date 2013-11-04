@@ -350,7 +350,8 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         std::sort (vMap.begin (), vMap.end (), bQualityCmp); // Lower is better and should be first.
 
 
-        for (int i = 0, iPathsLeft = iMaxPaths; (iPathsLeft > 0) && (i < vMap.size ()); ++i)
+        for (int i = 0, iPathsLeft = iMaxPaths;
+            ((iPathsLeft > 0) || (extraPath.size() == 0)) && (i < vMap.size ()); ++i)
         {
             path_LQ_t& lqt = vMap[i];
 
