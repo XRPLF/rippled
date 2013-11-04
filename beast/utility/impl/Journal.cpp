@@ -65,18 +65,21 @@ Journal::ScopedStream::ScopedStream (Stream const& stream)
     : m_sink (stream.sink())
     , m_severity (stream.severity())
 {
+    init ();
 }
 
 Journal::ScopedStream::ScopedStream (ScopedStream const& other)
     : m_sink (other.m_sink)
     , m_severity (other.m_severity)
 {
+    init ();
 }
 
 Journal::ScopedStream::ScopedStream (Stream const& stream, std::ostream& manip (std::ostream&))
     : m_sink (stream.sink())
     , m_severity (stream.severity())
 {
+    init ();
     m_ostream << manip;
 }
 
@@ -87,6 +90,17 @@ Journal::ScopedStream::~ScopedStream ()
         if (m_sink.active (m_severity))
             m_sink.write (m_severity, m_ostream.str());
     }
+}
+
+void Journal::ScopedStream::init ()
+{
+    // Modifiers applied from all ctors
+    m_ostream
+        << std::boolalpha
+        << std::showbase
+        //<< std::hex
+        ;
+
 }
 
 std::ostream& Journal::ScopedStream::operator<< (std::ostream& manip (std::ostream&)) const
