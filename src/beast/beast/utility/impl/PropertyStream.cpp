@@ -62,6 +62,25 @@ PropertyStream::Proxy::Proxy (
 {
 }
 
+PropertyStream::Proxy::Proxy (Proxy const& other)
+    : m_map (other.m_map)
+    , m_key (other.m_key)
+{
+}
+
+PropertyStream::Proxy::~Proxy ()
+{
+    std::string const s (m_ostream.str());
+    if (! s.empty())
+        m_map->add (m_key, s);
+}
+
+std::ostream& PropertyStream::Proxy::operator<< (
+    std::ostream& manip (std::ostream&)) const
+{
+    return m_ostream << manip;
+}
+
 //------------------------------------------------------------------------------
 //
 // Map

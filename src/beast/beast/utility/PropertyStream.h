@@ -90,6 +90,7 @@ private:
 //
 // Item
 //
+//------------------------------------------------------------------------------
 
 class PropertyStream::Item : public List <Item>::Node
 {
@@ -106,24 +107,37 @@ private:
 //
 // Proxy
 //
+//------------------------------------------------------------------------------
 
 class PropertyStream::Proxy
 {
 private:
-	Map const* m_map;
+    Map const* m_map;
     std::string m_key;
+    std::ostringstream mutable m_ostream;
 
 public:
     Proxy (Map const& map, std::string const& key);
+    Proxy (Proxy const& other);
+    ~Proxy ();
 
     template <typename Value>
     Proxy& operator= (Value value);
+
+    std::ostream& operator<< (std::ostream& manip (std::ostream&)) const;
+
+    template <typename T>
+    std::ostream& operator<< (T const& t) const
+    {
+        return m_ostream << t;
+    }
 };
 
 //------------------------------------------------------------------------------
 //
 // Map
 //
+//------------------------------------------------------------------------------
 
 class PropertyStream::Map : public Uncopyable
 {
@@ -181,6 +195,7 @@ PropertyStream::Proxy& PropertyStream::Proxy::operator= (Value value)
 //
 // Set
 //
+//------------------------------------------------------------------------------
 
 class PropertyStream::Set : public Uncopyable
 {
@@ -205,6 +220,7 @@ public:
 //
 // Source
 //
+//------------------------------------------------------------------------------
 
 /** Subclasses can be called to write to a stream and have children. */
 class PropertyStream::Source : public Uncopyable
