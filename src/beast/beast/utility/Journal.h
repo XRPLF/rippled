@@ -110,6 +110,8 @@ public:
         }
 
     private:
+        void init ();
+
         ScopedStream& operator= (ScopedStream const&); // disallowed
 
         Sink& m_sink;
