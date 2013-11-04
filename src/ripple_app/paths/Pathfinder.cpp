@@ -355,7 +355,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         {
             path_LQ_t& lqt = vMap[i];
 
-            if ((iPathsLeft != 1) || (lqt.get<2> () >= remaining))
+            if ((iPathsLeft > 1) || (lqt.get<2> () >= remaining))
             {
                 // last path must fill
                 --iPathsLeft;
