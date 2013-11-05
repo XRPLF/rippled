@@ -116,7 +116,7 @@ TER TrustSetTransactor::doApply ()
 
     const uint32        uOwnerCount     = mTxnAccount->getFieldU32 (sfOwnerCount);
     // The reserve required to create the line.
-    const uint64        uReserveCreate  = mEngine->getLedger ()->getReserve (uOwnerCount + 1);
+    const uint64        uReserveCreate  = (uOwnerCount < 2) ? 0 : mEngine->getLedger ()->getReserve (uOwnerCount + 1);
 
     STAmount            saLimitAllow    = saLimitAmount;
     saLimitAllow.setIssuer (mTxnAccountID);
