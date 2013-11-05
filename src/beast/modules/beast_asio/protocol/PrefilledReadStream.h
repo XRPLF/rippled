@@ -109,9 +109,8 @@ public:
     void close()
     {
         error_code ec;
-        if (close(ec))
+        if (close (ec))
             throw_error (ec, __FILE__, __LINE__);
-        return ec;
     }
 
     error_code close (error_code& ec)
