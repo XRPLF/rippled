@@ -120,7 +120,7 @@ public:
             Proxy& operator= (IntegralType v)
             {
                 (*m_value)=
-                    (*m_value)&(!((0xff)<<m_shift)) |
+                    (*m_value)&(~((0xff)<<m_shift)) |
                     ((v&0xff)<<m_shift);
 
                 return *this;

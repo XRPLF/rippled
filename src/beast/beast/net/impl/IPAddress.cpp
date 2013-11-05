@@ -493,7 +493,7 @@ std::istream& operator>> (std::istream &is, IPAddress& ep)
     {
         ep = IPAddress (v4);
     }
-    
+
     return is;
 }
 
@@ -668,6 +668,26 @@ public:
         shouldFail ("1.2.3:80");
     }
 
+    void testV4Proxy ()
+    {
+      beginTestCase("v4 proxy");
+
+      IPAddress::V4 v4 (10, 0, 0, 1);
+      expect (v4[0]==10);
+      expect (v4[1]==0);
+      expect (v4[2]==0);
+      expect (v4[3]==1);
+
+      expect((!((0xff)<<16)) == 0x00000000);
+      expect((~((0xff)<<16)) == 0xff00ffff);
+
+      v4[1] = 10;
+      expect (v4[0]==10);
+      expect (v4[1]==10);
+      expect (v4[2]==0);
+      expect (v4[3]==1);
+    }
+
     void testPrint ()
     {
         beginTestCase ("addresses");
@@ -704,6 +724,7 @@ public:
     {
         testPrint();
         testParse();
+        testV4Proxy();
     }
 
     IPAddressTests () : UnitTest ("IPAddress", "beast")
