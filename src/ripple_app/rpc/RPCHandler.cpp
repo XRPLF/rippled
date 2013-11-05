@@ -1116,10 +1116,13 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, LoadType* loadType, 
 
     if (lpLedger->hasAccount (raAccount))
     {
+        AccountItems rippleLines (raAccount.getAccountID (), lpLedger, AccountItem::pointer (new RippleState ()));
+        if (!bUnlocked)
+            masterLockHolder.unlock ();
+
         jvResult["account"] = raAccount.humanAccountID ();
         Json::Value& jsonLines = (jvResult["lines"] = Json::arrayValue);
 
-        AccountItems rippleLines (raAccount.getAccountID (), lpLedger, AccountItem::pointer (new RippleState ()));
 
         BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
         {
@@ -1153,8 +1156,6 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, LoadType* loadType, 
             }
         }
 
-        if (!bUnlocked)
-            masterLockHolder.unlock ();
     }
     else
     {
