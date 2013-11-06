@@ -20,6 +20,7 @@
 #include "BeastConfig.h"
 
 #include <cassert>
+#include <cstdlib>
 #include <iomanip>
 #include <sstream>
 #include <string>
