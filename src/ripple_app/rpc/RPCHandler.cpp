@@ -575,6 +575,65 @@ Json::Value RPCHandler::accountFromString (Ledger::ref lrLedger, RippleAddress& 
     return Json::Value (Json::objectValue);
 }
 
+Json::Value RPCHandler::doAccountCurrencies (Json::Value params, LoadType* loadType, Application::ScopedLockType& masterLockHolder)
+{
+    Ledger::pointer     lpLedger;
+    Json::Value         jvResult    = lookupLedger (params, lpLedger);
+
+    if (!lpLedger)
+        return jvResult;
+    if (lpLedger->isImmutable ())
+        masterLockHolder.unlock ();
+
+    if (!params.isMember ("account") && !params.isMember ("ident"))
+        return rpcError (rpcINVALID_PARAMS);
+
+    std::string     strIdent    = params.isMember ("account") ? params["account"].asString () : params["ident"].asString ();
+    bool            bIndex;
+    int             iIndex      = params.isMember ("account_index") ? params["account_index"].asUInt () : 0;
+    bool            bStrict     = params.isMember ("strict") && params["strict"].asBool ();
+    RippleAddress   naAccount;
+
+    // Get info on account.
+
+    Json::Value     jvAccepted      = accountFromString (lpLedger, naAccount, bIndex, strIdent, iIndex, bStrict);
+
+    if (!jvAccepted.empty ())
+        return jvAccepted;
+
+    std::set<uint160> send, receive;
+    AccountItems rippleLines (naAccount.getAccountID (), lpLedger, AccountItem::pointer (new RippleState ()));
+    BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems ())
+    {
+        RippleState* rspEntry = (RippleState*) item.get ();
+        const STAmount& saBalance = rspEntry->getBalance ();
+
+        if (saBalance < rspEntry->getLimit ())
+            receive.insert (saBalance.getCurrency ());
+        if ((-saBalance) < rspEntry->getLimitPeer ())
+            send.insert (saBalance.getCurrency ());
+    }
+
+
+    send.erase (CURRENCY_BAD);
+    receive.erase (CURRENCY_BAD);
+
+    Json::Value& sendCurrencies = (jvResult["send_currencies"] = Json::arrayValue);
+    BOOST_FOREACH(uint160 const& c, send)
+    {
+        sendCurrencies.append (STAmount::createHumanCurrency (c));
+    }
+
+    Json::Value& recvCurrencies = (jvResult["receive_currencies"] = Json::arrayValue);
+    BOOST_FOREACH(uint160 const& c, receive)
+    {
+        recvCurrencies.append (STAmount::createHumanCurrency (c));
+    }
+    
+
+    return jvResult;
+}
+
 // {
 //   account: <indent>,
 //   account_index : <index> // optional
@@ -3830,6 +3889,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, LoadTyp
     {
         // Request-response methods
         {   "account_info",         &RPCHandler::doAccountInfo,         false,  optCurrent  },
+        {   "account_currencies",   &RPCHandler::doAccountCurrencies,   false,  optCurrent  },
         {   "account_lines",        &RPCHandler::doAccountLines,        false,  optCurrent  },
         {   "account_offers",       &RPCHandler::doAccountOffers,       false,  optCurrent  },
         {   "account_tx",           &RPCHandler::doAccountTxSwitch,     false,  optNetwork  },

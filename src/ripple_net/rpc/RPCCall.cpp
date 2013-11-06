@@ -497,6 +497,11 @@ private:
         return parseAccountRaw (jvParams, false);
     }
 
+    Json::Value parseAccountCurrencies (const Json::Value& jvParams)
+    {
+        return parseAccountRaw (jvParams, false);
+    }
+
     // account_lines <account> <account>|"" [<ledger>]
     Json::Value parseAccountLines (const Json::Value& jvParams)
     {
@@ -834,6 +839,7 @@ public:
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
+            {   "account_currencies",   &RPCParser::parseAccountCurrencies,     1,  2   },
             {   "account_info",         &RPCParser::parseAccountItems,          1,  2   },
             {   "account_lines",        &RPCParser::parseAccountLines,          1,  3   },
             {   "account_offers",       &RPCParser::parseAccountItems,          1,  2   },

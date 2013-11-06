@@ -95,6 +95,7 @@ private:
         const int iIndex,
         const bool bStrict);
 
+    Json::Value doAccountCurrencies     (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doAccountInfo           (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doAccountLines          (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
     Json::Value doAccountOffers         (Json::Value params, LoadType* loadType, Application::ScopedLockType& mlh);
