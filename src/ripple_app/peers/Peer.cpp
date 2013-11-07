@@ -2512,7 +2512,7 @@ void PeerImp::addTxSet (uint256 const& hash)
 // (both sides get the same information, neither side controls it)
 void PeerImp::getSessionCookie (std::string& strDst)
 {
-    SSL* ssl = getHandshakeStream ().native_handle ();
+    SSL* ssl (getHandshakeStream ().ssl_handle ());
 
     if (!ssl) throw std::runtime_error ("No underlying connection");
 

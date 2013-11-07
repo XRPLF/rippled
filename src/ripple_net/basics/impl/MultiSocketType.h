@@ -125,9 +125,8 @@ protected:
         return m_proxyInfo;
     }
 
-    SSL* native_handle ()
+    SSL* ssl_handle ()
     {
-        bassert (m_native_ssl_handle != nullptr);
         return m_native_ssl_handle;
     }
 
