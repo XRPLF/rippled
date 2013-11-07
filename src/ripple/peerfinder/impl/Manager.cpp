@@ -296,11 +296,13 @@ public:
     void addFallbackStrings (std::string const& name,
         std::vector <std::string> const& strings)
     {
+#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
                 bind (
                     &Logic::addStaticSource, &m_logic,
                         SourceStrings::New (name, strings))));
+#endif
     }
 
     void addFallbackURL (std::string const& name, std::string const& url)
@@ -310,59 +312,73 @@ public:
 
     void onPeerConnectAttemptBegins (IPAddress const& address)
     {
+#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerConnectAttemptBegins, &m_logic,
                       address)));
+#endif
     }
 
     void onPeerConnectAttemptCompletes (IPAddress const& address, bool success)
     {
+#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerConnectAttemptCompletes, &m_logic,
                       address, success)));
+#endif
     }
 
     void onPeerConnected (const IPAddress &address, bool incoming)
     {
+#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerConnected, &m_logic,
                       address, incoming)));
+#endif
     }
 
     void onPeerHandshake (PeerID const& id,
         IPAddress const& address, bool incoming)
     {
+#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerHandshake, &m_logic,
                     id, address, incoming)));
+#endif
     }
 
     void onPeerDisconnected (const PeerID& id)
     {
+#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerDisconnected, &m_logic,
                     id)));
+#endif
     }
 
     void onPeerLegacyEndpoint (IPAddress const& ep)
     {
+#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerLegacyEndpoint, &m_logic,
                     ep)));
+#endif
     }
 
     void onPeerEndpoints (PeerID const& id,
         std::vector <Endpoint> const& endpoints)
     {
+#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             beast::bind (&Logic::onPeerEndpoints, &m_logic,
                 id, endpoints));
+#endif
     }
 
     //--------------------------------------------------------------------------

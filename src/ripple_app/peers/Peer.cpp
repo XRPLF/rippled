@@ -651,8 +651,10 @@ void PeerImp::connect (const std::string& strIp, int iPort)
 void PeerImp::handleConnect (const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator it)
 {
     // Notify peer finder about the status of this in-progress connection attempt
+#if RIPPLE_USE_PEERFINDER
     getApp ().getPeers ().getPeerFinder ().onPeerConnectAttemptCompletes(
         IPAddress::from_string(getIP()).withPort(getPort()), !error );
+#endif
 
     if (error)
     {
