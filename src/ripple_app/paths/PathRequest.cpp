@@ -124,6 +124,8 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, const Json::Value& valu
         }
         else
             mValid = false;
+
+        status = jvStatus;
     }
 
     if (mValid)
@@ -136,7 +138,7 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, const Json::Value& valu
         sRequests.insert (shared_from_this ());
     }
 
-    return jvStatus;
+    return status;
 }
 
 int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
