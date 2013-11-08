@@ -204,6 +204,7 @@ TER RippleCalc::calcNodeAdvance (
                 // Offer is expired.
                 WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: expired offer";
                 musUnfundedFound.insert(uOfferIndex);
+                continue;
             }
             else if (!saTakerPays.isPositive () || !saTakerGets.isPositive ())
             {
