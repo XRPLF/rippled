@@ -702,7 +702,7 @@ suite('Gateway', function() {
         .once('submitted', function (m) {
           // console.log("submitted: %s", JSON.stringify(m));
 
-          callback(m.engine_result !== 'terNO_LINE');
+          callback(m.engine_result !== 'tecPATH_DRY');
         })
         .submit();
       },
