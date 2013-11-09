@@ -36,7 +36,7 @@ struct Entry : public List <Entry>::Node
     {
     }
 
-    std::string label() const
+    std::string to_string() const
     {
         switch (key->kind)
         {
@@ -90,6 +90,12 @@ struct Entry : public List <Entry>::Node
     // For inactive entries, time after which this entry will be erased
     DiscreteTime whenExpires;
 };
+
+std::ostream& operator<< (std::ostream& os, Entry const& v)
+{
+    os << v.to_string();
+    return os;
+}
 
 }
 }

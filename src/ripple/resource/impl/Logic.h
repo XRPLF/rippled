@@ -112,7 +112,7 @@ public:
             }
         }
 
-        m_journal.debug << "New inbound endpoint " << entry->label();
+        m_journal.debug << "New inbound endpoint " << entry;
 
         return Consumer (*this, *entry);
     }
@@ -144,7 +144,7 @@ public:
             }
         }
 
-        m_journal.debug << "New outbound endpoint " << entry->label();
+        m_journal.debug << "New outbound endpoint " << entry;
 
         return Consumer (*this, *entry);
     }
@@ -173,7 +173,7 @@ public:
             }
         }
 
-        m_journal.debug << "New admin endpoint " << entry->label();
+        m_journal.debug << "New admin endpoint " << entry;
 
         return Consumer (*this, *entry);
     }
@@ -184,7 +184,7 @@ public:
         key.kind = kindAdmin;
         key.name = name;
 
-        m_journal.info << "Elevate " << prior.label() << " to " << name;
+        m_journal.info << "Elevate " << prior << " to " << name;
 
         Entry* entry (nullptr);
 
@@ -315,7 +315,7 @@ public:
         {
             if (iter->whenExpires <= now)
             {
-                m_journal.debug << "Expired " << iter->label();
+                m_journal.debug << "Expired " << *iter;
                 Table::iterator table_iter (
                     state->table.find (*iter->key));
                 ++iter;
@@ -367,7 +367,7 @@ public:
     {
         if (--entry.refcount == 0)
         {
-            m_journal.debug << "Inactive " << entry.label();
+            m_journal.debug << "Inactive " << entry;
             switch (entry.key->kind)
             {
             case kindInbound:
@@ -404,7 +404,7 @@ public:
     {
         DiscreteTime const now (m_clock());
         int const balance (entry.add (fee.cost(), now));
-        m_journal.info << "Charging " << entry.label() << " for " << fee;
+        m_journal.info << "Charging " << entry << " for " << fee;
         return disposition (balance);
     }
 
@@ -420,7 +420,7 @@ public:
         }
 
         if (notify)
-            m_journal.info << "Load warning: " << entry.label();
+            m_journal.info << "Load warning: " << entry;
 
         return notify;
     }
@@ -499,7 +499,7 @@ public:
             PropertyStream::Map item (items);
             if (iter->refcount != 0)
                 item ["count"] = iter->refcount;
-            item ["name"] = iter->label();
+            item ["name"] = iter->to_string();
             item ["balance"] = iter->balance(now);
             if (iter->remote_balance != 0)
                 item ["remote_balance"] = iter->remote_balance;

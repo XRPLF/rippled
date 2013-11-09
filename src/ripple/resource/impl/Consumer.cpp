@@ -77,12 +77,12 @@ Consumer& Consumer::operator= (Consumer const& other)
     return *this;
 }
 
-std::string Consumer::label ()
+std::string Consumer::to_string () const
 {
     if (m_logic == nullptr)
         return "(none)";
 
-    return m_entry->label();
+    return m_entry->to_string();
 }
 
 bool Consumer::admin () const
@@ -123,6 +123,12 @@ int Consumer::balance()
 Entry& Consumer::entry()
 {
     return *m_entry;
+}
+
+std::ostream& operator<< (std::ostream& os, Consumer const& v)
+{
+    os << v.to_string();
+    return os;
 }
 
 }

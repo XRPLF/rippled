@@ -81,7 +81,7 @@ public:
         {
             IPAddress address (IPAddress::from_string ("207.127.82.1"));
             Consumer c (logic.newInboundEndpoint (address));
-            logMessage ("Charging " + c.label() + " 10,000 units");
+            logMessage ("Charging " + c.to_string() + " 10,000 units");
             c.charge (10000);
             for (int i = 0; i < 128; ++i)
             {
@@ -95,7 +95,7 @@ public:
         {
             IPAddress address (IPAddress::from_string ("207.127.82.2"));
             Consumer c (logic.newInboundEndpoint (address));
-            logMessage ("Charging " + c.label() + " 1000 units per second");
+            logMessage ("Charging " + c.to_string() + " 1000 units per second");
             for (int i = 0; i < 128; ++i)
             {
                 c.charge (1000);

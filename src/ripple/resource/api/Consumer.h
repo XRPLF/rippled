@@ -39,7 +39,7 @@ public:
     Consumer& operator= (Consumer const& other);
 
     /** Return a human readable string uniquely identifying this consumer. */
-    std::string label ();
+    std::string to_string () const;
 
     /** Returns `true` if this is a privileged endpoint. */
     bool admin () const;
@@ -76,6 +76,8 @@ private:
     Logic* m_logic;
     Entry* m_entry;
 };
+
+std::ostream& operator<< (std::ostream& os, Consumer const& v);
 
 }
 }
