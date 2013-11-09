@@ -278,14 +278,11 @@ public:
             if (type == jtGENERIC)
                 continue;
 
-            uint64 count;
-            uint64 latencyAvg;
-            uint64 latencyPeak;
+            LoadMonitor::Stats stats;
             int jobCount;
             int threadCount;
-            bool isOver;
 
-            m_loads [i].getCountAndLatency (count, latencyAvg, latencyPeak, isOver);
+            m_loads [i].getStats ();
 
             MapType::const_iterator it = m_jobCounts.find (type);
 
@@ -300,11 +297,12 @@ public:
                 threadCount = it->second.running;
             }
 
-            if ((count != 0) || (jobCount != 0) || (latencyPeak != 0) || (threadCount != 0))
+            if ((stats.count != 0) || (jobCount != 0) ||
+                (stats.latencyPeak != 0) || (threadCount != 0))
             {
                 Json::Value pri (Json::objectValue);
 
-                if (isOver)
+                if (stats.isOverloaded)
                     pri["over_target"] = true;
 
                 pri["job_type"] = Job::toString (type);
@@ -312,14 +310,14 @@ public:
                 if (jobCount != 0)
                     pri["waiting"] = jobCount;
 
-                if (count != 0)
-                    pri["per_second"] = static_cast<int> (count);
+                if (stats.count != 0)
+                    pri["per_second"] = static_cast<int> (stats.count);
 
-                if (latencyPeak != 0)
-                    pri["peak_time"] = static_cast<int> (latencyPeak);
+                if (stats.latencyPeak != 0)
+                    pri["peak_time"] = static_cast<int> (stats.latencyPeak);
 
-                if (latencyAvg != 0)
-                    pri["avg_time"] = static_cast<int> (latencyAvg);
+                if (stats.latencyAvg != 0)
+                    pri["avg_time"] = static_cast<int> (stats.latencyAvg);
 
                 if (threadCount != 0)
                     pri["in_progress"] = threadCount;

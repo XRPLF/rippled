@@ -17,6 +17,26 @@
 */
 //==============================================================================
 
+/*
+
+TODO
+----
+
+- Use Journal for logging
+
+*/
+
+//------------------------------------------------------------------------------
+
+LoadMonitor::Stats::Stats()
+    : count (0)
+    , latencyAvg (0)
+    , latencyPeak (0)
+    , isOverloaded (false)
+{
+}
+
+//------------------------------------------------------------------------------
 
 SETUP_LOG (LoadMonitor)
 
@@ -171,26 +191,28 @@ bool LoadMonitor::isOver ()
     return isOverTarget (mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
 }
 
-void LoadMonitor::getCountAndLatency (uint64& count, uint64& latencyAvg, uint64& latencyPeak, bool& isOver)
+LoadMonitor::Stats LoadMonitor::getStats ()
 {
+    Stats stats;
+
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     update ();
 
-    count = mCounts / 4;
+    stats.count = mCounts / 4;
 
     if (mLatencyEvents == 0)
     {
-        latencyAvg = 0;
-        latencyPeak = 0;
+        stats.latencyAvg = 0;
+        stats.latencyPeak = 0;
     }
     else
     {
-        latencyAvg = mLatencyMSAvg / (mLatencyEvents * 4);
-        latencyPeak = mLatencyMSPeak / (mLatencyEvents * 4);
+        stats.latencyAvg = mLatencyMSAvg / (mLatencyEvents * 4);
+        stats.latencyPeak = mLatencyMSPeak / (mLatencyEvents * 4);
     }
 
-    isOver = isOverTarget (latencyAvg, latencyPeak);
-}
+    stats.isOverloaded = isOverTarget (stats.latencyAvg, stats.latencyPeak);
 
-// vim:ts=4
+    return stats;
+}
