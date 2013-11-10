@@ -2101,6 +2101,7 @@
     <None Include="..\..\src\ripple\json\impl\version" />
     <None Include="..\..\README.md" />
     <None Include="..\..\SConstruct" />
+    <None Include="..\..\src\ripple\peerfinder\README.md" />
     <None Include="..\QtCreator\rippled.pro" />
   </ItemGroup>
   <ItemGroup>

@@ -2404,6 +2404,9 @@
     <None Include="..\..\LICENSE">
       <Filter>%28Notes%29</Filter>
     </None>
+    <None Include="..\..\src\ripple\peerfinder\README.md">
+      <Filter>[1] Ripple\peerfinder</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\doc\todo\NIKB_TODO.txt">
