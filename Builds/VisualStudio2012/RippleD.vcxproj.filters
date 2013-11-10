@@ -2464,6 +2464,9 @@
     <None Include="..\..\src\ripple\sslutil\TODO.md">
       <Filter>[1] Ripple\sslutil</Filter>
     </None>
+    <None Include="..\..\src\ripple\validators\README.md">
+      <Filter>[1] Ripple\validators</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\doc\todo\NIKB_TODO.txt">
