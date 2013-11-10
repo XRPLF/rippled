@@ -21,6 +21,16 @@ About git-subtree:
 https://github.com/apenwarr/git-subtree <br>
 http://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/ <br>
 
+<table align=left><tr>
+<th>dir</th>
+<th>What</th>
+</tr><tr>
+<td>beast</td>
+<td>Beast, the amazing cross-platform library.<br>
+    git@github.com:vinniefalco/Beast.git
+</td>
+</tr></table>
+
 ## ./beast
 
 Beast, the amazing cross-platform library.
