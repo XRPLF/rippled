@@ -17,6 +17,75 @@
 */
 //==============================================================================
 
+LogJournal::PartitionSinkBase::PartitionSinkBase (LogPartition& partition)
+    : m_partition (partition)
+    , m_severity (Journal::kLowestSeverity)
+    , m_to_console (false)
+{
+#ifdef RIPPLE_JOURNAL_MSVC_OUTPUT
+    std::string const& list (RIPPLE_JOURNAL_MSVC_OUTPUT);
+
+    std::string::const_iterator first (list.begin());
+    for(;;)
+    {
+        std::string::const_iterator last (std::find (
+            first, list.end(), ','));
+
+        if (std::equal (first, last, m_partition.getName().begin()))
+        {
+            set_console (true);
+        #ifdef RIPPLE_JOURNAL_MSVC_OUTPUT_SEVERITY
+            set_severity (RIPPLE_JOURNAL_MSVC_OUTPUT_SEVERITY);
+        #endif
+            break;
+        }
+
+        if (last != list.end())
+            first = last + 1;
+        else
+            break;
+    }
+#endif
+}
+
+void LogJournal::PartitionSinkBase::write (
+    Journal::Severity severity, std::string const& text)
+{
+    std::string output;
+    LogSeverity const logSeverity (convertSeverity (severity));
+    LogSink::get()->format (output, text, logSeverity,
+        m_partition.getName());
+    LogSink::get()->write (output, logSeverity);
+#if BEAST_MSVC
+    if (m_to_console && beast_isRunningUnderDebugger ())
+        Logger::outputDebugString (output.c_str());
+#endif
+}
+
+bool LogJournal::PartitionSinkBase::active (
+    Journal::Severity severity)
+{
+    return m_partition.doLog (convertSeverity (severity));
+}
+
+bool LogJournal::PartitionSinkBase::console()
+{
+    return m_to_console;
+}
+
+void LogJournal::PartitionSinkBase::set_severity (
+    Journal::Severity severity)
+{
+    LogSeverity const logSeverity (convertSeverity (severity));
+    m_partition.setMinimumSeverity (logSeverity);
+}
+
+void LogJournal::PartitionSinkBase::set_console (bool to_console)
+{
+    m_to_console = to_console;
+}
+
+//------------------------------------------------------------------------------
 
 LogSeverity LogJournal::convertSeverity (Journal::Severity severity)
 {

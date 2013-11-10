@@ -30,56 +30,33 @@ public:
     //--------------------------------------------------------------------------
 
     /** A Journal::Sink that writes to the LogPartition with a given Key. */
-    template <class Key>
-    class PartitionSink : public Journal::Sink
+    /** @{ */
+    class PartitionSinkBase : public Journal::Sink
     {
     public:
-        PartitionSink ()
-            : m_partition (LogPartition::get <Key> ())
-            , m_severity (Journal::kLowestSeverity)
-            , m_to_console (false)
-        {
-        }
-
-        void write (Journal::Severity severity, std::string const& text)
-        {
-            std::string output;
-            LogSeverity const logSeverity (convertSeverity (severity));
-            LogSink::get()->format (output, text, logSeverity,
-                m_partition.getName());
-            LogSink::get()->write (output, logSeverity);
-        #if BEAST_MSVC
-            if (m_to_console && beast_isRunningUnderDebugger ())
-                Logger::outputDebugString (output.c_str());
-        #endif
-        }
-
-        bool active (Journal::Severity severity)
-        {
-            return m_partition.doLog (convertSeverity (severity));
-        }
-
-        bool console()
-        {
-            return m_to_console;
-        }
-
-        void set_severity (Journal::Severity severity)
-        {
-            LogSeverity const logSeverity (convertSeverity (severity));
-            m_partition.setMinimumSeverity (logSeverity);
-        }
-
-        void set_console (bool to_console)
-        {
-            m_to_console = to_console;
-        }
+        explicit PartitionSinkBase (LogPartition& partition);
+        void write (Journal::Severity severity, std::string const& text);
+        bool active (Journal::Severity severity);
+        bool console();
+        void set_severity (Journal::Severity severity);
+        void set_console (bool to_console);
 
     private:
         LogPartition& m_partition;
         Journal::Severity m_severity;
         bool m_to_console;
     };
+
+    template <class Key>
+    class PartitionSink : public PartitionSinkBase
+    {
+    public:
+        PartitionSink ()
+            : PartitionSinkBase (LogPartition::get <Key> ())
+        {
+        }
+    };
+    /** @} */
 
     //--------------------------------------------------------------------------
 

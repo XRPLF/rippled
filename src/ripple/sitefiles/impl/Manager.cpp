@@ -42,16 +42,6 @@ public:
         , m_logic (journal)
         , m_journal (journal)
     {
-#if 1
-#if BEAST_MSVC
-        if (beast_isRunningUnderDebugger())
-        {
-            m_journal.sink().set_console (true);
-            m_journal.sink().set_severity (Journal::kLowestSeverity);
-        }
-#endif
-#endif
-
         // Turned off for now, this is for testing
         //addURL ("https://ripple.com/ripple.txt");
     }

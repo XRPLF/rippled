@@ -158,15 +158,6 @@ public:
         , m_checkTimer (this)
         , m_checkSources (false)
     {
-#if 0
-#if BEAST_MSVC
-        if (beast_isRunningUnderDebugger())
-        {
-            m_journal.sink().set_console (true);
-            m_journal.sink().set_severity (Journal::kLowestSeverity);
-        }
-#endif
-#endif
     }
 
     ~ManagerImp ()

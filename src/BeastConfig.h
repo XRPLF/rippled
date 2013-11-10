@@ -154,6 +154,25 @@
 #define RIPPLE_TRACK_MUTEXES 0
 #endif
 
+/** Config: RIPPLE_JOURNAL_MSVC_OUTPUT
+    A comma separated string of Journal partition names. The partitions which
+    appear in this list will be logged to the MSVC Output Window if the
+    process is launched from the IDE.
+*/
+#ifndef RIPPLE_JOURNAL_MSVC_OUTPUT
+#define RIPPLE_JOURNAL_MSVC_OUTPUT ""
+#endif
+
+/** Config: RIPPLE_JOURNAL_MSVC_OUTPUT_SEVERITY
+    A Journal severity constant. Log entries below this severity that would be
+    destined for the MSVC Output Window will not be reported. This has no
+    effect on partitions not listed in RIPPLE_MSVC_OUTPUT_JOURNALS, or if not
+    running under the MSVC IDE.
+*/
+#ifndef RIPPLE_JOURNAL_MSVC_OUTPUT_SEVERITY
+#define RIPPLE_JOURNAL_MSVC_OUTPUT_SEVERITY Journal::kLowestSeverity
+#endif
+
 //------------------------------------------------------------------------------
 
 // Here temporarily to turn off new Validations code while it

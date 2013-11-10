@@ -251,15 +251,6 @@ public:
         , m_messageTimer (this)
         , m_cacheTimer (this)
     {
-#if 1
-#if BEAST_MSVC
-        if (beast_isRunningUnderDebugger())
-        {
-            m_journal.sink().set_console (true);
-            m_journal.sink().set_severity (Journal::kLowestSeverity);
-        }
-#endif
-#endif
     }
 
     ~ManagerImp ()
