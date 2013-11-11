@@ -86,10 +86,7 @@ Journal::ScopedStream::ScopedStream (Stream const& stream, std::ostream& manip (
 Journal::ScopedStream::~ScopedStream ()
 {
     if (! m_ostream.str().empty())
-    {
-        if (m_sink.active (m_severity))
-            m_sink.write (m_severity, m_ostream.str());
-    }
+        m_sink.write (m_severity, m_ostream.str());
 }
 
 void Journal::ScopedStream::init ()
