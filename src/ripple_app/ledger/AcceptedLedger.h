@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_ACCEPTEDLEDGER_H
 #define RIPPLE_ACCEPTEDLEDGER_H
 

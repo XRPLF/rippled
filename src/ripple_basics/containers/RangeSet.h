@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_RANGESET_H_INCLUDED
 #define RIPPLE_RANGESET_H_INCLUDED
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_PATHFINDER_H
 #define RIPPLE_PATHFINDER_H
 

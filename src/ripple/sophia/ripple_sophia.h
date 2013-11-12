@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_SOPHIA_H_INCLUDED
 #define RIPPLE_SOPHIA_H_INCLUDED
 

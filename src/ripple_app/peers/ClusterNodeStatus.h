@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_CLUSTERNODESTATUS_H_INCLUDED
 #define RIPPLE_CLUSTERNODESTATUS_H_INCLUDED
 

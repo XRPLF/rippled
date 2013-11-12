@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_TESTOVERLAY_CONNECTIONTYPE_H_INCLUDED
 #define RIPPLE_TESTOVERLAY_CONNECTIONTYPE_H_INCLUDED
 

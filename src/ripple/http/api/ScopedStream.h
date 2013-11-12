@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_HTTP_SCOPEDSTREAM_H_INCLUDED
 #define RIPPLE_HTTP_SCOPEDSTREAM_H_INCLUDED
 

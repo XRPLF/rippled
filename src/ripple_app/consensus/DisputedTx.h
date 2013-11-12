@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_DISPUTEDTX_H
 #define RIPPLE_DISPUTEDTX_H
 

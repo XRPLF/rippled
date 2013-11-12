@@ -17,16 +17,50 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_ORDERBOOKDB_H_INCLUDED
+#define RIPPLE_ORDERBOOKDB_H_INCLUDED
 
-#ifndef ORDERBOOK_DB_H
-#define ORDERBOOK_DB_H
+/*
 
-//------------------------------------------------------------------------------
+TODO
+----
 
+- Add typedefs (in src/ripple/types) for usage of the following primitives:
+    * uint64
+    * uint160
+    * uint256
+    Each typedef should make it clear what the semantics of the value are,
+    and have a javadoc comment. Examples:
+        RippleCurrencyHash
+        RippleIssuerHash
+        
+- Add a new struct OrderBookKey with these fields:
+        * issuerPays
+        * issuerGets
+        * currencyPays
+        * currencyGets
+    Use this struct as the key to map order books to the book listeners,
+    instead of passing the four parameters around everywhere. Change
+    all function signatures and container types to use this key instead
+    of the four parameters.
+
+- Add typedefs for all containers, choose a descriptive name that follows
+  the coding style, add a Javadoc comment explaining what it holds.
+
+- Rename currencyIssuer_ct to follow the coding style. e.g. CurrencyPair
+
+- Replace C11X with a suitable Beast macro
+
+- Move BookListeners to its own header file
+
+- Add documentation explaining what each class does
+
+*/
+
+// VFALCO TODO Rename this type and give the key and value typedefs.
 typedef std::pair<uint160, uint160> currencyIssuer_t;
 
-//------------------------------------------------------------------------------
-
+// VFALCO TODO Replace C11X with a suitable Beast macro
 #ifdef C11X
 typedef std::pair<const uint160&, const uint160&> currencyIssuer_ct;
 #else
@@ -35,6 +69,7 @@ typedef std::pair<uint160, uint160> currencyIssuer_ct; // C++ defect 106
 
 //------------------------------------------------------------------------------
 
+// VFALCO TODO Add Javadoc comment explaining what this class does
 class BookListeners
 {
 public:
@@ -49,11 +84,15 @@ private:
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
     LockType mLock;
+
+    // VFALCO TODO Use a typedef for the uint64
+    //             Use a typedef for the container
     boost::unordered_map<uint64, InfoSub::wptr> mListeners;
 };
 
 //------------------------------------------------------------------------------
 
+// VFALCO TODO Add Javadoc comment explaining what this class does
 class OrderBookDB
     : public Stoppable
     , public LeakChecked <OrderBookDB>
@@ -94,6 +133,7 @@ private:
     LockType mLock;
 
 
+    // VFALCO TODO Replace with just one map / unordered_map with a struct for the key
     // issuerPays, issuerGets, currencyPays, currencyGets
     std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > > mListeners;
 

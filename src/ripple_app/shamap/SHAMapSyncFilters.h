@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_SHAMAPSYNCFILTERS_H
 #define RIPPLE_SHAMAPSYNCFILTERS_H
 

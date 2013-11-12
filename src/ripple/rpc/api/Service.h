@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_RPC_SERVCE_H_INCLUDED
 #define RIPPLE_RPC_SERVCE_H_INCLUDED
 

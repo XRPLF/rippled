@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_SERIALIZEDVALIDATION_H
 #define RIPPLE_SERIALIZEDVALIDATION_H
 

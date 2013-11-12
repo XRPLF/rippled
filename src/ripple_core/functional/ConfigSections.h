@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_CONFIGSECTIONS_H_INCLUDED
 #define RIPPLE_CONFIGSECTIONS_H_INCLUDED
 

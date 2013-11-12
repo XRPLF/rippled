@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // TODO:
 // - Do automatic bridging via XRP.
 //
@@ -26,6 +25,11 @@
 //
 
 SETUP_LOG (RippleCalc)
+
+// VFALCO TODO Update the comment for this function, the argument list no
+//             resembles the comment 
+//
+//             Provide a better explanation for what this function does.
 
 // If needed, advance to next funded offer.
 // - Automatically advances to first offer.
@@ -70,6 +74,12 @@ TER RippleCalc::calcNodeAdvance (
 
     do
     {
+        // VFALCO NOTE Why not use a for() loop?
+        // VFALCO TODO The limit on loop iterations puts an
+        //             upper limit on the number of different quality
+        // levels (ratio of pay:get) that will be considered for one path.
+        // Changing this value has repercusssions on validation and consensus.
+        //
         if (++loopCount > 20)
         {
             WriteLog (lsWARNING, RippleCalc) << "Loop count exceeded";
@@ -239,6 +249,7 @@ TER RippleCalc::calcNodeAdvance (
                     terResult       = tefEXCEPTION;
                 }
 
+                // VFALCO NOTE What's the point of the earlier continue statements?
                 continue;
             }
 

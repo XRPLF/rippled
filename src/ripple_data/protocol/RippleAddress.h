@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_RIPPLEADDRESS_H
 #define RIPPLE_RIPPLEADDRESS_H
 

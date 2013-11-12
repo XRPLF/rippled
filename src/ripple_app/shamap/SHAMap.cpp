@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef STATE_MAP_BUCKETS
 #define STATE_MAP_BUCKETS 1024
 #endif

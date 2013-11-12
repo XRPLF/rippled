@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_KNOWNFORMATS_H_INCLUDED
 #define RIPPLE_KNOWNFORMATS_H_INCLUDED
 

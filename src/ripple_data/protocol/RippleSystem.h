@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_RIPPLESYSTEM_H
 #define RIPPLE_RIPPLESYSTEM_H
 

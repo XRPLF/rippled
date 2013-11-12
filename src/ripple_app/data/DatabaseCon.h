@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_DATABASECON_H
 #define RIPPLE_DATABASECON_H
 

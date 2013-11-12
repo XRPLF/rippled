@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef JSONCPP_BATCHALLOCATOR_H_INCLUDED
 #define JSONCPP_BATCHALLOCATOR_H_INCLUDED
 

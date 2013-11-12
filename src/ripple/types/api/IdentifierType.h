@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_TYPES_IDENTIFIERTYPE_H_INCLUDED
 #define RIPPLE_TYPES_IDENTIFIERTYPE_H_INCLUDED
 

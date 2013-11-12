@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_ACCEPTEDLEDGERTX_H
 #define RIPPLE_ACCEPTEDLEDGERTX_H
 

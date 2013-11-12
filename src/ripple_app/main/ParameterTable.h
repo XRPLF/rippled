@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_PARAMETERTABLE_H
 #define RIPPLE_PARAMETERTABLE_H
 

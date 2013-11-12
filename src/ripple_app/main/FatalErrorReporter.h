@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_FATALERRORREPORTER_H_INCLUDED
 #define RIPPLE_FATALERRORREPORTER_H_INCLUDED
 

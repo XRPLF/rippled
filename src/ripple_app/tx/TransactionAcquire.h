@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_TRANSACTIONACQUIRE_H
 #define RIPPLE_TRANSACTIONACQUIRE_H
 

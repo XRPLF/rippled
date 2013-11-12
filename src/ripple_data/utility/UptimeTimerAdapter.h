@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_UPTIMETIMERADAPTER_H
 #define RIPPLE_UPTIMETIMERADAPTER_H
 

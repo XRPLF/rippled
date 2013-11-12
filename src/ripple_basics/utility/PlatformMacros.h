@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_PLATFORMMACROS_H
 #define RIPPLE_PLATFORMMACROS_H
 

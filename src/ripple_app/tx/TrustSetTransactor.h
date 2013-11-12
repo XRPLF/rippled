@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef TRUSTSETTRANSACTOR_H
 #define TRUSTSETTRANSACTOR_H
 

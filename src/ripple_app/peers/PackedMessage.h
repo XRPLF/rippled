@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_PACKEDMESSAGE_H_INCLUDED
 #define RIPPLE_PACKEDMESSAGE_H_INCLUDED
 

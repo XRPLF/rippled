@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_ACCOUNTITEMS_H
 #define RIPPLE_ACCOUNTITEMS_H
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_ACCOUNTSTATE_H
 #define RIPPLE_ACCOUNTSTATE_H
 

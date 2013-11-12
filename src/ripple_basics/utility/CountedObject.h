@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_COUNTEDOBJECT_H_INCLUDED
 #define RIPPLE_COUNTEDOBJECT_H_INCLUDED
 

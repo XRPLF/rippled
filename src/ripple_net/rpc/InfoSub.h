@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
 #define RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
 

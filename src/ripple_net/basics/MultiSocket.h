@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_NET_BASICS_MULTISOCKET_H_INCLUDED
 #define RIPPLE_NET_BASICS_MULTISOCKET_H_INCLUDED
 

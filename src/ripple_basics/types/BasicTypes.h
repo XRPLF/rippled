@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_BASICTYPES_H
 #define RIPPLE_BASICTYPES_H
 

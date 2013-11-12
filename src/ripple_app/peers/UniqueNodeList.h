@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_UNIQUENODELIST_H_INCLUDED
 #define RIPPLE_UNIQUENODELIST_H_INCLUDED
 

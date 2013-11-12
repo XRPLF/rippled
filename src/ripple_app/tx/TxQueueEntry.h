@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_TXQUEUEENTRY_H_INCLUDED
 #define RIPPLE_TXQUEUEENTRY_H_INCLUDED
 

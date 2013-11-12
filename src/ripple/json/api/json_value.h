@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef CPPTL_JSON_H_INCLUDED
 #define CPPTL_JSON_H_INCLUDED
 

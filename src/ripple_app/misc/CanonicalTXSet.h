@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_CANONICALTXSET_H
 #define RIPPLE_CANONICALTXSET_H
 

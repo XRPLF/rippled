@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_HASHROUTER_H_INCLUDED
 #define RIPPLE_HASHROUTER_H_INCLUDED
 

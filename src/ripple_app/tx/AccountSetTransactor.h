@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef ACCOUNTSETTRANSACTOR_H
 #define ACCOUNTSETTRANSACTOR_H
 

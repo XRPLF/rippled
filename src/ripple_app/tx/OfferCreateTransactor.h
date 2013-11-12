@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef __OFFERCREATETRANSACTOR__
 #define __OFFERCREATETRANSACTOR__
 

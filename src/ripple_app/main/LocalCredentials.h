@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_LOCALCREDENTIALS_H
 #define RIPPLE_LOCALCREDENTIALS_H
 

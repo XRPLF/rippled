@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef OFFERCANCELTRANSACTOR_H
 #define OFFERCANCELTRANSACTOR_H
 

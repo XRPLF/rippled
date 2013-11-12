@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_LEDGERMASTER_H
 #define RIPPLE_LEDGERMASTER_H
 

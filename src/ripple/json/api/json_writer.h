@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef JSON_WRITER_H_INCLUDED
 #define JSON_WRITER_H_INCLUDED
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_DBINIT_H_INCLUDED
 #define RIPPLE_DBINIT_H_INCLUDED
 

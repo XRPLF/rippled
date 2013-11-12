@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_PEERFINDER_GIVEAWAYS_H_INCLUDED
 #define RIPPLE_PEERFINDER_GIVEAWAYS_H_INCLUDED
 

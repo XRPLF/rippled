@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_SHAMAPITEM_H
 #define RIPPLE_SHAMAPITEM_H
 

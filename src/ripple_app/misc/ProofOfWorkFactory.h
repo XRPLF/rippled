@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_PROOFOFWORKFACTORY_H_INCLUDED
 #define RIPPLE_PROOFOFWORKFACTORY_H_INCLUDED
 

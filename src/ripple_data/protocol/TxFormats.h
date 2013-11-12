@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_TXFORMATS_H_INCLUDED
 #define RIPPLE_TXFORMATS_H_INCLUDED
 

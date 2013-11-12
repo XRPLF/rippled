@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_SERIALIZEDOBJECTTEMPLATE_H
 #define RIPPLE_SERIALIZEDOBJECTTEMPLATE_H
 

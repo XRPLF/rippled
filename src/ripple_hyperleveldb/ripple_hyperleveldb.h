@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_HYPERLEVELDB_H_INCLUDED
 #define RIPPLE_HYPERLEVELDB_H_INCLUDED
 

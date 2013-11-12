@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_THREADNAME_H
 #define RIPPLE_THREADNAME_H
 

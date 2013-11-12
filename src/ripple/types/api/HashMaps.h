@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_TYPES_HASHMAPS_H_INCLUDED
 #define RIPPLE_TYPES_HASHMAPS_H_INCLUDED
 

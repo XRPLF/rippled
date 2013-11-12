@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef JSON_CONFIG_H_INCLUDED
 #define JSON_CONFIG_H_INCLUDED
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_APP_SQLITEFACTORY_H_INCLUDED
 #define RIPPLE_APP_SQLITEFACTORY_H_INCLUDED
 

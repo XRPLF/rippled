@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef WALLETADDTRANSACTOR_H
 #define WALLETADDTRANSACTOR_H
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_TAGGEDCACHE_H
 #define RIPPLE_TAGGEDCACHE_H
 

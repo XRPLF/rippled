@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_POWRESULT_H_INCLUDED
 #define RIPPLE_POWRESULT_H_INCLUDED
 

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_SHAMAPNODE_H
 #define RIPPLE_SHAMAPNODE_H
 

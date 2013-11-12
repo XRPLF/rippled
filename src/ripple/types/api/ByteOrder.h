@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_TYPES_BYTEORDER_H
 #define RIPPLE_TYPES_BYTEORDER_H
 

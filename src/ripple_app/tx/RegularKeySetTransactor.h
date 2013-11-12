@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef REGULARKEYSETTRANSACTOR_H
 #define REGULARKEYSETTRANSACTOR_H
 

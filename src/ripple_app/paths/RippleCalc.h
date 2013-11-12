@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_RIPPLECALC_H
 #define RIPPLE_RIPPLECALC_H
 
