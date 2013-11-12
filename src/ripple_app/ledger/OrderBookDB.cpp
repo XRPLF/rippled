@@ -62,10 +62,40 @@ void OrderBookDB::setup (Ledger::ref ledger)
             BIND_TYPE(&OrderBookDB::update, this, ledger));
 }
 
+static void updateHelper (SLE::ref entry,
+    boost::unordered_set< uint256 >& seen,
+    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> >& destMap,
+    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> >& sourceMap,
+    boost::unordered_set< currencyIssuer_t >& XRPBooks,
+    int& books)
+{
+    if ((entry->getType () == ltDIR_NODE) && (entry->isFieldPresent (sfExchangeRate)) &&
+            (entry->getFieldH256 (sfRootIndex) == entry->getIndex()))
+    {
+        const uint160& ci = entry->getFieldH160 (sfTakerPaysCurrency);
+        const uint160& co = entry->getFieldH160 (sfTakerGetsCurrency);
+        const uint160& ii = entry->getFieldH160 (sfTakerPaysIssuer);
+        const uint160& io = entry->getFieldH160 (sfTakerGetsIssuer);
+
+        uint256 index = Ledger::getBookBase (ci, ii, co, io);
+
+        if (seen.insert (index).second)
+        {
+            // VFALCO TODO Reduce the clunkiness of these parameter wrappers
+            OrderBook::pointer book = boost::make_shared<OrderBook> (boost::cref (index),
+                                      boost::cref (ci), boost::cref (co), boost::cref (ii), boost::cref (io));
+
+            sourceMap[currencyIssuer_ct (ci, ii)].push_back (book);
+            destMap[currencyIssuer_ct (co, io)].push_back (book);
+            if (co.isZero())
+                XRPBooks.insert(currencyIssuer_ct (ci, ii));
+            ++books;
+        }
+    }
+}
+
 void OrderBookDB::update (Ledger::pointer ledger)
 {
-    LoadEvent::autoptr ev = getApp().getJobQueue ().getLoadEventAP (jtOB_SETUP, "OrderBookDB::update");
-
     boost::unordered_set< uint256 > seen;
     boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > destMap;
     boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > sourceMap;
@@ -75,38 +105,8 @@ void OrderBookDB::update (Ledger::pointer ledger)
 
     // walk through the entire ledger looking for orderbook entries
     int books = 0;
-    uint256 currentIndex = ledger->getFirstLedgerIndex ();
-
-    while (currentIndex.isNonZero ())
-    {
-        SLE::pointer entry = ledger->getSLEi (currentIndex);
-
-        if ((entry->getType () == ltDIR_NODE) && (entry->isFieldPresent (sfExchangeRate)) &&
-                (entry->getFieldH256 (sfRootIndex) == currentIndex))
-        {
-            const uint160& ci = entry->getFieldH160 (sfTakerPaysCurrency);
-            const uint160& co = entry->getFieldH160 (sfTakerGetsCurrency);
-            const uint160& ii = entry->getFieldH160 (sfTakerPaysIssuer);
-            const uint160& io = entry->getFieldH160 (sfTakerGetsIssuer);
-
-            uint256 index = Ledger::getBookBase (ci, ii, co, io);
-
-            if (seen.insert (index).second)
-            {
-                // VFALCO TODO Reduce the clunkiness of these parameter wrappers
-                OrderBook::pointer book = boost::make_shared<OrderBook> (boost::cref (index),
-                                          boost::cref (ci), boost::cref (co), boost::cref (ii), boost::cref (io));
-
-                sourceMap[currencyIssuer_ct (ci, ii)].push_back (book);
-                destMap[currencyIssuer_ct (co, io)].push_back (book);
-                if (co.isZero())
-                    XRPBooks.insert(currencyIssuer_ct (ci, ii));
-                ++books;
-            }
-        }
-
-        currentIndex = ledger->getNextLedgerIndex (currentIndex);
-    }
+    ledger->visitStateItems(BIND_TYPE(&updateHelper, P_1, boost::ref(seen), boost::ref(destMap),
+        boost::ref(sourceMap), boost::ref(XRPBooks), boost::ref(books)));
 
     WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update< " << books << " books found";
     {
