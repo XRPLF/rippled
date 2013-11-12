@@ -46,6 +46,7 @@ public:
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
     explicit PathRequest (boost::shared_ptr <InfoSub> const& subscriber);
+    ~PathRequest ();
 
     bool        isValid (const boost::shared_ptr<Ledger>&);
     bool        isValid ();
@@ -85,6 +86,9 @@ private:
 
     int                             iLastLevel;
     bool                            bLastSuccess;
+
+    int                             iIdentifier;
+    static Atomic<int>              siLastIdentifier;
 
     // Track all requests
     static std::set<wptr>           sRequests;
