@@ -140,7 +140,7 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, const Json::Value& valu
     {
         WriteLog (lsINFO, PathRequest) << iIdentifier << " valid: " << raSrcAccount.humanAccountID () <<
                                        " -> " << raDstAccount.humanAccountID ();
-        WriteLog (lsINFO, PathRequest) << iIdentifier << "Deliver: " << saDstAmount.getFullText ();
+        WriteLog (lsINFO, PathRequest) << iIdentifier << " Deliver: " << saDstAmount.getFullText ();
 
         StaticScopedLockType sl (sLock, __FILE__, __LINE__);
         sRequests.insert (shared_from_this ());
@@ -339,13 +339,13 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     {
         {
             STAmount test (currIssuer.first, currIssuer.second, 1);
-            WriteLog (lsDEBUG, PathRequest) << iIdentifier << "Trying to find paths: " << test.getFullText ();
+            WriteLog (lsDEBUG, PathRequest) << iIdentifier << " Trying to find paths: " << test.getFullText ();
         }
         bool valid;
         STPathSet& spsPaths = mContext[currIssuer];
         Pathfinder pf (cache, raSrcAccount, raDstAccount,
                        currIssuer.first, currIssuer.second, saDstAmount, valid);
-        CondLog (!valid, lsINFO, PathRequest) << iIdentifier << "PF request not valid";
+        CondLog (!valid, lsINFO, PathRequest) << iIdentifier << " PF request not valid";
 
         STPath extraPath;
         if (valid && pf.findPaths (iLevel, 4, spsPaths, extraPath))
@@ -358,7 +358,7 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                     currIssuer.second.isNonZero () ? currIssuer.second :
                     (currIssuer.first.isZero () ? ACCOUNT_XRP : raSrcAccount.getAccountID ()), 1);
             saMaxAmount.negate ();
-            WriteLog (lsDEBUG, PathRequest) << iIdentifier << "Paths found, calling rippleCalc";
+            WriteLog (lsDEBUG, PathRequest) << iIdentifier << " Paths found, calling rippleCalc";
             TER terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                     vpsExpanded, saMaxAmount, saDstAmount,
                                                     raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
@@ -367,14 +367,14 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
             if ((extraPath.size() > 0) && ((terResult == terNO_LINE) || (terResult == tecPATH_PARTIAL)))
             {
-                WriteLog (lsDEBUG, PathRequest) << iIdentifier << "Trying with an extra path element";
+                WriteLog (lsDEBUG, PathRequest) << iIdentifier << " Trying with an extra path element";
                 spsPaths.addPath(extraPath);
                 vpsExpanded.clear ();
                 terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                     vpsExpanded, saMaxAmount, saDstAmount,
                                                     raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
                                                     spsPaths, false, false, false, true);
-                WriteLog (lsDEBUG, PathRequest) << iIdentifier << "Extra path element gives " << transHuman (terResult);
+                WriteLog (lsDEBUG, PathRequest) << iIdentifier << " Extra path element gives " << transHuman (terResult);
             }
 
             if (terResult == tesSUCCESS)
@@ -387,12 +387,12 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             }
             else
             {
-                WriteLog (lsINFO, PathRequest) << iIdentifier << "rippleCalc returns " << transHuman (terResult);
+                WriteLog (lsINFO, PathRequest) << iIdentifier << " rippleCalc returns " << transHuman (terResult);
             }
         }
         else
         {
-            WriteLog (lsINFO, PathRequest) << iIdentifier << "No paths found";
+            WriteLog (lsINFO, PathRequest) << iIdentifier << " No paths found";
         }
     }
 
@@ -405,8 +405,6 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
 void PathRequest::updateAll (Ledger::ref ledger, bool newOnly, CancelCallback shouldCancel)
 {
-    WriteLog (lsDEBUG, PathRequest) << "updateAll seq=" << ledger->getLedgerSeq() <<
-        (newOnly ? " newOnly" : " all");
     std::set<wptr> requests;
 
     LoadEvent::autoptr event (getApp().getJobQueue().getLoadEventAP(jtPATH_FIND, "PathRequest::updateAll"));
@@ -418,6 +416,9 @@ void PathRequest::updateAll (Ledger::ref ledger, bool newOnly, CancelCallback sh
 
     if (requests.empty ())
         return;
+
+    WriteLog (lsDEBUG, PathRequest) << "updateAll seq=" << ledger->getLedgerSeq() <<
+        (newOnly ? " newOnly, " : " all, ") << requests.size() << " requests";
 
     int processed = 0, removed = 0;
     RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (ledger);
