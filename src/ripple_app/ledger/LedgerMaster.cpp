@@ -924,9 +924,17 @@ void LedgerMaster::updatePaths (Job& job)
 {
     Ledger::pointer lastLedger;
 
+    if (getApp().getOPs().isNeedNetworkLedger ())
+    {
+        ScopedLockType ml (mLock, __FILE__, __LINE__);
+        mPathFindThread = false;
+        return;
+    }
+
     while (! job.shouldCancel())
     {
         bool newOnly = true;
+        bool hasNew = mPathFindNewRequest;
 
         {
             ScopedLockType ml (mLock, __FILE__, __LINE__);
@@ -952,7 +960,7 @@ void LedgerMaster::updatePaths (Job& job)
         }
 
         // VFALCO TODO Fix this global variable
-        PathRequest::updateAll (lastLedger, newOnly, job.getCancelCallback ());
+        PathRequest::updateAll (lastLedger, newOnly, hasNew, job.getCancelCallback ());
     }
 }
 
@@ -960,6 +968,20 @@ void LedgerMaster::newPathRequest ()
 {
     ScopedLockType ml (mLock, __FILE__, __LINE__);
     mPathFindNewRequest = true;
+
+    if (!mPathFindThread)
+    {
+        mPathFindThread = true;
+        getApp().getJobQueue ().addJob (jtUPDATE_PF, "updatePaths",
+            BIND_TYPE (&LedgerMaster::updatePaths, this, P_1));
+    }
+}
+
+// If the order book is radically updated, we need to reprocess all pathfinding requests
+void LedgerMaster::newOrderBookDB ()
+{
+    ScopedLockType ml (mLock, __FILE__, __LINE__);
+    mPathLedger.reset();
 
     if (!mPathFindThread)
     {

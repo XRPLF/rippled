@@ -116,6 +116,7 @@ void OrderBookDB::update (Ledger::pointer ledger)
         mSourceMap.swap(sourceMap);
         mDestMap.swap(destMap);
     }
+    getApp().getLedgerMaster().newOrderBookDB();
 }
 
 void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,

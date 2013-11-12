@@ -58,10 +58,11 @@ public:
 
     bool        doUpdate (const boost::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
 
-    static void updateAll (const boost::shared_ptr<Ledger>& ledger, bool newOnly, CancelCallback shouldCancel);
+    static void updateAll (const boost::shared_ptr<Ledger>& ledger, bool newOnly, bool hasNew, CancelCallback shouldCancel);
 
 private:
     void setValid ();
+    void resetLevel (int level);
     int parseJson (const Json::Value&, bool complete);
 
     typedef RippleRecursiveMutex LockType;

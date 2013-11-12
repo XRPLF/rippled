@@ -213,6 +213,7 @@ public:
 
     void tryAdvance ();
     void newPathRequest ();
+    void newOrderBookDB ();
 
     static bool shouldAcquire (uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
 

@@ -256,6 +256,12 @@ Json::Value PathRequest::doStatus (const Json::Value&)
     return jvStatus;
 }
 
+void PathRequest::resetLevel (int l)
+{
+    if (iLastLevel > l)
+        iLastLevel = l;
+}
+
 bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 {
     WriteLog (lsDEBUG, PathRequest) << iIdentifier << " update " << (fast ? "fast" : "normal");
@@ -403,7 +409,7 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     return true;
 }
 
-void PathRequest::updateAll (Ledger::ref ledger, bool newOnly, CancelCallback shouldCancel)
+void PathRequest::updateAll (Ledger::ref ledger, bool newOnly, bool hasNew, CancelCallback shouldCancel)
 {
     std::set<wptr> requests;
 
@@ -433,6 +439,10 @@ void PathRequest::updateAll (Ledger::ref ledger, bool newOnly, CancelCallback sh
 
         if (pRequest)
         {
+            // Drop old requests level to get new ones done faster
+            if (hasNew)
+                pRequest->resetLevel(getConfig().PATH_SEARCH);
+
             if (newOnly && !pRequest->isNew ())
                 remove = false;
             else
