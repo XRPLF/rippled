@@ -53,7 +53,7 @@ void SHAMap::visitLeaves (FUNCTION_TYPE<void (SHAMapItem::ref item)> function)
                 ++pos;
 	    else
             {
-                SHAMapTreeNode* child = getNodePointerNT (node->getChildNodeID (pos), node->getChildHash (pos));
+                SHAMapTreeNode* child = getNodePointer (node->getChildNodeID (pos), node->getChildHash (pos));
                 if (child->isLeaf ())
                 {
                     function (child->peekItem ());

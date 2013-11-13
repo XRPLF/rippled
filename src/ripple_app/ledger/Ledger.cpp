@@ -1241,8 +1241,17 @@ static void visitHelper (FUNCTION_TYPE<void (SLE::ref)>& function, SHAMapItem::r
 
 void Ledger::visitStateItems (FUNCTION_TYPE<void (SLE::ref)> function)
 {
-    if (mAccountStateMap)
-        mAccountStateMap->visitLeaves(BIND_TYPE(&visitHelper, beast::ref(function), P_1));
+    try
+    {
+        if (mAccountStateMap)
+            mAccountStateMap->visitLeaves(BIND_TYPE(&visitHelper, beast::ref(function), P_1));
+    }
+    catch (SHAMapMissingNode& sn)
+    {
+        if (mHash.isNonZero ())
+            getApp().getInboundLedgers().findCreate(mHash, mLedgerSeq, false);
+        throw;
+    }
 }
 
 /*

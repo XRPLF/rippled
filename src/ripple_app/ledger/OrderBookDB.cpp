@@ -105,8 +105,19 @@ void OrderBookDB::update (Ledger::pointer ledger)
 
     // walk through the entire ledger looking for orderbook entries
     int books = 0;
-    ledger->visitStateItems(BIND_TYPE(&updateHelper, P_1, boost::ref(seen), boost::ref(destMap),
-        boost::ref(sourceMap), boost::ref(XRPBooks), boost::ref(books)));
+
+    try
+    {
+        ledger->visitStateItems(BIND_TYPE(&updateHelper, P_1, boost::ref(seen), boost::ref(destMap),
+            boost::ref(sourceMap), boost::ref(XRPBooks), boost::ref(books)));
+    }
+    catch (const SHAMapMissingNode&)
+    {
+        WriteLog (lsINFO, OrderBookDB) << "OrderBookDB::update encountered a missing node";
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        mSeq = 0;
+        return;
+    }
 
     WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update< " << books << " books found";
     {
