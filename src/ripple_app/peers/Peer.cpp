@@ -307,23 +307,69 @@ private:
         {
             bool valid = false;
 
-            if (m_socket->getFlags ().set (MultiSocket::Flag::proxy) && m_isInbound)
+            try
             {
-                MultiSocket::ProxyInfo const proxyInfo (m_socket->getProxyInfo ());
-
-                if (proxyInfo.protocol == "TCP4")
+                if (m_socket->getFlags ().set (MultiSocket::Flag::proxy) && m_isInbound)
                 {
+                    MultiSocket::ProxyInfo const proxyInfo (m_socket->getProxyInfo ());
+
+                    if (proxyInfo.protocol == "TCP4")
+                    {
+                        m_remoteAddressSet = true;
+                        m_remoteAddress = IPAddress (IPAddress::V4 (
+                            proxyInfo.sourceAddress.value [0],
+                            proxyInfo.sourceAddress.value [1],
+                            proxyInfo.sourceAddress.value [2],
+                            proxyInfo.sourceAddress.value [3]),
+                            proxyInfo.sourcePort);
+
+                        // Set remote IP and port number from PROXY handshake
+                        mIpPort.first = proxyInfo.sourceAddress.toString ().toStdString ();
+                        mIpPort.second = proxyInfo.sourcePort;
+
+                        if (m_isInbound)
+                            m_usage = m_resourceManager.newInboundEndpoint (m_remoteAddress);
+                        else
+                            m_usage = m_resourceManager.newOutboundEndpoint (m_remoteAddress);
+
+                        valid = true;
+
+                        WriteLog (lsINFO, Peer) << "Peer: PROXY handshake from " << mIpPort.first;
+                    }
+                    else
+                    {
+                        if (proxyInfo.protocol != String::empty)
+                        {
+                            WriteLog (lsINFO, Peer) << "Peer: Unknown PROXY protocol " <<
+                                proxyInfo.protocol.toStdString ();
+                        }
+                        else
+                        {
+                            WriteLog (lsINFO, Peer) << "Peer: Missing PROXY handshake";
+                        }
+
+                        detach ("pi", true);
+                    }
+                }
+                else
+                {
+                    boost::asio::ip::address addr (getNativeSocket().remote_endpoint().address());
+
+                    if (addr.is_v4())
+                    {
+                        boost::asio::ip::address_v4::bytes_type bytes (addr.to_v4().to_bytes());
+                        m_remoteAddress = IPAddress (IPAddress::V4 (
+                            bytes[0], bytes[1], bytes[2], bytes[3]), 0);
+                        if (! m_isInbound)
+                            m_remoteAddress = m_remoteAddress.withPort (
+                                getNativeSocket().remote_endpoint().port());
+                    }
+                    else
+                    {
+                        // TODO: Support ipv6
+                        bassertfalse;
+                    }
                     m_remoteAddressSet = true;
-                    m_remoteAddress = IPAddress (IPAddress::V4 (
-                        proxyInfo.sourceAddress.value [0],
-                        proxyInfo.sourceAddress.value [1],
-                        proxyInfo.sourceAddress.value [2],
-                        proxyInfo.sourceAddress.value [3]),
-                        proxyInfo.sourcePort);
-                    
-                    // Set remote IP and port number from PROXY handshake
-                    mIpPort.first = proxyInfo.sourceAddress.toString ().toStdString ();
-                    mIpPort.second = proxyInfo.sourcePort;
 
                     if (m_isInbound)
                         m_usage = m_resourceManager.newInboundEndpoint (m_remoteAddress);
@@ -331,50 +377,12 @@ private:
                         m_usage = m_resourceManager.newOutboundEndpoint (m_remoteAddress);
 
                     valid = true;
-
-                    WriteLog (lsINFO, Peer) << "Peer: PROXY handshake from " << mIpPort.first;
-                }
-                else
-                {
-                    if (proxyInfo.protocol != String::empty)
-                    {
-                        WriteLog (lsINFO, Peer) << "Peer: Unknown PROXY protocol " <<
-                            proxyInfo.protocol.toStdString ();
-                    }
-                    else
-                    {
-                        WriteLog (lsINFO, Peer) << "Peer: Missing PROXY handshake";
-                    }
-
-                    detach ("pi", true);
                 }
             }
-            else
+            catch (...)
             {
-                boost::asio::ip::address addr (getNativeSocket().remote_endpoint().address());
-
-                if (addr.is_v4())
-                {
-                    boost::asio::ip::address_v4::bytes_type bytes (addr.to_v4().to_bytes());
-                    m_remoteAddress = IPAddress (IPAddress::V4 (
-                        bytes[0], bytes[1], bytes[2], bytes[3]), 0);
-                    if (! m_isInbound)
-                        m_remoteAddress = m_remoteAddress.withPort (
-                            getNativeSocket().remote_endpoint().port());
-                }
-                else
-                {
-                    // TODO: Support ipv6
-                    bassertfalse;
-                }
-                m_remoteAddressSet = true;
-
-                if (m_isInbound)
-                    m_usage = m_resourceManager.newInboundEndpoint (m_remoteAddress);
-                else
-                    m_usage = m_resourceManager.newOutboundEndpoint (m_remoteAddress);
-
-                valid = true;
+                WriteLog (lsDEBUG, Peer) << "exception accepting peer";
+                detach ("ex", true);
             }
 
             if (valid)
