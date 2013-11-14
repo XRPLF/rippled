@@ -959,8 +959,16 @@ void LedgerMaster::updatePaths (Job& job)
             mPathFindNewRequest = false;
         }
 
-        // VFALCO TODO Fix this global variable
-        PathRequest::updateAll (lastLedger, newOnly, hasNew, job.getCancelCallback ());
+        try
+        {
+            // VFALCO TODO Fix this global variable
+            PathRequest::updateAll (lastLedger, newOnly, hasNew, job.getCancelCallback ());
+        }
+        catch (SHAMapMissingNode&)
+        {
+            WriteLog (lsINFO, LedgerMaster) << "Missing node detected during pathfinding";
+            getApp().getInboundLedgers().findCreate(lastLedger->getHash (), lastLedger->getLedgerSeq (), false);
+        }
     }
 }
 
