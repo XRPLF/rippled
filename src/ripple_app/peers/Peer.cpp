@@ -2469,9 +2469,10 @@ void PeerImp::addLedger (uint256 const& hash)
 {
     boost::mutex::scoped_lock sl(mRecentLock);
     BOOST_FOREACH (uint256 const & ledger, mRecentLedgers)
-
-    if (ledger == hash)
-        return;
+    {
+        if (ledger == hash)
+            return;
+    }
 
     if (mRecentLedgers.size () == 128)
         mRecentLedgers.pop_front ();
@@ -2483,9 +2484,10 @@ bool PeerImp::hasTxSet (uint256 const& hash) const
 {
     boost::mutex::scoped_lock sl(mRecentLock);
     BOOST_FOREACH (uint256 const & set, mRecentTxSets)
-
-    if (set == hash)
-        return true;
+    {
+        if (set == hash)
+            return true;
+	}
 
     return false;
 }
@@ -2494,9 +2496,10 @@ void PeerImp::addTxSet (uint256 const& hash)
 {
     boost::mutex::scoped_lock sl(mRecentLock);
     BOOST_FOREACH (uint256 const & set, mRecentTxSets)
-
-    if (set == hash)
-        return;
+    {
+        if (set == hash)
+            return;
+	}
 
     if (mRecentTxSets.size () == 128)
         mRecentTxSets.pop_front ();
