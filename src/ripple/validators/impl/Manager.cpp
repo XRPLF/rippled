@@ -158,6 +158,12 @@ public:
         , m_checkTimer (this)
         , m_checkSources (false)
     {
+        m_journal.trace <<
+            "Validators constructed";
+        m_journal.debug <<
+            "Validators constructed (debug)";
+        m_journal.info <<
+            "Validators constructed (info)";
     }
 
     ~ManagerImp ()
@@ -199,12 +205,8 @@ public:
 
     void addStaticSource (Validators::Source* source)
     {
-#if RIPPLE_USE_VALIDATORS
         m_queue.dispatch (m_context.wrap (bind (
             &Logic::addStatic, &m_logic, source)));
-#else
-        delete source;
-#endif
     }
 
     void addURL (URL const& url)
@@ -214,32 +216,24 @@ public:
 
     void addSource (Validators::Source* source)
     {
-#if RIPPLE_USE_VALIDATORS
         m_queue.dispatch (m_context.wrap (bind (
             &Logic::add, &m_logic, source)));
-#else
-        delete source;
-#endif
     }
 
     //--------------------------------------------------------------------------
 
     void receiveValidation (ReceivedValidation const& rv)
     {
-#if RIPPLE_USE_VALIDATORS
         if (! isStopping())
             m_queue.dispatch (m_context.wrap (bind (
                 &Logic::receiveValidation, &m_logic, rv)));
-#endif
     }
 
     void ledgerClosed (RippleLedgerHash const& ledgerHash)
     {
-#if RIPPLE_USE_VALIDATORS
         if (! isStopping())
             m_queue.dispatch (m_context.wrap (bind (
                 &Logic::ledgerClosed, &m_logic, ledgerHash)));
-#endif
     }
 
     //--------------------------------------------------------------------------
@@ -250,42 +244,23 @@ public:
 
     void onPrepare ()
     {
-#if RIPPLE_USE_VALIDATORS
-        m_journal.info << "Validators preparing";
-#endif
     }
 
     void onStart ()
     {
-#if RIPPLE_USE_VALIDATORS
-        m_journal.info << "Validators starting";
-
         // Do this late so the sources have a chance to be added.
         m_queue.dispatch (m_context.wrap (bind (
             &ManagerImp::setCheckSources, this)));
 
         startThread();
-#endif
     }
 
     void onStop ()
     {
-#if RIPPLE_USE_VALIDATORS
-        m_journal.info << "Validators stopping";
-#endif
-
         m_logic.stop ();
 
-        if (this->Thread::isThreadRunning())
-        {
-            m_journal.debug << "Signaling thread exit";
-            m_queue.dispatch (m_context.wrap (bind (
-                &Thread::signalThreadShouldExit, this)));
-        }
-        else
-        {
-            stopped();
-        }
+        m_queue.dispatch (m_context.wrap (bind (
+            &Thread::signalThreadShouldExit, this)));
     }
 
     //--------------------------------------------------------------------------
@@ -306,7 +281,7 @@ public:
             PropertyStream::Set items ("sources", map);
             for (Logic::SourceTable::const_iterator iter (m_logic.m_sources.begin());
                 iter != m_logic.m_sources.end(); ++iter)
-                items.add (iter->source->name().toStdString());
+                items.add (iter->source->to_string());
         }
 
         {
@@ -314,6 +289,11 @@ public:
             for (Logic::ValidatorTable::iterator iter (m_logic.m_validators.begin());
                 iter != m_logic.m_validators.end(); ++iter)
             {
+                RipplePublicKey const& publicKey (iter->first);
+                Validator const& validator (iter->second);
+                PropertyStream::Map item (items);
+                item["public_key"] = publicKey.to_string();
+                validator.count().onWrite (item);
             }
         }
     }
@@ -326,20 +306,10 @@ public:
 
     void init ()
     {
-        m_journal.debug << "Initializing";
-
         File const file (File::getSpecialLocation (
             File::userDocumentsDirectory).getChildFile ("validators.sqlite"));
         
-        m_journal.debug << "Opening database at '" << file.getFullPathName() << "'";
-
         Error error (m_store.open (file));
-
-        if (error)
-        {
-            m_journal.fatal <<
-                "Failed to open '" << file.getFullPathName() << "'";
-        }
 
         if (! error)
         {
@@ -351,7 +321,7 @@ public:
     {
         if (timer == m_checkTimer)
         {
-            m_journal.debug << "Check timer expired";
+            m_journal.trace << "Check timer expired";
             m_queue.dispatch (m_context.wrap (bind (
                 &ManagerImp::setCheckSources, this)));
         }
@@ -359,7 +329,7 @@ public:
 
     void setCheckSources ()
     {
-        m_journal.debug << "Checking sources";
+        m_journal.trace << "Checking sources";
         m_checkSources = true;
     }
 
@@ -369,14 +339,14 @@ public:
         {
             if (m_logic.fetch_one () == 0)
             {
-                m_journal.debug << "All sources checked";
+                m_journal.trace << "All sources checked";
 
                 // Made it through the list without interruption!
                 // Clear the flag and set the deadline timer again.
                 //
                 m_checkSources = false;
 
-                m_journal.debug << "Next check timer expires in " <<
+                m_journal.trace << "Next check timer expires in " <<
                     RelativeTime::seconds (checkEverySeconds);
 
                 m_checkTimer.setExpiration (checkEverySeconds);

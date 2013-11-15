@@ -37,12 +37,15 @@ public:
     {
     }
 
-    String name ()
+    std::string to_string () const
     {
-        return "URL: '" + m_url.toString() + "'";
+        std::stringstream ss;
+        ss <<
+            "URL: '" << m_url.to_string() << "'";
+        return ss.str();
     }
 
-    String uniqueID ()
+    String uniqueID () const
     {
         return "URL," + m_url.toString();
     }

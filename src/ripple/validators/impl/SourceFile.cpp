@@ -34,12 +34,15 @@ public:
     {
     }
     
-    String name ()
+    std::string to_string () const
     {
-        return "File: '" + m_file.getFullPathName () + "'";
+        std::stringstream ss;
+        ss <<
+            "File: '" << m_file.getFullPathName().toStdString() + "'";
+        return ss.str();
     }
 
-    String uniqueID ()
+    String uniqueID () const
     {
         return "File," + m_file.getFullPathName ();
     }

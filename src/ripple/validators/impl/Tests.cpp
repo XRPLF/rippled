@@ -104,12 +104,12 @@ public:
         {
         }
 
-        String name ()
+        std::string to_string () const
         {
-            return uniqueID ();
+            return uniqueID().toStdString();
         }
 
-        String uniqueID ()
+        String uniqueID () const
         {
             return String ("Test,") + m_name + "," +
                 String::fromNumber (m_start) + "," +

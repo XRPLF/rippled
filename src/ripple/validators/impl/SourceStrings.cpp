@@ -36,13 +36,14 @@ public:
     {
     }
 
-    String name ()
+    std::string to_string () const
     {
-        return m_name;
+        return m_name.toStdString();
     }
 
-    String uniqueID ()
+    String uniqueID () const
     {
+        // VFALCO TODO This can't be right...?
         return String::empty;
     }
 
