@@ -105,6 +105,8 @@ void LedgerConsensus::checkOurValidation ()
     WriteLog (lsWARNING, LedgerConsensus) << "Sending partial validation";
 }
 
+/** Check if our last closed ledger matches the network's
+*/
 void LedgerConsensus::checkLCL ()
 {
     uint256 netLgr = mPrevLedgerHash;
@@ -176,6 +178,8 @@ void LedgerConsensus::checkLCL ()
         handleLCL (netLgr);
 }
 
+/** Change our view of the last closed ledger
+*/
 void LedgerConsensus::handleLCL (uint256 const& lclHash)
 {
     assert ((lclHash != mPrevLedgerHash) || (mPreviousLedger->getHash () != lclHash));
@@ -238,6 +242,9 @@ void LedgerConsensus::handleLCL (uint256 const& lclHash)
                            mPreviousLedger->getLedgerSeq () + 1);
 }
 
+/** Take an initial position on what we think the consensus should be
+    based on the transactions that made it into our open ledger
+*/
 void LedgerConsensus::takeInitialPosition (Ledger& initialLedger)
 {
     SHAMap::pointer initialSet;
@@ -291,6 +298,11 @@ void LedgerConsensus::takeInitialPosition (Ledger& initialLedger)
         propose ();
 }
 
+/** Determine if we still need to acquire a transaction set from the network.
+    If a transaction set is popular, we probably have it. If it's unpopular,
+    we probably don't need it (and the peer that initially made us
+    retrieve it has probably already changed its position)
+*/
 bool LedgerConsensus::stillNeedTXSet (uint256 const& hash)
 {
     if (mAcquired.find (hash) != mAcquired.end ())
@@ -304,6 +316,9 @@ bool LedgerConsensus::stillNeedTXSet (uint256 const& hash)
     return false;
 }
 
+/** Compare two proposed transaction sets and create disputed
+    transctions structures for any mismatches
+*/
 void LedgerConsensus::createDisputes (SHAMap::ref m1, SHAMap::ref m2)
 {
     if (m1->getHash() == m2->getHash())
@@ -337,6 +352,8 @@ void LedgerConsensus::createDisputes (SHAMap::ref m1, SHAMap::ref m2)
     WriteLog (lsDEBUG, LedgerConsensus) << dc << " differences found";
 }
 
+/** We have a complete transaction set, typically one acuired from the network
+*/
 void LedgerConsensus::mapComplete (uint256 const& hash, SHAMap::ref map, bool acquired)
 {
     CondLog (acquired, lsINFO, LedgerConsensus) << "We have acquired TXS " << hash;
@@ -404,6 +421,9 @@ void LedgerConsensus::mapComplete (uint256 const& hash, SHAMap::ref map, bool ac
     sendHaveTxSet (hash, true);
 }
 
+/** Let peers know that we a particular transactions set so they
+    can fetch it from us.
+*/
 void LedgerConsensus::sendHaveTxSet (uint256 const& hash, bool direct)
 {
     protocol::TMHaveTransactionSet msg;
@@ -413,20 +433,22 @@ void LedgerConsensus::sendHaveTxSet (uint256 const& hash, bool direct)
     getApp().getPeers ().relayMessage (NULL, packet);
 }
 
+/** Adjust the counts on all disputed transactions based on the set of peers taking this position
+*/
 void LedgerConsensus::adjustCount (SHAMap::ref map, const std::vector<uint160>& peers)
 {
-    // Adjust the counts on all disputed transactions based on the set of peers taking this position
     BOOST_FOREACH (u256_lct_pair & it, mDisputes)
     {
         bool setHas = map->hasItem (it.second->getTransactionID ());
         BOOST_FOREACH (const uint160 & pit, peers)
-        it.second->setVote (pit, setHas);
+            it.second->setVote (pit, setHas);
     }
 }
 
+/** Send a node status change message to our peers
+*/
 void LedgerConsensus::statusChange (protocol::NodeEvent event, Ledger& ledger)
 {
-    // Send a node status change message to our peers
     protocol::TMStatusChange s;
 
     if (!mHaveCorrectLCL)
@@ -493,6 +515,9 @@ void LedgerConsensus::statePreClose ()
     }
 }
 
+/** We have just decided to close the ledger. Start the consensus timer,
+   stash the close time, inform peers, and take a position
+*/
 void LedgerConsensus::closeLedger ()
 {
     checkOurValidation ();
@@ -504,9 +529,12 @@ void LedgerConsensus::closeLedger ()
     takeInitialPosition (*getApp().getLedgerMaster ().closeLedger (true));
 }
 
+/** We are establishing a consensus
+*/
 void LedgerConsensus::stateEstablish ()
 {
-    // we are establishing consensus
+
+    // Give everyone a chance to take an initial position
     if (mCurrentMSeconds < LEDGER_MIN_CONSENSUS)
         return;
 
@@ -609,6 +637,7 @@ void LedgerConsensus::updateOurPositions ()
 
     BOOST_FOREACH (u256_lct_pair & it, mDisputes)
     {
+        // Because the threshold for inclusion increases, time can change our position on a dispute
         if (it.second->updateVote (mClosePercent, mProposing))
         {
             if (!changes)
@@ -703,7 +732,7 @@ void LedgerConsensus::updateOurPositions ()
         // close time changed or our position is stale
         ourPosition = mAcquired[mOurPosition->getCurrentHash ()]->snapShot (true);
         assert (ourPosition);
-        changes = true;
+        changes = true; // We pretend our position changed to force a new proposal
     }
 
     if (changes)
@@ -721,6 +750,8 @@ void LedgerConsensus::updateOurPositions ()
     }
 }
 
+/** Check if we've reached consensus
+*/
 bool LedgerConsensus::haveConsensus (bool forReal)
 {
     // CHECKME: should possibly count unacquired TX sets as disagreeing
@@ -738,7 +769,7 @@ bool LedgerConsensus::haveConsensus (bool forReal)
                 WriteLog (lsDEBUG, LedgerConsensus) << it.first.GetHex () << " has " << it.second->getCurrentHash ().GetHex ();
                 ++disagree;
                 if (mCompares.count(it.second->getCurrentHash()) == 0)
-                {
+                { // Make sure we have generated disputes
                     uint256 hash = it.second->getCurrentHash();
                     WriteLog (lsDEBUG, LedgerConsensus) << "We have not compared to " << hash;
                     boost::unordered_map<uint256, SHAMap::pointer>::iterator it1 = mAcquired.find (hash);
@@ -760,6 +791,8 @@ bool LedgerConsensus::haveConsensus (bool forReal)
             mPreviousMSeconds, mCurrentMSeconds, forReal, mConsensusFail);
 }
 
+/** Get a transaction tree, fetching it from the network is required and requested
+*/
 SHAMap::pointer LedgerConsensus::getTransactionTree (uint256 const& hash, bool doAcquire)
 {
     boost::unordered_map<uint256, SHAMap::pointer>::iterator it = mAcquired.find (hash);
@@ -801,6 +834,8 @@ SHAMap::pointer LedgerConsensus::getTransactionTree (uint256 const& hash, bool d
     return SHAMap::pointer ();
 }
 
+/** Begin acquiring a transaction set
+*/
 void LedgerConsensus::startAcquiring (TransactionAcquire::pointer acquire)
 {
     boost::unordered_map< uint256, std::vector< boost::weak_ptr<Peer> > >::iterator it =
@@ -836,6 +871,8 @@ void LedgerConsensus::startAcquiring (TransactionAcquire::pointer acquire)
     acquire->setTimer ();
 }
 
+/** Make and send a proposal
+*/
 void LedgerConsensus::propose ()
 {
     WriteLog (lsTRACE, LedgerConsensus) << "We propose: " <<
@@ -852,9 +889,12 @@ void LedgerConsensus::propose ()
     prop.set_nodepubkey (&pubKey[0], pubKey.size ());
     prop.set_signature (&sig[0], sig.size ());
     getApp().getPeers ().relayMessage (NULL,
-                                      boost::make_shared<PackedMessage> (prop, protocol::mtPROPOSE_LEDGER));
+            boost::make_shared<PackedMessage> (prop, protocol::mtPROPOSE_LEDGER));
 }
 
+/** Add a disputed transaction (one that at least one node wants in the consensus set and
+    at least one node does not) to our tracking
+*/
 void LedgerConsensus::addDisputedTransaction (uint256 const& txID, Blob const& tx)
 {
     if (mDisputes.find (txID) != mDisputes.end ())
@@ -886,6 +926,7 @@ void LedgerConsensus::addDisputedTransaction (uint256 const& txID, Blob const& t
             txn->setVote (pit.first, cit->second->hasItem (txID));
     }
 
+    // If we didn't relay this transaction recently, relay it
     if (getApp().getHashRouter ().setFlag (txID, SF_RELAYED))
     {
         protocol::TMTransaction msg;
@@ -897,6 +938,8 @@ void LedgerConsensus::addDisputedTransaction (uint256 const& txID, Blob const& t
     }
 }
 
+/** A server has taken a new position, adjust our tracking
+*/
 bool LedgerConsensus::peerPosition (LedgerProposal::ref newPosition)
 {
     uint160 peerID = newPosition->getPeerID ();
@@ -956,6 +999,8 @@ bool LedgerConsensus::peerPosition (LedgerProposal::ref newPosition)
     return true;
 }
 
+/** A peer has informed us that it can give us a transaction set
+*/
 bool LedgerConsensus::peerHasSet (Peer::ref peer, uint256 const& hashSet, protocol::TxSetStatus status)
 {
     if (status != protocol::tsHAVE) // Indirect requests are for future support
@@ -979,6 +1024,8 @@ bool LedgerConsensus::peerHasSet (Peer::ref peer, uint256 const& hashSet, protoc
     return true;
 }
 
+/** A peer has sent us some nodes from a transaction set
+*/
 SHAMapAddNode LedgerConsensus::peerGaveNodes (Peer::ref peer, uint256 const& setHash,
         const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData)
 {
@@ -994,6 +1041,8 @@ SHAMapAddNode LedgerConsensus::peerGaveNodes (Peer::ref peer, uint256 const& set
     return set->takeNodes (nodeIDs, nodeData, peer);
 }
 
+/** We have a new LCL and must accept it
+*/
 void LedgerConsensus::beginAccept (bool synchronous)
 {
     SHAMap::pointer consensusSet = mAcquired[mOurPosition->getCurrentHash ()];
@@ -1016,6 +1065,9 @@ void LedgerConsensus::beginAccept (bool synchronous)
     }
 }
 
+/** If we radically changed our consensus context for some reason, we need to
+    replay recent proposals so that they're not lost.
+*/
 void LedgerConsensus::playbackProposals ()
 {
     boost::unordered_map < uint160,
@@ -1073,6 +1125,8 @@ void LedgerConsensus::playbackProposals ()
 #define LCAT_FAIL       1
 #define LCAT_RETRY      2
 
+/** Apply a transaction to a ledger
+*/
 int LedgerConsensus::applyTransaction (TransactionEngine& engine, SerializedTransaction::ref txn, Ledger::ref ledger,
                                        bool openLedger, bool retryAssured)
 {
@@ -1128,6 +1182,8 @@ int LedgerConsensus::applyTransaction (TransactionEngine& engine, SerializedTran
 #endif
 }
 
+/** Apply a set of transactions to a ledger
+*/
 void LedgerConsensus::applyTransactions (SHAMap::ref set, Ledger::ref applyLedger,
         Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, bool openLgr)
 {
@@ -1212,6 +1268,8 @@ uint32 LedgerConsensus::roundCloseTime (uint32 closeTime)
     return Ledger::roundCloseTime (closeTime, mCloseResolution);
 }
 
+/** We have a new last closed ledger, process it
+*/
 void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
 {
     if (set->getHash ().isNonZero ()) // put our set where others can get it later
@@ -1243,6 +1301,7 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
 
         Ledger::pointer newLCL = boost::make_shared<Ledger> (false, boost::ref (*mPreviousLedger));
 
+        // Set up to write SHAMap changes to our database, perform updates, extract changes
         newLCL->peekTransactionMap ()->armDirty ();
         newLCL->peekAccountStateMap ()->armDirty ();
         WriteLog (lsDEBUG, LedgerConsensus) << "Applying consensus set transactions to the last closed ledger";
@@ -1252,7 +1311,7 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
         boost::shared_ptr<SHAMap::DirtyMap> acctNodes = newLCL->peekAccountStateMap ()->disarmDirty ();
         boost::shared_ptr<SHAMap::DirtyMap> txnNodes = newLCL->peekTransactionMap ()->disarmDirty ();
 
-        // write out dirty nodes (temporarily done here) Most come before setAccepted
+        // write out dirty nodes (temporarily done here)
         int fc;
 
         while ((fc = SHAMap::flushDirty (*acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq ())) > 0)
@@ -1376,6 +1435,8 @@ void LedgerConsensus::endConsensus ()
     getApp().getOPs ().endConsensus (mHaveCorrectLCL);
 }
 
+/** Add our fee to our validation
+*/
 void LedgerConsensus::addLoad(SerializedValidation::ref val)
 {
     uint32 fee = std::max(
@@ -1386,6 +1447,8 @@ void LedgerConsensus::addLoad(SerializedValidation::ref val)
         val->setFieldU32(sfLoadFee, fee);
 }
 
+/** Simulate a consensus round without any network traffic
+*/
 void LedgerConsensus::simulate ()
 {
     WriteLog (lsINFO, LedgerConsensus) << "Simulating consensus";
