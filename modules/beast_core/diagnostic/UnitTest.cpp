@@ -234,27 +234,32 @@ UnitTests::JournalSink::JournalSink (UnitTests& tests)
 {
 }
 
-void UnitTests::JournalSink::write (Journal::Severity, std::string const& text)
-{
-    m_tests.logMessage (text);
-}
-
-bool UnitTests::JournalSink::active (Journal::Severity)
+bool UnitTests::JournalSink::active (Journal::Severity) const
 {
     return true;
 }
 
-bool UnitTests::JournalSink::console ()
+bool UnitTests::JournalSink::console() const
 {
     return false;
 }
 
-void UnitTests::JournalSink::set_severity (Journal::Severity)
+void UnitTests::JournalSink::console (bool)
 {
 }
 
-void UnitTests::JournalSink::set_console (bool)
+Journal::Severity UnitTests::JournalSink::severity() const
 {
+    return Journal::kLowestSeverity;
+}
+
+void UnitTests::JournalSink::severity (Journal::Severity)
+{
+}
+
+void UnitTests::JournalSink::write (Journal::Severity, std::string const& text)
+{
+    m_tests.logMessage (text);
 }
 
 //==============================================================================

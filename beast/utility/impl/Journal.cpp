@@ -19,8 +19,7 @@
 
 #include "../Journal.h"
 
-namespace beast
-{
+namespace beast {
 
 //------------------------------------------------------------------------------
 
@@ -28,25 +27,30 @@ namespace beast
 class NullJournalSink : public Journal::Sink
 {
 public:
+    bool active (Journal::Severity) const
+    {
+        return false;
+    }
+
+    bool console() const
+    {
+        return false;
+    }
+
+    void console (bool)
+    {
+    }
+
+    Journal::Severity severity() const
+    {
+        return Journal::kDisabled;
+    }
+
+    void severity (Journal::Severity)
+    {
+    }
+
     void write (Journal::Severity, std::string const&)
-    {
-    }
-
-    bool active (Journal::Severity)
-    {
-        return false;
-    }
-
-    bool console ()
-    {
-        return false;
-    }
-
-    void set_severity (Journal::Severity)
-    {
-    }
-
-    void set_console (bool)
     {
     }
 };
@@ -85,7 +89,7 @@ Journal::ScopedStream::ScopedStream (Stream const& stream, std::ostream& manip (
 
 Journal::ScopedStream::~ScopedStream ()
 {
-    if (! m_ostream.str().empty())
+    if (! m_ostream.str().empty() && m_sink.active (m_severity))
         m_sink.write (m_severity, m_ostream.str());
 }
 
@@ -144,6 +148,11 @@ Journal::Severity Journal::Stream::severity () const
 bool Journal::Stream::active () const
 {
     return m_sink->active (m_severity);
+}
+
+bool Journal::Stream::asBoolean () const
+{
+    return active();
 }
 
 Journal::Stream& Journal::Stream::operator= (Stream const& other)
