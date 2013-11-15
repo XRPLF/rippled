@@ -151,6 +151,8 @@ public:
         bassert (s_instance == nullptr);
         s_instance = this;
 
+        add (m_ledgerMaster->getPropertySource ());
+
         // VFALCO TODO remove these once the call is thread safe.
         HashMaps::getInstance ().initializeNonce <size_t> ();
     }

@@ -2896,6 +2896,13 @@ Json::Value RPCHandler::doLedgerAccept (Json::Value, Resource::Charge& loadType,
     return jvResult;
 }
 
+Json::Value RPCHandler::doLedgerCleaner (Json::Value parameters, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+{
+    masterLockHolder.unlock();
+    getApp().getLedgerMaster().doLedgerCleaner (parameters);
+    return "Cleaner configured";
+}
+
 // {
 //   ledger_hash : <ledger>,
 //   ledger_index : <ledger_index>
@@ -3919,6 +3926,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, Resourc
         {   "fetch_info",           &RPCHandler::doFetchInfo,           true,   optNone     },
         {   "ledger",               &RPCHandler::doLedger,              false,  optNetwork  },
         {   "ledger_accept",        &RPCHandler::doLedgerAccept,        true,   optCurrent  },
+        {   "ledger_cleaner",       &RPCHandler::doLedgerCleaner,       true,   optNetwork  },
         {   "ledger_closed",        &RPCHandler::doLedgerClosed,        false,  optClosed   },
         {   "ledger_current",       &RPCHandler::doLedgerCurrent,       false,  optCurrent  },
         {   "ledger_entry",         &RPCHandler::doLedgerEntry,         false,  optCurrent  },

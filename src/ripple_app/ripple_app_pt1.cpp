@@ -44,6 +44,8 @@ namespace ripple
 
 #include "consensus/LedgerConsensus.cpp"
 
+# include "ledger/LedgerCleaner.h"
+#include "ledger/LedgerCleaner.cpp"
 #include "ledger/LedgerMaster.cpp"
 
 }

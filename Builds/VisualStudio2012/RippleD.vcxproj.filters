@@ -1401,6 +1401,9 @@
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\vectorrep.cc">
       <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerCleaner.cpp">
+      <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -2873,6 +2876,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\utilities\utility_db.h">
       <Filter>[1] Ripple\rocksdb\rocksdb\include\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\ledger\LedgerCleaner.h">
+      <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

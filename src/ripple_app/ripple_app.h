@@ -108,6 +108,7 @@ namespace ripple {
 #include "tx/TransactionEngine.h"
 #include "misc/CanonicalTXSet.h"
 #include "ledger/LedgerHistory.h"
+#include "ledger/LedgerCleaner.h"
 #include "ledger/LedgerMaster.h"
 #include "ledger/LedgerProposal.h"
 #include "misc/NetworkOPs.h"

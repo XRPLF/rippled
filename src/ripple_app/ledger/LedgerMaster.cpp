@@ -22,6 +22,9 @@
 
 SETUP_LOG (LedgerMaster)
 
+class LedgerCleanerLog;
+template <> char const* LogPartition::getPartitionName <LedgerCleanerLog> () { return "LedgerCleaner"; }
+
 class LedgerMasterImp
     : public LedgerMaster
     , public LeakChecked <LedgerMasterImp>
@@ -58,6 +61,8 @@ public:
     LockType mCompleteLock;
     RangeSet mCompleteLedgers;
 
+    ScopedPointer<LedgerCleaner> mLedgerCleaner;
+
     int                         mMinValidations;    // The minimum validations to publish a ledger
     uint256                     mLastValidateHash;
     uint32                      mLastValidateSeq;
@@ -83,6 +88,7 @@ public:
         , mValidLedgerClose (0)
         , mValidLedgerSeq (0)
         , mHeldTransactions (uint256 ())
+        , mLedgerCleaner (LedgerCleaner::New(*this, LogPartition::getJournal<LedgerCleanerLog>()))
         , mMinValidations (0)
         , mLastValidateSeq (0)
         , mAdvanceThread (false)
@@ -1158,6 +1164,11 @@ public:
         return mLedgerHistory.getLedgerByHash (hash);
     }
 
+    void doLedgerCleaner(const Json::Value& parameters)
+    {
+        mLedgerCleaner->doClean (parameters);
+    }
+
     void setLedgerRangePresent (uint32 minV, uint32 maxV)
     {
         ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
@@ -1181,6 +1192,11 @@ public:
     void addValidateCallback (callback& c)
     {
         mOnValidate.push_back (c);
+    }
+
+    PropertyStream::Source& getPropertySource ()
+    {
+        return *mLedgerCleaner;
     }
 };
 
