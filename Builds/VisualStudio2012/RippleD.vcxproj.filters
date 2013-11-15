@@ -2407,6 +2407,63 @@
     <None Include="..\..\src\ripple\testoverlay\README.md">
       <Filter>[1] Ripple\testoverlay</Filter>
     </None>
+    <None Include="..\..\src\ripple\peerfinder\TODO.md">
+      <Filter>[1] Ripple\peerfinder</Filter>
+    </None>
+    <None Include="..\..\src\ripple\validators\TODO.md">
+      <Filter>[1] Ripple\validators</Filter>
+    </None>
+    <None Include="..\..\src\ripple\resource\TODO.md">
+      <Filter>[1] Ripple\resource</Filter>
+    </None>
+    <None Include="..\..\src\ripple\resource\README.md">
+      <Filter>[1] Ripple\resource</Filter>
+    </None>
+    <None Include="..\..\src\ripple\types\README.md">
+      <Filter>[1] Ripple\types</Filter>
+    </None>
+    <None Include="..\..\src\ripple\types\TODO.md">
+      <Filter>[1] Ripple\types</Filter>
+    </None>
+    <None Include="..\..\src\ripple\testoverlay\TODO.md">
+      <Filter>[1] Ripple\testoverlay</Filter>
+    </None>
+    <None Include="..\..\src\ripple\algorithm\README.md">
+      <Filter>[1] Ripple\algorithm</Filter>
+    </None>
+    <None Include="..\..\src\ripple\algorithm\TODO.md">
+      <Filter>[1] Ripple\algorithm</Filter>
+    </None>
+    <None Include="..\..\src\ripple\http\README.md">
+      <Filter>[1] Ripple\http</Filter>
+    </None>
+    <None Include="..\..\src\ripple\http\TODO.md">
+      <Filter>[1] Ripple\http</Filter>
+    </None>
+    <None Include="..\..\src\ripple\json\README.md">
+      <Filter>[1] Ripple\json</Filter>
+    </None>
+    <None Include="..\..\src\ripple\json\TODO.md">
+      <Filter>[1] Ripple\json</Filter>
+    </None>
+    <None Include="..\..\src\ripple\rpc\README.md">
+      <Filter>[1] Ripple\rpc</Filter>
+    </None>
+    <None Include="..\..\src\ripple\rpc\TODO.md">
+      <Filter>[1] Ripple\rpc</Filter>
+    </None>
+    <None Include="..\..\src\ripple\sitefiles\README.md">
+      <Filter>[1] Ripple\sitefiles</Filter>
+    </None>
+    <None Include="..\..\src\ripple\sitefiles\TODO.md">
+      <Filter>[1] Ripple\sitefiles</Filter>
+    </None>
+    <None Include="..\..\src\ripple\sslutil\README.md">
+      <Filter>[1] Ripple\sslutil</Filter>
+    </None>
+    <None Include="..\..\src\ripple\sslutil\TODO.md">
+      <Filter>[1] Ripple\sslutil</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\doc\todo\NIKB_TODO.txt">

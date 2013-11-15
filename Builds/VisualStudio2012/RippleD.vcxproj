@@ -2088,12 +2088,16 @@
     <None Include="..\..\doc\Doxyfile" />
     <None Include="..\..\doc\rippled-example.cfg" />
     <None Include="..\..\LICENSE" />
+    <None Include="..\..\src\ripple\algorithm\README.md" />
+    <None Include="..\..\src\ripple\algorithm\TODO.md" />
     <None Include="..\..\src\ripple\beast\ripple_beastobjc.mm">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
+    <None Include="..\..\src\ripple\http\README.md" />
+    <None Include="..\..\src\ripple\http\TODO.md" />
     <None Include="..\..\src\ripple\json\impl\json_internalarray.inl" />
     <None Include="..\..\src\ripple\json\impl\json_internalmap.inl" />
     <None Include="..\..\src\ripple\json\impl\json_valueiterator.inl" />
@@ -2101,8 +2105,23 @@
     <None Include="..\..\src\ripple\json\impl\version" />
     <None Include="..\..\README.md" />
     <None Include="..\..\SConstruct" />
+    <None Include="..\..\src\ripple\json\README.md" />
+    <None Include="..\..\src\ripple\json\TODO.md" />
     <None Include="..\..\src\ripple\peerfinder\README.md" />
+    <None Include="..\..\src\ripple\peerfinder\TODO.md" />
+    <None Include="..\..\src\ripple\resource\README.md" />
+    <None Include="..\..\src\ripple\resource\TODO.md" />
+    <None Include="..\..\src\ripple\rpc\README.md" />
+    <None Include="..\..\src\ripple\rpc\TODO.md" />
+    <None Include="..\..\src\ripple\sitefiles\README.md" />
+    <None Include="..\..\src\ripple\sitefiles\TODO.md" />
+    <None Include="..\..\src\ripple\sslutil\README.md" />
+    <None Include="..\..\src\ripple\sslutil\TODO.md" />
     <None Include="..\..\src\ripple\testoverlay\README.md" />
+    <None Include="..\..\src\ripple\testoverlay\TODO.md" />
+    <None Include="..\..\src\ripple\types\README.md" />
+    <None Include="..\..\src\ripple\types\TODO.md" />
+    <None Include="..\..\src\ripple\validators\TODO.md" />
     <None Include="..\QtCreator\rippled.pro" />
   </ItemGroup>
   <ItemGroup>
