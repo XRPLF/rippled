@@ -20,10 +20,11 @@
 #ifndef BEAST_UTILITY_JOURNAL_H_INCLUDED
 #define BEAST_UTILITY_JOURNAL_H_INCLUDED
 
+#include "../SafeBool.h"
+
 #include <sstream>
 
-namespace beast
-{
+namespace beast {
 
 /** A generic endpoint for log messages. */
 class Journal
@@ -57,27 +58,33 @@ public:
     public:
         virtual ~Sink () { }
 
-        /** Write text to the sink at the specified severity. */
-        virtual void write (Severity severity, std::string const& text) = 0;
-
         /** Returns `true` if text at the passed severity produces output. */
-        virtual bool active (Severity severity) = 0;
+        virtual bool active (Severity severity) const = 0;
 
         /** Returns `true` if a message is also written to the Output Window (MSVC). */
-        virtual bool console () = 0;
-
-        /** Set the minimum severity this sink will report. */
-        virtual void set_severity (Severity severity) = 0;
+        virtual bool console () const = 0;
 
         /** Set whether messages are also written to the Output Window (MSVC). */
-        virtual void set_console (bool to_console) = 0;
+        virtual void console (bool output) = 0;
+
+        /** Returns the minimum severity level this sink will report. */
+        virtual Severity severity() const = 0;
+
+        /** Set the minimum severity this sink will report. */
+        virtual void severity (Severity level) = 0;
+
+        /** Write text to the sink at the specified severity.
+            The caller is responsible for checking the minimum severity level
+            before using this function.
+        */
+        virtual void write (Severity level, std::string const& text) = 0;
     };
 
     /** Returns a Sink which does nothing. */
     static Sink& getNullSink ();
 
     //--------------------------------------------------------------------------
-    
+
     class Stream;
 
     /** Scoped ostream-based container for writing messages to a Journal. */
@@ -122,7 +129,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    class Stream
+    class Stream : public SafeBool <Stream>
     {
     public:
         /** Construct a stream which produces no logging output. */
@@ -144,7 +151,10 @@ public:
         Severity severity() const;
 
         /** Returns `true` if sink logs anything at this stream's severity. */
+        /** @{ */
         bool active() const;
+        bool asBoolean() const;
+        /** @} */
 
         /** Output stream support. */
         /** @{ */
