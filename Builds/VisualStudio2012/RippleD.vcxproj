@@ -946,12 +946,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\log\LogJournal.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\log\LogPartition.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1911,7 +1905,6 @@
     <ClInclude Include="..\..\src\ripple_basics\log\Log.h" />
     <ClInclude Include="..\..\src\ripple_basics\log\LogFile.h" />
     <ClInclude Include="..\..\src\ripple_basics\log\LoggedTimings.h" />
-    <ClInclude Include="..\..\src\ripple_basics\log\LogJournal.h" />
     <ClInclude Include="..\..\src\ripple_basics\log\LogPartition.h" />
     <ClInclude Include="..\..\src\ripple_basics\log\LogSeverity.h" />
     <ClInclude Include="..\..\src\ripple_basics\log\LogSink.h" />

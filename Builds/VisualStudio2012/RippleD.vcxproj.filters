@@ -834,9 +834,6 @@
     <ClCompile Include="..\..\src\ripple_basics\log\LogFile.cpp">
       <Filter>[2] Old Ripple\ripple_basics\log</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\log\LogJournal.cpp">
-      <Filter>[2] Old Ripple\ripple_basics\log</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\log\LogSink.cpp">
       <Filter>[2] Old Ripple\ripple_basics\log</Filter>
     </ClCompile>
@@ -1852,9 +1849,6 @@
       <Filter>[2] Old Ripple\ripple_basics\log</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\log\LoggedTimings.h">
-      <Filter>[2] Old Ripple\ripple_basics\log</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\log\LogJournal.h">
       <Filter>[2] Old Ripple\ripple_basics\log</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\log\LogSink.h">

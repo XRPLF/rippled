@@ -65,6 +65,7 @@ public:
     void write (std::string const& message, LogSeverity severity, std::string const& partitionName);
     void write (std::string const& text, LogSeverity severity);
     void write (std::string const& text);
+    void write_console (std::string const& text);
     /** @} */
 
     /** Hides secret keys from log output. */

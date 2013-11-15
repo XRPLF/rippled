@@ -20,47 +20,89 @@
 #ifndef RIPPLE_BASICS_LOGPARTITION_H_INCLUDED
 #define RIPPLE_BASICS_LOGPARTITION_H_INCLUDED
 
-class LogPartition
+class LogPartition : public Journal::Sink
 {
 public:
-    explicit LogPartition (const char* partitionName);
+    //--------------------------------------------------------------------------
+    //
+    // Journal::Sink
+    //
+    //--------------------------------------------------------------------------
 
-    /** Retrieve the LogPartition associated with an object.
+    bool active (Journal::Severity severity) const;
+    bool console () const;
+    void console (bool output);
+    Journal::Severity severity() const;
+    void severity (Journal::Severity level);
+    void write (Journal::Severity level, std::string const& text);
 
-        Each LogPartition is a singleton.
-    */
+    //--------------------------------------------------------------------------
+
+    /** Construct the partition with the specified name. */
+    explicit LogPartition (std::string const& name);
+
+    /** Returns `true` output is produced at the given severity. */
+    bool doLog (LogSeverity s) const;
+
+    /** Returns the name of this partition. */
+    std::string const& getName () const;
+
+    /** Return the lowest severity reported on the partition. */
+    LogSeverity getSeverity() const;
+
+    /** Sets the lowest severity reported on the partition. */
+    void setMinimumSeverity (LogSeverity severity);
+
+    //--------------------------------------------------------------------------
+
+    /** Returns the LogPartition based on a type key. */
     template <class Key>
     static LogPartition& get ()
     {
         struct LogPartitionType : LogPartition
         {
             LogPartitionType () : LogPartition (getPartitionName <Key> ())
-            {
-            }
+                { }
         };
 
+        // Each LogPartition is a singleton.
         return *SharedSingleton <LogPartitionType>::getInstance();
     }
 
-    bool doLog (LogSeverity s) const
+    /** Returns a Journal using the specified LogPartition type key. */
+    template <class Key>
+    static Journal getJournal ()
     {
-        return s >= mMinSeverity;
+        return Journal (get <Key> ());
     }
 
-    const std::string& getName () const
-    {
-        return mName;
-    }
+    /** Returns a cleaned up source code file name. */
+    static std::string canonicalFileName (char const* fileName);
 
-    void setMinimumSeverity (LogSeverity severity);
+    /** Returns the partition with the given name or nullptr if no match. */
+    static LogPartition* find (std::string const& name);
 
-    static bool setSeverity (const std::string& partition, LogSeverity severity);
+    /** Set the minimum severity of all existing partitions at once. */
     static void setSeverity (LogSeverity severity);
-    static std::vector< std::pair<std::string, std::string> > getSeverities ();
+
+    /** Set the minimum severity of a partition by name. */
+    static bool setSeverity (std::string const& name, LogSeverity severity);
+
+    /** Activate console output for the specified comma-separated partition list. */
+    static void setConsoleOutput (std::string const& list);
+
+    /** Returns a list of all partitions and their severity levels. */
+    typedef std::vector <std::pair <std::string, std::string> > Severities;
+    static Severities getSeverities ();
+
+    /** Convert the Journal::Severity to and from a LogSeverity. */
+    /** @{ */
+    static LogSeverity convertSeverity (Journal::Severity level);
+    static Journal::Severity convertLogSeverity (LogSeverity level);
+    /** @} */
 
 private:
-    /** Retrieve the name for a log partition.
-    */
+    /** Retrieve the name for a log partition. */
     template <class Key>
     static char const* getPartitionName ();
 
@@ -72,6 +114,7 @@ private:
     LogPartition*       mNextLog;
     LogSeverity         mMinSeverity;
     std::string         mName;
+    bool m_console;
 };
 
 #define SETUP_LOG(Class) \

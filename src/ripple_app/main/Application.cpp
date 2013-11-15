@@ -26,7 +26,7 @@ static bool volatile doShutdown = false;
 // Specializations for LogPartition names
 
 // VFALCO NOTE This is temporary, until I refactor LogPartition
-//            and LogJournal::get() to take a string
+//            and LogPartition::getJournal() to take a string
 //
 class ApplicationLog;
 template <> char const* LogPartition::getPartitionName <ApplicationLog> () { return "Application"; }
@@ -71,20 +71,20 @@ public:
 
     ApplicationImp ()
         : RootStoppable ("Application")
-        , m_journal (LogJournal::get <ApplicationLog> ())
+        , m_journal (LogPartition::getJournal <ApplicationLog> ())
         , m_tempNodeCache ("NodeCache", 16384, 90)
         , m_sleCache ("LedgerEntryCache", 4096, 120)
 
         , m_resourceManager (add (Resource::Manager::New (
-            LogJournal::get <ResourceManagerLog> ())))
+            LogPartition::getJournal <ResourceManagerLog> ())))
 
         , m_rpcServiceManager (RPC::Manager::New (
-            LogJournal::get <RPCServiceManagerLog> ()))
+            LogPartition::getJournal <RPCServiceManagerLog> ()))
 
         // The JobQueue has to come pretty early since
         // almost everything is a Stoppable child of the JobQueue.
         //
-        , m_jobQueue (JobQueue::New (*this, LogJournal::get <JobQueueLog> ()))
+        , m_jobQueue (JobQueue::New (*this, LogPartition::getJournal <JobQueueLog> ()))
 
         // The io_service must be a child of the JobQueue since we call addJob
         // in response to newtwork data from peers and also client requests.
@@ -96,7 +96,7 @@ public:
         //
 
         , m_siteFiles (SiteFiles::Manager::New (
-            *this, LogJournal::get <SiteFilesLog> ()))
+            *this, LogPartition::getJournal <SiteFilesLog> ()))
 
         , m_orderBookDB (*m_jobQueue)
 
@@ -104,13 +104,13 @@ public:
 
         // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
         , m_networkOPs (NetworkOPs::New (
-            m_ledgerMaster, *m_jobQueue, LogJournal::get <NetworkOPsLog> ()))
+            m_ledgerMaster, *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
 
         , m_rpcHTTPServer (RPCHTTPServer::New (*m_networkOPs,
-            LogJournal::get <HTTPServerLog> (), *m_jobQueue, *m_networkOPs, *m_resourceManager))
+            LogPartition::getJournal <HTTPServerLog> (), *m_jobQueue, *m_networkOPs, *m_resourceManager))
 
 #if ! RIPPLE_USE_RPC_SERVICE_MANAGER
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager) // passive object, not a Service
@@ -128,13 +128,13 @@ public:
         , m_txQueue (TxQueue::New ())
 
         , m_validators (add (Validators::Manager::New (
-            *this, LogJournal::get <ValidatorsLog> ())))
+            *this, LogPartition::getJournal <ValidatorsLog> ())))
 
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
 
         , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
 
-        , mFeeTrack (LoadFeeTrack::New (LogJournal::get <LoadManagerLog> ()))
+        , mFeeTrack (LoadFeeTrack::New (LogPartition::getJournal <LoadManagerLog> ()))
 
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
 
@@ -142,7 +142,7 @@ public:
 
         , mProofOfWorkFactory (ProofOfWorkFactory::New ())
 
-        , m_loadManager (LoadManager::New (*this, LogJournal::get <LoadManagerLog> ()))
+        , m_loadManager (LoadManager::New (*this, LogPartition::getJournal <LoadManagerLog> ()))
 
         , m_sweepTimer (this)
 
@@ -394,6 +394,11 @@ public:
 
             if (LogSink::get()->getMinSeverity () > lsDEBUG)
                 LogPartition::setSeverity (lsDEBUG);
+        }
+
+        if (!getConfig().CONSOLE_LOG_OUTPUT.empty())
+        {
+            LogPartition::setConsoleOutput (getConfig().CONSOLE_LOG_OUTPUT);
         }
 
         if (!getConfig ().RUN_STANDALONE)

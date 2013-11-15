@@ -17,6 +17,33 @@
 */
 //==============================================================================
 
+Log::Log (LogSeverity s)
+    : m_level (s)
+    , m_partition (nullptr)
+{
+}
+
+Log::Log (LogSeverity s, LogPartition& partition)
+    : m_level (s)
+    , m_partition (&partition)
+{
+}
+
+Log::~Log ()
+{
+    if (m_partition != nullptr)
+    {
+        if (m_partition->doLog (m_level))
+            m_partition->write (
+                LogPartition::convertLogSeverity (m_level), m_os.str());
+    }
+    else
+    {
+        LogSink::get()->write (m_os.str(), m_level, "");
+    }
+}
+
+//------------------------------------------------------------------------------
 
 std::string Log::replaceFirstSecretWithAsterisks (std::string s)
 {
@@ -46,11 +73,6 @@ std::string Log::replaceFirstSecretWithAsterisks (std::string s)
 }
 
 //------------------------------------------------------------------------------
-
-Log::~Log ()
-{
-    LogSink::get()->write (oss.str(), mSeverity, mPartitionName);
-}
 
 std::string Log::severityToString (LogSeverity s)
 {
@@ -102,3 +124,4 @@ LogSeverity Log::stringToSeverity (const std::string& s)
 
     return lsINVALID;
 }
+

@@ -17,55 +17,182 @@
 */
 //==============================================================================
 
-
-LogPartition* LogPartition::headLog = NULL;
-
-LogPartition::LogPartition (char const* partitionName)
-    : mNextLog (headLog)
-    , mMinSeverity (lsWARNING)
+bool LogPartition::active (Journal::Severity severity) const
 {
-    const char* ptr = strrchr (partitionName, '/');
-    mName = (ptr == NULL) ? partitionName : (ptr + 1);
-
-    size_t p = mName.find (".cpp");
-
-    if (p != std::string::npos)
-        mName.erase (mName.begin () + p, mName.end ());
-
-    headLog = this;
+    return convertSeverity (severity) >= mMinSeverity;
 }
 
-std::vector< std::pair<std::string, std::string> > LogPartition::getSeverities ()
+bool LogPartition::console () const
 {
-    std::vector< std::pair<std::string, std::string> > sevs;
+    return m_console;
+}
 
-    for (LogPartition* l = headLog; l != NULL; l = l->mNextLog)
-        sevs.push_back (std::make_pair (l->mName, Log::severityToString (l->mMinSeverity)));
+void LogPartition::console (bool output)
+{
+    m_console = output;
+}
 
-    return sevs;
+Journal::Severity LogPartition::severity() const
+{
+    return convertLogSeverity (mMinSeverity);
+}
+
+void LogPartition::severity (Journal::Severity level)
+{
+    setMinimumSeverity (convertSeverity (level));
+}
+
+void LogPartition::write (Journal::Severity level, std::string const& text)
+{
+    std::string output;
+    LogSeverity const logSeverity (convertSeverity (level));
+    LogSink::get()->format (output, text, logSeverity, mName);
+    LogSink::get()->write (output, logSeverity);
+    if (m_console)
+        LogSink::get()->write_console (output);
 }
 
 //------------------------------------------------------------------------------
+
+LogPartition::LogPartition (std::string const& name)
+    : mNextLog (headLog)
+    , mMinSeverity (lsWARNING)
+    , mName (canonicalFileName (name.c_str()))
+    , m_console (false)
+{
+    // VFALCO TODO Use an intrusive list.
+    headLog = this;
+}
+
+bool LogPartition::doLog (LogSeverity s) const
+{
+    return s >= mMinSeverity;
+}
+
+std::string const& LogPartition::getName () const
+{
+    return mName;
+}
+
+LogSeverity LogPartition::getSeverity() const
+{
+    return mMinSeverity;
+}
 
 void LogPartition::setMinimumSeverity (LogSeverity severity)
 {
     mMinSeverity = severity;
 }
 
-bool LogPartition::setSeverity (const std::string& partition, LogSeverity severity)
-{
-    for (LogPartition* p = headLog; p != NULL; p = p->mNextLog)
-        if (boost::iequals (p->mName, partition))
-        {
-            p->mMinSeverity = severity;
-            return true;
-        }
+//------------------------------------------------------------------------------
 
-    return false;
+LogPartition* LogPartition::headLog = nullptr;
+
+std::string LogPartition::canonicalFileName (char const* fileName)
+{
+    std::string result;
+    char const* ptr (strrchr (fileName, '/'));
+    result = (ptr == nullptr) ? fileName : (ptr + 1);
+
+    size_t p = result.find (".cpp");
+
+    if (p != std::string::npos)
+        result.erase (result.begin () + p, result.end ());
+
+    return result;
+}
+
+LogPartition* LogPartition::find (std::string const& name)
+{
+    for (LogPartition* p = headLog; p != nullptr; p = p->mNextLog)
+        if (boost::iequals (p->getName(), name))
+            return p;
+    return nullptr;
 }
 
 void LogPartition::setSeverity (LogSeverity severity)
 {
-    for (LogPartition* p = headLog; p != NULL; p = p->mNextLog)
+    for (LogPartition* p = headLog; p != nullptr; p = p->mNextLog)
         p->mMinSeverity = severity;
+}
+
+bool LogPartition::setSeverity (const std::string& partition, LogSeverity severity)
+{
+    LogPartition* const p (find (partition));
+
+    if (p)
+    {
+        p->mMinSeverity = severity;
+        return true;
+    }
+
+    return false;
+}
+
+void LogPartition::setConsoleOutput (std::string const& list)
+{
+    std::string::const_iterator first (list.begin());
+    for(;;)
+    {
+        std::string::const_iterator last (std::find (
+            first, list.end(), ','));
+
+        LogPartition* const p (find (std::string (first, last)));
+        if (p != nullptr)
+            p->console (true);
+
+        if (last != list.end())
+            first = last + 1;
+        else
+            break;
+    }
+}
+
+LogPartition::Severities LogPartition::getSeverities ()
+{
+    LogPartition::Severities result;
+
+    for (LogPartition* l = headLog; l != nullptr; l = l->mNextLog)
+        result.push_back (std::make_pair (l->mName, Log::severityToString (l->mMinSeverity)));
+
+    return result;
+}
+
+//------------------------------------------------------------------------------
+
+LogSeverity LogPartition::convertSeverity (Journal::Severity level)
+{
+    switch (level)
+    {
+    case Journal::kTrace:   return lsTRACE;
+    case Journal::kDebug:   return lsDEBUG;
+    case Journal::kInfo:    return lsINFO;
+    case Journal::kWarning: return lsWARNING;
+    case Journal::kError:   return lsERROR;
+
+    default:
+        bassertfalse;
+    case Journal::kFatal:
+        break;
+    }
+
+    return lsFATAL;
+}
+
+Journal::Severity LogPartition::convertLogSeverity (LogSeverity level)
+{
+    switch (level)
+    {
+    case lsTRACE:   return Journal::kTrace;
+    case lsDEBUG:   return Journal::kDebug;
+    case lsINFO:    return Journal::kInfo;
+    case lsWARNING: return Journal::kWarning;
+    case lsERROR:   return Journal::kError;
+    default:
+        bassertfalse;
+    case lsFATAL:
+        break;
+    }
+
+    return Journal::kFatal;
 }

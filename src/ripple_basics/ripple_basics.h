@@ -68,7 +68,6 @@ using namespace beast;
 # include "log/LogSink.h"
 # include "log/LogPartition.h"
 # include "log/Log.h"
-#include "log/LogJournal.h"
 #include "log/LoggedTimings.h"
 
 #include "utility/CountedObject.h"

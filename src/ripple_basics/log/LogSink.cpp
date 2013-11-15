@@ -128,7 +128,6 @@ void LogSink::write (std::string const& output, LogSeverity severity)
 void LogSink::write (std::string const& text)
 {
     ScopedLockType lock (m_mutex, __FILE__, __LINE__);
-
     write (text, true, lock);
 }
 
@@ -139,6 +138,14 @@ void LogSink::write (std::string const& line, bool toStdErr, ScopedLockType&)
 
     if (toStdErr)
         std::cerr << line << std::endl;
+}
+
+void LogSink::write_console (std::string const& text)
+{
+#if BEAST_MSVC
+    if (beast_isRunningUnderDebugger ())
+        Logger::outputDebugString (text.c_str());
+#endif
 }
 
 //------------------------------------------------------------------------------

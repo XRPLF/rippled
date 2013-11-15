@@ -99,7 +99,7 @@ public:
             *this,
             siteFiles,
             *this,
-            LogJournal::get <PeerFinderLog> ())))
+            LogPartition::getJournal <PeerFinderLog> ())))
         , m_io_service (io_service)
         , m_ssl_context (ssl_context)
         , mPeerLock (this, "PeersImp", __FILE__, __LINE__)
