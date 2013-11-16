@@ -2116,6 +2116,7 @@
     <None Include="..\..\src\ripple\types\TODO.md" />
     <None Include="..\..\src\ripple\validators\TODO.md" />
     <None Include="..\..\src\ripple\validators\README.md" />
+    <None Include="..\..\src\ripple_app\TODO.md" />
     <None Include="..\QtCreator\rippled.pro" />
   </ItemGroup>
   <ItemGroup>
