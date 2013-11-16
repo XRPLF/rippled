@@ -56,6 +56,7 @@ String const& UnitTest::getPackageName() const noexcept
 
 Journal UnitTest::journal () const
 {
+    bassert (m_runner != nullptr);
     return m_runner->journal();
 }
 
