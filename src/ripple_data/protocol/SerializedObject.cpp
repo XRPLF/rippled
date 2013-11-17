@@ -1563,7 +1563,7 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
                 STArray* tail = dynamic_cast<STArray*> (&data.back ());
                 assert (tail);
 
-                for (Json::UInt i = 0; !object.isValidIndex (i); ++i)
+                for (Json::UInt i = 0; object.isValidIndex (i); ++i)
                     tail->push_back (*STObject::parseJson (object[i], sfGeneric, depth + 1));
             }
             break;
