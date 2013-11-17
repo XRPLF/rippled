@@ -1566,6 +1566,7 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
                 for (Json::UInt i = 0; !object.isValidIndex (i); ++i)
                     tail->push_back (*STObject::parseJson (object[i], sfGeneric, depth + 1));
             }
+            break;
 
         default:
             throw std::runtime_error ("Invalid field type");
