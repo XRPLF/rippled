@@ -1563,8 +1563,40 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
                 STArray* tail = dynamic_cast<STArray*> (&data.back ());
                 assert (tail);
 
-                for (Json::UInt i = 0; object.isValidIndex (i); ++i)
-                    tail->push_back (*STObject::parseJson (object[i], sfGeneric, depth + 1));
+                for (Json::UInt i = 0; value.isValidIndex (i); ++i)
+                {
+
+                    bool isObject (value[i].isObject());
+                    bool singleKey (true);
+
+                    if (isObject)
+                    {
+                         singleKey = value[i].size() == 1;
+                    }
+
+                    if (!isObject || !singleKey)
+                    {
+                        std::stringstream err;
+
+                        err << "First level children of `"
+                            << field.getName()
+                            << "`must be objects containing a single key with"
+                            << " an object value";
+
+                        throw std::runtime_error (err.str());
+                    }
+
+                    // TODO: There doesn't seem to be a nice way to get just the
+                    // first/only key in an object without copying all keys into
+                    // a vector
+                    std::string objectName (value[i].getMemberNames()[0]);;
+                    SField::ref nameField (SField::getField(objectName));
+                    Json::Value objectFields (value[i][objectName]);
+
+                    tail->push_back (*STObject::parseJson (objectFields,
+                                                           nameField,
+                                                           depth + 1));
+                }
             }
             break;
 
@@ -1586,6 +1618,80 @@ public:
     }
 
     void runTest ()
+    {
+        testSerialization();
+        testParseJSONArray();
+        testParseJSONArrayWithInvalidChildrenObjects();
+    }
+
+    bool parseJSONString (const std::string& json, Json::Value& to)
+    {
+        Json::Reader reader;
+        return (reader.parse(json, to) &&
+               !to.isNull() &&
+                to.isObject());
+    }
+
+    void testParseJSONArrayWithInvalidChildrenObjects ()
+    {
+        beginTestCase ("parse json array invalid children");
+        try
+        {
+            /*
+
+            STArray/STObject constructs don't really map perfectly to json
+            arrays/objects.
+
+            STObject is an associative container, mapping fields to value, but
+            an STObject may also have a Field as it's name, stored outside the
+            associative structure. The name is important, so to maintain
+            fidelity, it will take TWO json objects to represent them.
+
+            */
+            std::string faulty ("{\"Template\":[{"
+                                    "\"ModifiedNode\":{\"Sequence\":1}, "
+                                    "\"DeletedNode\":{\"Sequence\":1}"
+                                "}]}");
+
+            UPTR_T<STObject> so;
+            Json::Value faultyJson;
+            bool parsedOK (parseJSONString(faulty, faultyJson));
+            unexpected(!parsedOK, "failed to parse");
+            so = STObject::parseJson (faultyJson);
+            fail ("It should have thrown. "
+                  "Immediate children of STArray encoded as json must "
+                  "have one key only.");
+        }
+        catch(std::runtime_error& e)
+        {
+            std::string what(e.what());
+            unexpected (what.find("First level children of `Template`") != 0);
+        }
+    }
+
+    void testParseJSONArray ()
+    {
+        beginTestCase ("parse json array");
+        std::string const json ("{\"Template\":[{\"ModifiedNode\":{\"Sequence\":1}}]}\n");
+
+        Json::Value jsonObject;
+        bool parsedOK (parseJSONString(json, jsonObject));
+        if (parsedOK)
+        {
+          UPTR_T<STObject> so;
+          so = STObject::parseJson (jsonObject);
+          Json::FastWriter writer;
+          std::string const& serialized (writer.write(so->getJson(0)));
+          bool serializedOK = serialized == json;
+          unexpected (!serializedOK, serialized + " should equal: " + json);
+        }
+        else
+        {
+          fail ("Couldn't parse json: " + json);
+        }
+    }
+
+    void testSerialization ()
     {
         beginTestCase ("serialization");
 
