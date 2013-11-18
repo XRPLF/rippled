@@ -217,7 +217,7 @@ void RangeSet::simplify ()
         if (it->second >= (nit->first - 1))
         {
             // ranges overlap
-            it->second = nit->second;
+            it->second = std::max(it->second, nit->second);
             mRanges.erase (nit);
         }
         else
