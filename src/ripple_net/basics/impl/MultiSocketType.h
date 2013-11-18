@@ -889,7 +889,7 @@ protected:
         {
             error_code ec (ec_);
 
-            do
+            while (!ec)
             {
                 if (m_owner.m_state == stateReady)
                 {
@@ -973,7 +973,6 @@ protected:
                     ec = m_owner.handshake_error ();
                 }
             }
-            while (! ec);
 
             bassert (ec || (m_owner.m_state == stateReady && m_owner.m_needsShutdown));
 
