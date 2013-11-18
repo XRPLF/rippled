@@ -2057,7 +2057,7 @@ Json::Value RPCHandler::doLedger (Json::Value params, Resource::Charge& loadType
                               | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
                               | (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
-    if (bFull || bAccounts)
+    if (bFull || bAccounts | bExpand)
     {
         if (getApp().getFeeTrack().isLoadedLocal() && (mRole != Config::ADMIN))
         {
