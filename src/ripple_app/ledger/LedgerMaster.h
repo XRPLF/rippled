@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGERMASTER_H
-#define RIPPLE_LEDGERMASTER_H
+#ifndef RIPPLE_LEDGERMASTER_H_INCLUDED
+#define RIPPLE_LEDGERMASTER_H_INCLUDED
 
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
@@ -29,8 +29,10 @@
 //
 class LedgerMaster
     : public Stoppable
-    , public LeakChecked <LedgerMaster>
 {
+protected:
+    explicit LedgerMaster (Stoppable& parent);
+
 public:
     typedef FUNCTION_TYPE <void (Ledger::ref)> callback;
 
@@ -39,238 +41,88 @@ public:
     typedef LockType::ScopedLockType ScopedLockType;
     typedef LockType::ScopedUnlockType ScopedUnlockType;
 
-    explicit LedgerMaster (Stoppable& parent)
-        : Stoppable ("LedgerMaster", parent)
-        , mLock (this, "LedgerMaster", __FILE__, __LINE__)
-        , mPubLedgerClose (0)
-        , mPubLedgerSeq (0)
-        , mValidLedgerClose (0)
-        , mValidLedgerSeq (0)
-        , mHeldTransactions (uint256 ())
-        , mMinValidations (0)
-        , mLastValidateSeq (0)
-        , mAdvanceThread (false)
-        , mAdvanceWork (false)
-        , mFillInProgress (0)
-        , mPathFindThread (false)
-        , mPathFindNewRequest (false)
-    {
-    }
+    static LedgerMaster* New (Stoppable& parent, Journal journal);
 
-    ~LedgerMaster ()
-    {
-    }
+    virtual ~LedgerMaster () = 0;
 
-    uint32 getCurrentLedgerIndex ();
+    virtual uint32 getCurrentLedgerIndex () = 0;
 
-    LockType& peekMutex ()
-    {
-        return mLock;
-    }
+    virtual LockType& peekMutex () = 0;
 
     // The current ledger is the ledger we believe new transactions should go in
-    Ledger::ref getCurrentLedger ()
-    {
-        return mCurrentLedger;
-    }
+    virtual Ledger::ref getCurrentLedger () = 0;
 
     // An immutable snapshot of the current ledger
-    Ledger::ref getCurrentSnapshot ();
+    virtual Ledger::ref getCurrentSnapshot () = 0;
 
     // The finalized ledger is the last closed/accepted ledger
-    Ledger::ref getClosedLedger ()
-    {
-        return mClosedLedger;
-    }
+    virtual Ledger::ref getClosedLedger () = 0;
 
     // The validated ledger is the last fully validated ledger
-    Ledger::ref getValidatedLedger ()
-    {
-        return mValidLedger;
-    }
+    virtual Ledger::ref getValidatedLedger () = 0;
 
     // This is the last ledger we published to clients and can lag the validated ledger
-    Ledger::ref getPublishedLedger ()
-    {
-        return mPubLedger;
-    }
+    virtual Ledger::ref getPublishedLedger () = 0;
 
-    int getPublishedLedgerAge ();
-    int getValidatedLedgerAge ();
-    bool isCaughtUp(std::string& reason);
+    virtual int getPublishedLedgerAge () = 0;
+    virtual int getValidatedLedgerAge () = 0;
+    virtual bool isCaughtUp(std::string& reason) = 0;
 
-    TER doTransaction (SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply);
+    virtual TER doTransaction (
+        SerializedTransaction::ref txn,
+            TransactionEngineParams params, bool& didApply) = 0;
 
-    int getMinValidations ()
-    {
-        return mMinValidations;
-    }
-    void setMinValidations (int v)
-    {
-        mMinValidations = v;
-    }
+    virtual int getMinValidations () = 0;
 
-    void pushLedger (Ledger::pointer newLedger);
-    void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL);
-    void storeLedger (Ledger::pointer);
-    void forceValid (Ledger::pointer);
+    virtual void setMinValidations (int v) = 0;
 
-    void setFullLedger (Ledger::pointer ledger, bool isSynchronous, bool isCurrent);
+    virtual void pushLedger (Ledger::pointer newLedger) = 0;
+    virtual void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL) = 0;
+    virtual void storeLedger (Ledger::pointer) = 0;
+    virtual void forceValid (Ledger::pointer) = 0;
 
-    void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer newCurrent);
+    virtual void setFullLedger (Ledger::pointer ledger, bool isSynchronous, bool isCurrent) = 0;
 
-    void failedSave(uint32 seq, uint256 const& hash);
+    virtual void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer newCurrent) = 0;
 
-    std::string getCompleteLedgers ()
-    {
-        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
-        return mCompleteLedgers.toString ();
-    }
+    virtual void failedSave(uint32 seq, uint256 const& hash) = 0;
 
-    Ledger::pointer closeLedger (bool recoverHeldTransactions);
+    virtual std::string getCompleteLedgers () = 0;
 
-    uint256 getHashBySeq (uint32 index)
-    {
-        uint256 hash = mLedgerHistory.getLedgerHash (index);
+    virtual Ledger::pointer closeLedger (bool recoverHeldTransactions) = 0;
 
-        if (hash.isNonZero ())
-            return hash;
+    virtual uint256 getHashBySeq (uint32 index) = 0;
 
-        return Ledger::getHashByIndex (index);
-    }
+    virtual Ledger::pointer getLedgerBySeq (uint32 index) = 0;
 
-    Ledger::pointer getLedgerBySeq (uint32 index)
-    {
-        {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
-            if (mCurrentLedger && (mCurrentLedger->getLedgerSeq () == index))
-                return mCurrentLedger;
+    virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;
 
-                if (mClosedLedger && (mClosedLedger->getLedgerSeq () == index))
-                return mClosedLedger;
-        }
+    virtual void setLedgerRangePresent (uint32 minV, uint32 maxV) = 0;
 
-        Ledger::pointer ret = mLedgerHistory.getLedgerBySeq (index);
+    virtual uint256 getLedgerHash(uint32 desiredSeq, Ledger::ref knownGoodLedger) = 0;
 
-        if (ret)
-            return ret;
+    virtual void addHeldTransaction (Transaction::ref trans) = 0;
+    virtual void fixMismatch (Ledger::ref ledger) = 0;
 
-        clearLedger (index);
-        return ret;
-    }
+    virtual bool haveLedgerRange (uint32 from, uint32 to) = 0;
+    virtual bool haveLedger (uint32 seq) = 0;
+    virtual void clearLedger (uint32 seq) = 0;
+    virtual bool getValidatedRange (uint32& minVal, uint32& maxVal) = 0;
+    virtual bool getFullValidatedRange (uint32& minVal, uint32& maxVal) = 0;
 
-    Ledger::pointer getLedgerByHash (uint256 const& hash)
-    {
-        if (hash.isZero ())
-            return boost::make_shared<Ledger> (boost::ref (*mCurrentLedger), false);
+    virtual void tune (int size, int age) = 0;
+    virtual void sweep () = 0;
+    virtual float getCacheHitRate () = 0;
+    virtual void addValidateCallback (callback& c) = 0;
 
-        if (mCurrentLedger && (mCurrentLedger->getHash () == hash))
-            return boost::make_shared<Ledger> (boost::ref (*mCurrentLedger), false);
+    virtual void checkAccept (Ledger::ref ledger) = 0;
+    virtual void checkAccept (uint256 const& hash) = 0;
 
-        if (mClosedLedger && (mClosedLedger->getHash () == hash))
-            return mClosedLedger;
-
-        return mLedgerHistory.getLedgerByHash (hash);
-    }
-
-    void setLedgerRangePresent (uint32 minV, uint32 maxV)
-    {
-        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
-        mCompleteLedgers.setRange (minV, maxV);
-    }
-
-    uint256 getLedgerHash(uint32 desiredSeq, Ledger::ref knownGoodLedger);
-
-    void addHeldTransaction (Transaction::ref trans);
-    void fixMismatch (Ledger::ref ledger);
-
-    bool haveLedgerRange (uint32 from, uint32 to);
-    bool haveLedger (uint32 seq);
-    void clearLedger (uint32 seq);
-    bool getValidatedRange (uint32& minVal, uint32& maxVal);
-    bool getFullValidatedRange (uint32& minVal, uint32& maxVal);
-
-    void tune (int size, int age)
-    {
-        mLedgerHistory.tune (size, age);
-    }
-    void sweep ()
-    {
-        mLedgerHistory.sweep ();
-    }
-    float getCacheHitRate ()
-    {
-        return mLedgerHistory.getCacheHitRate ();
-    }
-
-    void addValidateCallback (callback& c)
-    {
-        mOnValidate.push_back (c);
-    }
-
-    void checkAccept (Ledger::ref ledger);
-    void checkAccept (uint256 const& hash);
-
-    void tryAdvance ();
-    void newPathRequest ();
-    void newOrderBookDB ();
+    virtual void tryAdvance () = 0;
+    virtual void newPathRequest () = 0;
+    virtual void newOrderBookDB () = 0;
 
     static bool shouldAcquire (uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
-
-private:
-    std::list<Ledger::pointer> findNewLedgersToPublish ();
-
-    void applyFutureTransactions (uint32 ledgerIndex);
-    bool isValidTransaction (Transaction::ref trans);
-    bool isTransactionOnFutureList (Transaction::ref trans);
-
-    void getFetchPack (Ledger::ref have);
-    void tryFill (Job&, Ledger::pointer);
-    void advanceThread ();
-    void doAdvance ();
-    void updatePaths (Job&);
-
-    void setValidLedger(Ledger::ref);
-    void setPubLedger(Ledger::ref);
-
-private:
-    LockType mLock;
-
-    TransactionEngine mEngine;
-
-    Ledger::pointer mCurrentLedger;     // The ledger we are currently processiong
-    Ledger::pointer mCurrentSnapshot;   // Snapshot of the current ledger
-    Ledger::pointer mClosedLedger;      // The ledger that most recently closed
-    Ledger::pointer mValidLedger;       // The highest-sequence ledger we have fully accepted
-    Ledger::pointer mPubLedger;         // The last ledger we have published
-    Ledger::pointer mPathLedger;        // The last ledger we did pathfinding against
-
-    beast::Atomic<uint32> mPubLedgerClose;
-    beast::Atomic<uint32> mPubLedgerSeq;
-    beast::Atomic<uint32> mValidLedgerClose;
-    beast::Atomic<uint32> mValidLedgerSeq;
-
-    LedgerHistory mLedgerHistory;
-
-    CanonicalTXSet mHeldTransactions;
-
-    LockType mCompleteLock;
-    RangeSet mCompleteLedgers;
-
-    int                         mMinValidations;    // The minimum validations to publish a ledger
-    uint256                     mLastValidateHash;
-    uint32                      mLastValidateSeq;
-    std::list<callback>         mOnValidate;        // Called when a ledger has enough validations
-
-    std::list<Ledger::pointer>  mPubLedgers;        // List of ledgers to publish
-    bool                        mAdvanceThread;     // Publish thread is running
-    bool                        mAdvanceWork;       // Publish thread has work to do
-    int                         mFillInProgress;
-
-    bool                        mPathFindThread;    // Pathfind thread is running
-    bool                        mPathFindNewLedger;
-    bool                        mPathFindNewRequest;
 };
 
 #endif
-// vim:ts=4

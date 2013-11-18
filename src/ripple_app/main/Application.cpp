@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // VFALCO TODO Clean this global up
 static bool volatile doShutdown = false;
 
@@ -100,11 +99,12 @@ public:
 
         , m_orderBookDB (*m_jobQueue)
 
-        , m_ledgerMaster (*m_jobQueue)
+        , m_ledgerMaster (LedgerMaster::New (
+            *m_jobQueue, LogPartition::getJournal <LedgerMaster> ()))
 
         // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
         , m_networkOPs (NetworkOPs::New (
-            m_ledgerMaster, *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
+            *m_ledgerMaster, *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
@@ -195,7 +195,7 @@ public:
 
     LedgerMaster& getLedgerMaster ()
     {
-        return m_ledgerMaster;
+        return *m_ledgerMaster;
     }
 
     InboundLedgers& getInboundLedgers ()
@@ -420,7 +420,7 @@ public:
         mFeatures->addInitialFeatures ();
         Pathfinder::initPathTable ();
 
-        m_ledgerMaster.setMinValidations (getConfig ().VALIDATION_QUORUM);
+        m_ledgerMaster->setMinValidations (getConfig ().VALIDATION_QUORUM);
 
         if (getConfig ().START_UP == Config::FRESH)
         {
@@ -467,7 +467,7 @@ public:
 
         mValidations->tune (getConfig ().getSize (siValidationsSize), getConfig ().getSize (siValidationsAge));
         m_nodeStore->tune (getConfig ().getSize (siNodeCacheSize), getConfig ().getSize (siNodeCacheAge));
-        m_ledgerMaster.tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
+        m_ledgerMaster->tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
         m_sleCache.setTargetSize (getConfig ().getSize (siSLECacheSize));
         m_sleCache.setTargetAge (getConfig ().getSize (siSLECacheAge));
 
@@ -834,7 +834,7 @@ public:
             &NodeStore::Database::sweep, m_nodeStore.get ()));
 
         logTimedCall (m_journal.warning, "LedgerMaster::sweep", __FILE__, __LINE__, boost::bind (
-            &LedgerMaster::sweep, &m_ledgerMaster));
+            &LedgerMaster::sweep, m_ledgerMaster.get()));
 
         logTimedCall (m_journal.warning, "TempNodeCache::sweep", __FILE__, __LINE__, boost::bind (
             &NodeCache::sweep, &m_tempNodeCache));
@@ -887,7 +887,7 @@ private:
     IoServicePool m_mainIoPool;
     ScopedPointer <SiteFiles::Manager> m_siteFiles;
     OrderBookDB m_orderBookDB;
-    LedgerMaster m_ledgerMaster;
+    ScopedPointer <LedgerMaster> m_ledgerMaster;
     ScopedPointer <NetworkOPs> m_networkOPs;
     ScopedPointer <UniqueNodeList> m_deprecatedUNL;
     ScopedPointer <RPCHTTPServer> m_rpcHTTPServer;
@@ -948,12 +948,12 @@ void ApplicationImp::startNewLedger ()
         firstLedger->updateHash ();
         firstLedger->setClosed ();
         firstLedger->setAccepted ();
-        m_ledgerMaster.pushLedger (firstLedger);
+        m_ledgerMaster->pushLedger (firstLedger);
 
         Ledger::pointer secondLedger = boost::make_shared<Ledger> (true, boost::ref (*firstLedger));
         secondLedger->setClosed ();
         secondLedger->setAccepted ();
-        m_ledgerMaster.pushLedger (secondLedger, boost::make_shared<Ledger> (true, boost::ref (*secondLedger)));
+        m_ledgerMaster->pushLedger (secondLedger, boost::make_shared<Ledger> (true, boost::ref (*secondLedger)));
         assert (!!secondLedger->getAccountState (rootAddress));
         m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
     }
@@ -1018,11 +1018,11 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
             return false;
         }
 
-        m_ledgerMaster.setLedgerRangePresent (loadLedger->getLedgerSeq (), loadLedger->getLedgerSeq ());
+        m_ledgerMaster->setLedgerRangePresent (loadLedger->getLedgerSeq (), loadLedger->getLedgerSeq ());
 
         Ledger::pointer openLedger = boost::make_shared<Ledger> (false, boost::ref (*loadLedger));
-        m_ledgerMaster.switchLedgers (loadLedger, openLedger);
-        m_ledgerMaster.forceValid(loadLedger);
+        m_ledgerMaster->switchLedgers (loadLedger, openLedger);
+        m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->getCloseTimeNC ());
 
         if (bReplay)
