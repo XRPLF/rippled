@@ -7,14 +7,16 @@
 
 #include <stdint.h>
 #include <stdio.h>
+
 #include "iterator.h"
 #include "options.h"
+#include "replay_iterator.h"
 
 namespace hyperleveldb {
 
 // Update Makefile if you change these
 static const int kMajorVersion = 1;
-static const int kMinorVersion = 11;
+static const int kMinorVersion = 13;
 
 struct Options;
 struct ReadOptions;
@@ -139,6 +141,36 @@ class DB {
   // Therefore the following call will compact the entire database:
   //    db->CompactRange(NULL, NULL);
   virtual void CompactRange(const Slice* begin, const Slice* end) = 0;
+
+  // Create a live backup of a live LevelDB instance.
+  // The backup is stored in a directory named "backup-<name>" under the top
+  // level of the open LevelDB database.  The implementation is permitted, and
+  // even encouraged, to improve the performance of this call through
+  // hard-links.
+  virtual Status LiveBackup(const Slice& name) = 0;
+
+  // Return an opaque timestamp that identifies the current point in time of the
+  // database.  This timestamp may be subsequently presented to the
+  // NewReplayIterator method to create a ReplayIterator.
+  virtual void GetReplayTimestamp(std::string* timestamp) = 0;
+
+  // Set the lower bound for manual garbage collection.  This method only takes
+  // effect when Options.manual_garbage_collection is true.
+  virtual void AllowGarbageCollectBeforeTimestamp(const std::string& timestamp) = 0;
+
+  // Validate the timestamp
+  virtual bool ValidateTimestamp(const std::string& timestamp) = 0;
+
+  // Compare two timestamps and return -1, 0, 1 for lt, eq, gt
+  virtual int CompareTimestamps(const std::string& lhs, const std::string& rhs) = 0;
+
+  // Return a ReplayIterator that returns every write operation performed after
+  // the timestamp.
+  virtual Status GetReplayIterator(const std::string& timestamp,
+                                   ReplayIterator** iter) = 0;
+
+  // Release a previously allocated replay iterator.
+  virtual void ReleaseReplayIterator(ReplayIterator* iter) = 0;
 
  private:
   // No copying allowed

@@ -42,7 +42,8 @@
 #include <po6/threads/thread.h>
 
 // e
-#include <e/guard.h>
+#include <e/popt.h>
+#include <e/time.h>
 
 // armnod
 #include <armnod.h>
@@ -50,17 +51,9 @@
 // numbers
 #include <numbers.h>
 
-static long _done = 0;
-static long _number = 1000000;
-static long _threads = 1;
-
-static struct poptOption _popts[] = {
-    {"number", 'n', POPT_ARG_LONG, &_number, 0,
-     "perform N operations against the database (default: 1000000)", "N"},
-    {"threads", 't', POPT_ARG_LONG, &_threads, 0,
-     "run the test with T concurrent threads (default: 1)", "T"},
-    POPT_TABLEEND
-};
+static void
+backup_thread(leveldb::DB*,
+              numbers::throughput_latency_logger* tll);
 
 static void
 worker_thread(leveldb::DB*,
@@ -68,50 +61,55 @@ worker_thread(leveldb::DB*,
               const armnod::argparser& k,
               const armnod::argparser& v);
 
+static long _done = 0;
+static long _number = 1000000;
+static long _threads = 1;
+static long _backup = 0;
+static long _write_buf = 64ULL * 1024ULL * 1024ULL;
+static const char* _output = "benchmark.log";
+static const char* _dir = ".";
+
 int
 main(int argc, const char* argv[])
 {
+    e::argparser ap;
+    ap.autohelp();
+    ap.arg().name('n', "number")
+            .description("perform N operations against the database (default: 1000000)")
+            .metavar("N")
+            .as_long(&_number);
+    ap.arg().name('t', "threads")
+            .description("run the test with T concurrent threads (default: 1)")
+            .metavar("T")
+            .as_long(&_threads);
+    ap.arg().name('o', "output")
+            .description("output file for benchmark results (default: benchmark.log)")
+            .as_string(&_output);
+    ap.arg().name('d', "db-dir")
+            .description("directory for leveldb storage (default: .)")
+            .as_string(&_dir);
+    ap.arg().name('w', "write-buffer")
+            .description("write buffer size (default: 64MB)")
+            .as_long(&_write_buf);
+    ap.arg().name('b', "backup")
+            .description("perform a live backup every N seconds (default: 0 (no backup))")
+            .as_long(&_backup);
     armnod::argparser key_parser("key-");
     armnod::argparser value_parser("value-");
-    std::vector<poptOption> popts;
-    poptOption s[] = {POPT_AUTOHELP {NULL, 0, POPT_ARG_INCLUDE_TABLE, _popts, 0, "Benchmark:", NULL}, POPT_TABLEEND};
-    popts.push_back(s[0]);
-    popts.push_back(s[1]);
-    popts.push_back(key_parser.options("Key Generation:"));
-    popts.push_back(value_parser.options("Value Generation:"));
-    popts.push_back(s[2]);
-    poptContext poptcon;
-    poptcon = poptGetContext(NULL, argc, argv, &popts.front(), POPT_CONTEXT_POSIXMEHARDER);
-    e::guard g = e::makeguard(poptFreeContext, poptcon); g.use_variable();
-    poptSetOtherOptionHelp(poptcon, "[OPTIONS]");
+    ap.add("Key Generation:", key_parser.parser());
+    ap.add("Value Generation:", value_parser.parser());
 
-    int rc;
-
-    while ((rc = poptGetNextOpt(poptcon)) != -1)
+    if (!ap.parse(argc, argv))
     {
-        switch (rc)
-        {
-            case POPT_ERROR_NOARG:
-            case POPT_ERROR_BADOPT:
-            case POPT_ERROR_BADNUMBER:
-            case POPT_ERROR_OVERFLOW:
-                std::cerr << poptStrerror(rc) << " " << poptBadOption(poptcon, 0) << std::endl;
-                return EXIT_FAILURE;
-            case POPT_ERROR_OPTSTOODEEP:
-            case POPT_ERROR_BADQUOTE:
-            case POPT_ERROR_ERRNO:
-            default:
-                std::cerr << "logic error in argument parsing" << std::endl;
-                return EXIT_FAILURE;
-        }
+        return EXIT_FAILURE;
     }
 
     leveldb::Options opts;
     opts.create_if_missing = true;
-    opts.write_buffer_size = 64ULL * 1024ULL * 1024ULL;
+    opts.write_buffer_size = write_buf;
     opts.filter_policy = leveldb::NewBloomFilterPolicy(10);
     leveldb::DB* db;
-    leveldb::Status st = leveldb::DB::Open(opts, "tmp", &db);
+    leveldb::Status st = leveldb::DB::Open(opts, _dir, &db);
 
     if (!st.ok())
     {
@@ -121,7 +119,7 @@ main(int argc, const char* argv[])
 
     numbers::throughput_latency_logger tll;
 
-    if (!tll.open("benchmark.log"))
+    if (!tll.open(_output))
     {
         std::cerr << "could not open log: " << strerror(errno) << std::endl;
         return EXIT_FAILURE;
@@ -129,6 +127,13 @@ main(int argc, const char* argv[])
 
     typedef std::tr1::shared_ptr<po6::threads::thread> thread_ptr;
     std::vector<thread_ptr> threads;
+
+    if (_backup > 0)
+    {
+        thread_ptr t(new po6::threads::thread(std::tr1::bind(backup_thread, db, &tll)));
+        threads.push_back(t);
+        t->start();
+    }
 
     for (size_t i = 0; i < _threads; ++i)
     {
@@ -175,6 +180,47 @@ get_random()
     return ret;
 }
 
+#define BILLION (1000ULL * 1000ULL * 1000ULL)
+
+void
+backup_thread(leveldb::DB* db,
+              numbers::throughput_latency_logger* tll)
+{
+    uint64_t target = e::time() / BILLION;
+    target += _backup;
+    uint64_t idx = 0;
+    numbers::throughput_latency_logger::thread_state ts;
+    tll->initialize_thread(&ts);
+
+    while (__sync_fetch_and_add(&_done, 0) < _number)
+    {
+        uint64_t now = e::time() / BILLION;
+
+        if (now < target)
+        {
+            timespec ts;
+            ts.tv_sec = 0;
+            ts.tv_nsec = 250ULL * 1000ULL * 1000ULL;
+            nanosleep(&ts, NULL);
+        }
+        else
+        {
+            target = now + _backup;
+            char buf[32];
+            snprintf(buf, 32, "%05lu", idx);
+            buf[31] = '\0';
+            leveldb::Slice name(buf);
+            leveldb::Status st;
+
+            tll->start(&ts, 4);
+            st = db->LiveBackup(name);
+            tll->finish(&ts);
+            assert(st.ok());
+            ++idx;
+        }
+    }
+}
+
 void
 worker_thread(leveldb::DB* db,
               numbers::throughput_latency_logger* tll,
@@ -196,13 +242,15 @@ worker_thread(leveldb::DB* db,
         // issue a "get"
         std::string tmp;
         leveldb::ReadOptions ropts;
+        tll->start(&ts, 1);
         leveldb::Status rst = db->Get(ropts, leveldb::Slice(k.data(), k.size()), &tmp);
+        tll->finish(&ts);
         assert(rst.ok() || rst.IsNotFound());
 
         // issue a "put"
         leveldb::WriteOptions wopts;
         wopts.sync = false;
-        tll->start(&ts, 0);
+        tll->start(&ts, 2);
         leveldb::Status wst = db->Put(wopts, leveldb::Slice(k.data(), k.size()), leveldb::Slice(v.data(), v.size()));
         tll->finish(&ts);
         assert(wst.ok());

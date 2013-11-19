@@ -1,0 +1,41 @@
+package hyperleveldb
+| source="hyperleveldb"
+| debian name="libhyperleveldb0"
+| version="@VERSION@"
+| release="1"
+| license="BSD"
+| copyright="2011-2013 The LevelDB Authors"
+| homepage="http://hyperdex.org"
+| tarball="http://hyperdex.org/src/hyperleveldb-{version}.tar.gz"
+| debian section="libs"
+| configure="--disable-static"
+| summary="A fast key-value storage library"
++ {libdir}/libhyperleveldb.so.0
++ {libdir}/libhyperleveldb.so.0.0.0
+'''LevelDB is a fast key-value storage library written at Google that provides
+an ordered mapping from string keys to string values.'''
+
+subpackage hyperleveldb-devel
+| debian name="libhyperleveldb-dev"
+| debian section="libdevel"
+| debian requires="libhyperleveldb0{self}"
+| fedora requires="hyperleveldb{self}"
+| summary="A fast key-value storage library (development files)"
++ {includedir}/hyperleveldb/cache.h
++ {includedir}/hyperleveldb/c.h
++ {includedir}/hyperleveldb/comparator.h
++ {includedir}/hyperleveldb/db.h
++ {includedir}/hyperleveldb/env.h
++ {includedir}/hyperleveldb/filter_policy.h
++ {includedir}/hyperleveldb/iterator.h
++ {includedir}/hyperleveldb/options.h
++ {includedir}/hyperleveldb/replay_iterator.h
++ {includedir}/hyperleveldb/slice.h
++ {includedir}/hyperleveldb/status.h
++ {includedir}/hyperleveldb/table_builder.h
++ {includedir}/hyperleveldb/table.h
++ {includedir}/hyperleveldb/write_batch.h
++ {libdir}/libhyperleveldb.so
++ {libdir}/pkgconfig/libhyperleveldb.pc
+
+exclude {libdir}/libhyperleveldb.la

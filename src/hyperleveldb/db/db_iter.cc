@@ -5,12 +5,14 @@
 #include "db_iter.h"
 
 #include "filename.h"
+#include "db_impl.h"
 #include "dbformat.h"
 #include "../hyperleveldb/env.h"
 #include "../hyperleveldb/iterator.h"
 #include "../port/port.h"
 #include "../util/logging.h"
 #include "../util/mutexlock.h"
+#include "../util/random.h"
 
 namespace hyperleveldb {
 
@@ -46,15 +48,16 @@ class DBIter: public Iterator {
     kReverse
   };
 
-  DBIter(const std::string* dbname, Env* env,
-         const Comparator* cmp, Iterator* iter, SequenceNumber s)
-      : dbname_(dbname),
-        env_(env),
+  DBIter(DBImpl* db, const Comparator* cmp, Iterator* iter, SequenceNumber s,
+         uint32_t seed)
+      : db_(db),
         user_comparator_(cmp),
         iter_(iter),
         sequence_(s),
         direction_(kForward),
-        valid_(false) {
+        valid_(false),
+        rnd_(seed),
+        bytes_counter_(RandomPeriod()) {
   }
   virtual ~DBIter() {
     delete iter_;
@@ -100,8 +103,12 @@ class DBIter: public Iterator {
     }
   }
 
-  const std::string* const dbname_;
-  Env* const env_;
+  // Pick next gap with average value of config::kReadBytesPeriod.
+  ssize_t RandomPeriod() {
+    return rnd_.Uniform(2*config::kReadBytesPeriod);
+  }
+
+  DBImpl* db_;
   const Comparator* const user_comparator_;
   Iterator* const iter_;
   SequenceNumber const sequence_;
@@ -112,13 +119,23 @@ class DBIter: public Iterator {
   Direction direction_;
   bool valid_;
 
+  Random rnd_;
+  ssize_t bytes_counter_;
+
   // No copying allowed
   DBIter(const DBIter&);
   void operator=(const DBIter&);
 };
 
 inline bool DBIter::ParseKey(ParsedInternalKey* ikey) {
-  if (!ParseInternalKey(iter_->key(), ikey)) {
+  Slice k = iter_->key();
+  ssize_t n = k.size() + iter_->value().size();
+  bytes_counter_ -= n;
+  while (bytes_counter_ < 0) {
+    bytes_counter_ += RandomPeriod();
+    db_->RecordReadSample(k);
+  }
+  if (!ParseInternalKey(k, ikey)) {
     status_ = Status::Corruption("corrupted internal key in DBIter");
     return false;
   } else {
@@ -128,6 +145,9 @@ inline bool DBIter::ParseKey(ParsedInternalKey* ikey) {
 
 void DBIter::Next() {
   assert(valid_);
+
+  // Temporarily use saved_key_ as storage for key to skip.
+  std::string* skip = &saved_key_;
 
   if (direction_ == kReverse) {  // Switch directions?
     direction_ = kForward;
@@ -144,11 +164,13 @@ void DBIter::Next() {
       saved_key_.clear();
       return;
     }
+  } else {
+    // if we did not reverse direction, save the current key as the one which we
+    // must advance past.  If we did reverse direction, it's already been set,
+    // so we don't need to do it.  This conditional solves upstream issue #200.
+    SaveKey(ExtractUserKey(iter_->key()), skip);
   }
 
-  // Temporarily use saved_key_ as storage for key to skip.
-  std::string* skip = &saved_key_;
-  SaveKey(ExtractUserKey(iter_->key()), skip);
   FindNextUserEntry(true, skip);
 }
 
@@ -288,12 +310,12 @@ void DBIter::SeekToLast() {
 }  // anonymous namespace
 
 Iterator* NewDBIterator(
-    const std::string* dbname,
-    Env* env,
+    DBImpl* db,
     const Comparator* user_key_comparator,
     Iterator* internal_iter,
-    const SequenceNumber& sequence) {
-  return new DBIter(dbname, env, user_key_comparator, internal_iter, sequence);
+    SequenceNumber sequence,
+    uint32_t seed) {
+  return new DBIter(db, user_key_comparator, internal_iter, sequence, seed);
 }
 
 }  // namespace hyperleveldb

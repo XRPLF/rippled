@@ -4,14 +4,20 @@
 
 #include <algorithm>
 #include <stdint.h>
+
 #include "../hyperleveldb/comparator.h"
 #include "../hyperleveldb/slice.h"
 #include "../port/port.h"
+#include "coding.h"
 #include "logging.h"
 
 namespace hyperleveldb {
 
 Comparator::~Comparator() { }
+
+uint64_t Comparator::KeyNum(const Slice& key) const {
+  return 0;
+}
 
 namespace {
 class BytewiseComparatorImpl : public Comparator {
@@ -62,6 +68,22 @@ class BytewiseComparatorImpl : public Comparator {
       }
     }
     // *key is a run of 0xffs.  Leave it alone.
+  }
+
+  virtual uint64_t KeyNum(const Slice& key) const {
+    unsigned char buf[sizeof(uint64_t)];
+    memset(buf, 0, sizeof(buf));
+    memmove(buf, key.data(), std::min(key.size(), sizeof(uint64_t)));
+    uint64_t number;
+    number = static_cast<uint64_t>(buf[0]) << 56
+           | static_cast<uint64_t>(buf[1]) << 48
+           | static_cast<uint64_t>(buf[2]) << 40
+           | static_cast<uint64_t>(buf[3]) << 32
+           | static_cast<uint64_t>(buf[4]) << 24
+           | static_cast<uint64_t>(buf[5]) << 16
+           | static_cast<uint64_t>(buf[6]) << 8
+           | static_cast<uint64_t>(buf[7]);
+    return number;
   }
 };
 }  // namespace
