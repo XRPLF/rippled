@@ -260,6 +260,11 @@ public:
         checkAccept (lastClosed);
     }
 
+    bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
+    {
+        return mLedgerHistory.fixIndex (ledgerIndex, ledgerHash);
+    }
+
     void storeLedger (Ledger::pointer ledger)
     {
         mLedgerHistory.addLedger (ledger, false);

@@ -2464,6 +2464,9 @@
     <None Include="..\..\src\ripple_app\TODO.md">
       <Filter>[2] Old Ripple\ripple_app</Filter>
     </None>
+    <None Include="..\..\src\ripple_app\ledger\TODO.md">
+      <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\doc\todo\NIKB_TODO.txt">

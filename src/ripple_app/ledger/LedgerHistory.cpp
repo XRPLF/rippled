@@ -30,8 +30,8 @@
 // FIXME: Need to clean up ledgers by index at some point
 
 LedgerHistory::LedgerHistory ()
-	: mLedgersByHash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE)
-	, mConsensusValidated ("ConsensusValidated", 64, 300)
+        : mLedgersByHash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE)
+        , mConsensusValidated ("ConsensusValidated", 64, 300)
 {
     ;
 }
@@ -157,6 +157,21 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
         }
         entry->second = hash;
     }
+}
+
+/** Ensure mLedgersByHash doesn't have the wrong hash for a particular index
+*/
+bool LedgerHistory::fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
+{
+    TaggedCache::ScopedLockType sl (mLedgersByHash.peekMutex (), __FILE__, __LINE__);
+    std::map<uint32, uint256>::iterator it (mLedgersByIndex.find (ledgerIndex));
+
+    if ((it != mLedgersByIndex.end ()) && (it->second != ledgerHash) )
+    {
+        it->second = ledgerHash;
+        return false;
+    }
+    return true;
 }
 
 void LedgerHistory::tune (int size, int age)

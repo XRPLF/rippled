@@ -63,6 +63,12 @@ protected:
 //         class. But then what is the meaning of a Ledger object? Is this
 //         really two classes in one? StoreOfAllLedgers + SingleLedgerObject?
 //
+/** Holds some or all of a ledger.
+    This can hold just the header, a partial set of data, or the entire set
+    of data. It all depends on what is in the corresponding SHAMap entry.
+    Various functions are provided to populate or depopulate the caches that
+    the object holds references to.
+*/
 class Ledger
     : public boost::enable_shared_from_this <Ledger>
     , public LedgerBase
@@ -470,7 +476,7 @@ protected:
     {
         saveValidatedLedger(current);
     }
-    void saveValidatedLedger (bool current);
+    bool saveValidatedLedger (bool current);
 
     void updateFees ();
 

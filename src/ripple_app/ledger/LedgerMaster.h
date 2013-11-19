@@ -122,6 +122,8 @@ public:
     virtual void newPathRequest () = 0;
     virtual void newOrderBookDB () = 0;
 
+    virtual bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) = 0;
+
     static bool shouldAcquire (uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
 };
 

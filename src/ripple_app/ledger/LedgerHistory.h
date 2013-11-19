@@ -50,6 +50,8 @@ public:
     void builtLedger (Ledger::ref);
     void validatedLedger (Ledger::ref);
 
+    bool fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
+
 private:
     TaggedCacheType <LedgerHash, Ledger, UptimeTimerAdapter> mLedgersByHash;
     TaggedCacheType <LedgerIndex, std::pair< LedgerHash, LedgerHash >, UptimeTimerAdapter> mConsensusValidated;

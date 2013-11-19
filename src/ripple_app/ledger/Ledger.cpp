@@ -538,7 +538,7 @@ uint256 Ledger::getHash ()
     return mHash;
 }
 
-void Ledger::saveValidatedLedger (bool current)
+bool Ledger::saveValidatedLedger (bool current)
 {
     WriteLog (lsTRACE, Ledger) << "saveValidatedLedger " << (current ? "" : "fromAcquire ") << getLedgerSeq ();
     static boost::format deleteLedger ("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
@@ -588,7 +588,7 @@ void Ledger::saveValidatedLedger (bool current)
             StaticScopedLockType sl (sPendingSaveLock, __FILE__, __LINE__);
             sPendingSaves.erase(getLedgerSeq());
         }
-        return;
+        return false;
     }
 
     {
@@ -664,6 +664,7 @@ void Ledger::saveValidatedLedger (bool current)
         StaticScopedLockType sl (sPendingSaveLock, __FILE__, __LINE__);
         sPendingSaves.erase(getLedgerSeq());
     }
+    return true;
 }
 
 #ifndef NO_SQLITE3_PREPARE
@@ -1875,12 +1876,15 @@ uint32 Ledger::roundCloseTime (uint32 closeTime, uint32 closeResolution)
     return closeTime - (closeTime % closeResolution);
 }
 
+/** Save, or arrange to save, a fully-validated ledger
+    Returns false on error
+*/
 bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
 {
     if (!getApp().getHashRouter ().setFlag (getHash (), SF_SAVED))
     {
         WriteLog (lsDEBUG, Ledger) << "Double pend save for " << getLedgerSeq();
-        return false;
+        return true;
     }
 
     assert (isImmutable ());
@@ -1890,13 +1894,13 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
         if (!sPendingSaves.insert(getLedgerSeq()).second)
         {
             WriteLog (lsDEBUG, Ledger) << "Pend save with seq in pending saves " << getLedgerSeq();
-            return false;
+            return true;
         }
     }
 
     if (isSynchronous)
     {
-        saveValidatedLedger(isCurrent);
+        return saveValidatedLedger(isCurrent);
     }
     else if (isCurrent)
     {
