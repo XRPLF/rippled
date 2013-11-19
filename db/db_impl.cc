@@ -5,11 +5,13 @@
 #include "db_impl.h"
 
 #include <algorithm>
+#include <iostream>
 #include <set>
 #include <string>
 #include <stdint.h>
 #include <stdio.h>
 #include <vector>
+
 #include "builder.h"
 #include "db_iter.h"
 #include "dbformat.h"
@@ -17,11 +19,13 @@
 #include "log_reader.h"
 #include "log_writer.h"
 #include "memtable.h"
+#include "replay_iterator.h"
 #include "table_cache.h"
 #include "version_set.h"
 #include "write_batch_internal.h"
 #include "../hyperleveldb/db.h"
 #include "../hyperleveldb/env.h"
+#include "../hyperleveldb/replay_iterator.h"
 #include "../hyperleveldb/status.h"
 #include "../hyperleveldb/table.h"
 #include "../hyperleveldb/table_builder.h"
@@ -34,6 +38,8 @@
 #include "../util/mutexlock.h"
 
 namespace hyperleveldb {
+
+const int kStraightReads = 50;
 
 const int kNumNonTableCacheFiles = 10;
 
@@ -102,22 +108,23 @@ Options SanitizeOptions(const std::string& dbname,
   return result;
 }
 
-DBImpl::DBImpl(const Options& options, const std::string& dbname)
-    : env_(options.env),
-      internal_comparator_(options.comparator),
-      internal_filter_policy_(options.filter_policy),
-      options_(SanitizeOptions(
-          dbname, &internal_comparator_, &internal_filter_policy_, options)),
-      owns_info_log_(options_.info_log != options.info_log),
-      owns_cache_(options_.block_cache != options.block_cache),
+DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
+    : env_(raw_options.env),
+      internal_comparator_(raw_options.comparator),
+      internal_filter_policy_(raw_options.filter_policy),
+      options_(SanitizeOptions(dbname, &internal_comparator_,
+                               &internal_filter_policy_, raw_options)),
+      owns_info_log_(options_.info_log != raw_options.info_log),
+      owns_cache_(options_.block_cache != raw_options.block_cache),
       dbname_(dbname),
       db_lock_(NULL),
       shutting_down_(NULL),
       mem_(new MemTable(internal_comparator_)),
       imm_(NULL),
-      logfile_(NULL),
+      logfile_(),
       logfile_number_(0),
-      log_(NULL),
+      log_(),
+      seed_(0),
       writers_lower_(0),
       writers_upper_(0),
       bg_fg_cv_(&mutex_),
@@ -130,17 +137,24 @@ DBImpl::DBImpl(const Options& options, const std::string& dbname)
       bg_log_cv_(&mutex_),
       bg_log_occupied_(false),
       manual_compaction_(NULL),
+      manual_garbage_cutoff_(raw_options.manual_garbage_collection ?
+                             SequenceNumber(0) : kMaxSequenceNumber),
+      straight_reads_(0),
+      backup_cv_(&mutex_),
+      backup_in_progress_(),
+      backup_deferred_delete_(),
       consecutive_compaction_errors_(0) {
   mutex_.Lock();
   mem_->Ref();
   has_imm_.Release_Store(NULL);
+  backup_in_progress_.Release_Store(NULL);
   env_->StartThread(&DBImpl::CompactMemTableWrapper, this);
   env_->StartThread(&DBImpl::CompactOptimisticWrapper, this);
   env_->StartThread(&DBImpl::CompactLevelWrapper, this);
   num_bg_threads_ = 3;
 
   // Reserve ten files or so for other uses and give the rest to TableCache.
-  const int table_cache_size = options.max_open_files - kNumNonTableCacheFiles;
+  const int table_cache_size = options_.max_open_files - kNumNonTableCacheFiles;
   table_cache_ = new TableCache(dbname_, &options_, table_cache_size);
   versions_ = new VersionSet(dbname_, &options_, table_cache_,
                              &internal_comparator_);
@@ -170,8 +184,8 @@ DBImpl::~DBImpl() {
   delete versions_;
   if (mem_ != NULL) mem_->Unref();
   if (imm_ != NULL) imm_->Unref();
-  delete log_;
-  delete logfile_;
+  log_.reset();
+  logfile_.reset();
   delete table_cache_;
 
   if (owns_info_log_) {
@@ -224,6 +238,16 @@ void DBImpl::MaybeIgnoreError(Status* s) const {
 }
 
 void DBImpl::DeleteObsoleteFiles() {
+  // Defer if there's background activity
+  mutex_.AssertHeld();
+  if (backup_in_progress_.Acquire_Load() != NULL) {
+    backup_deferred_delete_ = true;
+    return;
+  }
+
+  // If you ever release mutex_ in this function, you'll need to do more work in
+  // LiveBackup
+
   // Make a set of all of the live files
   std::set<uint64_t> live = pending_outputs_;
   versions_->AddLiveFiles(&live);
@@ -651,7 +675,7 @@ void DBImpl::CompactLevelThread() {
   while (!shutting_down_.Acquire_Load()) {
     while (!shutting_down_.Acquire_Load() &&
            manual_compaction_ == NULL &&
-           !versions_->NeedsCompaction(levels_locked_)) {
+           !versions_->NeedsCompaction(levels_locked_, straight_reads_ > kStraightReads)) {
       bg_compaction_cv_.Wait();
     }
     if (shutting_down_.Acquire_Load()) {
@@ -709,9 +733,9 @@ Status DBImpl::BackgroundCompaction() {
         (m->end ? m->end->DebugString().c_str() : "(end)"),
         (m->done ? "(end)" : manual_end.DebugString().c_str()));
   } else {
-    int level = versions_->PickCompactionLevel(levels_locked_);
+    int level = versions_->PickCompactionLevel(levels_locked_, straight_reads_ > kStraightReads);
     if (level != config::kNumLevels) {
-      c = versions_->PickCompaction(level);
+      c = versions_->PickCompaction(versions_->current(), level);
     }
     if (c) {
       assert(!levels_locked_[c->level() + 0]);
@@ -831,7 +855,7 @@ Status DBImpl::OptimisticCompaction() {
       if (levels_locked_[level] || levels_locked_[level + 1]) {
         continue;
       }
-      Compaction* tmp = versions_->PickCompaction(level);
+      Compaction* tmp = versions_->PickCompaction(versions_->current(), level);
       if (tmp && tmp->IsTrivialMove()) {
         if (c) {
           delete c;
@@ -1055,6 +1079,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   std::string current_user_key;
   bool has_current_user_key = false;
   SequenceNumber last_sequence_for_key = kMaxSequenceNumber;
+  uint64_t i = 0;
   for (; input->Valid() && !shutting_down_.Acquire_Load(); ) {
     Slice key = input->key();
     // Handle key/value, add to state, etc.
@@ -1074,6 +1099,9 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
         last_sequence_for_key = kMaxSequenceNumber;
       }
 
+      // Just remember that last_sequence_for_key is decreasing over time, and
+      // all of this makes sense.
+
       if (last_sequence_for_key <= compact->smallest_snapshot) {
         // Hidden by an newer entry for same user key
         drop = true;    // (A)
@@ -1088,6 +1116,15 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
         //     few iterations of this loop (by rule (A) above).
         // Therefore this deletion marker is obsolete and can be dropped.
         drop = true;
+      }
+
+      // If we're going to drop this key, and there was no previous version of
+      // this key, and it was written at or after the garbage cutoff, we keep
+      // it.
+      if (drop &&
+          last_sequence_for_key == kMaxSequenceNumber  &&
+          ikey.sequence >= manual_garbage_cutoff_) {
+        drop = false;
       }
 
       last_sequence_for_key = ikey.sequence;
@@ -1174,10 +1211,14 @@ static void CleanupIteratorState(void* arg1, void* arg2) {
 }
 }  // namespace
 
-Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
-                                      SequenceNumber* latest_snapshot) {
+Iterator* DBImpl::NewInternalIterator(const ReadOptions& options, uint64_t number,
+                                      SequenceNumber* latest_snapshot,
+                                      uint32_t* seed, bool external_sync) {
   IterState* cleanup = new IterState;
-  mutex_.Lock();
+  if (!external_sync) {
+    mutex_.Lock();
+  }
+  ++straight_reads_;
   *latest_snapshot = versions_->LastSequence();
 
   // Collect together all needed child iterators
@@ -1188,7 +1229,7 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
     list.push_back(imm_->NewIterator());
     imm_->Ref();
   }
-  versions_->current()->AddIterators(options, &list);
+  versions_->current()->AddSomeIterators(options, number, &list);
   Iterator* internal_iter =
       NewMergingIterator(&internal_comparator_, &list[0], list.size());
   versions_->current()->Ref();
@@ -1199,13 +1240,17 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
   cleanup->version = versions_->current();
   internal_iter->RegisterCleanup(CleanupIteratorState, cleanup, NULL);
 
-  mutex_.Unlock();
+  *seed = ++seed_;
+  if (!external_sync) {
+    mutex_.Unlock();
+  }
   return internal_iter;
 }
 
 Iterator* DBImpl::TEST_NewInternalIterator() {
   SequenceNumber ignored;
-  return NewInternalIterator(ReadOptions(), &ignored);
+  uint32_t ignored_seed;
+  return NewInternalIterator(ReadOptions(), 0, &ignored, &ignored_seed, false);
 }
 
 int64_t DBImpl::TEST_MaxNextLevelOverlappingBytes() {
@@ -1251,6 +1296,10 @@ Status DBImpl::Get(const ReadOptions& options,
     mutex_.Lock();
   }
 
+  if (have_stat_update && current->UpdateStats(stats)) {
+    bg_compaction_cv_.Signal();
+  }
+  ++straight_reads_;
   mem->Unref();
   if (imm != NULL) imm->Unref();
   current->Unref();
@@ -1259,12 +1308,157 @@ Status DBImpl::Get(const ReadOptions& options,
 
 Iterator* DBImpl::NewIterator(const ReadOptions& options) {
   SequenceNumber latest_snapshot;
-  Iterator* internal_iter = NewInternalIterator(options, &latest_snapshot);
+  uint32_t seed;
+  Iterator* iter = NewInternalIterator(options, 0, &latest_snapshot, &seed, false);
   return NewDBIterator(
-      &dbname_, env_, user_comparator(), internal_iter,
+      this, user_comparator(), iter,
       (options.snapshot != NULL
        ? reinterpret_cast<const SnapshotImpl*>(options.snapshot)->number_
-       : latest_snapshot));
+       : latest_snapshot),
+      seed);
+}
+
+void DBImpl::GetReplayTimestamp(std::string* timestamp) {
+  uint64_t file = 0;
+  uint64_t seqno = 0;
+
+  {
+    MutexLock l(&mutex_);
+    file = versions_->NewFileNumber();
+    versions_->ReuseFileNumber(file);
+    seqno = versions_->LastSequence();
+  }
+
+  timestamp->clear();
+  PutVarint64(timestamp, file);
+  PutVarint64(timestamp, seqno);
+}
+
+void DBImpl::AllowGarbageCollectBeforeTimestamp(const std::string& timestamp) {
+  Slice ts_slice(timestamp);
+  uint64_t file = 0;
+  uint64_t seqno = 0;
+
+  if (timestamp == "all") {
+    // keep zeroes
+  } else if (timestamp == "now") {
+    MutexLock l(&mutex_);
+    seqno = versions_->LastSequence();
+    if (manual_garbage_cutoff_ < seqno) {
+      manual_garbage_cutoff_ = seqno;
+    }
+  } else if (GetVarint64(&ts_slice, &file) &&
+             GetVarint64(&ts_slice, &seqno)) {
+    MutexLock l(&mutex_);
+    if (manual_garbage_cutoff_ < seqno) {
+      manual_garbage_cutoff_ = seqno;
+    }
+  }
+}
+
+bool DBImpl::ValidateTimestamp(const std::string& ts) {
+  uint64_t file = 0;
+  uint64_t seqno = 0;
+  Slice ts_slice(ts);
+  return ts == "all" || ts == "now" ||
+         (GetVarint64(&ts_slice, &file) &&
+          GetVarint64(&ts_slice, &seqno));
+}
+
+int DBImpl::CompareTimestamps(const std::string& lhs, const std::string& rhs) {
+  uint64_t now = 0;
+  uint64_t lhs_seqno = 0;
+  uint64_t rhs_seqno = 0;
+  uint64_t tmp;
+  if (lhs == "now" || rhs == "now") {
+    MutexLock l(&mutex_);
+    now = versions_->LastSequence();
+  }
+  if (lhs == "all") {
+    lhs_seqno = 0;
+  } else if (lhs == "now") {
+    lhs_seqno = now;
+  } else {
+    Slice lhs_slice(lhs);
+    GetVarint64(&lhs_slice, &tmp);
+    GetVarint64(&lhs_slice, &lhs_seqno);
+  }
+  if (rhs == "all") {
+    rhs_seqno = 0;
+  } else if (rhs == "now") {
+    rhs_seqno = now;
+  } else {
+    Slice rhs_slice(rhs);
+    GetVarint64(&rhs_slice, &tmp);
+    GetVarint64(&rhs_slice, &rhs_seqno);
+  }
+
+  if (lhs_seqno < rhs_seqno) {
+    return -1;
+  } else if (lhs_seqno > rhs_seqno) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+Status DBImpl::GetReplayIterator(const std::string& timestamp,
+                                 ReplayIterator** iter) {
+  *iter = NULL;
+  Slice ts_slice(timestamp);
+  uint64_t file = 0;
+  uint64_t seqno = 0;
+
+  if (timestamp == "all") {
+    seqno = 0;
+  } else if (timestamp == "now") {
+    MutexLock l(&mutex_);
+    file = versions_->NewFileNumber();
+    versions_->ReuseFileNumber(file);
+    seqno = versions_->LastSequence();
+  } else if (!GetVarint64(&ts_slice, &file) ||
+             !GetVarint64(&ts_slice, &seqno)) {
+    return Status::InvalidArgument("Timestamp is not valid");
+  }
+
+  ReadOptions options;
+  SequenceNumber latest_snapshot;
+  uint32_t seed;
+  MutexLock l(&mutex_);
+  Iterator* internal_iter = NewInternalIterator(options, file, &latest_snapshot, &seed, true);
+  internal_iter->SeekToFirst();
+  ReplayIteratorImpl* iterimpl;
+  iterimpl = new ReplayIteratorImpl(
+      this, &mutex_, user_comparator(), internal_iter, mem_, SequenceNumber(seqno));
+  *iter = iterimpl;
+  replay_iters_.push_back(iterimpl);
+  return Status::OK();
+}
+
+void DBImpl::ReleaseReplayIterator(ReplayIterator* _iter) {
+  MutexLock l(&mutex_);
+  ReplayIteratorImpl* iter = reinterpret_cast<ReplayIteratorImpl*>(_iter);
+  for (std::list<ReplayIteratorImpl*>::iterator it = replay_iters_.begin();
+      it != replay_iters_.end(); ++it) {
+    if (*it == iter) {
+      iter->cleanup(); // calls delete
+      replay_iters_.erase(it);
+      return;
+    }
+  }
+}
+
+void DBImpl::RecordReadSample(Slice key) {
+  MutexLock l(&mutex_);
+  ++straight_reads_;
+  if (versions_->current()->RecordReadSample(key)) {
+    bg_compaction_cv_.Signal();
+  }
+}
+
+SequenceNumber DBImpl::LastSequence() {
+  MutexLock l(&mutex_);
+  return versions_->LastSequence();
 }
 
 const Snapshot* DBImpl::GetSnapshot() {
@@ -1294,11 +1488,11 @@ struct DBImpl::Writer {
   Writer* next;
   uint64_t start_sequence;
   uint64_t end_sequence;
-  WritableFile* logfile;
-  log::Writer* log;
+  std::tr1::shared_ptr<WritableFile> logfile;
+  std::tr1::shared_ptr<log::Writer> log;
   MemTable* mem;
-  WritableFile* old_logfile;
-  log::Writer* old_log;
+  std::tr1::shared_ptr<WritableFile> old_logfile;
+  std::tr1::shared_ptr<log::Writer> old_log;
 
   explicit Writer()
     : mtx(),
@@ -1307,11 +1501,11 @@ struct DBImpl::Writer {
       next(NULL),
       start_sequence(0),
       end_sequence(0),
-      logfile(NULL),
-      log(NULL),
+      logfile(),
+      log(),
       mem(NULL),
-      old_logfile(NULL),
-      old_log(NULL) {
+      old_logfile(),
+      old_log() {
   }
   ~Writer() throw () {
   }
@@ -1345,10 +1539,12 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
 Status DBImpl::SequenceWriteBegin(Writer* w, WriteBatch* updates) {
   Status s;
   MutexLock l(&mutex_);
+  straight_reads_ = 0;
   bool force = updates == NULL;
   bool allow_delay = !force;
-  w->old_log = NULL;
-  w->old_logfile = NULL;
+  bool enqueue_mem = false;
+  w->old_log.reset();
+  w->old_logfile.reset();
 
   while (true) {
     if (!bg_error_.ok()) {
@@ -1380,14 +1576,15 @@ Status DBImpl::SequenceWriteBegin(Writer* w, WriteBatch* updates) {
       }
       w->old_log = log_;
       w->old_logfile = logfile_;
-      logfile_ = lfile;
+      logfile_.reset(lfile);
       logfile_number_ = new_log_number;
-      log_ = new log::Writer(lfile);
+      log_.reset(new log::Writer(lfile));
       imm_ = mem_;
       has_imm_.Release_Store(imm_);
       mem_ = new MemTable(internal_comparator_);
       mem_->Ref();
       force = false;   // Do not force another compaction if have room
+      enqueue_mem = true;
       break;
     }
   }
@@ -1403,6 +1600,13 @@ Status DBImpl::SequenceWriteBegin(Writer* w, WriteBatch* updates) {
     w->log = log_;
     w->mem = mem_;
     w->mem->Ref();
+  }
+
+  if (enqueue_mem) {
+    for (std::list<ReplayIteratorImpl*>::iterator it = replay_iters_.begin();
+        it != replay_iters_.end(); ++it) {
+      (*it)->enqueue(mem_, w->start_sequence);
+    }
   }
 
   return s;
@@ -1429,8 +1633,8 @@ void DBImpl::SequenceWriteEnd(Writer* w) {
   // must do in order: log, logfile
   if (w->old_log) {
     assert(w->old_logfile);
-    delete w->old_log;
-    delete w->old_logfile;
+    w->old_log.reset();
+    w->old_logfile.reset();
     bg_memtable_cv_.Signal();
   }
 
@@ -1520,6 +1724,107 @@ void DBImpl::GetApproximateSizes(
   }
 }
 
+Status DBImpl::LiveBackup(const Slice& _name) {
+  Slice name = _name;
+  size_t name_sz = 0;
+
+  for (; name_sz < name.size() && name.data()[name_sz] != '\0'; ++name_sz)
+      ;
+
+  name = Slice(name.data(), name_sz);
+  std::set<uint64_t> live;
+  uint64_t ticket = __sync_add_and_fetch(&writers_upper_, 1);
+
+  while (__sync_fetch_and_add(&writers_lower_, 0) < ticket)
+    ;
+
+  {
+    MutexLock l(&mutex_);
+    versions_->SetLastSequence(ticket);
+    while (backup_in_progress_.Acquire_Load() != NULL) {
+      backup_cv_.Wait();
+    }
+    backup_in_progress_.Release_Store(this);
+    while (bg_log_occupied_) {
+      bg_log_cv_.Wait();
+    }
+    bg_log_occupied_ = true;
+    // note that this logic assumes that DeleteObsoleteFiles never releases
+    // mutex_, so that once we release at this brace, we'll guarantee that it
+    // will see backup_in_progress_.  If you change DeleteObsoleteFiles to
+    // release mutex_, you'll need to add some sort of synchronization in place
+    // of this text block.
+    versions_->AddLiveFiles(&live);
+    __sync_fetch_and_add(&writers_lower_, 1);
+  }
+
+  Status s;
+  std::vector<std::string> filenames;
+  s = env_->GetChildren(dbname_, &filenames);
+  std::string backup_dir = dbname_ + "/backup-" + name.ToString() + "/";
+
+  if (s.ok()) {
+    s = env_->CreateDir(backup_dir);
+  }
+
+  uint64_t number;
+  FileType type;
+
+  for (size_t i = 0; i < filenames.size(); i++) {
+    if (!s.ok()) {
+      continue;
+    }
+    if (ParseFileName(filenames[i], &number, &type)) {
+      std::string src = dbname_ + "/" + filenames[i];
+      std::string target = backup_dir + "/" + filenames[i];
+      switch (type) {
+        case kLogFile:
+        case kDescriptorFile:
+        case kCurrentFile:
+        case kInfoLogFile:
+          s = env_->CopyFile(src, target);
+          break;
+        case kTableFile:
+          // If it's a file referenced by a version, we have logged that version
+          // and applied it.  Our MANIFEST will reflect that, and the file
+          // number assigned to new files will be greater or equal, ensuring
+          // that they aren't overwritten.  Any file not in "live" either exists
+          // past the current manifest (output of ongoing compaction) or so far
+          // in the past we don't care (we're going to delete it at the end of
+          // this backup).  I'd rather play safe than sorry.
+          //
+          // Under no circumstances should you collapse this to a single
+          // LinkFile without the conditional as it has implications for backups
+          // that share hardlinks.  Opening an older backup that has files
+          // hardlinked with newer backups will overwrite "immutable" files in
+          // the newer backups because they aren't in our manifest, and we do an
+          // open/write rather than a creat/rename.  We avoid linking these
+          // files.
+          if (live.find(number) != live.end()) {
+            s = env_->LinkFile(src, target);
+          }
+          break;
+        case kTempFile:
+        case kDBLockFile:
+          break;
+      }
+    }
+  }
+
+  {
+    MutexLock l(&mutex_);
+    backup_in_progress_.Release_Store(NULL);
+    if (s.ok() && backup_deferred_delete_) {
+      DeleteObsoleteFiles();
+    }
+    backup_deferred_delete_ = false;
+    bg_log_occupied_ = false;
+    bg_log_cv_.Signal();
+    backup_cv_.Signal();
+  }
+  return s;
+}
+
 // Default implementations of convenience methods that subclasses of DB
 // can call if they wish
 Status DB::Put(const WriteOptions& opt, const Slice& key, const Slice& value) {
@@ -1551,9 +1856,9 @@ Status DB::Open(const Options& options, const std::string& dbname,
                                      &lfile);
     if (s.ok()) {
       edit.SetLogNumber(new_log_number);
-      impl->logfile_ = lfile;
+      impl->logfile_.reset(lfile);
       impl->logfile_number_ = new_log_number;
-      impl->log_ = new log::Writer(lfile);
+      impl->log_.reset(new log::Writer(lfile));
       s = impl->versions_->LogAndApply(&edit, &impl->mutex_, &impl->bg_log_cv_, &impl->bg_log_occupied_);
     }
     if (s.ok()) {

@@ -5,6 +5,7 @@
 #ifndef STORAGE_HYPERLEVELDB_INCLUDE_COMPARATOR_H_
 #define STORAGE_HYPERLEVELDB_INCLUDE_COMPARATOR_H_
 
+#include <stdint.h>
 #include <string>
 
 namespace hyperleveldb {
@@ -51,6 +52,9 @@ class Comparator {
   // Simple comparator implementations may return with *key unchanged,
   // i.e., an implementation of this method that does nothing is correct.
   virtual void FindShortSuccessor(std::string* key) const = 0;
+
+  // If unsure, return 0;
+  virtual uint64_t KeyNum(const Slice& key) const;
 };
 
 // Return a builtin comparator that uses lexicographic byte-wise

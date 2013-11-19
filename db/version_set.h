@@ -64,6 +64,12 @@ class Version {
   // REQUIRES: This version has been saved (see VersionSet::SaveTo)
   void AddIterators(const ReadOptions&, std::vector<Iterator*>* iters);
 
+  // Append to *iters a sequence of iterators that will
+  // yield a subset of the contents of this Version when merged together.
+  // Yields only files with number greater or equal to num
+  // REQUIRES: This version has been saved (see VersionSet::SaveTo)
+  void AddSomeIterators(const ReadOptions&, uint64_t num, std::vector<Iterator*>* iters);
+
   // Lookup the value for key.  If found, store it in *val and
   // return OK.  Else return a non-OK status.  Fills *stats.
   // REQUIRES: lock is not held
@@ -73,6 +79,17 @@ class Version {
   };
   Status Get(const ReadOptions&, const LookupKey& key, std::string* val,
              GetStats* stats);
+
+  // Adds "stats" into the current state.  Returns true if a new
+  // compaction may need to be triggered, false otherwise.
+  // REQUIRES: lock is held
+  bool UpdateStats(const GetStats& stats);
+
+  // Record a sample of bytes read at the specified internal key.
+  // Samples are taken approximately once every config::kReadBytesPeriod
+  // bytes.  Returns true if a new compaction may need to be triggered.
+  // REQUIRES: lock is held
+  bool RecordReadSample(Slice key);
 
   // Reference count management (so Versions do not disappear out from
   // under live iterators)
@@ -108,7 +125,16 @@ class Version {
   friend class VersionSet;
 
   class LevelFileNumIterator;
-  Iterator* NewConcatenatingIterator(const ReadOptions&, int level) const;
+  Iterator* NewConcatenatingIterator(const ReadOptions&, int level, uint64_t num) const;
+
+  // Call func(arg, level, f) for every file that overlaps user_key in
+  // order from newest to oldest.  If an invocation of func returns
+  // false, makes no more calls.
+  //
+  // REQUIRES: user portion of internal_key == user_key.
+  void ForEachOverlapping(Slice user_key, Slice internal_key,
+                          void* arg,
+                          bool (*func)(void*, int, FileMetaData*));
 
   VersionSet* vset_;            // VersionSet to which this Version belongs
   Version* next_;               // Next version in linked list
@@ -118,13 +144,19 @@ class Version {
   // List of files per level
   std::vector<FileMetaData*> files_[config::kNumLevels];
 
+  // Next file to compact based on seek stats.
+  FileMetaData* file_to_compact_;
+  int file_to_compact_level_;
+
   // Level that should be compacted next and its compaction score.
   // Score < 1 means compaction is not strictly needed.  These fields
   // are initialized by Finalize().
   double compaction_scores_[config::kNumLevels];
 
   explicit Version(VersionSet* vset)
-      : vset_(vset), next_(this), prev_(this), refs_(0) {
+      : vset_(vset), next_(this), prev_(this), refs_(0),
+        file_to_compact_(NULL),
+        file_to_compact_level_(-1) {
     for (int i = 0; i < config::kNumLevels; ++i) {
       compaction_scores_[i] = -1;
     }
@@ -202,13 +234,13 @@ class VersionSet {
   // Pick level for a new compaction.
   // Returns kNumLevels if there is no compaction to be done.
   // Otherwise returns the lowest unlocked level that may compact upwards.
-  int PickCompactionLevel(bool* locked);
+  int PickCompactionLevel(bool* locked, bool seek_driven) const;
 
   // Pick inputs for a new compaction at the specified level.
   // Returns NULL if there is no compaction to be done.
   // Otherwise returns a pointer to a heap-allocated object that
   // describes the compaction.  Caller should delete the result.
-  Compaction* PickCompaction(int level);
+  Compaction* PickCompaction(Version* v, int level);
 
   // Return a compaction object for compacting the range [begin,end] in
   // the specified level.  Returns NULL if there is nothing in that
@@ -228,17 +260,8 @@ class VersionSet {
   Iterator* MakeInputIterator(Compaction* c);
 
   // Returns true iff some level needs a compaction.
-  bool NeedsCompaction(bool* levels) const {
-    Version* v = current_;
-    for (int i = 0; i + 1 < config::kNumLevels; ++i) {
-      if (!levels[i] && !levels[i + 1] &&
-          v->compaction_scores_[i] >= 1.0 &&
-          (i + 2 == config::kNumLevels ||
-           v->compaction_scores_[i + 1] < 1.0)) {
-        return true;
-      }
-    }
-    return false;
+  bool NeedsCompaction(bool* levels, bool seek_driven) const {
+    return PickCompactionLevel(levels, seek_driven) != config::kNumLevels;
   }
 
   // Add all files listed in any live version to *live.
@@ -273,7 +296,8 @@ class VersionSet {
                  InternalKey* smallest,
                  InternalKey* largest);
 
-  void GetCompactionBoundaries(int level,
+  void GetCompactionBoundaries(Version* version,
+                               int level,
                                std::vector<FileMetaData*>* LA,
                                std::vector<FileMetaData*>* LB,
                                std::vector<uint64_t>* LA_sizes,

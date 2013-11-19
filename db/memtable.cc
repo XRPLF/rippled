@@ -19,6 +19,10 @@ static Slice GetLengthPrefixedSlice(const char* data) {
   return Slice(p, len);
 }
 
+static Slice GetLengthPrefixedSlice(std::pair<uint64_t, const char*> tk) {
+  return GetLengthPrefixedSlice(tk.second);
+}
+
 MemTable::MemTable(const InternalKeyComparator& cmp)
     : comparator_(cmp),
       refs_(0),
@@ -34,11 +38,16 @@ size_t MemTable::ApproximateMemoryUsage() {
   return arena_.MemoryUsage();
 }
 
-int MemTable::KeyComparator::operator()(const char* aptr, const char* bptr)
+int MemTable::KeyComparator::operator()(TableKey ak, TableKey bk)
     const {
+  if (ak.first < bk.first) {
+    return -1;
+  } else if (ak.first > bk.first) {
+    return 1;
+  }
   // Internal keys are encoded as length-prefixed strings.
-  Slice a = GetLengthPrefixedSlice(aptr);
-  Slice b = GetLengthPrefixedSlice(bptr);
+  Slice a = GetLengthPrefixedSlice(ak);
+  Slice b = GetLengthPrefixedSlice(bk);
   return comparator.Compare(a, b);
 }
 
@@ -54,10 +63,15 @@ static const char* EncodeKey(std::string* scratch, const Slice& target) {
 
 class MemTableIterator: public Iterator {
  public:
-  explicit MemTableIterator(MemTable::Table* table) : iter_(table) { }
+  explicit MemTableIterator(MemTable::Table* table,
+                            MemTable::KeyComparator* cmp)
+    : iter_(table), comparator_(cmp) { }
 
   virtual bool Valid() const { return iter_.Valid(); }
-  virtual void Seek(const Slice& k) { iter_.Seek(EncodeKey(&tmp_, k)); }
+  virtual void Seek(const Slice& k) {
+    uint64_t keynum = comparator_->comparator.user_comparator()->KeyNum(Slice(k.data(), k.size() - 8));
+    iter_.Seek(std::make_pair(keynum, EncodeKey(&tmp_, k)));
+  }
   virtual void SeekToFirst() { iter_.SeekToFirst(); }
   virtual void SeekToLast() { iter_.SeekToLast(); }
   virtual void Next() { iter_.Next(); }
@@ -72,6 +86,7 @@ class MemTableIterator: public Iterator {
 
  private:
   MemTable::Table::Iterator iter_;
+  MemTable::KeyComparator* comparator_;
   std::string tmp_;       // For passing to EncodeKey
 
   // No copying allowed
@@ -80,7 +95,7 @@ class MemTableIterator: public Iterator {
 };
 
 Iterator* MemTable::NewIterator() {
-  return new MemTableIterator(&table_);
+  return new MemTableIterator(&table_, &comparator_);
 }
 
 void MemTable::Add(SequenceNumber s, ValueType type,
@@ -112,18 +127,22 @@ void MemTable::Add(SequenceNumber s, ValueType type,
   p = EncodeVarint32(p, val_size);
   memcpy(p, value.data(), val_size);
   assert((p + val_size) - buf == encoded_len);
-  Table::InsertHint ih(&table_, buf);
+  uint64_t keynum = comparator_.comparator.user_comparator()->KeyNum(key);
+  TableKey tk(keynum, buf);
+  Table::InsertHint ih(&table_, tk);
 
   {
     MutexLock l(&mtx_);
-    table_.InsertWithHint(&ih, buf);
+    table_.InsertWithHint(&ih, tk);
   }
 }
 
 bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
   Slice memkey = key.memtable_key();
   Table::Iterator iter(&table_);
-  iter.Seek(memkey.data());
+  uint64_t keynum = comparator_.comparator.user_comparator()->KeyNum(key.user_key());
+  TableKey tk(keynum, memkey.data());
+  iter.Seek(tk);
   if (iter.Valid()) {
     // entry format is:
     //    klength  varint32
@@ -134,10 +153,11 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
     // Check that it belongs to same user key.  We do not check the
     // sequence number since the Seek() call above should have skipped
     // all entries with overly large sequence numbers.
-    const char* entry = iter.key();
+    const char* entry = iter.key().second;
     uint32_t key_length;
     const char* key_ptr = GetVarint32Ptr(entry, entry+5, &key_length);
-    if (comparator_.comparator.user_comparator()->Compare(
+    if (iter.key().first == tk.first &&
+        comparator_.comparator.user_comparator()->Compare(
             Slice(key_ptr, key_length - 8),
             key.user_key()) == 0) {
       // Correct user key

@@ -135,6 +135,17 @@ struct Options {
   // Default: NULL
   const FilterPolicy* filter_policy;
 
+  // Is the database used with the Replay mechanism?  If yes, the lower bound on
+  // values to compact is (somewhat) left up to the application; if no, then
+  // LevelDB functions as usual, and uses snapshots to determine the lower
+  // bound.  HyperLevelDB will always maintain the integrity of snapshots, so
+  // the application merely has the option to hold data as if it's holding a
+  // snapshot.  This just prevents compaction from grabbing data before the app
+  // can get a snapshot.
+  //
+  // Default: false/no.
+  bool manual_garbage_collection;
+
   // Create an Options object with default values for all fields.
   Options();
 };

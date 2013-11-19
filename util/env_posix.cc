@@ -324,9 +324,41 @@ class PosixMmapFile : public WritableFile {
     return s;
   }
 
-  virtual Status Sync() {
+  Status SyncDirIfManifest() {
+    const char* f = filename_.c_str();
+    const char* sep = strrchr(f, '/');
+    Slice basename;
+    std::string dir;
+    if (sep == NULL) {
+      dir = ".";
+      basename = f;
+    } else {
+      dir = std::string(f, sep - f);
+      basename = sep + 1;
+    }
     Status s;
+    if (basename.starts_with("MANIFEST")) {
+      int fd = open(dir.c_str(), O_RDONLY);
+      if (fd < 0) {
+        s = IOError(dir, errno);
+      } else {
+        if (fsync(fd) < 0) {
+          s = IOError(dir, errno);
+        }
+        close(fd);
+      }
+    }
+    return s;
+  }
+
+  virtual Status Sync() {
+    // Ensure new files referred to by the manifest are in the filesystem.
+    Status s = SyncDirIfManifest();
     bool need_sync = false;
+
+    if (!s.ok()) {
+      return s;
+    }
 
     {
       MutexLock l(&mtx_);
@@ -499,6 +531,54 @@ class PosixEnv : public Env {
   virtual Status RenameFile(const std::string& src, const std::string& target) {
     Status result;
     if (rename(src.c_str(), target.c_str()) != 0) {
+      result = IOError(src, errno);
+    }
+    return result;
+  }
+
+  virtual Status CopyFile(const std::string& src, const std::string& target) {
+    Status result;
+    int fd1;
+    int fd2;
+
+    if (result.ok() && (fd1 = open(src.c_str(), O_RDONLY)) < 0) {
+      result = IOError(src, errno);
+    }
+    if (result.ok() && (fd2 = open(target.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644)) < 0) {
+      result = IOError(target, errno);
+    }
+
+    ssize_t amt = 0;
+    char buf[512];
+
+    while (result.ok() && (amt = read(fd1, buf, 512)) > 0) {
+      if (write(fd2, buf, amt) != amt) {
+        result = IOError(src, errno);
+      }
+    }
+
+    if (result.ok() && amt < 0) {
+      result = IOError(src, errno);
+    }
+
+    if (fd1 >= 0 && close(fd1) < 0) {
+      if (result.ok()) {
+        result = IOError(src, errno);
+      }
+    }
+
+    if (fd2 >= 0 && close(fd2) < 0) {
+      if (result.ok()) {
+        result = IOError(target, errno);
+      }
+    }
+
+    return result;
+  }
+
+  virtual Status LinkFile(const std::string& src, const std::string& target) {
+    Status result;
+    if (link(src.c_str(), target.c_str()) != 0) {
       result = IOError(src, errno);
     }
     return result;

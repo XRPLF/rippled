@@ -6,10 +6,14 @@
 #define STORAGE_HYPERLEVELDB_DB_DB_IMPL_H_
 
 #include <deque>
+#include <list>
 #include <set>
+#include <tr1/memory>
+
 #include "dbformat.h"
 #include "log_writer.h"
 #include "snapshot.h"
+#include "replay_iterator.h"
 #include "../hyperleveldb/db.h"
 #include "../hyperleveldb/env.h"
 #include "../port/port.h"
@@ -36,11 +40,19 @@ class DBImpl : public DB {
                      const Slice& key,
                      std::string* value);
   virtual Iterator* NewIterator(const ReadOptions&);
+  virtual void GetReplayTimestamp(std::string* timestamp);
+  virtual void AllowGarbageCollectBeforeTimestamp(const std::string& timestamp);
+  virtual bool ValidateTimestamp(const std::string& timestamp);
+  virtual int CompareTimestamps(const std::string& lhs, const std::string& rhs);
+  virtual Status GetReplayIterator(const std::string& timestamp,
+                                   ReplayIterator** iter);
+  virtual void ReleaseReplayIterator(ReplayIterator* iter);
   virtual const Snapshot* GetSnapshot();
   virtual void ReleaseSnapshot(const Snapshot* snapshot);
   virtual bool GetProperty(const Slice& property, std::string* value);
   virtual void GetApproximateSizes(const Range* range, int n, uint64_t* sizes);
   virtual void CompactRange(const Slice* begin, const Slice* end);
+  virtual Status LiveBackup(const Slice& name);
 
   // Extra methods (for testing) that are not in the public DB interface
 
@@ -59,13 +71,23 @@ class DBImpl : public DB {
   // file at a level >= 1.
   int64_t TEST_MaxNextLevelOverlappingBytes();
 
+  // Record a sample of bytes read at the specified internal key.
+  // Samples are taken approximately once every config::kReadBytesPeriod
+  // bytes.
+  void RecordReadSample(Slice key);
+
+  // Peek at the last sequence;
+  // REQURES: mutex_ not held
+  SequenceNumber LastSequence();
+
  private:
   friend class DB;
   struct CompactionState;
   struct Writer;
 
-  Iterator* NewInternalIterator(const ReadOptions&,
-                                SequenceNumber* latest_snapshot);
+  Iterator* NewInternalIterator(const ReadOptions&, uint64_t number,
+                                SequenceNumber* latest_snapshot,
+                                uint32_t* seed, bool external_sync);
 
   Status NewDB();
 
@@ -139,9 +161,10 @@ class DBImpl : public DB {
   MemTable* mem_;
   MemTable* imm_;                // Memtable being compacted
   port::AtomicPointer has_imm_;  // So bg thread can detect non-NULL imm_
-  WritableFile* logfile_;
+  std::tr1::shared_ptr<WritableFile> logfile_;
   uint64_t logfile_number_;
-  log::Writer* log_;
+  std::tr1::shared_ptr<log::Writer> log_;
+  uint32_t seed_;                // For sampling.
 
   // Synchronize writers
   uint64_t __attribute__ ((aligned (8))) writers_lower_;
@@ -179,7 +202,21 @@ class DBImpl : public DB {
   };
   ManualCompaction* manual_compaction_;
 
+  // Where have we pinned tombstones?
+  SequenceNumber manual_garbage_cutoff_;
+
+  // replay iterators
+  std::list<ReplayIteratorImpl*> replay_iters_;
+
+  // how many reads have we done in a row, uninterrupted by writes
+  uint64_t straight_reads_;
+
   VersionSet* versions_;
+
+  // Information for ongoing backup processes
+  port::CondVar backup_cv_;
+  port::AtomicPointer backup_in_progress_; // non-NULL in progress
+  bool backup_deferred_delete_; // DeleteObsoleteFiles delayed by backup; protect with mutex_
 
   // Have we encountered a background error in paranoid mode?
   Status bg_error_;

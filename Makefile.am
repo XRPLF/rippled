@@ -26,8 +26,8 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
-AM_CFLAGS = -DLEVELDB_PLATFORM_POSIX -fno-builtin-memcmp -fno-builtin-memmove
-AM_CXXFLAGS = -DLEVELDB_PLATFORM_POSIX -fno-builtin-memcmp -fno-builtin-memmove
+AM_CFLAGS = -DLEVELDB_PLATFORM_POSIX $(SNAPPY_FLAGS) -fno-builtin-memcmp -fno-builtin-memmove
+AM_CXXFLAGS = -DLEVELDB_PLATFORM_POSIX $(SNAPPY_FLAGS) -fno-builtin-memcmp -fno-builtin-memmove
 AM_MAKEFLAGS = --no-print-directory
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -35,11 +35,19 @@ pkgconfig_DATA = libhyperleveldb.pc
 
 EXTRA_DIST =
 EXTRA_DIST += AUTHORS
+EXTRA_DIST += doc/benchmark.html
+EXTRA_DIST += doc/doc.css
+EXTRA_DIST += doc/impl.html
+EXTRA_DIST += doc/index.html
+EXTRA_DIST += doc/log_format.txt
+EXTRA_DIST += doc/table_format.txt
+EXTRA_DIST += helpers/memenv/memenv.cc
+EXTRA_DIST += helpers/memenv/memenv_test.cc
 EXTRA_DIST += LICENSE
 EXTRA_DIST += NEWS
+EXTRA_DIST += port/README
 EXTRA_DIST += README
 EXTRA_DIST += TODO
-EXTRA_DIST += port/README
 
 nobase_include_HEADERS =
 nobase_include_HEADERS += hyperleveldb/cache.h
@@ -51,6 +59,7 @@ nobase_include_HEADERS += hyperleveldb/filter_policy.h
 nobase_include_HEADERS += hyperleveldb/iterator.h
 nobase_include_HEADERS += hyperleveldb/options.h
 nobase_include_HEADERS += hyperleveldb/slice.h
+nobase_include_HEADERS += hyperleveldb/replay_iterator.h
 nobase_include_HEADERS += hyperleveldb/status.h
 nobase_include_HEADERS += hyperleveldb/table_builder.h
 nobase_include_HEADERS += hyperleveldb/table.h
@@ -66,6 +75,7 @@ noinst_HEADERS += db/log_reader.h
 noinst_HEADERS += db/log_writer.h
 noinst_HEADERS += db/memtable.h
 noinst_HEADERS += db/skiplist.h
+noinst_HEADERS += db/replay_iterator.h
 noinst_HEADERS += db/snapshot.h
 noinst_HEADERS += db/table_cache.h
 noinst_HEADERS += db/version_edit.h
@@ -110,6 +120,7 @@ libhyperleveldb_la_SOURCES += db/log_reader.cc
 libhyperleveldb_la_SOURCES += db/log_writer.cc
 libhyperleveldb_la_SOURCES += db/memtable.cc
 libhyperleveldb_la_SOURCES += db/repair.cc
+libhyperleveldb_la_SOURCES += db/replay_iterator.cc
 libhyperleveldb_la_SOURCES += db/table_cache.cc
 libhyperleveldb_la_SOURCES += db/version_edit.cc
 libhyperleveldb_la_SOURCES += db/version_set.cc
@@ -138,6 +149,7 @@ libhyperleveldb_la_SOURCES += util/logging.cc
 libhyperleveldb_la_SOURCES += util/options.cc
 libhyperleveldb_la_SOURCES += util/status.cc
 libhyperleveldb_la_SOURCES += port/port_posix.cc
+libhyperleveldb_la_LIBADD = $(SNAPPY_LIBS) -lpthread
 libhyperleveldb_la_LDFLAGS = -pthread
 
 TESTUTIL = util/testutil.cc
@@ -153,6 +165,7 @@ EXTRA_PROGRAMS += db_bench_sqlite3
 EXTRA_PROGRAMS += db_bench_tree_db
 
 check_PROGRAMS =
+check_PROGRAMS += autocompact_test
 check_PROGRAMS += arena_test
 check_PROGRAMS += bloom_test
 check_PROGRAMS += c_test
@@ -172,6 +185,7 @@ check_PROGRAMS += version_edit_test
 check_PROGRAMS += version_set_test
 check_PROGRAMS += write_batch_test
 check_PROGRAMS += issue178_test
+check_PROGRAMS += issue200_test
 
 TESTS = $(check_PROGRAMS)
 
@@ -190,6 +204,9 @@ db_bench_tree_db_LDADD = -lkyotocabinet
 
 leveldbutil_SOURCES = db/leveldb_main.cc
 leveldbutil_LDADD = libhyperleveldb.la -lpthread
+
+autocompact_test_SOURCES = db/autocompact_test.cc $(TESTHARNESS)
+autocompact_test_LDADD = libhyperleveldb.la -lpthread
 
 arena_test_SOURCES = util/arena_test.cc $(TESTHARNESS)
 arena_test_LDADD = libhyperleveldb.la -lpthread
@@ -247,3 +264,6 @@ write_batch_test_LDADD = libhyperleveldb.la -lpthread
 
 issue178_test_SOURCES = issues/issue178_test.cc $(TESTHARNESS)
 issue178_test_LDADD = libhyperleveldb.la -lpthread
+
+issue200_test_SOURCES = issues/issue200_test.cc $(TESTHARNESS)
+issue200_test_LDADD = libhyperleveldb.la -lpthread

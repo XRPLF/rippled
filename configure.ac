@@ -30,7 +30,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.62])
-AC_INIT([hyperleveldb], [2.0.dev], [robert@hyperdex.org])
+AC_INIT([hyperleveldb], [1.0.dev], [robert@hyperdex.org])
 AM_INIT_AUTOMAKE([foreign subdir-objects dist-bzip2])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 LT_PREREQ([2.2])
@@ -58,6 +58,40 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([alarm clock_gettime mach_absolute_time ftruncate memmove mkdir munmap rmdir socket])
 
 # Optional components
+snappy_detect_hdr=yes
+snappy_detect_lib=yes
+AC_CHECK_LIB([snappy], [snappy_compress], [], [snappy_detect_hdr=no])
+AC_CHECK_HEADER([snappy.h],,[snappy_detect_lib=no])
+AC_ARG_ENABLE([snappy], [AS_HELP_STRING([--enable-snappy],
+              [build with Snappy @<:@default: auto@:>@])],
+              [snappy=${enableval}], [snappy=no])
+if test x"${snappy}" = xyes; then
+    if test x"${snappy_detect_hdr}" != xyes; then
+        AC_MSG_ERROR([
+-------------------------------------------------
+LevelDB configured with the Snappy library.
+libsnappy.so not found
+Please install Snappy to continue.
+-------------------------------------------------])
+    fi
+    if test x"${snappy_detect_lib}" != xyes; then
+        AC_MSG_ERROR([
+-------------------------------------------------
+LevelDB configured with the Snappy library.
+snappy.h not found
+Please install Snappy to continue.
+-------------------------------------------------])
+    fi
+fi
+if test x"${snappy_detect_hdr}" = xyes -a x"${snappy_detect_lib}" = xyes; then
+SNAPPY_FLAGS=-DSNAPPY
+SNAPPY_LIBS=-lsnappy
+else
+SNAPPY_FLAGS=
+SNAPPY_LIBS=
+fi
+AC_SUBST(SNAPPY_FLAGS)
+AC_SUBST(SNAPPY_LIBS)
 
-AC_CONFIG_FILES([Makefile libhyperleveldb.pc])
+AC_CONFIG_FILES([Makefile libhyperleveldb.pc hyperleveldb.upack])
 AC_OUTPUT

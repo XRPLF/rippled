@@ -67,16 +67,17 @@ class MemTable {
 
  private:
   ~MemTable();  // Private since only Unref() should be used to delete it
+  typedef std::pair<uint64_t, const char*> TableKey;
 
   struct KeyComparator {
     const InternalKeyComparator comparator;
     explicit KeyComparator(const InternalKeyComparator& c) : comparator(c) { }
-    int operator()(const char* a, const char* b) const;
+    int operator()(TableKey a, TableKey b) const;
   };
   friend class MemTableIterator;
   friend class MemTableBackwardIterator;
 
-  typedef SkipList<const char*, KeyComparator> Table;
+  typedef SkipList<TableKey, KeyComparator> Table;
 
   KeyComparator comparator_;
   int refs_;
