@@ -61,6 +61,7 @@
 #include "hyperleveldb/db/log_writer.cc"
 #include "hyperleveldb/db/memtable.cc"
 #include "hyperleveldb/db/repair.cc"
+#include "hyperleveldb/db/replay_iterator.cc"
 #include "hyperleveldb/db/table_cache.cc"
 #include "hyperleveldb/db/version_edit.cc"
 #include "hyperleveldb/db/version_set.cc"
