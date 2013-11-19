@@ -103,7 +103,8 @@ public:
             }
         }
 
-        m_journal.debug << "New inbound endpoint " << entry;
+        m_journal.debug <<
+            "New inbound endpoint " << *entry;
 
         return Consumer (*this, *entry);
     }
@@ -135,7 +136,8 @@ public:
             }
         }
 
-        m_journal.debug << "New outbound endpoint " << entry;
+        m_journal.debug <<
+            "New outbound endpoint " << *entry;
 
         return Consumer (*this, *entry);
     }
@@ -164,7 +166,8 @@ public:
             }
         }
 
-        m_journal.debug << "New admin endpoint " << entry;
+        m_journal.debug <<
+            "New admin endpoint " << *entry;
 
         return Consumer (*this, *entry);
     }
@@ -415,7 +418,9 @@ public:
     {
         if (--entry.refcount == 0)
         {
-            m_journal.debug << "Inactive " << entry;
+            m_journal.debug <<
+                "Inactive " << entry;
+
             switch (entry.key->kind)
             {
             case kindInbound:
@@ -452,7 +457,8 @@ public:
     {
         DiscreteTime const now (m_clock());
         int const balance (entry.add (fee.cost(), now));
-        m_journal.info << "Charging " << entry << " for " << fee;
+        m_journal.info <<
+            "Charging " << entry << " for " << fee;
         return disposition (balance);
     }
 
@@ -468,7 +474,8 @@ public:
         }
 
         if (notify)
-            m_journal.info << "Load warning: " << entry;
+            m_journal.info <<
+                "Load warning: " << entry;
 
         return notify;
     }
