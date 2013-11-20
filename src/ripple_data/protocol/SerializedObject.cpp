@@ -1565,7 +1565,7 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
 
                 for (Json::UInt i = 0; value.isValidIndex (i); ++i)
                 {
-                    
+
                     bool isObject (value[i].isObject());
                     bool singleKey (true);
 
@@ -1573,15 +1573,17 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
                     {
                          singleKey = value[i].size() == 1;
                     }
-                    
+
                     if (!isObject || !singleKey)
                     {
-                        static boost::format errFormat (
-                            "First level children of `%s` must be an "
-                            "object containing a single key with an object value");
-                        
-                        std::string msg (boost::str(errFormat % field.getName()));
-                        throw std::runtime_error (msg);
+                        std::stringstream err;
+
+                        err << "First level children of `"
+                            << field.getName()
+                            << "`must be objects containing a single key with"
+                            << " an object value";
+
+                        throw std::runtime_error (err.str());
                     }
 
                     // TODO: There doesn't seem to be a nice way to get just the
@@ -1636,24 +1638,19 @@ public:
         try
         {
             /*
-            
+
             STArray/STObject constructs don't really map perfectly to json
             arrays/objects.
-            
+
             STObject is an associative container, mapping fields to value, but
             an STObject may also have a Field as it's name, stored outside the
             associative structure. The name is important, so to maintain
             fidelity, it will take TWO json objects to represent them.
 
-            The below is faulty because it has two keys in an immediate child of
-            a json array representation of an STArray. There should be only one
-            key.
-            
             */
             std::string faulty ("{\"Template\":[{"
                                     "\"ModifiedNode\":{\"Sequence\":1}, "
                                     "\"DeletedNode\":{\"Sequence\":1}"
-                                   // Two keys above ^^^ is bogus 
                                 "}]}");
 
             UPTR_T<STObject> so;
