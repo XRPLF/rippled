@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (TransactionAcquire)
 
 #define TX_ACQUIRE_TIMEOUT  250

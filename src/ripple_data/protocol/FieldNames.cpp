@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // These must stay at the top of this file
 std::map<int, SField::ptr> SField::codeToField;
 int SField::num = 0;

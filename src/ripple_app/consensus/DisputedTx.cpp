@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // #define TRUST_NETWORK
 
 // Track a peer's yes/no vote on a particular disputed transaction

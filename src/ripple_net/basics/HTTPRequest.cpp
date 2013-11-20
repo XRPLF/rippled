@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (HTTPRequest)
 
 // Logic to handle incoming HTTP reqests

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 PackedMessage::PackedMessage (::google::protobuf::Message const& message, int type)
 {
     unsigned const messageBytes = message.ByteSize ();

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (RegularKeySetTransactor)
 
 uint64 RegularKeySetTransactor::calculateBaseFee ()

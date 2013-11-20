@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // VFALCO TODO Replace OpenSSL randomness with a dependency-free implementation
 //         Perhaps Schneier's Fortuna or a variant. Abstract the collection of
 //         entropy and provide OS-specific implementation. We can re-use the

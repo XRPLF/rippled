@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 AccountItem::pointer Offer::makeItem (const uint160& , SerializedLedgerEntry::ref ledgerEntry)
 {
     if (!ledgerEntry || ledgerEntry->getType () != ltOFFER) return (AccountItem::pointer ());

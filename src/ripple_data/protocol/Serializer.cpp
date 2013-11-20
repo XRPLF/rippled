@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (Serializer)
 
 int Serializer::addZeros (size_t uBytes)

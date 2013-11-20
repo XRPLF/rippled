@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
 
 InboundLedgers::InboundLedgers (Stoppable& parent)

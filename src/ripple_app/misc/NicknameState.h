@@ -18,7 +18,6 @@
 //==============================================================================
 
 
-
 #ifndef RIPPLE_NICKNAMESTATE_H
 #define RIPPLE_NICKNAMESTATE_H
 

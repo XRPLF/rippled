@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (SerializedTransaction)
 
 SerializedTransaction::SerializedTransaction (TxType type)

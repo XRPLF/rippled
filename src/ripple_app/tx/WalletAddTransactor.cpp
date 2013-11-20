@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (WalletAddTransactor)
 
 TER WalletAddTransactor::doApply ()

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // included by json_value.cpp
 // everything is within Json namespace
 

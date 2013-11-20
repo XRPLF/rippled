@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // #define EC_DEBUG
 
 // Functions to add CKey support for deterministic EC keys

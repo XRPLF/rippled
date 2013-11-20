@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (STObject)
 
 UPTR_T<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)

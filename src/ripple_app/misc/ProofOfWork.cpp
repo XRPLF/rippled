@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (ProofOfWork)
 
 // VFALCO TODO Move these to a header

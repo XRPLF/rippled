@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (OrderBookDB)
 
 OrderBookDB::OrderBookDB (Stoppable& parent)

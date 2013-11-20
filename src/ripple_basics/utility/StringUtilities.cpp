@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // VFALCO TODO Replace these with something more robust and without macros.
 //
 #if ! BEAST_MSVC

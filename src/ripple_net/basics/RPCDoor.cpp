@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (RPCDoor)
 
 class RPCDoorImp : public RPCDoor, public LeakChecked <RPCDoorImp>

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 class InboundLedger;
 
 PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)

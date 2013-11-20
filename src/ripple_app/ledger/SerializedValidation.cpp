@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SerializedValidation::SerializedValidation (SerializerIterator& sit, bool checkSignature)
     : STObject (getFormat (), sit, sfValidation)
     , mTrusted (false)

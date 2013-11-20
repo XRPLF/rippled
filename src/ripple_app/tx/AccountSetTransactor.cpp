@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (AccountSetTransactor)
 
 TER AccountSetTransactor::doApply ()

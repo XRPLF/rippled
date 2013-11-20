@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 LedgerProposal::LedgerProposal (uint256 const& pLgr, uint32 seq, uint256 const& tx, uint32 closeTime,
                                 const RippleAddress& naPeerPublic, uint256 const& suppression) :
     mPreviousLedger (pLgr), mCurrentHash (tx), mSuppression (suppression), mCloseTime (closeTime),

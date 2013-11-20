@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (PathRequest)
 
 // VFALCO TODO Move these globals into a PathRequests collection inteface

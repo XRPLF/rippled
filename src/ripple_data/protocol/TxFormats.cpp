@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 TxFormats::TxFormats ()
 {
     add ("AccountSet", ttACCOUNT_SET)
@@ -106,5 +105,7 @@ void TxFormats::addCommonFields (Item& item)
 
 TxFormats* TxFormats::getInstance ()
 {
-    return SharedSingleton <TxFormats>::getInstance ();
+    static TxFormats instance;
+    //return SharedSingleton <TxFormats>::getInstance ();
+    return &instance;
 }

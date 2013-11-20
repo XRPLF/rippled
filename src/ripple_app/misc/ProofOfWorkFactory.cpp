@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 class ProofOfWorkFactoryImp
     : public ProofOfWorkFactory
     , public LeakChecked <ProofOfWorkFactoryImp>

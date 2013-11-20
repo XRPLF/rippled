@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (SerializedType)
 
 const STAmount saZero (CURRENCY_ONE, ACCOUNT_ONE, 0);

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 class TxQueueImp
     : public TxQueue
     , public LeakChecked <TxQueueImp>

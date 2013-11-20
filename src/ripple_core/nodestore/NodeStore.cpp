@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // backend support
 #include "beast/modules/beast_db/beast_db.h"
 #include "../ripple_hyperleveldb/ripple_hyperleveldb.h"

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // VFALCO TODO tidy up this global
 
 static const uint256 uZero;

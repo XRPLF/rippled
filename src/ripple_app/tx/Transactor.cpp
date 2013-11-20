@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (Transactor)
 
 UPTR_T<Transactor> Transactor::makeTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine)

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SHAMapTreeNode::SHAMapTreeNode (uint32 seq, const SHAMapNode& nodeID)
     : SHAMapNode (nodeID)
     , mHash (uint64(0))

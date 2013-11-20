@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 CountedObjects& CountedObjects::getInstance ()
 {
     static CountedObjects instance;

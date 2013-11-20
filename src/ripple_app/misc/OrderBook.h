@@ -18,7 +18,6 @@
 //==============================================================================
 
 
-
 #ifndef RIPPLE_ORDERBOOK_H
 #define RIPPLE_ORDERBOOK_H
 

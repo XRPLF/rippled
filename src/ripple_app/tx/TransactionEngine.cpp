@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 //
 // XXX Make sure all fields are recognized in transactions.
 //

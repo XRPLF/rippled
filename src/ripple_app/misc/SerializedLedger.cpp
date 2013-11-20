@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 struct SerializedLedgerLog; // for Log
 
 SETUP_LOGN (SerializedLedgerLog,"SerializedLedger")

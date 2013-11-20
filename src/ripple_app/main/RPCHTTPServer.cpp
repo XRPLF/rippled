@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 class RPCHTTPServerImp
     : public RPCHTTPServer
     , public LeakChecked <RPCHTTPServerImp>

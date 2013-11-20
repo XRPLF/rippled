@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
 {
     static struct

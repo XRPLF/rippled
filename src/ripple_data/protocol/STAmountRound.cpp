@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 void STAmount::canonicalizeRound (bool isNative, uint64& value, int& offset, bool roundUp)
 {
     if (!roundUp) // canonicalize already rounds down

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 bool ParameterNode::setValue (const std::string& name, const Json::Value& value, Json::Value& error)
 {
     if (name.empty ()) // this node

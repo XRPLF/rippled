@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 AccountItem::pointer RippleState::makeItem (const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry)
 {
     if (!ledgerEntry || ledgerEntry->getType () != ltRIPPLE_STATE)

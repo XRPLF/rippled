@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 /** Add this to get the @ref ripple_net module.
 
     @file ripple_net.cpp

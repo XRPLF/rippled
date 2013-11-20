@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 LedgerFormats::LedgerFormats ()
 {
     add ("AccountRoot", ltACCOUNT_ROOT)

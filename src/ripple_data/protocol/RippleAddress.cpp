@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (RippleAddress)
 
 RippleAddress::RippleAddress ()

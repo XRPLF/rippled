@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 AccountItems::AccountItems (uint160 const& accountID,
                             Ledger::ref ledger,
                             AccountItem::pointer ofType)

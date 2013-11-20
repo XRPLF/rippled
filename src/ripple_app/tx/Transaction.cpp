@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 Transaction::Transaction (SerializedTransaction::ref sit, bool bValidate)
     : mInLedger (0), mStatus (INVALID), mResult (temUNCERTAIN), mTransaction (sit)
 {

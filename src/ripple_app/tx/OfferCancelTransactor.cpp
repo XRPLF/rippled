@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (OfferCancelTransactor)
 
 TER OfferCancelTransactor::doApply ()

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (TrustSetTransactor)
 
 TER TrustSetTransactor::doApply ()

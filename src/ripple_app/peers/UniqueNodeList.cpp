@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // XXX Dynamically limit fetching by distance.
 // XXX Want a limit of 2000 validators.
 

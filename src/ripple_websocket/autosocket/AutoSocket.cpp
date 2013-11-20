@@ -17,5 +17,4 @@
 */
 //==============================================================================
 
-
 ripple::LogPartition AutoSocket::AutoSocketPartition ("AutoSocket");

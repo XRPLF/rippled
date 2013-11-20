@@ -18,7 +18,6 @@
 //==============================================================================
 
 
-
 OrderBook::OrderBook (uint256 const& index,
                       uint160 const& currencyIn,
                       uint160 const& currencyOut,

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 NodeStoreScheduler::NodeStoreScheduler (Stoppable& parent, JobQueue& jobQueue)
     : Stoppable ("NodeStoreScheduler", parent)
     , m_jobQueue (jobQueue)

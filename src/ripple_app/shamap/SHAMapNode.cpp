@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (SHAMapNode)
 
 // canonicalize the hash to a node ID for this depth

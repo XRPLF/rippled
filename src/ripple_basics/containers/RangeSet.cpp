@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (RangeSet)
 
 // VFALCO NOTE std::min and std::max not good enough?

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 bool CanonicalTXSet::Key::operator< (Key const& rhs) const
 {
     if (mAccount < rhs.mAccount) return true;

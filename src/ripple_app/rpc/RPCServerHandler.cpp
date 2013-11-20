@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 RPCServerHandler::RPCServerHandler (NetworkOPs& networkOPs, Resource::Manager& resourceManager)
     : m_networkOPs (networkOPs)
     , m_resourceManager (resourceManager)

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 class RippleSSLContextImp : public RippleSSLContext
 {
 private:

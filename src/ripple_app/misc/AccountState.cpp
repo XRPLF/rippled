@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 AccountState::AccountState (RippleAddress const& naAccountID)
     : mAccountID (naAccountID)
     , mValid (false)

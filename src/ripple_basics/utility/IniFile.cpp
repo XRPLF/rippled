@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #define SECTION_DEFAULT_NAME    ""
 
 struct ParseSectionLog; // for Log

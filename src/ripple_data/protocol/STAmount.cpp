@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 SETUP_LOG (STAmount)
 
 uint64  STAmount::uRateOne  = STAmount::getRate (STAmount (1), STAmount (1));

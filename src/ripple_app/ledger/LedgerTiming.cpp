@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // VFALCO Should rename ContinuousLedgerTiming to LedgerTiming
 
 struct LedgerTiming; // for Log

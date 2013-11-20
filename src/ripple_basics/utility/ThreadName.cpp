@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // VFALCO TODO use beast::Thread::setCurrentThreadName() or something similar.
 
 #if _MSC_VER

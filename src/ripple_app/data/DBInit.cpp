@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // Transaction database holds transactions and public keys
 const char* TxnDBInit[] =
 {

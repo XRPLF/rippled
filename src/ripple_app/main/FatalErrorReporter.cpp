@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 FatalErrorReporter::FatalErrorReporter ()
 {
     m_savedReporter = FatalError::setReporter (this);

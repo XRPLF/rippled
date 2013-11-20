@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 MultiSocket* MultiSocket::New (
     boost::asio::io_service& io_service,
         boost::asio::ssl::context& ssl_context,

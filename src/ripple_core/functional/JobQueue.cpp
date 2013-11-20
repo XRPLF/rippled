@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 class JobQueueImp
     : public JobQueue
     , private Workers::Callback

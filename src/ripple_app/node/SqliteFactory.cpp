@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 static const char* s_nodeStoreDBInit [] =
 {
     "PRAGMA synchronous=NORMAL;",

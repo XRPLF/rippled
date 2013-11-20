@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
 
 namespace NodeStore

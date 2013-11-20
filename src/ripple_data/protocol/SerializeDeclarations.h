@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 // This is not really a header file, but it can be used as one with
 // appropriate #define statements.
 
