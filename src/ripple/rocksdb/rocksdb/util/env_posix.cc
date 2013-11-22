@@ -1393,9 +1393,15 @@ class PosixEnv : public Env {
                          nullptr,
                          &ThreadPool::BGThreadWrapper,
                          this));
+        // VFALCO Commented this out because it makes no sense
+        //        for an embedded database to write to stdout
+        //        in a normal case.
+        //
+        /*
         fprintf(stdout,
                 "Created bg thread 0x%lx\n",
                 (unsigned long)t);
+        */
         bgthreads_.push_back(t);
       }
 
