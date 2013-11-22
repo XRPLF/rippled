@@ -49,8 +49,8 @@
 #include <stdint.h>
 #include <string>
 #include <string.h>
-#include "rocksdb/options.h"
-#include "port/atomic_pointer.h"
+#include "../include/rocksdb/options.h"
+#include "atomic_pointer.h"
 
 #ifndef PLATFORM_IS_LITTLE_ENDIAN
 #define PLATFORM_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)

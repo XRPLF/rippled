@@ -8,9 +8,9 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #pragma once
-#include "rocksdb/env.h"
-#include "rocksdb/slice.h"
-#include "util/random.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/slice.h"
+#include "random.h"
 
 namespace rocksdb {
 namespace test {

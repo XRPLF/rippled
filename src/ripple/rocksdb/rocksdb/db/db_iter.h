@@ -9,8 +9,8 @@
 
 #pragma once
 #include <stdint.h>
-#include "rocksdb/db.h"
-#include "db/dbformat.h"
+#include "../include/rocksdb/db.h"
+#include "dbformat.h"
 
 namespace rocksdb {
 

@@ -6,7 +6,7 @@
 // This file defines a collection of statistics collectors.
 #pragma once
 
-#include "rocksdb/table_properties.h"
+#include "../include/rocksdb/table_properties.h"
 
 #include <memory>
 #include <string>

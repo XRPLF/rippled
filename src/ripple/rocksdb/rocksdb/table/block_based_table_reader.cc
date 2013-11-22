@@ -7,25 +7,25 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/block_based_table_reader.h"
+#include "block_based_table_reader.h"
 
-#include "db/dbformat.h"
+#include "../db/dbformat.h"
 
-#include "rocksdb/comparator.h"
-#include "rocksdb/env.h"
-#include "rocksdb/filter_policy.h"
-#include "rocksdb/options.h"
-#include "rocksdb/statistics.h"
-#include "rocksdb/table.h"
+#include "../include/rocksdb/comparator.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/filter_policy.h"
+#include "../include/rocksdb/options.h"
+#include "../include/rocksdb/statistics.h"
+#include "../include/rocksdb/table.h"
 
-#include "table/block.h"
-#include "table/filter_block.h"
-#include "table/format.h"
-#include "table/two_level_iterator.h"
+#include "block.h"
+#include "filter_block.h"
+#include "format.h"
+#include "two_level_iterator.h"
 
-#include "util/coding.h"
-#include "util/perf_context_imp.h"
-#include "util/stop_watch.h"
+#include "../util/coding.h"
+#include "../util/perf_context_imp.h"
+#include "../util/stop_watch.h"
 
 namespace rocksdb {
 

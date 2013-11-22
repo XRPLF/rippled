@@ -13,8 +13,8 @@
 #include <time.h>
 #include <iostream>
 #include <sstream>
-#include "rocksdb/env.h"
-#include "rocksdb/status.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/status.h"
 #include "hdfs/hdfs.h"
 #include "hdfs/env_hdfs.h"
 
@@ -504,7 +504,7 @@ Status HdfsEnv::NewLogger(const std::string& fname,
 #else // USE_HDFS
 
 // dummy placeholders used when HDFS is not available
-#include "rocksdb/env.h"
+#include "../include/rocksdb/env.h"
 #include "hdfs/env_hdfs.h"
 namespace rocksdb {
  Status HdfsEnv::NewSequentialFile(const std::string& fname,

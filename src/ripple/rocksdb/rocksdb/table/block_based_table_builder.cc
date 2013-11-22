@@ -7,28 +7,28 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/block_based_table_builder.h"
+#include "block_based_table_builder.h"
 
 #include <assert.h>
 #include <inttypes.h>
 #include <map>
 #include <stdio.h>
 
-#include "rocksdb/flush_block_policy.h"
-#include "rocksdb/cache.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/table.h"
-#include "rocksdb/env.h"
-#include "rocksdb/filter_policy.h"
-#include "rocksdb/options.h"
-#include "table/block_based_table_reader.h"
-#include "table/block.h"
-#include "table/block_builder.h"
-#include "table/filter_block.h"
-#include "table/format.h"
-#include "util/coding.h"
-#include "util/crc32c.h"
-#include "util/stop_watch.h"
+#include "../include/rocksdb/flush_block_policy.h"
+#include "../include/rocksdb/cache.h"
+#include "../include/rocksdb/comparator.h"
+#include "../include/rocksdb/table.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/filter_policy.h"
+#include "../include/rocksdb/options.h"
+#include "block_based_table_reader.h"
+#include "block.h"
+#include "block_builder.h"
+#include "filter_block.h"
+#include "format.h"
+#include "../util/coding.h"
+#include "../util/crc32c.h"
+#include "../util/stop_watch.h"
 
 namespace rocksdb {
 

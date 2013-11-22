@@ -24,7 +24,7 @@
 
 #include <memory>
 #include <stdint.h>
-#include "rocksdb/slice.h"
+#include "slice.h"
 
 namespace rocksdb {
 

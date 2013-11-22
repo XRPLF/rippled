@@ -13,10 +13,10 @@
 #include <stdio.h>
 #include <memory>
 #include <vector>
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
-#include "rocksdb/types.h"
-#include "rocksdb/transaction_log.h"
+#include "iterator.h"
+#include "options.h"
+#include "types.h"
+#include "transaction_log.h"
 
 namespace rocksdb {
 

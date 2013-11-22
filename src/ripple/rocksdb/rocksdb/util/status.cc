@@ -8,8 +8,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <stdio.h>
-#include "port/port.h"
-#include "rocksdb/status.h"
+#include "../port/port.h"
+#include "../include/rocksdb/status.h"
 
 namespace rocksdb {
 

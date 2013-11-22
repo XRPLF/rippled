@@ -15,14 +15,14 @@
 #include <vector>
 #include <stdint.h>
 
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
-#include "rocksdb/slice_transform.h"
-#include "rocksdb/statistics.h"
-#include "rocksdb/table_properties.h"
-#include "rocksdb/universal_compaction.h"
+#include "memtablerep.h"
+#include "memtablerep.h"
+#include "slice.h"
+#include "slice_transform.h"
+#include "slice_transform.h"
+#include "statistics.h"
+#include "table_properties.h"
+#include "universal_compaction.h"
 
 namespace rocksdb {
 

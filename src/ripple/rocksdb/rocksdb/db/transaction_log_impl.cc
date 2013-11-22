@@ -3,8 +3,8 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
-#include "db/transaction_log_impl.h"
-#include "db/write_batch_internal.h"
+#include "transaction_log_impl.h"
+#include "write_batch_internal.h"
 
 namespace rocksdb {
 

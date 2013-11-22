@@ -3,7 +3,7 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
-#include "rocksdb/memtablerep.h"
+#include "../include/rocksdb/memtablerep.h"
 
 #include <unordered_set>
 #include <set>
@@ -11,10 +11,10 @@
 #include <algorithm>
 #include <type_traits>
 
-#include "rocksdb/arena.h"
-#include "port/port.h"
-#include "util/mutexlock.h"
-#include "util/stl_wrappers.h"
+#include "../include/rocksdb/arena.h"
+#include "../port/port.h"
+#include "mutexlock.h"
+#include "stl_wrappers.h"
 
 namespace rocksdb {
 namespace {

@@ -11,12 +11,12 @@
 #include <string>
 #include <memory>
 #include <deque>
-#include "db/dbformat.h"
-#include "db/skiplist.h"
-#include "db/version_set.h"
-#include "rocksdb/db.h"
-#include "rocksdb/memtablerep.h"
-#include "util/arena_impl.h"
+#include "dbformat.h"
+#include "skiplist.h"
+#include "version_set.h"
+#include "../include/rocksdb/db.h"
+#include "../include/rocksdb/memtablerep.h"
+#include "../util/arena_impl.h"
 
 namespace rocksdb {
 

@@ -6,10 +6,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 #pragma once
-#include "rocksdb/comparator.h"
-#include "rocksdb/status.h"
-#include "rocksdb/types.h"
-#include "rocksdb/options.h"
+#include "../include/rocksdb/comparator.h"
+#include "../include/rocksdb/status.h"
+#include "../include/rocksdb/types.h"
+#include "../include/rocksdb/options.h"
 
 namespace rocksdb {
 

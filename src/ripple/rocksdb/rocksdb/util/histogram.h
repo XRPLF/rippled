@@ -8,7 +8,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #pragma once
-#include "rocksdb/statistics.h"
+#include "../include/rocksdb/statistics.h"
 
 #include <cassert>
 #include <string>

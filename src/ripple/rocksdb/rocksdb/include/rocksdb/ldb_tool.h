@@ -4,7 +4,7 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 #ifndef STORAGE_ROCKSDB_INCLUDE_LDB_TOOL_H
 #define STORAGE_ROCKSDB_INCLUDE_LDB_TOOL_H
-#include "rocksdb/options.h"
+#include "options.h"
 
 namespace rocksdb {
 

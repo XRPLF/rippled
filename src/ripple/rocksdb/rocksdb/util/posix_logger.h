@@ -20,7 +20,7 @@
 #ifdef OS_LINUX
 #include <linux/falloc.h>
 #endif
-#include "rocksdb/env.h"
+#include "../include/rocksdb/env.h"
 #include <atomic>
 
 namespace rocksdb {

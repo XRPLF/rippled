@@ -7,8 +7,8 @@
 #pragma once
 #include <queue>
 
-#include "rocksdb/comparator.h"
-#include "table/iterator_wrapper.h"
+#include "../include/rocksdb/comparator.h"
+#include "iterator_wrapper.h"
 
 namespace rocksdb {
 

@@ -3,9 +3,9 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#include "rocksdb/flush_block_policy.h"
-#include "rocksdb/slice.h"
-#include "table/block_builder.h"
+#include "../include/rocksdb/flush_block_policy.h"
+#include "../include/rocksdb/slice.h"
+#include "block_builder.h"
 
 #include <cassert>
 

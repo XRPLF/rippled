@@ -26,7 +26,7 @@
 #define STORAGE_ROCKSDB_INCLUDE_WRITE_BATCH_H_
 
 #include <string>
-#include "rocksdb/status.h"
+#include "status.h"
 
 namespace rocksdb {
 

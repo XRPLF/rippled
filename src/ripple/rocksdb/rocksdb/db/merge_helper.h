@@ -6,9 +6,9 @@
 #ifndef MERGE_HELPER_H
 #define MERGE_HELPER_H
 
-#include "db/dbformat.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/statistics.h"
+#include "dbformat.h"
+#include "../include/rocksdb/slice.h"
+#include "../include/rocksdb/statistics.h"
 #include <string>
 #include <deque>
 

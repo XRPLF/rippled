@@ -4,10 +4,10 @@
 
 #include "helpers/memenv/memenv.h"
 
-#include "rocksdb/env.h"
-#include "rocksdb/status.h"
-#include "port/port.h"
-#include "util/mutexlock.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/status.h"
+#include "../port/port.h"
+#include "../util/mutexlock.h"
 #include <map>
 #include <string.h>
 #include <string>

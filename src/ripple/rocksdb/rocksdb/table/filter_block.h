@@ -18,10 +18,10 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
-#include "rocksdb/options.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
-#include "util/hash.h"
+#include "../include/rocksdb/options.h"
+#include "../include/rocksdb/slice.h"
+#include "../include/rocksdb/slice_transform.h"
+#include "../util/hash.h"
 
 namespace rocksdb {
 

@@ -8,12 +8,12 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 
-#include "table/block_based_table_factory.h"
+#include "block_based_table_factory.h"
 
 #include <memory>
 #include <stdint.h>
-#include "table/block_based_table_builder.h"
-#include "table/block_based_table_reader.h"
+#include "block_based_table_builder.h"
+#include "block_based_table_reader.h"
 #include "port/port.h"
 
 namespace rocksdb {

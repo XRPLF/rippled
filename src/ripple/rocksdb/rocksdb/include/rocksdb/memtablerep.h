@@ -45,9 +45,9 @@
 #define STORAGE_ROCKSDB_DB_MEMTABLEREP_H_
 
 #include <memory>
-#include "rocksdb/arena.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
+#include "arena.h"
+#include "slice.h"
+#include "slice_transform.h"
 
 namespace rocksdb {
 

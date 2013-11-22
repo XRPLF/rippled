@@ -19,16 +19,16 @@
 //    len: varint32
 //    data: uint8[len]
 
-#include "rocksdb/write_batch.h"
+#include "../include/rocksdb/write_batch.h"
 
-#include "rocksdb/options.h"
-#include "rocksdb/statistics.h"
-#include "db/dbformat.h"
-#include "db/db_impl.h"
-#include "db/memtable.h"
-#include "db/snapshot.h"
-#include "db/write_batch_internal.h"
-#include "util/coding.h"
+#include "../include/rocksdb/options.h"
+#include "../include/rocksdb/statistics.h"
+#include "dbformat.h"
+#include "db_impl.h"
+#include "memtable.h"
+#include "snapshot.h"
+#include "write_batch_internal.h"
+#include "../util/coding.h"
 #include <stdexcept>
 
 namespace rocksdb {

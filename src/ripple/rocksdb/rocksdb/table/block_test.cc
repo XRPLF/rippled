@@ -4,19 +4,19 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #include <string>
-#include "db/dbformat.h"
-#include "db/memtable.h"
-#include "db/write_batch_internal.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/table.h"
-#include "table/block.h"
-#include "table/block_builder.h"
-#include "table/format.h"
-#include "util/random.h"
-#include "util/testharness.h"
-#include "util/testutil.h"
+#include "../db/dbformat.h"
+#include "../db/memtable.h"
+#include "../db/write_batch_internal.h"
+#include "../include/rocksdb/db.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/iterator.h"
+#include "../include/rocksdb/table.h"
+#include "block.h"
+#include "block_builder.h"
+#include "format.h"
+#include "../util/random.h"
+#include "../util/testharness.h"
+#include "../util/testutil.h"
 
 namespace rocksdb {
 

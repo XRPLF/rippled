@@ -13,10 +13,10 @@
 #include <vector>
 #include <memory>
 
-#include "rocksdb/statistics.h"
-#include "util/histogram.h"
-#include "port/port.h"
-#include "util/mutexlock.h"
+#include "../include/rocksdb/statistics.h"
+#include "../util/histogram.h"
+#include "../port/port.h"
+#include "../util/mutexlock.h"
 
 
 namespace rocksdb {

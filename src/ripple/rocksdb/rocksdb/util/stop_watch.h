@@ -4,8 +4,8 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #pragma once
-#include "rocksdb/env.h"
-#include "rocksdb/statistics.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/statistics.h"
 
 namespace rocksdb {
 // Auto-scoped.

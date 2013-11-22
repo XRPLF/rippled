@@ -10,10 +10,10 @@
 #pragma once
 #include <string>
 #include <stdint.h>
-#include "rocksdb/slice.h"
-#include "rocksdb/status.h"
-#include "rocksdb/options.h"
-#include "rocksdb/table.h"
+#include "../include/rocksdb/slice.h"
+#include "../include/rocksdb/status.h"
+#include "../include/rocksdb/options.h"
+#include "../include/rocksdb/table.h"
 
 namespace rocksdb {
 

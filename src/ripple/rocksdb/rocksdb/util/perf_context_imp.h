@@ -4,8 +4,8 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #pragma once
-#include "rocksdb/perf_context.h"
-#include "util/stop_watch.h"
+#include "../include/rocksdb/perf_context.h"
+#include "stop_watch.h"
 
 namespace rocksdb {
 

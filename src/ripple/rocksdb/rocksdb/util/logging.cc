@@ -7,14 +7,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "util/logging.h"
+#include "logging.h"
 
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "rocksdb/env.h"
-#include "rocksdb/slice.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/slice.h"
 
 namespace rocksdb {
 

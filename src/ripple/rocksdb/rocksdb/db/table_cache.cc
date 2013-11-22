@@ -7,14 +7,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/table_cache.h"
+#include "table_cache.h"
 
-#include "db/filename.h"
+#include "filename.h"
 
-#include "rocksdb/statistics.h"
-#include "rocksdb/table.h"
-#include "util/coding.h"
-#include "util/stop_watch.h"
+#include "../include/rocksdb/statistics.h"
+#include "../include/rocksdb/table.h"
+#include "../util/coding.h"
+#include "../util/stop_watch.h"
 
 namespace rocksdb {
 

@@ -9,10 +9,10 @@
 
 #pragma once
 #include <stdint.h>
-#include "rocksdb/flush_block_policy.h"
-#include "rocksdb/options.h"
-#include "rocksdb/status.h"
-#include "rocksdb/table.h"
+#include "../include/rocksdb/flush_block_policy.h"
+#include "../include/rocksdb/options.h"
+#include "../include/rocksdb/status.h"
+#include "../include/rocksdb/table.h"
 
 namespace rocksdb {
 

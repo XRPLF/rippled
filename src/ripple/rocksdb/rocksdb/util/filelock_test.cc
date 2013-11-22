@@ -3,12 +3,12 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
-#include "rocksdb/status.h"
-#include "rocksdb/env.h"
+#include "../include/rocksdb/status.h"
+#include "../include/rocksdb/env.h"
 
 #include <vector>
-#include "util/coding.h"
-#include "util/testharness.h"
+#include "coding.h"
+#include "testharness.h"
 
 namespace rocksdb {
 

@@ -8,8 +8,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <string.h>
-#include "util/coding.h"
-#include "util/hash.h"
+#include "coding.h"
+#include "hash.h"
 
 namespace rocksdb {
 

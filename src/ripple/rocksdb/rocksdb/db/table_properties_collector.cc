@@ -3,10 +3,10 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 
-#include "db/table_properties_collector.h"
+#include "table_properties_collector.h"
 
-#include "db/dbformat.h"
-#include "util/coding.h"
+#include "dbformat.h"
+#include "../util/coding.h"
 
 namespace rocksdb {
 

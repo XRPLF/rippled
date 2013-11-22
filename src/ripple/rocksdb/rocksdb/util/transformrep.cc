@@ -9,14 +9,14 @@
 #include <algorithm>
 #include <iostream>
 
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/arena.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
-#include "port/port.h"
-#include "util/mutexlock.h"
-#include "util/murmurhash.h"
-#include "util/stl_wrappers.h"
+#include "../include/rocksdb/memtablerep.h"
+#include "../include/rocksdb/arena.h"
+#include "../include/rocksdb/slice.h"
+#include "../include/rocksdb/slice_transform.h"
+#include "../port/port.h"
+#include "mutexlock.h"
+#include "murmurhash.h"
+#include "stl_wrappers.h"
 
 namespace std {
 template <>

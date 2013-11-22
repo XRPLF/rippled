@@ -8,9 +8,9 @@
 #include <string>
 #include <list>
 #include <deque>
-#include "rocksdb/db.h"
-#include "db/dbformat.h"
-#include "db/skiplist.h"
+#include "../include/rocksdb/db.h"
+#include "dbformat.h"
+#include "skiplist.h"
 #include "memtable.h"
 
 namespace rocksdb {

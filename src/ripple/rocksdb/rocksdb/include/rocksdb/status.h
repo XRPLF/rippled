@@ -18,7 +18,7 @@
 #define STORAGE_ROCKSDB_INCLUDE_STATUS_H_
 
 #include <string>
-#include "rocksdb/slice.h"
+#include "slice.h"
 
 namespace rocksdb {
 

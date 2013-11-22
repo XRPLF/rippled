@@ -10,13 +10,13 @@
 // A portable implementation of crc32c, optimized to handle
 // four bytes at a time.
 
-#include "util/crc32c.h"
+#include "crc32c.h"
 
 #include <stdint.h>
 #ifdef __SSE4_2__
 #include <nmmintrin.h>
 #endif
-#include "util/coding.h"
+#include "coding.h"
 
 namespace rocksdb {
 namespace crc32c {

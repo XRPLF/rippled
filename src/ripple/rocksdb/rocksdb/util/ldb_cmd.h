@@ -11,14 +11,14 @@
 #include <algorithm>
 #include <stdio.h>
 
-#include "db/version_set.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/slice.h"
-#include "util/logging.h"
-#include "util/ldb_cmd_execute_result.h"
-#include "util/string_util.h"
+#include "../db/version_set.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/options.h"
+#include "../include/rocksdb/iterator.h"
+#include "../include/rocksdb/slice.h"
+#include "logging.h"
+#include "ldb_cmd_execute_result.h"
+#include "string_util.h"
 #include "utilities/utility_db.h"
 #include "utilities/ttl/db_ttl.h"
 

@@ -8,17 +8,17 @@
 // found in the LICENSE file.
 
 #pragma once
-#include "db/db_impl.h"
+#include "db_impl.h"
 
 #include <deque>
 #include <set>
-#include "db/dbformat.h"
-#include "db/log_writer.h"
-#include "db/snapshot.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "port/port.h"
-#include "util/stats_logger.h"
+#include "dbformat.h"
+#include "log_writer.h"
+#include "snapshot.h"
+#include "../include/rocksdb/db.h"
+#include "../include/rocksdb/env.h"
+#include "../port/port.h"
+#include "../util/stats_logger.h"
 
 namespace rocksdb {
 

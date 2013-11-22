@@ -3,15 +3,15 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
-#include "util/ldb_cmd.h"
+#include "ldb_cmd.h"
 
-#include "db/dbformat.h"
-#include "db/db_impl.h"
-#include "db/log_reader.h"
-#include "db/filename.h"
-#include "db/write_batch_internal.h"
-#include "rocksdb/write_batch.h"
-#include "util/coding.h"
+#include "../db/dbformat.h"
+#include "../db/db_impl.h"
+#include "../db/log_reader.h"
+#include "../db/filename.h"
+#include "../db/write_batch_internal.h"
+#include "../include/rocksdb/write_batch.h"
+#include "coding.h"
 
 #include <ctime>
 #include <dirent.h>

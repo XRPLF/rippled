@@ -9,10 +9,10 @@
 
 #include <algorithm>
 #include <stdint.h>
-#include "rocksdb/comparator.h"
-#include "rocksdb/slice.h"
-#include "port/port.h"
-#include "util/logging.h"
+#include "../include/rocksdb/comparator.h"
+#include "../include/rocksdb/slice.h"
+#include "../port/port.h"
+#include "logging.h"
 
 namespace rocksdb {
 

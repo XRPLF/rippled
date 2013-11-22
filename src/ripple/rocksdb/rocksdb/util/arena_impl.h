@@ -16,7 +16,7 @@
 #include <vector>
 #include <assert.h>
 #include <stdint.h>
-#include "rocksdb/arena.h"
+#include "../include/rocksdb/arena.h"
 
 namespace rocksdb {
 

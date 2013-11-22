@@ -7,20 +7,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/db_iter.h"
+#include "db_iter.h"
 #include <stdexcept>
 #include <deque>
 
-#include "db/filename.h"
-#include "db/dbformat.h"
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/merge_operator.h"
-#include "port/port.h"
-#include "util/logging.h"
-#include "util/mutexlock.h"
-#include "util/perf_context_imp.h"
+#include "filename.h"
+#include "dbformat.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/options.h"
+#include "../include/rocksdb/iterator.h"
+#include "../include/rocksdb/merge_operator.h"
+#include "../port/port.h"
+#include "../util/logging.h"
+#include "../util/mutexlock.h"
+#include "../util/perf_context_imp.h"
 
 namespace rocksdb {
 

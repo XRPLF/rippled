@@ -11,16 +11,16 @@
 #include <deque>
 #include <set>
 #include <vector>
-#include "db/dbformat.h"
-#include "db/log_writer.h"
-#include "db/snapshot.h"
-#include "db/version_edit.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/transaction_log.h"
-#include "port/port.h"
-#include "util/stats_logger.h"
+#include "dbformat.h"
+#include "log_writer.h"
+#include "snapshot.h"
+#include "version_edit.h"
+#include "../include/rocksdb/db.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/memtablerep.h"
+#include "../include/rocksdb/transaction_log.h"
+#include "../port/port.h"
+#include "../util/stats_logger.h"
 #include "memtablelist.h"
 
 namespace rocksdb {

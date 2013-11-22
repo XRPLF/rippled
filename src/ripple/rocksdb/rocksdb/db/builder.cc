@@ -7,20 +7,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/builder.h"
+#include "builder.h"
 
-#include "db/filename.h"
-#include "db/dbformat.h"
-#include "db/merge_helper.h"
-#include "db/table_cache.h"
-#include "db/version_edit.h"
-#include "rocksdb/db.h"
-#include "rocksdb/table.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
+#include "filename.h"
+#include "dbformat.h"
+#include "merge_helper.h"
+#include "table_cache.h"
+#include "version_edit.h"
+#include "../include/rocksdb/db.h"
+#include "../include/rocksdb/table.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/iterator.h"
+#include "../include/rocksdb/options.h"
 #include "table/block_based_table_builder.h"
-#include "util/stop_watch.h"
+#include "../util/stop_watch.h"
 
 namespace rocksdb {
 

@@ -7,13 +7,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/two_level_iterator.h"
+#include "two_level_iterator.h"
 
-#include "rocksdb/options.h"
-#include "rocksdb/table.h"
-#include "table/block.h"
-#include "table/format.h"
-#include "table/iterator_wrapper.h"
+#include "../include/rocksdb/options.h"
+#include "../include/rocksdb/table.h"
+#include "block.h"
+#include "format.h"
+#include "iterator_wrapper.h"
 
 namespace rocksdb {
 

@@ -10,13 +10,13 @@
 #pragma once
 #include <memory>
 #include <stdint.h>
-#include "rocksdb/cache.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/statistics.h"
-#include "rocksdb/table_properties.h"
-#include "rocksdb/table.h"
-#include "util/coding.h"
+#include "../include/rocksdb/cache.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/iterator.h"
+#include "../include/rocksdb/statistics.h"
+#include "../include/rocksdb/table_properties.h"
+#include "../include/rocksdb/table.h"
+#include "../util/coding.h"
 
 namespace rocksdb {
 

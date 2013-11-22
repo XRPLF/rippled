@@ -10,8 +10,8 @@
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
-#include "rocksdb/iterator.h"
-#include "rocksdb/options.h"
+#include "../include/rocksdb/iterator.h"
+#include "../include/rocksdb/options.h"
 
 namespace rocksdb {
 

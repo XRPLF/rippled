@@ -5,11 +5,11 @@
 //
 #pragma once
 
-#include "util/murmurhash.h"
-#include "util/coding.h"
+#include "murmurhash.h"
+#include "coding.h"
 
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/slice.h"
+#include "../include/rocksdb/memtablerep.h"
+#include "../include/rocksdb/slice.h"
 
 namespace rocksdb {
 namespace stl_wrappers {

@@ -22,7 +22,7 @@
 #include <memory>
 #include <vector>
 #include <stdint.h>
-#include "rocksdb/status.h"
+#include "status.h"
 
 namespace rocksdb {
 

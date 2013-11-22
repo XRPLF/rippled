@@ -7,15 +7,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/db_impl.h"
+#include "db_impl.h"
 #include <string>
 #include <stdint.h>
 #include <stdio.h>
-#include "db/version_set.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
-#include "port/port.h"
-#include "util/mutexlock.h"
+#include "version_set.h"
+#include "../include/rocksdb/db.h"
+#include "../include/rocksdb/env.h"
+#include "../port/port.h"
+#include "../util/mutexlock.h"
 
 namespace rocksdb {
 

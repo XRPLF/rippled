@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <string>
-#include "port/port.h"
+#include "../port/port.h"
 
 namespace rocksdb {
 

@@ -12,10 +12,10 @@
 #include <stdlib.h>
 #include <list>
 
-#include "rocksdb/cache.h"
-#include "port/port.h"
-#include "util/hash.h"
-#include "util/mutexlock.h"
+#include "../include/rocksdb/cache.h"
+#include "../port/port.h"
+#include "hash.h"
+#include "mutexlock.h"
 
 namespace rocksdb {
 

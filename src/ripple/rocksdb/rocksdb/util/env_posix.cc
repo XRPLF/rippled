@@ -33,13 +33,13 @@
 #if defined(LEVELDB_PLATFORM_ANDROID)
 #include <sys/stat.h>
 #endif
-#include "rocksdb/env.h"
-#include "rocksdb/slice.h"
-#include "port/port.h"
-#include "util/coding.h"
-#include "util/logging.h"
-#include "util/posix_logger.h"
-#include "util/random.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/slice.h"
+#include "../port/port.h"
+#include "coding.h"
+#include "logging.h"
+#include "posix_logger.h"
+#include "random.h"
 #include <signal.h>
 
 // Get nano time for mach systems

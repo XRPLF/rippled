@@ -29,19 +29,19 @@
 //   Store per-table metadata (smallest, largest, largest-seq#, ...)
 //   in the table's meta section to speed up ScanTable.
 
-#include "db/builder.h"
-#include "db/db_impl.h"
-#include "db/dbformat.h"
-#include "db/filename.h"
-#include "db/log_reader.h"
-#include "db/log_writer.h"
-#include "db/memtable.h"
-#include "db/table_cache.h"
-#include "db/version_edit.h"
-#include "db/write_batch_internal.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/db.h"
-#include "rocksdb/env.h"
+#include "builder.h"
+#include "db_impl.h"
+#include "dbformat.h"
+#include "filename.h"
+#include "log_reader.h"
+#include "log_writer.h"
+#include "memtable.h"
+#include "table_cache.h"
+#include "version_edit.h"
+#include "write_batch_internal.h"
+#include "../include/rocksdb/comparator.h"
+#include "../include/rocksdb/db.h"
+#include "../include/rocksdb/env.h"
 
 namespace rocksdb {
 

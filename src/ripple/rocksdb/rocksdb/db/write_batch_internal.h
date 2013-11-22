@@ -8,10 +8,10 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #pragma once
-#include "rocksdb/types.h"
-#include "rocksdb/write_batch.h"
-#include "rocksdb/db.h"
-#include "rocksdb/options.h"
+#include "../include/rocksdb/types.h"
+#include "../include/rocksdb/write_batch.h"
+#include "../include/rocksdb/db.h"
+#include "../include/rocksdb/options.h"
 
 namespace rocksdb {
 

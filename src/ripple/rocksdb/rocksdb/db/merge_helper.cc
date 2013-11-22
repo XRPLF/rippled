@@ -4,10 +4,10 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 #include "merge_helper.h"
-#include "db/dbformat.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/db.h"
-#include "rocksdb/merge_operator.h"
+#include "dbformat.h"
+#include "../include/rocksdb/comparator.h"
+#include "../include/rocksdb/db.h"
+#include "../include/rocksdb/merge_operator.h"
 #include <string>
 #include <stdio.h>
 

@@ -6,9 +6,9 @@
 #ifndef STORAGE_ROCKSDB_INCLUDE_TRANSACTION_LOG_ITERATOR_H_
 #define STORAGE_ROCKSDB_INCLUDE_TRANSACTION_LOG_ITERATOR_H_
 
-#include "rocksdb/status.h"
-#include "rocksdb/types.h"
-#include "rocksdb/write_batch.h"
+#include "status.h"
+#include "types.h"
+#include "write_batch.h"
 #include <memory>
 #include <vector>
 

@@ -7,18 +7,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/memtable.h"
+#include "memtable.h"
 
 #include <memory>
 
-#include "db/dbformat.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
-#include "rocksdb/merge_operator.h"
-#include "util/coding.h"
-#include "util/mutexlock.h"
-#include "util/murmurhash.h"
+#include "dbformat.h"
+#include "../include/rocksdb/comparator.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/iterator.h"
+#include "../include/rocksdb/merge_operator.h"
+#include "../util/coding.h"
+#include "../util/mutexlock.h"
+#include "../util/murmurhash.h"
 
 namespace std {
 template <>

@@ -7,12 +7,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/merger.h"
+#include "merger.h"
 
-#include "rocksdb/comparator.h"
-#include "rocksdb/iterator.h"
-#include "table/iter_heap.h"
-#include "table/iterator_wrapper.h"
+#include "../include/rocksdb/comparator.h"
+#include "../include/rocksdb/iterator.h"
+#include "iter_heap.h"
+#include "iterator_wrapper.h"
 
 #include <vector>
 

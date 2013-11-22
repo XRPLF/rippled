@@ -8,7 +8,7 @@
 
 #include <string>
 #include <deque>
-#include "rocksdb/slice.h"
+#include "slice.h"
 
 namespace rocksdb {
 

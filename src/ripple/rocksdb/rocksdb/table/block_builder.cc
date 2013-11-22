@@ -31,12 +31,12 @@
 //     num_restarts: uint32
 // restarts[i] contains the offset within the block of the ith restart point.
 
-#include "table/block_builder.h"
+#include "block_builder.h"
 
 #include <algorithm>
 #include <assert.h>
-#include "rocksdb/comparator.h"
-#include "util/coding.h"
+#include "../include/rocksdb/comparator.h"
+#include "../util/coding.h"
 
 namespace rocksdb {
 

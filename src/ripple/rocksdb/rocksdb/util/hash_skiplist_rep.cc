@@ -4,14 +4,14 @@
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
 
-#include "rocksdb/memtablerep.h"
-#include "rocksdb/arena.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/slice_transform.h"
-#include "port/port.h"
-#include "port/atomic_pointer.h"
-#include "util/murmurhash.h"
-#include "db/skiplist.h"
+#include "../include/rocksdb/memtablerep.h"
+#include "../include/rocksdb/arena.h"
+#include "../include/rocksdb/slice.h"
+#include "../include/rocksdb/slice_transform.h"
+#include "../port/port.h"
+#include "../port/atomic_pointer.h"
+#include "murmurhash.h"
+#include "../db/skiplist.h"
 
 namespace rocksdb {
 namespace {

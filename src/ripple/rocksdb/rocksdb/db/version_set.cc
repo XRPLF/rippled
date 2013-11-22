@@ -7,24 +7,24 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "db/version_set.h"
+#include "version_set.h"
 
 #include <algorithm>
 #include <climits>
 #include <stdio.h>
-#include "db/filename.h"
-#include "db/log_reader.h"
-#include "db/log_writer.h"
-#include "db/memtable.h"
-#include "db/table_cache.h"
-#include "rocksdb/env.h"
-#include "rocksdb/merge_operator.h"
-#include "rocksdb/table.h"
+#include "filename.h"
+#include "log_reader.h"
+#include "log_writer.h"
+#include "memtable.h"
+#include "table_cache.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/merge_operator.h"
+#include "../include/rocksdb/table.h"
 #include "table/merger.h"
 #include "table/two_level_iterator.h"
-#include "util/coding.h"
-#include "util/logging.h"
-#include "util/stop_watch.h"
+#include "../util/coding.h"
+#include "../util/logging.h"
+#include "../util/stop_watch.h"
 
 namespace rocksdb {
 

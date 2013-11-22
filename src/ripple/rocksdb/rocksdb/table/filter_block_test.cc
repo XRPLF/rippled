@@ -7,14 +7,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/filter_block.h"
+#include "filter_block.h"
 
-#include "rocksdb/filter_policy.h"
-#include "util/coding.h"
-#include "util/hash.h"
-#include "util/logging.h"
-#include "util/testharness.h"
-#include "util/testutil.h"
+#include "../include/rocksdb/filter_policy.h"
+#include "../util/coding.h"
+#include "../util/hash.h"
+#include "../util/logging.h"
+#include "../util/testharness.h"
+#include "../util/testutil.h"
 
 namespace rocksdb {
 

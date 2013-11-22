@@ -23,10 +23,10 @@
 #include <set>
 #include <vector>
 #include <deque>
-#include "db/dbformat.h"
-#include "db/version_edit.h"
-#include "port/port.h"
-#include "db/table_cache.h"
+#include "dbformat.h"
+#include "version_edit.h"
+#include "../port/port.h"
+#include "table_cache.h"
 
 namespace rocksdb {
 

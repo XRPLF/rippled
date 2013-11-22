@@ -9,14 +9,14 @@
 
 #pragma once
 #include <stdio.h>
-#include "rocksdb/comparator.h"
-#include "rocksdb/db.h"
-#include "rocksdb/filter_policy.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/table.h"
-#include "rocksdb/types.h"
-#include "util/coding.h"
-#include "util/logging.h"
+#include "../include/rocksdb/comparator.h"
+#include "../include/rocksdb/db.h"
+#include "../include/rocksdb/filter_policy.h"
+#include "../include/rocksdb/slice.h"
+#include "../include/rocksdb/table.h"
+#include "../include/rocksdb/types.h"
+#include "../util/coding.h"
+#include "../util/logging.h"
 
 namespace rocksdb {
 

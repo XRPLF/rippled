@@ -6,13 +6,13 @@
 #pragma once
 #include <vector>
 
-#include "rocksdb/env.h"
-#include "rocksdb/options.h"
-#include "rocksdb/types.h"
-#include "rocksdb/transaction_log.h"
-#include "db/db_impl.h"
-#include "db/log_reader.h"
-#include "db/filename.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/options.h"
+#include "../include/rocksdb/types.h"
+#include "../include/rocksdb/transaction_log.h"
+#include "db_impl.h"
+#include "log_reader.h"
+#include "filename.h"
 
 namespace rocksdb {
 

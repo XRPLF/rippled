@@ -3,14 +3,14 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
-#include "db/memtablelist.h"
+#include "memtablelist.h"
 
 #include <string>
-#include "rocksdb/db.h"
-#include "db/memtable.h"
-#include "rocksdb/env.h"
-#include "rocksdb/iterator.h"
-#include "util/coding.h"
+#include "../include/rocksdb/db.h"
+#include "memtable.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/iterator.h"
+#include "../util/coding.h"
 
 namespace rocksdb {
 

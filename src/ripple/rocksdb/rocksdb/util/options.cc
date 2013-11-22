@@ -7,16 +7,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "rocksdb/options.h"
+#include "../include/rocksdb/options.h"
 
 #include <limits>
 
-#include "rocksdb/cache.h"
-#include "rocksdb/compaction_filter.h"
-#include "rocksdb/comparator.h"
-#include "rocksdb/env.h"
-#include "rocksdb/filter_policy.h"
-#include "rocksdb/merge_operator.h"
+#include "../include/rocksdb/cache.h"
+#include "../include/rocksdb/compaction_filter.h"
+#include "../include/rocksdb/comparator.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/filter_policy.h"
+#include "../include/rocksdb/merge_operator.h"
 #include "table/block_based_table_factory.h"
 
 namespace rocksdb {

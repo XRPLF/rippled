@@ -3,11 +3,11 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #pragma once
-#include "rocksdb/env.h"
-#include "rocksdb/status.h"
-#include "port/port.h"
-#include "util/mutexlock.h"
-#include "util/coding.h"
+#include "../include/rocksdb/env.h"
+#include "../include/rocksdb/status.h"
+#include "../port/port.h"
+#include "mutexlock.h"
+#include "coding.h"
 
 #include <list>
 #include <deque>

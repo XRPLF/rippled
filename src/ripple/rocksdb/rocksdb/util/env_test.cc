@@ -11,11 +11,11 @@
 #include <iostream>
 #include <unordered_set>
 
-#include "rocksdb/env.h"
-#include "port/port.h"
-#include "util/coding.h"
-#include "util/mutexlock.h"
-#include "util/testharness.h"
+#include "../include/rocksdb/env.h"
+#include "../port/port.h"
+#include "coding.h"
+#include "mutexlock.h"
+#include "testharness.h"
 
 namespace rocksdb {
 

@@ -11,7 +11,7 @@
 // keys in the dataset.
 
 #pragma once
-#include "rocksdb/iterator.h"
+#include "../include/rocksdb/iterator.h"
 
 namespace rocksdb {
 

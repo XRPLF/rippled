@@ -8,8 +8,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #pragma once
-#include "rocksdb/iterator.h"
-#include "rocksdb/env.h"
+#include "../include/rocksdb/iterator.h"
+#include "../include/rocksdb/env.h"
 
 namespace rocksdb {
 

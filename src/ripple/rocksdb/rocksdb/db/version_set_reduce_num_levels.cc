@@ -7,13 +7,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "db/version_set.h"
+#include "version_set.h"
 
 #include <algorithm>
 #include <stdio.h>
-#include "db/log_reader.h"
-#include "db/log_writer.h"
-#include "util/logging.h"
+#include "log_reader.h"
+#include "log_writer.h"
+#include "../util/logging.h"
 
 namespace rocksdb {
 

@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "rocksdb/status.h"
+#include "status.h"
 
 namespace rocksdb {
 

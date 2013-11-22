@@ -19,8 +19,8 @@
 #ifndef STORAGE_ROCKSDB_INCLUDE_ITERATOR_H_
 #define STORAGE_ROCKSDB_INCLUDE_ITERATOR_H_
 
-#include "rocksdb/slice.h"
-#include "rocksdb/status.h"
+#include "slice.h"
+#include "status.h"
 
 namespace rocksdb {
 

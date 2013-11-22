@@ -7,14 +7,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "table/format.h"
+#include "format.h"
 
 #include "port/port.h"
-#include "rocksdb/env.h"
-#include "table/block.h"
-#include "util/coding.h"
-#include "util/crc32c.h"
-#include "util/perf_context_imp.h"
+#include "../include/rocksdb/env.h"
+#include "block.h"
+#include "../util/coding.h"
+#include "../util/crc32c.h"
+#include "../util/perf_context_imp.h"
 
 namespace rocksdb {
 

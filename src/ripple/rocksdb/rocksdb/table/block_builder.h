@@ -11,7 +11,7 @@
 #include <vector>
 
 #include <stdint.h>
-#include "rocksdb/slice.h"
+#include "../include/rocksdb/slice.h"
 
 namespace rocksdb {
 
