@@ -19,7 +19,7 @@
 #include "../include/rocksdb/env.h"
 #include "../include/rocksdb/iterator.h"
 #include "../include/rocksdb/options.h"
-#include "table/block_based_table_builder.h"
+#include "../table/block_based_table_builder.h"
 #include "../util/stop_watch.h"
 
 namespace rocksdb {

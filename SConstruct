@@ -160,6 +160,7 @@ COMPILED_FILES.extend([
     'src/ripple/json/ripple_json.cpp',
     'src/ripple/peerfinder/ripple_peerfinder.cpp',
     'src/ripple/resource/ripple_resource.cpp',
+    'src/ripple/rocksdb/ripple_rocksdb.cpp',
     'src/ripple/rpc/ripple_rpc.cpp',
     'src/ripple/sitefiles/ripple_sitefiles.cpp',
     'src/ripple/sophia/ripple_sophia.c',

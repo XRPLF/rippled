@@ -17,7 +17,7 @@
 #include "../include/rocksdb/env.h"
 #include "../include/rocksdb/filter_policy.h"
 #include "../include/rocksdb/merge_operator.h"
-#include "table/block_based_table_factory.h"
+#include "../table/block_based_table_factory.h"
 
 namespace rocksdb {
 

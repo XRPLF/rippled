@@ -43,10 +43,10 @@
 #include "../include/rocksdb/status.h"
 #include "../include/rocksdb/table.h"
 #include "../port/port.h"
-#include "table/block.h"
-#include "table/block_based_table_factory.h"
-#include "table/merger.h"
-#include "table/two_level_iterator.h"
+#include "../table/block.h"
+#include "../table/block_based_table_factory.h"
+#include "../table/merger.h"
+#include "../table/two_level_iterator.h"
 #include "../util/auto_roll_logger.h"
 #include "../util/build_version.h"
 #include "../util/coding.h"
@@ -283,7 +283,10 @@ DBImpl::DBImpl(const Options& options, const std::string& dbname)
   versions_.reset(new VersionSet(dbname_, &options_, storage_options_,
                                  table_cache_.get(), &internal_comparator_));
 
+#ifdef ROCKSDB_LDB_BUILD_VERSION
   dumpLeveldbBuildVersion(options_.info_log.get());
+#endif
+
   options_.Dump(options_.info_log.get());
 
   char name[100];
@@ -3587,6 +3590,7 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
   return result;
 }
 
+#ifdef ROCKSDB_LDB_BUILD_VERSION
 //
 // A global method that can dump out the build version
 void dumpLeveldbBuildVersion(Logger * log) {
@@ -3594,5 +3598,6 @@ void dumpLeveldbBuildVersion(Logger * log) {
   Log(log, "Compile time %s %s",
       rocksdb_build_compile_time, rocksdb_build_compile_date);
 }
+#endif
 
 }  // namespace rocksdb

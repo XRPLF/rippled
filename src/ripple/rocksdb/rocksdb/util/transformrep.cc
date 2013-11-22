@@ -18,6 +18,8 @@
 #include "murmurhash.h"
 #include "stl_wrappers.h"
 
+#ifndef ROCKSDB_HASH_SLICE_DECLARED
+#define ROCKSDB_HASH_SLICE_DECLARED
 namespace std {
 template <>
 struct hash<rocksdb::Slice> {
@@ -26,6 +28,7 @@ struct hash<rocksdb::Slice> {
   }
 };
 }
+#endif
 
 namespace rocksdb {
 namespace {

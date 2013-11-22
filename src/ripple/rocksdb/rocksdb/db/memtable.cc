@@ -20,6 +20,8 @@
 #include "../util/mutexlock.h"
 #include "../util/murmurhash.h"
 
+#ifndef ROCKSDB_HASH_SLICE_DECLARED
+#define ROCKSDB_HASH_SLICE_DECLARED
 namespace std {
 template <>
 struct hash<rocksdb::Slice> {
@@ -28,6 +30,7 @@ struct hash<rocksdb::Slice> {
   }
 };
 }
+#endif
 
 namespace rocksdb {
 

@@ -559,7 +559,7 @@ Status BlockBasedTable::GetBlock(
       if (s.ok()) {
         if (options.fill_cache && entry->value->isCachable()) {
           entry->cache_handle = block_cache->Insert(
-            key, entry->value, entry->value->size(), &DeleteCachedBlock);
+            key, entry->value, entry->value->size(), &rocksdb::DeleteCachedBlock);
           RecordTick(statistics, BLOCK_CACHE_ADD);
         }
       }
@@ -673,7 +673,7 @@ Iterator* BlockBasedTable::BlockReader(void* arg,
           if (block_cache != nullptr && block->isCachable() &&
               options.fill_cache) {
             cache_handle = block_cache->Insert(key, block, block->size(),
-                                               &DeleteCachedBlock);
+                                               &rocksdb::DeleteCachedBlock);
             assert(reinterpret_cast<Block*>(block_cache->Value(cache_handle))
                    == block);
           }
@@ -726,7 +726,7 @@ Iterator* BlockBasedTable::BlockReader(void* arg,
             // Release the hold on the compressed cache entry immediately.
             if (block_cache_compressed != nullptr && cblock != nullptr) {
               compressed_cache_handle = block_cache_compressed->Insert(
-                          ckey, cblock, cblock->size(), &DeleteCachedBlock);
+                          ckey, cblock, cblock->size(), &rocksdb::DeleteCachedBlock);
               block_cache_compressed->Release(compressed_cache_handle);
               RecordTick(statistics, BLOCK_CACHE_COMPRESSED_MISS);
               cblock = nullptr;
@@ -735,7 +735,7 @@ Iterator* BlockBasedTable::BlockReader(void* arg,
             assert((block->compressionType() == kNoCompression));
             if (block_cache != nullptr) {
               cache_handle = block_cache->Insert(
-                key, block, block->size(), &DeleteCachedBlock);
+                key, block, block->size(), &rocksdb::DeleteCachedBlock);
               RecordTick(statistics, BLOCK_CACHE_ADD);
               assert(reinterpret_cast<Block*>(block_cache->Value(
                      cache_handle))== block);

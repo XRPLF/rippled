@@ -262,6 +262,39 @@
     <Filter Include="[1] Ripple\sitefiles\impl">
       <UniqueIdentifier>{5609ad93-0654-41db-8ecb-7dfcde58d2e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\rocksdb">
+      <UniqueIdentifier>{b244f110-0549-40d2-963b-8c0af87de917}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\rocksdb\rocksdb">
+      <UniqueIdentifier>{514156a8-2473-4bf3-940f-bd7c166e726f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\rocksdb\rocksdb\db">
+      <UniqueIdentifier>{9e7aee3c-76bf-408c-8577-b055919b9f8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\rocksdb\rocksdb\memenv">
+      <UniqueIdentifier>{7e693c99-fcae-4f60-a6d4-e4fe27119959}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\rocksdb\rocksdb\port">
+      <UniqueIdentifier>{d2a35ae6-6911-4b77-966d-cac44fccb429}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\rocksdb\rocksdb\port\win">
+      <UniqueIdentifier>{076ca841-0b06-400a-a87c-8d1df126f43f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\rocksdb\rocksdb\table">
+      <UniqueIdentifier>{17b0a87f-5a62-48af-9cdd-cbe9af7736d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\rocksdb\rocksdb\util">
+      <UniqueIdentifier>{e4649e1a-07bc-4633-a01f-3615a7da53c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\rocksdb\rocksdb\include">
+      <UniqueIdentifier>{c02d2b7e-253d-49fb-b0db-b30c861bb2dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\rocksdb\rocksdb\include\rocksdb">
+      <UniqueIdentifier>{424405b5-72c7-4d07-add8-3c81d3da6e5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\rocksdb\rocksdb\include\utilities">
+      <UniqueIdentifier>{013f0eb9-bf1d-4b11-8c2c-3fd99d4b8ef5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -1148,6 +1181,225 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\Manager.cpp">
       <Filter>[1] Ripple\sitefiles\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\ripple_rocksdb.cpp">
+      <Filter>[1] Ripple\rocksdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\builder.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_bench.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_filesnapshot.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_impl.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_impl_readonly.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_iter.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_stats_logger.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\dbformat.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\filename.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\log_reader.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\log_writer.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\memtable.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\memtablelist.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\merge_helper.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\merge_operator.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\repair.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\table_cache.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\table_properties_collector.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\transaction_log_impl.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_edit.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_set.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_set_reduce_num_levels.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\write_batch.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\helpers\memenv\memenv.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\memenv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\port\port_posix.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\port</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\port\stack_trace.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\port</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_builder.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_factory.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_reader.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_builder.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_test.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\filter_block.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\filter_block_test.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\flush_block_policy.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\format.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\iterator.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\merger.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\two_level_iterator.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\arena_impl.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\auto_roll_logger.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\blob_store.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\bloom.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\cache.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\coding.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\comparator.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\crc32c.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\env.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\env_hdfs.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\env_posix.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\env_test.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\filelock_test.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\filter_policy.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\hash.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\hash_skiplist_rep.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\histogram.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\ldb_cmd.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\ldb_tool.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\logging.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\murmurhash.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\options.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\perf_context.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\signal_test.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\skiplistrep.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\slice.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\statistics.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\status.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\string_util.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\testharness.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\testutil.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\transformrep.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\vectorrep.cc">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2351,6 +2603,276 @@
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\multitls.hpp">
       <Filter>[0] Libraries\websocket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\ripple_rocksdb.h">
+      <Filter>[1] Ripple\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\builder.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\db_impl.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\db_impl_readonly.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\db_iter.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\db_statistics.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\dbformat.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\filename.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\log_format.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\log_reader.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\log_writer.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\memtable.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\memtablelist.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\merge_helper.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\prefix_filter_iterator.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\skiplist.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\snapshot.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\table_cache.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\table_properties_collector.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\transaction_log_impl.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\version_edit.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\version_set.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\write_batch_internal.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\helpers\memenv\memenv.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\memenv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\port\atomic_pointer.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\port\port.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\port\port_posix.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\port</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\port\win\stdint.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\port\win</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\block.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_builder.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_factory.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_reader.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\block_builder.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\filter_block.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\format.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\iter_heap.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\iterator_wrapper.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\merger.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\two_level_iterator.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\arena_impl.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\auto_roll_logger.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\bit_set.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\blob_store.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\build_version.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\coding.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\crc32c.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\hash.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\histogram.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\ldb_cmd.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\ldb_cmd_execute_result.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\logging.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\murmurhash.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\mutexlock.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\perf_context_imp.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\posix_logger.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\random.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\stack_trace.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\stats_logger.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\stl_wrappers.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\stop_watch.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\string_util.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\testharness.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\testutil.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\arena.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\c.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\cache.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\compaction_filter.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\comparator.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\db.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\env.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\filter_policy.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\flush_block_policy.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\iterator.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\ldb_tool.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\memtablerep.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\merge_operator.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\options.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\perf_context.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\slice.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\slice_transform.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\statistics.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\status.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\table.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\table_properties.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\transaction_log.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\types.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\universal_compaction.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\write_batch.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\utilities\stackable_db.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\utilities\utility_db.h">
+      <Filter>[1] Ripple\rocksdb\rocksdb\include\utilities</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
