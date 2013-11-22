@@ -124,7 +124,6 @@ private:
 
     private:
         Workers& m_workers;
-        String m_threadName;
     };
 
 private:
