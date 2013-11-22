@@ -202,7 +202,7 @@ void Workers::Worker::run ()
             }
 
             // Put the name back in case the callback changed it
-            Thread::setCurrentThreadName (m_threadName);
+            Thread::setCurrentThreadName (Thread::getThreadName());
         }
 
         // Any worker that goes into the paused list must
@@ -217,7 +217,7 @@ void Workers::Worker::run ()
         if (--m_workers.m_activeCount == 0)
             m_workers.m_allPaused.signal ();
 
-        Thread::setCurrentThreadName (m_threadName + " (paused)");
+        Thread::setCurrentThreadName ("(" + getThreadName() + ")");
 
         // [1] We will be here when the paused list is popped
         //
