@@ -95,6 +95,10 @@ public:
         testBackend ("mdb", seedValue, 200);
         #endif
 
+        #if RIPPLE_ROCKSDB_AVAILABLE
+        testBackend ("rocksdb", seedValue);
+        #endif
+
         #if RIPPLE_SOPHIA_AVAILABLE
         testBackend ("sophia", seedValue);
         #endif

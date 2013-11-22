@@ -344,6 +344,10 @@ void Database::addAvailableBackends ()
     addFactory (MdbFactory::getInstance ());
 #endif
 
+#if RIPPLE_ROCKSDB_AVAILABLE
+    addFactory (RocksDBFactory::New ());
+#endif
+
 #if RIPPLE_SOPHIA_AVAILABLE
     addFactory (SophiaFactory::getInstance ());
 #endif

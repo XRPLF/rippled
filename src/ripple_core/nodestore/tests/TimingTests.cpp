@@ -118,15 +118,21 @@ public:
         testBackend ("hyperleveldb", seedValue);
     #endif
 
+    #if RIPPLE_ROCKSDB_AVAILABLE
+        testBackend ("rocksdb", seedValue);
+    #endif
+
     /*
     #if RIPPLE_MDB_AVAILABLE
         testBackend ("mdb", seedValue);
     #endif
     */
 
+    /*
     #if RIPPLE_SOPHIA_AVAILABLE
         testBackend ("sophia", seedValue);
     #endif
+    */
 
     /*
         testBackend ("sqlite", seedValue);

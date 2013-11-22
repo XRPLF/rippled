@@ -188,6 +188,10 @@ public:
         testNodeStore ("mdb", useEphemeralDatabase, true, seedValue, 200);
     #endif
 
+    #if RIPPLE_ROCKSDB_AVAILABLE
+        testNodeStore ("rocksdb", useEphemeralDatabase, true, seedValue);
+    #endif
+
     #if RIPPLE_SOPHIA_AVAILABLE
         testNodeStore ("sophia", useEphemeralDatabase, true, seedValue);
     #endif
@@ -200,6 +204,10 @@ public:
     void runImportTests (int64 const seedValue)
     {
         testImport ("leveldb", "leveldb", seedValue);
+
+    #if RIPPLE_ROCKSDB_AVAILABLE
+        testImport ("rocksdb", "rocksdb", seedValue);
+    #endif
 
     #if RIPPLE_HYPERLEVELDB_AVAILABLE
         testImport ("hyperleveldb", "hyperleveldb", seedValue);
