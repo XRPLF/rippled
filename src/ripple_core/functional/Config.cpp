@@ -108,6 +108,7 @@ Config::Config ()
 
     ELB_SUPPORT             = false;
     RUN_STANDALONE          = false;
+    doImport                = false;
     START_UP                = NORMAL;
 }
 

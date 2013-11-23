@@ -325,6 +325,7 @@ public:
             <key>'='<value>['|'<key>'='value]
         @see parseDelimitedKeyValueString
     */
+    bool doImport;
     StringPairArray importNodeDatabase;
 
     //
