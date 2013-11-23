@@ -407,9 +407,7 @@ int RippleMain::run (int argc, char const* const* argv)
     //
     if (vm.count ("import"))
     {
-        String const optionString (vm ["import"].as <std::string> ());
-
-        getConfig ().importNodeDatabase = parseDelimitedKeyValueString (optionString);
+        getConfig ().doImport = true;
     }
 
     if (vm.count ("ledger"))

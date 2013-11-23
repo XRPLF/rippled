@@ -1225,7 +1225,7 @@ void ApplicationImp::updateTables ()
         exit (1);
     }
 
-    if (getConfig ().importNodeDatabase.size () > 0)
+    if (getConfig ().doImport)
     {
         NodeStore::DummyScheduler scheduler;
         ScopedPointer <NodeStore::Database> source (NodeStore::Database::New (
