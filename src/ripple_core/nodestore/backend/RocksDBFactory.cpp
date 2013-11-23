@@ -125,6 +125,8 @@ public:
         if (! keyValues["file_size_mb"].isEmpty())
         {
             options.target_file_size_base = 1024 * 1024 * keyValues["file_size_mb"].getIntValue();
+            options.max_bytes_for_level_base = 5 * options.target_file_size_base;
+            options.write_buffer_size = 2 * options.target_file_size_base;
         }
 
         if (! keyValues["file_size_mult"].isEmpty())
