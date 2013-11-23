@@ -95,6 +95,11 @@ public:
         return m_now;
     }
 
+    elapsed_type now() const
+    {
+        return m_now;
+    }
+
     elapsed_type operator() ()
     {
         return now();
