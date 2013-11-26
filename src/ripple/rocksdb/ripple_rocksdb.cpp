@@ -43,6 +43,11 @@
 # pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #endif
 
+// Compile RocksDB without debugging unless specifically requested
+#if !defined (NDEBUG) && !defined (RIPPLE_DEBUG_ROCKSDB)
+#define NDEBUG
+#endif
+
 #include "rocksdb/db/builder.cc"
 #include "rocksdb/db/db_filesnapshot.cc"
 #include "rocksdb/db/dbformat.cc"

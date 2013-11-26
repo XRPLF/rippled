@@ -107,6 +107,13 @@
 #define BEAST_ZLIB_INCLUDE_PATH <zlib.h>
 #endif
 
+/** Config: BEAST_SQLITE_FORCE_NDEBUG
+    Setting this option forces sqlite into release mode even if NDEBUG is not set
+*/
+#ifndef BEAST_SQLITE_FORCE_NDEBUG
+#define BEAST_SQLITE_FORCE_NDEBUG 1
+#endif
+
 //------------------------------------------------------------------------------
 //
 // Boost

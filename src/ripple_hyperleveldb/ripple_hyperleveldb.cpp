@@ -51,6 +51,11 @@
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #endif
 
+// Compile HyperLevelDB without debugging unless specifically requested
+#if !defined (NDEBUG) && !defined (RIPPLE_DEBUG_HYPERLEVELDB)
+#define NDEBUG
+#endif
+
 #include "hyperleveldb/db/builder.cc"
 #include "hyperleveldb/db/db_impl.cc"
 #include "hyperleveldb/db/db_iter.cc"
