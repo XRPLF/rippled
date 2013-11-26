@@ -57,6 +57,10 @@
 */
 //#define SQLITE_THREADSAFE 2
 
+#if defined (BEAST_SQLITE_USE_NDEBUG) && BEAST_SQLITE_USE_NDEBUG && !defined (NDEBUG)
+#define NDEBUG
+#endif
+
 #include "sqlite/sqlite3.c"
 
 #if BEAST_MSVC

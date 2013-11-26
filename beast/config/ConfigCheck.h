@@ -81,6 +81,10 @@
 #define BEAST_ZLIB_INCLUDE_PATH <zlib.h>
 #endif
 
+#ifndef BEAST_SQLITE_FORCE_NDEBUG
+#define BEAST_SQLITE_FORCE_NDEBUG 0
+#endif
+
 #ifndef BEAST_STRING_UTF_TYPE
 #define BEAST_STRING_UTF_TYPE 8
 #endif
