@@ -1972,7 +1972,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, int32 minLedger, in
     {
         try
         {
-            if (!token.isMember("ledger") || !token.isMember("seq"))
+            if (!token.isObject() || !token.isMember("ledger") || !token.isMember("seq"))
                 return ret;
             findLedger = token["ledger"].asInt();
             findSeq = token["ledger"].asInt();
