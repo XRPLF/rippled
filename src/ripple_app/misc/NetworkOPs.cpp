@@ -1844,7 +1844,7 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int
     uint32 NONBINARY_PAGE_LENGTH = 200;
     uint32 EXTRA_LENGTH = 20;
 
-    bool foundResume = token.isNull();
+    bool foundResume = !token.isObject();
 
     uint32 numberOfResults, queryLimit;
     if (limit <= 0)
@@ -1956,7 +1956,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, int32 minLedger, in
     uint32 BINARY_PAGE_LENGTH = 500;
     uint32 EXTRA_LENGTH = 20;
 
-    bool foundResume = token.isNull();
+    bool foundResume = !token.isObject();
 
     uint32 numberOfResults, queryLimit;
     if (limit <= 0)
@@ -1972,7 +1972,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, int32 minLedger, in
     {
         try
         {
-            if (!token.isObject() || !token.isMember("ledger") || !token.isMember("seq"))
+            if (!token.isMember("ledger") || !token.isMember("seq"))
                 return ret;
             findLedger = token["ledger"].asInt();
             findSeq = token["ledger"].asInt();
