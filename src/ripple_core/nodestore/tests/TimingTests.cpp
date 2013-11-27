@@ -129,12 +129,6 @@ public:
     */
 
     /*
-    #if RIPPLE_SOPHIA_AVAILABLE
-        testBackend ("sophia", seedValue);
-    #endif
-    */
-
-    /*
         testBackend ("sqlite", seedValue);
     */
     }

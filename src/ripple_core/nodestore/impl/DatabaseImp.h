@@ -348,10 +348,6 @@ void Database::addAvailableBackends ()
     addFactory (RocksDBFactory::New ());
 #endif
 
-#if RIPPLE_SOPHIA_AVAILABLE
-    addFactory (SophiaFactory::getInstance ());
-#endif
-
     addFactory (KeyvaDBFactory::getInstance ());
 }
 

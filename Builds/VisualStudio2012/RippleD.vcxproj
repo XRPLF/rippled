@@ -635,7 +635,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\sitefiles\ripple_sitefiles.cpp" />
-    <ClCompile Include="..\..\src\ripple\sophia\ripple_sophia.c" />
     <ClCompile Include="..\..\src\ripple\sslutil\impl\CBigNum.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1512,12 +1511,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\SophiaFactory.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\impl\BatchWriter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2276,7 +2269,6 @@
     <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h" />
     <ClInclude Include="..\..\src\ripple\sitefiles\impl\Site.h" />
     <ClInclude Include="..\..\src\ripple\sitefiles\ripple_sitefiles.h" />
-    <ClInclude Include="..\..\src\ripple\sophia\ripple_sophia.h" />
     <ClInclude Include="..\..\src\ripple\sslutil\api\bignum_error.h" />
     <ClInclude Include="..\..\src\ripple\sslutil\api\CAutoBN_CTX.h" />
     <ClInclude Include="..\..\src\ripple\sslutil\api\CBigNum.h" />
@@ -2472,7 +2464,6 @@
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MdbFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\NullFactory.h" />
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\SophiaFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\impl\BatchWriter.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\impl\DatabaseImp.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\impl\DecodedBlob.h" />

@@ -192,10 +192,6 @@ public:
         testNodeStore ("rocksdb", useEphemeralDatabase, true, seedValue);
     #endif
 
-    #if RIPPLE_SOPHIA_AVAILABLE
-        testNodeStore ("sophia", useEphemeralDatabase, true, seedValue);
-    #endif
-
         testNodeStore ("sqlite", useEphemeralDatabase, true, seedValue);
     }
 
@@ -216,12 +212,6 @@ public:
     /*
     #if RIPPLE_MDB_AVAILABLE
         testImport ("mdb", "mdb", seedValue);
-    #endif
-    */
-
-    /*
-    #if RIPPLE_SOPHIA_AVAILABLE
-        testImport ("sophia", "sophia", seedValue);
     #endif
     */
 

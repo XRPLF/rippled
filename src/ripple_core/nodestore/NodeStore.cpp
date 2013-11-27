@@ -22,7 +22,6 @@
 #include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
 #include "../ripple_leveldb/ripple_leveldb.h"
 #include "../ripple_mdb/ripple_mdb.h"
-#include "../ripple/sophia/ripple_sophia.h"
 #include "../ripple/rocksdb/ripple_rocksdb.h"
 
 namespace ripple {
@@ -42,8 +41,6 @@ namespace ripple {
 #include "backend/NullFactory.cpp"
 # include "backend/MdbFactory.h"
 #include "backend/MdbFactory.cpp"
-# include "backend/SophiaFactory.h"
-#include "backend/SophiaFactory.cpp"
 # include "backend/RocksDBFactory.h"
 #include "backend/RocksDBFactory.cpp"
 

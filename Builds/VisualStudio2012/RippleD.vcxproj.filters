@@ -166,9 +166,6 @@
     <Filter Include="[1] Ripple\beast">
       <UniqueIdentifier>{458b9099-fcf6-49fe-b3fb-a27beb2ee070}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\sophia">
-      <UniqueIdentifier>{29b20c8e-267a-487a-9086-fb0c85a922f6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\json">
       <UniqueIdentifier>{d95b931f-b5fd-4d15-a040-e832ac1e2f87}</UniqueIdentifier>
     </Filter>
@@ -963,9 +960,6 @@
     <ClCompile Include="..\..\src\ripple_app\main\IoServicePool.cpp">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sophia\ripple_sophia.c">
-      <Filter>[1] Ripple\sophia</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\impl\json_reader.cpp">
       <Filter>[1] Ripple\json\impl</Filter>
     </ClCompile>
@@ -995,9 +989,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\tests\TimingTests.cpp">
       <Filter>[2] Old Ripple\ripple_core\nodestore\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\SophiaFactory.cpp">
-      <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\backend\NullFactory.cpp">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
@@ -2187,9 +2178,6 @@
     <ClInclude Include="..\..\src\ripple_app\main\IoServicePool.h">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sophia\ripple_sophia.h">
-      <Filter>[1] Ripple\sophia</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\api\json_features.h">
       <Filter>[1] Ripple\json\api</Filter>
     </ClInclude>
@@ -2255,9 +2243,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\VisitCallback.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\SophiaFactory.h">
-      <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\NullFactory.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
