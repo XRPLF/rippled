@@ -340,10 +340,6 @@ void Database::addAvailableBackends ()
     addFactory (HyperDBFactory::getInstance ());
 #endif
 
-#if RIPPLE_MDB_AVAILABLE
-    addFactory (MdbFactory::getInstance ());
-#endif
-
 #if RIPPLE_ROCKSDB_AVAILABLE
     addFactory (RocksDBFactory::New ());
 #endif

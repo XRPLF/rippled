@@ -123,12 +123,6 @@ public:
     #endif
 
     /*
-    #if RIPPLE_MDB_AVAILABLE
-        testBackend ("mdb", seedValue);
-    #endif
-    */
-
-    /*
         testBackend ("sqlite", seedValue);
     */
     }

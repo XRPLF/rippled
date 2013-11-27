@@ -130,9 +130,6 @@
     <Filter Include="[2] Old Ripple\ripple_net\rpc">
       <UniqueIdentifier>{045285aa-9043-4cee-b8ca-cc8881e52f6a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[2] Old Ripple\ripple_mdb">
-      <UniqueIdentifier>{6a769530-8edf-4836-afc8-8836fe315603}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[2] Old Ripple\ripple_hyperleveldb">
       <UniqueIdentifier>{571acd5b-065c-4202-8de3-8692735171dc}</UniqueIdentifier>
     </Filter>
@@ -933,9 +930,6 @@
     <ClCompile Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.cpp">
       <Filter>[2] Old Ripple\ripple_hyperleveldb</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_mdb\ripple_mdb.c">
-      <Filter>[2] Old Ripple\ripple_mdb</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\ripple_net.cpp">
       <Filter>[2] Old Ripple\ripple_net</Filter>
     </ClCompile>
@@ -994,9 +988,6 @@
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.cpp">
-      <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\MdbFactory.cpp">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.cpp">
@@ -2157,9 +2148,6 @@
     <ClInclude Include="..\..\src\ripple_leveldb\ripple_leveldb.h">
       <Filter>[2] Old Ripple\ripple_leveldb</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_mdb\ripple_mdb.h">
-      <Filter>[2] Old Ripple\ripple_mdb</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\ripple_net.h">
       <Filter>[2] Old Ripple\ripple_net</Filter>
     </ClInclude>
@@ -2248,9 +2236,6 @@
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.h">
-      <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MdbFactory.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.h">

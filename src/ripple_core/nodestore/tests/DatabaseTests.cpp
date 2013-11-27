@@ -184,10 +184,6 @@ public:
         testNodeStore ("hyperleveldb", useEphemeralDatabase, true, seedValue);
     #endif
 
-    #if RIPPLE_MDB_AVAILABLE
-        testNodeStore ("mdb", useEphemeralDatabase, true, seedValue, 200);
-    #endif
-
     #if RIPPLE_ROCKSDB_AVAILABLE
         testNodeStore ("rocksdb", useEphemeralDatabase, true, seedValue);
     #endif
@@ -208,12 +204,6 @@ public:
     #if RIPPLE_HYPERLEVELDB_AVAILABLE
         testImport ("hyperleveldb", "hyperleveldb", seedValue);
     #endif
-
-    /*
-    #if RIPPLE_MDB_AVAILABLE
-        testImport ("mdb", "mdb", seedValue);
-    #endif
-    */
 
         testImport ("sqlite", "sqlite", seedValue);
     }

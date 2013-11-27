@@ -1493,12 +1493,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\MdbFactory.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1677,7 +1671,6 @@
     <ClCompile Include="..\..\src\ripple_data\ripple_data.cpp" />
     <ClCompile Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.cpp" />
     <ClCompile Include="..\..\src\ripple_leveldb\ripple_leveldb.cpp" />
-    <ClCompile Include="..\..\src\ripple_mdb\ripple_mdb.c" />
     <ClCompile Include="..\..\src\ripple_net\basics\RippleSSLContext.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2461,7 +2454,6 @@
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\HyperDBFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\KeyvaDBFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.h" />
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MdbFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\NullFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\impl\BatchWriter.h" />
@@ -2495,7 +2487,6 @@
     <ClInclude Include="..\..\src\ripple_data\utility\UptimeTimerAdapter.h" />
     <ClInclude Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.h" />
     <ClInclude Include="..\..\src\ripple_leveldb\ripple_leveldb.h" />
-    <ClInclude Include="..\..\src\ripple_mdb\ripple_mdb.h" />
     <ClInclude Include="..\..\src\ripple_net\basics\impl\MultiSocketType.h" />
     <ClInclude Include="..\..\src\ripple_net\basics\impl\RPCServerImp.h" />
     <ClInclude Include="..\..\src\ripple_net\basics\RippleSSLContext.h" />

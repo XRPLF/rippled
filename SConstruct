@@ -187,7 +187,6 @@ COMPILED_FILES.extend([
     'src/ripple_data/ripple_data.cpp',
     'src/ripple_hyperleveldb/ripple_hyperleveldb.cpp',
     'src/ripple_leveldb/ripple_leveldb.cpp',
-    'src/ripple_mdb/ripple_mdb.c',
     'src/ripple_net/ripple_net.cpp',
     'src/ripple_websocket/ripple_websocket.cpp'
     ])
