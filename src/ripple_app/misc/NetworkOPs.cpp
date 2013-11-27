@@ -336,7 +336,6 @@ public:
     getTxsAccountB (const RippleAddress& account, int32 minLedger, int32 maxLedger,  bool forward, Json::Value& token, int limit, bool bAdmin);
 
     std::vector<RippleAddress> getLedgerAffectedAccounts (uint32 ledgerSeq);
-    uint32 countAccountTxs (const RippleAddress& account, int32 minLedger, int32 maxLedger);
 
     //
     // Monitoring: publisher side
@@ -1836,24 +1835,6 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
     return ret;
 }
 
-
-uint32
-NetworkOPsImp::countAccountTxs (const RippleAddress& account, int32 minLedger, int32 maxLedger)
-{
-    // can be called with no locks
-    uint32 ret = 0;
-    std::string sql = NetworkOPsImp::transactionsSQL ("COUNT(DISTINCT TransID) AS 'TransactionCount'", account,
-                      minLedger, maxLedger, false, 0, -1, true, true, true);
-
-    Database* db = getApp().getTxnDB ()->getDB ();
-    DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
-    SQL_FOREACH (db, sql)
-    {
-        ret = db->getInt ("TransactionCount");
-    }
-
-    return ret;
-}
 
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
 NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int32 maxLedger, bool forward, Json::Value& token, int limit, bool bAdmin)

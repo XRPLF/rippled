@@ -91,6 +91,7 @@ Json::Value rpcError (int iError, Json::Value jvResult)
         { rpcWRONG_SEED,            "wrongSeed",        "The regular key does not point as the master key."     },
         { rpcTOO_BUSY,              "tooBusy",          "The server is too busy to help you now."               },
         { rpcSLOW_DOWN,             "slowDown",         "You are placing too much load on the server."          },
+        { rpcATX_DEPRECATED,        "deprecated",       "Use the new API or specify a ledger range."            },
     };
 
     int     i;

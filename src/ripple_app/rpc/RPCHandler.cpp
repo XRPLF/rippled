@@ -2113,6 +2113,9 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
     if (!raAccount.setAccountID (params["account"].asString ()))
         return rpcError (rpcACT_MALFORMED);
 
+    if (offset > 3000)
+        return rpcError (rpcATX_DEPRECATED);
+
     loadType = Resource::feeHighBurdenRPC;
 
     // DEPRECATED
@@ -2159,6 +2162,8 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
         uLedgerMin = uLedgerMax = l->getLedgerSeq ();
     }
 
+    int count = 0;
+
 #ifndef BEAST_DEBUG
 
     try
@@ -2179,6 +2184,7 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
             for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin (), end = txns.end ();
                     it != end; ++it)
             {
+                ++count;
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
                 uint32  uLedgerIndex    = it->get<2> ();
@@ -2195,6 +2201,7 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
 
             for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin (), end = txns.end (); it != end; ++it)
             {
+                ++count;
                 Json::Value&    jvObj = jvTxns.append (Json::objectValue);
 
                 if (it->first)
@@ -2217,8 +2224,10 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
         ret["validated"]        = bValidated && uValidatedMin <= uLedgerMin && uValidatedMax >= uLedgerMax;
         ret["offset"]           = offset;
 
+        // We no longer return the full count but only the count of returned transactions
+        // Computing this count was two expensive and this API is deprecated anyway
         if (bCount)
-            ret["count"]        = mNetOps->countAccountTxs (raAccount, uLedgerMin, uLedgerMax);
+            ret["count"]        = count;
 
         if (params.isMember ("limit"))
             ret["limit"]        = limit;

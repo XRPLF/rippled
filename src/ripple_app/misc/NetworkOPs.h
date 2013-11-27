@@ -298,9 +298,6 @@ public:
 
     virtual std::vector<RippleAddress> getLedgerAffectedAccounts (uint32 ledgerSeq) = 0;
 
-    virtual uint32 countAccountTxs (const RippleAddress& account,
-        int32 minLedger, int32 maxLedger) = 0;
-
     //--------------------------------------------------------------------------
     //
     // Monitoring: publisher side

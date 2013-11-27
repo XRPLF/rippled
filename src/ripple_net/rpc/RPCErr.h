@@ -94,6 +94,7 @@ enum
     rpcSRC_AMT_MALFORMED,
     rpcSRC_CUR_MALFORMED,
     rpcSRC_ISR_MALFORMED,
+    rpcATX_DEPRECATED,
 
     // Internal error (should never happen)
     rpcINTERNAL,        // Generic internal error.
