@@ -334,7 +334,6 @@ private:
 
 /** Comparison. */
 /** @{ */
-int  compare    (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
 bool operator== (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
 bool operator!= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
 bool operator<  (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
@@ -342,7 +341,6 @@ bool operator<= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
 bool operator>  (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
 bool operator>= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs);
 
-int  compare    (IPAddress const& lhs, IPAddress const& rhs);
 bool operator== (IPAddress const& lhs, IPAddress const& rhs);
 bool operator!= (IPAddress const& lhs, IPAddress const& rhs);
 bool operator<  (IPAddress const& lhs, IPAddress const& rhs);
