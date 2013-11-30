@@ -325,6 +325,18 @@ public:
 
     struct key_equal;
 
+    /** LessThanComparable functor that ignores the port. */
+    struct LessWithoutPort
+    {
+        bool operator() (IPAddress const& lhs, IPAddress const& rhs) const;
+    };
+
+    /** EqualityComparable functor that ignores the port. */
+    struct EqualWithoutPort
+    {
+        bool operator() (IPAddress const& lhs, IPAddress const& rhs) const;
+    };
+
 private:
     Type m_type;
     uint16 m_port;
@@ -369,6 +381,18 @@ struct IPAddress::key_equal
         return lhs == rhs;
     }
 };
+
+inline bool IPAddress::LessWithoutPort::operator() (
+    IPAddress const& lhs, IPAddress const& rhs) const
+{
+    return lhs.withPort (0) < rhs.withPort (0);
+}
+
+inline bool IPAddress::EqualWithoutPort::operator() (
+    IPAddress const& lhs, IPAddress const& rhs) const
+{
+    return lhs.withPort (0) == rhs.withPort (0);
+}
 
 }
 
