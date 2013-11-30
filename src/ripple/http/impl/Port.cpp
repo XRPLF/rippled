@@ -56,35 +56,50 @@ Port::Port (
 {
 }
 
-int compare (Port const& lhs, Port const& rhs)
+bool operator== (Port const& lhs, Port const& rhs)
 {
-    int comp;
-    
-    comp = compare (lhs.addr, rhs.addr);
-    if (comp != 0)
-        return comp;
-
-    if (lhs.port < rhs.port)
-        return -1;
-    else if (lhs.port > rhs.port)
-        return 1;
-
-    if (lhs.security < rhs.security)
-        return -1;
-    else if (lhs.security > rhs.security)
-        return 1;
-
+    if (lhs.addr != rhs.addr)
+        return false;
+    if (lhs.port != rhs.port)
+        return false;
+    if (lhs.security != rhs.security)
+        return false;
     // 'context' does not participate in the comparison
-
-    return 0;
+    return true;
 }
 
-bool operator== (Port const& lhs, Port const& rhs) { return compare (lhs, rhs) == 0; }
-bool operator!= (Port const& lhs, Port const& rhs) { return compare (lhs, rhs) != 0; }
-bool operator<  (Port const& lhs, Port const& rhs) { return compare (lhs, rhs) <  0; }
-bool operator<= (Port const& lhs, Port const& rhs) { return compare (lhs, rhs) <= 0; }
-bool operator>  (Port const& lhs, Port const& rhs) { return compare (lhs, rhs) >  0; }
-bool operator>= (Port const& lhs, Port const& rhs) { return compare (lhs, rhs) >= 0; }
+bool operator< (Port const& lhs, Port const& rhs)
+{
+    if (lhs.addr > rhs.addr)
+        return false;
+    else if (lhs.addr < rhs.addr)
+        return true;
+
+    if (lhs.port > rhs.port)
+        return false;
+    else if (lhs.port < rhs.port)
+        return true;
+
+    if (lhs.security > rhs.security)
+        return false;
+    else if (lhs.security < rhs.security)
+        return true;
+
+    return true;
+}
+
+bool operator!= (Port const& lhs, Port const& rhs)
+    { return ! (lhs == rhs); }
+
+bool operator> (Port const& lhs, Port const& rhs)
+    { return rhs < lhs; }
+
+bool operator<= (Port const& lhs, Port const& rhs)
+    { return ! (rhs < lhs); }
+
+bool operator>= (Port const& lhs, Port const& rhs)
+    { return ! (lhs < rhs); }
+
 
 }
 }

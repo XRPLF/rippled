@@ -554,58 +554,71 @@ IPAddress IPAddress::from_string_altform (std::string const& s)
 
 //------------------------------------------------------------------------------
 
-int compare (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
+bool operator== (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
+    { return lhs.value == rhs.value; }
+
+bool operator< (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
+    { return lhs.value < rhs.value; }
+
+bool operator!= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
+    { return ! (lhs == rhs); }
+
+bool operator> (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
+    { return rhs < lhs; }
+
+bool operator<= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
+    { return ! (rhs < lhs); }
+
+bool operator>= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
+    { return ! (lhs < rhs); }
+
+//------------------------------------------------------------------------------
+
+bool operator== (IPAddress const& lhs, IPAddress const& rhs)
 {
-    if (lhs.value < rhs.value)
-        return -1;
-    else if (lhs.value > rhs.value)
-        return 1;
-    return 0;
-}
-
-bool operator== (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) == 0; }
-bool operator!= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) != 0; }
-bool operator<  (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) <  0; }
-bool operator<= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) <= 0; }
-bool operator>  (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) >  0; }
-bool operator>= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs) { return compare (lhs, rhs) >= 0; }
-
-static int type_compare (IPAddress const& lhs, IPAddress const& rhs)
-{
-    if (lhs.type() < rhs.type())
-        return -1;
-    else if (lhs.type() > rhs.type())
-        return 1;
-    return 0;
-}
-
-int compare (IPAddress const& lhs, IPAddress const& rhs)
-{
-    int const tc (type_compare (lhs, rhs));
-
-    if (tc < 0)
-        return -1;
-    else if (tc > 0)
-        return 1;
-
+    if (lhs.type() != rhs.type())
+        return false;
     switch (lhs.type())
     {
-    case IPAddress::none: return 0;
-    case IPAddress::ipv4: return compare (lhs.v4(), rhs.v4());
-    default:
+    case IPAddress::none: return true;
+    case IPAddress::ipv4: return lhs.v4() == rhs.v4();
     case IPAddress::ipv6:
-        break;
-    };
-    bassertfalse;
-    return 0;
+    default:
+        bassertfalse;
+    }
+    return false;
 }
 
-bool operator== (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) == 0; }
-bool operator!= (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) != 0; }
-bool operator<  (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) <  0; }
-bool operator<= (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) <= 0; }
-bool operator>  (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) >  0; }
-bool operator>= (IPAddress const& lhs, IPAddress const& rhs) { return compare (lhs, rhs) >= 0; }
+bool operator< (IPAddress const& lhs, IPAddress const& rhs)
+{
+    if (lhs.type() > rhs.type())
+        return false;
+    if (lhs.type() < rhs.type())
+        return true;
+    switch (lhs.type())
+    {
+    case IPAddress::none: return true;
+    case IPAddress::ipv4: return lhs.v4() < rhs.v4();
+    case IPAddress::ipv6:
+    default:
+        bassertfalse;
+    }
+    return false;
+}
+
+bool operator!= (IPAddress const& lhs, IPAddress const& rhs)
+    { return ! (lhs == rhs); }
+
+bool operator> (IPAddress const& lhs, IPAddress const& rhs)
+    { return rhs < lhs; }
+
+bool operator<= (IPAddress const& lhs, IPAddress const& rhs)
+    { return ! (rhs < lhs); }
+
+bool operator>= (IPAddress const& lhs, IPAddress const& rhs)
+    { return ! (lhs < rhs); }
+
+//------------------------------------------------------------------------------
 
 std::ostream& operator<< (std::ostream &os, IPAddress::V4 const& addr)
 {

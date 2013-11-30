@@ -72,7 +72,10 @@ public:
     void handle_update ();
     void update ();
     void run ();
+
+    static int compare (Port const& lhs, Port const& rhs);
 };
+
 
 }
 }

@@ -123,6 +123,16 @@ void ServerImpl::remove (Door& door)
 //
 // Thread
 //
+//--------------------------------------------------------------------------
+
+int ServerImpl::compare (Port const& lhs, Port const& rhs)
+{
+    if (lhs < rhs)
+        return -1;
+    else if (lhs > rhs)
+        return 1;
+    return 0;
+}
 
 // Updates our Door list based on settings.
 //

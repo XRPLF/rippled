@@ -47,7 +47,6 @@ struct Port
     SSLContext* context;
 };
 
-int  compare    (Port const& lhs, Port const& rhs);
 bool operator== (Port const& lhs, Port const& rhs);
 bool operator!= (Port const& lhs, Port const& rhs);
 bool operator<  (Port const& lhs, Port const& rhs);
