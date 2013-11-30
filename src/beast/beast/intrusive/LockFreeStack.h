@@ -199,6 +199,7 @@ public:
         @return `true` if the stack was previously empty. If multiple threads
                 are attempting to push, only one will receive `true`.
     */
+    // VFALCO NOTE Fix this, shouldn't it be a reference like intrusive list?
     bool push_front (Node* node)
     {
         bool first;
