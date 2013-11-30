@@ -56,28 +56,34 @@ public:
     class Sink
     {
     public:
-        virtual ~Sink () { }
+        Sink ();
+
+        virtual ~Sink () = 0;
 
         /** Returns `true` if text at the passed severity produces output. */
-        virtual bool active (Severity severity) const = 0;
+        virtual bool active (Severity level) const;
 
         /** Returns `true` if a message is also written to the Output Window (MSVC). */
-        virtual bool console () const = 0;
+        virtual bool console () const;
 
         /** Set whether messages are also written to the Output Window (MSVC). */
-        virtual void console (bool output) = 0;
+        virtual void console (bool output);
 
         /** Returns the minimum severity level this sink will report. */
-        virtual Severity severity() const = 0;
+        virtual Severity severity() const;
 
         /** Set the minimum severity this sink will report. */
-        virtual void severity (Severity level) = 0;
+        virtual void severity (Severity level);
 
         /** Write text to the sink at the specified severity.
             The caller is responsible for checking the minimum severity level
             before using this function.
         */
         virtual void write (Severity level, std::string const& text) = 0;
+
+    private:
+        Severity m_severity;
+        bool m_console;
     };
 
     /** Returns a Sink which does nothing. */

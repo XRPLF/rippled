@@ -65,6 +65,43 @@ Journal::Sink& Journal::getNullSink ()
 
 //------------------------------------------------------------------------------
 
+Journal::Sink::Sink ()
+    : m_severity (kLowestSeverity)
+    , m_console (false)
+{
+}
+
+Journal::Sink::~Sink ()
+{
+}
+
+bool Journal::Sink::active (Severity level) const
+{
+    return level >= m_severity;
+}
+
+bool Journal::Sink::console () const
+{
+    return m_console;
+}
+
+void Journal::Sink::console (bool output)
+{
+    m_console = output;
+}
+
+Journal::Severity Journal::Sink::severity () const
+{
+    return m_severity;
+}
+
+void Journal::Sink::severity (Severity level)
+{
+    m_severity = level;
+}
+
+//------------------------------------------------------------------------------
+
 Journal::ScopedStream::ScopedStream (Stream const& stream)
     : m_sink (stream.sink())
     , m_severity (stream.severity())
