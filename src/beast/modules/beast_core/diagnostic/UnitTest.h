@@ -517,11 +517,6 @@ private:
     {
     public:
         explicit JournalSink (UnitTests& tests);
-        bool active (Journal::Severity severity) const;
-        bool console () const;
-        void console (bool);
-        Journal::Severity severity() const;
-        void severity (Journal::Severity severity);
         void write (Journal::Severity severity, std::string const& text);
 
     private:

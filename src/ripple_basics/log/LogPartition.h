@@ -29,11 +29,6 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    bool active (Journal::Severity severity) const;
-    bool console () const;
-    void console (bool output);
-    Journal::Severity severity() const;
-    void severity (Journal::Severity level);
     void write (Journal::Severity level, std::string const& text);
 
     //--------------------------------------------------------------------------
@@ -112,9 +107,7 @@ private:
     static LogPartition* headLog;
 
     LogPartition*       mNextLog;
-    LogSeverity         mMinSeverity;
     std::string         mName;
-    bool m_console;
 };
 
 #define SETUP_LOG(Class) \
