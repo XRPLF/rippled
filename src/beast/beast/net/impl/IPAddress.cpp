@@ -581,7 +581,12 @@ bool operator== (IPAddress const& lhs, IPAddress const& rhs)
     switch (lhs.type())
     {
     case IPAddress::none: return true;
-    case IPAddress::ipv4: return lhs.v4() == rhs.v4();
+    case IPAddress::ipv4:
+        if (lhs.v4() != rhs.v4())
+            return false;
+        if (lhs.port() != rhs.port())
+            return false;
+        return true;
     case IPAddress::ipv6:
     default:
         bassertfalse;
@@ -598,7 +603,12 @@ bool operator< (IPAddress const& lhs, IPAddress const& rhs)
     switch (lhs.type())
     {
     case IPAddress::none: return true;
-    case IPAddress::ipv4: return lhs.v4() < rhs.v4();
+    case IPAddress::ipv4:
+        if (lhs.v4() < rhs.v4())
+            return true;
+        if (lhs.v4() > rhs.v4())
+            return false;
+        return lhs.port() < rhs.port();
     case IPAddress::ipv6:
     default:
         bassertfalse;
