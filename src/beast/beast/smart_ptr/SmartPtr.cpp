@@ -19,7 +19,13 @@
 
 #include "BeastConfig.h"
 
+#include "../Config.h"
+
 #include "ContainerDeletePolicy.h"
 #include "ScopedPointer.h"
 #include "SharedObject.h"
 #include "SharedPtr.h"
+
+#include "../../modules/beast_core/beast_core.h" // for UnitTest
+
+#include "impl/AbstractObject.cpp"

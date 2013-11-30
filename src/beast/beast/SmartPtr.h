@@ -22,6 +22,7 @@
 
 #include "Config.h"
 
+#include "smart_ptr/AbstractObject.h"
 #include "smart_ptr/ContainerDeletePolicy.h"
 #include "smart_ptr/SharedObject.h"
 #include "smart_ptr/SharedPtr.h"
