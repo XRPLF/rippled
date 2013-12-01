@@ -66,8 +66,7 @@ public:
 
         void create_interfaces (Object& object)
         {
-            object.add_interface (ScopedPointer <Interface1> (
-                new Interface1));
+            object.add_interface (new Interface1);
         }
     };
 
@@ -91,8 +90,7 @@ public:
 
         void create_interfaces (Object& object)
         {
-            object.add_interface (ScopedPointer <Interface2> (
-                new Interface2));
+            object.add_interface (new Interface2);
         }
     };
 
@@ -112,12 +110,11 @@ public:
         // find existing interfaces
         expect (object.find_interface <Interface1> () != nullptr);
         expect (object.find_interface <Interface2> () != nullptr);
-
+         
         // add duplicate interface
         try
         {
-            object.add_interface (ScopedPointer <Interface1> (
-                new Interface1));
+            object.add_interface (new Interface1);
             fail ("uncaught exeption");
         }
         catch (std::invalid_argument const&)

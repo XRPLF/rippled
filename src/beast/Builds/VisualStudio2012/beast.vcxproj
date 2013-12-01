@@ -114,6 +114,7 @@
     <ClInclude Include="..\..\beast\crypto\MurmurHash.h" />
     <ClInclude Include="..\..\beast\crypto\Sha256.h" />
     <ClInclude Include="..\..\beast\CStdInt.h" />
+    <ClInclude Include="..\..\beast\cyclic_iterator.h" />
     <ClInclude Include="..\..\beast\FixedArray.h" />
     <ClInclude Include="..\..\beast\HeapBlock.h" />
     <ClInclude Include="..\..\beast\HTTP.h" />
