@@ -62,6 +62,7 @@ protected:
     virtual void add (std::string const& key,  uint32 value);
     virtual void add (std::string const& key,   int64 value);
     virtual void add (std::string const& key,  uint64 value);
+    virtual void add (std::string const& key,  double value);
 
     virtual void array_begin () = 0;
     virtual void array_begin (std::string const& key) = 0;

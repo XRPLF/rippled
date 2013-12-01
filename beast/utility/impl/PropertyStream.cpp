@@ -390,6 +390,11 @@ void PropertyStream::add (std::string const& key, int64 value)
     }
 }
 
+void PropertyStream::add (std::string const& key, double value)
+{
+    lexical_add (key, value);
+}
+
 void PropertyStream::add (std::string const& key, uint64 value)
 {
     if (value <= std::numeric_limits <uint32>::max() &&
