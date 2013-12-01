@@ -62,6 +62,11 @@ void JsonPropertyStream::add (std::string const& key, uint32 v)
     (*m_stack.back())[key] = v;
 }
 
+void JsonPropertyStream::add (std::string const& key, double v)
+{
+    (*m_stack.back())[key] = v;
+}
+
 void JsonPropertyStream::add (std::string const& key, std::string const& v)
 {
     (*m_stack.back())[key] = v;

@@ -40,6 +40,7 @@ protected:
     void map_end ();
     void add (std::string const& key, int32 v);
     void add (std::string const& key, uint32 v);
+    void add (std::string const& key, double v);
     void add (std::string const& key, std::string const& v);
     void array_begin ();
     void array_begin (std::string const& key);
