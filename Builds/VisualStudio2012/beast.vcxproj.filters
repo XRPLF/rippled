@@ -68,10 +68,10 @@
       <Filter>beast_core</Filter>
     </None>
     <None Include="..\..\beast\crypto\impl\sha2\README">
-      <Filter>beast\crypto\impl\sha2</Filter>
+      <Filter>beast\http\crypto\impl\sha2</Filter>
     </None>
     <None Include="..\..\beast\crypto\impl\sha2\sha2test.pl">
-      <Filter>beast\crypto\impl\sha2</Filter>
+      <Filter>beast\http\crypto\impl\sha2</Filter>
     </None>
     <None Include="..\..\scripts\compile.sh">
       <Filter>scripts</Filter>
@@ -254,15 +254,6 @@
     </Filter>
     <Filter Include="beast\config">
       <UniqueIdentifier>{1fff3bd8-44ae-41df-8dd4-8bb6f07b2908}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\crypto">
-      <UniqueIdentifier>{9c1ef4c4-5623-4500-859f-12d6ce5ae362}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\crypto\impl">
-      <UniqueIdentifier>{fc3d3f14-9ba1-43e4-b086-cbbd2f63b944}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\crypto\impl\sha2">
-      <UniqueIdentifier>{44489531-f44a-439a-a6ea-d32c252b1e8b}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast\chrono">
       <UniqueIdentifier>{57dc7059-cbb2-437c-9c52-79825d9a4cf5}</UniqueIdentifier>
@@ -1107,10 +1098,10 @@
       <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\crypto\impl\sha2\sha2.h">
-      <Filter>beast\crypto\impl\sha2</Filter>
+      <Filter>beast\http\crypto\impl\sha2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\crypto\Sha256.h">
-      <Filter>beast\crypto</Filter>
+      <Filter>beast\http\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\async\WrapHandler.h">
       <Filter>beast_asio\async</Filter>
@@ -1282,7 +1273,7 @@
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\crypto\MurmurHash.h">
-      <Filter>beast\crypto</Filter>
+      <Filter>beast\http\crypto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\smart_ptr\AbstractObject.h">
       <Filter>beast\smart_ptr</Filter>
@@ -1343,6 +1334,9 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\insight\HookImpl.h">
       <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\cyclic_iterator.h">
+      <Filter>beast</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1812,19 +1806,19 @@
       <Filter>beast\http\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2.c">
-      <Filter>beast\crypto\impl\sha2</Filter>
+      <Filter>beast\http\crypto\impl\sha2</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2prog.c">
-      <Filter>beast\crypto\impl\sha2</Filter>
+      <Filter>beast\http\crypto\impl\sha2</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2speed.c">
-      <Filter>beast\crypto\impl\sha2</Filter>
+      <Filter>beast\http\crypto\impl\sha2</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\Crypto.cpp">
-      <Filter>beast\crypto</Filter>
+      <Filter>beast\http\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\Sha256.cpp">
-      <Filter>beast\crypto\impl</Filter>
+      <Filter>beast\http\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\chrono\impl\RelativeTime.cpp">
       <Filter>beast\chrono\impl</Filter>
@@ -1896,7 +1890,7 @@
       <Filter>beast\asio\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\MurmurHash.cpp">
-      <Filter>beast\crypto\impl</Filter>
+      <Filter>beast\http\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\smart_ptr\impl\AbstractObject.cpp">
       <Filter>beast\smart_ptr\impl</Filter>

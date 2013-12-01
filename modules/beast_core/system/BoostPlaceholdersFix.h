@@ -30,11 +30,6 @@
 #endif
 
 #include <boost/version.hpp>
-
-#if BOOST_VERSION > 105499
-# error "This hasnt been tested with boost versions above 1.54"
-#endif
-
 #include <boost/bind.hpp>
 #include <boost/bind/arg.hpp>
 

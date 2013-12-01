@@ -66,7 +66,7 @@ Journal::Sink& Journal::getNullSink ()
 //------------------------------------------------------------------------------
 
 Journal::Sink::Sink ()
-    : m_severity (kLowestSeverity)
+    : m_level (kAll)
     , m_console (false)
 {
 }
@@ -77,7 +77,7 @@ Journal::Sink::~Sink ()
 
 bool Journal::Sink::active (Severity level) const
 {
-    return level >= m_severity;
+    return level >= m_level;
 }
 
 bool Journal::Sink::console () const
@@ -92,42 +92,56 @@ void Journal::Sink::console (bool output)
 
 Journal::Severity Journal::Sink::severity () const
 {
-    return m_severity;
+    return m_level;
 }
 
 void Journal::Sink::severity (Severity level)
 {
-    m_severity = level;
+    m_level = level;
 }
 
 //------------------------------------------------------------------------------
 
 Journal::ScopedStream::ScopedStream (Stream const& stream)
-    : m_sink (stream.sink())
-    , m_severity (stream.severity())
+    : m_sink (stream.sink ())
+    , m_level (stream.severity ())
+    , m_active (stream.active ())
 {
     init ();
 }
 
 Journal::ScopedStream::ScopedStream (ScopedStream const& other)
     : m_sink (other.m_sink)
-    , m_severity (other.m_severity)
+    , m_level (other.m_level)
+    , m_active (other.m_active)
 {
     init ();
 }
 
-Journal::ScopedStream::ScopedStream (Stream const& stream, std::ostream& manip (std::ostream&))
-    : m_sink (stream.sink())
-    , m_severity (stream.severity())
+Journal::ScopedStream::ScopedStream (
+    Stream const& stream, std::ostream& manip (std::ostream&))
+    : m_sink (stream.sink ())
+    , m_level (stream.severity ())
+    , m_active (stream.active ())
 {
     init ();
-    m_ostream << manip;
+    if (active ())
+        m_ostream << manip;
 }
 
 Journal::ScopedStream::~ScopedStream ()
 {
-    if (! m_ostream.str().empty() && m_sink.active (m_severity))
-        m_sink.write (m_severity, m_ostream.str());
+    if (active ())
+    {
+        std::string const& s (m_ostream.str());
+        if (! s.empty ())
+        {
+            if (s == "\n")
+                m_sink.write (m_level, "");
+            else
+                m_sink.write (m_level, s);
+        }
+    }
 }
 
 void Journal::ScopedStream::init ()
@@ -155,20 +169,30 @@ std::ostringstream& Journal::ScopedStream::ostream () const
 
 Journal::Stream::Stream ()
     : m_sink (&getNullSink ())
-    , m_severity (kDisabled)
+    , m_level (kDisabled)
+    , m_disabled (true)
 {
 }
 
-Journal::Stream::Stream (Sink& sink, Severity severity)
+Journal::Stream::Stream (Sink& sink, Severity level, bool active)
     : m_sink (&sink)
-    , m_severity (severity)
+    , m_level (level)
+    , m_disabled (! active)
 {
-    bassert (severity != kDisabled);
+    bassert (level != kDisabled);
+}
+
+Journal::Stream::Stream (Stream const& stream, bool active)
+    : m_sink (&stream.sink ())
+    , m_level (stream.severity ())
+    , m_disabled (! active)
+{
 }
 
 Journal::Stream::Stream (Stream const& other)
     : m_sink (other.m_sink)
-    , m_severity (other.m_severity)
+    , m_level (other.m_level)
+    , m_disabled (other.m_disabled)
 {
 }
 
@@ -179,12 +203,12 @@ Journal::Sink& Journal::Stream::sink () const
 
 Journal::Severity Journal::Stream::severity () const
 {
-    return m_severity;
+    return m_level;
 }
 
 bool Journal::Stream::active () const
 {
-    return m_sink->active (m_severity);
+    return ! m_disabled && m_sink->active (m_level);
 }
 
 bool Journal::Stream::asBoolean () const
@@ -195,11 +219,12 @@ bool Journal::Stream::asBoolean () const
 Journal::Stream& Journal::Stream::operator= (Stream const& other)
 {
     m_sink = other.m_sink;
-    m_severity = other.m_severity;
+    m_level = other.m_level;
     return *this;
 }
 
-Journal::ScopedStream Journal::Stream::operator<< (std::ostream& manip (std::ostream&)) const
+Journal::ScopedStream Journal::Stream::operator<< (
+    std::ostream& manip (std::ostream&)) const
 {
     return ScopedStream (*this, manip);
 }
@@ -208,6 +233,7 @@ Journal::ScopedStream Journal::Stream::operator<< (std::ostream& manip (std::ost
 
 Journal::Journal ()
     : m_sink  (&getNullSink())
+    , m_level (kDisabled)
     , trace   (stream (kTrace))
     , debug   (stream (kDebug))
     , info    (stream (kInfo))
@@ -217,8 +243,9 @@ Journal::Journal ()
 {
 }
 
-Journal::Journal (Sink& sink)
+Journal::Journal (Sink& sink, Severity level)
     : m_sink  (&sink)
+    , m_level (level)
     , trace   (stream (kTrace))
     , debug   (stream (kDebug))
     , info    (stream (kInfo))
@@ -230,6 +257,19 @@ Journal::Journal (Sink& sink)
 
 Journal::Journal (Journal const& other)
     : m_sink  (other.m_sink)
+    , m_level (other.m_level)
+    , trace   (stream (kTrace))
+    , debug   (stream (kDebug))
+    , info    (stream (kInfo))
+    , warning (stream (kWarning))
+    , error   (stream (kError))
+    , fatal   (stream (kFatal))
+{
+}
+
+Journal::Journal (Journal const& other, Severity level)
+    : m_sink  (other.m_sink)
+    , m_level (std::max (other.m_level, level))
     , trace   (stream (kTrace))
     , debug   (stream (kDebug))
     , info    (stream (kInfo))
@@ -248,15 +288,23 @@ Journal::Sink& Journal::sink() const
     return *m_sink;
 }
 
-Journal::Stream Journal::stream (Severity severity) const
+Journal::Stream Journal::stream (Severity level) const
 {
-    return Stream (*m_sink, severity);
+    return Stream (*m_sink, level, level >= m_level);
 }
 
-bool Journal::active (Severity severity) const
+bool Journal::active (Severity level) const
 {
-    bassert (severity != kDisabled);
-    return m_sink->active (severity);
+    if (level == kDisabled)
+        return false;
+    if (level < m_level)
+        return false;
+    return m_sink->active (level);
+}
+
+Journal::Severity Journal::severity () const
+{
+    return m_level;
 }
 
 }
