@@ -25,3 +25,8 @@
 
 #include "impl/DynamicBuffer.cpp"
 #include "impl/IPAddress.cpp"
+#include "impl/IPAddressV4.cpp"
+#include "impl/IPAddressV6.cpp"
+#include "impl/IPEndpoint.cpp"
+
+

@@ -294,6 +294,9 @@
     <Filter Include="beast\crypto\impl\sha2">
       <UniqueIdentifier>{44489531-f44a-439a-a6ea-d32c252b1e8b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\net\detail">
+      <UniqueIdentifier>{43cc0f2a-9905-4081-8104-48d2c4be9e7e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1143,9 +1146,6 @@
     <ClInclude Include="..\..\beast\utility\BaseFromMember.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\net\IPAddress.h">
-      <Filter>beast\net</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\Asio.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1253,6 +1253,21 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\insight\Groups.h">
       <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\net\detail\Parse.h">
+      <Filter>beast\net\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\net\IPAddress.h">
+      <Filter>beast\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\net\IPAddressV4.h">
+      <Filter>beast\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\net\IPAddressV6.h">
+      <Filter>beast\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\net\IPEndpoint.h">
+      <Filter>beast\net</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1769,9 +1784,6 @@
     <ClCompile Include="..\..\beast\utility\impl\PropertyStream.cpp">
       <Filter>beast\utility\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\net\impl\IPAddress.cpp">
-      <Filter>beast\net\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\asio\Asio.cpp">
       <Filter>beast\asio</Filter>
     </ClCompile>
@@ -1819,6 +1831,18 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\insight\impl\Groups.cpp">
       <Filter>beast\insight\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\IPAddress.cpp">
+      <Filter>beast\net\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\IPAddressV4.cpp">
+      <Filter>beast\net\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\IPAddressV6.cpp">
+      <Filter>beast\net\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
+      <Filter>beast\net\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

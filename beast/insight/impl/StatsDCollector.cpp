@@ -215,11 +215,11 @@ private:
     static boost::asio::ip::udp::endpoint to_endpoint (
         IPAddress const &address)
     {
-        if (address.isV4 ())
+        if (address.is_v4 ())
         {
             return boost::asio::ip::udp::endpoint (
                 boost::asio::ip::address_v4 (
-                    address.v4().value), address.port ());
+                    address.to_v4().value), address.port ());
         }
 
         // VFALCO TODO IPv6 support

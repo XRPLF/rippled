@@ -17,20 +17,63 @@
 */
 //==============================================================================
 
-#ifndef BEAST_NET_H_INCLUDED
-#define BEAST_NET_H_INCLUDED
+#include "../IPAddressV6.h"
 
-#include "net/BufferType.h"
-#include "net/DynamicBuffer.h"
-
-#include "net/IPAddress.h"
-#include "net/IPAddressV4.h"
-#include "net/IPAddressV6.h"
-#include "net/IPEndpoint.h"
-
-// VFALCO DEPRECATED, REMOVE ASAP!
 namespace beast {
-typedef IP::Endpoint IPAddress;
+namespace IP {
+
+//------------------------------------------------------------------------------
+
+bool is_loopback (AddressV6 const&)
+{
+    // VFALCO TODO
+    bassertfalse;
+    return false;
 }
 
-#endif
+bool is_unspecified (AddressV6 const&)
+{
+    // VFALCO TODO
+    bassertfalse;
+    return false;
+}
+
+bool is_multicast (AddressV6 const&)
+{
+    // VFALCO TODO
+    bassertfalse;
+    return false;
+}
+
+bool is_private (AddressV6 const&)
+{
+    // VFALCO TODO
+    bassertfalse;
+    return false;
+}
+
+bool is_public (AddressV6 const&)
+{
+    // VFALCO TODO
+    bassertfalse;
+    return false;
+}
+
+//------------------------------------------------------------------------------
+
+std::string to_string (AddressV6 const&)
+{
+    // VFALCO TODO
+    bassertfalse;
+    return "";
+}
+
+std::istream& operator>> (std::istream& is, AddressV6&)
+{
+    // VFALCO TODO
+    bassertfalse;
+    return is;
+}
+
+}
+}

@@ -20,34 +20,35 @@
 #include "../IPAddressConversion.h"
 
 namespace beast {
+namespace IP {
 
-IPAddress IPAddressConversion::from_asio (boost::asio::ip::address const& address)
+Endpoint from_asio (boost::asio::ip::address const& address)
 {
     if (address.is_v4 ())
     {
         boost::asio::ip::address_v4::bytes_type const bytes (
             address.to_v4().to_bytes());
-        return IPAddress (IPAddress::V4 (
+        return Endpoint (AddressV4 (
             bytes [0], bytes [1], bytes [2], bytes [3]));
     }
 
     // VFALCO TODO IPv6 support
     bassertfalse;
-    return IPAddress();
+    return Endpoint();
 }
 
-IPAddress IPAddressConversion::from_asio (boost::asio::ip::tcp::endpoint const& endpoint)
+Endpoint from_asio (boost::asio::ip::tcp::endpoint const& endpoint)
 {
-    return from_asio (endpoint.address()).withPort (endpoint.port());
+    return from_asio (endpoint.address()).at_port (endpoint.port());
 }
 
-boost::asio::ip::address IPAddressConversion::to_asio_address (IPAddress const& address)
+boost::asio::ip::address to_asio_address (Endpoint const& endpoint)
 {
-    if (address.isV4 ())
+    if (endpoint.address().is_v4())
     {
         return boost::asio::ip::address (
             boost::asio::ip::address_v4 (
-                address.v4().value));
+                endpoint.address().to_v4().value));
     }
 
     // VFALCO TODO IPv6 support
@@ -56,10 +57,11 @@ boost::asio::ip::address IPAddressConversion::to_asio_address (IPAddress const& 
         boost::asio::ip::address_v6 ());
 }
 
-boost::asio::ip::tcp::endpoint IPAddressConversion::to_asio_endpoint (IPAddress const& address)
+boost::asio::ip::tcp::endpoint to_asio_endpoint (Endpoint const& endpoint)
 {
     return boost::asio::ip::tcp::endpoint (
-        to_asio_address (address), address.port());
+        to_asio_address (endpoint), endpoint.port());
 }
 
+}
 }
