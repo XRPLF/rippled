@@ -17,635 +17,156 @@
 */
 //==============================================================================
 
+#include <typeinfo>
+
 #include "../IPAddress.h"
+#include "../detail/Parse.h"
 
 namespace beast {
+namespace IP {
 
-IPAddress::V4::V4 ()
-    : value (0)
-{
-}
-
-IPAddress::V4::V4 (uint32 value_)
-    : value (value_)
-{
-}
-
-IPAddress::V4::V4 (uint8 a, uint8 b, uint8 c, uint8 d)
-    : value ((a<<24)|(b<<16)|(c<<8)|d)
-{
-}
-
-IPAddress::V4::V4 (V4 const& other)
-    : value (other.value)
-{
-}
-
-IPAddress::V4& IPAddress::V4::operator= (V4 const& other)
-{
-    value = other.value;
-    return *this;
-}
-
-IPAddress::V4 IPAddress::V4::localBroadcastAddress ()
-{
-    return V4 (0xffffffff);
-}
-
-IPAddress::V4 IPAddress::V4::broadcastAddress () const
-{
-    switch (getClass())
-    {
-    case 'A': return V4 ((value&0xff000000)|0x00ffffff);
-    case 'B': return V4 ((value&0xffff0000)|0x0000ffff);
-    case 'C': return V4 ((value&0xffffff00)|0x000000ff);
-    default:
-    case 'D':
-        bassertfalse;
-        break;
-    }
-    return V4();
-}
-
-char IPAddress::V4::getClass () const
-{
-    static char const* table = "AAAABBCD";
-    return table[(value&0xE0000000)>>29];
-}
-
-bool IPAddress::V4::isPublic () const
-{
-    return !isPrivate() && !isBroadcast() && !isMulticast();
-}
-
-bool IPAddress::V4::isPrivate () const
-{
-    return
-        ((value&0xff000000)==0x0a000000) || // Prefix /8,    10.##.#.#
-        ((value&0xfff00000)==0xac100000) || // Prefix /12   172.16.#.# - 172.31.#.#
-        ((value&0xffff0000)==0xc0a80000) || // Prefix /16   192.168.#.#
-        isLoopback();
-}
-
-bool IPAddress::V4::isBroadcast () const
-{
-    return (value == broadcastAddress().value);
-}
-
-bool IPAddress::V4::isMulticast () const
-{
-    return getClass() == 'D';
-}
-
-bool IPAddress::V4::isLoopback () const
-{
-    return (value&0xff000000)==0x7f000000;
-}
-
-IPAddress::V4::Proxy <true> IPAddress::V4::operator[] (std::size_t index) const
-{
-    switch (index)
-    {
-    default:
-        bassertfalse;
-    case 0: return Proxy <true> (24, &value);
-    case 1: return Proxy <true> (16, &value);
-    case 2: return Proxy <true> ( 8, &value);
-    case 3: return Proxy <true> ( 0, &value);
-    };
-};
-
-IPAddress::V4::Proxy <false> IPAddress::V4::operator[] (std::size_t index)
-{
-    switch (index)
-    {
-    default:
-        bassertfalse;
-    case 0: return Proxy <false> (24, &value);
-    case 1: return Proxy <false> (16, &value);
-    case 2: return Proxy <false> ( 8, &value);
-    case 3: return Proxy <false> ( 0, &value);
-    };
-};
-
-std::string IPAddress::V4::to_string () const
-{
-    std::string s;
-    s.reserve (15);
-    s.append (numberToString ((int)((*this)[0]))); s.push_back ('.');
-    s.append (numberToString ((int)((*this)[1]))); s.push_back ('.');
-    s.append (numberToString ((int)((*this)[2]))); s.push_back ('.');
-    s.append (numberToString ((int)((*this)[3])));
-    return s;
-}
-
-IPAddress::V4::operator std::string () const
-{
-    return to_string();
-}
-
-//------------------------------------------------------------------------------
-
-IPAddress::IPAddress ()
-    : m_type (none)
-{
-}
-
-IPAddress::IPAddress (V4 const& v4, uint16 port)
+Address::Address ()
     : m_type (ipv4)
-    , m_port (port)
-    , m_v4 (v4)
 {
 }
 
-IPAddress::IPAddress (V6 const& v6, uint16 port)
+Address::Address (AddressV4 const& addr)
+    : m_type (ipv4)
+    , m_v4 (addr)
+{
+}
+
+Address::Address (AddressV6 const& addr)
     : m_type (ipv6)
-    , m_port (port)
-    , m_v6 (v6)
+    , m_v6 (addr)
 {
 }
 
-IPAddress::IPAddress (IPAddress const& other)
-    : m_type (other.m_type)
-    , m_port (other.m_port)
-{
-    switch (m_type)
-    {
-    case ipv4: m_v4 = other.m_v4; break;
-    case ipv6: m_v6 = other.m_v6; break;
-    default:
-    case none:
-        break;
-    };
-}
-
-IPAddress& IPAddress::operator= (IPAddress const& other)
-{
-    m_type = other.m_type;
-    m_port = other.m_port;
-    switch (m_type)
-    {
-    case ipv4: m_v4 = other.m_v4; break;
-    case ipv6: m_v6 = other.m_v6; break;
-    default:
-    case none:
-        break;
-    };
-    return *this;
-}
-
-IPAddress IPAddress::from_string (std::string const& s)
-{
-    std::stringstream is (s);
-    IPAddress ep;
-    is >> ep;
-    if (! is.fail() && is.rdbuf()->in_avail() == 0)
-        return ep;
-    return IPAddress();
-}
-
-IPAddress& IPAddress::operator= (V4 const& address)
+Address& Address::operator= (AddressV4 const& addr)
 {
     m_type = ipv4;
-    m_port = 0;
-    m_v4 = address;
+    m_v6 = AddressV6();
+    m_v4 = addr;
     return *this;
 }
 
-IPAddress& IPAddress::operator= (V6 const& address)
+Address& Address::operator= (AddressV6 const& addr)
 {
     m_type = ipv6;
-    m_port = 0;
-    m_v6 = address;
+    m_v4 = AddressV4();
+    m_v6 = addr;
     return *this;
 }
 
-IPAddress IPAddress::withPort (uint16 port) const
+std::pair <Address, bool> Address::from_string (std::string const& s)
 {
-    switch (m_type)
-    {
-    case ipv4: return IPAddress (m_v4, port);
-    case ipv6: return IPAddress (m_v6, port);
-    default:
-    case none:
-        bassertfalse;
-        break;
-    };
-    return IPAddress();
+    std::stringstream is (s);
+    Address addr;
+    is >> addr;
+    if (! is.fail() && is.rdbuf()->in_avail() == 0)
+        return std::make_pair (addr, true);
+    return std::make_pair (Address (), false);
 }
 
-bool IPAddress::empty () const
+std::string Address::to_string () const
 {
-    return m_type == none;
+    return (is_v4 ())
+        ? IP::to_string (to_v4())
+        : IP::to_string (to_v6());
 }
 
-bool IPAddress::isNull () const
+AddressV4 const& Address::to_v4 () const
 {
-    return empty ();
-}
-
-bool IPAddress::isNotNull () const
-{
-    return ! empty ();
-}
-
-IPAddress::Type IPAddress::type () const
-{
-    return m_type;
-}
-
-bool IPAddress::isV4 () const
-{
-    return m_type == ipv4;
-}
-
-bool IPAddress::isV6 () const
-{
-    return m_type == ipv6;
-}
-
-IPAddress::V4 const& IPAddress::v4 () const
-{
+    if (m_type != ipv4)
+        throw std::bad_cast();
     return m_v4;
 }
 
-IPAddress::V6 const& IPAddress::v6 () const
+AddressV6 const& Address::to_v6 () const
 {
+    if (m_type != ipv6)
+        throw std::bad_cast();
     return m_v6;
 }
 
-uint16 IPAddress::port () const
+bool operator== (Address const& lhs, Address const& rhs)
 {
-    return m_port;
-}
-
-bool IPAddress::isPublic () const
-{
-    switch (m_type)
+    if (lhs.is_v4 ())
     {
-    case ipv4: return m_v4.isPublic();
-    case ipv6: return m_v6.isPublic();
-    default:
-        bassertfalse;
-    case none:
-        break;
-    };
-    return false;
-}
-
-bool IPAddress::isPrivate () const
-{
-    switch (m_type)
-    {
-    case ipv4: return m_v4.isPrivate();
-    case ipv6: return m_v6.isPrivate();
-    default:
-        bassertfalse;
-    case none:
-        break;
-    };
-    return false;
-}
-
-bool IPAddress::isBroadcast () const
-{
-    switch (m_type)
-    {
-    case ipv4: return m_v4.isBroadcast();
-    case ipv6: return m_v6.isBroadcast();
-    default:
-        bassertfalse;
-    case none:
-        break;
-    };
-    return false;
-}
-
-bool IPAddress::isMulticast () const
-{
-    switch (m_type)
-    {
-    case ipv4: return m_v4.isMulticast();
-    case ipv6: return m_v6.isMulticast();
-    default:
-        bassertfalse;
-    case none:
-        break;
-    };
-    return false;
-}
-
-bool IPAddress::isLoopback () const
-{
-    switch (m_type)
-    {
-    case ipv4: return m_v4.isLoopback();
-    case ipv6: return m_v6.isLoopback();
-    default:
-        bassertfalse;
-    case none:
-        break;
-    };
-    return false;
-}
-
-std::string IPAddress::to_string () const
-{
-    switch (m_type)
-    {
-    case ipv4:
-        {
-            std::string s (m_v4.to_string());
-            if (m_port != 0)
-            {
-                s.append (":");
-                s.append (numberToString (m_port));
-            }
-            return s;
-        }
-
-    case ipv6:
-        return m_v6.to_string();
-
-    default:
-    case none:
-        bassertfalse;
-        break;
-    };
-    return std::string();
-}
-
-IPAddress::operator std::string () const
-{
-    return to_string();
-}
-
-//------------------------------------------------------------------------------
-
-namespace parse
-{
-
-/** Require and consume the specified character from the input.
-    @return `true` if the character matched.
-*/
-bool expect (std::istream& is, char v)
-{
-    char c;
-    if (is.get(c) && v == c)
-        return true;
-
-    is.unget();
-    is.setstate (std::ios_base::failbit);
-    return false;
-}
-
-namespace detail
-{
-
-/** Used to disambiguate 8-bit integers from characters. */
-template <typename IntType>
-struct integer_holder
-{
-    IntType* pi;
-    explicit integer_holder (IntType& i)
-        : pi (&i)
-    {
-    }
-    template <typename OtherIntType>
-    IntType& operator= (OtherIntType o) const
-    {
-        *pi = o;
-        return *pi;
-    }
-};
-
-/** Parse 8-bit unsigned integer. */
-std::istream& operator>> (std::istream& is, integer_holder <uint8> const& i)
-{
-    uint16 v;
-    is >> v;
-    if (! (v>=0 && v<=255))
-    {
-        is.setstate (std::ios_base::failbit);
-        return is;
-    }
-    i = uint8(v);
-    return is;
-}
-
-}
-
-/** Free function for template argument deduction. */
-template <typename IntType>
-detail::integer_holder <IntType> integer (IntType& i)
-{
-    return detail::integer_holder <IntType> (i);
-}
-
-}
-
-/** Parse IPv4 address. */
-std::istream& operator>> (std::istream &is, IPAddress::V4& addr)
-{
-    uint8 octets [4];
-    is >> parse::integer (octets [0]);
-    for (int i = 1; i < 4; ++i)
-    {
-        if (!is || !parse::expect (is, '.'))
-            return is;
-        is >> parse::integer (octets [i]);
-        if (!is)
-            return is;
-    }
-    addr = IPAddress::V4 (octets[0], octets[1], octets[2], octets[3]);
-    return is;
-}
-
-/** Parse an IPAddress.
-    @note Currently only IPv4 addresses are supported.
-*/
-std::istream& operator>> (std::istream &is, IPAddress& ep)
-{
-    IPAddress::V4 v4;
-    is >> v4;
-    if (is.fail())
-        return is;
-
-    if (is.rdbuf()->in_avail()>0)
-    {
-        char c;
-        is.get(c);
-        if (c != ':')
-        {
-            is.unget();
-            ep = IPAddress (v4);
-            return is;
-        }
-
-        uint16 port;
-        is >> port;
-        if (is.fail())
-            return is;
-
-        ep = IPAddress (v4, port);
+        if (rhs.is_v4 ())
+            return lhs.to_v4() == rhs.to_v4();
     }
     else
     {
-        ep = IPAddress (v4);
+        if (rhs.is_v6 ())
+            return lhs.to_v6() == rhs.to_v6();
     }
 
+    return false;
+}
+
+bool operator< (Address const& lhs, Address const& rhs)
+{
+    if (lhs.m_type < rhs.m_type)
+        return true;
+    if (lhs.is_v4 ())
+        return lhs.to_v4() < rhs.to_v4();
+    return lhs.to_v6() < rhs.to_v6();
+}
+
+//------------------------------------------------------------------------------
+
+bool is_loopback (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? is_loopback (addr.to_v4 ())
+        : is_loopback (addr.to_v6 ());
+}
+
+bool is_unspecified (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? is_unspecified (addr.to_v4 ())
+        : is_unspecified (addr.to_v6 ());
+}
+
+bool is_multicast (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? is_multicast (addr.to_v4 ())
+        : is_multicast (addr.to_v6 ());
+}
+
+bool is_private (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? is_private (addr.to_v4 ())
+        : is_private (addr.to_v6 ());
+}
+
+bool is_public (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? is_public (addr.to_v4 ())
+        : is_public (addr.to_v6 ());
+}
+
+//------------------------------------------------------------------------------
+
+std::size_t hash_value (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? hash_value (addr.to_v4())
+        : hash_value (addr.to_v6());
+}
+
+std::istream& operator>> (std::istream& is, Address& addr)
+{
+    // VFALCO TODO Support ipv6!
+    AddressV4 addrv4;
+    is >> addrv4;
+    addr = Address (addrv4);
     return is;
-}
-
-//------------------------------------------------------------------------------
-
-IPAddress IPAddress::from_string_altform (std::string const& s)
-{
-    // Accept the regular form if it parses
-    {
-        IPAddress ep (IPAddress::from_string (s));
-        if (! ep.empty())
-            return ep;
-    }
-
-    // Now try the alt form
-    std::stringstream is (s);
-
-    IPAddress::V4 v4;
-    is >> v4;
-    if (! is.fail())
-    {
-        IPAddress ep (v4);
-
-        if (is.rdbuf()->in_avail()>0)
-        {
-            if (! parse::expect (is, ' '))
-                return IPAddress();
-
-            while (is.rdbuf()->in_avail()>0)
-            {
-                char c;
-                is.get(c);
-                if (c != ' ')
-                {
-                    is.unget();
-                    break;
-                }
-            }
-
-            uint16 port;
-            is >> port;
-            if (is.fail())
-                return IPAddress();
-
-            return ep.withPort (port);
-        }
-        else
-        {
-            // Just an address with no port
-            return ep;
-        }
-    }
-
-    // Could be V6 here...
-
-    return IPAddress();
-}
-
-//------------------------------------------------------------------------------
-
-bool operator== (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
-    { return lhs.value == rhs.value; }
-
-bool operator< (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
-    { return lhs.value < rhs.value; }
-
-bool operator!= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
-    { return ! (lhs == rhs); }
-
-bool operator> (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
-    { return rhs < lhs; }
-
-bool operator<= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
-    { return ! (rhs < lhs); }
-
-bool operator>= (IPAddress::V4 const& lhs, IPAddress::V4 const& rhs)
-    { return ! (lhs < rhs); }
-
-//------------------------------------------------------------------------------
-
-bool operator== (IPAddress const& lhs, IPAddress const& rhs)
-{
-    if (lhs.type() != rhs.type())
-        return false;
-    switch (lhs.type())
-    {
-    case IPAddress::none: return true;
-    case IPAddress::ipv4:
-        if (lhs.v4() != rhs.v4())
-            return false;
-        if (lhs.port() != rhs.port())
-            return false;
-        return true;
-    case IPAddress::ipv6:
-    default:
-        bassertfalse;
-    }
-    return false;
-}
-
-bool operator< (IPAddress const& lhs, IPAddress const& rhs)
-{
-    if (lhs.type() > rhs.type())
-        return false;
-    if (lhs.type() < rhs.type())
-        return true;
-    switch (lhs.type())
-    {
-    case IPAddress::none: return true;
-    case IPAddress::ipv4:
-        if (lhs.v4() < rhs.v4())
-            return true;
-        if (lhs.v4() > rhs.v4())
-            return false;
-        return lhs.port() < rhs.port();
-    case IPAddress::ipv6:
-    default:
-        bassertfalse;
-    }
-    return false;
-}
-
-bool operator!= (IPAddress const& lhs, IPAddress const& rhs)
-    { return ! (lhs == rhs); }
-
-bool operator> (IPAddress const& lhs, IPAddress const& rhs)
-    { return rhs < lhs; }
-
-bool operator<= (IPAddress const& lhs, IPAddress const& rhs)
-    { return ! (rhs < lhs); }
-
-bool operator>= (IPAddress const& lhs, IPAddress const& rhs)
-    { return ! (lhs < rhs); }
-
-//------------------------------------------------------------------------------
-
-std::ostream& operator<< (std::ostream &os, IPAddress::V4 const& addr)
-{
-    os << addr.to_string();
-    return os;
-}
-
-std::ostream& operator<< (std::ostream &os, IPAddress::V6 const& addr)
-{
-    os << addr.to_string();
-    return os;
-}
-
-std::ostream& operator<< (std::ostream &os, IPAddress const& ep)
-{
-    os << ep.to_string();
-    return os;
 }
 
 //------------------------------------------------------------------------------
@@ -653,49 +174,79 @@ std::ostream& operator<< (std::ostream &os, IPAddress const& ep)
 class IPAddressTests : public UnitTest
 {
 public:
-    bool parse (char const* text, IPAddress& ep)
+    void shouldParseV4 (std::string const& s, uint32 value)
     {
-        std::string input (text);
-        std::istringstream stream (input);
-        stream >> ep;
-        return !stream.fail();
+        std::pair <AddressV4, bool> const result (
+            AddressV4::from_string (s));
+
+        if (expect (result.second))
+        {
+            if (expect (result.first.value == value))
+            {
+                expect (to_string (result.first) == s);
+            }
+        }
     }
 
-    void shouldPass (char const* text)
+    void failParseV4 (std::string const& s)
     {
-        IPAddress ep;
-        expect (parse (text, ep));
-        expect (ep.to_string() == std::string(text));
+        unexpected (AddressV4::from_string (s).second);
     }
 
-    void shouldFail (char const* text)
+    void testAddressV4 ()
     {
-        IPAddress ep;
-        unexpected (parse (text, ep));
+        beginTestCase ("AddressV4");
+
+        expect (AddressV4().value == 0);
+        expect (is_unspecified (AddressV4()));
+        expect (AddressV4(0x01020304).value == 0x01020304);
+        expect (AddressV4(1, 2, 3, 4).value == 0x01020304);
+
+        unexpected (is_unspecified (AddressV4(1, 2, 3, 4)));
+
+        AddressV4 const v1 (1);
+        expect (AddressV4(v1).value == 1);
+
+        {
+            AddressV4 v;
+            v = v1;
+            expect (v.value == v1.value);
+        }
+
+        {
+            AddressV4 v;
+            v [0] = 1;
+            v [1] = 2;
+            v [2] = 3;
+            v [3] = 4;
+            expect (v.value == 0x01020304);
+        }
+
+        expect (to_string (AddressV4(0x01020304)) == "1.2.3.4");
+
+        shouldParseV4 ("1.2.3.4", 0x01020304);
+        shouldParseV4 ("255.255.255.255", 0xffffffff);
+        shouldParseV4 ("0.0.0.0", 0);
+
+        failParseV4 (".");
+        failParseV4 ("..");
+        failParseV4 ("...");
+        failParseV4 ("....");
+        failParseV4 ("1");
+        failParseV4 ("1.");
+        failParseV4 ("1.2");
+        failParseV4 ("1.2.");
+        failParseV4 ("1.2.3");
+        failParseV4 ("1.2.3.");
+        failParseV4 ("256.0.0.0");
+        failParseV4 ("-1.2.3.4");
     }
 
-    void testParse ()
+    void testAddressV4Proxy ()
     {
-        beginTestCase ("parse");
+      beginTestCase ("AddressV4::Proxy");
 
-        shouldPass ("0.0.0.0");
-        shouldPass ("192.168.0.1");
-        shouldPass ("168.127.149.132");
-        shouldPass ("168.127.149.132:80");
-        shouldPass ("168.127.149.132:54321");
-
-        shouldFail ("");
-        shouldFail ("255");
-        shouldFail ("512");
-        shouldFail ("1.2.3.256");
-        shouldFail ("1.2.3:80");
-    }
-
-    void testV4Proxy ()
-    {
-      beginTestCase("v4 proxy");
-
-      IPAddress::V4 v4 (10, 0, 0, 1);
+      AddressV4 v4 (10, 0, 0, 1);
       expect (v4[0]==10);
       expect (v4[1]==0);
       expect (v4[2]==0);
@@ -711,43 +262,131 @@ public:
       expect (v4[3]==1);
     }
 
-    void testPrint ()
+    //--------------------------------------------------------------------------
+
+    void testAddress ()
     {
-        beginTestCase ("addresses");
+        beginTestCase ("Address");
 
-        IPAddress ep;
+        std::pair <Address, bool> result (
+            Address::from_string ("1.2.3.4"));
+        expect (result.second);
+        if (expect (result.first.is_v4 ()))
+            expect (result.first.to_v4() == AddressV4 (1, 2, 3, 4));
+    }
 
-        ep = IPAddress(IPAddress::V4(127,0,0,1)).withPort (80);
-        expect (!ep.isPublic());
-        expect ( ep.isPrivate());
-        expect (!ep.isBroadcast());
-        expect (!ep.isMulticast());
-        expect ( ep.isLoopback());
-        expect (ep.to_string() == "127.0.0.1:80");
+    //--------------------------------------------------------------------------
 
-        ep = IPAddress::V4(10,0,0,1);
-        expect ( ep.v4().getClass() == 'A');
-        expect (!ep.isPublic());
-        expect ( ep.isPrivate());
-        expect (!ep.isBroadcast());
-        expect (!ep.isMulticast());
-        expect (!ep.isLoopback());
-        expect (ep.to_string() == "10.0.0.1");
+    void testEndpoint ()
+    {
+        beginTestCase ("Endpoint");
 
-        ep = IPAddress::V4(166,78,151,147);
-        expect ( ep.isPublic());
-        expect (!ep.isPrivate());
-        expect (!ep.isBroadcast());
-        expect (!ep.isMulticast());
-        expect (!ep.isLoopback());
-        expect (ep.to_string() == "166.78.151.147");
+        {
+            std::pair <Endpoint, bool> result (
+                Endpoint::from_string_checked ("1.2.3.4"));
+            expect (result.second);
+            if (expect (result.first.address().is_v4 ()))
+            {
+                expect (result.first.address().to_v4() ==
+                    AddressV4 (1, 2, 3, 4));
+                expect (result.first.port() == 0);
+                expect (to_string (result.first) == "1.2.3.4");
+            }
+        }
+
+        {
+            std::pair <Endpoint, bool> result (
+                Endpoint::from_string_checked ("1.2.3.4:5"));
+            expect (result.second);
+            if (expect (result.first.address().is_v4 ()))
+            {
+                expect (result.first.address().to_v4() ==
+                    AddressV4 (1, 2, 3, 4));
+                expect (result.first.port() == 5);
+                expect (to_string (result.first) == "1.2.3.4:5");
+            }
+        }
+
+        Endpoint ep;
+
+        ep = Endpoint (AddressV4 (127,0,0,1), 80);
+        expect (! is_unspecified (ep));
+        expect (! is_public (ep));
+        expect (  is_private (ep));
+        expect (! is_multicast (ep));
+        expect (  is_loopback (ep));
+        expect (to_string (ep) == "127.0.0.1:80");
+
+        ep = Endpoint (AddressV4 (10,0,0,1));
+        expect (AddressV4::get_class (ep.to_v4()) == 'A');
+        expect (! is_unspecified (ep));
+        expect (! is_public (ep));
+        expect (  is_private (ep));
+        expect (! is_multicast (ep));
+        expect (! is_loopback (ep));
+        expect (to_string (ep) == "10.0.0.1");
+
+        ep = Endpoint (AddressV4 (166,78,151,147));
+        expect (! is_unspecified (ep));
+        expect (  is_public (ep));
+        expect (! is_private (ep));
+        expect (! is_multicast (ep));
+        expect (! is_loopback (ep));
+        expect (to_string (ep) == "166.78.151.147");
+    }
+
+    //--------------------------------------------------------------------------
+
+    template <typename T>
+    bool parse (char const* text, T& t)
+    {
+        std::string input (text);
+        std::istringstream stream (input);
+        stream >> t;
+        return !stream.fail();
+    }
+
+    template <typename T>
+    void shouldPass (char const* text)
+    {
+        T t;
+        expect (parse (text, t));
+        expect (to_string (t) == std::string (text));
+    }
+
+    template <typename T>
+    void shouldFail (char const* text)
+    {
+        T t;
+        unexpected (parse (text, t));
+    }
+
+    template <typename T>
+    void testParse (char const* name)
+    {
+        beginTestCase (name);
+
+        shouldPass <T> ("0.0.0.0");
+        shouldPass <T> ("192.168.0.1");
+        shouldPass <T> ("168.127.149.132");
+        shouldPass <T> ("168.127.149.132:80");
+        shouldPass <T> ("168.127.149.132:54321");
+
+        shouldFail <T> ("");
+        shouldFail <T> ("255");
+        shouldFail <T> ("512");
+        shouldFail <T> ("1.2.3.256");
+        shouldFail <T> ("1.2.3:80");
     }
 
     void runTest ()
     {
-        testPrint();
-        testParse();
-        testV4Proxy();
+        testAddressV4 ();
+        testAddressV4Proxy();
+        testAddress ();
+        testEndpoint ();
+
+        testParse <Endpoint> ("Parse Endpoint");
     }
 
     IPAddressTests () : UnitTest ("IPAddress", "beast")
@@ -757,4 +396,5 @@ public:
 
 static IPAddressTests ipEndpointTests;
 
+}
 }

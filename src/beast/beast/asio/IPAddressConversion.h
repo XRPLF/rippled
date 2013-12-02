@@ -20,41 +20,47 @@
 #ifndef BEAST_ASIO_IPADDRESSCONVERSION_H_INCLUDED
 #define BEAST_ASIO_IPADDRESSCONVERSION_H_INCLUDED
 
-#include "../net/IPAddress.h"
+#include "../net/IPEndpoint.h"
 
 #include <sstream>
 
 #include <boost/asio.hpp>
 
 namespace beast {
+namespace IP {
 
+/** Convert to Endpoint.
+    The port is set to zero.
+*/
+Endpoint from_asio (boost::asio::ip::address const& address);
+
+/** Convert to Endpoint. */
+Endpoint from_asio (boost::asio::ip::tcp::endpoint const& endpoint);
+
+/** Convert to asio::ip::address.
+    The port is ignored.
+*/
+boost::asio::ip::address to_asio_address (Endpoint const& endpoint);
+
+/** Convert to asio::ip::tcp::endpoint. */
+boost::asio::ip::tcp::endpoint to_asio_endpoint (Endpoint const& endpoint);
+
+}
+}
+
+namespace beast {
+
+// DEPRECATED
 struct IPAddressConversion
 {
-    /** Convert to IPAddress.
-        The port is set to zero.
-    */
-    static IPAddress from_asio (boost::asio::ip::address const& address);
-
-    /** Convert to IPAddress, including port. */
-    static IPAddress from_asio (boost::asio::ip::tcp::endpoint const& endpoint);
-
-    /** Convert to asio::ip::address.
-        The port is ignored.
-    */
-    static boost::asio::ip::address to_asio_address (IPAddress const& address);
-
-    /** Convert to asio::ip::tcp::endpoint. */
-    static boost::asio::ip::tcp::endpoint to_asio_endpoint (IPAddress const& address);
-
-    /** Conversions to string. */
-    /** @{ */
-    static std::string to_string (boost::asio::ip::tcp::endpoint const& endpoint)
-    {
-        std::stringstream ss;
-        ss << endpoint;
-        return ss.str();
-    }
-    /** @} */
+    static IP::Endpoint from_asio (boost::asio::ip::address const& address)
+        { return IP::from_asio (address); }
+    static IP::Endpoint from_asio (boost::asio::ip::tcp::endpoint const& endpoint)
+        { return IP::from_asio (endpoint); }
+    static boost::asio::ip::address to_asio_address (IP::Endpoint const& address)
+        { return IP::to_asio_address (address); }
+    static boost::asio::ip::tcp::endpoint to_asio_endpoint (IP::Endpoint const& address)
+        { return IP::to_asio_endpoint (address); }
 };
 
 }
