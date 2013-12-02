@@ -35,7 +35,6 @@
 #include "websocket/src/uri.cpp"
 
 #include "websocket/src/base64/base64.cpp"
-#include "websocket/src/rng/boost_rng.cpp"
 #include "websocket/src/messages/data.cpp"
 #include "websocket/src/processors/hybi_header.cpp"
 #include "websocket/src/processors/hybi_util.cpp"

@@ -93,7 +93,6 @@ BOOST_LIBS = [
     'boost_regex',
     'boost_system',
     'boost_thread',
-    'boost_random',
 ]
 
 # We whitelist platforms where the non -mt version is linked with pthreads. This
