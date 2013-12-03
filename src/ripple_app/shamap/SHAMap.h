@@ -238,6 +238,8 @@ private:
     bool walkBranch (SHAMapTreeNode * node, SHAMapItem::ref otherMapItem, bool isFirstMap,
                      Delta & differences, int & maxCount);
 
+    void visitLeavesInternal (FUNCTION_TYPE<void (SHAMapItem::ref item)>& function);
+
 private:
 #if 1
     LockType mLock;

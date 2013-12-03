@@ -25,8 +25,16 @@ KeyCache <uint256, UptimeTimerAdapter> SHAMap::fullBelowCache ("fullBelowCache",
 
 void SHAMap::visitLeaves (FUNCTION_TYPE<void (SHAMapItem::ref item)> function)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    SHAMap::pointer snap;
+    {
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        snap = snapShot (false);
+    }
+    snap->visitLeavesInternal(function);
+}
 
+void SHAMap::visitLeavesInternal (FUNCTION_TYPE<void (SHAMapItem::ref item)>& function)
+{
     assert (root->isValid ());
 
     if (!root || root->isEmpty ())
@@ -50,18 +58,21 @@ void SHAMap::visitLeaves (FUNCTION_TYPE<void (SHAMapItem::ref item)> function)
         {
             if (node->isEmptyBranch (pos))
                 ++pos;
-	    else
+            else
             {
                 SHAMapTreeNode* child = getNodePointer (node->getChildNodeID (pos), node->getChildHash (pos));
                 if (child->isLeaf ())
                 {
                     function (child->peekItem ());
+                    mTNByID.erase (*child); // don't need this leaf anymore
                     ++pos;
                 }
                 else
                 {
                     if (pos != 15)
                         stack.push (posPair (pos + 1, node)); // save next position
+                    else
+                        mTNByID.erase (*node); // don't need this inner node anymore
 
                     node = child;
                     pos = 0;
@@ -72,8 +83,8 @@ void SHAMap::visitLeaves (FUNCTION_TYPE<void (SHAMapItem::ref item)> function)
         if (stack.empty ())
             break;
         pos = stack.top ().first;
-	node = stack.top ().second;
-	stack.pop ();
+        node = stack.top ().second;
+        stack.pop ();
     }
 }
 
