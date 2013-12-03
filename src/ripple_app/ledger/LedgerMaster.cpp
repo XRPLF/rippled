@@ -1120,6 +1120,21 @@ public:
         return mCompleteLedgers.toString ();
     }
 
+    /** Find or acquire the ledger with the specified index and the specified hash
+        Return a pointer to that ledger if it is immediately available
+    */
+    Ledger::pointer findAcquireLedger (uint32 index, uint256 const& hash)
+    {
+        Ledger::pointer ledger (getLedgerByHash (hash));
+        if (!ledger)
+        {
+            InboundLedger::pointer inboundLedger = getApp().getInboundLedgers().findCreate (hash, index, false);
+            if (inboundLedger && inboundLedger->isComplete() && !inboundLedger->isFailed())
+                ledger = inboundLedger->getLedger();
+        }
+        return ledger;
+    }
+
     uint256 getHashBySeq (uint32 index)
     {
         uint256 hash = mLedgerHistory.getLedgerHash (index);
@@ -1128,6 +1143,56 @@ public:
             return hash;
 
         return Ledger::getHashByIndex (index);
+    }
+
+    uint256 walkHashBySeq (uint32 index)
+    {
+        uint256 ledgerHash;
+        Ledger::pointer referenceLedger;
+
+        {
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            referenceLedger = mValidLedger;
+        }
+        if (referenceLedger)
+            ledgerHash = walkHashBySeq (index, referenceLedger);
+        return ledgerHash;
+    }
+
+    /** Walk the chain of ledger hashed to determine the hash of the
+        ledger with the specified index. The referenceLedger is used as
+        the base of the chain and should be fully validated and must not
+        precede the target index. This function may throw if nodes
+        from the reference ledger or any prior ledger are not present
+        in the node store.
+    */
+    uint256 walkHashBySeq (uint32 index, Ledger::ref referenceLedger)
+    {
+        uint256 ledgerHash;
+        if (!referenceLedger || (referenceLedger->getLedgerSeq() < index))
+            return ledgerHash; // Nothing we can do. No validated ledger.
+
+        // See if the hash for the ledger we need is in the reference ledger
+        ledgerHash = referenceLedger->getLedgerHash (index);
+        if (ledgerHash.isZero())
+        { 
+            // No, Try to get another ledger that might have the hash we need
+            // Compute the index and hash of a ledger that will have the hash we need
+            LedgerIndex refIndex = (index + 255) & (~255);
+            LedgerHash refHash = referenceLedger->getLedgerHash (refIndex);
+
+            if (meets_precondition (refHash.isNonZero ()))
+            {
+                // We found the hash and sequence of a better reference ledger
+                Ledger::pointer ledger = findAcquireLedger (refIndex, refHash);
+                if (ledger)
+                {
+                    ledgerHash = ledger->getLedgerHash (index);
+                    assert (ledgerHash.isNonZero());
+                }
+            }
+        }
+        return ledgerHash;
     }
 
     Ledger::pointer getLedgerBySeq (uint32 index)

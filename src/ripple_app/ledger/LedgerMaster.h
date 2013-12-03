@@ -91,7 +91,16 @@ public:
 
     virtual Ledger::pointer closeLedger (bool recoverHeldTransactions) = 0;
 
+    /** Get a ledger's hash by sequence number using the cache
+    */
     virtual uint256 getHashBySeq (uint32 index) = 0;
+
+    /** Walk to a ledger's hash using the skip list
+    */
+    virtual uint256 walkHashBySeq (uint32 index) = 0;
+    virtual uint256 walkHashBySeq (uint32 index, Ledger::ref referenceLedger) = 0;
+
+    virtual Ledger::pointer findAcquireLedger (uint32 index, uint256 const& hash) = 0;
 
     virtual Ledger::pointer getLedgerBySeq (uint32 index) = 0;
 

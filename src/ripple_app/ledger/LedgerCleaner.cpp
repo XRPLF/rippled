@@ -250,30 +250,6 @@ public:
         return hash;
     }
 
-    /** Try to get a ledger, acquiring it if needed. */
-    Ledger::pointer findAcquireLedger (
-        LedgerIndex const& ledgerIndex, LedgerHash const& ledgerHash)
-    {
-        Ledger::pointer ledger (getApp().getLedgerMaster().getLedgerByHash(
-            ledgerHash));
-        if (!ledger)
-        {
-            m_journal.info <<
-                "Trying to acquire ledger " << ledgerIndex;
-            InboundLedger::pointer inboundLedger =
-                getApp().getInboundLedgers().findCreate (
-                    ledgerHash, ledgerIndex, false);
-            if (inboundLedger && inboundLedger->isComplete() &&
-                ! inboundLedger->isFailed())
-            {
-                ledger = inboundLedger->getLedger();
-                m_journal.info <<
-                    "Found ledger " << ledgerIndex << " locally";
-            }
-        }
-        return ledger;
-    }
-
     /** Process a single ledger
         @param ledgerIndex The index of the ledger to process.
         @param ledgerHash  The known correct hash of the ledger.
@@ -287,7 +263,7 @@ public:
         bool doNodes,
         bool doTxns)
     {
-        Ledger::pointer nodeLedger = findAcquireLedger(ledgerIndex, ledgerHash);
+        Ledger::pointer nodeLedger = getApp().getLedgerMaster().findAcquireLedger(ledgerIndex, ledgerHash);
         if (!nodeLedger)
         {
             m_journal.debug << "Ledger " << ledgerIndex << " not available";
@@ -364,7 +340,7 @@ public:
                 if (meets_precondition (refHash.isNonZero ()))
                 {
                     // We found the hash and sequence of a better reference ledger
-                    referenceLedger = findAcquireLedger (refIndex, refHash);
+                    referenceLedger = getApp().getLedgerMaster().findAcquireLedger (refIndex, refHash);
                     if (referenceLedger)
                         ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);
                 }
