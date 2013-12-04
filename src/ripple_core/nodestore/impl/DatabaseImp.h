@@ -34,7 +34,6 @@ public:
         , m_fastBackend ((fastBackendParameters.size () > 0)
             ? createBackend (fastBackendParameters, scheduler) : nullptr)
         , m_cache ("NodeStore", 16384, 300)
-        , m_negativeCache ("NoteStoreNegativeCache", 0, 120)
     {
     }
 
@@ -57,75 +56,61 @@ public:
 
         if (obj == nullptr)
         {
-            // It's not in the cache, see if we can skip checking the db.
+            // There's still a chance it could be in one of the databases.
+
+            bool foundInFastBackend = false;
+
+            // Check the fast backend database if we have one
             //
-            if (! m_negativeCache.isPresent (hash))
+            if (m_fastBackend != nullptr)
             {
-                // There's still a chance it could be in one of the databases.
+                obj = fetchInternal (m_fastBackend, hash);
 
-                bool foundInFastBackend = false;
-
-                // Check the fast backend database if we have one
-                //
-                if (m_fastBackend != nullptr)
-                {
-                    obj = fetchInternal (m_fastBackend, hash);
-
-                    // If we found the object, avoid storing it again later.
-                    if (obj != nullptr)
-                        foundInFastBackend = true;
-                }
-
-                // Are we still without an object?
-                //
-                if (obj == nullptr)
-                {
-                    // Yes so at last we will try the main database.
-                    //
-                    {
-                        // Monitor this operation's load since it is expensive.
-                        //
-                        // VFALCO TODO Why is this an autoptr? Why can't it just be a plain old object?
-                        //
-                        // VFALCO NOTE Commented this out because it breaks the unit test!
-                        //
-                        //LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtHO_READ, "HOS::retrieve"));
-
-                        obj = fetchInternal (m_backend, hash);
-                    }
-
-                    // If it's not in the main database, remember that so we
-                    // can skip the lookup for the same object again later.
-                    //
-                    if (obj == nullptr)
-                        m_negativeCache.add (hash);
-                }
-
-                // Did we finally get something?
-                //
+                // If we found the object, avoid storing it again later.
                 if (obj != nullptr)
-                {
-                    // Yes it so canonicalize. This solves the problem where
-                    // more than one thread has its own copy of the same object.
-                    //
-                    m_cache.canonicalize (hash, obj);
-
-                    if (! foundInFastBackend)
-                    {
-                        // If we have a fast back end, store it there for later.
-                        //
-                        if (m_fastBackend != nullptr)
-                            m_fastBackend->store (obj);
-
-                        // Since this was a 'hard' fetch, we will log it.
-                        //
-                        WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " fetch: in db";
-                    }
-                }
+                    foundInFastBackend = true;
             }
-            else
+
+            // Are we still without an object?
+            //
+            if (obj == nullptr)
             {
-                // hash is known not to be in the database
+                // Yes so at last we will try the main database.
+                //
+                {
+                    // Monitor this operation's load since it is expensive.
+                    //
+                    // VFALCO TODO Why is this an autoptr? Why can't it just be a plain old object?
+                    //
+                    // VFALCO NOTE Commented this out because it breaks the unit test!
+                    //
+                    //LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtHO_READ, "HOS::retrieve"));
+
+                    obj = fetchInternal (m_backend, hash);
+                }
+
+            }
+
+            // Did we finally get something?
+            //
+            if (obj != nullptr)
+            {
+                // Yes it so canonicalize. This solves the problem where
+                // more than one thread has its own copy of the same object.
+                //
+                m_cache.canonicalize (hash, obj);
+
+                if (! foundInFastBackend)
+                {
+                    // If we have a fast back end, store it there for later.
+                    //
+                    if (m_fastBackend != nullptr)
+                        m_fastBackend->store (obj);
+
+                    // Since this was a 'hard' fetch, we will log it.
+                    //
+                    WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " fetch: in db";
+                }
             }
         }
         else
@@ -192,7 +177,6 @@ public:
                     m_fastBackend->store (object);
             }
 
-            m_negativeCache.del (hash);
         }
     }
 
@@ -212,7 +196,6 @@ public:
     void sweep ()
     {
         m_cache.sweep ();
-        m_negativeCache.sweep ();
     }
 
     int getWriteLoad ()
@@ -316,7 +299,6 @@ private:
 
     // VFALCO NOTE What are these things for? We need comments.
     TaggedCacheType <uint256, NodeObject, UptimeTimerAdapter> m_cache;
-    KeyCache <uint256, UptimeTimerAdapter> m_negativeCache;
 };
 
 //------------------------------------------------------------------------------

@@ -23,7 +23,6 @@ namespace NodeStore
 BatchWriter::BatchWriter (Callback& callback, Scheduler& scheduler)
     : m_callback (callback)
     , m_scheduler (scheduler)
-    , mWriteGeneration (0)
     , mWriteLoad (0)
     , mWritePending (false)
 {
@@ -63,8 +62,6 @@ void BatchWriter::performScheduledTask ()
 
 void BatchWriter::writeBatch ()
 {
-    int setSize = 0;
-
     for (;;)
     {
         std::vector< boost::shared_ptr<NodeObject> > set;
@@ -76,21 +73,17 @@ void BatchWriter::writeBatch ()
 
             mWriteSet.swap (set);
             assert (mWriteSet.empty ());
-            ++mWriteGeneration;
-            mWriteCondition.notify_all ();
+            mWriteLoad = set.size ();
 
             if (set.empty ())
             {
                 mWritePending = false;
-                mWriteLoad = 0;
+                mWriteCondition.notify_all ();
 
                 // VFALCO NOTE Fix this function to not return from the middle
                 return;
             }
 
-            int newSetSize = mWriteSet.size();
-            mWriteLoad = std::max (setSize, newSetSize);
-            newSetSize = set.size ();
         }
 
         m_callback.writeBatch (set);
@@ -100,9 +93,8 @@ void BatchWriter::writeBatch ()
 void BatchWriter::waitForWriting ()
 {
     LockType::scoped_lock sl (mWriteMutex);
-    int gen = mWriteGeneration;
 
-    while (mWritePending && (mWriteGeneration == gen))
+    while (mWritePending)
         mWriteCondition.wait (sl);
 }
 

@@ -76,7 +76,6 @@ private:
     Scheduler& m_scheduler;
     LockType mWriteMutex;
     CondvarType mWriteCondition;
-    int mWriteGeneration;
     int mWriteLoad;
     bool mWritePending;
     Batch mWriteSet;
