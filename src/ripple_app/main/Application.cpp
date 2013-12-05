@@ -132,7 +132,7 @@ public:
 
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
 
-        , mFeeVote (IFeeVote::New (10, 50 * SYSTEM_CURRENCY_PARTS, 12.5 * SYSTEM_CURRENCY_PARTS))
+        , mFeeVote (IFeeVote::New (10, 20 * SYSTEM_CURRENCY_PARTS, 5 * SYSTEM_CURRENCY_PARTS))
 
         , mFeeTrack (LoadFeeTrack::New (LogPartition::getJournal <LoadManagerLog> ()))
 
