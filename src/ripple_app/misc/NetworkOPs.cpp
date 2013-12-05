@@ -1975,13 +1975,15 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, int32 minLedger, in
             if (!token.isMember("ledger") || !token.isMember("seq"))
                 return ret;
             findLedger = token["ledger"].asInt();
-            findSeq = token["ledger"].asInt();
+            findSeq = token["seq"].asInt();
         }
         catch (...)
         {
             return ret;
         }
     }
+
+    token = Json::nullValue;
 
     std::string sql = boost::str (boost::format
         ("SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,Status,RawTxn,TxnMeta "
