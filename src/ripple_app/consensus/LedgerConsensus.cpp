@@ -1307,8 +1307,8 @@ void LedgerConsensus::accept (SHAMap::ref set, LoadEvent::pointer)
         applyTransactions (set, newLCL, newLCL, failedTransactions, false);
         newLCL->updateSkipList ();
         newLCL->setClosed ();
-        boost::shared_ptr<SHAMap::DirtyMap> acctNodes = newLCL->peekAccountStateMap ()->disarmDirty ();
-        boost::shared_ptr<SHAMap::DirtyMap> txnNodes = newLCL->peekTransactionMap ()->disarmDirty ();
+        boost::shared_ptr<SHAMap::NodeMap> acctNodes = newLCL->peekAccountStateMap ()->disarmDirty ();
+        boost::shared_ptr<SHAMap::NodeMap> txnNodes = newLCL->peekTransactionMap ()->disarmDirty ();
 
         // write out dirty nodes (temporarily done here)
         int fc;

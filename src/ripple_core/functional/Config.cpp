@@ -559,8 +559,11 @@ int Config::getSize (SizedItemName item)
         { siValidationsSize,    {   256,    256,    512,    1024,       1024    } },
         { siValidationsAge,     {   500,    500,    500,    500,        500     } },
 
-        { siNodeCacheSize,      {   8192,   65536,  262144, 512000,     0       } },
+        { siNodeCacheSize,      {   8192,   16384,  32768,  131072,     0       } },
         { siNodeCacheAge,       {   30,     60,     90,     120,        900     } },
+
+        { siTreeCacheSize,      {   8192,   65536,  131072, 131072,     0       } },
+        { siTreeCacheAge,       {   30,     60,     90,     120,        900     } },
 
         { siSLECacheSize,       {   4096,   8192,   16384,  65536,      0       } },
         { siSLECacheAge,        {   30,     60,     90,     120,        300     } },

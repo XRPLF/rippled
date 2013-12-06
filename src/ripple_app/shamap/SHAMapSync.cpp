@@ -57,7 +57,9 @@ void SHAMap::visitLeavesInternal (FUNCTION_TYPE<void (SHAMapItem::ref item)>& fu
         while (pos < 16)
         {
             if (node->isEmptyBranch (pos))
-                ++pos;
+            {
+                ++pos; // move to next position
+            }
             else
             {
                 SHAMapTreeNode* child = getNodePointer (node->getChildNodeID (pos), node->getChildHash (pos));
@@ -70,18 +72,23 @@ void SHAMap::visitLeavesInternal (FUNCTION_TYPE<void (SHAMapItem::ref item)>& fu
                 else
                 {
                     if (pos != 15)
-                        stack.push (posPair (pos + 1, node)); // save next position
+                        stack.push (posPair (pos + 1, node)); // save next position to resume at
                     else
                         mTNByID.erase (*node); // don't need this inner node anymore
 
+                    // descend to the child's first position
                     node = child;
                     pos = 0;
                 }
             }
         }
 
+        // We are done with this inner node
+        mTNByID.erase (*node);
+
         if (stack.empty ())
             break;
+
         pos = stack.top ().first;
         node = stack.top ().second;
         stack.pop ();
@@ -369,13 +376,15 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
             }
 
             SHAMapTreeNode::pointer newNode =
-                boost::make_shared<SHAMapTreeNode> (node, rawNode, mSeq - 1, snfWIRE, uZero, false);
+                boost::make_shared<SHAMapTreeNode> (node, rawNode, 0, snfWIRE, uZero, false);
 
             if (iNode->getChildHash (branch) != newNode->getNodeHash ())
             {
                 WriteLog (lsWARNING, SHAMap) << "Corrupt node recevied";
                 return SHAMapAddNode::invalid ();
             }
+
+            canonicalize (iNode->getChildHash (branch), newNode);
 
             if (filter)
             {

@@ -40,7 +40,7 @@ public:
 
     typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> DeltaItem;
     typedef std::map<uint256, DeltaItem> Delta;
-    typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> DirtyMap;
+    typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> NodeMap;
 
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
@@ -160,12 +160,13 @@ public:
     bool compare (SHAMap::ref otherMap, Delta & differences, int maxCount);
 
     int armDirty ();
-    static int flushDirty (DirtyMap & dirtyMap, int maxNodes, NodeObjectType t, uint32 seq);
-    boost::shared_ptr<DirtyMap> disarmDirty ();
+    static int flushDirty (NodeMap & dirtyMap, int maxNodes, NodeObjectType t, uint32 seq);
+    boost::shared_ptr<NodeMap> disarmDirty ();
 
     void setSeq (uint32 seq)
     {
         mSeq = seq;
+        assert (seq != 0);
     }
     uint32 getSeq ()
     {
@@ -199,17 +200,34 @@ public:
     std::list<fetchPackEntry_t> getFetchPack (SHAMap * have, bool includeLeaves, int max);
     void getFetchPack (SHAMap * have, bool includeLeaves, int max, FUNCTION_TYPE<void (const uint256&, const Blob&)>);
 
+    // tree node cache operations
+    static SHAMapTreeNode::pointer getCache (uint256 const& hash, SHAMapNode const& id);
+    static void canonicalize (uint256 const& hash, SHAMapTreeNode::pointer&);
+
     static int getFullBelowSize ()
     {
         return fullBelowCache.getSize ();
     }
+    static int getTreeNodeSize ()
+    {
+        return treeNodeCache.getCacheSize ();
+    }
     static void sweep ()
     {
         fullBelowCache.sweep ();
+        treeNodeCache.sweep ();
+    }
+    static void setTreeCache (int size, int age)
+    {
+        treeNodeCache.setTargetSize (size);
+        treeNodeCache.setTargetAge (age);
     }
 
 private:
     static KeyCache <uint256, UptimeTimerAdapter> fullBelowCache;
+
+    typedef std::pair<uint256, SHAMapNode> TNIndex;
+    static TaggedCacheType <TNIndex, SHAMapTreeNode, UptimeTimerAdapter> treeNodeCache;
 
     void dirtyUp (std::stack<SHAMapTreeNode::pointer>& stack, uint256 const & target, uint256 prevHash);
     std::stack<SHAMapTreeNode::pointer> getStack (uint256 const & id, bool include_nonmatching_leaf);
@@ -249,9 +267,9 @@ private:
 
     uint32 mSeq;
     uint32 mLedgerSeq; // sequence number of ledger this is part of
-    boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> mTNByID;
+    NodeMap mTNByID;
 
-    boost::shared_ptr<DirtyMap> mDirtyNodes;
+    boost::shared_ptr<NodeMap> mDirtyNodes;
 
     SHAMapTreeNode::pointer root;
 

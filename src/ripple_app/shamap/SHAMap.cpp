@@ -23,6 +23,9 @@
 
 SETUP_LOG (SHAMap)
 
+TaggedCacheType< SHAMap::TNIndex, SHAMapTreeNode, UptimeTimerAdapter>
+    SHAMap::treeNodeCache ("TreeNodeCache", 65536, 60);
+
 SHAMap::~SHAMap ()
 {
     mState = smsInvalid;
@@ -73,6 +76,7 @@ SHAMap::SHAMap (SHAMapType t, uint32 seq)
     , mState (smsModifying)
     , mType (t)
 {
+    assert (mSeq != 0);
     if (t == smtSTATE)
         mTNByID.rehash (STATE_MAP_BUCKETS);
 
@@ -99,17 +103,37 @@ SHAMap::SHAMap (SHAMapType t, uint256 const& hash)
 
 SHAMap::pointer SHAMap::snapShot (bool isMutable)
 {
-    // Return a new SHAMap that is an immutable snapshot of this one
-    // Initially nodes are shared, but CoW is forced on both ledgers
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
     SHAMap::pointer ret = boost::make_shared<SHAMap> (mType);
-    SHAMap& newMap = *ret;
-    newMap.mSeq = ++mSeq;
-    newMap.mTNByID = mTNByID;
-    newMap.root = root;
+        SHAMap& newMap = *ret;
 
-    if (!isMutable)
-        newMap.mState = smsImmutable;
+    // Return a new SHAMap that is a snapshot of this one
+    // Initially most nodes are shared and CoW is forced where needed
+    {
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        newMap.mSeq = mSeq;
+        newMap.mTNByID = mTNByID;
+        newMap.root = root;
+
+        if (!isMutable)
+            newMap.mState = smsImmutable;
+
+        // If the existing map has any nodes it might modify, unshare them now
+        if (mState != smsImmutable)
+        {
+            BOOST_FOREACH(NodeMap::value_type& nodeIt, mTNByID)
+            {
+                if (nodeIt.second->getSeq() == mSeq)
+                { // We might modify this node, so duplicate it in the snapShot
+                    SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode> (*nodeIt.second, mSeq);
+                    newMap.mTNByID[*newNode] = newNode;
+                    if (newNode->isRoot ())
+                        newMap.root = newNode;
+                }
+            }
+        }
+        else if (isMutable) // Need to unshare on changes to the snapshot
+            ++newMap.mSeq;
+    }
 
     return ret;
 }
@@ -312,7 +336,8 @@ SHAMapTreeNode* SHAMap::getNodePointerNT (const SHAMapNode& id, uint256 const& h
         if (filter->haveNode (id, hash, nodeData))
         {
             SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode> (
-                                               boost::cref (id), boost::cref (nodeData), mSeq - 1, snfPREFIX, boost::cref (hash), true);
+                    boost::cref (id), boost::cref (nodeData), 0, snfPREFIX, boost::cref (hash), true);
+            canonicalize (hash, node);
             mTNByID[id] = node;
             filter->gotNode (true, id, hash, nodeData, node->getType ());
             return node.get ();
@@ -349,6 +374,7 @@ void SHAMap::returnNode (SHAMapTreeNode::pointer& node, bool modify)
 
 void SHAMap::trackNewNode (SHAMapTreeNode::pointer& node)
 {
+    assert (node->getSeq() == mSeq);
     if (mDirtyNodes)
         (*mDirtyNodes)[*node] = node;
 }
@@ -867,54 +893,61 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint2
     if (!getApp().running ())
         return ret;
 
-    // These are for diagnosing a crash on exit
-    Application& app (getApp ());
-    NodeStore::Database& nodeStore (app.getNodeStore ());
-    NodeObject::pointer obj (nodeStore.fetch (hash));
-
-    if (!obj)
-    {
-        //      WriteLog (lsTRACE, SHAMap) << "fetchNodeExternal: missing " << hash;
-        if (mLedgerSeq != 0)
+    ret = getCache (hash, id);
+    if (ret)
+    { // The node was found in the TreeNodeCache
+        assert (ret->getSeq() == 0);
+        assert (id == *ret);
+    }
+    else
+    { // Check the back end
+        NodeObject::pointer obj (getApp ().getNodeStore ().fetch (hash));
+        if (!obj)
         {
-            getApp().getOPs ().missingNodeInLedger (mLedgerSeq);
-            mLedgerSeq = 0;
+            if (mLedgerSeq != 0)
+            {
+                getApp().getOPs ().missingNodeInLedger (mLedgerSeq);
+                mLedgerSeq = 0;
+            }
+
+            return ret;
         }
 
-        return ret;
-    }
-
-    try
-    {
-        ret = boost::make_shared<SHAMapTreeNode> (id, obj->getData (), mSeq, snfPREFIX, hash, true);
-
-        if (id != *ret)
+        try
         {
-            WriteLog (lsFATAL, SHAMap) << "id:" << id << ", got:" << *ret;
-            assert (false);
+            ret = boost::make_shared<SHAMapTreeNode> (id, obj->getData (), 0, snfPREFIX, hash, true);
+
+            if (id != *ret)
+            {
+                WriteLog (lsFATAL, SHAMap) << "id:" << id << ", got:" << *ret;
+                assert (false);
+                return SHAMapTreeNode::pointer ();
+            }
+
+            if (ret->getNodeHash () != hash)
+            {
+                WriteLog (lsFATAL, SHAMap) << "Hashes don't match";
+                assert (false);
+                return SHAMapTreeNode::pointer ();
+            }
+
+            canonicalize (hash, ret);
+        }
+        catch (...)
+        {
+            WriteLog (lsWARNING, SHAMap) << "fetchNodeExternal gets an invalid node: " << hash;
             return SHAMapTreeNode::pointer ();
         }
-
-        if (ret->getNodeHash () != hash)
-        {
-            WriteLog (lsFATAL, SHAMap) << "Hashes don't match";
-            assert (false);
-            return SHAMapTreeNode::pointer ();
-        }
-
-        if (id.isRoot ())
-            mTNByID[id] = ret;
-        else if (!mTNByID.emplace (id, ret).second)
-            assert (false);
-
-        trackNewNode (ret);
-        return ret;
     }
-    catch (...)
+
+    if (id.isRoot ()) // it is legal to replace an existing root
     {
-        WriteLog (lsWARNING, SHAMap) << "fetchNodeExternal gets an invalid node: " << hash;
-        return SHAMapTreeNode::pointer ();
+        mTNByID[id] = ret;
+        root = ret;
     }
+    else if (!mTNByID.emplace (id, ret).second)
+        assert (false);
+    return ret;
 }
 
 bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
@@ -936,7 +969,7 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
     
     if (newRoot)
     {
-    	root = newRoot;
+        root = newRoot;
     }
     else
     {
@@ -962,12 +995,12 @@ int SHAMap::armDirty ()
     return ++mSeq;
 }
 
-int SHAMap::flushDirty (DirtyMap& map, int maxNodes, NodeObjectType t, uint32 seq)
+int SHAMap::flushDirty (NodeMap& map, int maxNodes, NodeObjectType t, uint32 seq)
 {
     int flushed = 0;
     Serializer s;
 
-    for (DirtyMap::iterator it = map.begin (); it != map.end (); it = map.erase (it))
+    for (NodeMap::iterator it = map.begin (); it != map.end (); it = map.erase (it))
     {
         //      tLog(t == hotTRANSACTION_NODE, lsDEBUG) << "TX node write " << it->first;
         //      tLog(t == hotACCOUNT_NODE, lsDEBUG) << "STATE node write " << it->first;
@@ -995,12 +1028,12 @@ int SHAMap::flushDirty (DirtyMap& map, int maxNodes, NodeObjectType t, uint32 se
     return flushed;
 }
 
-boost::shared_ptr<SHAMap::DirtyMap> SHAMap::disarmDirty ()
+boost::shared_ptr<SHAMap::NodeMap> SHAMap::disarmDirty ()
 {
     // stop saving dirty nodes
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    boost::shared_ptr<DirtyMap> ret;
+    boost::shared_ptr<NodeMap> ret;
     ret.swap (mDirtyNodes);
     return ret;
 }
@@ -1122,6 +1155,19 @@ void SHAMap::dump (bool hash)
         CondLog (hash, lsINFO, SHAMap) << it->second->getNodeHash ();
     }
 
+}
+
+SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash, SHAMapNode const& id)
+{
+    SHAMapTreeNode::pointer ret = treeNodeCache.fetch (TNIndex (hash, id));
+    assert (!ret || !ret->getSeq());
+    return ret;
+}
+
+void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
+{
+    assert (node->getSeq() == 0);
+    treeNodeCache.canonicalize (TNIndex (hash, *node), node);
 }
 
 //------------------------------------------------------------------------------
