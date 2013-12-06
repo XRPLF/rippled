@@ -22,6 +22,7 @@ SETUP_LOG (PathRequest)
 // VFALCO TODO Move these globals into a PathRequests collection inteface
 PathRequest::StaticLockType PathRequest::sLock ("PathRequest", __FILE__, __LINE__);
 std::set <PathRequest::wptr> PathRequest::sRequests;
+RippleLineCache::pointer PathRequest::sLineCache;
 Atomic<int> PathRequest::siLastIdentifier(0);
 
 PathRequest::PathRequest (const boost::shared_ptr<InfoSub>& subscriber)
@@ -113,19 +114,24 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, const Json::Value& valu
 {
     assert (lrLedger->isClosed ());
 
+    // Get the ledger and line cache we should use
+    Ledger::pointer ledger = lrLedger;
+    RippleLineCache::pointer cache;
+    {
+        StaticScopedLockType sl (sLock, __FILE__, __LINE__);
+        cache = getLineCache (ledger);
+    }
+
     Json::Value status;
     bool mValid;
 
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-
         if (parseJson (value, true) != PFR_PJ_INVALID)
         {
-            mValid = isValid (lrLedger);
+            mValid = isValid (ledger);
 
             if (mValid)
             {
-                RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lrLedger);
                 doUpdate (cache, true);
             }
         }
@@ -408,15 +414,40 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     return true;
 }
 
-void PathRequest::updateAll (Ledger::ref ledger, bool newOnly, bool hasNew, CancelCallback shouldCancel)
+/** Get the current RippleLineCache, updating it if necessary.
+    Get the correct ledger to use.
+    Call with a lock
+*/
+RippleLineCache::pointer PathRequest::getLineCache (Ledger::pointer& ledger)
+{
+    uint32 lineSeq = sLineCache ? sLineCache->getLedger()->getLedgerSeq() : 0;
+    if ( (lineSeq == 0) ||                             // No cache
+        (lineSeq < ledger->getLedgerSeq()) ||         // Cache is out of date
+        (lineSeq > (ledger->getLedgerSeq() + 16)))    // We jumped way back somehow
+    {
+        ledger = boost::make_shared<Ledger>(*ledger, false);
+        sLineCache = boost::make_shared<RippleLineCache> (ledger);
+    }
+    else
+    {
+        ledger = sLineCache->getLedger();
+    }
+    return sLineCache;
+}
+
+void PathRequest::updateAll (Ledger::ref inLedger, bool newOnly, bool hasNew, CancelCallback shouldCancel)
 {
     std::set<wptr> requests;
 
     LoadEvent::autoptr event (getApp().getJobQueue().getLoadEventAP(jtPATH_FIND, "PathRequest::updateAll"));
 
+    // Get the ledger and cache we should be using
+    Ledger::pointer ledger = inLedger;
+    RippleLineCache::pointer cache;
     {
         StaticScopedLockType sl (sLock, __FILE__, __LINE__);
         requests = sRequests;
+        cache = getLineCache (ledger);
     }
 
     if (requests.empty ())
@@ -426,7 +457,6 @@ void PathRequest::updateAll (Ledger::ref ledger, bool newOnly, bool hasNew, Canc
         (newOnly ? " newOnly, " : " all, ") << requests.size() << " requests";
 
     int processed = 0, removed = 0;
-    RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (ledger);
 
     BOOST_FOREACH (wref wRequest, requests)
     {

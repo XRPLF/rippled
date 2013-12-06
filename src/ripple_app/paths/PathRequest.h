@@ -64,6 +64,7 @@ private:
     void setValid ();
     void resetLevel (int level);
     int parseJson (const Json::Value&, bool complete);
+    static RippleLineCache::pointer getLineCache (Ledger::pointer& ledger);
 
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
@@ -92,6 +93,9 @@ private:
 
     // Track all requests
     static std::set<wptr>           sRequests;
+
+    // Use a RippleLineCache
+    static RippleLineCache::pointer sLineCache;
 
     typedef RippleRecursiveMutex StaticLockType;
     typedef LockType::ScopedLockType StaticScopedLockType;
