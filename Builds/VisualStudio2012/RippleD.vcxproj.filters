@@ -2502,9 +2502,6 @@
     <ClInclude Include="..\..\src\ripple\resource\api\Manager.h">
       <Filter>[1] Ripple\resource\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\resource\impl\DecayingSample.h">
-      <Filter>[1] Ripple\resource\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\impl\Kind.h">
       <Filter>[1] Ripple\resource\impl</Filter>
     </ClInclude>
@@ -2849,6 +2846,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerCleaner.h">
       <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h">
+      <Filter>[1] Ripple\algorithm\api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RESOURCE_DECAYINGSAMPLE_H_INCLUDED
-#define RIPPLE_RESOURCE_DECAYINGSAMPLE_H_INCLUDED
+#ifndef RIPPLE_ALGORITHM_DECAYINGSAMPLE_H_INCLUDED
+#define RIPPLE_ALGORITHM_DECAYINGSAMPLE_H_INCLUDED
 
 namespace ripple {
-namespace Resource {
 
 /** Sampling function using exponential decay to provide a continuous value. */
 template <int Window,
@@ -92,7 +91,6 @@ private:
     elapsed_type m_when;
 };
 
-}
 }
 
 #endif

@@ -2099,6 +2099,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h" />
+    <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h" />
     <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Server.h" />
@@ -2151,7 +2152,6 @@
     <ClInclude Include="..\..\src\ripple\resource\api\LegacyFees.h" />
     <ClInclude Include="..\..\src\ripple\resource\api\Manager.h" />
     <ClInclude Include="..\..\src\ripple\resource\api\Types.h" />
-    <ClInclude Include="..\..\src\ripple\resource\impl\DecayingSample.h" />
     <ClInclude Include="..\..\src\ripple\resource\impl\Entry.h" />
     <ClInclude Include="..\..\src\ripple\resource\impl\Import.h" />
     <ClInclude Include="..\..\src\ripple\resource\impl\Key.h" />

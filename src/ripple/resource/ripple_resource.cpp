@@ -21,6 +21,7 @@
 
 #include "ripple_resource.h"
 
+#include "../algorithm/api/DecayingSample.h"
 #include "../algorithm/api/DiscreteClock.h"
 
 #include "beast/modules/beast_core/system/BeforeBoost.h"
@@ -29,7 +30,6 @@
 #include "impl/Fees.cpp"
 #  include "impl/Kind.h"
 # include "impl/Key.h"
-#  include "impl/DecayingSample.h"
 #  include "impl/Tuning.h"
 # include "impl/Entry.h"
 # include "impl/Import.h"
