@@ -139,7 +139,7 @@ public:
     }
 
     AbstractObjectTests () : UnitTest (
-        "AbstractObject", "beast")
+        "AbstractObject", "beast", runManual)
     {
     }
 };
