@@ -277,11 +277,9 @@ public:
             if (type == jtGENERIC)
                 continue;
 
-            LoadMonitor::Stats stats;
+            LoadMonitor::Stats stats = m_loads [i].getStats ();
             int jobCount;
             int threadCount;
-
-            m_loads [i].getStats ();
 
             MapType::const_iterator it = m_jobCounts.find (type);
 
@@ -299,12 +297,12 @@ public:
             if ((stats.count != 0) || (jobCount != 0) ||
                 (stats.latencyPeak != 0) || (threadCount != 0))
             {
-                Json::Value pri (Json::objectValue);
+                Json::Value& pri = priorities.append (Json::objectValue);
+
+                pri["job_type"] = Job::toString (type);
 
                 if (stats.isOverloaded)
                     pri["over_target"] = true;
-
-                pri["job_type"] = Job::toString (type);
 
                 if (jobCount != 0)
                     pri["waiting"] = jobCount;
@@ -320,8 +318,6 @@ public:
 
                 if (threadCount != 0)
                     pri["in_progress"] = threadCount;
-
-                priorities.append (pri);
             }
         }
 
