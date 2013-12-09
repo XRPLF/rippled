@@ -129,6 +129,7 @@ public:
 
     virtual void tryAdvance () = 0;
     virtual void newPathRequest () = 0;
+    virtual bool isNewPathRequest () = 0;
     virtual void newOrderBookDB () = 0;
 
     virtual bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) = 0;
