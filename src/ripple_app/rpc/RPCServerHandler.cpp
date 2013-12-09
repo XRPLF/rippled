@@ -42,7 +42,8 @@ std::string RPCServerHandler::processRequest (std::string const& request, std::s
     {
         Json::Reader reader;
 
-        if (! reader.parse (request, jvRequest) ||
+        if ((request.size() > 1000000) ||
+            ! reader.parse (request, jvRequest) ||
             jvRequest.isNull () ||
             ! jvRequest.isObject ())
         {

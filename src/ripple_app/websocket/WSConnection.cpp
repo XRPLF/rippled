@@ -60,9 +60,9 @@ void WSConnection::rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueu
         return;
     }
 
-    if (m_isDead || (m_receiveQueue.size () >= 1000))
+    if ((m_receiveQueue.size () >= 1000) || (msg->get_payload().size() > 1000000))
     {
-        msgRejected = !m_isDead;
+        msgRejected = true;
         runQueue = false;
     }
     else
