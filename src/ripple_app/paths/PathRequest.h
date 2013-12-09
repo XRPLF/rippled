@@ -49,22 +49,21 @@ public:
 
     bool        isValid (const boost::shared_ptr<Ledger>&);
     bool        isValid ();
-    bool        isNew ();
+    bool        needsUpdate (bool newOnly, LedgerIndex index);
     Json::Value getStatus ();
 
     Json::Value doCreate (const boost::shared_ptr<Ledger>&, const Json::Value&);
     Json::Value doClose (const Json::Value&);
     Json::Value doStatus (const Json::Value&);
+    Json::Value doUpdate (const boost::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
 
-    bool        doUpdate (const boost::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
-
-    static void updateAll (const boost::shared_ptr<Ledger>& ledger, bool newOnly, bool hasNew, CancelCallback shouldCancel);
+    static void updateAll (const boost::shared_ptr<Ledger>& ledger, CancelCallback shouldCancel);
+    static RippleLineCache::pointer getLineCache (Ledger::pointer& ledger, bool authoritative);
 
 private:
     void setValid ();
     void resetLevel (int level);
     int parseJson (const Json::Value&, bool complete);
-    static RippleLineCache::pointer getLineCache (Ledger::pointer& ledger);
 
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
@@ -83,7 +82,7 @@ private:
     std::map<currIssuer_t, STPathSet> mContext;
 
     bool                            bValid;
-    bool                            bNew;
+    LedgerIndex                     iLastIndex;
 
     int                             iLastLevel;
     bool                            bLastSuccess;
@@ -91,8 +90,12 @@ private:
     int                             iIdentifier;
     static Atomic<int>              siLastIdentifier;
 
+    boost::posix_time::ptime        ptCreated;
+    boost::posix_time::ptime        ptQuickReply;
+    boost::posix_time::ptime        ptFullReply;
+
     // Track all requests
-    static std::set<wptr>           sRequests;
+    static std::vector<wptr>        sRequests;
 
     // Use a RippleLineCache
     static RippleLineCache::pointer sLineCache;
