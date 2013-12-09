@@ -21,7 +21,7 @@ SETUP_LOG (PathRequest)
 
 // VFALCO TODO Move these globals into a PathRequests collection inteface
 PathRequest::StaticLockType PathRequest::sLock ("PathRequest", __FILE__, __LINE__);
-std::set <PathRequest::wptr> PathRequest::sRequests;
+std::vector <PathRequest::wptr> PathRequest::sRequests;
 RippleLineCache::pointer PathRequest::sLineCache;
 Atomic<int> PathRequest::siLastIdentifier(0);
 
@@ -30,17 +30,42 @@ PathRequest::PathRequest (const boost::shared_ptr<InfoSub>& subscriber)
     , wpSubscriber (subscriber)
     , jvStatus (Json::objectValue)
     , bValid (false)
-    , bNew (true)
+    , iLastIndex (0)
     , iLastLevel (0)
     , bLastSuccess (false)
     , iIdentifier (++siLastIdentifier)
 {
-    WriteLog (lsINFO, PathRequest) << iIdentifier << " created";
+    WriteLog (lsDEBUG, PathRequest) << iIdentifier << " created";
+    ptCreated = boost::posix_time::microsec_clock::universal_time ();
+}
+
+static std::string const get_milli_diff (boost::posix_time::ptime const& after, boost::posix_time::ptime const& before)
+{
+    return lexicalCastThrow <std::string> (static_cast <unsigned> ((after - before).total_milliseconds()));
+}
+
+static std::string const get_milli_diff (boost::posix_time::ptime const& before)
+{
+    return get_milli_diff(boost::posix_time::microsec_clock::universal_time(), before);
 }
 
 PathRequest::~PathRequest()
 {
-    WriteLog (lsINFO, PathRequest) << iIdentifier << " destroyed";
+    std::string fast, full;
+    if (!ptQuickReply.is_not_a_date_time())
+    {
+        fast = " fast:";
+        fast += get_milli_diff (ptQuickReply, ptCreated);
+        fast += "ms";
+    }
+    if (!ptFullReply.is_not_a_date_time())
+    {
+        full = " full:";
+        full += get_milli_diff (ptFullReply, ptCreated);
+        full += "ms";
+    }
+    WriteLog (lsINFO, PathRequest) << iIdentifier << " complete:" << fast << full <<
+        " total:" << get_milli_diff(ptCreated) << "ms";
 }
 
 bool PathRequest::isValid ()
@@ -49,10 +74,23 @@ bool PathRequest::isValid ()
     return bValid;
 }
 
-bool PathRequest::isNew ()
+bool PathRequest::needsUpdate (bool newOnly, LedgerIndex index)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
-    return bNew;
+    if (newOnly)
+    { // we only want to handle new requests
+        if (iLastIndex != 0)
+            return false;
+        iLastIndex = 1;
+        return true;
+    }
+    else
+    {
+        if (iLastIndex >= index)
+            return false;
+        iLastIndex = index;
+        return true;
+    }
 }
 
 bool PathRequest::isValid (Ledger::ref lrLedger)
@@ -119,7 +157,7 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, const Json::Value& valu
     RippleLineCache::pointer cache;
     {
         StaticScopedLockType sl (sLock, __FILE__, __LINE__);
-        cache = getLineCache (ledger);
+        cache = getLineCache (ledger, false);
     }
 
     Json::Value status;
@@ -131,27 +169,28 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, const Json::Value& valu
             mValid = isValid (ledger);
 
             if (mValid)
-            {
-                doUpdate (cache, true);
-            }
+                status = doUpdate (cache, true);
+            else
+                status = jvStatus;
         }
         else
+        {
             mValid = false;
-
-        status = jvStatus;
+            status = jvStatus;
+        }
     }
 
     if (mValid)
     {
-        WriteLog (lsINFO, PathRequest) << iIdentifier << " valid: " << raSrcAccount.humanAccountID () <<
+        WriteLog (lsDEBUG, PathRequest) << iIdentifier << " valid: " << raSrcAccount.humanAccountID () <<
                                        " -> " << raDstAccount.humanAccountID ();
-        WriteLog (lsINFO, PathRequest) << iIdentifier << " Deliver: " << saDstAmount.getFullText ();
+        WriteLog (lsDEBUG, PathRequest) << iIdentifier << " Deliver: " << saDstAmount.getFullText ();
 
         StaticScopedLockType sl (sLock, __FILE__, __LINE__);
-        sRequests.insert (shared_from_this ());
+        sRequests.push_back (shared_from_this ());
     }
     else
-        WriteLog (lsINFO, PathRequest) << iIdentifier << " invalid";
+        WriteLog (lsDEBUG, PathRequest) << iIdentifier << " invalid";
 
     return status;
 }
@@ -267,17 +306,14 @@ void PathRequest::resetLevel (int l)
         iLastLevel = l;
 }
 
-bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
+Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 {
     WriteLog (lsDEBUG, PathRequest) << iIdentifier << " update " << (fast ? "fast" : "normal");
     ScopedLockType sl (mLock, __FILE__, __LINE__);
-    jvStatus = Json::objectValue;
 
     if (!isValid (cache->getLedger ()))
-        return false;
-
-    if (!fast)
-        bNew = false;
+        return jvStatus;
+    jvStatus = Json::objectValue;
 
     std::set<currIssuer_t> sourceCurrencies (sciSourceCurrencies);
 
@@ -312,12 +348,8 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
     if (iLevel == 0)
     { // first pass
-        if (loaded)
+        if (loaded || fast)
             iLevel = getConfig().PATH_SEARCH_FAST;
-        else if (!fast)
-            iLevel = getConfig().PATH_SEARCH_OLD;
-        else if (getConfig().PATH_SEARCH < getConfig().PATH_SEARCH_MAX)
-            iLevel = getConfig().PATH_SEARCH + 1; // start with an extra boost
         else
             iLevel = getConfig().PATH_SEARCH;
     }
@@ -326,8 +358,6 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         iLevel = getConfig().PATH_SEARCH;
         if (loaded && (iLevel > getConfig().PATH_SEARCH_FAST))
             --iLevel;
-        else if (!loaded && (iLevel < getConfig().PATH_SEARCH))
-            ++iLevel;
     }
     else if (bLastSuccess)
     { // decrement, if possible
@@ -356,7 +386,7 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         STPathSet& spsPaths = mContext[currIssuer];
         Pathfinder pf (cache, raSrcAccount, raDstAccount,
                        currIssuer.first, currIssuer.second, saDstAmount, valid);
-        CondLog (!valid, lsINFO, PathRequest) << iIdentifier << " PF request not valid";
+        CondLog (!valid, lsDEBUG, PathRequest) << iIdentifier << " PF request not valid";
 
         STPath extraPath;
         if (valid && pf.findPaths (iLevel, 4, spsPaths, extraPath))
@@ -398,34 +428,42 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             }
             else
             {
-                WriteLog (lsINFO, PathRequest) << iIdentifier << " rippleCalc returns " << transHuman (terResult);
+                WriteLog (lsDEBUG, PathRequest) << iIdentifier << " rippleCalc returns " << transHuman (terResult);
             }
         }
         else
         {
-            WriteLog (lsINFO, PathRequest) << iIdentifier << " No paths found";
+            WriteLog (lsDEBUG, PathRequest) << iIdentifier << " No paths found";
         }
     }
 
     iLastLevel = iLevel;
     bLastSuccess = found;
 
+    if (fast && ptQuickReply.is_not_a_date_time())
+        ptQuickReply = boost::posix_time::microsec_clock::universal_time();
+    else if (!fast && ptFullReply.is_not_a_date_time())
+        ptFullReply = boost::posix_time::microsec_clock::universal_time();
+
     jvStatus["alternatives"] = jvArray;
-    return true;
+    return jvStatus;
 }
 
 /** Get the current RippleLineCache, updating it if necessary.
     Get the correct ledger to use.
     Call with a lock
 */
-RippleLineCache::pointer PathRequest::getLineCache (Ledger::pointer& ledger)
+RippleLineCache::pointer PathRequest::getLineCache (Ledger::pointer& ledger, bool authoritative)
 {
     uint32 lineSeq = sLineCache ? sLineCache->getLedger()->getLedgerSeq() : 0;
-    if ( (lineSeq == 0) ||                             // No cache
-        (lineSeq < ledger->getLedgerSeq()) ||         // Cache is out of date
-        (lineSeq > (ledger->getLedgerSeq() + 16)))    // We jumped way back somehow
+    uint32 lgrSeq = ledger->getLedgerSeq();
+
+    if ( (lineSeq == 0) ||                                 // no ledger
+         (authoritative && (lgrSeq > lineSeq)) ||          // newer authoritative ledger
+         (authoritative && ((lgrSeq + 8)  < lineSeq)) ||   // we jumped way back for some reason
+         (lgrSeq > (lineSeq + 8)))                         // we jumped way forward for some reason
     {
-        ledger = boost::make_shared<Ledger>(*ledger, false);
+        ledger = boost::make_shared<Ledger>(*ledger, false); // Take a snapshot of the ledger
         sLineCache = boost::make_shared<RippleLineCache> (ledger);
     }
     else
@@ -435,9 +473,9 @@ RippleLineCache::pointer PathRequest::getLineCache (Ledger::pointer& ledger)
     return sLineCache;
 }
 
-void PathRequest::updateAll (Ledger::ref inLedger, bool newOnly, bool hasNew, CancelCallback shouldCancel)
+void PathRequest::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
 {
-    std::set<wptr> requests;
+    std::vector<wptr> requests;
 
     LoadEvent::autoptr event (getApp().getJobQueue().getLoadEventAP(jtPATH_FIND, "PathRequest::updateAll"));
 
@@ -447,60 +485,108 @@ void PathRequest::updateAll (Ledger::ref inLedger, bool newOnly, bool hasNew, Ca
     {
         StaticScopedLockType sl (sLock, __FILE__, __LINE__);
         requests = sRequests;
-        cache = getLineCache (ledger);
+        cache = getLineCache (ledger, true);
     }
 
-    if (requests.empty ())
-        return;
+    bool newRequests = getApp().getLedgerMaster().isNewPathRequest();
+    bool mustBreak = false;
 
-    WriteLog (lsDEBUG, PathRequest) << "updateAll seq=" << ledger->getLedgerSeq() <<
-        (newOnly ? " newOnly, " : " all, ") << requests.size() << " requests";
-
+    WriteLog (lsTRACE, PathRequest) << "updateAll seq=" << ledger->getLedgerSeq() << ", " <<
+        requests.size() << " requests";
     int processed = 0, removed = 0;
 
-    BOOST_FOREACH (wref wRequest, requests)
+    do
     {
-        if (shouldCancel())
-            break;
 
-        bool remove = true;
-        PathRequest::pointer pRequest = wRequest.lock ();
+        { // Get the latest requests, cache, and ledger
+            StaticScopedLockType sl (sLock, __FILE__, __LINE__);
 
-        if (pRequest)
-        {
-            // Drop old requests level to get new ones done faster
-            if (hasNew)
-                pRequest->resetLevel(getConfig().PATH_SEARCH);
+            if (sRequests.empty())
+                return;
 
-            if (newOnly && !pRequest->isNew ())
-                remove = false;
-            else
+            // Newest request is last in sRequests, but we want to serve it first
+            requests.empty();
+            requests.reserve(sRequests.size ());
+            BOOST_REVERSE_FOREACH (wptr& req, sRequests)
             {
-                InfoSub::pointer ipSub = pRequest->wpSubscriber.lock ();
+               requests.push_back (req);
+            }
 
-                if (ipSub)
-                {
-                    Json::Value update;
-                    {
-                        ScopedLockType sl (pRequest->mLock, __FILE__, __LINE__);
-                        pRequest->doUpdate (cache, false);
-                        update = pRequest->jvStatus;
-                    }
-                    update["type"] = "path_find";
-                    ipSub->send (update, false);
+            cache = getLineCache (ledger, false);
+        }
+
+        BOOST_FOREACH (wref wRequest, requests)
+        {
+            if (shouldCancel())
+                break;
+
+            bool remove = true;
+            PathRequest::pointer pRequest = wRequest.lock ();
+
+            if (pRequest)
+            {
+                if (!pRequest->needsUpdate (newRequests, ledger->getLedgerSeq ()))
                     remove = false;
-                    ++processed;
+                else
+                {
+                    InfoSub::pointer ipSub = pRequest->wpSubscriber.lock ();
+
+                    if (ipSub)
+                    {
+                        Json::Value update = pRequest->doUpdate (cache, false);
+                        update["type"] = "path_find";
+                        ipSub->send (update, false);
+                        remove = false;
+                        ++processed;
+                    }
                 }
             }
+
+            if (remove)
+            {
+                PathRequest::pointer pRequest = wRequest.lock ();
+
+                StaticScopedLockType sl (sLock, __FILE__, __LINE__);
+
+                // Remove any dangling weak pointers or weak pointers that refer to this path request.
+                std::vector<wptr>::iterator it = sRequests.begin();
+                while (it != sRequests.end())
+                {
+                    PathRequest::pointer itRequest = it->lock ();
+                    if (!itRequest || (itRequest == pRequest))
+                    {
+                        ++removed;
+                        it = sRequests.erase (it);
+                    }
+                    else
+                        ++it;
+                }
+            }
+
+            mustBreak = !newRequests && getApp().getLedgerMaster().isNewPathRequest();
+            if (mustBreak) // We weren't handling new requests and then there was a new request
+                break;
+
         }
 
-        if (remove)
-        {
-            ++removed;
-            StaticScopedLockType sl (sLock, __FILE__, __LINE__);
-            sRequests.erase (wRequest);
+        if (mustBreak)
+        { // a new request came in while we were working
+            newRequests = true;
         }
+        else if (newRequests)
+        { // we only did new requests, so we always need a last pass
+            newRequests = getApp().getLedgerMaster().isNewPathRequest();
+        }
+        else
+        { // check if there are any new requests, otherwise we are done
+            newRequests = getApp().getLedgerMaster().isNewPathRequest();
+            if (!newRequests) // We did a full pass and there are no new requests
+                return;
+        }
+
     }
+    while (!shouldCancel ());
+
     WriteLog (lsDEBUG, PathRequest) << "updateAll complete " << processed << " process and " <<
         removed << " removed";
 }
