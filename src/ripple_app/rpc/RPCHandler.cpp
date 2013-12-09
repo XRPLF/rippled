@@ -1545,6 +1545,11 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
     }
     else
     {
+        loadType = Resource::feeHighBurdenRPC;
+        Ledger::pointer lSnapShot = boost::make_shared<Ledger> (boost::ref (*lpLedger), false);
+
+        masterLockHolder.unlock (); // As long as we have a locked copy of the ledger, we can unlock.
+
         Json::Value     jvSrcCurrencies;
 
         if (params.isMember ("source_currencies"))
@@ -1566,11 +1571,6 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
                 jvSrcCurrencies.append (jvCurrency);
             }
         }
-
-        loadType = Resource::feeHighBurdenRPC;
-        Ledger::pointer lSnapShot = boost::make_shared<Ledger> (boost::ref (*lpLedger), false);
-
-        masterLockHolder.unlock (); // As long as we have a locked copy of the ledger, we can unlock.
 
         // Fill in currencies destination will accept
         Json::Value jvDestCur (Json::arrayValue);
