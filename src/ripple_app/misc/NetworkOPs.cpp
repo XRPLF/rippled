@@ -1652,8 +1652,7 @@ void NetworkOPsImp::setMode (OperatingMode om)
         if (getApp().getLedgerMaster ().getValidatedLedgerAge () < 60)
             om = omSYNCING;
     }
-
-    if (om == omSYNCING)
+    else if (om == omSYNCING)
     {
         if (getApp().getLedgerMaster ().getValidatedLedgerAge () >= 60)
             om = omCONNECTED;
