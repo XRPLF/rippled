@@ -571,6 +571,7 @@ public:
         ledger->setValidated();
         mLedgerHistory.addLedger(ledger, true);
         ledger->setFull();
+        ledger->pendSaveValidated (isSynchronous, isCurrent);
 
         {
 
@@ -580,8 +581,6 @@ public:
             }
 
             ScopedLockType ml (mLock, __FILE__, __LINE__);
-
-            ledger->pendSaveValidated (isSynchronous, isCurrent);
 
             if (!mValidLedger || (ledger->getLedgerSeq() > mValidLedger->getLedgerSeq()))
                 setValidLedger(ledger);
