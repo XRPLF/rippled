@@ -38,7 +38,8 @@
 
 #else
 
-#define UPTR_T          std::auto_ptr
+//#define UPTR_T          std::auto_ptr
+#define UPTR_T          ScopedPointer
 #define MOVE_P(p)       (p)
 
 #endif
