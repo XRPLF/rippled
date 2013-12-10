@@ -163,6 +163,20 @@
 
 //------------------------------------------------------------------------------
 
+// These control whether or not certain functionality gets
+// compiled into the resulting rippled executable
+
+/** Config: RIPPLE_ROCKSDB_AVAILABLE
+    Controls whether or not the RocksDB database back-end is compiled into
+    rippled. RocksDB requires a relatively modern C++ compiler (tested with
+    gcc versions 4.8.1 and later) that supports some C++11 features.
+*/
+#ifndef   RIPPLE_ROCKSDB_AVAILABLE
+//#define RIPPLE_ROCKSDB_AVAILABLE 0
+#endif
+
+//------------------------------------------------------------------------------
+
 // Here temporarily to turn off new Validations code while it
 // is being written.
 //

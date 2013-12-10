@@ -26,7 +26,11 @@
 # if BEAST_WIN32
 #  define RIPPLE_ROCKSDB_AVAILABLE 0
 # else
-#  define RIPPLE_ROCKSDB_AVAILABLE 1
+#  if __cplusplus >= 201103L
+#   define RIPPLE_ROCKSDB_AVAILABLE 1
+#  else
+#   define RIPPLE_ROCKSDB_AVAILABLE 0
+#  endif
 # endif
 #endif
 
