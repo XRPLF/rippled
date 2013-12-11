@@ -74,7 +74,7 @@ private:
         {
             ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
 
-            m_endpoint = new websocketpp::server_multitls (handler);
+            m_endpoint = boost::make_shared<websocketpp::server_multitls> (handler);
         }
 
         // Call the main-event-loop of the websocket server.
@@ -107,7 +107,7 @@ private:
         {
             ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
 
-            m_endpoint = nullptr;
+            m_endpoint.reset();
         }
 
         stopped ();
@@ -115,15 +115,19 @@ private:
 
     void onStop ()
     {
+        boost::shared_ptr<websocketpp::server_multitls> endpoint;
+
         {
             ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
 
-            // VFALCO NOTE we probably dont want to block here
-            //             but websocketpp is deficient and broken.
-            //
-            if (m_endpoint != nullptr)
-                m_endpoint->stop ();
+             endpoint = m_endpoint;
         }
+
+        // VFALCO NOTE we probably dont want to block here
+        //             but websocketpp is deficient and broken.
+        //
+        if (endpoint)
+            endpoint->stop ();
 
         signalThreadShouldExit ();
     }
@@ -137,7 +141,7 @@ private:
     boost::asio::ssl::context& m_ssl_context;
     LockType m_endpointLock;
 
-    ScopedPointer <websocketpp::server_multitls> m_endpoint;
+    boost::shared_ptr<websocketpp::server_multitls> m_endpoint;
     bool                            mPublic;
     bool                            mProxy;
     std::string                     mIp;

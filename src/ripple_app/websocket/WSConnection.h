@@ -160,10 +160,8 @@ public:
 
     bool onPingTimer (std::string&)
     {
-#ifdef DISCONNECT_ON_WEBSOCKET_PING_TIMEOUTS
         if (m_sentPing)
             return true; // causes connection to close
-#endif
 
         m_sentPing = true;
         setPingTimer ();

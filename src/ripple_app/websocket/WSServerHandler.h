@@ -69,8 +69,9 @@ private:
 
 protected:
     // For each connection maintain an associated object to track subscriptions.
-    boost::unordered_map <connection_ptr,
-        boost::shared_ptr <WSConnectionType <endpoint_type> > > mMap;
+    typedef boost::unordered_map <connection_ptr,
+        boost::shared_ptr <WSConnectionType <endpoint_type> > > MapType;
+    MapType mMap;
     bool const mPublic;
     bool const mProxy;
 
@@ -154,8 +155,15 @@ public:
 
         if (ptr->onPingTimer (data))
         {
-            WriteLog (lsWARNING, WSServerHandlerLog) << "Connection pings out";
-            cpClient->close (websocketpp::close::status::PROTOCOL_ERROR, "ping timeout");
+            cpClient->terminate (false);
+            try
+            {
+                WriteLog (lsDEBUG, WSServerHandlerLog) <<
+                    "Ws:: ping_out(" << cpClient->get_socket ().remote_endpoint ().to_string () << ")";
+            }
+            catch (...)
+            {
+            }
         }
         else
             cpClient->ping (data);
@@ -183,11 +191,13 @@ public:
 
         try
         {
-            mMap [cpClient] = boost::make_shared <
-                WSConnectionType <endpoint_type>
-                    > (boost::ref(m_resourceManager),
-                        boost::ref (m_source),
-                            boost::ref(*this), boost::cref(cpClient));
+            std::pair <typename MapType::iterator, bool> const result (
+                mMap.emplace (cpClient,
+                    boost::make_shared < WSConnectionType <endpoint_type> > (boost::ref(m_resourceManager),
+                    boost::ref (m_source), boost::ref(*this), boost::cref(cpClient))));
+            check_postcondition (result.second);
+            WriteLog (lsDEBUG, WSServerHandlerLog) <<
+                "Ws:: on_open(" << cpClient->get_socket ().remote_endpoint ().to_string () << ")";
         }
         catch (...)
         {
@@ -206,10 +216,28 @@ public:
 
             ptr = it->second;
         }
+        try
+        {
+            WriteLog (lsDEBUG, WSServerHandlerLog) <<
+           "Ws:: on_pong(" << cpClient->get_socket ().remote_endpoint ().to_string () << ")";
+        }
+        catch (...)
+        {
+        }
         ptr->onPong (data);
     }
 
     void on_close (connection_ptr cpClient)
+    {
+        doClose (cpClient, "on_close");
+    }
+
+    void on_fail (connection_ptr cpClient)
+    {
+        doClose (cpClient, "on_fail");
+    }
+
+    void doClose (connection_ptr const& cpClient, char const* reason)
     {
         // we cannot destroy the connection while holding the map lock or we deadlock with pubLedger
         wsc_ptr ptr;
@@ -218,12 +246,32 @@ public:
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
+            {
+                try
+                {
+                    WriteLog (lsDEBUG, WSServerHandlerLog) <<
+                        "Ws:: " << reason << "(" <<
+                           cpClient->get_socket ().remote_endpoint ().to_string () << ") not found";
+                }
+                catch (...)
+                {
+                }
                 return;
+            }
 
             ptr = it->second;       // prevent the WSConnection from being destroyed until we release the lock
             mMap.erase (it);
         }
         ptr->preDestroy (); // Must be done before we return
+        try
+        {
+            WriteLog (lsDEBUG, WSServerHandlerLog) <<
+                "Ws:: " << reason << "(" <<
+                   cpClient->get_socket ().remote_endpoint ().to_string () << ") found";
+        }
+        catch (...)
+        {
+        }
 
         // Must be done without holding the websocket send lock
         getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::destroy",
@@ -335,7 +383,7 @@ public:
             {
                 std::string cmd = jvRequest["command"].asString ();
                 job.rename (std::string ("WSClient::") + cmd);
-	    }
+            }
 
             send (cpClient, conn->invokeCommand (jvRequest), false);
         }
