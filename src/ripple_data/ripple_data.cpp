@@ -44,6 +44,7 @@
 #include <openssl/err.h>
 
 #include "../ripple/sslutil/ripple_sslutil.h"
+#include "../ripple/rpc/api/ErrorCodes.h"
 
 // VFALCO TODO fix these warnings!
 #if BEAST_MSVC
@@ -54,6 +55,8 @@
 #ifdef min
 #undef min
 #endif
+
+#include "protocol/STParsedJSON.cpp"
 
 namespace ripple
 {

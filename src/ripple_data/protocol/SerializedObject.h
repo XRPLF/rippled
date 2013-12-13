@@ -48,17 +48,17 @@ public:
         setType (type);
     }
 
-    std::unique_ptr<STObject> oClone () const
+    STObject (SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType (name), mType (NULL)
+    {
+        mData.swap (data);
+    }
+
+    std::unique_ptr <STObject> oClone () const
     {
         return std::unique_ptr<STObject> (new STObject (*this));
     }
 
-    static std::unique_ptr<STObject> parseJson (const Json::Value & value, SField::ref name = sfGeneric, int depth = 0);
-
-    virtual ~STObject ()
-    {
-        ;
-    }
+    virtual ~STObject () { }
 
     static std::unique_ptr<SerializedType> deserialize (SerializerIterator & sit, SField::ref name);
 
@@ -295,24 +295,9 @@ private:
     }
     */
 
-    // VFALCO TODO these parameters should not be const references.
-    template <typename T, typename U>
-    static T range_check_cast (const U& value, const T& minimum, const T& maximum)
-    {
-        if ((value < minimum) || (value > maximum))
-            throw std::runtime_error ("Value out of range");
-
-        return static_cast<T> (value);
-    }
-
     STObject* duplicate () const
     {
         return new STObject (*this);
-    }
-
-    STObject (SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType (name), mType (NULL)
-    {
-        mData.swap (data);
     }
 
 private:
@@ -321,6 +306,16 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
+// VFALCO TODO these parameters should not be const references.
+template <typename T, typename U>
+static T range_check_cast (const U& value, const T& minimum, const T& maximum)
+{
+    if ((value < minimum) || (value > maximum))
+        throw std::runtime_error ("Value out of range");
+
+    return static_cast<T> (value);
+}
 
 inline STObject::iterator range_begin (STObject& x)
 {

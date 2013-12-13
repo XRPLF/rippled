@@ -604,6 +604,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\ErrorCodes.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Handler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1732,6 +1738,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_data\protocol\STParsedJSON.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\protocol\TER.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2326,6 +2338,7 @@
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\string_util.h" />
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\testharness.h" />
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\testutil.h" />
+    <ClInclude Include="..\..\src\ripple\rpc\api\ErrorCodes.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Manager.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Service.h" />
@@ -2561,6 +2574,7 @@
     <ClInclude Include="..\..\src\ripple_data\protocol\SerializedObjectTemplate.h" />
     <ClInclude Include="..\..\src\ripple_data\protocol\SerializedTypes.h" />
     <ClInclude Include="..\..\src\ripple_data\protocol\Serializer.h" />
+    <ClInclude Include="..\..\src\ripple_data\protocol\STParsedJSON.h" />
     <ClInclude Include="..\..\src\ripple_data\protocol\TER.h" />
     <ClInclude Include="..\..\src\ripple_data\protocol\TxFlags.h" />
     <ClInclude Include="..\..\src\ripple_data\protocol\TxFormats.h" />

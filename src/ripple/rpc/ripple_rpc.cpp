@@ -24,6 +24,7 @@
 #include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/unordered_map.hpp>
 
+#include "impl/ErrorCodes.cpp"
 # include "impl/ManagerImpl.h"
 #include "impl/Manager.cpp"
 #include "impl/Handler.cpp"

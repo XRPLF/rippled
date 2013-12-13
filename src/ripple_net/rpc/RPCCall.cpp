@@ -78,7 +78,8 @@ private:
         }
         else
         {
-            return rpcError (rpcINVALID_PARAMS);
+            return RPC::make_param_error (std::string ("Invalid currency/issuer '") + 
+                    strCurrencyIssuer + "'");
         }
     }
 

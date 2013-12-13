@@ -1437,6 +1437,12 @@
     <ClCompile Include="..\..\src\ripple_app\peers\PeerSet.cpp">
       <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_data\protocol\STParsedJSON.cpp">
+      <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\ErrorCodes.cpp">
+      <Filter>[1] Ripple\rpc\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -2915,6 +2921,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\peers\PeerSet.h">
       <Filter>[2] Old Ripple\ripple_app\peers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\STParsedJSON.h">
+      <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\api\ErrorCodes.h">
+      <Filter>[1] Ripple\rpc\api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

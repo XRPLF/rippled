@@ -51,6 +51,8 @@ namespace ripple {
 
 }
 
+#include "protocol/STParsedJSON.h"
+
 //------------------------------------------------------------------------------
 
 namespace boost

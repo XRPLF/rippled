@@ -65,6 +65,20 @@ static inline const uint160& get_u160_one ()
 #define ACCOUNT_XRP         get_u160_zero()
 #define ACCOUNT_ONE         get_u160_one()                  // Used as a place holder.
 
+//------------------------------------------------------------------------------
+
+/** A type which can be exported to a well known binary format.
+    
+    A SerializedType:
+        - Always a field
+        - Can always go inside an eligible enclosing SerializedType
+            (such as STArray)
+        - Has a field name
+        
+
+    Like JSON, a SerializedObject is a basket which has rules
+    on what it can hold.
+*/
 // VFALCO TODO Document this as it looks like a central class.
 //             STObject is derived from it
 //
@@ -88,6 +102,9 @@ public:
         return std::unique_ptr<SerializedType> (new SerializedType (name));
     }
 
+    /** A SerializeType is a field.
+        This sets the name.
+    */
     void setFName (SField::ref n)
     {
         fName = &n;
@@ -160,18 +177,26 @@ private:
     }
 };
 
+//------------------------------------------------------------------------------
+
 inline SerializedType* new_clone (const SerializedType& s)
 {
-    return s.clone ().release ();
+    SerializedType* const copy (s.clone ().release ());
+    assert (typeid (*copy) == typeid (s));
+    return copy;
 }
+
 inline void delete_clone (const SerializedType* s)
 {
     boost::checked_delete (s);
 }
+
 inline std::ostream& operator<< (std::ostream& out, const SerializedType& t)
 {
     return out << t.getFullText ();
 }
+
+//------------------------------------------------------------------------------
 
 class STUInt8 : public SerializedType
 {
@@ -230,6 +255,8 @@ private:
     static STUInt8* construct (SerializerIterator&, SField::ref f);
 };
 
+//------------------------------------------------------------------------------
+
 class STUInt16 : public SerializedType
 {
 public:
@@ -286,6 +313,8 @@ private:
     }
     static STUInt16* construct (SerializerIterator&, SField::ref name);
 };
+
+//------------------------------------------------------------------------------
 
 class STUInt32 : public SerializedType
 {
@@ -344,10 +373,11 @@ private:
     static STUInt32* construct (SerializerIterator&, SField::ref name);
 };
 
+//------------------------------------------------------------------------------
+
 class STUInt64 : public SerializedType
 {
 public:
-
     STUInt64 (uint64 v = 0) : value (v)
     {
         ;
@@ -400,6 +430,8 @@ private:
     }
     static STUInt64* construct (SerializerIterator&, SField::ref name);
 };
+
+//------------------------------------------------------------------------------
 
 // Internal form:
 // 1: If amount is zero, then value is zero and offset is -100
@@ -805,6 +837,8 @@ private:
 extern const STAmount saZero;
 extern const STAmount saOne;
 
+//------------------------------------------------------------------------------
+
 class STHash128 : public SerializedType
 {
 public:
@@ -875,6 +909,8 @@ private:
     }
     static STHash128* construct (SerializerIterator&, SField::ref name);
 };
+
+//------------------------------------------------------------------------------
 
 class STHash160 : public SerializedType
 {
@@ -947,6 +983,8 @@ private:
     static STHash160* construct (SerializerIterator&, SField::ref name);
 };
 
+//------------------------------------------------------------------------------
+
 class STHash256 : public SerializedType
 {
 public:
@@ -1017,6 +1055,8 @@ private:
     }
     static STHash256* construct (SerializerIterator&, SField::ref);
 };
+
+//------------------------------------------------------------------------------
 
 // variable length byte string
 class STVariableLength : public SerializedType
@@ -1091,6 +1131,8 @@ private:
     static STVariableLength* construct (SerializerIterator&, SField::ref);
 };
 
+//------------------------------------------------------------------------------
+
 class STAccount : public STVariableLength
 {
 public:
@@ -1136,6 +1178,8 @@ private:
     }
     static STAccount* construct (SerializerIterator&, SField::ref);
 };
+
+//------------------------------------------------------------------------------
 
 class STPathElement
 {
@@ -1222,6 +1266,8 @@ private:
     uint160         mCurrencyID;
     uint160         mIssuerID;
 };
+
+//------------------------------------------------------------------------------
 
 class STPath
 {
@@ -1321,6 +1367,8 @@ inline std::vector<STPathElement>::const_iterator range_end (const STPath& x)
 {
     return x.end ();
 }
+
+//------------------------------------------------------------------------------
 
 // A set of zero or more payment paths
 class STPathSet : public SerializedType
@@ -1482,6 +1530,8 @@ inline std::vector<STPath>::const_iterator range_end (const STPathSet& x)
     return x.end ();
 }
 
+//------------------------------------------------------------------------------
+
 class STVector256 : public SerializedType
 {
 public:
@@ -1582,4 +1632,3 @@ private:
 };
 
 #endif
-// vim:ts=4

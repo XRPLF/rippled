@@ -27,5 +27,6 @@
 #  include "api/Handler.h"
 # include "api/Service.h"
 #include "api/Manager.h"
+#include "api/ErrorCodes.h"
 
 #endif

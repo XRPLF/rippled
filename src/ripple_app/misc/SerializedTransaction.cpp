@@ -344,9 +344,11 @@ public:
             pass ();
         }
 
-        std::unique_ptr<STObject> new_obj = STObject::parseJson (j.getJson (0), sfGeneric);
+        STParsedJSON parsed ("test", j.getJson (0));
+        std::unique_ptr <STObject> new_obj (std::move (parsed.object));
 
-        if (new_obj.get () == NULL) fail ("Unable to build object from json");
+        if (new_obj.get () == nullptr)
+            fail ("Unable to build object from json");
 
         if (STObject (j) != *new_obj)
         {
