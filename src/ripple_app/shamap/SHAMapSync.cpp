@@ -479,8 +479,7 @@ bool SHAMap::hasInnerNode (const SHAMapNode& nodeID, uint256 const& nodeHash)
 {
     boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find (nodeID);
     if (it != mTNByID.end())
-        if (it->second->getNodeHash() == nodeHash)
-            return true;
+        return it->second->getNodeHash() == nodeHash;
 
     SHAMapTreeNode* node = root.get ();
 
@@ -489,7 +488,7 @@ bool SHAMap::hasInnerNode (const SHAMapNode& nodeID, uint256 const& nodeHash)
         int branch = node->selectBranch (nodeID.getNodeID ());
 
         if (node->isEmptyBranch (branch))
-            break;
+            return false;
 
         node = getNodePointer (node->getChildNodeID (branch), node->getChildHash (branch));
     }
@@ -501,22 +500,26 @@ bool SHAMap::hasLeafNode (uint256 const& tag, uint256 const& nodeHash)
 {
     SHAMapTreeNode* node = root.get ();
 
-    while (node->isInner ())
+    if (!node->isInner()) // only one leaf node in the tree
+        return node->getNodeHash() == nodeHash;
+
+    do
     {
         int branch = node->selectBranch (tag);
 
-        if (node->isEmptyBranch (branch))
+        if (node->isEmptyBranch (branch)) // Dead end, node must not be here
             return false;
 
         const uint256& nextHash = node->getChildHash (branch);
 
-        if (nextHash == nodeHash)
+        if (nextHash == nodeHash) // Matching leaf, no need to retrieve it
             return true;
 
         node = getNodePointer (node->getChildNodeID (branch), nextHash);
     }
+    while (node->isInner());
 
-    return node->getNodeHash() == nodeHash;
+    return false; // If this was a matching leaf, we would have caught it already
 }
 
 static void addFPtoList (std::list<SHAMap::fetchPackEntry_t>& list, const uint256& hash, const Blob& blob)
@@ -550,9 +553,15 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
     }
 
 
+    if (root->getNodeHash ().isZero ())
+        return;
+
+    if (have && (root->getNodeHash () == have->root->getNodeHash ()))
+        return;
+
     if (root->isLeaf ())
     {
-        if (includeLeaves && !root->getNodeHash ().isZero () &&
+        if (includeLeaves &&
                 (!have || !have->hasLeafNode (root->getTag (), root->getNodeHash ())))
         {
             Serializer s;
@@ -563,16 +572,10 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
         return;
     }
 
-    if (root->getNodeHash ().isZero ())
-        return;
-
-    if (have && (root->getNodeHash () == have->root->getNodeHash ()))
-        return;
-
     std::stack<SHAMapTreeNode*> stack; // contains unexplored non-matching inner node entries
-    stack.push (root.get ());
+    stack.push (root.get());
 
-    while (!stack.empty ())
+    while (!stack.empty() && (max > 0))
     {
         SHAMapTreeNode* node = stack.top ();
         stack.pop ();
@@ -607,9 +610,6 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                 }
             }
         }
-
-        if (max <= 0)
-            break;
     }
 }
 

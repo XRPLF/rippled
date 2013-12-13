@@ -489,6 +489,8 @@ public:
         }
     }
 
+    /** Request a fetch pack to get the ledger prior to 'nextLedger'
+    */
     void getFetchPack (Ledger::ref nextLedger)
     {
         Peer::pointer target;
@@ -501,7 +503,7 @@ public:
             {
                 if (count++ == 0)
                     target = peer;
-                else if ((rand () % count) == 0)
+                else if ((rand () % ++count) == 0)
                     target = peer;
             }
         }
