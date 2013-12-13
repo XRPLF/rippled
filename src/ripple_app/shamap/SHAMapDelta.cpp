@@ -138,7 +138,7 @@ bool SHAMap::compare (SHAMap::ref otherMap, Delta& differences, int maxCount)
 
     std::stack<SHAMapDeltaNode> nodeStack; // track nodes we've pushed
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedReadLockType sl (mLock);
 
     if (getHash () == otherMap->getHash ())
         return true;
@@ -236,7 +236,7 @@ void SHAMap::walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissi
 {
     std::stack<SHAMapTreeNode::pointer> nodeStack;
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedReadLockType sl (mLock);
 
     if (!root->isInner ())  // root is only node, and we have it
         return;

@@ -74,7 +74,8 @@ public:
     }
     void touch (uint32 s)
     {
-        mAccessSeq = s;
+        if (mSeq != 0)
+            mAccessSeq = s;
     }
     uint256 const& getNodeHash () const
     {

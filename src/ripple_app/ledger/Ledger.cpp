@@ -1046,7 +1046,6 @@ Json::Value Ledger::getJson (int options)
     {
         Json::Value txns (Json::arrayValue);
         SHAMapTreeNode::TNType type;
-        SHAMap::ScopedLockType l (mTransactionMap->peekMutex (), __FILE__, __LINE__);
 
         for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem (type); !!item;
                 item = mTransactionMap->peekNextItem (item->getTag (), type))
@@ -1131,10 +1130,8 @@ void Ledger::setCloseTime (boost::posix_time::ptime ptm)
     mCloseTime = iToSeconds (ptm);
 }
 
-// XXX Use shared locks where possible?
 LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
 {
-    SHAMap::ScopedLockType l (mAccountStateMap->peekMutex (), __FILE__, __LINE__);
     bool create = false;
 
     if (!mAccountStateMap->hasItem (entry->getIndex ()))
@@ -1186,8 +1183,6 @@ SLE::pointer Ledger::getSLE (uint256 const& uHash)
 SLE::pointer Ledger::getSLEi (uint256 const& uId)
 {
     uint256 hash;
-
-    SHAMap::ScopedLockType sl (mAccountStateMap->peekMutex (), __FILE__, __LINE__);
 
     SHAMapItem::pointer node = mAccountStateMap->peekItem (uId, hash);
 

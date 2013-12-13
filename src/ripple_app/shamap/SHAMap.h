@@ -57,8 +57,9 @@ public:
     typedef std::map<uint256, DeltaItem> Delta;
     typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> NodeMap;
 
-    typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef boost::shared_mutex LockType;
+    typedef boost::shared_lock<LockType> ScopedReadLockType;
+    typedef boost::unique_lock<LockType> ScopedWriteLockType;
 
 public:
     // build new map
@@ -84,12 +85,6 @@ public:
     void setLedgerSeq (uint32 lseq)
     {
         mLedgerSeq = lseq;
-    }
-
-    // hold the map stable across operations
-    LockType const& peekMutex () const
-    {
-        return mLock;
     }
 
     bool hasNode (const SHAMapNode & id);
@@ -148,9 +143,9 @@ public:
         assert (mState != smsInvalid);
         mState = smsImmutable;
     }
-    void clearImmutable ()
+    bool isImmutable ()
     {
-        mState = smsModifying;
+        return mState == smsImmutable;
     }
     bool isSynching () const
     {
@@ -192,8 +187,8 @@ public:
     }
 
     // overloads for backed maps
-    boost::shared_ptr<SHAMapTreeNode> fetchNodeExternal (const SHAMapNode & id, uint256 const & hash); // throws
-    boost::shared_ptr<SHAMapTreeNode> fetchNodeExternalNT (const SHAMapNode & id, uint256 const & hash); // no throw
+    SHAMapTreeNode::pointer fetchNodeExternal (const SHAMapNode & id, uint256 const & hash); // throws
+    SHAMapTreeNode::pointer fetchNodeExternalNT (const SHAMapNode & id, uint256 const & hash); // no throw
 
     bool operator== (const SHAMap & s)
     {
@@ -277,15 +272,15 @@ private:
     void visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& function);
 
 private:
-#if 1
-    LockType mLock;
-#else
+
+    // This lock protects key SHAMap structures.
+    // One may change anything with a write lock.
+    // With a read lock, one may not invalidate pointers to existing members of mTNByID
     mutable LockType mLock;
-#endif
 
     uint32 mSeq;
     uint32 mLedgerSeq; // sequence number of ledger this is part of
-    NodeMap mTNByID;
+    SyncUnorderedMapType< SHAMapNode, SHAMapTreeNode::pointer > mTNByID;
     boost::shared_ptr<NodeMap> mDirtyNodes;
     SHAMapTreeNode::pointer root;
     SHAMapState mState;

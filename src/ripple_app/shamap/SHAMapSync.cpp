@@ -25,12 +25,9 @@ KeyCache <uint256, UptimeTimerAdapter> SHAMap::fullBelowCache ("fullBelowCache",
 
 void SHAMap::visitLeaves (std::function<void (SHAMapItem::ref item)> function)
 {
-    SHAMap::pointer snap;
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        snap = snapShot (false);
-    }
-    snap->visitLeavesInternal(function);
+    // Make a snapshot of this map so we don't need to hold
+    // a lock on the map we're visiting
+    snapShot (false)->visitLeavesInternal (function);
 }
 
 void SHAMap::visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& function)
@@ -95,10 +92,13 @@ void SHAMap::visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& fu
     }
 }
 
+/** Get a list of node IDs and hashes for nodes that are part of this SHAMap but not available locally.
+    The filter can hold alternate sources of nodes that are not permanently stored locally
+*/
 void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
                               SHAMapSyncFilter* filter)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedReadLockType sl (mLock);
 
     assert (root->isValid ());
     assert (root->getNodeHash().isNonZero ());
@@ -192,7 +192,7 @@ bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& node
                          std::list<Blob >& rawNodes, bool fatRoot, bool fatLeaves)
 {
     // Gets a node and some of its children
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedReadLockType sl (mLock);
 
     SHAMapTreeNode* node = getNodePointer(wanted);
 
@@ -247,7 +247,7 @@ bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& node
 
 bool SHAMap::getRootNode (Serializer& s, SHANodeFormat format)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedReadLockType sl (mLock);
     root->addRaw (s, format);
     return true;
 }
@@ -255,7 +255,7 @@ bool SHAMap::getRootNode (Serializer& s, SHANodeFormat format)
 SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
                                    SHAMapSyncFilter* filter)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedWriteLockType sl (mLock);
 
     // we already have a root node
     if (root->getNodeHash ().isNonZero ())
@@ -276,7 +276,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
 #endif
 
     root = node;
-    mTNByID[*root] = root;
+    mTNByID.replace(*root, root);
 
     if (root->isLeaf())
         clearSynching ();
@@ -294,7 +294,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
 SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SHANodeFormat format,
                                    SHAMapSyncFilter* filter)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedWriteLockType sl (mLock);
 
     // we already have a root node
     if (root->getNodeHash ().isNonZero ())
@@ -312,7 +312,7 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
         return SHAMapAddNode::invalid ();
 
     root = node;
-    mTNByID[*root] = root;
+    mTNByID.replace(*root, root);
 
     if (root->isLeaf())
         clearSynching ();
@@ -329,6 +329,8 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
 
 SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode, SHAMapSyncFilter* filter)
 {
+    ScopedWriteLockType sl (mLock);
+
     // return value: true=okay, false=error
     assert (!node.isRoot ());
 
@@ -337,8 +339,6 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
         WriteLog (lsTRACE, SHAMap) << "AddKnownNode while not synching";
         return SHAMapAddNode::duplicate ();
     }
-
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (checkCacheNode (node)) // Do we already have this node?
         return SHAMapAddNode::duplicate ();
@@ -383,14 +383,13 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
 
             canonicalize (iNode->getChildHash (branch), newNode);
 
-            if (filter)
+            if (mTNByID.canonicalize(node, &newNode) && filter)
             {
                 Serializer s;
                 newNode->addRaw (s, snfPREFIX);
                 filter->gotNode (false, node, iNode->getChildHash (branch), s.modData (), newNode->getType ());
             }
 
-            mTNByID[node] = newNode;
             return SHAMapAddNode::useful ();
         }
         iNode = nextNode;
@@ -404,7 +403,7 @@ bool SHAMap::deepCompare (SHAMap& other)
 {
     // Intended for debug/test only
     std::stack<SHAMapTreeNode::pointer> stack;
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedReadLockType sl (mLock);
 
     stack.push (root);
 
@@ -472,11 +471,14 @@ bool SHAMap::deepCompare (SHAMap& other)
     return true;
 }
 
+/** Does this map have this inner node?
+    You must hold a read lock to call this function
+*/
 bool SHAMap::hasInnerNode (const SHAMapNode& nodeID, uint256 const& nodeHash)
 {
-    boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.find (nodeID);
-    if (it != mTNByID.end())
-        return it->second->getNodeHash() == nodeHash;
+    SHAMapTreeNode::pointer ptr = mTNByID.retrieve (nodeID);
+    if (ptr)
+        return ptr->getNodeHash() == nodeHash;
 
     SHAMapTreeNode* node = root.get ();
 
@@ -493,6 +495,9 @@ bool SHAMap::hasInnerNode (const SHAMapNode& nodeID, uint256 const& nodeHash)
     return node->getNodeHash () == nodeHash;
 }
 
+/** Does this map have this leaf node?
+    You must hold a read lock to call this function
+*/
 bool SHAMap::hasLeafNode (uint256 const& tag, uint256 const& nodeHash)
 {
     SHAMapTreeNode* node = root.get ();
@@ -534,14 +539,14 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack (SHAMap* have, bool inc
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                            std::function<void (const uint256&, const Blob&)> func)
 {
-    ScopedLockType ul1 (mLock, __FILE__, __LINE__);
+    ScopedReadLockType ul1 (mLock);
 
-    std::unique_ptr <LockType::ScopedTryLockType> ul2;
+    std::unique_ptr <ScopedReadLockType> ul2;
 
     if (have)
     {
         // VFALCO NOTE This looks like a mess. A dynamically allocated scoped lock?
-        ul2.reset (new LockType::ScopedTryLockType (have->mLock, __FILE__, __LINE__));
+        ul2.reset (new ScopedReadLockType (have->mLock, boost::try_to_lock));
 
         if (! ul2->owns_lock ())
         {
@@ -565,6 +570,7 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
             Serializer s;
             root->addRaw (s, snfPREFIX);
             func (boost::cref(root->getNodeHash ()), boost::cref(s.peekData ()));
+            --max;
         }
 
         return;
@@ -613,7 +619,8 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
 
 std::list<Blob > SHAMap::getTrustedPath (uint256 const& index)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedReadLockType sl (mLock);
+
     std::stack<SHAMapTreeNode::pointer> stack = SHAMap::getStack (index, false);
 
     if (stack.empty () || !stack.top ()->isLeaf ())
