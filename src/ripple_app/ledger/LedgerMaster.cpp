@@ -870,6 +870,7 @@ public:
             WriteLog (lsWARNING, LedgerMaster) << "Gap in validated ledger stream " << mPubLedger->getLedgerSeq () << " - " <<
                                                mValidLedger->getLedgerSeq () - 1;
             ret.push_back (mValidLedger);
+            setPubLedger (mValidLedger);
             getApp().getOrderBookDB().setup(mValidLedger);
         }
         else if (mValidLedger->getLedgerSeq () > mPubLedger->getLedgerSeq ())
