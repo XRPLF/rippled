@@ -46,6 +46,8 @@ template <> char const* LogPartition::getPartitionName <LoadManagerLog> () { ret
 class ResourceManagerLog;
 template <> char const* LogPartition::getPartitionName <ResourceManagerLog> () { return "ResourceManager"; }
 
+template <> char const* LogPartition::getPartitionName <CollectorManager> () { return "Collector"; }
+
 //
 //------------------------------------------------------------------------------
 
@@ -74,6 +76,10 @@ public:
         , m_tempNodeCache ("NodeCache", 16384, 90)
         , m_sleCache ("LedgerEntryCache", 4096, 120)
 
+        , m_collectorManager (CollectorManager::New (
+            getConfig().insightSettings,
+                LogPartition::getJournal <CollectorManager> ()))
+
         , m_resourceManager (add (Resource::Manager::New (
             LogPartition::getJournal <ResourceManagerLog> ())))
 
@@ -83,7 +89,9 @@ public:
         // The JobQueue has to come pretty early since
         // almost everything is a Stoppable child of the JobQueue.
         //
-        , m_jobQueue (JobQueue::New (*this, LogPartition::getJournal <JobQueueLog> ()))
+        , m_jobQueue (JobQueue::New (
+            m_collectorManager->collector (),
+                *this, LogPartition::getJournal <JobQueueLog> ()))
 
         // The io_service must be a child of the JobQueue since we call addJob
         // in response to newtwork data from peers and also client requests.
@@ -165,6 +173,11 @@ public:
 
     //--------------------------------------------------------------------------
     
+    CollectorManager& getCollectorManager ()
+    {
+        return *m_collectorManager;
+    }
+
     RPC::Manager& getRPCServiceManager()
     {
         return *m_rpcServiceManager;
@@ -882,6 +895,7 @@ private:
     LocalCredentials m_localCredentials;
     TransactionMaster m_txMaster;
 
+    beast::unique_ptr <CollectorManager> m_collectorManager;
     ScopedPointer <Resource::Manager> m_resourceManager;
     ScopedPointer <RPC::Manager> m_rpcServiceManager;
 

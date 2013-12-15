@@ -22,6 +22,12 @@ class JobQueueImp
     , private Workers::Callback
 {
 public:
+    struct Metrics
+    {
+        insight::Hook hook;
+        insight::Gauge job_count;
+    };
+
     // Statistics for each JobType
     //
     struct Count
@@ -53,6 +59,7 @@ public:
     typedef CriticalSection::ScopedLockType ScopedLock;
 
     Journal m_journal;
+    Metrics m_metrics;
     CriticalSection m_mutex;
     uint64 m_lastJob;
     JobSet m_jobSet;
@@ -67,7 +74,8 @@ public:
 
     //--------------------------------------------------------------------------
 
-    JobQueueImp (Stoppable& parent, Journal journal)
+    JobQueueImp (shared_ptr <insight::Collector> const& collector,
+        Stoppable& parent, Journal journal)
         : JobQueue ("JobQueue", parent)
         , m_journal (journal)
         , m_lastJob (0)
@@ -75,6 +83,10 @@ public:
         , m_workers (*this, "JobQueue", 0)
         , m_cancelCallback (boost::bind (&Stoppable::isStopping, this))
     {
+        m_metrics.hook = collector->make_hook (beast::bind (
+            &JobQueueImp::collect, this));
+        m_metrics.job_count = collector->make_gauge ("job_count");
+
         {
             ScopedLock lock (m_mutex);
 
@@ -110,6 +122,12 @@ public:
 
     ~JobQueueImp ()
     {
+    }
+
+    void collect ()
+    {
+        ScopedLock lock (m_mutex);
+        m_metrics.job_count = m_jobSet.size ();
     }
 
     void addJob (JobType type, const std::string& name, const FUNCTION_TYPE<void (Job&)>& jobFunc)
@@ -708,7 +726,8 @@ JobQueue::JobQueue (char const* name, Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-JobQueue* JobQueue::New (Stoppable& parent, Journal journal)
+JobQueue* JobQueue::New (shared_ptr <insight::Collector> const& collector,
+                         Stoppable& parent, Journal journal)
 {
-    return new JobQueueImp (parent, journal);
+    return new JobQueueImp (collector, parent, journal);
 }

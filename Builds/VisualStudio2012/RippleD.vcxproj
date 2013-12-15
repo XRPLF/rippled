@@ -597,6 +597,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\ErrorCodes.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Handler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -898,6 +904,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ledger\SerializedValidation.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\main\CollectorManager.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -2250,6 +2262,7 @@
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\string_util.h" />
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\testharness.h" />
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\testutil.h" />
+    <ClInclude Include="..\..\src\ripple\rpc\api\ErrorCodes.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Manager.h" />
     <ClInclude Include="..\..\src\ripple\rpc\api\Service.h" />
@@ -2343,6 +2356,7 @@
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerEntrySet.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerHistory.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\SerializedValidation.h" />
+    <ClInclude Include="..\..\src\ripple_app\main\CollectorManager.h" />
     <ClInclude Include="..\..\src\ripple_app\main\IoServicePool.h" />
     <ClInclude Include="..\..\src\ripple_app\main\NodeStoreScheduler.h" />
     <ClInclude Include="..\..\src\ripple_app\main\ParameterTable.h" />

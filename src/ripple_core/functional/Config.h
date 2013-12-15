@@ -298,6 +298,9 @@ public:
 
     //--------------------------------------------------------------------------
 
+    /** Parameters for the insight collection module */
+    StringPairArray insightSettings;
+
     /** Parameters for the main NodeStore database.
 
         This is 1 or more strings of the form <key>=<value>

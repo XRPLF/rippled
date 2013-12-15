@@ -27,6 +27,7 @@ namespace NodeStore { class Database; }
 namespace RPC { class Manager; }
 
 // VFALCO TODO Fix forward declares required for header dependency loops
+class CollectorManager;
 class IFeatures;
 class IFeeVote;
 class IHashRouter;
@@ -77,9 +78,8 @@ public:
     virtual ~Application () { }
 
     virtual boost::asio::io_service& getIOService () = 0;
-
+    virtual CollectorManager&       getCollectorManager () = 0;
     virtual RPC::Manager&           getRPCServiceManager() = 0;
-
     virtual JobQueue&               getJobQueue () = 0;
     virtual SiteFiles::Manager&     getSiteFiles () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
