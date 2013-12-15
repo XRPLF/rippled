@@ -50,7 +50,7 @@ public:
         , mLastCloseConvergeTime (1000 * LEDGER_IDLE_INTERVAL)
         , mLastCloseTime (0)
         , mLastValidationTime (0)
-        , mFetchPack ("FetchPack", 2048, 20)
+        , mFetchPack ("FetchPack", 65536, 45)
         , mFetchSeq (0)
         , mLastLoadBase (256)
         , mLastLoadFactor (256)
@@ -3065,6 +3065,11 @@ int NetworkOPsImp::getFetchSize ()
 
 void NetworkOPsImp::gotFetchPack (bool progress, uint32 seq)
 {
+
+    // FIXME: Calling this function more than once will result in
+    // InboundLedgers::gotFetchPack being called more than once
+    // which is expensive. A flag should track whether we've already dispatched
+
     getApp().getJobQueue ().addJob (jtLEDGER_DATA, "gotFetchPack",
                                    BIND_TYPE (&InboundLedgers::gotFetchPack, &getApp().getInboundLedgers (), P_1));
 }

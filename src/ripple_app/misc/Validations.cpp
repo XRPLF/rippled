@@ -122,7 +122,7 @@ private:
         WriteLog (lsDEBUG, Validations) << "Val for " << hash << " from " << signer.humanNodePublic ()
                                         << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 
-        if (val->isTrusted ())
+        if (val->isTrusted () && isCurrent)
             getApp().getLedgerMaster ().checkAccept (hash);
 
         // FIXME: This never forwards untrusted validations

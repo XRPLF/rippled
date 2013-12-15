@@ -628,7 +628,7 @@ public:
 
         if (!ledger)
         {
-            InboundLedger::pointer l = getApp().getInboundLedgers().findCreate(hash, 0, false);
+            InboundLedger::pointer l = getApp().getInboundLedgers().findCreateValidationLedger(hash);
             if (l && l->isComplete() && !l->isFailed())
                 ledger = l->getLedger();
             else

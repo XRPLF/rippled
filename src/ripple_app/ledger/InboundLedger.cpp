@@ -33,12 +33,10 @@ InboundLedger::InboundLedger (uint256 const& hash, uint32 seq)
     , mAborted (false)
     , mSignaled (false)
     , mByHash (true)
-    , mWaitCount (0)
     , mSeq (seq)
+    , mReceiveDispatched (false)
 {
-#ifdef LA_DEBUG
     WriteLog (lsTRACE, InboundLedger) << "Acquiring ledger " << mHash;
-#endif
 }
 
 bool InboundLedger::checkLocal ()
@@ -55,6 +53,12 @@ bool InboundLedger::checkLocal ()
 
 InboundLedger::~InboundLedger ()
 {
+    BOOST_FOREACH (PeerDataPairType& entry, mReceivedData)
+    {
+        if (entry.second->type () == protocol::liAS_NODE)
+            getApp().getInboundLedgers().gotStaleData(entry.second);
+    }
+
 }
 
 void InboundLedger::init(ScopedLockType& collectionLock, bool couldBeNew)
@@ -127,7 +131,6 @@ bool InboundLedger::tryLocal ()
 
             if (mLedger->peekTransactionMap ()->fetchRoot (mLedger->getTransHash (), &filter))
             {
-                WriteLog (lsTRACE, InboundLedger) << "Got root txn map locally";
                 std::vector<uint256> h = mLedger->getNeededTransactionHashes (1, &filter);
 
                 if (h.empty ())
@@ -152,7 +155,6 @@ bool InboundLedger::tryLocal ()
 
             if (mLedger->peekAccountStateMap ()->fetchRoot (mLedger->getAccountHash (), &filter))
             {
-                WriteLog (lsTRACE, InboundLedger) << "Got root AS map locally";
                 std::vector<uint256> h = mLedger->getNeededAccountStateHashes (1, &filter);
 
                 if (h.empty ())
@@ -175,17 +177,25 @@ bool InboundLedger::tryLocal ()
     return mComplete;
 }
 
+/** Called with a lock by the PeerSet when the timer expires
+*/
 void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 {
     mRecentTXNodes.clear ();
     mRecentASNodes.clear ();
 
+    if (isDone())
+    {
+        WriteLog (lsINFO, InboundLedger) << "Already done " << mHash;
+        return;
+    }
+
     if (getTimeouts () > LEDGER_TIMEOUT_COUNT)
     {
         if (mSeq != 0)
-            WriteLog (lsWARNING, InboundLedger) << getTimeouts() << " timeouts  for ledger " << mSeq;
+            WriteLog (lsWARNING, InboundLedger) << getTimeouts() << " timeouts for ledger " << mSeq;
         else
-            WriteLog (lsWARNING, InboundLedger) << getTimeouts() << " timeouts  for ledger " << mHash;
+            WriteLog (lsWARNING, InboundLedger) << getTimeouts() << " timeouts for ledger " << mHash;
         setFailed ();
         done ();
         return;
@@ -193,11 +203,6 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 
     if (!wasProgress)
     {
-        if (isDone())
-        {
-            WriteLog (lsINFO, InboundLedger) << "Already done " << mHash;
-            return;
-        }
         checkLocal();
         if (isDone())
         {
@@ -214,23 +219,6 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
         if (pc < 4)
             addPeers ();
     }
-}
-
-void InboundLedger::awaitData ()
-{
-    ++mWaitCount;
-}
-
-void InboundLedger::noAwaitData ()
-{ // subtract one if mWaitCount is greater than zero
-    do
-    {
-       int j = mWaitCount.get();
-       if (j <= 0)
-           return;
-       if (mWaitCount.compareAndSetBool(j - 1, j))
-           return;
-    } while (1);
 }
 
 void InboundLedger::addPeers ()
@@ -264,8 +252,8 @@ void InboundLedger::addPeers ()
         {
             if (peerHas (peerList[ (i + firstPeer) % vSize]))
                 ++found;
-	}
-	if (mSeq != 0)
+        }
+        if (mSeq != 0)
             WriteLog (lsDEBUG, InboundLedger) << "Chose " << found << " peer(s) for ledger " << mSeq;
         else
             WriteLog (lsDEBUG, InboundLedger) << "Chose " << found << " peer(s) for ledger " << getHash ().GetHex();
@@ -287,8 +275,10 @@ static void LADispatch (
     std::vector< FUNCTION_TYPE<void (InboundLedger::pointer)> > trig)
 {
     if (la->isComplete() && !la->isFailed())
+    {
         getApp().getLedgerMaster().checkAccept(la->getLedger());
-    getApp().getLedgerMaster().tryAdvance();
+        getApp().getLedgerMaster().tryAdvance();
+    }
     for (unsigned int i = 0; i < trig.size (); ++i)
         trig[i] (la);
 }
@@ -325,14 +315,14 @@ void InboundLedger::done ()
                                     BIND_TYPE (LADispatch, P_1, shared_from_this (), triggers));
 }
 
-bool InboundLedger::addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)> trigger)
+bool InboundLedger::addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)> triggerFunc)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (isDone ())
         return false;
 
-    mOnComplete.push_back (trigger);
+    mOnComplete.push_back (triggerFunc);
     return true;
 }
 
@@ -344,12 +334,6 @@ void InboundLedger::trigger (Peer::ref peer)
     {
         WriteLog (lsDEBUG, InboundLedger) << "Trigger on ledger: " << mHash <<
                                           (mAborted ? " aborted" : "") << (mComplete ? " completed" : "") << (mFailed ? " failed" : "");
-        return;
-    }
-
-    if ((mWaitCount.get() > 0) && peer)
-    {
-        WriteLog (lsTRACE, InboundLedger) << "Skipping peer";
         return;
     }
 
@@ -550,7 +534,7 @@ void InboundLedger::trigger (Peer::ref peer)
                     BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
                     {
                         * (tmGL.add_nodeids ()) = it.getRawString ();
-		    }
+                    }
                     WriteLog (lsTRACE, InboundLedger) << "Sending AS node " << nodeIDs.size ()
                                                       << " request to " << (peer ? "selected peer" : "all peers");
                     CondLog (nodeIDs.size () == 1, lsTRACE, InboundLedger) << "AS node: " << nodeIDs[0];
@@ -638,13 +622,15 @@ void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<u
     }
 }
 
+/** Take ledger base data
+    Call with a lock
+*/
 bool InboundLedger::takeBase (const std::string& data) // data must not have hash prefix
 {
     // Return value: true=normal, false=bad data
 #ifdef LA_DEBUG
     WriteLog (lsTRACE, InboundLedger) << "got base acquiring ledger " << mHash;
 #endif
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (mComplete || mFailed || mHaveBase)
         return true;
@@ -671,26 +657,35 @@ bool InboundLedger::takeBase (const std::string& data) // data must not have has
 
     progress ();
 
-    if (!mLedger->getTransHash ())
+    if (mLedger->getTransHash ().isZero ())
         mHaveTransactions = true;
 
-    if (!mLedger->getAccountHash ())
+    if (mLedger->getAccountHash ().isZero ())
         mHaveState = true;
 
     mLedger->setAcquiring ();
     return true;
 }
 
+/** Process TX data received from a peer
+    Call with a lock
+*/
 bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
                                 const std::list< Blob >& data, SHAMapAddNode& san)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!mHaveBase)
+    {
+        WriteLog (lsWARNING, InboundLedger) << "TX node without base";
+        san.incInvalid();
         return false;
+    }
 
     if (mHaveTransactions || mFailed)
+    {
+        san.incDuplicate();
         return true;
+    }
 
     std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin ();
     std::list< Blob >::const_iterator nodeDatait = data.begin ();
@@ -700,13 +695,15 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
     {
         if (nodeIDit->isRoot ())
         {
-            if (!san.combine (mLedger->peekTransactionMap ()->addRootNode (mLedger->getTransHash (), *nodeDatait,
-                              snfWIRE, &tFilter)))
+            san += mLedger->peekTransactionMap ()->addRootNode (mLedger->getTransHash (), *nodeDatait,
+                              snfWIRE, &tFilter);
+            if (!san.isGood())
                 return false;
         }
         else
         {
-            if (!san.combine (mLedger->peekTransactionMap ()->addKnownNode (*nodeIDit, *nodeDatait, &tFilter)))
+            san +=  mLedger->peekTransactionMap ()->addKnownNode (*nodeIDit, *nodeDatait, &tFilter);
+            if (!san.isGood())
                 return false;
         }
 
@@ -729,6 +726,9 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
     return true;
 }
 
+/** Process AS data received from a peer
+    Call with a lock
+*/
 bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
                                 const std::list< Blob >& data, SHAMapAddNode& san)
 {
@@ -740,11 +740,15 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
     if (!mHaveBase)
     {
         WriteLog (lsWARNING, InboundLedger) << "Don't have ledger base";
+        san.incInvalid();
         return false;
     }
 
     if (mHaveState || mFailed)
+    {
+        san.incDuplicate();
         return true;
+    }
 
     std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin ();
     std::list< Blob >::const_iterator nodeDatait = data.begin ();
@@ -754,17 +758,22 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
     {
         if (nodeIDit->isRoot ())
         {
-            if (!san.combine (mLedger->peekAccountStateMap ()->addRootNode (mLedger->getAccountHash (),
-                              *nodeDatait, snfWIRE, &tFilter)))
+            san += mLedger->peekAccountStateMap ()
+                ->addRootNode (mLedger->getAccountHash (), *nodeDatait, snfWIRE, &tFilter);
+            if (!san.isGood ())
             {
                 WriteLog (lsWARNING, InboundLedger) << "Bad ledger base";
                 return false;
             }
         }
-        else if (!san.combine (mLedger->peekAccountStateMap ()->addKnownNode (*nodeIDit, *nodeDatait, &tFilter)))
+        else
         {
-            WriteLog (lsWARNING, InboundLedger) << "Unable to add AS node";
-            return false;
+            san += mLedger->peekAccountStateMap ()->addKnownNode (*nodeIDit, *nodeDatait, &tFilter);
+            if (!san.isGood ())
+            {
+                WriteLog (lsWARNING, InboundLedger) << "Unable to add AS node";
+                return false;
+            }
         }
 
         ++nodeIDit;
@@ -786,34 +795,48 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
     return true;
 }
 
+/** Process AS root node received from a peer
+    Call with a lock
+*/
 bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-
     if (mFailed || mHaveState)
+    {
+        san.incDuplicate();
         return true;
+    }
 
     if (!mHaveBase)
+    {
+        san.incInvalid();
         return false;
+    }
 
     AccountStateSF tFilter (mLedger->getLedgerSeq ());
-    return san.combine (
-               mLedger->peekAccountStateMap ()->addRootNode (mLedger->getAccountHash (), data, snfWIRE, &tFilter));
+    san += mLedger->peekAccountStateMap ()->addRootNode (mLedger->getAccountHash (), data, snfWIRE, &tFilter);
+    return san.isGood();
 }
 
+/** Process AS root node received from a peer
+    Call with a lock
+*/
 bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-
     if (mFailed || mHaveState)
+    {
+        san.incDuplicate();
         return true;
+    }
 
     if (!mHaveBase)
+    {
+        san.incInvalid();
         return false;
+    }
 
     TransactionStateSF tFilter (mLedger->getLedgerSeq ());
-    return san.combine (
-               mLedger->peekTransactionMap ()->addRootNode (mLedger->getTransHash (), data, snfWIRE, &tFilter));
+    san += mLedger->peekTransactionMap ()->addRootNode (mLedger->getTransHash (), data, snfWIRE, &tFilter);
+    return san.isGood();
 }
 
 std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
@@ -848,6 +871,164 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 
     return ret;
 }
+
+/** Stash a TMLedgerData received from a peer for later processing
+    Returns 'true' if we need to dispatch
+*/
+bool InboundLedger::gotData (boost::weak_ptr<Peer> peer, boost::shared_ptr<protocol::TMLedgerData> data)
+{
+    ScopedLockType sl (mReceivedDataLock, __FILE__, __LINE__);
+
+    mReceivedData.push_back (PeerDataPairType (peer, data));
+
+    if (mReceiveDispatched)
+        return false;
+
+    mReceiveDispatched = true;
+    return true;
+}
+
+/** Process one TMLedgerData
+    Returns the number of useful nodes
+*/
+int InboundLedger::processData (boost::shared_ptr<Peer> peer, protocol::TMLedgerData& packet)
+{
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+    if (packet.type () == protocol::liBASE)
+    {
+        if (packet.nodes_size () < 1)
+        {
+            WriteLog (lsWARNING, InboundLedger) << "Got empty base data";
+            peer->charge (Resource::feeInvalidRequest);
+            return -1;
+        }
+
+        if (!mHaveBase && !takeBase (packet.nodes (0).nodedata ()))
+        {
+            WriteLog (lsWARNING, InboundLedger) << "Got invalid base data";
+            peer->charge (Resource::feeInvalidRequest);
+            return -1;
+        }
+
+        SHAMapAddNode san;
+
+        if (!mHaveState && (packet.nodes ().size () > 1) &&
+            !takeAsRootNode (strCopy (packet.nodes (1).nodedata ()), san))
+        {
+            WriteLog (lsWARNING, InboundLedger) << "Included ASbase invalid";
+        }
+
+        if (!mHaveTransactions && (packet.nodes ().size () > 2) &&
+            !takeTxRootNode (strCopy (packet.nodes (2).nodedata ()), san))
+        {
+            WriteLog (lsWARNING, InboundLedger) << "Included TXbase invalid";
+        }
+
+        if (!san.isInvalid ())
+            progress ();
+        else
+            WriteLog (lsDEBUG, InboundLedger) << "Peer sends invalid base data";
+
+        return san.getGood ();
+    }
+
+    if ((packet.type () == protocol::liTX_NODE) || (packet.type () == protocol::liAS_NODE))
+    {
+        std::list<SHAMapNode> nodeIDs;
+        std::list< Blob > nodeData;
+
+        if (packet.nodes ().size () == 0)
+        {
+            WriteLog (lsINFO, InboundLedger) << "Got response with no nodes";
+            peer->charge (Resource::feeInvalidRequest);
+            return -1;
+        }
+
+        for (int i = 0; i < packet.nodes ().size (); ++i)
+        {
+            const protocol::TMLedgerNode& node = packet.nodes (i);
+
+            if (!node.has_nodeid () || !node.has_nodedata ())
+            {
+                WriteLog (lsWARNING, InboundLedger) << "Got bad node";
+                peer->charge (Resource::feeInvalidRequest);
+                return -1;
+            }
+
+            nodeIDs.push_back (SHAMapNode (node.nodeid ().data (), node.nodeid ().size ()));
+            nodeData.push_back (Blob (node.nodedata ().begin (), node.nodedata ().end ()));
+        }
+
+        SHAMapAddNode ret;
+
+        if (packet.type () == protocol::liTX_NODE)
+        {
+            takeTxNode (nodeIDs, nodeData, ret);
+            WriteLog (lsDEBUG, InboundLedger) << "Ledger TX node stats: " << ret.get();
+        }
+        else
+        {
+            takeAsNode (nodeIDs, nodeData, ret);
+            WriteLog (lsDEBUG, InboundLedger) << "Ledger AS node stats: " << ret.get();
+        }
+
+        if (!ret.isInvalid ())
+            progress ();
+        else
+            WriteLog (lsDEBUG, InboundLedger) << "Peer sends invalid node data";
+
+        return ret.getGood ();
+    }
+
+    return -1;
+}
+
+/** Process pending TMLedgerData
+    Query the 'best' peer
+*/
+void InboundLedger::runData ()
+{
+    boost::shared_ptr<Peer> chosenPeer;
+    int chosenPeerCount = -1;
+
+    std::vector <PeerDataPairType> data;
+    do
+    {
+
+        data.clear();
+        {
+            ScopedLockType sl (mReceivedDataLock, __FILE__, __LINE__);
+
+            if (mReceivedData.empty ())
+            {
+                mReceiveDispatched = false;
+                break;
+            }
+            data.swap(mReceivedData);
+        }
+
+        BOOST_FOREACH (PeerDataPairType& entry, data)
+        {
+            Peer::pointer peer = entry.first.lock();
+            if (peer)
+            {
+                int count = processData (peer, *(entry.second));
+                if (count > chosenPeerCount)
+                {
+                    chosenPeer = peer;
+                    chosenPeerCount = count;
+                }
+            }
+        }
+
+    } while (1);
+
+    if (chosenPeer)
+        trigger (chosenPeer);
+
+}
+
 
 Json::Value InboundLedger::getJson (int)
 {

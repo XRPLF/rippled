@@ -42,19 +42,18 @@ public:
 
     InboundLedger::pointer find (uint256 const& hash);
 
+    InboundLedger::pointer findCreateConsensusLedger (uint256 const& hash);
+    InboundLedger::pointer findCreateValidationLedger (uint256 const& hash);
+
     bool hasLedger (LedgerHash const& ledgerHash);
 
     void dropLedger (LedgerHash const& ledgerHash);
 
-    bool awaitLedgerData (LedgerHash const& ledgerHash);
+    bool gotLedgerData (LedgerHash const& ledgerHash, boost::shared_ptr<Peer>, boost::shared_ptr <protocol::TMLedgerData>);
 
-    // VFALCO TODO Why is hash passed by value?
-    // VFALCO TODO Remove the dependency on the Peer object.
-    //
-    void gotLedgerData (Job&,
-                        LedgerHash hash,
-                        boost::shared_ptr <protocol::TMLedgerData> packet,
-                        boost::weak_ptr<Peer> peer);
+    void doLedgerData (Job&, LedgerHash hash);
+
+    void gotStaleData (boost::shared_ptr <protocol::TMLedgerData> packet);
 
     int getFetchCount (int& timeoutCount);
 
@@ -86,6 +85,9 @@ private:
 
     MapType mLedgers;
     KeyCache <uint256, UptimeTimerAdapter> mRecentFailures;
+
+    uint256 mConsensusLedger;
+    uint256 mValidationLedger;
 };
 
 #endif
