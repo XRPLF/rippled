@@ -315,6 +315,9 @@
     <Filter Include="beast\smart_ptr\impl">
       <UniqueIdentifier>{df4f2935-13a1-4afe-90cc-d86472ec2466}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\stl">
+      <UniqueIdentifier>{793e2d61-14f6-4fa1-a17f-af6bbec13ba1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1278,6 +1281,21 @@
     <ClInclude Include="..\..\beast\smart_ptr\AbstractObject.h">
       <Filter>beast\smart_ptr</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\stl\function.h">
+      <Filter>beast\stl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\stl\shared_ptr.h">
+      <Filter>beast\stl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\stl\thread.h">
+      <Filter>beast\stl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\stl\unique_ptr.h">
+      <Filter>beast\stl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\STL.h">
+      <Filter>beast</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1834,6 +1852,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\smart_ptr\impl\AbstractObject.cpp">
       <Filter>beast\smart_ptr\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\stl\STL.cpp">
+      <Filter>beast\stl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
