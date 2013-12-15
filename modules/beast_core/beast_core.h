@@ -61,6 +61,7 @@
 #include "../../beast/Threads.h"
 #include "../../beast/Utility.h"
 #include "../../beast/Chrono.h"
+#include "../../beast/STL.h"
 
 #include "system/StandardIncludes.h"
 
