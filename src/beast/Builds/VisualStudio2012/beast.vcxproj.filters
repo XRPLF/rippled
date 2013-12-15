@@ -318,6 +318,12 @@
     <Filter Include="beast\stl">
       <UniqueIdentifier>{793e2d61-14f6-4fa1-a17f-af6bbec13ba1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\insight">
+      <UniqueIdentifier>{174b9125-76a7-4796-be97-79c2dcc751f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\insight\impl">
+      <UniqueIdentifier>{04f27818-7843-4ef3-967c-1761dc892342}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1296,6 +1302,48 @@
     <ClInclude Include="..\..\beast\STL.h">
       <Filter>beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\Insight.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\Collector.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\Counter.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\CounterImpl.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\Event.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\EventImpl.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\Gauge.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\GaugeImpl.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\Meter.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\MeterImpl.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\NullCollector.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\StatsDCollector.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\Hook.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\HookImpl.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
@@ -1855,6 +1903,24 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\stl\STL.cpp">
       <Filter>beast\stl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\Insight.cpp">
+      <Filter>beast\insight</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\impl\Collector.cpp">
+      <Filter>beast\insight\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\impl\Metric.cpp">
+      <Filter>beast\insight\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\impl\NullCollector.cpp">
+      <Filter>beast\insight\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\impl\StatsDCollector.cpp">
+      <Filter>beast\insight\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\impl\Hook.cpp">
+      <Filter>beast\insight\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
