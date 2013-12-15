@@ -2428,14 +2428,9 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
         return;
     }
 
-    if (getApp().getInboundLedgers ().awaitLedgerData (hash))
+    if (!getApp().getInboundLedgers ().gotLedgerData (hash, shared_from_this(), packet_ptr))
     {
-        getApp().getJobQueue ().addJob (jtLEDGER_DATA, "gotLedgerData",
-                                       BIND_TYPE (&InboundLedgers::gotLedgerData, &getApp().getInboundLedgers (),
-                                               P_1, hash, packet_ptr, boost::weak_ptr<Peer> (shared_from_this ())));
-    }
-    else
-    {
+        WriteLog (lsINFO, Peer) << "Got data for unwanted ledger";
         charge (Resource::feeUnwantedData);
     }
 }

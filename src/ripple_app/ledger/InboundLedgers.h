@@ -34,24 +34,30 @@ public:
     // VFALCO TODO Should this be called findOrAdd ?
     //
     virtual InboundLedger::pointer findCreate (uint256 const& hash, 
-                                        uint32 seq, 
-                                        bool bCouldBeNew) = 0;
+        uint32 seq, bool bCouldBeNew) = 0;
 
-    virtual InboundLedger::pointer find (uint256 const& hash) = 0;
+    virtual InboundLedger::pointer find (LedgerHash const& hash) = 0;
 
     virtual bool hasLedger (LedgerHash const& ledgerHash) = 0;
 
-    virtual void dropLedger (LedgerHash const& ledgerHash) = 0;
+    virtual InboundLedger::pointer findCreateConsensusLedger (
+        LedgerHash const& hash) = 0;
+    virtual InboundLedger::pointer findCreateValidationLedger (
+        LedgerHash const& hash) = 0;
 
-    virtual bool awaitLedgerData (LedgerHash const& ledgerHash) = 0;
+    virtual void dropLedger (LedgerHash const& ledgerHash) = 0;
 
     // VFALCO TODO Why is hash passed by value?
     // VFALCO TODO Remove the dependency on the Peer object.
     //
-    virtual void gotLedgerData (Job& job,
-                        LedgerHash hash,
-                        boost::shared_ptr <protocol::TMLedgerData> packet,
-                        boost::weak_ptr<Peer> peer) = 0;
+    virtual bool gotLedgerData (LedgerHash const& ledgerHash,
+        boost::shared_ptr<Peer>,
+        boost::shared_ptr <protocol::TMLedgerData>) = 0;
+
+    virtual void doLedgerData (Job&, LedgerHash hash) = 0;
+
+    virtual void gotStaleData (
+        boost::shared_ptr <protocol::TMLedgerData> packet) = 0;
 
     virtual int getFetchCount (int& timeoutCount) = 0;
 
@@ -66,6 +72,7 @@ public:
     virtual void gotFetchPack (Job&) = 0;
     virtual void sweep () = 0;
 
+    virtual void onStop() = 0;
 };
 
 #endif

@@ -499,8 +499,7 @@ public:
             return;
 
         // we need to switch the ledger we're working from
-        Ledger::pointer newLCL = 
-            getApp().getLedgerMaster ().getLedgerByHash (lclHash);
+        Ledger::pointer newLCL = getApp().getLedgerMaster ().getLedgerByHash (lclHash);
 
         if (newLCL)
         {
@@ -510,36 +509,31 @@ public:
             mPreviousLedger = newLCL;
             mPrevLedgerHash = lclHash;
         }
-        else if (!mAcquiringLedger || (mAcquiringLedger->getHash () 
-                != mPrevLedgerHash))
+        else if (!mAcquiringLedger || (mAcquiringLedger->getHash () != mPrevLedgerHash))
         {
             // need to start acquiring the correct consensus LCL
-            WriteLog (lsWARNING, LedgerConsensus) 
-                << "Need consensus ledger " << mPrevLedgerHash;
+            WriteLog (lsWARNING, LedgerConsensus) << "Need consensus ledger " << mPrevLedgerHash;
 
             if (mAcquiringLedger)
-            {
-                getApp().getInboundLedgers ().dropLedger
-                     (mAcquiringLedger->getHash ());
-            }
+                getApp().getInboundLedgers ().dropLedger (mAcquiringLedger->getHash ());
 
-            mAcquiringLedger = getApp().getInboundLedgers ().findCreate
-                (mPrevLedgerHash, 0, true);
+            mAcquiringLedger = getApp().getInboundLedgers ().findCreateConsensusLedger (mPrevLedgerHash);
             mHaveCorrectLCL = false;
             return;
         }
         else
             return;
 
-        WriteLog (lsINFO, LedgerConsensus) 
-            << "Have the consensus ledger " << mPrevLedgerHash;
+        WriteLog (lsINFO, LedgerConsensus) << "Have the consensus ledger " << mPrevLedgerHash;
         mHaveCorrectLCL = true;
 
         mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution (
-            mPreviousLedger->getCloseResolution () 
-            ,mPreviousLedger->getCloseAgree ()
-            ,mPreviousLedger->getLedgerSeq () + 1);
+                               mPreviousLedger->getCloseResolution (), mPreviousLedger->getCloseAgree (),
+                               mPreviousLedger->getLedgerSeq () + 1);
     }
+
+
+
 
     void timerEntry ()
     {

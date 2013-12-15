@@ -25,77 +25,110 @@ class SHAMapAddNode
 {
 public:
     SHAMapAddNode ()
-        : mInvalid (false)
-        , mUseful (false)
+        : mGood (0)
+        , mBad (0)
+        , mDuplicate (0)
     {
     }
 
-    void setInvalid ()
+    SHAMapAddNode (int good, int bad, int duplicate)
+        : mGood(good)
+        , mBad(bad)
+        , mDuplicate(duplicate)
     {
-        mInvalid = true;
     }
-    void setUseful ()
+
+    void incInvalid ()
     {
-        mUseful = true;
+        ++mBad;
     }
+    void incUseful ()
+    {
+        ++mGood;
+    }
+    void incDuplicate ()
+    {
+        ++mDuplicate;
+    }
+
     void reset ()
     {
-        mInvalid = false;
-        mUseful = false;
+        mGood = mBad = mDuplicate = 0;
+    }
+
+    int getGood ()
+    {
+        return mGood;
     }
 
     bool isInvalid () const
     {
-        return mInvalid;
+        return mBad > 0;
     }
     bool isUseful () const
     {
-        return mUseful;
+        return mGood > 0;
     }
 
-    bool combine (SHAMapAddNode const& n)
+    SHAMapAddNode& operator+= (SHAMapAddNode const& n)
     {
-        // VFALCO NOTE What is the meaning of these lines?
+        mGood += n.mGood;
+        mBad += n.mBad;
+        mDuplicate += n.mDuplicate;
 
-        if (n.mInvalid)
-        {
-            mInvalid = true;
-            return false;
-        }
-
-        if (n.mUseful)
-            mUseful = true;
-
-        return true;
+        return *this;
     }
 
-    operator bool () const
+    bool isGood () const
     {
-        return !mInvalid;
+        return (mGood + mDuplicate) > mBad;
     }
 
-    static SHAMapAddNode okay ()
+    static SHAMapAddNode duplicate ()
     {
-        return SHAMapAddNode (false, false);
+        return SHAMapAddNode (0, 0, 1);
     }
     static SHAMapAddNode useful ()
     {
-        return SHAMapAddNode (false, true);
+        return SHAMapAddNode (1, 0, 0);
     }
     static SHAMapAddNode invalid ()
     {
-        return SHAMapAddNode (true, false);
+        return SHAMapAddNode (0, 1, 0);
+    }
+
+    std::string get ()
+    {
+        std::string ret;
+        if (mGood > 0)
+        {
+            ret.append("good:");
+            ret.append(lexicalCastThrow<std::string>(mGood));
+        }
+        if (mBad > 0)
+        {
+            if (!ret.empty())
+                ret.append(" ");
+	     ret.append("bad:");
+	     ret.append(lexicalCastThrow<std::string>(mBad));
+        }
+        if (mDuplicate > 0)
+        {
+            if (!ret.empty())
+                ret.append(" ");
+	     ret.append("dupe:");
+	     ret.append(lexicalCastThrow<std::string>(mDuplicate));
+        }
+        if (ret.empty ())
+            ret = "no nodes processed";
+        return ret;
     }
 
 private:
-    SHAMapAddNode (bool i, bool u)
-        : mInvalid (i)
-        , mUseful (u)
-    {
-    }
 
-    bool mInvalid;
-    bool mUseful;
+    int mGood;
+    int mBad;
+    int mDuplicate;
 };
 
 #endif

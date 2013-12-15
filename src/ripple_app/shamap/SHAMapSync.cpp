@@ -101,6 +101,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     assert (root->isValid ());
+    assert (root->getNodeHash().isNonZero ());
 
     if (root->isFullBelow ())
     {
@@ -260,7 +261,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
     if (root->getNodeHash ().isNonZero ())
     {
         WriteLog (lsTRACE, SHAMap) << "got root node, already have one";
-        return SHAMapAddNode::okay ();
+        return SHAMapAddNode::duplicate ();
     }
 
     assert (mSeq >= 1);
@@ -277,12 +278,10 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
     root = node;
     mTNByID[*root] = root;
 
-    if (root->getNodeHash ().isZero ())
-    {
-        root->setFullBelow ();
+    if (root->isLeaf())
         clearSynching ();
-    }
-    else if (filter)
+
+    if (filter)
     {
         Serializer s;
         root->addRaw (s, snfPREFIX);
@@ -302,7 +301,7 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
     {
         WriteLog (lsTRACE, SHAMap) << "got root node, already have one";
         assert (root->getNodeHash () == hash);
-        return SHAMapAddNode::okay ();
+        return SHAMapAddNode::duplicate ();
     }
 
     assert (mSeq >= 1);
@@ -315,12 +314,10 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
     root = node;
     mTNByID[*root] = root;
 
-    if (root->getNodeHash ().isZero ())
-    {
-        root->setFullBelow ();
+    if (root->isLeaf())
         clearSynching ();
-    }
-    else if (filter)
+
+    if (filter)
     {
         Serializer s;
         root->addRaw (s, snfPREFIX);
@@ -338,13 +335,13 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
     if (!isSynching ())
     {
         WriteLog (lsTRACE, SHAMap) << "AddKnownNode while not synching";
-        return SHAMapAddNode::okay ();
+        return SHAMapAddNode::duplicate ();
     }
 
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (checkCacheNode (node)) // Do we already have this node?
-        return SHAMapAddNode::okay ();
+        return SHAMapAddNode::duplicate ();
 
     SHAMapTreeNode::pointer parent = checkCacheNode(node.getParentNodeID());
     SHAMapTreeNode* iNode = parent ? parent.get() : root.get ();
@@ -361,7 +358,7 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
         }
 
         if (fullBelowCache.isPresent (iNode->getChildHash (branch)))
-            return SHAMapAddNode::okay ();
+            return SHAMapAddNode::duplicate ();
 
         SHAMapTreeNode *nextNode = getNodePointerNT (iNode->getChildNodeID (branch), iNode->getChildHash (branch), filter);
         if (!nextNode)
@@ -400,7 +397,7 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
     }
 
     WriteLog (lsTRACE, SHAMap) << "got node, already had it (late)";
-    return SHAMapAddNode::okay ();
+    return SHAMapAddNode::duplicate ();
 }
 
 bool SHAMap::deepCompare (SHAMap& other)
@@ -737,7 +734,7 @@ public:
 
         unexpected (gotNodes.size () < 1, "NodeSize");
 
-        unexpected (!destination.addRootNode (*gotNodes.begin (), snfWIRE, NULL), "AddRootNode");
+        unexpected (!destination.addRootNode (*gotNodes.begin (), snfWIRE, NULL).isGood(), "AddRootNode");
 
         nodeIDs.clear ();
         gotNodes.clear ();
@@ -791,7 +788,7 @@ public:
                 bytes += rawNodeIterator->size ();
 #endif
 
-                if (!destination.addKnownNode (*nodeIDIterator, *rawNodeIterator, NULL))
+                if (!destination.addKnownNode (*nodeIDIterator, *rawNodeIterator, NULL).isGood ())
                 {
                     WriteLog (lsTRACE, SHAMap) << "AddKnownNode fails";
                     fail ("AddKnownNode");
