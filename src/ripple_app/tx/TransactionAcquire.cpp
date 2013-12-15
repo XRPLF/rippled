@@ -201,20 +201,15 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNode>& nodeID
             if (nodeIDit->isRoot ())
             {
                 if (mHaveRoot)
-                {
-                    WriteLog (lsWARNING, TransactionAcquire) << "Got root TXS node, already have it";
-                    return SHAMapAddNode ();
-                }
-
-                if (!mMap->addRootNode (getHash (), *nodeDatait, snfWIRE, NULL))
+                    WriteLog (lsDEBUG, TransactionAcquire) << "Got root TXS node, already have it";
+                else if (!mMap->addRootNode (getHash (), *nodeDatait, snfWIRE, NULL).isGood())
                 {
                     WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad root node";
-                    return SHAMapAddNode::invalid ();
                 }
                 else
                     mHaveRoot = true;
             }
-            else if (!mMap->addKnownNode (*nodeIDit, *nodeDatait, &sf))
+            else if (!mMap->addKnownNode (*nodeIDit, *nodeDatait, &sf).isGood())
             {
                 WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad non-root node";
                 return SHAMapAddNode::invalid ();

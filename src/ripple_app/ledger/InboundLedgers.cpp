@@ -26,6 +26,24 @@ InboundLedgers::InboundLedgers (Stoppable& parent)
 {
 }
 
+InboundLedger::pointer InboundLedgers::findCreateConsensusLedger (uint256 const& hash)
+{
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    if (mConsensusLedger.isNonZero() && (mValidationLedger != mConsensusLedger))
+        dropLedger(mConsensusLedger);
+    mConsensusLedger = hash;
+    return findCreate (hash, 0, true);
+}
+
+InboundLedger::pointer InboundLedgers::findCreateValidationLedger (uint256 const& hash)
+{
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    if (mValidationLedger.isNonZero() && (mValidationLedger != mConsensusLedger))
+        dropLedger(mValidationLedger);
+    mValidationLedger = hash;
+    return findCreate (hash, 0, false);
+}
+
 InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 seq, bool couldBeNew)
 {
     assert (hash.isNonZero ());
@@ -208,9 +226,15 @@ void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
         SHAMapAddNode ret;
 
         if (packet.type () == protocol::liTX_NODE)
+        {
             ledger->takeTxNode (nodeIDs, nodeData, ret);
+            WriteLog (lsDEBUG, InboundLedger) << "Ledger TX node stats: " << ret.get();
+        }
         else
+        {
             ledger->takeAsNode (nodeIDs, nodeData, ret);
+            WriteLog (lsDEBUG, InboundLedger) << "Ledger AS node stats: " << ret.get();
+        }
 
         if (!ret.isInvalid ())
         {
@@ -225,6 +249,39 @@ void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
 
     WriteLog (lsWARNING, InboundLedger) << "Not sure what ledger data we got";
     peer->charge (Resource::feeInvalidRequest);
+}
+
+/** We got some data for a ledger we are no longer acquiring
+    Since we paid the price to receive it, we might as well stash it in case we need it.
+    Nodes are received in wire format and must be stashed/hashed in prefix format
+*/
+void InboundLedgers::gotStaleData (Job&, boost::shared_ptr<protocol::TMLedgerData> packet_ptr)
+{
+    const uint256 uZero;
+    try
+    {
+        for (int i = 0; i < packet_ptr->nodes ().size (); ++i)
+        {
+            const protocol::TMLedgerNode& node = packet_ptr->nodes (i);
+
+            if (!node.has_nodeid () || !node.has_nodedata ())
+                return;
+
+	    Serializer s;
+            SHAMapTreeNode newNode(
+                SHAMapNode (node.nodeid().data(), node.nodeid().size()),
+                Blob (node.nodedata().begin(), node.nodedata().end()),
+                0, snfWIRE, uZero, false);
+	    newNode.addRaw(s, snfPREFIX);
+
+	    boost::shared_ptr<Blob> blob = boost::make_shared<Blob> (s.begin(), s.end());
+
+            getApp().getOPs().addFetchPack (newNode.getNodeHash(), blob);
+        }
+    }
+    catch (...)
+    {
+    }
 }
 
 void InboundLedgers::sweep ()

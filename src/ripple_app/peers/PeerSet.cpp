@@ -28,9 +28,10 @@ PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)
     , mFailed (false)
     , mAggressive (false)
     , mTxnData (txnData)
+    , mProgress (false)
     , mTimer (getApp().getIOService ())
 {
-    mLastAction = mLastProgress = UptimeTimer::getInstance ().getElapsedSeconds ();
+    mLastAction = UptimeTimer::getInstance ().getElapsedSeconds ();
     assert ((mTimerInterval > 10) && (mTimerInterval < 30000));
 }
 
@@ -71,7 +72,10 @@ void PeerSet::invokeOnTimer ()
         onTimer (false, sl);
     }
     else
+    {
+        clearProgress ();
         onTimer (true, sl);
+    }
 
     if (!isDone ())
         setTimer ();
