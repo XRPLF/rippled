@@ -113,4 +113,3 @@ public:
 extern void splitIpPort (const std::string& strIpPort, std::string& strIp, int& iPort);
 
 #endif
-// vim:ts=4
