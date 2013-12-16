@@ -26,6 +26,11 @@
 #include "../ripple/resource/ripple_resource.h"
 #include "../ripple/validators/ripple_validators.h"
 
+#include <deque>
+
+#include "peers/NameResolver.h"
+#include "peers/NameResolver.cpp"
+
 namespace ripple {
 
 #include "ledger/LedgerTiming.cpp"
@@ -41,5 +46,4 @@ namespace ripple {
 #include "peers/Peer.cpp"
 #include "peers/PackedMessage.cpp"
 #include "peers/Peers.cpp"
-
 }

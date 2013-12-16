@@ -22,6 +22,9 @@ SETUP_LOG (Peers)
 class PeerFinderLog;
 template <> char const* LogPartition::getPartitionName <PeerFinderLog> () { return "PeerFinder"; }
 
+class NameResolverLog;
+template <> char const* LogPartition::getPartitionName <NameResolverLog> () { return "NameResolver"; }
+
 class PeersImp
     : public Peers
     , public Stoppable
@@ -86,6 +89,8 @@ public:
 
     Peer::pointer   peerConnect (const std::string& strIp, int iPort);
 
+    ScopedPointer <NameResolver> m_resolver;
+
     //--------------------------------------------------------------------------
 
     PeersImp (Stoppable& parent,
@@ -107,7 +112,11 @@ public:
         , mPhase (0)
         , mScanTimer (io_service)
         , mPolicyTimer (io_service)
+        , m_resolver (NameResolver::New (
+            io_service,
+            Journal()))
     {
+
     }
 
     //--------------------------------------------------------------------------
@@ -229,6 +238,7 @@ public:
 
     void onStop ()
     {
+        m_resolver->cancel();
     }
 
     void onChildrenStopped ()

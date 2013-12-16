@@ -1386,6 +1386,9 @@
     <ClCompile Include="..\..\src\ripple_app\ledger\LedgerCleaner.cpp">
       <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\peers\NameResolver.cpp">
+      <Filter>[2] Old Ripple\ripple_app\peers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -2849,6 +2852,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h">
       <Filter>[1] Ripple\algorithm\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\peers\NameResolver.h">
+      <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
