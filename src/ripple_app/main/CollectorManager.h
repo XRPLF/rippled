@@ -17,31 +17,22 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#ifndef RIPPLE_RIPPLECOLLECTOR_H_INCLUDED
+#define RIPPLE_RIPPLECOLLECTOR_H_INCLUDED
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
-
-#include "beast/beast/http/URL.h" // for Config
 #include "beast/beast/Insight.h"
 
-#include "../ripple/resource/api/LegacyFees.h"
+namespace ripple {
 
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+/** Provides the beast::insight::Collector service. */
+class CollectorManager
 {
-
-// Order matters
-
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
+public:
+    static CollectorManager* New (StringPairArray const& params,
+        Journal journal);
+    virtual ~CollectorManager () = 0;
+    virtual shared_ptr <insight::Collector> const& collector () = 0;
+};
 
 }
 

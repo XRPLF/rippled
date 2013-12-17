@@ -43,6 +43,7 @@
 #include "../beast/beast/chrono/Chrono.cpp"
 #include "../beast/beast/crypto/Crypto.cpp"
 #include "../beast/beast/http/HTTP.cpp"
+#include "../beast/beast/insight/Insight.cpp"
 #include "../beast/beast/net/Net.cpp"
 #include "../beast/beast/smart_ptr/SmartPtr.cpp"
 #include "../beast/beast/strings/Strings.cpp"

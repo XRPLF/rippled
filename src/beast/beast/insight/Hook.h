@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,32 +17,41 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_H_INCLUDED
-#define RIPPLE_CORE_H_INCLUDED
+#ifndef BEAST_INSIGHT_HOOK_H_INCLUDED
+#define BEAST_INSIGHT_HOOK_H_INCLUDED
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+#include "HookImpl.h"
 
-#include "beast/beast/http/URL.h" // for Config
-#include "beast/beast/Insight.h"
+#include "../stl/shared_ptr.h"
 
-#include "../ripple/resource/api/LegacyFees.h"
-
-#include "nodestore/NodeStore.h"
-
-namespace ripple
+namespace beast {
+namespace insight {
+    
+/** A reference to a handler for performing polled collection. */
+class Hook
 {
+public:
+    /** Create a null hook.
+        A null hook has no associated handler.
+    */
+    Hook ()
+        { }
 
-// Order matters
+    /** Create a hook referencing the specified implementation.
+        Normally this won't be called directly. Instead, call the appropriate
+        factory function in the Collector interface.
+        @see Collector.
+    */
+    explicit Hook (shared_ptr <HookImpl> const& impl)
+        : m_impl (impl)
+    {
+    }
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
+private:
+    shared_ptr <HookImpl> m_impl;
+};
 
+}
 }
 
 #endif

@@ -42,6 +42,9 @@
 
 #include "beast/beast/Asio.h"
 
+# include "main/CollectorManager.h"
+#include "main/CollectorManager.cpp"
+
 namespace ripple {
 
 //

@@ -26,7 +26,8 @@ protected:
     JobQueue (char const* name, Stoppable& parent);
 
 public:
-    static JobQueue* New (Stoppable& parent, Journal journal);
+    static JobQueue* New (shared_ptr <insight::Collector> const& collector,
+        Stoppable& parent, Journal journal);
 
     virtual ~JobQueue () { }
 

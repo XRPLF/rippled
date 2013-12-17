@@ -47,6 +47,7 @@ struct ConfigSection
 #define SECTION_FEE_ACCOUNT_RESERVE     "fee_account_reserve"
 #define SECTION_FEE_OWNER_RESERVE       "fee_owner_reserve"
 #define SECTION_LEDGER_HISTORY          "ledger_history"
+#define SECTION_INSIGHT                 "insight"
 #define SECTION_IPS                     "ips"
 #define SECTION_IPS_FIXED               "ips_fixed"
 #define SECTION_NETWORK_QUORUM          "network_quorum"

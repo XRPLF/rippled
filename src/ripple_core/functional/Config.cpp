@@ -331,6 +331,8 @@ void Config::load ()
             (void) SectionSingleB (secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
             (void) SectionSingleB (secConfig, SECTION_RPC_USER, RPC_USER);
 
+            insightSettings = parseKeyValueSection (secConfig, SECTION_INSIGHT);
+
             //---------------------------------------
             //
             // VFALCO BEGIN CLEAN
