@@ -64,6 +64,17 @@ public:
         Derived* m_owner;
     };
 
+    void addReference ()
+    {
+        ++m_pending;
+    }
+
+    void removeReference ()
+    {
+        if (--m_pending)
+            (static_cast <Derived *> (this))->asyncHandlersComplete ();
+    }
+
 private:
     // The number of handlers pending.
     Atomic <int> m_pending;
