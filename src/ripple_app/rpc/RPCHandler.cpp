@@ -3629,6 +3629,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
                 Ledger::pointer     lpLedger = getApp().getLedgerMaster ().getPublishedLedger ();
                 if (lpLedger)
                 {
+                    masterLockHolder.unlock();
                     const Json::Value   jvMarker = Json::Value (Json::nullValue);
 
                     if (bBoth)
@@ -3649,6 +3650,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
                         mNetOps->getBookPage (lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID (), false, 0, jvMarker, jvResult);
                     }
                 }
+                // masterLockHolder.lock();
             }
         }
     }
