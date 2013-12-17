@@ -47,12 +47,16 @@ public:
     bool isActive ();
     void progress ()
     {
-        mLastProgress = UptimeTimer::getInstance().getElapsedSeconds();
+        mProgress = true;
         mAggressive = false;
+    }
+    void clearProgress ()
+    {
+        mProgress = false;
     }
     bool isProgress ()
     {
-        return (mLastProgress + (mTimerInterval / 1000)) > UptimeTimer::getInstance().getElapsedSeconds();
+        return mProgress;
     }
     void touch ()
     {
@@ -114,7 +118,7 @@ protected:
     bool mAggressive;
     bool mTxnData;
     int mLastAction;
-    int mLastProgress;
+    bool mProgress;
 
 
     // VFALCO TODO move the responsibility for the timer to a higher level

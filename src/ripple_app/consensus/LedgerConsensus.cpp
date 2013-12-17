@@ -226,7 +226,7 @@ void LedgerConsensus::handleLCL (uint256 const& lclHash)
         if (mAcquiringLedger)
             getApp().getInboundLedgers ().dropLedger (mAcquiringLedger->getHash ());
 
-        mAcquiringLedger = getApp().getInboundLedgers ().findCreate (mPrevLedgerHash, 0, true);
+        mAcquiringLedger = getApp().getInboundLedgers ().findCreateConsensusLedger (mPrevLedgerHash);
         mHaveCorrectLCL = false;
         return;
     }

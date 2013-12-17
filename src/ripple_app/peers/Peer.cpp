@@ -2436,7 +2436,14 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
     }
     else
     {
+        WriteLog (lsINFO, Peer) << "Got data for unwanted ledger";
         charge (Resource::feeUnwantedData);
+
+        // stash the data in our fetch pack, just in case
+        if (getApp().getJobQueue().getJobCount(jtLEDGER_DATA) < 64)
+            getApp().getJobQueue().addJob (jtLEDGER_DATA, "gotStaleData",
+                                       BIND_TYPE (&InboundLedgers::gotStaleData, &getApp().getInboundLedgers (),
+                                               P_1, packet_ptr));
     }
 }
 

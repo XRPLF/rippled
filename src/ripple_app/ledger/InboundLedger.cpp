@@ -180,6 +180,12 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
     mRecentTXNodes.clear ();
     mRecentASNodes.clear ();
 
+    if (isDone())
+    {
+        WriteLog (lsINFO, InboundLedger) << "Already done " << mHash;
+        return;
+    }
+
     if (getTimeouts () > LEDGER_TIMEOUT_COUNT)
     {
         if (mSeq != 0)
@@ -193,11 +199,6 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 
     if (!wasProgress)
     {
-        if (isDone())
-        {
-            WriteLog (lsINFO, InboundLedger) << "Already done " << mHash;
-            return;
-        }
         checkLocal();
         if (isDone())
         {
@@ -687,10 +688,17 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!mHaveBase)
+    {
+        WriteLog (lsWARNING, InboundLedger) << "TX node without base";
+        san.incInvalid();
         return false;
+    }
 
     if (mHaveTransactions || mFailed)
+    {
+        san.incDuplicate();
         return true;
+    }
 
     std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin ();
     std::list< Blob >::const_iterator nodeDatait = data.begin ();
@@ -700,13 +708,15 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
     {
         if (nodeIDit->isRoot ())
         {
-            if (!san.combine (mLedger->peekTransactionMap ()->addRootNode (mLedger->getTransHash (), *nodeDatait,
-                              snfWIRE, &tFilter)))
+            san += mLedger->peekTransactionMap ()->addRootNode (mLedger->getTransHash (), *nodeDatait,
+                              snfWIRE, &tFilter);
+	    if (!san.isGood())
                 return false;
         }
         else
         {
-            if (!san.combine (mLedger->peekTransactionMap ()->addKnownNode (*nodeIDit, *nodeDatait, &tFilter)))
+            san +=  mLedger->peekTransactionMap ()->addKnownNode (*nodeIDit, *nodeDatait, &tFilter);
+            if (!san.isGood())
                 return false;
         }
 
@@ -754,17 +764,22 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
     {
         if (nodeIDit->isRoot ())
         {
-            if (!san.combine (mLedger->peekAccountStateMap ()->addRootNode (mLedger->getAccountHash (),
-                              *nodeDatait, snfWIRE, &tFilter)))
+            san += mLedger->peekAccountStateMap ()
+                ->addRootNode (mLedger->getAccountHash (), *nodeDatait, snfWIRE, &tFilter);
+	    if (!san.isGood ())
             {
                 WriteLog (lsWARNING, InboundLedger) << "Bad ledger base";
                 return false;
             }
         }
-        else if (!san.combine (mLedger->peekAccountStateMap ()->addKnownNode (*nodeIDit, *nodeDatait, &tFilter)))
+        else
         {
-            WriteLog (lsWARNING, InboundLedger) << "Unable to add AS node";
-            return false;
+            san += mLedger->peekAccountStateMap ()->addKnownNode (*nodeIDit, *nodeDatait, &tFilter);
+            if (!san.isGood ())
+            {
+                WriteLog (lsWARNING, InboundLedger) << "Unable to add AS node";
+                return false;
+            }
         }
 
         ++nodeIDit;
@@ -797,8 +812,8 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
         return false;
 
     AccountStateSF tFilter (mLedger->getLedgerSeq ());
-    return san.combine (
-               mLedger->peekAccountStateMap ()->addRootNode (mLedger->getAccountHash (), data, snfWIRE, &tFilter));
+    san += mLedger->peekAccountStateMap ()->addRootNode (mLedger->getAccountHash (), data, snfWIRE, &tFilter);
+    return san.isGood();
 }
 
 bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
@@ -812,8 +827,8 @@ bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
         return false;
 
     TransactionStateSF tFilter (mLedger->getLedgerSeq ());
-    return san.combine (
-               mLedger->peekTransactionMap ()->addRootNode (mLedger->getTransHash (), data, snfWIRE, &tFilter));
+    san += mLedger->peekTransactionMap ()->addRootNode (mLedger->getTransHash (), data, snfWIRE, &tFilter);
+    return san.isGood();
 }
 
 std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
