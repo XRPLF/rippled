@@ -25,7 +25,7 @@
 */
 struct SocketBase
 {
-protected:
+public:
     typedef boost::system::error_code error_code;
 
     /** The error returned when a pure virtual is called.
