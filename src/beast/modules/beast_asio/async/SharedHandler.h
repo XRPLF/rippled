@@ -62,14 +62,7 @@ public:
     virtual void operator() (error_code const&, std::size_t);
 
     template <typename Function>
-    void invoke (BOOST_ASIO_MOVE_ARG(Function) f)
-    {
-        // The allocator will hold a reference to the SharedHandler
-        // so that we can safely destroy the function object.
-        invoked_type invoked (f,
-            SharedHandlerAllocator <char> (this));
-        invoke (invoked);
-    }
+    void invoke (BEAST_MOVE_ARG(Function) f);
 
     virtual void  invoke (invoked_type& invoked) = 0;
     virtual void* allocate (std::size_t size) = 0;

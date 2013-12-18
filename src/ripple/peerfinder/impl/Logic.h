@@ -36,6 +36,7 @@ namespace PeerFinder {
 
 //------------------------------------------------------------------------------
 
+#if 0
 typedef boost::multi_index_container <
     PeerInfo, boost::multi_index::indexed_by <
         boost::multi_index::hashed_unique <
@@ -46,6 +47,7 @@ typedef boost::multi_index_container <
                 IPAddress::hasher>
     >
 > Peers;
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -109,8 +111,10 @@ public:
     // The current tally of peer slot statistics
     Slots m_slots;
 
+#if 0
     // Our view of the current set of connected peers.
     Peers m_peers;
+#endif
 
     Cache m_cache;
 
@@ -278,9 +282,11 @@ public:
             for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
                 iter != m_fixedPeers.end(); ++iter)
             {
+#if 0
                 // Make sure the fixed peer is not already connected
                 if (m_peers.get<1>().find (*iter) == m_peers.get<1>().end())
                     list.push_back (*iter);
+#endif
             }
         }
 
@@ -346,9 +352,11 @@ public:
     {
         m_cache.sweep (get_now());
 
+#if 0
         for (Peers::iterator iter (m_peers.begin());
             iter != m_peers.end(); ++iter)
             iter->received.cycle();
+#endif
     }
 
     // Called when an outbound connection attempt is started
@@ -407,10 +415,13 @@ public:
         if (! inbound)
             m_legacyCache.checked (address, true);
 
+#if 0
         std::pair <Peers::iterator, bool> result (
             m_peers.insert (
                 PeerInfo (id, address, inbound, get_now())));
         bassert (result.second);
+#endif
+
         m_slots.addPeer (m_config, inbound);
 
         // VFALCO NOTE Update fixed peers count (HACKED)
@@ -428,6 +439,7 @@ public:
     //
     void onPeerDisconnected (PeerID const& id)
     {
+#if 0
         Peers::iterator iter (m_peers.find (id));
         bassert (iter != m_peers.end());
         PeerInfo const& peer (*iter);
@@ -444,6 +456,7 @@ public:
 
         // Must come last
         m_peers.erase (iter);
+#endif
     }
 
     //--------------------------------------------------------------------------
@@ -530,6 +543,7 @@ public:
     //
     void sendEndpoints ()
     {
+#if 0
         if (! m_peers.empty())
         {
             m_journal.trace << "Sending endpoints...";
@@ -555,6 +569,7 @@ public:
                 }
             }
         }
+#endif
     }
 
     // Called when the Checker completes a connectivity test
@@ -565,6 +580,7 @@ public:
         if (result.error == boost::asio::error::operation_aborted)
             return;
 
+#if 0
         Peers::iterator iter (m_peers.find (id));
         if (iter != m_peers.end())
         {
@@ -602,12 +618,14 @@ public:
             m_journal.debug << "Finished listening test for " <<
                 id << " but the peer disconnected. ";
         }
+#endif
     }
 
     // Called when a peer sends us the mtENDPOINTS message.
     //
     void onPeerEndpoints (PeerID const& id, std::vector <Endpoint> list)
     {
+#if 0
         Peers::iterator iter (m_peers.find (id));
         bassert (iter != m_peers.end());
 
@@ -700,6 +718,7 @@ public:
         }
 
         peer.whenAcceptEndpoints = now + secondsPerMessage;
+#endif
     }
 
     //--------------------------------------------------------------------------
@@ -740,10 +759,12 @@ public:
             for (std::vector <IPAddress>::const_iterator iter (results.list.begin());
                 iter != results.list.end(); ++iter)
             {
+#if 0
                 std::pair <LegacyEndpoint const&, bool> result (
                     m_legacyCache.insert (*iter, now));
                 if (result.second)
                     ++newEntries;
+#endif
             }
 
             m_journal.debug <<
@@ -787,6 +808,7 @@ public:
     {
         if (! validIPAddress (address))
             return;
+#if 0
         std::pair <LegacyEndpoint const&, bool> result (
             m_legacyCache.insert (address, get_now()));
         if (result.second)
@@ -803,6 +825,7 @@ public:
                     this, address, _1));
 #endif
         }
+#endif
     }
 };
 

@@ -27,6 +27,7 @@
 #include <cstring>
     
 #include "Config.h"
+#include "Uncopyable.h"
 
 namespace beast {
 

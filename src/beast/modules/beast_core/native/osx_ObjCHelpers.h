@@ -24,7 +24,6 @@
 #ifndef BEAST_OSX_OBJCHELPERS_H_INCLUDED
 #define BEAST_OSX_OBJCHELPERS_H_INCLUDED
 
-
 /* This file contains a few helper functions that are used internally but which
    need to be kept away from the public headers because they use obj-C symbols.
 */

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_LEGACYENDPOINTCACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_LEGACYENDPOINTCACHE_H_INCLUDED
 
+#include <functional>
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -30,6 +32,7 @@ public:
     typedef std::vector <LegacyEndpoint const*> FlattenedList;
 
 private:
+#if 0
     typedef boost::multi_index_container <
         LegacyEndpoint, boost::multi_index::indexed_by <
             boost::multi_index::hashed_unique <
@@ -39,6 +42,8 @@ private:
     > MapType;
 
     MapType m_map;
+#endif
+
     Store& m_store;
     Journal m_journal;
     int m_mutationCount;
@@ -71,10 +76,12 @@ private:
     FlattenedList flatten () const
     {
         FlattenedList list;
+#if 0
         list.reserve (m_map.size());
         for (MapType::iterator iter (m_map.begin());
             iter != m_map.end(); ++iter)
             list.push_back (&*iter);
+#endif
         return list;
     }
 
@@ -116,6 +123,7 @@ private:
         std::random_shuffle (list.begin(), list.end());
         std::sort (list.begin(), list.end(), PruneLess());
         FlattenedList::const_iterator pos (list.begin() + list.size()/2 + 1);
+#if 0
         std::size_t const n (m_map.size() - (pos - list.begin()));
         MapType map;
         for (FlattenedList::const_iterator iter (list.begin());
@@ -123,6 +131,7 @@ private:
             map.insert (**iter);
         std::swap (map, m_map);
         m_journal.info << "Pruned " << n << " legacy endpoints";
+#endif
         mutate();
     }
 
@@ -160,7 +169,11 @@ public:
 
     std::size_t size() const
     {
+#if 0
         return m_map.size();
+#else
+        return 0;
+#endif
     }
 
     /** Load the legacy endpoints cache from the database. */
@@ -173,16 +186,18 @@ public:
         for (List::const_iterator iter (list.begin());
             iter != list.end(); ++iter)
         {
+#if 0
             std::pair <LegacyEndpoint const&, bool> result (insert (*iter, now));
             if (result.second)
                 ++n;
+#endif
         }
         m_journal.debug << "Loaded " << n << " legacy endpoints";
         m_mutationCount = 0;
     }
 
+#if 0
     /** Attempt to insert the endpoint.
-        The caller is responsible for making sure the address is valid.
         The return value provides a reference to the new or existing endpoint.
         The bool indicates whether or not the insertion took place.
     */
@@ -196,13 +211,16 @@ public:
             mutate();
         return std::make_pair (*result.first, result.second);
     }
+#endif
 
     /** Returns a pointer to the legacy endpoint if it exists, else nullptr. */
     LegacyEndpoint const* find (IPAddress const& address)
     {
+#if 0
         MapType::iterator iter (m_map.find (address));
         if (iter != m_map.end())
             return &*iter;
+#endif
         return nullptr;
     }
 

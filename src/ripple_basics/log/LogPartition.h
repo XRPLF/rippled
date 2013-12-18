@@ -52,17 +52,7 @@ public:
 
     /** Returns the LogPartition based on a type key. */
     template <class Key>
-    static LogPartition& get ()
-    {
-        struct LogPartitionType : LogPartition
-        {
-            LogPartitionType () : LogPartition (getPartitionName <Key> ())
-                { }
-        };
-
-        // Each LogPartition is a singleton.
-        return *SharedSingleton <LogPartitionType>::getInstance();
-    }
+    static LogPartition& get ();
 
     /** Returns a Journal using the specified LogPartition type key. */
     template <class Key>
@@ -109,6 +99,19 @@ private:
     LogPartition*       mNextLog;
     std::string         mName;
 };
+
+template <class Key>
+LogPartition& LogPartition::get ()
+{
+    struct LogPartitionType : LogPartition
+    {
+        LogPartitionType () : LogPartition (getPartitionName <Key> ())
+            { }
+    };
+
+    // Each LogPartition is a singleton.
+    return *SharedSingleton <LogPartitionType>::getInstance();
+}
 
 #define SETUP_LOG(Class) \
     template <> char const* LogPartition::getPartitionName <Class> () { return #Class; } \

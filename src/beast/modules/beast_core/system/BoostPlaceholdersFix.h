@@ -29,7 +29,6 @@
 # define BOOST_BIND_PLACEHOLDERS_HPP_INCLUDED
 #endif
 
-#include <boost/version.hpp>
 #include <boost/bind.hpp>
 #include <boost/bind/arg.hpp>
 

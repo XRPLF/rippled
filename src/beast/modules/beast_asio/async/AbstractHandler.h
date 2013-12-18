@@ -130,7 +130,7 @@ private:
 
 /** A reference counted, abstract completion handler. */
 template <typename Signature, class Allocator = std::allocator <char> >
-class AbstractHandler;
+struct AbstractHandler;
 
 //------------------------------------------------------------------------------
 

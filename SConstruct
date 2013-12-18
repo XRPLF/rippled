@@ -48,8 +48,8 @@ if OSX:
     env.Replace(CC= 'clang')
     env.Replace(CXX= 'clang++')
     env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libc++'])
-    env.Append(LINKFLAGS='-stdlib=libc++')
-    env['FRAMEWORKS'] = ['AppKit']
+    env.Append(LINKFLAGS='-stdlib=libc++') 
+    env['FRAMEWORKS'] = ['AppKit','Foundation']
 
 GCC_VERSION = re.split('\.', commands.getoutput(env['CXX'] + ' -dumpversion'))
 
@@ -98,7 +98,8 @@ BOOST_LIBS = [
 # We whitelist platforms where the non -mt version is linked with pthreads. This
 # can be verified with: ldd libboost_filesystem.* If a threading library is
 # included the platform can be whitelisted.
-if FreeBSD or Ubuntu or Archlinux or OSX:
+if FreeBSD or Ubuntu or Archlinux:
+# if FreeBSD or Ubuntu or Archlinux or OSX:    
     # non-mt libs do link with pthreads.
     env.Append(
         LIBS = BOOST_LIBS

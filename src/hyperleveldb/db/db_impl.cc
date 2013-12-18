@@ -1488,11 +1488,11 @@ struct DBImpl::Writer {
   Writer* next;
   uint64_t start_sequence;
   uint64_t end_sequence;
-  std::tr1::shared_ptr<WritableFile> logfile;
-  std::tr1::shared_ptr<log::Writer> log;
+  std::shared_ptr<WritableFile> logfile;
+  std::shared_ptr<log::Writer> log;
   MemTable* mem;
-  std::tr1::shared_ptr<WritableFile> old_logfile;
-  std::tr1::shared_ptr<log::Writer> old_log;
+  std::shared_ptr<WritableFile> old_logfile;
+  std::shared_ptr<log::Writer> old_log;
 
   explicit Writer()
     : mtx(),
