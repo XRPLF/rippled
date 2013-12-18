@@ -453,7 +453,7 @@ bool Pathfinder::matchesOrigin (const uint160& currency, const uint160& issuer)
     return (issuer == mSrcIssuerID) || (issuer == mSrcAccountID);
 }
 
-int Pathfinder::getPathsOut (const uint160& currencyID, const uint160& accountID,
+int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& accountID,
                              bool isDstCurrency, const uint160& dstAccount)
 {
 #ifdef C11X

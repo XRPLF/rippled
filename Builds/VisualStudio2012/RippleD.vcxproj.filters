@@ -1398,6 +1398,12 @@
     <ClCompile Include="..\..\src\ripple_app\shamap\RadixMapTest.cpp">
       <Filter>[2] Old Ripple\ripple_app\shamap</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\RippleAssets.cpp">
+      <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\RippleAssets.h">
+      <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -2870,6 +2876,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\shamap\RadixMapTest.h">
       <Filter>[2] Old Ripple\ripple_app\shamap</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\RippleAssets.h">
+      <Filter>[1] Ripple\types\api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

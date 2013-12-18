@@ -26,6 +26,7 @@
 #include "beast/modules/beast_crypto/beast_crypto.h" // for UnsignedInteger, Remove ASAP!
 
 #include "beast/modules/beast_core/system/BeforeBoost.h"
+#include <boost/utility/base_from_member.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/unordered_set.hpp>
 
@@ -61,6 +62,7 @@ using namespace beast;
 #include "api/RippleAccountID.h"
 #include "api/RippleAccountPublicKey.h"
 #include "api/RippleAccountPrivateKey.h"
+#include "api/RippleAssets.h"
 #include "api/RipplePublicKey.h"
 #include "api/RipplePrivateKey.h"
 # include "api/SimpleIdentifier.h"

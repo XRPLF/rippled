@@ -30,6 +30,13 @@
 # endif
 #endif
 
+#include <set>
+#include <map>
+#include <unordered_set>
+#include <unordered_map>
+#include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
+
 #include "impl/Base58.cpp"
 #include "impl/ByteOrder.cpp"
 #include "impl/RandomNumbers.cpp"
@@ -38,4 +45,5 @@
 #include "impl/UInt160.cpp"
 #include "impl/UInt256.cpp"
 #include "impl/RippleIdentifierTests.cpp"
+#include "impl/RippleAssets.cpp"
 #include "impl/JsonPropertyStream.cpp"

@@ -356,10 +356,10 @@ public:
     bool subServer (InfoSub::ref ispListener, Json::Value& jvResult);
     bool unsubServer (uint64 uListener);
 
-    bool subBook (InfoSub::ref ispListener, const uint160& currencyPays, const uint160& currencyGets,
-                  const uint160& issuerPays, const uint160& issuerGets);
-    bool unsubBook (uint64 uListener, const uint160& currencyPays, const uint160& currencyGets,
-                    const uint160& issuerPays, const uint160& issuerGets);
+    bool subBook (InfoSub::ref ispListener, RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
+                  RippleIssuer const& issuerPays, RippleIssuer const& issuerGets);
+    bool unsubBook (uint64 uListener, RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
+                    RippleIssuer const& issuerPays, RippleIssuer const& issuerGets);
 
     bool subTransactions (InfoSub::ref ispListener);
     bool unsubTransactions (uint64 uListener);
@@ -2605,8 +2605,8 @@ void NetworkOPsImp::unsubAccount (uint64 uSeq, const boost::unordered_set<Ripple
     }
 }
 
-bool NetworkOPsImp::subBook (InfoSub::ref isrListener, const uint160& currencyPays, const uint160& currencyGets,
-                          const uint160& issuerPays, const uint160& issuerGets)
+bool NetworkOPsImp::subBook (InfoSub::ref isrListener, RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
+                          RippleIssuer const& issuerPays, RippleIssuer const& issuerGets)
 {
     BookListeners::pointer listeners =
         getApp().getOrderBookDB ().makeBookListeners (currencyPays, currencyGets, issuerPays, issuerGets);
@@ -2618,7 +2618,7 @@ bool NetworkOPsImp::subBook (InfoSub::ref isrListener, const uint160& currencyPa
 }
 
 bool NetworkOPsImp::unsubBook (uint64 uSeq,
-                            const uint160& currencyPays, const uint160& currencyGets, const uint160& issuerPays, const uint160& issuerGets)
+                            RippleCurrency const& currencyPays, RippleCurrency const& currencyGets, RippleIssuer const& issuerPays, RippleIssuer const& issuerGets)
 {
     BookListeners::pointer listeners =
         getApp().getOrderBookDB ().getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets);
