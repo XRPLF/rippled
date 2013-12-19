@@ -112,9 +112,6 @@ Pathfinder::Pathfinder (RippleLineCache::ref cache,
 
     bValid = true;
 
-    // FIXME: This is not right
-    getApp().getOrderBookDB ().setup (mLedger);
-
     m_loadEvent = getApp().getJobQueue ().getLoadEvent (jtPATH_FIND, "FindPath");
 
     bool bIssuer = mSrcCurrencyID.isNonZero() && mSrcIssuerID.isNonZero() && (mSrcIssuerID != mSrcAccountID);
@@ -466,7 +463,14 @@ int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& ac
     if (it != mPOMap.end ())
         return it->second;
 
-    int aFlags = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID))->getFieldU32(sfFlags);
+    SLE::pointer sleAccount = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID));
+    if (!sleAccount)
+    {
+        mPOMap[accountCurrency] = 0;
+        return 0;
+    }
+
+    int aFlags = sleAccount->getFieldU32(sfFlags);
     bool const bAuthRequired = (aFlags & lsfRequireAuth) != 0;
 
     int count = 0;
