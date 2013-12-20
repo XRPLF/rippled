@@ -19,8 +19,21 @@ PIDFILE=/var/run/$NAME.pid
 DAEMON=/usr/local/sbin/rippled
 DAEMON_OPTS="--conf /etc/ripple/rippled.cfg"
 NET_OPTS="--net $DAEMON_OPTS"
+LOGDIR="/var/log/rippled"
+DBDIR="/var/db/rippled/db/hyperldb"
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
+
+# I wish it didn't come down to this, but this is the easiest way to ensure
+# sanity of an install.
+if [ ! -d $LOGDIR ]; then
+	mkdir -p $LOGDIR
+	chown $USER:$GROUP $LOGDIR
+fi
+if [ ! -d $DBDIR ]; then
+	mkdir -p $DBDIR
+	chown -R $USER:$GROUP $DBDIR
+fi
 
 case "$1" in
     start)
@@ -50,11 +63,11 @@ case "$1" in
         echo "Status of $NAME:"
         echo -n "PID of $NAME: "
         if [ -f "$PIDFILE" ]; then
-		cat $PIDFILE
-        	$DAEMON $DAEMON_OPTS server_info
-	else
-		echo "$NAME not running."
-	fi
+                cat $PIDFILE
+                $DAEMON $DAEMON_OPTS server_info
+        else
+                echo "$NAME not running."
+        fi
         echo "."
         ;;
 
@@ -93,7 +106,7 @@ case "$1" in
 
     *)
         echo "Usage: $0 {start|stop|restart|status|fetch|uptime|startconfig|"
-        echo "         command|test}"
+        echo "           command|test}"
         exit 1
 esac
 
