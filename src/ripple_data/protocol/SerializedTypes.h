@@ -566,7 +566,7 @@ public:
     }
     bool isLegalNet () const
     {
-        return !mIsNative || (mValue < cMaxNativeN);
+        return !mIsNative || (mValue <= cMaxNativeN);
     }
     operator bool () const
     {
