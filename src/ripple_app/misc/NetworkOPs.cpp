@@ -1403,8 +1403,10 @@ int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer
     // Create a consensus object to get consensus on this ledger
     assert (!mConsensus);
     prevLedger->setImmutable ();
-    mConsensus = boost::make_shared<LedgerConsensus> (
-                     networkClosed, prevLedger, m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC ());
+    
+    mConsensus = LedgerConsensus::New(
+        networkClosed, prevLedger,
+        m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC ());
 
     m_journal.debug << "Initiating consensus engine";
     return mConsensus->startup ();
