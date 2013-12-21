@@ -26,148 +26,56 @@
     is destroyed when the process is complete.
 */
 class LedgerConsensus
-    : public boost::enable_shared_from_this <LedgerConsensus>
-    , public CountedObject <LedgerConsensus>
 {
-public:
-    static char const* getCountedObjectName () { return "LedgerConsensus"; }
+public:    
+    shared_ptr <LedgerConsensus> New(
+        LedgerHash const & prevLCLHash, Ledger::ref previousLedger
+        , uint32 closeTime)
 
-    LedgerConsensus (LedgerHash const & prevLCLHash, Ledger::ref previousLedger, uint32 closeTime);
+    virtual int startup () = 0;
 
-    int startup ();
+    virtual Json::Value getJson (bool full) = 0;
 
-    Json::Value getJson (bool full);
+    virtual Ledger::ref peekPreviousLedger () = 0;
 
-    Ledger::ref peekPreviousLedger ()
-    {
-        return mPreviousLedger;
-    }
+    virtual uint256 getLCL () = 0;
 
-    uint256 getLCL ()
-    {
-        return mPrevLedgerHash;
-    }
+    virtual SHAMap::pointer getTransactionTree (uint256 const & hash, 
+        bool doAcquire) = 0;
 
-    SHAMap::pointer getTransactionTree (uint256 const & hash, bool doAcquire);
+    virtual void mapComplete (uint256 const & hash, SHAMap::ref map, 
+        bool acquired) = 0;
 
-    TransactionAcquire::pointer getAcquiring (uint256 const & hash);
+    virtual bool stillNeedTXSet (uint256 const & hash) = 0;
 
-    void mapComplete (uint256 const & hash, SHAMap::ref map, bool acquired);
+    virtual void checkLCL () = 0;
 
-    bool stillNeedTXSet (uint256 const & hash);
+    virtual void handleLCL (uint256 const & lclHash) = 0;
 
-    void checkLCL ();
-
-    void handleLCL (uint256 const & lclHash);
-
-    void timerEntry ();
+    virtual void timerEntry () = 0;
 
     // state handlers
-    void statePreClose ();
-    void stateEstablish ();
-    void stateCutoff ();
-    void stateFinished ();
-    void stateAccepted ();
+    virtual void statePreClose () = 0;
+    virtual void stateEstablish () = 0;
+    virtual void stateFinished () = 0;
+    virtual void stateAccepted () = 0;
 
-    bool haveConsensus (bool forReal);
+    virtual bool haveConsensus (bool forReal) = 0;
 
-    bool peerPosition (LedgerProposal::ref);
+    virtual bool peerPosition (LedgerProposal::ref) = 0;
 
-    bool peerHasSet (Peer::ref peer, uint256 const & set, protocol::TxSetStatus status);
+    virtual bool peerHasSet (Peer::ref peer, uint256 const & set,
+        protocol::TxSetStatus status) = 0;
 
-    SHAMapAddNode peerGaveNodes (Peer::ref peer, uint256 const & setHash,
-                                 const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData);
+    virtual SHAMapAddNode peerGaveNodes (Peer::ref peer, 
+        uint256 const & setHash,
+        const std::list<SHAMapNode>& nodeIDs, 
+        const std::list< Blob >& nodeData) = 0;
 
-    bool isOurPubKey (const RippleAddress & k)
-    {
-        return k == mValPublic;
-    }
+    virtual bool isOurPubKey (const RippleAddress & k) = 0;
 
     // test/debug
-    void simulate ();
-
-private:
-    // final accept logic
-    void accept (SHAMap::ref txSet, LoadEvent::pointer);
-
-    void weHave (uint256 const & id, Peer::ref avoidPeer);
-    void startAcquiring (TransactionAcquire::pointer);
-    SHAMap::pointer find (uint256 const & hash);
-
-    void createDisputes (SHAMap::ref, SHAMap::ref);
-    void addDisputedTransaction (uint256 const& , Blob const & transaction);
-    void adjustCount (SHAMap::ref map, const std::vector<uint160>& peers);
-    void propose ();
-
-    void addPosition (LedgerProposal&, bool ours);
-    void removePosition (LedgerProposal&, bool ours);
-    void sendHaveTxSet (uint256 const & set, bool direct);
-    void applyTransactions (SHAMap::ref transactionSet, Ledger::ref targetLedger,
-                            Ledger::ref checkLedger, CanonicalTXSet & failedTransactions, bool openLgr);
-    int applyTransaction (TransactionEngine & engine, SerializedTransaction::ref txn, Ledger::ref targetLedger,
-                          bool openLgr, bool retryAssured);
-
-    uint32 roundCloseTime (uint32 closeTime);
-
-    // manipulating our own position
-    void statusChange (protocol::NodeEvent, Ledger & ledger);
-    void takeInitialPosition (Ledger & initialLedger);
-    void updateOurPositions ();
-    void playbackProposals ();
-    int getThreshold ();
-    void closeLedger ();
-    void checkOurValidation ();
-
-    void beginAccept (bool synchronous);
-    void endConsensus ();
-
-    void addLoad (SerializedValidation::ref val);
-
-private:
-    // VFALCO TODO Rename these to look pretty
-    enum LCState
-    {
-        lcsPRE_CLOSE,       // We haven't closed our ledger yet, but others might have
-        lcsESTABLISH,       // Establishing consensus
-        lcsFINISHED,        // We have closed on a transaction set
-        lcsACCEPTED,        // We have accepted/validated a new last closed ledger
-    };
-
-    LCState mState;
-    uint32 mCloseTime;                      // The wall time this ledger closed
-    uint256 mPrevLedgerHash, mNewLedgerHash;
-    Ledger::pointer mPreviousLedger;
-    InboundLedger::pointer mAcquiringLedger;
-    LedgerProposal::pointer mOurPosition;
-    RippleAddress mValPublic, mValPrivate;
-    bool mProposing, mValidating, mHaveCorrectLCL, mConsensusFail;
-
-    int mCurrentMSeconds, mClosePercent, mCloseResolution;
-    bool mHaveCloseTimeConsensus;
-
-    boost::posix_time::ptime        mConsensusStartTime;
-    int                             mPreviousProposers;
-    int                             mPreviousMSeconds;
-
-    // Convergence tracking, trusted peers indexed by hash of public key
-    boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
-
-    // Transaction Sets, indexed by hash of transaction tree
-    boost::unordered_map<uint256, SHAMap::pointer> mAcquired;
-    boost::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
-
-    // Peer sets
-    boost::unordered_map<uint256, std::vector< boost::weak_ptr<Peer> > > mPeerData;
-
-    // Disputed transactions
-    boost::unordered_map<uint256, DisputedTx::pointer> mDisputes;
-    boost::unordered_set<uint256> mCompares;
-
-    // Close time estimates
-    std::map<uint32, int> mCloseTimes;
-
-    // nodes that have bowed out of this consensus process
-    boost::unordered_set<uint160> mDeadNodes;
+    virtual void simulate () = 0;
 };
 
 

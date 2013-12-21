@@ -24,68 +24,50 @@
 
     @see InboundLedger
 */
-// VFALCO TODO Rename to InboundLedgers
-// VFALCO TODO Create abstract interface
 class InboundLedgers
     : public Stoppable
-    , public LeakChecked <InboundLedger>
+    , public LeakChecked <InboundLedgers>
 {
 public:
-    // How long before we try again to acquire the same ledger
-    static const int kReacquireIntervalSeconds = 300;
-
     explicit InboundLedgers (Stoppable& parent);
+
+    static InboundLedgers* New (Stoppable& parent);
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
-    InboundLedger::pointer findCreate (uint256 const& hash, uint32 seq, bool bCouldBeNew);
+    virtual InboundLedger::pointer findCreate (uint256 const& hash, 
+                                        uint32 seq, 
+                                        bool bCouldBeNew) = 0;
 
-    InboundLedger::pointer find (uint256 const& hash);
+    virtual InboundLedger::pointer find (uint256 const& hash) = 0;
 
-    bool hasLedger (LedgerHash const& ledgerHash);
+    virtual bool hasLedger (LedgerHash const& ledgerHash) = 0;
 
-    void dropLedger (LedgerHash const& ledgerHash);
+    virtual void dropLedger (LedgerHash const& ledgerHash) = 0;
 
-    bool awaitLedgerData (LedgerHash const& ledgerHash);
+    virtual bool awaitLedgerData (LedgerHash const& ledgerHash) = 0;
 
     // VFALCO TODO Why is hash passed by value?
     // VFALCO TODO Remove the dependency on the Peer object.
     //
-    void gotLedgerData (Job&,
+    virtual void gotLedgerData (Job& job,
                         LedgerHash hash,
                         boost::shared_ptr <protocol::TMLedgerData> packet,
-                        boost::weak_ptr<Peer> peer);
+                        boost::weak_ptr<Peer> peer) = 0;
 
-    int getFetchCount (int& timeoutCount);
+    virtual int getFetchCount (int& timeoutCount) = 0;
 
-    void logFailure (uint256 const& h)
-    {
-        mRecentFailures.add (h);
-    }
+    virtual void logFailure (uint256 const& h) = 0;
 
-    bool isFailure (uint256 const& h)
-    {
-        return mRecentFailures.isPresent (h, false);
-    }
+    virtual bool isFailure (uint256 const& h) = 0;
 
-    void clearFailures();
+    virtual void clearFailures() = 0;
 
-    Json::Value getInfo();
+    virtual Json::Value getInfo() = 0;
 
-    void gotFetchPack (Job&);
-    void sweep ();
+    virtual void gotFetchPack (Job&) = 0;
+    virtual void sweep () = 0;
 
-    void onStop ();
-
-private:
-    typedef boost::unordered_map <uint256, InboundLedger::pointer> MapType;
-
-    typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-    LockType mLock;
-
-    MapType mLedgers;
-    KeyCache <uint256, UptimeTimerAdapter> mRecentFailures;
 };
 
 #endif
