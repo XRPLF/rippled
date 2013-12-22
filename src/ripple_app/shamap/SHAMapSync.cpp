@@ -601,11 +601,11 @@ void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                     if (!have || !have->hasInnerNode (*next, childHash))
                         stack.push (next);
                 }
-                else if (includeLeaves && (!have || !have->hasLeafNode (next->getTag (), childHash)))
+                else if (includeLeaves && (!have || !have->hasLeafNode (next->getTag(), childHash)))
                 {
                     Serializer s;
-                    node->addRaw (s, snfPREFIX);
-                    func (boost::cref(node->getNodeHash ()), boost::cref(s.peekData ()));
+                    next->addRaw (s, snfPREFIX);
+                    func (boost::cref(childHash), boost::cref(s.peekData ()));
                     --max;
                 }
             }
