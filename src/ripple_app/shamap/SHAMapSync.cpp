@@ -428,7 +428,7 @@ bool SHAMap::deepCompare (SHAMap& other)
         }
         else if (otherNode->getNodeHash () != node->getNodeHash ())
         {
-            WriteLog (lsWARNING, SHAMap) << "node hash mismatch";
+            WriteLog (lsWARNING, SHAMap) << "node hash mismatch " << *node;
             return false;
         }
 
@@ -657,7 +657,7 @@ public:
         return boost::make_shared<SHAMapItem> (s.getRIPEMD160 ().to256 (), s.peekData ());
     }
 
-    static bool confuseMap (SHAMap& map, int count)
+    bool confuseMap (SHAMap& map, int count)
     {
         // add a bunch of random states to a map, then remove them
         // map should be the same
@@ -672,7 +672,8 @@ public:
 
             if (!map.addItem (*item, false, false))
             {
-                WriteLog (lsFATAL, SHAMap) << "Unable to add item to map";
+                journal().fatal <<
+                    "Unable to add item to map";
                 return false;
             }
         }
@@ -681,14 +682,16 @@ public:
         {
             if (!map.delItem (*it))
             {
-                WriteLog (lsFATAL, SHAMap) << "Unable to remove item from map";
+                journal().fatal <<
+                    "Unable to remove item from map";
                 return false;
             }
         }
 
         if (beforeHash != map.getHash ())
         {
-            WriteLog (lsFATAL, SHAMap) << "Hashes do not match";
+            journal().fatal <<
+                "Hashes do not match";
             return false;
         }
 

@@ -53,7 +53,6 @@ SHAMap::SHAMap (SHAMapType t, uint256 const& hash,
     , mType (t)
     , m_missing_node_handler (missing_node_handler)
 {
-    // FIXME: Need to acquire root node
     if (t == smtSTATE)
         mTNByID.rehash (STATE_MAP_BUCKETS);
 

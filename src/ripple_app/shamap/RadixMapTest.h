@@ -17,33 +17,23 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
-
-#include "ripple_app.h"
-
 namespace ripple {
+namespace RadixMap {
 
-#include "shamap/SHAMap.cpp" // Uses theApp
-#include "shamap/SHAMapItem.cpp"
-#include "shamap/SHAMapSync.cpp"
-#include "shamap/SHAMapMissingNode.cpp"
+typedef SHAMap Table;
+typedef SHAMapItem Item;
 
-#include "misc/AccountItem.cpp"
-#include "tx/AccountSetTransactor.cpp"
-#include "misc/CanonicalTXSet.cpp"
-#include "ledger/LedgerProposal.cpp"
-#include "main/LoadManager.cpp"
-#include "misc/NicknameState.cpp"
-#include "tx/OfferCancelTransactor.cpp"
-#include "ledger/OrderBookDB.cpp"
+// Utility functions for RadixMap::Table (a.k.a. SHAMap) unit tests
 
-#include "data/Database.cpp"
-#include "data/DatabaseCon.cpp"
-#include "data/SqliteDatabase.cpp"
-#include "data/DBInit.cpp"
+/** Returns a pseudo random Table item. */
+shared_ptr <Item> make_random_item (Random& r);
+
+/** Adds a set of random items to the Table.
+    @param n The number of items to add.
+    @param t The table to add the items to.
+    @param r A pseudo random number generator.
+*/
+void add_random_items (std::size_t n, Table& t, Random& r);
 
 }
-
-# include "shamap/RadixMapTest.h"
-#include "shamap/RadixMapTest.cpp"
-#include "shamap/FetchPackTests.cpp"
+}

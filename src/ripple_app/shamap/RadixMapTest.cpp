@@ -17,33 +17,30 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
-
-#include "ripple_app.h"
-
 namespace ripple {
+namespace RadixMap {
 
-#include "shamap/SHAMap.cpp" // Uses theApp
-#include "shamap/SHAMapItem.cpp"
-#include "shamap/SHAMapSync.cpp"
-#include "shamap/SHAMapMissingNode.cpp"
-
-#include "misc/AccountItem.cpp"
-#include "tx/AccountSetTransactor.cpp"
-#include "misc/CanonicalTXSet.cpp"
-#include "ledger/LedgerProposal.cpp"
-#include "main/LoadManager.cpp"
-#include "misc/NicknameState.cpp"
-#include "tx/OfferCancelTransactor.cpp"
-#include "ledger/OrderBookDB.cpp"
-
-#include "data/Database.cpp"
-#include "data/DatabaseCon.cpp"
-#include "data/SqliteDatabase.cpp"
-#include "data/DBInit.cpp"
-
+shared_ptr <Item> make_random_item (Random& r)
+{
+    Serializer s;
+    for (int d = 0; d < 3; ++d)
+        s.add32 (r.nextInt ());
+    return beast::make_shared <Item> (
+        s.getRIPEMD160().to256(), s.peekData ());
 }
 
-# include "shamap/RadixMapTest.h"
-#include "shamap/RadixMapTest.cpp"
-#include "shamap/FetchPackTests.cpp"
+//------------------------------------------------------------------------------
+
+void add_random_items (std::size_t n, Table& t, Random& r)
+{
+    while (n--)
+    {
+        shared_ptr <SHAMapItem> item (
+            make_random_item (r));
+        meets_postcondition (
+            t.addItem (*item, false, false));
+    }
+}
+
+}
+}
