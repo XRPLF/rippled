@@ -32,7 +32,22 @@ enum SHAMapState
 class SHAMap
     : public CountedObject <SHAMap>
 {
+private:
+    /** Function object which handles missing nodes. */
+    typedef beast::function <void (uint32 refNum)> MissingNodeHandler;
+
+    /** Default handler which calls NetworkOPs. */
+    struct DefaultMissingNodeHandler
+    {
+        void operator() (uint32 refNUm);
+    };
+
 public:
+    enum
+    {
+        STATE_MAP_BUCKETS = 1024
+    };
+
     static char const* getCountedObjectName () { return "SHAMap"; }
 
     typedef boost::shared_ptr<SHAMap> pointer;
@@ -47,8 +62,11 @@ public:
 
 public:
     // build new map
-    explicit SHAMap (SHAMapType t, uint32 seq = 1);
-    SHAMap (SHAMapType t, uint256 const & hash);
+    explicit SHAMap (SHAMapType t, uint32 seq = 1,
+        MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
+
+    SHAMap (SHAMapType t, uint256 const& hash,
+        MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
 
     ~SHAMap ();
 
@@ -268,15 +286,11 @@ private:
     uint32 mSeq;
     uint32 mLedgerSeq; // sequence number of ledger this is part of
     NodeMap mTNByID;
-
     boost::shared_ptr<NodeMap> mDirtyNodes;
-
     SHAMapTreeNode::pointer root;
-
     SHAMapState mState;
-
     SHAMapType mType;
+    MissingNodeHandler m_missing_node_handler;
 };
 
 #endif
-// vim:ts=4

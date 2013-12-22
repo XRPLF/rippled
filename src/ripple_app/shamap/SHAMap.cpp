@@ -17,11 +17,50 @@
 */
 //==============================================================================
 
-#ifndef STATE_MAP_BUCKETS
-#define STATE_MAP_BUCKETS 1024
-#endif
-
 SETUP_LOG (SHAMap)
+
+void SHAMap::DefaultMissingNodeHandler::operator() (uint32 refNUm)
+{
+    getApp().getOPs ().missingNodeInLedger (refNUm);
+};
+
+//------------------------------------------------------------------------------
+
+SHAMap::SHAMap (SHAMapType t, uint32 seq,
+    MissingNodeHandler missing_node_handler)
+    : mLock (this, "SHAMap", __FILE__, __LINE__)
+    , mSeq (seq)
+    , mLedgerSeq (0)
+    , mState (smsModifying)
+    , mType (t)
+    , m_missing_node_handler (missing_node_handler)
+{
+    assert (mSeq != 0);
+    if (t == smtSTATE)
+        mTNByID.rehash (STATE_MAP_BUCKETS);
+
+    root = boost::make_shared<SHAMapTreeNode> (mSeq, SHAMapNode (0, uint256 ()));
+    root->makeInner ();
+    mTNByID[*root] = root;
+}
+
+SHAMap::SHAMap (SHAMapType t, uint256 const& hash,
+    MissingNodeHandler missing_node_handler)
+    : mLock (this, "SHAMap", __FILE__, __LINE__)
+    , mSeq (1)
+    , mLedgerSeq (0)
+    , mState (smsSynching)
+    , mType (t)
+    , m_missing_node_handler (missing_node_handler)
+{
+    // FIXME: Need to acquire root node
+    if (t == smtSTATE)
+        mTNByID.rehash (STATE_MAP_BUCKETS);
+
+    root = boost::make_shared<SHAMapTreeNode> (mSeq, SHAMapNode (0, uint256 ()));
+    root->makeInner ();
+    mTNByID[*root] = root;
+}
 
 TaggedCacheType< SHAMap::TNIndex, SHAMapTreeNode, UptimeTimerAdapter>
     SHAMap::treeNodeCache ("TreeNodeCache", 65536, 60);
@@ -66,39 +105,6 @@ void SHAMapNode::setMHash () const
 std::size_t hash_value (const SHAMapNode& mn)
 {
     return mn.getMHash ();
-}
-
-
-SHAMap::SHAMap (SHAMapType t, uint32 seq)
-    : mLock (this, "SHAMap", __FILE__, __LINE__)
-    , mSeq (seq)
-    , mLedgerSeq (0)
-    , mState (smsModifying)
-    , mType (t)
-{
-    assert (mSeq != 0);
-    if (t == smtSTATE)
-        mTNByID.rehash (STATE_MAP_BUCKETS);
-
-    root = boost::make_shared<SHAMapTreeNode> (mSeq, SHAMapNode (0, uint256 ()));
-    root->makeInner ();
-    mTNByID[*root] = root;
-}
-
-SHAMap::SHAMap (SHAMapType t, uint256 const& hash)
-    : mLock (this, "SHAMap", __FILE__, __LINE__)
-    , mSeq (1)
-    , mLedgerSeq (0)
-    , mState (smsSynching)
-    , mType (t)
-{
-    // FIXME: Need to acquire root node
-    if (t == smtSTATE)
-        mTNByID.rehash (STATE_MAP_BUCKETS);
-
-    root = boost::make_shared<SHAMapTreeNode> (mSeq, SHAMapNode (0, uint256 ()));
-    root->makeInner ();
-    mTNByID[*root] = root;
 }
 
 SHAMap::pointer SHAMap::snapShot (bool isMutable)
@@ -906,7 +912,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint2
         {
             if (mLedgerSeq != 0)
             {
-                getApp().getOPs ().missingNodeInLedger (mLedgerSeq);
+                m_missing_node_handler (mLedgerSeq);
                 mLedgerSeq = 0;
             }
 
