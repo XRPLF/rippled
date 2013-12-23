@@ -122,9 +122,14 @@ boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast ()
 
 void TransactionAcquire::trigger (Peer::ref peer)
 {
-    if (mComplete || mFailed)
+    if (mComplete)
     {
-        WriteLog (lsINFO, TransactionAcquire) << "complete or failed";
+        WriteLog (lsINFO, TransactionAcquire) << "trigger after complete";
+        return;
+    }
+    if (mFailed)
+    {
+        WriteLog (lsINFO, TransactionAcquire) << "trigger after fail";
         return;
     }
 
@@ -167,7 +172,9 @@ void TransactionAcquire::trigger (Peer::ref peer)
             tmGL.set_querytype (protocol::qtINDIRECT);
 
         BOOST_FOREACH (SHAMapNode & it, nodeIDs)
-        * (tmGL.add_nodeids ()) = it.getRawString ();
+        {
+            * (tmGL.add_nodeids ()) = it.getRawString ();
+        }
         sendRequest (tmGL, peer);
     }
 }
@@ -201,20 +208,15 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNode>& nodeID
             if (nodeIDit->isRoot ())
             {
                 if (mHaveRoot)
-                {
-                    WriteLog (lsWARNING, TransactionAcquire) << "Got root TXS node, already have it";
-                    return SHAMapAddNode ();
-                }
-
-                if (!mMap->addRootNode (getHash (), *nodeDatait, snfWIRE, NULL))
+                    WriteLog (lsDEBUG, TransactionAcquire) << "Got root TXS node, already have it";
+                else if (!mMap->addRootNode (getHash (), *nodeDatait, snfWIRE, NULL).isGood())
                 {
                     WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad root node";
-                    return SHAMapAddNode::invalid ();
                 }
                 else
                     mHaveRoot = true;
             }
-            else if (!mMap->addKnownNode (*nodeIDit, *nodeDatait, &sf))
+            else if (!mMap->addKnownNode (*nodeIDit, *nodeDatait, &sf).isGood())
             {
                 WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad non-root node";
                 return SHAMapAddNode::invalid ();

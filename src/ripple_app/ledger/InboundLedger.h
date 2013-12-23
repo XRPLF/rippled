@@ -31,6 +31,7 @@ public:
     static char const* getCountedObjectName () { return "InboundLedger"; }
 
     typedef boost::shared_ptr <InboundLedger> pointer;
+    typedef std::pair < boost::weak_ptr<Peer>, boost::shared_ptr<protocol::TMLedgerData> > PeerDataPairType;
 
 public:
     InboundLedger (uint256 const& hash, uint32 seq);
@@ -69,20 +70,13 @@ public:
     // VFALCO TODO Make this the Listener / Observer pattern
     bool addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)>);
 
-    bool takeBase (const std::string& data);
-    bool takeTxNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
-                     SHAMapAddNode&);
-    bool takeTxRootNode (Blob const& data, SHAMapAddNode&);
-    bool takeAsNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
-                     SHAMapAddNode&);
-    bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
     void trigger (Peer::ref);
     bool tryLocal ();
     void addPeers ();
-    void awaitData ();
-    void noAwaitData ();
     bool checkLocal ();
     void init(ScopedLockType& collectionLock, bool couldBeNew);
+
+    bool gotData (boost::weak_ptr<Peer>, boost::shared_ptr<protocol::TMLedgerData>);
 
     typedef std::pair <protocol::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
 
@@ -92,6 +86,7 @@ public:
                              std::set<SHAMapNode>& recentNodes, int max, bool aggressive);
 
     Json::Value getJson (int);
+    void runData ();
 
 private:
     void done ();
@@ -105,6 +100,16 @@ private:
 
     boost::weak_ptr <PeerSet> pmDowncast ();
 
+    int processData (boost::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
+
+    bool takeBase (const std::string& data);
+    bool takeTxNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
+                     SHAMapAddNode&);
+    bool takeTxRootNode (Blob const& data, SHAMapAddNode&);
+    bool takeAsNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
+                     SHAMapAddNode&);
+    bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
+
 private:
     Ledger::pointer    mLedger;
     bool               mHaveBase;
@@ -113,11 +118,16 @@ private:
     bool               mAborted;
     bool               mSignaled;
     bool               mByHash;
-    beast::Atomic<int> mWaitCount;
     uint32             mSeq;
 
     std::set <SHAMapNode> mRecentTXNodes;
     std::set <SHAMapNode> mRecentASNodes;
+
+
+    // Data we have received from peers
+    PeerSet::LockType mReceivedDataLock;    
+    std::vector <PeerDataPairType> mReceivedData;
+    bool mReceiveDispatched;
 
     std::vector <FUNCTION_TYPE <void (InboundLedger::pointer)> > mOnComplete;
 };

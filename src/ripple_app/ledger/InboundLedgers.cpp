@@ -26,6 +26,51 @@ InboundLedgers::InboundLedgers (Stoppable& parent)
 {
 }
 
+InboundLedger::pointer InboundLedgers::findCreateConsensusLedger (uint256 const& hash)
+{
+    // We do not want to destroy the ledger while holding the collection lock
+    InboundLedger::pointer oldLedger;
+
+    {
+        // If there was an old consensus inbound ledger, remove it
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        if (mConsensusLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mConsensusLedger))
+        {
+            boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (mConsensusLedger);
+            if (it != mLedgers.end ())
+            {
+                oldLedger = it->second;
+                mLedgers.erase (it);
+           }
+        }
+        mConsensusLedger = hash;
+    }
+
+    return findCreate (hash, 0, true);
+}
+
+InboundLedger::pointer InboundLedgers::findCreateValidationLedger (uint256 const& hash)
+{
+    InboundLedger::pointer oldLedger;
+
+    {
+        // If there was an old validation inbound ledger, remove it
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        if (mValidationLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mValidationLedger))
+        {
+            boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (mValidationLedger);
+            if (it != mLedgers.end ())
+            {
+                oldLedger = it->second;
+                mLedgers.erase (it);
+           }
+        }
+        mValidationLedger = hash;
+    }
+
+    return findCreate (hash, 0, true);
+}
+
 InboundLedger::pointer InboundLedgers::findCreate (uint256 const& hash, uint32 seq, bool couldBeNew)
 {
     assert (hash.isNonZero ());
@@ -86,37 +131,28 @@ void InboundLedgers::dropLedger (LedgerHash const& hash)
 {
     assert (hash.isNonZero ());
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    mLedgers.erase (hash);
+    // We don't want to destroy the ledger while holding the lock
+    InboundLedger::pointer ledger;
+
+    {
+        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
+        if (it != mLedgers.end ())
+        {
+            ledger = it->second;
+            mLedgers.erase (it);
+        }
+    }
 
 }
 
-bool InboundLedgers::awaitLedgerData (LedgerHash const& ledgerHash)
-{
-    InboundLedger::pointer ledger = find (ledgerHash);
-
-    if (!ledger)
-        return false;
-
-    ledger->awaitData ();
-    return true;
-}
-
-/*
-This gets called when
-    "We got some data from an inbound ledger"
-
-inboundLedgerTrigger:
-  "What do we do with this partial data?"
-  Figures out what to do with the responses to our requests for information.
-
+/** We received a TMLedgerData from a peer.
 */
-// means "We got some data from an inbound ledger"
-void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
-        boost::shared_ptr<protocol::TMLedgerData> packet_ptr, boost::weak_ptr<Peer> wPeer)
+bool InboundLedgers::gotLedgerData (LedgerHash const& hash,
+        boost::shared_ptr<Peer> peer,
+        boost::shared_ptr<protocol::TMLedgerData> packet_ptr)
 {
     protocol::TMLedgerData& packet = *packet_ptr;
-    Peer::pointer peer = wPeer.lock ();
 
     WriteLog (lsTRACE, InboundLedger) << "Got data (" << packet.nodes ().size () << ") for acquiring ledger: " << hash;
 
@@ -124,107 +160,65 @@ void InboundLedgers::gotLedgerData (Job&, LedgerHash hash,
 
     if (!ledger)
     {
-        WriteLog (lsTRACE, InboundLedger) << "Got data for ledger we're not acquiring";
+        WriteLog (lsTRACE, InboundLedger) << "Got data for ledger we're no longer acquiring";
 
-        if (peer)
+        // If it's state node data, stash it because it still might be useful
+        if (packet.type () == protocol::liAS_NODE)
         {
-            peer->charge (Resource::feeInvalidRequest);
+            getApp().getJobQueue().addJob(jtLEDGER_DATA, "gotStaleData",
+                BIND_TYPE(&InboundLedgers::gotStaleData, this, packet_ptr));
         }
 
-        return;
+        return false;
     }
 
-    ledger->noAwaitData ();
+    // Stash the data for later processing and see if we need to dispatch
+    if (ledger->gotData(boost::weak_ptr<Peer>(peer), packet_ptr))
+        getApp().getJobQueue().addJob (jtLEDGER_DATA, "processLedgerData",
+            BIND_TYPE (&InboundLedgers::doLedgerData, this, P_1, hash));
 
-    if (!peer)
-        return;
+    return true;
+}
 
-    if (packet.type () == protocol::liBASE)
+void InboundLedgers::doLedgerData (Job&, LedgerHash hash)
+{
+    InboundLedger::pointer ledger = find (hash);
+
+    if (ledger)
+        ledger->runData ();
+}
+
+/** We got some data for a ledger we are no longer acquiring
+    Since we paid the price to receive it, we might as well stash it in case we need it.
+    Nodes are received in wire format and must be stashed/hashed in prefix format
+*/
+void InboundLedgers::gotStaleData (boost::shared_ptr<protocol::TMLedgerData> packet_ptr)
+{
+    const uint256 uZero;
+    try
     {
-        if (packet.nodes_size () < 1)
+        for (int i = 0; i < packet_ptr->nodes ().size (); ++i)
         {
-            WriteLog (lsWARNING, InboundLedger) << "Got empty base data";
-            peer->charge (Resource::feeInvalidRequest);
-            return;
-        }
-
-        if (!ledger->takeBase (packet.nodes (0).nodedata ()))
-        {
-            WriteLog (lsWARNING, InboundLedger) << "Got invalid base data";
-            peer->charge (Resource::feeInvalidRequest);
-            return;
-        }
-
-        SHAMapAddNode san = SHAMapAddNode::useful ();
-
-        if ((packet.nodes ().size () > 1) && !ledger->takeAsRootNode (strCopy (packet.nodes (1).nodedata ()), san))
-        {
-            WriteLog (lsWARNING, InboundLedger) << "Included ASbase invalid";
-        }
-
-        if ((packet.nodes ().size () > 2) && !ledger->takeTxRootNode (strCopy (packet.nodes (2).nodedata ()), san))
-        {
-            WriteLog (lsWARNING, InboundLedger) << "Included TXbase invalid";
-        }
-
-        if (!san.isInvalid ())
-        {
-            ledger->progress ();
-            ledger->trigger (peer);
-        }
-        else
-            WriteLog (lsDEBUG, InboundLedger) << "Peer sends invalid base data";
-
-        return;
-    }
-
-    if ((packet.type () == protocol::liTX_NODE) || (packet.type () == protocol::liAS_NODE))
-    {
-        std::list<SHAMapNode> nodeIDs;
-        std::list< Blob > nodeData;
-
-        if (packet.nodes ().size () <= 0)
-        {
-            WriteLog (lsINFO, InboundLedger) << "Got response with no nodes";
-            peer->charge (Resource::feeInvalidRequest);
-            return;
-        }
-
-        for (int i = 0; i < packet.nodes ().size (); ++i)
-        {
-            const protocol::TMLedgerNode& node = packet.nodes (i);
+            const protocol::TMLedgerNode& node = packet_ptr->nodes (i);
 
             if (!node.has_nodeid () || !node.has_nodedata ())
-            {
-                WriteLog (lsWARNING, InboundLedger) << "Got bad node";
-                peer->charge (Resource::feeInvalidRequest);
                 return;
-            }
 
-            nodeIDs.push_back (SHAMapNode (node.nodeid ().data (), node.nodeid ().size ()));
-            nodeData.push_back (Blob (node.nodedata ().begin (), node.nodedata ().end ()));
+            Serializer s;
+            SHAMapTreeNode newNode(
+                SHAMapNode (node.nodeid().data(), node.nodeid().size()),
+                Blob (node.nodedata().begin(), node.nodedata().end()),
+                0, snfWIRE, uZero, false);
+            newNode.addRaw(s, snfPREFIX);
+
+            boost::shared_ptr<Blob> blob = boost::make_shared<Blob> (s.begin(), s.end());
+
+            getApp().getOPs().addFetchPack (newNode.getNodeHash(), blob);
         }
-
-        SHAMapAddNode ret;
-
-        if (packet.type () == protocol::liTX_NODE)
-            ledger->takeTxNode (nodeIDs, nodeData, ret);
-        else
-            ledger->takeAsNode (nodeIDs, nodeData, ret);
-
-        if (!ret.isInvalid ())
-        {
-            ledger->progress ();
-            ledger->trigger (peer);
-        }
-        else
-            WriteLog (lsDEBUG, InboundLedger) << "Peer sends invalid node data";
-
-        return;
     }
-
-    WriteLog (lsWARNING, InboundLedger) << "Not sure what ledger data we got";
-    peer->charge (Resource::feeInvalidRequest);
+    catch (...)
+    {
+    }
 }
 
 void InboundLedgers::sweep ()

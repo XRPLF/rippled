@@ -466,7 +466,14 @@ int Pathfinder::getPathsOut (const uint160& currencyID, const uint160& accountID
     if (it != mPOMap.end ())
         return it->second;
 
-    int aFlags = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID))->getFieldU32(sfFlags);
+    SLE::pointer sleAccount = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID));
+    if (!sleAccount)
+    {
+        mPOMap[accountCurrency] = 0;
+        return 0;
+    }
+
+    int aFlags = sleAccount->getFieldU32(sfFlags);
     bool const bAuthRequired = (aFlags & lsfRequireAuth) != 0;
 
     int count = 0;
