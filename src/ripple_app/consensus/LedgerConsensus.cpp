@@ -892,7 +892,7 @@ private:
             newLCL->peekTransactionMap ()->armDirty ();
             newLCL->peekAccountStateMap ()->armDirty ();
             WriteLog (lsDEBUG, LedgerConsensus) 
-                << "Applying consensus set transactions to the";
+                << "Applying consensus set transactions to the"
                 << " last closed ledger";
             applyTransactions (set, newLCL, newLCL, failedTransactions, false);
             newLCL->updateSkipList ();
@@ -991,7 +991,7 @@ private:
                     try
                     {
                         WriteLog (lsDEBUG, LedgerConsensus) 
-                            << "Test applying disputed transaction that did";
+                            << "Test applying disputed transaction that did"
                             << " not get in";
                         SerializerIterator sit (it.second->peekTransaction ());
                         SerializedTransaction::pointer txn 
@@ -1722,7 +1722,7 @@ private:
                 if (relay)
                 {
                     WriteLog (lsWARNING, LedgerConsensus) 
-                        << "We should do delayed relay of this proposal,";
+                        << "We should do delayed relay of this proposal,"
                         << " but we cannot";
                 }
 
@@ -1833,7 +1833,7 @@ private:
         else
         { // FIXME: Post to JobQueue, not I/O service
             getApp().getIOService ().post 
-                (BIND_TYPE (&LedgerConsensus::accept
+                (BIND_TYPE (&LedgerConsensusImp::accept
                     , shared_from_this (), consensusSet
                     , getApp().getJobQueue ().getLoadEvent 
                     (jtACCEPTLEDGER, "LedgerConsensus::beginAccept")));
