@@ -914,7 +914,7 @@ private:
     NodeStoreScheduler m_nodeStoreScheduler;
     ScopedPointer <NodeStore::Database> m_nodeStore;
     ScopedPointer <SNTPClient> m_sntpClient;
-    unique_ptr <InboundLedgers> m_inboundLedgers;
+    beast::unique_ptr <InboundLedgers> m_inboundLedgers;
     ScopedPointer <TxQueue> m_txQueue;
     ScopedPointer <Validators::Manager> m_validators;
     ScopedPointer <IFeatures> mFeatures;
