@@ -1834,7 +1834,7 @@ private:
                 (BIND_TYPE (&LedgerConsensusImp::accept
                     , shared_from_this (), consensusSet
                     , getApp().getJobQueue ().getLoadEvent 
-                    (jtACCEPTLEDGER, "LedgerConsensus::beginAccept")));
+                    (jtACCEPTLEDGER, "LedgerConsensusImp::beginAccept")));
         }
     }
 
