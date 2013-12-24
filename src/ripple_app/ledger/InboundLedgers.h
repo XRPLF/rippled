@@ -26,7 +26,7 @@
 */
 class InboundLedgers
     : public Stoppable
-    , public LeakChecked <InboundLedgerImp>
+    , public LeakChecked <InboundLedgersImp>
 {
 public:
     explicit InboundLedgers (Stoppable& parent);

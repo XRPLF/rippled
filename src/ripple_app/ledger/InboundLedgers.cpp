@@ -20,7 +20,7 @@
 
 class InboundLedgersImp
     : public Stoppable
-    , public LeakChecked <InboundLedgerImp>
+    , public LeakChecked <InboundLedgersImp>
 {
 public:
     typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;    
