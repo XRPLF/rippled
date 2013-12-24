@@ -22,9 +22,7 @@ SETUP_LOG (LedgerConsensus)
 // #define TRUST_NETWORK
 
 class LedgerConsensusImp
-    : public boost::enable_shared_from_this <LedgerConsensus>
-    , public CountedObject <LedgerConsensus>
-    , public LedgerConsensus
+    : public LedgerConsensus
 {
 public:
     enum{resultSuccess, resultFail, resultRetry};
