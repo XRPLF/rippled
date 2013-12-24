@@ -46,8 +46,6 @@ public:
     virtual SHAMap::pointer getTransactionTree (uint256 const & hash, 
         bool doAcquire) = 0;
 
-    virtual TransactionAcquire::pointer getAcquiring (uint256 const & hash) = 0;
-
     virtual void mapComplete (uint256 const & hash, SHAMap::ref map, 
         bool acquired) = 0;
 
@@ -62,7 +60,6 @@ public:
     // state handlers
     virtual void statePreClose () = 0;
     virtual void stateEstablish () = 0;
-    virtual void stateCutoff () = 0;
     virtual void stateFinished () = 0;
     virtual void stateAccepted () = 0;
 
