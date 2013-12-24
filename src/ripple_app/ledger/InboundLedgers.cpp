@@ -409,7 +409,7 @@ InboundLedgers::InboundLedgers (Stoppable& parent)
 {
 }
 
-InboundLedger* InboundLedger::New (Stoppable& parent)
+InboundLedgers* InboundLedger::New (Stoppable& parent)
 {
     return new InboundLedgerImp (parent);
 }

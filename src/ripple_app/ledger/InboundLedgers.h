@@ -31,7 +31,7 @@ class InboundLedgers
 public:
     explicit InboundLedgers (Stoppable& parent);
 
-    static InboundLedger* New (Stoppable& parent);
+    static InboundLedgers* New (Stoppable& parent);
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
