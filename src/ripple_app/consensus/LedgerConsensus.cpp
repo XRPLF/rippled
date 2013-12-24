@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-SETUP_LOG (LedgerConsensusImp)
+SETUP_LOG (LedgerConsensus)
 
 // #define TRUST_NETWORK
 
@@ -665,7 +665,9 @@ public:
             if (!it.second->isBowOut ())
             {
                 if (it.second->getCurrentHash () == ourPosition)
+                {
                     ++agree;
+                }
                 else
                 {
                     WriteLog (lsDEBUG, LedgerConsensus) << it.first.GetHex () 
@@ -679,8 +681,8 @@ public:
                         boost::unordered_map<uint256, SHAMap::pointer>::iterator
                             it1 = mAcquired.find (hash);
                         boost::unordered_map<uint256, SHAMap::pointer>::iterator
-                            it2 = mAcquired.find (mOurPosition
-                            ->getCurrentHash ());
+                            it2 = mAcquired.find 
+                            (mOurPosition->getCurrentHash ());
                         if ((it1 != mAcquired.end()) && (it2 != mAcquired.end())
                             && (it1->second) && (it2->second))
                         {
@@ -705,7 +707,7 @@ public:
 
     /** A server has taken a new position, adjust our tracking
     */
-    bool LedgerConsensus::peerPosition (LedgerProposal::ref newPosition)
+    bool peerPosition (LedgerProposal::ref newPosition)
     {
         uint160 peerID = newPosition->getPeerID ();
 
@@ -804,7 +806,7 @@ public:
 
     /** A peer has sent us some nodes from a transaction set
     */
-    SHAMapAddNode LedgerConsensus::peerGaveNodes (Peer::ref peer
+    SHAMapAddNode peerGaveNodes (Peer::ref peer
         , uint256 const& setHash, const std::list<SHAMapNode>& nodeIDs
         , const std::list< Blob >& nodeData)
     {
@@ -1213,7 +1215,7 @@ private:
     
     /** Make and send a proposal
     */
-    void LedgerConsensus::propose ()
+    void propose ()
     {
         WriteLog (lsTRACE, LedgerConsensus) << "We propose: " <<
             (mOurPosition->isBowOut () ? std::string ("bowOut") 
