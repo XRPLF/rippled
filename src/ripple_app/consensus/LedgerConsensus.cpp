@@ -23,18 +23,26 @@ SETUP_LOG (LedgerConsensus)
 
 class LedgerConsensusImp
     : public LedgerConsensus
+    , public boost::enable_shared_from_this <LedgerConsensus>
+    , public CountedObject <LedgerConsensusImpl>
 {
 public:
-    enum{resultSuccess, resultFail, resultRetry};
+    enum {resultSuccess, resultFail, resultRetry};
+
+    static char const* getCountedObjectName () { return "LedgerConsensus"; }
 
     LedgerConsensusImp (LedgerHash const & prevLCLHash, 
         Ledger::ref previousLedger, uint32 closeTime)
-        :  mState (lcsPRE_CLOSE), mCloseTime (closeTime), 
-            mPrevLedgerHash (prevLCLHash), mPreviousLedger (previousLedger)
-        , mValPublic (getConfig ().VALIDATION_PUB), 
-            mValPrivate (getConfig ().VALIDATION_PRIV), mConsensusFail (false)
-        , mCurrentMSeconds (0), mClosePercent (0), 
-            mHaveCloseTimeConsensus (false)
+        : mState (lcsPRE_CLOSE)
+        , mCloseTime (closeTime)
+        , mPrevLedgerHash (prevLCLHash)
+        , mPreviousLedger (previousLedger)
+        , mValPublic (getConfig ().VALIDATION_PUB)
+        , mValPrivate (getConfig ().VALIDATION_PRIV)
+        , mConsensusFail (false)
+        , mCurrentMSeconds (0)
+        , mClosePercent (0)
+        , mHaveCloseTimeConsensus (false)
         , mConsensusStartTime 
             (boost::posix_time::microsec_clock::universal_time ())
     {
@@ -1906,10 +1914,11 @@ private:
 
 //------------------------------------------------------------------------------
 
-LedgerConsensus* LedgerConsensus::New(LedgerHash const & prevLCLHash, 
+shared_ptr <LedgerConsensus> LedgerConsensus::New(LedgerHash const & prevLCLHash, 
         Ledger::ref previousLedger, uint32 closeTime)
 {
-    return new LedgerConsensusImp(prevLCLHash, previousLedger,closeTime);
+    return make_shared<LedgerConsensusImpl>(
+        prevLCLHash, previousLedger,closeTime);
 }
 static char const* getCountedObjectName ()
 { 

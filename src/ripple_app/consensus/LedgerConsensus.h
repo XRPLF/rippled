@@ -26,14 +26,11 @@
     is destroyed when the process is complete.
 */
 class LedgerConsensus
-    : public boost::enable_shared_from_this <LedgerConsensus>
-    , public CountedObject <LedgerConsensus>
 {
 public:    
-    static LedgerConsensus* New(LedgerHash const & prevLCLHash, 
-        Ledger::ref previousLedger, uint32 closeTime);
-
-    static char const* getCountedObjectName () { return "LedgerConsensus"; }
+    shared_ptr <LedgerConsensus> New(
+        LedgerHash const & prevLCLHash, Ledger::ref previousLedger
+        , uint32 closeTime)
 
     virtual int startup () = 0;
 
