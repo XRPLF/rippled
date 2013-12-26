@@ -1518,6 +1518,7 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
         if (saBefore.isPositive ()                                                                              // Sender balance was positive.
                 && !saBalance.isPositive ()                                                                         // Sender is zero or negative.
                 && isSetBit ((uFlags = sleRippleState->getFieldU32 (sfFlags)), !bSenderHigh ? lsfLowReserve : lsfHighReserve) // Sender reserve is set.
+                && !isSetBit (uFlags, !bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)
                 && !sleRippleState->getFieldAmount (!bSenderHigh ? sfLowLimit : sfHighLimit)                        // Sender trust limit is 0.
                 && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)                   // Sender quality in is 0.
                 && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))                // Sender quality out is 0.

@@ -1976,7 +1976,7 @@ void RippleCalc::pathNext (PathState::ref psrCur, const bool bMultiQuality, cons
 // <-- TER: Only returns tepPATH_PARTIAL if !bPartialPayment.
 TER RippleCalc::rippleCalc (
     // Compute paths vs this ledger entry set.  Up to caller to actually apply to ledger.
-    LedgerEntrySet&         lesActive,              // <-> --> = Fee already applied to src balance.
+    LedgerEntrySet&   lesActive,              // <-> --> = Fee already applied to src balance.
     STAmount&         saMaxAmountAct,         // <-- The computed input amount.
     STAmount&         saDstAmountAct,         // <-- The computed output amount.
     std::vector<PathState::pointer>&  vpsExpanded,
@@ -2033,6 +2033,9 @@ TER RippleCalc::rippleCalc (
 
         pspDirect->setExpanded (lesActive, STPath (), uDstAccountID, uSrcAccountID);
 
+        if (tesSUCCESS == pspDirect->terStatus)
+           pspDirect->checkNoRipple (uDstAccountID, uSrcAccountID);
+
         pspDirect->setIndex (vpsExpanded.size ());
 
         WriteLog (lsDEBUG, RippleCalc) << boost::str (boost::format ("rippleCalc: Build direct: status: %s")
@@ -2072,6 +2075,9 @@ TER RippleCalc::rippleCalc (
                                        % RippleAddress::createHumanAccountID (uSrcAccountID));
 
         pspExpanded->setExpanded (lesActive, spPath, uDstAccountID, uSrcAccountID);
+
+        if (tesSUCCESS == pspExpanded->terStatus)
+           pspExpanded->checkNoRipple (uDstAccountID, uSrcAccountID);
 
         WriteLog (lsDEBUG, RippleCalc) << boost::str (boost::format ("rippleCalc: Build path: %d: status: %s")
                                        % ++iIndex

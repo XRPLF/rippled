@@ -487,8 +487,8 @@ int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& ac
             nothing ();
         else if (isDstCurrency && (dstAccount == rspEntry->getAccountIDPeer ()))
             count += 10000; // count a path to the destination extra
-        else if (rspEntry->getNoRipple())
-            nothing (); // This isn't a useful path out
+        else if (rspEntry->getNoRipplePeer ())
+            nothing (); // This probably isn't a useful path out
         else
             ++count;
     }
@@ -546,10 +546,7 @@ STPathSet& Pathfinder::getPaths(PathType_t const& type, bool addComplete)
         break;
 
         case nt_ACCOUNTS:
-            if (type.size() == 2) // "sa", so can use noRipple paths
-                addLink(pathsIn, pathsOut, afADD_ACCOUNTS | afALL_ACCOUNTS);
-            else
-                addLink(pathsIn, pathsOut, afADD_ACCOUNTS);
+            addLink(pathsIn, pathsOut, afADD_ACCOUNTS);
             break;
 
         case nt_BOOKS:
@@ -578,6 +575,33 @@ STPathSet& Pathfinder::getPaths(PathType_t const& type, bool addComplete)
     return pathsOut;
 }
 
+bool Pathfinder::isNoRipple (const uint160& setByID, const uint160& setOnID, const uint160& currencyID)
+{
+    SLE::pointer sleRipple = mLedger->getSLEi (Ledger::getRippleStateIndex (setByID, setOnID, currencyID));
+    return sleRipple &&
+        isSetBit (sleRipple->getFieldU32 (sfFlags), (setByID > setOnID) ? lsfHighNoRipple : lsfLowNoRipple);
+}
+
+// Does this path end on an account-to-account link whose last account
+// has set no ripple on the link?
+bool Pathfinder::isNoRippleOut (const STPath& currentPath)
+{
+    // Must have at least one link
+    if (currentPath.size() == 0)
+        return false;
+
+    // Last link must be an account
+    STPathElement const& endElement = *(currentPath.end() - 1);
+    if (!isSetBit(endElement.getNodeType(), STPathElement::typeAccount))
+        return false;
+
+    // What account are we leaving?
+    uint160 const& fromAccount =
+        (currentPath.size() == 1) ? mSrcAccountID : (currentPath.end() - 2)->mAccountID;
+
+    return isNoRipple (endElement.mAccountID, fromAccount, endElement.mCurrencyID);
+}
+
 void Pathfinder::addLink(
     const STPath& currentPath,      // The path to build from
     STPathSet& incompletePaths,     // The set of partial paths we add to
@@ -604,12 +628,12 @@ void Pathfinder::addLink(
         }
         else
         { // search for accounts to add
-            bool bAllAccounts = (addFlags & afALL_ACCOUNTS) != 0;
             SLE::pointer sleEnd = mLedger->getSLEi(Ledger::getAccountRootIndex(uEndAccount));
             if (sleEnd)
             {
                 bool const bRequireAuth = isSetBit(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
                 bool const bIsEndCurrency = (uEndCurrency == mDstAmount.getCurrency());
+                bool const bIsNoRippleOut = isNoRippleOut (currentPath);
 
                 AccountItems& rippleLines(mRLCache->getRippleLines(uEndAccount));
 
@@ -631,7 +655,7 @@ void Pathfinder::addLink(
                         {
                             // path has no credit
                         }
-                        else if (!bAllAccounts && rspEntry.getNoRipple())
+                        else if (bIsNoRippleOut && rspEntry.getNoRipple())
                         {
                             // Can't leave on this path
                         }

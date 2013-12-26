@@ -316,13 +316,6 @@ TER PathState::pushNode (
 
                         terResult   = terNO_AUTH;
                     }
-                    else if (isSetBit (sleRippleState->getFieldU32 (sfFlags), bHigh ? lsfHighNoRipple : lsfLowNoRipple) &&
-                            (vpnNodes.size() > 1))
-                    { // If the link leaves the side that set no ripple, it must be the first link
-                        WriteLog (lsWARNING, RippleCalc) << "pushNode: illegal use of noRipple link";
-
-                        terResult   = terNO_AUTH;
-                    }
 
                     if (tesSUCCESS == terResult)
                     {
@@ -431,7 +424,7 @@ void PathState::setExpanded (
                           ? STPathElement::typeAccount | STPathElement::typeCurrency | STPathElement::typeIssuer
                           : STPathElement::typeAccount | STPathElement::typeCurrency,
                           uSenderID,
-                          uMaxCurrencyID,                                 // Max specifes the currency.
+                          uMaxCurrencyID,                                 // Max specifies the currency.
                           uSenderIssuerID);
 
     WriteLog (lsDEBUG, RippleCalc) << boost::str (boost::format ("setExpanded: pushed: account=%s currency=%s issuer=%s")
@@ -771,6 +764,133 @@ void PathState::setCanonical (
                                    % STAmount::createHumanCurrency (uOutCurrencyID)
                                    % RippleAddress::createHumanAccountID (uOutIssuerID)
                                    % getJson ());
+}
+
+/** Check if a sequence of three accounts violates the no ripple constrains
+    [first] -> [second] -> [third]
+    Disallowed if 'second' set no ripple on [first]->[second] and [second]->[third]
+*/
+void PathState::checkNoRipple (
+    uint160 const& firstAccount,
+    uint160 const& secondAccount,  // This is the account whose constraints we are checking
+    uint160 const& thirdAccount,
+    uint160 const& currency)
+{
+    // fetch the ripple lines into and out of this node
+    SLE::pointer sleIn = lesEntries.entryCache (ltRIPPLE_STATE,
+        Ledger::getRippleStateIndex (firstAccount, secondAccount, currency));
+    SLE::pointer sleOut = lesEntries.entryCache (ltRIPPLE_STATE,
+        Ledger::getRippleStateIndex (secondAccount, thirdAccount, currency));
+
+    if (!sleIn || !sleOut)
+    {
+        terStatus = terNO_LINE;
+    }
+    else if (
+        isSetBit (sleIn->getFieldU32 (sfFlags),
+            (secondAccount > firstAccount) ? lsfHighNoRipple : lsfLowNoRipple) &&
+        isSetBit (sleOut->getFieldU32 (sfFlags),
+            (secondAccount > thirdAccount) ? lsfHighNoRipple : lsfLowNoRipple))
+    {
+        WriteLog (lsINFO, RippleCalc) << "Path violates noRipple constraint between " <<
+            RippleAddress::createHumanAccountID (firstAccount) << ", " <<
+            RippleAddress::createHumanAccountID (secondAccount) << " and " <<
+            RippleAddress::createHumanAccountID (thirdAccount);
+
+        terStatus = terNO_RIPPLE;
+    }
+}
+
+// Check a fully-expanded path to make sure it doesn't violate no-Ripple settings
+void PathState::checkNoRipple (uint160 const& uDstAccountID, uint160 const& uSrcAccountID)
+{
+
+    // There must be at least one node for there to be two consecutive ripple lines
+    if (vpnNodes.size() == 0)
+       return;
+
+    if (vpnNodes.size() == 1)
+    {
+        // There's just one link in the path
+        // We only need to check source-node-dest
+        if (isSetBit (vpnNodes[0].uFlags, STPathElement::typeAccount) &&
+            (vpnNodes[0].uAccountID != uSrcAccountID) &&
+            (vpnNodes[0].uAccountID != uDstAccountID))
+        {
+            if (saInReq.getCurrency() != saOutReq.getCurrency())
+                terStatus = terNO_LINE;
+            else
+                checkNoRipple (uSrcAccountID, vpnNodes[0].uAccountID, uDstAccountID,
+                    vpnNodes[0].uCurrencyID);
+        }
+        return;
+    }
+
+    // Check source <-> first <-> second
+    if (isSetBit (vpnNodes[0].uFlags, STPathElement::typeAccount) &&
+        isSetBit (vpnNodes[1].uFlags, STPathElement::typeAccount) &&
+        (vpnNodes[0].uAccountID != uSrcAccountID))
+    {
+        if ((vpnNodes[0].uCurrencyID != vpnNodes[1].uCurrencyID))
+        {
+            terStatus = terNO_LINE;
+            return;
+        }
+        else
+        {
+            checkNoRipple (uSrcAccountID, vpnNodes[0].uAccountID, vpnNodes[1].uAccountID,
+                vpnNodes[0].uCurrencyID);
+            if (tesSUCCESS != terStatus)
+                return;
+        }
+    }
+
+    // Check second_from_last <-> last <-> destination
+    size_t s = vpnNodes.size() - 2;
+    if (isSetBit (vpnNodes[s].uFlags, STPathElement::typeAccount) &&
+        isSetBit (vpnNodes[s+1].uFlags, STPathElement::typeAccount) &&
+        (uDstAccountID != vpnNodes[s+1].uAccountID))
+    {
+        if ((vpnNodes[s].uCurrencyID != vpnNodes[s+1].uCurrencyID))
+        {
+            terStatus = terNO_LINE;
+            return;
+        }
+        else
+        {
+            checkNoRipple (vpnNodes[s].uAccountID, vpnNodes[s+1].uAccountID, uDstAccountID,
+                vpnNodes[s].uCurrencyID);
+            if (tesSUCCESS != terStatus)
+                return;
+        }
+    }
+
+
+    // Loop through all nodes that have a prior node and successor nodes
+    // These are the nodes whose no ripple constratints could be violated
+    for (int i = 1; i < (vpnNodes.size() - 1); ++i)
+    {
+
+        if (isSetBit (vpnNodes[i-1].uFlags, STPathElement::typeAccount) &&
+            isSetBit (vpnNodes[i].uFlags, STPathElement::typeAccount) &&
+            isSetBit (vpnNodes[i+1].uFlags, STPathElement::typeAccount))
+        { // two consecutive account-to-account links
+
+            uint160 const& currencyID = vpnNodes[i].uCurrencyID;
+            if ((vpnNodes[i-1].uCurrencyID != currencyID) ||
+                (vpnNodes[i+1].uCurrencyID != currencyID))
+            {
+                terStatus = temBAD_PATH;
+                return;
+            }
+            checkNoRipple (
+                vpnNodes[i-1].uAccountID, vpnNodes[i].uAccountID, vpnNodes[i+1].uAccountID,
+                    currencyID);
+            if (terStatus != tesSUCCESS)
+                return;
+        }
+
+    }
 }
 
 // This is for debugging not end users. Output names can be changed without warning.

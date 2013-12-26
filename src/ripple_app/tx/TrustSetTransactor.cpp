@@ -217,20 +217,34 @@ TER TrustSetTransactor::doApply ()
             uHighQualityOut =  bHigh ? 0 : sleRippleState->getFieldU32 (sfHighQualityOut);
         }
 
+        const uint32    uFlagsIn        = sleRippleState->getFieldU32 (sfFlags);
+        uint32          uFlagsOut       = uFlagsIn;
+
+        if (bSetNoRipple && !bClearNoRipple && (bHigh ? saHighBalance : saLowBalance).isGEZero())
+        {
+            uFlagsOut           |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
+        }
+        else if (bClearNoRipple && !bSetNoRipple)
+        {
+            uFlagsOut           &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
+        }
+
         if (QUALITY_ONE == uLowQualityOut)  uLowQualityOut  = 0;
 
         if (QUALITY_ONE == uHighQualityOut) uHighQualityOut = 0;
 
-        const bool  bLowReserveSet      = uLowQualityIn || uLowQualityOut || !!saLowLimit || saLowBalance.isPositive ();
+
+        const bool  bLowReserveSet      = uLowQualityIn || uLowQualityOut ||
+                                          isSetBit (uFlagsOut, lsfLowNoRipple) ||
+                                          !!saLowLimit || saLowBalance.isPositive ();
         const bool  bLowReserveClear    = !bLowReserveSet;
 
-        const bool  bHighReserveSet     = uHighQualityIn || uHighQualityOut || !!saHighLimit || saHighBalance.isPositive ();
+        const bool  bHighReserveSet     = uHighQualityIn || uHighQualityOut ||
+                                          isSetBit (uFlagsOut, lsfHighNoRipple) ||
+                                          !!saHighLimit || saHighBalance.isPositive ();
         const bool  bHighReserveClear   = !bHighReserveSet;
 
         const bool  bDefault            = bLowReserveClear && bHighReserveClear;
-
-        const uint32    uFlagsIn        = sleRippleState->getFieldU32 (sfFlags);
-        uint32          uFlagsOut       = uFlagsIn;
 
         const bool  bLowReserved        = isSetBit (uFlagsIn, lsfLowReserve);
         const bool  bHighReserved       = isSetBit (uFlagsIn, lsfHighReserve);
@@ -240,15 +254,6 @@ TER TrustSetTransactor::doApply ()
         if (bSetAuth)
         {
             uFlagsOut           |= (bHigh ? lsfHighAuth : lsfLowAuth);
-        }
-
-        if (bSetNoRipple && !bClearNoRipple)
-        {
-            uFlagsOut           |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
-        }
-        else if (bClearNoRipple && !bSetNoRipple)
-        {
-            uFlagsOut           &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
         if (bLowReserveSet && !bLowReserved)

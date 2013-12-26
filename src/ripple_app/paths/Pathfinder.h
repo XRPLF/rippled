@@ -103,6 +103,9 @@ private:
     STPathSet& getPaths(const PathType_t& type, bool addComplete = true);
     STPathSet filterPaths(int iMaxPaths, STPath& extraPath);
 
+    bool isNoRippleOut (const STPath& currentPath);
+    bool isNoRipple (uint160 const& setByID, uint160 const& setOnID, uint160 const& currencyID);
+
     // Our main table of paths
 
     static std::map<PaymentType, CostedPathList_t> mPathTable;
@@ -131,7 +134,6 @@ private:
     static const uint32 afOB_XRP       = 0x010;  // Add order book to XRP only
     static const uint32 afOB_LAST      = 0x040;  // Must link to destination currency
     static const uint32 afAC_LAST      = 0x080;  // Destination account only
-    static const uint32 afALL_ACCOUNTS = 0x100;  // Include no ripple paths
 };
 
 boost::unordered_set<uint160> usAccountDestCurrencies (const RippleAddress& raAccountID, Ledger::ref lrLedger,

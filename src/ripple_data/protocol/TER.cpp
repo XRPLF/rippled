@@ -108,6 +108,7 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   terFUNDS_SPENT,         "terFUNDS_SPENT",           "Can't set password, password set funds already spent." },
         {   terINSUF_FEE_B,         "terINSUF_FEE_B",           "Account balance can't pay fee."                        },
         {   terLAST,                "terLAST",                  "Process last."                                         },
+        {   terNO_RIPPLE,           "terNO_RIPPLE",             "Path does not permit rippling."                        },
         {   terNO_ACCOUNT,          "terNO_ACCOUNT",            "The source account does not exist."                    },
         {   terNO_AUTH,             "terNO_AUTH",               "Not authorized to hold IOUs."                          },
         {   terNO_LINE,             "terNO_LINE",               "No such line."                                         },
