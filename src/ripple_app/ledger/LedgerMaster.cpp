@@ -1034,8 +1034,7 @@ public:
 
             try
             {
-                // VFALCO TODO Fix this global variable
-                PathRequest::updateAll (lastLedger, job.getCancelCallback ());
+                getApp().getPathRequests().updateAll (lastLedger, job.getCancelCallback ());
             }
             catch (SHAMapMissingNode&)
             {

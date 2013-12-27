@@ -24,6 +24,7 @@
 // The request issuer must maintain a strong pointer
 
 class RippleLineCache;
+class PathRequests;
 
 // Return values from parseJson <0 = invalid, >0 = valid
 #define PFR_PJ_INVALID              -1
@@ -44,7 +45,7 @@ public:
 
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
-    explicit PathRequest (boost::shared_ptr <InfoSub> const& subscriber);
+    explicit PathRequest (boost::shared_ptr <InfoSub> const& subscriber, int id, PathRequests&);
     ~PathRequest ();
 
     bool        isValid (const boost::shared_ptr<Ledger>&);
@@ -52,13 +53,13 @@ public:
     bool        needsUpdate (bool newOnly, LedgerIndex index);
     Json::Value getStatus ();
 
-    Json::Value doCreate (const boost::shared_ptr<Ledger>&, const Json::Value&);
+    Json::Value doCreate (const boost::shared_ptr<Ledger>&, const RippleLineCache::pointer&,
+        const Json::Value&, bool&);
     Json::Value doClose (const Json::Value&);
     Json::Value doStatus (const Json::Value&);
     Json::Value doUpdate (const boost::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
-
-    static void updateAll (const boost::shared_ptr<Ledger>& ledger, CancelCallback shouldCancel);
-    static RippleLineCache::pointer getLineCache (Ledger::pointer& ledger, bool authoritative);
+    InfoSub::pointer getSubscriber ();
+    Journal& journal ();
 
 private:
     void setValid ();
@@ -69,6 +70,8 @@ private:
     typedef LockType::ScopedLockType ScopedLockType;
     LockType mLock;
 
+    PathRequests&                   mOwner;
+
     boost::weak_ptr<InfoSub>        wpSubscriber;               // Who this request came from
     Json::Value                     jvId;
     Json::Value                     jvStatus;                   // Last result
@@ -78,7 +81,7 @@ private:
     RippleAddress                     raDstAccount;
     STAmount                          saDstAmount;
     std::set<currIssuer_t>            sciSourceCurrencies;
-    std::vector<Json::Value>          vjvBridges;
+    // std::vector<Json::Value>          vjvBridges;
     std::map<currIssuer_t, STPathSet> mContext;
 
     bool                            bValid;
@@ -88,22 +91,69 @@ private:
     bool                            bLastSuccess;
 
     int                             iIdentifier;
-    
-    static std::atomic <int> s_last_id;
 
     boost::posix_time::ptime        ptCreated;
     boost::posix_time::ptime        ptQuickReply;
     boost::posix_time::ptime        ptFullReply;
 
+};
+
+
+class PathRequests
+{
+public:
+
+    PathRequests (Journal journal, std::shared_ptr <insight::Collector> const& collector)
+        : mJournal (journal)
+        , mLastIdentifier (0)
+        , mLock ("PathRequests", __FILE__, __LINE__)
+    {
+        mFast = collector->make_event ("pathfind_fast");
+        mFull = collector->make_event ("pathfind_full");
+    }
+
+    void updateAll (const boost::shared_ptr<Ledger>& ledger, CancelCallback shouldCancel);
+
+    RippleLineCache::pointer getLineCache (Ledger::pointer& ledger, bool authoritative);
+
+    Json::Value makePathRequest (
+        boost::shared_ptr <InfoSub> const& subscriber,
+        const boost::shared_ptr<Ledger>& ledger,
+        const Json::Value& request);
+
+    Journal& journal ()
+    {
+        return mJournal;
+    }
+
+    void reportFast (int milliseconds)
+    {
+        mFast.notify (static_cast < insight::Event::value_type> (milliseconds));
+    }
+
+    void reportFull (int milliseconds)
+    {
+        mFull.notify (static_cast < insight::Event::value_type> (milliseconds));
+    }
+
+private:
+    Journal                          mJournal;
+
+    insight::Event                   mFast;
+    insight::Event                   mFull;
+
     // Track all requests
-    static std::vector<wptr>        sRequests;
+    std::vector<PathRequest::wptr>   mRequests;
 
     // Use a RippleLineCache
-    static RippleLineCache::pointer sLineCache;
+    RippleLineCache::pointer         mLineCache;
 
-    typedef RippleRecursiveMutex StaticLockType;
-    typedef LockType::ScopedLockType StaticScopedLockType;
-    static StaticLockType sLock;
+    Atomic<int>                      mLastIdentifier;
+
+    typedef RippleRecursiveMutex     LockType;
+    typedef LockType::ScopedLockType ScopedLockType;
+    LockType                         mLock;
+
 };
 
 #endif

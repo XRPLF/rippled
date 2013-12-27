@@ -45,6 +45,8 @@ class LoadManagerLog;
 template <> char const* LogPartition::getPartitionName <LoadManagerLog> () { return "LoadManager"; }
 class ResourceManagerLog;
 template <> char const* LogPartition::getPartitionName <ResourceManagerLog> () { return "ResourceManager"; }
+class PathRequestLog;
+template <> char const* LogPartition::getPartitionName <PathRequestLog> () { return "PathRequest"; }
 
 template <> char const* LogPartition::getPartitionName <CollectorManager> () { return "Collector"; }
 
@@ -117,6 +119,9 @@ public:
             *this, LogPartition::getJournal <SiteFilesLog> ()))
 
         , m_orderBookDB (*m_jobQueue)
+
+        , m_pathRequests ( new PathRequests (
+            LogPartition::getJournal <PathRequestLog> (), m_collectorManager->collector ()))
 
         , m_ledgerMaster (LedgerMaster::New (
             *m_jobQueue, LogPartition::getJournal <LedgerMaster> ()))
@@ -268,6 +273,11 @@ public:
     OrderBookDB& getOrderBookDB ()
     {
         return m_orderBookDB;
+    }
+
+    PathRequests& getPathRequests ()
+    {
+        return *m_pathRequests;
     }
 
     SLECache& getSLECache ()
@@ -918,6 +928,7 @@ private:
     std::unique_ptr <SiteFiles::Manager> m_siteFiles;
     // VFALCO TODO Make OrderBookDB abstract
     OrderBookDB m_orderBookDB;
+    std::unique_ptr <PathRequests> m_pathRequests;
     std::unique_ptr <LedgerMaster> m_ledgerMaster;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;

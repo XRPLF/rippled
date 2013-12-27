@@ -1443,16 +1443,7 @@ Json::Value RPCHandler::doPathFind (Json::Value params, Resource::Charge& loadTy
     {
         loadType = Resource::feeHighBurdenRPC;
         mInfoSub->clearPathRequest ();
-        PathRequest::pointer request = boost::make_shared<PathRequest> (mInfoSub);
-        Json::Value result = request->doCreate (lpLedger, params);
-
-        if (request->isValid ())
-        {
-            mInfoSub->setPathRequest (request);
-            getApp().getLedgerMaster ().newPathRequest ();
-        }
-
-        return result;
+        return getApp().getPathRequests().makePathRequest (mInfoSub, lpLedger, params);
     }
 
     if (sSubCommand == "close")
@@ -1556,7 +1547,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
         else
         { // Use the default ledger and cache
             lpLedger = mNetOps->getValidatedLedger();
-            cache = PathRequest::getLineCache(lpLedger, false);
+            cache = getApp().getPathRequests().getLineCache(lpLedger, false);
         }
 
         masterLockHolder.unlock (); // As long as we have a locked copy of the ledger, we can unlock.
