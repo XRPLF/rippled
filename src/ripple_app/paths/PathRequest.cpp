@@ -451,10 +451,11 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
 /** Get the current RippleLineCache, updating it if necessary.
     Get the correct ledger to use.
-    Call with a lock
 */
 RippleLineCache::pointer PathRequest::getLineCache (Ledger::pointer& ledger, bool authoritative)
 {
+    StaticScopedLockType sl (sLock, __FILE__, __LINE__);
+
     uint32 lineSeq = sLineCache ? sLineCache->getLedger()->getLedgerSeq() : 0;
     uint32 lgrSeq = ledger->getLedgerSeq();
 
