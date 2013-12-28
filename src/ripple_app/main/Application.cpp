@@ -131,7 +131,7 @@ public:
 
         , m_sntpClient (SNTPClient::New (*this))
 
-        , m_inboundLedgers (*m_jobQueue)
+        , m_inboundLedgers (InboundLedgers::New(*m_jobQueue))
 
         , m_txQueue (TxQueue::New ())
 
@@ -215,7 +215,7 @@ public:
 
     InboundLedgers& getInboundLedgers ()
     {
-        return m_inboundLedgers;
+        return *m_inboundLedgers;
     }
 
     TransactionMaster& getMasterTransaction ()
@@ -914,7 +914,7 @@ private:
     NodeStoreScheduler m_nodeStoreScheduler;
     ScopedPointer <NodeStore::Database> m_nodeStore;
     ScopedPointer <SNTPClient> m_sntpClient;
-    InboundLedgers m_inboundLedgers;
+    beast::unique_ptr <InboundLedgers> m_inboundLedgers;
     ScopedPointer <TxQueue> m_txQueue;
     ScopedPointer <Validators::Manager> m_validators;
     ScopedPointer <IFeatures> mFeatures;
