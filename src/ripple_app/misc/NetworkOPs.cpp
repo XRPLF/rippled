@@ -2742,14 +2742,14 @@ bool NetworkOPsImp::unsubTransactions (uint64 uSeq)
 bool NetworkOPsImp::subRTTransactions (InfoSub::ref isrListener)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
-    return mSubTransactions.emplace (isrListener->getSeq (), isrListener).second;
+    return mSubRTTransactions.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
 bool NetworkOPsImp::unsubRTTransactions (uint64 uSeq)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
-    return !!mSubTransactions.erase (uSeq);
+    return !!mSubRTTransactions.erase (uSeq);
 }
 
 InfoSub::pointer NetworkOPsImp::findRpcSub (const std::string& strUrl)
