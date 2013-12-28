@@ -180,8 +180,8 @@ bool operator<= (RippleAssetType <LhsByValue> const& lhs,
 
 //------------------------------------------------------------------------------
 
-typedef RippleAssetType <false> RippleAssetRef;
 typedef RippleAssetType <true> RippleAsset;
+typedef RippleAssetType <false> RippleAssetRef;
 
 /** Create an asset specifier by parsing the given JSON.
     Errors, if any, will be returned or injected into the specified result
@@ -285,7 +285,7 @@ bool operator< (RippleBookType <LhsByValue> const& lhs,
     RippleBookType <RhsByValue> const& rhs)
 {
     int const diff (compare (lhs.in, rhs.in));
-    if (diff != 0 || lhs.in.is_xrp ())
+    if (diff != 0)
         return diff < 0;
     return lhs.out < rhs.out;
 }
@@ -314,8 +314,8 @@ bool operator<= (RippleBookType <LhsByValue> const& lhs,
 
 //------------------------------------------------------------------------------
 
-typedef RippleBookType <false> RippleBook;
-typedef RippleBookType <true> RippleBookRef;
+typedef RippleBookType <true> RippleBook;
+typedef RippleBookType <false> RippleBookRef;
 
 }
 
