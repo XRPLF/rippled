@@ -1227,6 +1227,18 @@
     <ClInclude Include="..\..\beast\crypto\UnsignedIntegerCalc.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\abstract_clock.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\manual_clock.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\ratio_io.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\chrono_io.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
@@ -1777,6 +1789,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\insight\impl\Hook.cpp">
       <Filter>beast\insight\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\impl\abstract_clock.cpp">
+      <Filter>beast\chrono\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\impl\chrono_io.cpp">
+      <Filter>beast\chrono\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\BinaryEncoding.cpp">
       <Filter>beast\crypto\impl</Filter>
