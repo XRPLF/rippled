@@ -17,16 +17,25 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CHRONO_H_INCLUDED
-#define BEAST_CHRONO_H_INCLUDED
+//  chrono_io
+//
+//  (C) Copyright Howard Hinnant
+//  Use, modification and distribution are subject to the Boost Software License,
+//  Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
+//  http://www.boost.org/LICENSE_1_0.txt).
 
-#include "chrono/abstract_clock.h"
-#include "chrono/chrono_io.h"
-#include "chrono/manual_clock.h"
-#include "chrono/ratio_io.h"
+#include "../chrono_io.h"
 
-#include "chrono/CPUMeter.h"
-#include "chrono/RelativeTime.h"
-#include "chrono/ScopedTimeInterval.h"
+//_LIBCPP_BEGIN_NAMESPACE_STD
+namespace std {
 
-#endif
+namespace chrono
+{
+
+locale::id
+durationpunct::id;
+
+}  // chrono
+
+//_LIBCPP_END_NAMESPACE_STD
+}

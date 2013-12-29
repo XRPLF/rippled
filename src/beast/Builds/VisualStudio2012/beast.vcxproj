@@ -88,7 +88,11 @@
     <ClInclude Include="..\..\beast\Boost.h" />
     <ClInclude Include="..\..\beast\boost\ErrorCode.h" />
     <ClInclude Include="..\..\beast\ByteOrder.h" />
+    <ClInclude Include="..\..\beast\chrono\chrono_io.h" />
     <ClInclude Include="..\..\beast\chrono\CPUMeter.h" />
+    <ClInclude Include="..\..\beast\chrono\abstract_clock.h" />
+    <ClInclude Include="..\..\beast\chrono\manual_clock.h" />
+    <ClInclude Include="..\..\beast\chrono\ratio_io.h" />
     <ClInclude Include="..\..\beast\chrono\RelativeTime.h" />
     <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h" />
     <ClInclude Include="..\..\beast\Config.h" />
@@ -402,7 +406,19 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\boost\Boost.cpp" />
     <ClCompile Include="..\..\beast\chrono\Chrono.cpp" />
+    <ClCompile Include="..\..\beast\chrono\impl\chrono_io.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\beast\chrono\impl\CPUMeter.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\impl\abstract_clock.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
