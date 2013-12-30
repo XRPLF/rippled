@@ -2559,9 +2559,6 @@
     <ClInclude Include="..\..\src\ripple\resource\api\LegacyFees.h">
       <Filter>[1] Ripple\resource\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\resource\impl\LogicType.h">
-      <Filter>[1] Ripple\resource\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\LogicType.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>

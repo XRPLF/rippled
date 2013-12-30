@@ -26,12 +26,13 @@ class ManagerImp
 {
 public:
     Journal m_journal;
-    LogicType <SimpleMonotonicClock> m_logic;
+    Logic m_logic;
 
     ManagerImp (Journal journal)
         : Thread ("Resource::Manager")
         , m_journal (journal)
-        , m_logic (journal)
+        , m_logic (get_abstract_clock <
+            std::chrono::steady_clock, std::chrono::seconds> (), journal)
     {
         startThread ();
     }

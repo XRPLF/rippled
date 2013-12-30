@@ -26,6 +26,7 @@ namespace Resource {
 class Logic
 {
 public:
+    typedef abstract_clock <std::chrono::seconds> clock_type;
     typedef boost::unordered_map <std::string, Import> Imports;
     typedef boost::unordered_map <Key, Entry, Key::hasher, Key::key_equal> Table;
 
@@ -53,13 +54,13 @@ public:
     typedef SharedData <State> SharedState;
 
     SharedState m_state;
-    DiscreteClock <DiscreteTime> m_clock;
+    abstract_clock <std::chrono::seconds>& m_clock;
     Journal m_journal;
 
     //--------------------------------------------------------------------------
 
-    Logic (DiscreteClock <DiscreteTime>::Source& source, Journal journal)
-        : m_clock (source)
+    Logic (clock_type& clock, Journal journal)
+        : m_clock (clock)
         , m_journal (journal)
     {
     }
@@ -212,7 +213,7 @@ public:
 
     Json::Value getJson (int threshold)
     {
-        DiscreteTime const now (m_clock());
+        clock_type::rep const now (m_clock.elapsed());
 
         Json::Value ret (Json::objectValue);
         SharedState::Access state (m_state);
@@ -262,7 +263,7 @@ public:
 
     Gossip exportConsumers ()
     {
-        DiscreteTime const now (m_clock());
+        clock_type::rep const now (m_clock.elapsed());
 
         Gossip gossip;
         SharedState::Access state (m_state);
@@ -288,7 +289,7 @@ public:
 
     void importConsumers (std::string const& origin, Gossip const& gossip)
     {
-        DiscreteTime const now (m_clock());
+        clock_type::rep const now (m_clock.elapsed());
 
         {
             SharedState::Access state (m_state);
@@ -357,7 +358,7 @@ public:
     {
         SharedState::Access state (m_state);
 
-        DiscreteTime const now (m_clock());
+        clock_type::rep const now (m_clock.elapsed());
 
         for (List <Entry>::iterator iter (
             state->inactive.begin()); iter != state->inactive.end();)
@@ -440,7 +441,7 @@ public:
                 break;
             }
             state->inactive.push_back (entry);
-            entry.whenExpires = m_clock() + secondsUntilExpiration;
+            entry.whenExpires = m_clock.elapsed() + secondsUntilExpiration;
         }
     }
 
@@ -455,7 +456,7 @@ public:
 
     Disposition charge (Entry& entry, Charge const& fee, SharedState::Access& state)
     {
-        DiscreteTime const now (m_clock());
+        clock_type::rep const now (m_clock.elapsed());
         int const balance (entry.add (fee.cost(), now));
         m_journal.info <<
             "Charging " << entry << " for " << fee;
@@ -465,7 +466,7 @@ public:
     bool warn (Entry& entry, SharedState::Access& state)
     {
         bool notify (false);
-        DiscreteTime const now (m_clock());
+        clock_type::rep const now (m_clock.elapsed());
         if (entry.balance (now) >= warningThreshold && now != entry.lastWarningTime)
         {
             charge (entry, feeWarning, state);
@@ -483,7 +484,7 @@ public:
     bool disconnect (Entry& entry, SharedState::Access& state)
     {
         bool drop (false);
-        DiscreteTime const now (m_clock());
+        clock_type::rep const now (m_clock.elapsed());
         if (entry.balance (now) >= dropThreshold)
         {
             charge (entry, feeDrop, state);
@@ -494,7 +495,7 @@ public:
 
     int balance (Entry& entry, SharedState::Access& state)
     {
-        return entry.balance (m_clock());
+        return entry.balance (m_clock.elapsed());
     }
 
     //--------------------------------------------------------------------------
@@ -544,7 +545,7 @@ public:
     //--------------------------------------------------------------------------
 
     void writeList (
-        DiscreteTime const now,
+        clock_type::rep const now,
             PropertyStream::Set& items,
                 List <Entry>& list)
     {
@@ -563,7 +564,7 @@ public:
 
     void onWrite (PropertyStream::Map& map)
     {
-        DiscreteTime const now (m_clock());
+        clock_type::rep const now (m_clock.elapsed());
 
         SharedState::Access state (m_state);
 

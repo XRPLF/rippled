@@ -23,6 +23,8 @@
 namespace ripple {
 namespace Resource {
 
+typedef abstract_clock <std::chrono::seconds> clock_type;
+
 // An entry in the table
 struct Entry : public List <Entry>::Node
 {
@@ -57,14 +59,14 @@ struct Entry : public List <Entry>::Node
     }
 
     // Balance including remote contributions
-    int balance (DiscreteTime const now)
+    int balance (clock_type::rep const now)
     {
         return local_balance.value (now) + remote_balance;
     }
 
     // Add a charge and return normalized balance
     // including contributions from imports.
-    int add (int charge, DiscreteTime const now)
+    int add (int charge, clock_type::rep const now)
     {
         return local_balance.add (charge, now) + remote_balance;
     }
@@ -85,10 +87,10 @@ struct Entry : public List <Entry>::Node
     Disposition disposition;
 
     // Time of the last warning
-    DiscreteTime lastWarningTime;
+    clock_type::rep lastWarningTime;
 
     // For inactive entries, time after which this entry will be erased
-    DiscreteTime whenExpires;
+    clock_type::rep whenExpires;
 };
 
 std::ostream& operator<< (std::ostream& os, Entry const& v)
