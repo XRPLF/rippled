@@ -74,7 +74,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    JobQueueImp (shared_ptr <insight::Collector> const& collector,
+    JobQueueImp (std::shared_ptr <insight::Collector> const& collector,
         Stoppable& parent, Journal journal)
         : JobQueue ("JobQueue", parent)
         , m_journal (journal)
@@ -83,7 +83,7 @@ public:
         , m_workers (*this, "JobQueue", 0)
         , m_cancelCallback (boost::bind (&Stoppable::isStopping, this))
     {
-        m_metrics.hook = collector->make_hook (beast::bind (
+        m_metrics.hook = collector->make_hook (std::bind (
             &JobQueueImp::collect, this));
         m_metrics.job_count = collector->make_gauge ("job_count");
 
@@ -130,7 +130,7 @@ public:
         m_metrics.job_count = m_jobSet.size ();
     }
 
-    void addJob (JobType type, const std::string& name, const FUNCTION_TYPE<void (Job&)>& jobFunc)
+    void addJob (JobType type, const std::string& name, const std::function<void (Job&)>& jobFunc)
     {
         bassert (type != jtINVALID);
 
@@ -726,7 +726,7 @@ JobQueue::JobQueue (char const* name, Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-JobQueue* JobQueue::New (shared_ptr <insight::Collector> const& collector,
+JobQueue* JobQueue::New (std::shared_ptr <insight::Collector> const& collector,
                          Stoppable& parent, Journal journal)
 {
     return new JobQueueImp (collector, parent, journal);

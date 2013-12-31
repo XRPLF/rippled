@@ -18,7 +18,6 @@
 //==============================================================================
 
 // backend support
-#include "beast/modules/beast_db/beast_db.h"
 #include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
 #include "../ripple_leveldb/ripple_leveldb.h"
 #include "../ripple/rocksdb/ripple_rocksdb.h"
@@ -30,8 +29,6 @@ namespace ripple {
 #  include "impl/BatchWriter.h"
 # include "backend/HyperDBFactory.h"
 #include "backend/HyperDBFactory.cpp"
-# include "backend/KeyvaDBFactory.h"
-#include "backend/KeyvaDBFactory.cpp"
 # include "backend/LevelDBFactory.h"
 #include "backend/LevelDBFactory.cpp"
 # include "backend/MemoryFactory.h"

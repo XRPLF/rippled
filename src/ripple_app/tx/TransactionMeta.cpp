@@ -27,7 +27,7 @@ TransactionMetaSet::TransactionMetaSet (uint256 const& txid, uint32 ledger, Blob
     Serializer s (vec);
     SerializerIterator sit (s);
 
-    UPTR_T<SerializedType> pobj = STObject::deserialize (sit, sfAffectedNodes);
+    std::unique_ptr<SerializedType> pobj = STObject::deserialize (sit, sfAffectedNodes);
     STObject* obj = static_cast<STObject*> (pobj.get ());
 
     if (!obj)

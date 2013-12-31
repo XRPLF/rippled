@@ -34,7 +34,7 @@ class SHAMap
 {
 private:
     /** Function object which handles missing nodes. */
-    typedef beast::function <void (uint32 refNum)> MissingNodeHandler;
+    typedef std::function <void (uint32 refNum)> MissingNodeHandler;
 
     /** Default handler which calls NetworkOPs. */
     struct DefaultMissingNodeHandler
@@ -126,7 +126,7 @@ public:
     SHAMapItem::pointer peekNextItem (uint256 const& );
     SHAMapItem::pointer peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type);
     SHAMapItem::pointer peekPrevItem (uint256 const& );
-    void visitLeaves(FUNCTION_TYPE<void (SHAMapItem::ref)>);
+    void visitLeaves(std::function<void (SHAMapItem::ref)>);
 
     // comparison/sync functions
     void getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& hashes, int max,
@@ -216,7 +216,7 @@ public:
     typedef std::pair <uint256, Blob> fetchPackEntry_t;
 
     std::list<fetchPackEntry_t> getFetchPack (SHAMap * have, bool includeLeaves, int max);
-    void getFetchPack (SHAMap * have, bool includeLeaves, int max, FUNCTION_TYPE<void (const uint256&, const Blob&)>);
+    void getFetchPack (SHAMap * have, bool includeLeaves, int max, std::function<void (const uint256&, const Blob&)>);
 
     // tree node cache operations
     static SHAMapTreeNode::pointer getCache (uint256 const& hash, SHAMapNode const& id);
@@ -274,7 +274,7 @@ private:
     bool walkBranch (SHAMapTreeNode * node, SHAMapItem::ref otherMapItem, bool isFirstMap,
                      Delta & differences, int & maxCount);
 
-    void visitLeavesInternal (FUNCTION_TYPE<void (SHAMapItem::ref item)>& function);
+    void visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& function);
 
 private:
 #if 1

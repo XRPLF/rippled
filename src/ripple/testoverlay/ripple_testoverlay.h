@@ -25,6 +25,8 @@
 
 #include "beast/modules/beast_core/beast_core.h"
 
+#include <memory>
+
 /** Provides a template based peer to peer network simulator.
 
     A TestOverlay::Network simulates an entire peer to peer network.

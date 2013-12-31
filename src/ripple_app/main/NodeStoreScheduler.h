@@ -36,7 +36,7 @@ private:
     void doTask (NodeStore::Task& task, Job&);
 
     JobQueue& m_jobQueue;
-    Atomic <int> m_taskCount;
+    std::atomic <int> m_taskCount;
 };
 
 

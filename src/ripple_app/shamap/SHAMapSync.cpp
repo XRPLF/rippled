@@ -23,7 +23,7 @@ static const uint256 uZero;
 
 KeyCache <uint256, UptimeTimerAdapter> SHAMap::fullBelowCache ("fullBelowCache", 524288, 240);
 
-void SHAMap::visitLeaves (FUNCTION_TYPE<void (SHAMapItem::ref item)> function)
+void SHAMap::visitLeaves (std::function<void (SHAMapItem::ref item)> function)
 {
     SHAMap::pointer snap;
     {
@@ -33,7 +33,7 @@ void SHAMap::visitLeaves (FUNCTION_TYPE<void (SHAMapItem::ref item)> function)
     snap->visitLeavesInternal(function);
 }
 
-void SHAMap::visitLeavesInternal (FUNCTION_TYPE<void (SHAMapItem::ref item)>& function)
+void SHAMap::visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& function)
 {
     assert (root->isValid ());
 
@@ -532,15 +532,16 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack (SHAMap* have, bool inc
 }
 
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
-                           FUNCTION_TYPE<void (const uint256&, const Blob&)> func)
+                           std::function<void (const uint256&, const Blob&)> func)
 {
     ScopedLockType ul1 (mLock, __FILE__, __LINE__);
 
-    ScopedPointer <LockType::ScopedTryLockType> ul2;
+    std::unique_ptr <LockType::ScopedTryLockType> ul2;
 
     if (have)
     {
-        ul2 = new LockType::ScopedTryLockType (have->mLock, __FILE__, __LINE__);
+        // VFALCO NOTE This looks like a mess. A dynamically allocated scoped lock?
+        ul2.reset (new LockType::ScopedTryLockType (have->mLock, __FILE__, __LINE__));
 
         if (! ul2->owns_lock ())
         {

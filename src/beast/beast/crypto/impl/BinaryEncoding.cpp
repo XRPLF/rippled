@@ -17,6 +17,14 @@
 */
 //==============================================================================
 
+#include "../BinaryEncoding.h"
+#include "../UnsignedInteger.h"
+
+#include <cstddef>
+#include <string>
+
+namespace beast {
+
 /** Generic algorithms for base encoding and decoding. */
 class BinaryEncoding
 {
@@ -393,3 +401,5 @@ public:
 };
 
 static BinaryEncodingTests BinaryEncodingTests;
+
+}

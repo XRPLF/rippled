@@ -213,7 +213,8 @@ void LedgerEntrySet::entryModify (SLE::ref sle)
     {
     case taaCACHED:
         it->second.mAction  = taaMODIFY;
-        fallthru ();
+        
+        // Fall through
 
     case taaCREATE:
     case taaMODIFY:
@@ -641,7 +642,7 @@ TER LedgerEntrySet::dirAdd (
     uint64&                                 uNodeDir,
     uint256 const&                          uRootIndex,
     uint256 const&                          uLedgerIndex,
-    FUNCTION_TYPE<void (SLE::ref, bool)>    fDescriber)
+    std::function<void (SLE::ref, bool)>    fDescriber)
 {
     WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("dirAdd: uRootIndex=%s uLedgerIndex=%s")
                                        % uRootIndex.ToString ()

@@ -20,16 +20,17 @@
 #ifndef BEAST_INSIGHT_HOOKIMPL_H_INCLUDED
 #define BEAST_INSIGHT_HOOKIMPL_H_INCLUDED
 
-#include "../stl/shared_ptr.h"
+#include <functional>
+#include <memory>
 
 namespace beast {
 namespace insight {
 
-class HookImpl : public enable_shared_from_this <HookImpl>
+class HookImpl : public std::enable_shared_from_this <HookImpl>
 {
 public:
-    typedef beast::function <void (void)> HandlerType;
-   
+    typedef std::function <void (void)> HandlerType;
+
     virtual ~HookImpl () = 0;
 };
 

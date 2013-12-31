@@ -34,8 +34,6 @@
 #endif
 
 #include "../beast/modules/beast_asio/beast_asio.cpp"
-#include "../beast/modules/beast_crypto/beast_crypto.cpp"
-#include "../beast/modules/beast_db/beast_db.cpp"
 #include "../beast/modules/beast_sqdb/beast_sqdb.cpp"
 
 #include "../beast/beast/asio/Asio.cpp"

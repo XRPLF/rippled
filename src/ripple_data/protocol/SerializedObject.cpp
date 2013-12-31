@@ -19,56 +19,56 @@
 
 SETUP_LOG (STObject)
 
-UPTR_T<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
+std::unique_ptr<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
 {
     assert ((id == STI_NOTPRESENT) || (id == name.fieldType));
 
     switch (id)
     {
     case STI_NOTPRESENT:
-        return UPTR_T<SerializedType> (new SerializedType (name));
+        return std::unique_ptr<SerializedType> (new SerializedType (name));
 
     case STI_UINT8:
-        return UPTR_T<SerializedType> (new STUInt8 (name));
+        return std::unique_ptr<SerializedType> (new STUInt8 (name));
 
     case STI_UINT16:
-        return UPTR_T<SerializedType> (new STUInt16 (name));
+        return std::unique_ptr<SerializedType> (new STUInt16 (name));
 
     case STI_UINT32:
-        return UPTR_T<SerializedType> (new STUInt32 (name));
+        return std::unique_ptr<SerializedType> (new STUInt32 (name));
 
     case STI_UINT64:
-        return UPTR_T<SerializedType> (new STUInt64 (name));
+        return std::unique_ptr<SerializedType> (new STUInt64 (name));
 
     case STI_AMOUNT:
-        return UPTR_T<SerializedType> (new STAmount (name));
+        return std::unique_ptr<SerializedType> (new STAmount (name));
 
     case STI_HASH128:
-        return UPTR_T<SerializedType> (new STHash128 (name));
+        return std::unique_ptr<SerializedType> (new STHash128 (name));
 
     case STI_HASH160:
-        return UPTR_T<SerializedType> (new STHash160 (name));
+        return std::unique_ptr<SerializedType> (new STHash160 (name));
 
     case STI_HASH256:
-        return UPTR_T<SerializedType> (new STHash256 (name));
+        return std::unique_ptr<SerializedType> (new STHash256 (name));
 
     case STI_VECTOR256:
-        return UPTR_T<SerializedType> (new STVector256 (name));
+        return std::unique_ptr<SerializedType> (new STVector256 (name));
 
     case STI_VL:
-        return UPTR_T<SerializedType> (new STVariableLength (name));
+        return std::unique_ptr<SerializedType> (new STVariableLength (name));
 
     case STI_ACCOUNT:
-        return UPTR_T<SerializedType> (new STAccount (name));
+        return std::unique_ptr<SerializedType> (new STAccount (name));
 
     case STI_PATHSET:
-        return UPTR_T<SerializedType> (new STPathSet (name));
+        return std::unique_ptr<SerializedType> (new STPathSet (name));
 
     case STI_OBJECT:
-        return UPTR_T<SerializedType> (new STObject (name));
+        return std::unique_ptr<SerializedType> (new STObject (name));
 
     case STI_ARRAY:
-        return UPTR_T<SerializedType> (new STArray (name));
+        return std::unique_ptr<SerializedType> (new STArray (name));
 
     default:
         WriteLog (lsFATAL, STObject) << "Object type: " << lexicalCast <std::string> (id);
@@ -78,7 +78,7 @@ UPTR_T<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField:
 }
 
 // VFALCO TODO Remove the 'depth' parameter
-UPTR_T<SerializedType> STObject::makeDeserializedObject (SerializedTypeID id, SField::ref name,
+std::unique_ptr<SerializedType> STObject::makeDeserializedObject (SerializedTypeID id, SField::ref name,
         SerializerIterator& sit, int depth)
 {
     switch (id)
@@ -297,10 +297,10 @@ bool STObject::set (SerializerIterator& sit, int depth)
 }
 
 
-UPTR_T<SerializedType> STObject::deserialize (SerializerIterator& sit, SField::ref name)
+std::unique_ptr<SerializedType> STObject::deserialize (SerializerIterator& sit, SField::ref name)
 {
     STObject* o;
-    UPTR_T<SerializedType> object (o = new STObject (name));
+    std::unique_ptr<SerializedType> object (o = new STObject (name));
     o->set (sit, 1);
     return object;
 }
@@ -1232,7 +1232,7 @@ void STArray::sort (bool (*compare) (const STObject&, const STObject&))
     value.sort (compare);
 }
 
-UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inName, int depth)
+std::unique_ptr<STObject> STObject::parseJson (const Json::Value& object, SField::ref inName, int depth)
 {
     if (!object.isObject ())
         throw std::runtime_error ("Value is not an object");
@@ -1604,7 +1604,7 @@ UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inN
         }
     }
 
-    return UPTR_T<STObject> (new STObject (*name, data));
+    return std::unique_ptr<STObject> (new STObject (*name, data));
 }
 
 //------------------------------------------------------------------------------
@@ -1652,7 +1652,7 @@ public:
                                     "\"DeletedNode\":{\"Sequence\":1}"
                                 "}]}");
 
-            UPTR_T<STObject> so;
+            std::unique_ptr<STObject> so;
             Json::Value faultyJson;
             bool parsedOK (parseJSONString(faulty, faultyJson));
             unexpected(!parsedOK, "failed to parse");
@@ -1677,7 +1677,7 @@ public:
         bool parsedOK (parseJSONString(json, jsonObject));
         if (parsedOK)
         {
-          UPTR_T<STObject> so;
+          std::unique_ptr<STObject> so;
           so = STObject::parseJson (jsonObject);
           Json::FastWriter writer;
           std::string const& serialized (writer.write(so->getJson(0)));

@@ -34,4 +34,6 @@
 #include "threads/WaitableEvent.h"
 #include "threads/ScopedWrapperContext.h"
 
+#include "threads/semaphore.h"
+
 #endif

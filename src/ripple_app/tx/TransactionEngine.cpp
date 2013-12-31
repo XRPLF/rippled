@@ -99,7 +99,7 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
 
 #endif
 
-    UPTR_T<Transactor> transactor = Transactor::makeTransactor (txn, params, this);
+    std::unique_ptr<Transactor> transactor = Transactor::makeTransactor (txn, params, this);
 
     if (transactor.get () != NULL)
     {

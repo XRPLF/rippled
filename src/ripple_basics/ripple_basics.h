@@ -21,12 +21,14 @@
 #define RIPPLE_BASICS_H_INCLUDED
 
 #include "beast/modules/beast_core/beast_core.h"
-#include "beast/modules/beast_crypto/beast_crypto.h"
+#include "beast/beast/Crypto.h"
 
 #include "beast/modules/beast_core/system/BeforeBoost.h"
 #include "system/BoostIncludes.h"
 
 #include "../../beast/beast/Utility.h"
+
+#include <atomic>
 
 #ifndef RIPPLE_TRACK_MUTEXES
 # define RIPPLE_TRACK_MUTEXES 0

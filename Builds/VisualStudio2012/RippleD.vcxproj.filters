@@ -1002,9 +1002,6 @@
     <ClCompile Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.cpp">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\KeyvaDBFactory.cpp">
-      <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\backend\HyperDBFactory.cpp">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClCompile>
@@ -2272,9 +2269,6 @@
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.h">
-      <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\KeyvaDBFactory.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\HyperDBFactory.h">

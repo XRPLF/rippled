@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_CHECKERADAPTER_H_INCLUDED
 #define RIPPLE_PEERFINDER_CHECKERADAPTER_H_INCLUDED
 
+#include <memory>
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -39,7 +41,7 @@ class CheckerAdapter : public Checker
 private:
     SerializedContext& m_context;
     ServiceQueue& m_queue;
-    ScopedPointer <Checker> m_checker;
+    std::unique_ptr <Checker> m_checker;
 
     struct Handler
     {

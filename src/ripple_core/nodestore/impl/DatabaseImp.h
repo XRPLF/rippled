@@ -331,8 +331,6 @@ void Database::addAvailableBackends ()
 #if RIPPLE_ROCKSDB_AVAILABLE
     addFactory (RocksDBFactory::New ());
 #endif
-
-    addFactory (KeyvaDBFactory::getInstance ());
 }
 
 //------------------------------------------------------------------------------

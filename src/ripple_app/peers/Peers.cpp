@@ -64,7 +64,7 @@ public:
     typedef boost::unordered_map<RippleAddress, Peer::pointer>::value_type vtConMap;
 
     Resource::Manager& m_resourceManager;
-    ScopedPointer <PeerFinder::Manager> m_peerFinder;
+    std::unique_ptr <PeerFinder::Manager> m_peerFinder;
 
     boost::asio::io_service& m_io_service;
     boost::asio::ssl::context& m_ssl_context;
@@ -107,7 +107,7 @@ public:
 
     Peer::pointer   peerConnect (const std::string& strIp, int iPort);
 
-    ScopedPointer <NameResolver> m_resolver;
+    std::unique_ptr <NameResolver> m_resolver;
 
     //--------------------------------------------------------------------------
 

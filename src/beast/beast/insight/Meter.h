@@ -51,7 +51,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Meter (shared_ptr <MeterImpl> const& impl)
+    explicit Meter (std::shared_ptr <MeterImpl> const& impl)
         : m_impl (impl)
     {
     }
@@ -89,7 +89,7 @@ public:
     /** @} */
 
 private:
-    shared_ptr <MeterImpl> m_impl;
+    std::shared_ptr <MeterImpl> m_impl;
 };
 
 }

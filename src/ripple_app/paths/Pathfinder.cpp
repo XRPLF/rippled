@@ -450,14 +450,13 @@ bool Pathfinder::matchesOrigin (const uint160& currency, const uint160& issuer)
     return (issuer == mSrcIssuerID) || (issuer == mSrcAccountID);
 }
 
+// VFALCO TODO Use RippleCurrency, RippleAccount, et. al. in argument list here
 int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& accountID,
                              bool isDstCurrency, const uint160& dstAccount)
 {
-#ifdef C11X
+    // VFALCO TODO Use RippleAsset here
     std::pair<const uint160&, const uint160&> accountCurrency (currencyID, accountID);
-#else
-    std::pair<uint160, uint160> accountCurrency (currencyID, accountID);
-#endif
+    // VFALCO TODO Use RippleAsset here
     boost::unordered_map<std::pair<uint160, uint160>, int>::iterator it = mPOMap.find (accountCurrency);
 
     if (it != mPOMap.end ())

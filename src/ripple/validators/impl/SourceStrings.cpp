@@ -75,10 +75,7 @@ private:
 SourceStrings* SourceStrings::New (
     String name, StringArray const& strings)
 {
-    ScopedPointer <SourceStrings> object (
-        new SourceStringsImp (name, strings));
-
-    return object.release ();
+    return new SourceStringsImp (name, strings);
 }
 
 }

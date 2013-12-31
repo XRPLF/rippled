@@ -26,10 +26,6 @@ class LevelDBFactory::BackendImp
     , public LeakChecked <LevelDBFactory::BackendImp>
 {
 public:
-    typedef RecycledObjectPool <std::string> StringPool;
-
-    //--------------------------------------------------------------------------
-
     BackendImp (int keyBytes,
              Parameters const& keyValues,
              Scheduler& scheduler)
@@ -95,45 +91,38 @@ public:
 
         leveldb::ReadOptions const options;
         leveldb::Slice const slice (static_cast <char const*> (key), m_keyBytes);
+        std::string string;
 
+        leveldb::Status getStatus = m_db->Get (options, slice, &string);
+
+        if (getStatus.ok ())
         {
-            // These are reused std::string objects,
-            // required for leveldb's funky interface.
-            //
-            StringPool::ScopedItem item (m_stringPool);
-            std::string& string = item.getObject ();
+            DecodedBlob decoded (key, string.data (), string.size ());
 
-            leveldb::Status getStatus = m_db->Get (options, slice, &string);
-
-            if (getStatus.ok ())
+            if (decoded.wasOk ())
             {
-                DecodedBlob decoded (key, string.data (), string.size ());
-
-                if (decoded.wasOk ())
-                {
-                    *pObject = decoded.createObject ();
-                }
-                else
-                {
-                    // Decoding failed, probably corrupted!
-                    //
-                    status = dataCorrupt;
-                }
+                *pObject = decoded.createObject ();
             }
             else
             {
-                if (getStatus.IsCorruption ())
-                {
-                    status = dataCorrupt;
-                }
-                else if (getStatus.IsNotFound ())
-                {
-                    status = notFound;
-                }
-                else
-                {
-                    status = unknown;
-                }
+                // Decoding failed, probably corrupted!
+                //
+                status = dataCorrupt;
+            }
+        }
+        else
+        {
+            if (getStatus.IsCorruption ())
+            {
+                status = dataCorrupt;
+            }
+            else if (getStatus.IsNotFound ())
+            {
+                status = notFound;
+            }
+            else
+            {
+                status = unknown;
             }
         }
 
@@ -149,19 +138,17 @@ public:
     {
         leveldb::WriteBatch wb;
 
+        EncodedBlob encoded;
+
+        BOOST_FOREACH (NodeObject::ref object, batch)
         {
-            EncodedBlob::Pool::ScopedItem item (m_blobPool);
+            encoded.prepare (object);
 
-            BOOST_FOREACH (NodeObject::ref object, batch)
-            {
-                item.getObject ().prepare (object);
-
-                wb.Put (
-                    leveldb::Slice (reinterpret_cast <char const*> (item.getObject ().getKey ()),
-                                                                    m_keyBytes),
-                    leveldb::Slice (reinterpret_cast <char const*> (item.getObject ().getData ()),
-                                                                    item.getObject ().getSize ()));
-            }
+            wb.Put (
+                leveldb::Slice (reinterpret_cast <char const*> (
+                    encoded.getKey ()), m_keyBytes),
+                leveldb::Slice (reinterpret_cast <char const*> (
+                    encoded.getData ()), encoded.getSize ()));
         }
 
         leveldb::WriteOptions const options;
@@ -221,7 +208,6 @@ private:
     Scheduler& m_scheduler;
     BatchWriter m_batch;
     StringPool m_stringPool;
-    EncodedBlob::Pool m_blobPool;
     std::string m_name;
     ScopedPointer <leveldb::DB> m_db;
 };

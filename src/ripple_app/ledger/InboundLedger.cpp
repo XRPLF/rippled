@@ -267,7 +267,7 @@ boost::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
 static void LADispatch (
     Job& job,
     InboundLedger::pointer la,
-    std::vector< FUNCTION_TYPE<void (InboundLedger::pointer)> > trig)
+    std::vector< std::function<void (InboundLedger::pointer)> > trig)
 {
     if (la->isComplete() && !la->isFailed())
     {
@@ -290,7 +290,7 @@ void InboundLedger::done ()
 
     assert (isComplete () || isFailed ());
 
-    std::vector< FUNCTION_TYPE<void (InboundLedger::pointer)> > triggers;
+    std::vector< std::function<void (InboundLedger::pointer)> > triggers;
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
         triggers.swap (mOnComplete);
@@ -310,7 +310,7 @@ void InboundLedger::done ()
                                     BIND_TYPE (LADispatch, P_1, shared_from_this (), triggers));
 }
 
-bool InboundLedger::addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)> triggerFunc)
+bool InboundLedger::addOnComplete (std::function<void (InboundLedger::pointer)> triggerFunc)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 

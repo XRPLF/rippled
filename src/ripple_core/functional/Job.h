@@ -90,7 +90,7 @@ public:
          std::string const& name,
          uint64 index,
          LoadMonitor& lm,
-         FUNCTION_TYPE <void (Job&)> const& job,
+         std::function <void (Job&)> const& job,
          CancelCallback cancelCallback);
 
     Job& operator= (Job const& other);
@@ -118,7 +118,7 @@ private:
     CancelCallback m_cancelCallback;
     JobType                     mType;
     uint64                      mJobIndex;
-    FUNCTION_TYPE <void (Job&)> mJob;
+    std::function <void (Job&)> mJob;
     LoadEvent::pointer          m_loadEvent;
     std::string                 mName;
 };

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_HTTP_PEER_H_INCLUDED
 #define RIPPLE_HTTP_PEER_H_INCLUDED
 
+#include <memory>
+
 namespace ripple {
 namespace HTTP {
 
@@ -57,16 +59,16 @@ public:
     boost::asio::io_service::strand m_strand;
     boost::asio::deadline_timer m_data_timer;
     boost::asio::deadline_timer m_request_timer;
-    ScopedPointer <MultiSocket> m_socket;
+    std::unique_ptr <MultiSocket> m_socket;
     MemoryBlock m_buffer;
     HTTPRequestParser m_parser;
     int m_writesPending;
     bool m_closed;
     bool m_callClose;
-    Atomic <int> m_detached;
     SharedPtr <Peer> m_detach_ref;
     boost::optional <boost::asio::io_service::work> m_work;
     int m_errorCode;
+    std::atomic <int> m_detached;
 
     //--------------------------------------------------------------------------
 
@@ -80,6 +82,7 @@ public:
         , m_closed (false)
         , m_callClose (false)
         , m_errorCode (0)
+        , m_detached (0)
     {
         tag = nullptr;
 
@@ -93,7 +96,8 @@ public:
         case Port::require_ssl: flags = MultiSocket::server_ssl_required; break;
         }
 
-        m_socket = MultiSocket::New (m_impl.get_io_service(), port.context->get(), flags);
+        m_socket.reset (MultiSocket::New (
+            m_impl.get_io_service(), port.context->get(), flags));
 
         m_impl.add (*this);
     }
@@ -163,7 +167,7 @@ public:
     // Make the Session asynchronous
     void detach ()
     {
-        if (m_detached.compareAndSetBool (1, 0))
+        if (m_detached.exchange (1) == 0)
         {
             bassert (! m_work);
             bassert (m_detach_ref.empty());

@@ -23,7 +23,7 @@ SETUP_LOG (PathRequest)
 PathRequest::StaticLockType PathRequest::sLock ("PathRequest", __FILE__, __LINE__);
 std::set <PathRequest::wptr> PathRequest::sRequests;
 RippleLineCache::pointer PathRequest::sLineCache;
-Atomic<int> PathRequest::siLastIdentifier(0);
+std::atomic <int> PathRequest::s_last_id (0);
 
 PathRequest::PathRequest (const boost::shared_ptr<InfoSub>& subscriber)
     : mLock (this, "PathRequest", __FILE__, __LINE__)
@@ -33,7 +33,7 @@ PathRequest::PathRequest (const boost::shared_ptr<InfoSub>& subscriber)
     , bNew (true)
     , iLastLevel (0)
     , bLastSuccess (false)
-    , iIdentifier (++siLastIdentifier)
+    , iIdentifier (++s_last_id)
 {
     WriteLog (lsINFO, PathRequest) << iIdentifier << " created";
 }
@@ -504,5 +504,3 @@ void PathRequest::updateAll (Ledger::ref inLedger, bool newOnly, bool hasNew, Ca
     WriteLog (lsDEBUG, PathRequest) << "updateAll complete " << processed << " process and " <<
         removed << " removed";
 }
-
-// vim:ts=4

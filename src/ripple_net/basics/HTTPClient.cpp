@@ -116,9 +116,9 @@ public:
     void request (
         bool bSSL,
         std::deque<std::string> deqSites,
-        FUNCTION_TYPE<void (boost::asio::streambuf& sb, const std::string& strHost)> build,
+        std::function<void (boost::asio::streambuf& sb, const std::string& strHost)> build,
         boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE<bool (const boost::system::error_code& ecResult,
+        std::function<bool (const boost::system::error_code& ecResult,
             int iStatus, const std::string& strData)> complete)
     {
         mSSL        = bSSL;
@@ -137,7 +137,7 @@ public:
         std::deque<std::string> deqSites,
         const std::string& strPath,
         boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus,
+        std::function<bool (const boost::system::error_code& ecResult, int iStatus,
             const std::string& strData)> complete)
     {
 
@@ -503,8 +503,8 @@ private:
     const unsigned short                                        mPort;
     int                                                         mResponseMax;
     int                                                         mStatus;
-    FUNCTION_TYPE<void (boost::asio::streambuf& sb, const std::string& strHost)>         mBuild;
-    FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> mComplete;
+    std::function<void (boost::asio::streambuf& sb, const std::string& strHost)>         mBuild;
+    std::function<bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> mComplete;
 
     boost::asio::deadline_timer                                 mDeadline;
 
@@ -525,7 +525,7 @@ void HTTPClient::get (
     const std::string& strPath,
     std::size_t responseMax,
     boost::posix_time::time_duration timeout,
-    FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus,
+    std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         const std::string& strData)> complete)
 {
     boost::shared_ptr <HTTPClientImp> client (
@@ -542,7 +542,7 @@ void HTTPClient::get (
     const std::string& strPath,
     std::size_t responseMax,
     boost::posix_time::time_duration timeout,
-    FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus,
+    std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         const std::string& strData)> complete)
 {
     std::deque<std::string> deqSites (1, strSite);
@@ -558,10 +558,10 @@ void HTTPClient::request (
     boost::asio::io_service& io_service,
     std::string strSite,
     const unsigned short port,
-    FUNCTION_TYPE<void (boost::asio::streambuf& sb, const std::string& strHost)> setRequest,
+    std::function<void (boost::asio::streambuf& sb, const std::string& strHost)> setRequest,
     std::size_t responseMax,
     boost::posix_time::time_duration timeout,
-    FUNCTION_TYPE<bool (const boost::system::error_code& ecResult, int iStatus,
+    std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         const std::string& strData)> complete)
 {
     std::deque<std::string> deqSites (1, strSite);

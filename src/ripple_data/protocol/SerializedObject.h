@@ -48,19 +48,19 @@ public:
         setType (type);
     }
 
-    UPTR_T<STObject> oClone () const
+    std::unique_ptr<STObject> oClone () const
     {
-        return UPTR_T<STObject> (new STObject (*this));
+        return std::unique_ptr<STObject> (new STObject (*this));
     }
 
-    static UPTR_T<STObject> parseJson (const Json::Value & value, SField::ref name = sfGeneric, int depth = 0);
+    static std::unique_ptr<STObject> parseJson (const Json::Value & value, SField::ref name = sfGeneric, int depth = 0);
 
     virtual ~STObject ()
     {
         ;
     }
 
-    static UPTR_T<SerializedType> deserialize (SerializerIterator & sit, SField::ref name);
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator & sit, SField::ref name);
 
     bool setType (const SOTemplate & type);
     bool isValidForType ();
@@ -108,7 +108,7 @@ public:
         mData.push_back (t.clone ().release ());
         return mData.size () - 1;
     }
-    int giveObject (UPTR_T<SerializedType> t)
+    int giveObject (std::unique_ptr<SerializedType> t)
     {
         mData.push_back (t.release ());
         return mData.size () - 1;
@@ -223,21 +223,21 @@ public:
     bool delField (SField::ref field);
     void delField (int index);
 
-    static UPTR_T <SerializedType> makeDefaultObject (SerializedTypeID id, SField::ref name);
+    static std::unique_ptr <SerializedType> makeDefaultObject (SerializedTypeID id, SField::ref name);
 
     // VFALCO TODO remove the 'depth' parameter
-    static UPTR_T<SerializedType> makeDeserializedObject (
+    static std::unique_ptr<SerializedType> makeDeserializedObject (
         SerializedTypeID id,
         SField::ref name,
         SerializerIterator&,
         int depth);
 
-    static UPTR_T<SerializedType> makeNonPresentObject (SField::ref name)
+    static std::unique_ptr<SerializedType> makeNonPresentObject (SField::ref name)
     {
         return makeDefaultObject (STI_NOTPRESENT, name);
     }
 
-    static UPTR_T<SerializedType> makeDefaultObject (SField::ref name)
+    static std::unique_ptr<SerializedType> makeDefaultObject (SField::ref name)
     {
         return makeDefaultObject (name.fieldType, name);
     }
@@ -373,9 +373,9 @@ public:
         ;
     }
 
-    static UPTR_T<SerializedType> deserialize (SerializerIterator & sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator & sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     const vector& getValue () const

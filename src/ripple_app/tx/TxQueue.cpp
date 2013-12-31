@@ -139,6 +139,5 @@ private:
 
 TxQueue* TxQueue::New ()
 {
-    ScopedPointer <TxQueue> object (new TxQueueImp);
-    return object.release ();
+    return new TxQueueImp;
 }

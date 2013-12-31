@@ -321,19 +321,19 @@ public:
 
     DatabaseCon* getRpcDB ()
     {
-        return mRpcDB;
+        return mRpcDB.get();
     }
     DatabaseCon* getTxnDB ()
     {
-        return mTxnDB;
+        return mTxnDB.get();
     }
     DatabaseCon* getLedgerDB ()
     {
-        return mLedgerDB;
+        return mLedgerDB.get();
     }
     DatabaseCon* getWalletDB ()
     {
-        return mWalletDB;
+        return mWalletDB.get();
     }
 
     bool isShutdown ()
@@ -354,10 +354,10 @@ public:
     {
         switch (index)
         {
-        case 0: mRpcDB = openDatabaseCon ("rpc.db", RpcDBInit, RpcDBCount); break;
-        case 1: mTxnDB = openDatabaseCon ("transaction.db", TxnDBInit, TxnDBCount); break;
-        case 2: mLedgerDB = openDatabaseCon ("ledger.db", LedgerDBInit, LedgerDBCount); break;
-        case 3: mWalletDB = openDatabaseCon ("wallet.db", WalletDBInit, WalletDBCount); break;
+        case 0: mRpcDB.reset (openDatabaseCon ("rpc.db", RpcDBInit, RpcDBCount)); break;
+        case 1: mTxnDB.reset (openDatabaseCon ("transaction.db", TxnDBInit, TxnDBCount)); break;
+        case 2: mLedgerDB.reset (openDatabaseCon ("ledger.db", LedgerDBInit, LedgerDBCount)); break;
+        case 3: mWalletDB.reset (openDatabaseCon ("wallet.db", WalletDBInit, WalletDBCount)); break;
         };
     }
 
@@ -427,8 +427,8 @@ public:
         getApp().getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                 (getConfig ().getSize (siTxnDBCache) * 1024)));
 
-        mTxnDB->getDB ()->setupCheckpointing (m_jobQueue);
-        mLedgerDB->getDB ()->setupCheckpointing (m_jobQueue);
+        mTxnDB->getDB ()->setupCheckpointing (m_jobQueue.get());
+        mLedgerDB->getDB ()->setupCheckpointing (m_jobQueue.get());
 
         if (!getConfig ().RUN_STANDALONE)
             updateTables ();
@@ -495,8 +495,8 @@ public:
 
         // SSL context used for Peer connections.
         {
-            m_peerSSLContext = RippleSSLContext::createAnonymous (
-                getConfig ().PEER_SSL_CIPHER_LIST);
+            m_peerSSLContext.reset (RippleSSLContext::createAnonymous (
+                getConfig ().PEER_SSL_CIPHER_LIST));
 
             // VFALCO NOTE, It seems the WebSocket context never has
             // set_verify_mode called, for either setting of WEBSOCKET_SECURE
@@ -508,8 +508,8 @@ public:
         //             the creation of the peer SSL context and Peers object into
         //             the conditional.
         //
-        m_peers = add (Peers::New (m_mainIoPool, *m_resourceManager, *m_siteFiles,
-            m_mainIoPool, m_peerSSLContext->get ()));
+        m_peers.reset (add (Peers::New (m_mainIoPool, *m_resourceManager, *m_siteFiles,
+            m_mainIoPool, m_peerSSLContext->get ())));
 
         // If we're not in standalone mode,
         // prepare ourselves for  networking
@@ -548,24 +548,24 @@ public:
         // SSL context used for WebSocket connections.
         if (getConfig ().WEBSOCKET_SECURE)
         {
-            m_wsSSLContext = RippleSSLContext::createAuthenticated (
+            m_wsSSLContext.reset (RippleSSLContext::createAuthenticated (
                 getConfig ().WEBSOCKET_SSL_KEY,
                 getConfig ().WEBSOCKET_SSL_CERT,
-                getConfig ().WEBSOCKET_SSL_CHAIN);
+                getConfig ().WEBSOCKET_SSL_CHAIN));
         }
         else
         {
-            m_wsSSLContext = RippleSSLContext::createWebSocket ();
+            m_wsSSLContext.reset (RippleSSLContext::createWebSocket ());
         }
 
         // Create private listening WebSocket socket
         //
         if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
         {
-            m_wsPrivateDoor = WSDoor::New (*m_resourceManager,
+            m_wsPrivateDoor.reset (WSDoor::New (*m_resourceManager,
                 getOPs(), getConfig ().WEBSOCKET_IP,
                     getConfig ().WEBSOCKET_PORT, false, false,
-                        m_wsSSLContext->get ());
+                        m_wsSSLContext->get ()));
 
             if (m_wsPrivateDoor == nullptr)
             {
@@ -582,10 +582,10 @@ public:
         //
         if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
         {
-            m_wsPublicDoor = WSDoor::New (*m_resourceManager,
+            m_wsPublicDoor.reset (WSDoor::New (*m_resourceManager,
                 getOPs(), getConfig ().WEBSOCKET_PUBLIC_IP,
                     getConfig ().WEBSOCKET_PUBLIC_PORT, true, false,
-                        m_wsSSLContext->get ());
+                        m_wsSSLContext->get ()));
 
             if (m_wsPublicDoor == nullptr)
             {
@@ -599,10 +599,10 @@ public:
         }
         if (!getConfig ().WEBSOCKET_PROXY_IP.empty () && getConfig ().WEBSOCKET_PROXY_PORT)
         {
-            m_wsProxyDoor = WSDoor::New (*m_resourceManager,
+            m_wsProxyDoor.reset (WSDoor::New (*m_resourceManager,
                 getOPs(), getConfig ().WEBSOCKET_PROXY_IP,
                     getConfig ().WEBSOCKET_PROXY_PORT, true, true,
-                        m_wsSSLContext->get ());
+                        m_wsSSLContext->get ()));
 
             if (m_wsProxyDoor == nullptr)
             {
@@ -626,7 +626,7 @@ public:
         {
             try
             {
-                m_rpcDoor = RPCDoor::New (m_mainIoPool, m_rpcServerHandler);
+                m_rpcDoor.reset (RPCDoor::New (m_mainIoPool, m_rpcServerHandler));
             }
             catch (const std::exception& e)
             {
@@ -896,51 +896,52 @@ private:
     LocalCredentials m_localCredentials;
     TransactionMaster m_txMaster;
 
-    beast::unique_ptr <CollectorManager> m_collectorManager;
-    ScopedPointer <Resource::Manager> m_resourceManager;
-    ScopedPointer <RPC::Manager> m_rpcServiceManager;
+    std::unique_ptr <CollectorManager> m_collectorManager;
+    std::unique_ptr <Resource::Manager> m_resourceManager;
+    std::unique_ptr <RPC::Manager> m_rpcServiceManager;
 
     // These are Stoppable-related
-    ScopedPointer <JobQueue> m_jobQueue;
+    std::unique_ptr <JobQueue> m_jobQueue;
     IoServicePool m_mainIoPool;
-    ScopedPointer <SiteFiles::Manager> m_siteFiles;
+    std::unique_ptr <SiteFiles::Manager> m_siteFiles;
+    // VFALCO TODO Make OrderBookDB abstract
     OrderBookDB m_orderBookDB;
-    ScopedPointer <LedgerMaster> m_ledgerMaster;
-    ScopedPointer <NetworkOPs> m_networkOPs;
-    ScopedPointer <UniqueNodeList> m_deprecatedUNL;
-    ScopedPointer <RPCHTTPServer> m_rpcHTTPServer;
+    std::unique_ptr <LedgerMaster> m_ledgerMaster;
+    std::unique_ptr <NetworkOPs> m_networkOPs;
+    std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
+    std::unique_ptr <RPCHTTPServer> m_rpcHTTPServer;
 #if ! RIPPLE_USE_RPC_SERVICE_MANAGER
     RPCServerHandler m_rpcServerHandler;
 #endif
     NodeStoreScheduler m_nodeStoreScheduler;
-    ScopedPointer <NodeStore::Database> m_nodeStore;
-    ScopedPointer <SNTPClient> m_sntpClient;
-    beast::unique_ptr <InboundLedgers> m_inboundLedgers;
-    ScopedPointer <TxQueue> m_txQueue;
-    ScopedPointer <Validators::Manager> m_validators;
-    ScopedPointer <IFeatures> mFeatures;
-    ScopedPointer <IFeeVote> mFeeVote;
-    ScopedPointer <LoadFeeTrack> mFeeTrack;
-    ScopedPointer <IHashRouter> mHashRouter;
-    ScopedPointer <Validations> mValidations;
-    ScopedPointer <ProofOfWorkFactory> mProofOfWorkFactory;
-    ScopedPointer <LoadManager> m_loadManager;
+    std::unique_ptr <NodeStore::Database> m_nodeStore;
+    std::unique_ptr <SNTPClient> m_sntpClient;
+    std::unique_ptr <InboundLedgers> m_inboundLedgers;
+    std::unique_ptr <TxQueue> m_txQueue;
+    std::unique_ptr <Validators::Manager> m_validators;
+    std::unique_ptr <IFeatures> mFeatures;
+    std::unique_ptr <IFeeVote> mFeeVote;
+    std::unique_ptr <LoadFeeTrack> mFeeTrack;
+    std::unique_ptr <IHashRouter> mHashRouter;
+    std::unique_ptr <Validations> mValidations;
+    std::unique_ptr <ProofOfWorkFactory> mProofOfWorkFactory;
+    std::unique_ptr <LoadManager> m_loadManager;
     DeadlineTimer m_sweepTimer;
     bool volatile mShutdown;
 
-    ScopedPointer <DatabaseCon> mRpcDB;
-    ScopedPointer <DatabaseCon> mTxnDB;
-    ScopedPointer <DatabaseCon> mLedgerDB;
-    ScopedPointer <DatabaseCon> mWalletDB;
+    std::unique_ptr <DatabaseCon> mRpcDB;
+    std::unique_ptr <DatabaseCon> mTxnDB;
+    std::unique_ptr <DatabaseCon> mLedgerDB;
+    std::unique_ptr <DatabaseCon> mWalletDB;
 
-    ScopedPointer <SSLContext> m_peerSSLContext;
-    ScopedPointer <SSLContext> m_wsSSLContext;
-    ScopedPointer <Peers> m_peers;
+    std::unique_ptr <SSLContext> m_peerSSLContext;
+    std::unique_ptr <SSLContext> m_wsSSLContext;
+    std::unique_ptr <Peers> m_peers;
     OwnedArray <PeerDoor>  m_peerDoors;
-    ScopedPointer <RPCDoor>  m_rpcDoor;
-    ScopedPointer <WSDoor> m_wsPublicDoor;
-    ScopedPointer <WSDoor> m_wsPrivateDoor;
-    ScopedPointer <WSDoor> m_wsProxyDoor;
+    std::unique_ptr <RPCDoor>  m_rpcDoor;
+    std::unique_ptr <WSDoor> m_wsPublicDoor;
+    std::unique_ptr <WSDoor> m_wsPrivateDoor;
+    std::unique_ptr <WSDoor> m_wsProxyDoor;
 
     WaitableEvent m_stop;
 };
@@ -1246,7 +1247,7 @@ void ApplicationImp::updateTables ()
     if (getConfig ().doImport)
     {
         NodeStore::DummyScheduler scheduler;
-        ScopedPointer <NodeStore::Database> source (NodeStore::Database::New (
+        std::unique_ptr <NodeStore::Database> source (NodeStore::Database::New (
             "NodeStore.import", scheduler, LogPartition::getJournal <NodeObject> (),
                 getConfig ().importNodeDatabase));
 

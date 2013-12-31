@@ -23,7 +23,7 @@
 #include "../json/ripple_json.h"
 
 #include "beast/modules/beast_core/beast_core.h"
-#include "beast/modules/beast_crypto/beast_crypto.h" // for UnsignedInteger, Remove ASAP!
+#include "beast/beast/Crypto.h"
 
 #include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/utility/base_from_member.hpp>

@@ -29,7 +29,7 @@ public:
     NetworkOPs& m_networkOPs;
     RPCServerHandler m_deprecatedHandler;
     HTTP::Server m_server;
-    ScopedPointer <RippleSSLContext> m_context;
+    std::unique_ptr <RippleSSLContext> m_context;
 
     RPCHTTPServerImp (Stoppable& parent,
                       Journal journal,
@@ -46,14 +46,14 @@ public:
     {
         if (getConfig ().RPC_SECURE == 0)
         {
-            m_context = RippleSSLContext::createBare ();
+            m_context.reset (RippleSSLContext::createBare ());
         }
         else
         {
-            m_context = RippleSSLContext::createAuthenticated (
+            m_context.reset (RippleSSLContext::createAuthenticated (
                 getConfig ().RPC_SSL_KEY,
                     getConfig ().RPC_SSL_CERT,
-                        getConfig ().RPC_SSL_CHAIN);
+                        getConfig ().RPC_SSL_CHAIN));
         }
     }
 
@@ -76,7 +76,7 @@ public:
                     port.port = getConfig ().getRpcPort();
                 else
                     port.port = ep.port();
-                port.context = m_context;
+                port.context = m_context.get ();
 
                 HTTP::Ports ports;
                 ports.push_back (port);

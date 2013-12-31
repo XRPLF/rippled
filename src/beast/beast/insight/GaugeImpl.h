@@ -25,12 +25,12 @@ namespace insight {
 
 class Gauge;
 
-class GaugeImpl : public enable_shared_from_this <GaugeImpl>
+class GaugeImpl : public std::enable_shared_from_this <GaugeImpl>
 {
 public:
     typedef uint64  value_type;
     typedef int64   difference_type;
-    typedef beast::function <void (Gauge const&)> HandlerType;
+    typedef std::function <void (Gauge const&)> HandlerType;
 
     virtual ~GaugeImpl () = 0;
     virtual void set (value_type value) = 0;

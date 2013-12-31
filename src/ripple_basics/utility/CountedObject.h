@@ -46,22 +46,22 @@ public:
 
         virtual ~CounterBase ();
 
-        inline int increment () noexcept
+        int increment () noexcept
         {
             return ++m_count;
         }
 
-        inline int decrement () noexcept
+        int decrement () noexcept
         {
             return --m_count;
         }
 
-        inline int getCount () const noexcept
+        int getCount () const noexcept
         {
-            return m_count.get ();
+            return m_count.load ();
         }
 
-        inline CounterBase* getNext () const noexcept
+        CounterBase* getNext () const noexcept
         {
             return m_next;
         }
@@ -72,18 +72,17 @@ public:
         virtual void checkPureVirtual () const = 0;
 
     protected:
-        beast::Atomic <int> m_count;
+        std::atomic <int> m_count;
         CounterBase* m_next;
     };
 
 private:
     CountedObjects ();
-
     ~CountedObjects ();
 
 private:
-    beast::Atomic <int> m_count;
-    beast::Atomic <CounterBase*> m_head;
+    std::atomic <int> m_count;
+    std::atomic <CounterBase*> m_head;
 };
 
 //------------------------------------------------------------------------------

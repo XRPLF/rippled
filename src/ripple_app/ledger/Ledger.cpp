@@ -1206,7 +1206,7 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId)
     return ret;
 }
 
-void Ledger::visitAccountItems (const uint160& accountID, FUNCTION_TYPE<void (SLE::ref)> func)
+void Ledger::visitAccountItems (const uint160& accountID, std::function<void (SLE::ref)> func)
 {
     // Visit each item in this account's owner directory
     uint256 rootIndex       = Ledger::getOwnerDirIndex (accountID);
@@ -1234,12 +1234,12 @@ void Ledger::visitAccountItems (const uint160& accountID, FUNCTION_TYPE<void (SL
 
 }
 
-static void visitHelper (FUNCTION_TYPE<void (SLE::ref)>& function, SHAMapItem::ref item)
+static void visitHelper (std::function<void (SLE::ref)>& function, SHAMapItem::ref item)
 {
     function (boost::make_shared<SLE> (item->peekSerializer (), item->getTag ()));
 }
 
-void Ledger::visitStateItems (FUNCTION_TYPE<void (SLE::ref)> function)
+void Ledger::visitStateItems (std::function<void (SLE::ref)> function)
 {
     try
     {

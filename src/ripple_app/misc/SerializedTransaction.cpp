@@ -344,7 +344,7 @@ public:
             pass ();
         }
 
-        UPTR_T<STObject> new_obj = STObject::parseJson (j.getJson (0), sfGeneric);
+        std::unique_ptr<STObject> new_obj = STObject::parseJson (j.getJson (0), sfGeneric);
 
         if (new_obj.get () == NULL) fail ("Unable to build object from json");
 

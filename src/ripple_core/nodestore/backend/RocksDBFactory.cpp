@@ -80,10 +80,6 @@ class RocksDBFactory::BackendImp
     , public LeakChecked <RocksDBFactory::BackendImp>
 {
 public:
-    typedef RecycledObjectPool <std::string> StringPool;
-
-    //--------------------------------------------------------------------------
-
     BackendImp (int keyBytes,
              Parameters const& keyValues,
              Scheduler& scheduler,
@@ -166,46 +162,40 @@ public:
         rocksdb::ReadOptions const options;
         rocksdb::Slice const slice (static_cast <char const*> (key), m_keyBytes);
 
+        std::string string;
+
+        rocksdb::Status getStatus = m_db->Get (options, slice, &string);
+
+        if (getStatus.ok ())
         {
-            // These are reused std::string objects,
-            // required for RocksDB's funky interface.
-            //
-            StringPool::ScopedItem item (m_stringPool);
-            std::string& string = item.getObject ();
+            DecodedBlob decoded (key, string.data (), string.size ());
 
-            rocksdb::Status getStatus = m_db->Get (options, slice, &string);
-
-            if (getStatus.ok ())
+            if (decoded.wasOk ())
             {
-                DecodedBlob decoded (key, string.data (), string.size ());
-
-                if (decoded.wasOk ())
-                {
-                    *pObject = decoded.createObject ();
-                }
-                else
-                {
-                    // Decoding failed, probably corrupted!
-                    //
-                    status = dataCorrupt;
-                }
+                *pObject = decoded.createObject ();
             }
             else
             {
-                if (getStatus.IsCorruption ())
-                {
-                    status = dataCorrupt;
-                }
-                else if (getStatus.IsNotFound ())
-                {
-                    status = notFound;
-                }
-                else
-                {
-                    status = Status (customCode + getStatus.code());
+                // Decoding failed, probably corrupted!
+                //
+                status = dataCorrupt;
+            }
+        }
+        else
+        {
+            if (getStatus.IsCorruption ())
+            {
+                status = dataCorrupt;
+            }
+            else if (getStatus.IsNotFound ())
+            {
+                status = notFound;
+            }
+            else
+            {
+                status = Status (customCode + getStatus.code());
 
-                    m_journal.error << getStatus.ToString ();
-                }
+                m_journal.error << getStatus.ToString ();
             }
         }
 
@@ -221,19 +211,17 @@ public:
     {
         rocksdb::WriteBatch wb;
 
+        EncodedBlob encoded;
+
+        BOOST_FOREACH (NodeObject::ref object, batch)
         {
-            EncodedBlob::Pool::ScopedItem item (m_blobPool);
+            encoded.prepare (object);
 
-            BOOST_FOREACH (NodeObject::ref object, batch)
-            {
-                item.getObject ().prepare (object);
-
-                wb.Put (
-                    rocksdb::Slice (reinterpret_cast <char const*> (item.getObject ().getKey ()),
-                                                                    m_keyBytes),
-                    rocksdb::Slice (reinterpret_cast <char const*> (item.getObject ().getData ()),
-                                                                    item.getObject ().getSize ()));
-            }
+            wb.Put (
+                rocksdb::Slice (reinterpret_cast <char const*> (
+                    encoded.getKey ()), m_keyBytes),
+                rocksdb::Slice (reinterpret_cast <char const*> (
+                    encoded.getData ()), encoded.getSize ()));
         }
 
         rocksdb::WriteOptions const options;
@@ -293,8 +281,6 @@ private:
     size_t const m_keyBytes;
     Scheduler& m_scheduler;
     BatchWriter m_batch;
-    StringPool m_stringPool;
-    EncodedBlob::Pool m_blobPool;
     std::string m_name;
     ScopedPointer <rocksdb::DB> m_db;
 };

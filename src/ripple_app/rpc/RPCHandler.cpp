@@ -276,7 +276,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
         return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    UPTR_T<STObject>    sopTrans;
+    std::unique_ptr<STObject>    sopTrans;
 
     try
     {
@@ -989,7 +989,7 @@ Json::Value RPCHandler::doProofCreate (Json::Value params, Resource::Charge& loa
     if (params.isMember ("difficulty") || params.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
-        beast::ScopedPointer <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
+        std::unique_ptr <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
 
         if (params.isMember ("difficulty"))
         {
@@ -1075,7 +1075,7 @@ Json::Value RPCHandler::doProofVerify (Json::Value params, Resource::Charge& loa
     if (params.isMember ("difficulty") || params.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
-        beast::ScopedPointer <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
+        std::unique_ptr <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
 
         if (params.isMember ("difficulty"))
         {

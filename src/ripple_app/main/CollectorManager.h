@@ -31,7 +31,7 @@ public:
     static CollectorManager* New (StringPairArray const& params,
         Journal journal);
     virtual ~CollectorManager () = 0;
-    virtual shared_ptr <insight::Collector> const& collector () = 0;
+    virtual std::shared_ptr <insight::Collector> const& collector () = 0;
 };
 
 }

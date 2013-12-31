@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 #define RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 
+#include <memory>
+
 namespace ripple {
 namespace SiteFiles {
 
@@ -74,7 +76,7 @@ public:
 
     SharedState m_state;
     Journal m_journal;
-    ScopedPointer <HTTPClientBase> m_client;
+    std::unique_ptr <HTTPClientBase> m_client;
 
     explicit Logic (Journal journal)
         : m_journal (journal)

@@ -39,7 +39,7 @@ public:
         @param prefix A string pre-pended before each metric name.
         @param journal Destination for logging output.
     */
-    static shared_ptr <StatsDCollector> New (IPAddress const& address,
+    static std::shared_ptr <StatsDCollector> New (IPAddress const& address,
         std::string const& prefix, Journal journal);
 };
 

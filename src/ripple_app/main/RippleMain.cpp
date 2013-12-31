@@ -154,7 +154,7 @@ public:
         //             code demands the Application object exists.
         //
         //        TODO To find out who, just comment the next line out
-        m_app = Application::New ();
+        m_app.reset (Application::New ());
 
         setAssertOnFailure (false);
     }
@@ -195,7 +195,7 @@ private:
 
 private:
     bool const m_shouldLog;
-    ScopedPointer <Application> m_app;
+    std::unique_ptr <Application> m_app;
 };
 
 static int runUnitTests (String const& match, String const& format)
@@ -455,7 +455,7 @@ int RippleMain::run (int argc, char const* const* argv)
         if (!vm.count ("parameters"))
         {
             // No arguments. Run server.
-            ScopedPointer <Application> app (Application::New ());
+            std::unique_ptr <Application> app (Application::New ());
             setupServer ();            
             startServer ();
         }

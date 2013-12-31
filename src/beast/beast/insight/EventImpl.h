@@ -20,12 +20,14 @@
 #ifndef BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
 #define BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
 
+#include <memory>
+
 namespace beast {
 namespace insight {
 
 class Event;
 
-class EventImpl : public enable_shared_from_this <EventImpl>
+class EventImpl : public std::enable_shared_from_this <EventImpl>
 {
 public:
     typedef uint64 value_type;

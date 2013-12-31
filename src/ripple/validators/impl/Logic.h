@@ -20,6 +20,8 @@
 #ifndef RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
+#include <memory>
+
 namespace ripple {
 namespace Validators {
 
@@ -158,7 +160,7 @@ public:
     {
         if (findSourceByID (source->uniqueID()))
         {
-            ScopedPointer <Source> object (source);
+            std::unique_ptr <Source> object (source);
             m_journal.error << "Duplicate " << source->name();
             return;
         }

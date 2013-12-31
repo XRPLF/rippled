@@ -28,8 +28,6 @@ class HyperDBFactory::BackendImp
     , public LeakChecked <HyperDBFactory::BackendImp>
 {
 public:
-    typedef RecycledObjectPool <std::string> StringPool;
-
     BackendImp (size_t keyBytes,
              Parameters const& keyValues,
              Scheduler& scheduler)
@@ -96,44 +94,38 @@ public:
         hyperleveldb::ReadOptions const options;
         hyperleveldb::Slice const slice (static_cast <char const*> (key), m_keyBytes);
 
+        std::string string;
+
+        hyperleveldb::Status getStatus = m_db->Get (options, slice, &string);
+
+        if (getStatus.ok ())
         {
-            // These are reused std::string objects,
-            // required for leveldb's funky interface.
-            //
-            StringPool::ScopedItem item (m_stringPool);
-            std::string& string = item.getObject ();
+            DecodedBlob decoded (key, string.data (), string.size ());
 
-            hyperleveldb::Status getStatus = m_db->Get (options, slice, &string);
-
-            if (getStatus.ok ())
+            if (decoded.wasOk ())
             {
-                DecodedBlob decoded (key, string.data (), string.size ());
-
-                if (decoded.wasOk ())
-                {
-                    *pObject = decoded.createObject ();
-                }
-                else
-                {
-                    // Decoding failed, probably corrupted!
-                    //
-                    status = dataCorrupt;
-                }
+                *pObject = decoded.createObject ();
             }
             else
             {
-                if (getStatus.IsCorruption ())
-                {
-                    status = dataCorrupt;
-                }
-                else if (getStatus.IsNotFound ())
-                {
-                    status = notFound;
-                }
-                else
-                {
-                    status = unknown;
-                }
+                // Decoding failed, probably corrupted!
+                //
+                status = dataCorrupt;
+            }
+        }
+        else
+        {
+            if (getStatus.IsCorruption ())
+            {
+                status = dataCorrupt;
+            }
+            else if (getStatus.IsNotFound ())
+            {
+                status = notFound;
+            }
+            else
+            {
+                status = unknown;
             }
         }
 
@@ -149,19 +141,17 @@ public:
     {
         hyperleveldb::WriteBatch wb;
 
+        EncodedBlob encoded;
+
+        BOOST_FOREACH (NodeObject::ref object, batch)
         {
-            EncodedBlob::Pool::ScopedItem item (m_blobPool);
+            encoded.prepare (object);
 
-            BOOST_FOREACH (NodeObject::ref object, batch)
-            {
-                item.getObject ().prepare (object);
-
-                wb.Put (
-                    hyperleveldb::Slice (reinterpret_cast <char const*> (
-                        item.getObject ().getKey ()), m_keyBytes),
-                    hyperleveldb::Slice (reinterpret_cast <char const*> (
-                        item.getObject ().getData ()), item.getObject ().getSize ()));
-            }
+            wb.Put (
+                hyperleveldb::Slice (reinterpret_cast <char const*> (
+                    encoded.getKey ()), m_keyBytes),
+                hyperleveldb::Slice (reinterpret_cast <char const*> (
+                    encoded.getData ()), encoded.getSize ()));
         }
 
         hyperleveldb::WriteOptions const options;
@@ -180,8 +170,7 @@ public:
             if (it->key ().size () == m_keyBytes)
             {
                 DecodedBlob decoded (it->key ().data (),
-                                                it->value ().data (),
-                                                it->value ().size ());
+                    it->value ().data (), it->value ().size ());
 
                 if (decoded.wasOk ())
                 {
@@ -220,8 +209,6 @@ private:
     size_t const m_keyBytes;
     Scheduler& m_scheduler;
     BatchWriter m_batch;
-    StringPool m_stringPool;
-    EncodedBlob::Pool m_blobPool;
     std::string m_name;
     ScopedPointer <hyperleveldb::DB> m_db;
 };

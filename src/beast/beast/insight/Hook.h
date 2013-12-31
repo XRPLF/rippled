@@ -42,13 +42,13 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Hook (shared_ptr <HookImpl> const& impl)
+    explicit Hook (std::shared_ptr <HookImpl> const& impl)
         : m_impl (impl)
     {
     }
 
 private:
-    shared_ptr <HookImpl> m_impl;
+    std::shared_ptr <HookImpl> m_impl;
 };
 
 }

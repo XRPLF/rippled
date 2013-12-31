@@ -32,8 +32,6 @@ namespace NodeStore
 struct EncodedBlob
 {
 public:
-    typedef RecycledObjectPool <EncodedBlob> Pool;
-
     void prepare (NodeObject::Ptr const& object);
 
     void const* getKey () const noexcept { return m_key; }

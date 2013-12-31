@@ -20,10 +20,11 @@
 #ifndef BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
 #define BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
 
-#include <iterator>
-#include "../mpl/IfCond.h"
 #include "../Atomic.h"
 #include "../Uncopyable.h"
+
+#include <iterator>
+#include <type_traits>
 
 namespace beast {
 
@@ -35,23 +36,24 @@ class LockFreeStackIterator
         std::forward_iterator_tag,
         typename Container::value_type,
         typename Container::difference_type,
-        typename mpl::IfCond <IsConst,
+        typename std::conditional <IsConst,
             typename Container::const_pointer,
             typename Container::pointer>::type,
-        typename mpl::IfCond <IsConst,
+        typename std::conditional <IsConst,
             typename Container::const_reference,
             typename Container::reference>::type>
 {
 protected:
     typedef typename Container::Node Node;
-    typedef typename mpl::IfCond <IsConst, Node const*, Node*>::type NodePtr;
+    typedef typename std::conditional <
+        IsConst, Node const*, Node*>::type NodePtr;
 
 public:
     typedef typename Container::value_type value_type;
-    typedef typename mpl::IfCond <IsConst,
+    typedef typename std::conditional <IsConst,
         typename Container::const_pointer,
         typename Container::pointer>::type pointer;
-    typedef typename mpl::IfCond <IsConst,
+    typedef typename std::conditional <IsConst,
         typename Container::const_reference,
         typename Container::reference>::type reference;
 

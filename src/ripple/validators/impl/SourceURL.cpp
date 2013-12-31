@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <memory>
+
 namespace ripple {
 namespace Validators {
 
@@ -75,7 +77,7 @@ public:
 
 private:
     URL m_url;
-    ScopedPointer <HTTPClientBase> m_client;
+    std::unique_ptr <HTTPClientBase> m_client;
 };
 
 //------------------------------------------------------------------------------

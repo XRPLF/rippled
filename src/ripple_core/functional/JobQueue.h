@@ -26,7 +26,7 @@ protected:
     JobQueue (char const* name, Stoppable& parent);
 
 public:
-    static JobQueue* New (shared_ptr <insight::Collector> const& collector,
+    static JobQueue* New (std::shared_ptr <insight::Collector> const& collector,
         Stoppable& parent, Journal journal);
 
     virtual ~JobQueue () { }
@@ -34,7 +34,7 @@ public:
     // VFALCO TODO make convenience functions that allow the caller to not 
     //             have to call bind.
     //
-    virtual void addJob (JobType type, const std::string& name, const FUNCTION_TYPE<void (Job&)>& job) = 0;
+    virtual void addJob (JobType type, const std::string& name, const std::function<void (Job&)>& job) = 0;
 
     // Jobs waiting at this priority
     virtual int getJobCount (JobType t) = 0;

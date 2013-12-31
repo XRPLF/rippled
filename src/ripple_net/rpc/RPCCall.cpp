@@ -945,7 +945,7 @@ struct RPCCallImp
     }
 
     static bool onResponse (
-        FUNCTION_TYPE<void (const Json::Value& jvInput)> callbackFuncP,
+        std::function<void (const Json::Value& jvInput)> callbackFuncP,
             const boost::system::error_code& ecResult, int iStatus,
                 const std::string& strData)
     {
@@ -1125,7 +1125,7 @@ void RPCCall::fromNetwork (
     const std::string& strUsername, const std::string& strPassword,
     const std::string& strPath, const std::string& strMethod,
     const Json::Value& jvParams, const bool bSSL,
-    FUNCTION_TYPE<void (const Json::Value& jvInput)> callbackFuncP)
+    std::function<void (const Json::Value& jvInput)> callbackFuncP)
 {
     // Connect to localhost
     if (!getConfig ().QUIET)

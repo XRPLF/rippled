@@ -68,7 +68,7 @@ public:
     }
 
     // VFALCO TODO Make this the Listener / Observer pattern
-    bool addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)>);
+    bool addOnComplete (std::function<void (InboundLedger::pointer)>);
 
     void trigger (Peer::ref);
     bool tryLocal ();
@@ -129,7 +129,7 @@ private:
     std::vector <PeerDataPairType> mReceivedData;
     bool mReceiveDispatched;
 
-    std::vector <FUNCTION_TYPE <void (InboundLedger::pointer)> > mOnComplete;
+    std::vector <std::function <void (InboundLedger::pointer)> > mOnComplete;
 };
 
 #endif

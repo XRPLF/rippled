@@ -24,7 +24,7 @@ class CollectorManagerImp
 {
 public:
     Journal m_journal;
-    shared_ptr <insight::Collector> m_collector;
+    std::shared_ptr <insight::Collector> m_collector;
 
     CollectorManagerImp (StringPairArray const& params,
         Journal journal)
@@ -50,7 +50,7 @@ public:
     {
     }
 
-    shared_ptr <insight::Collector> const& collector ()
+    std::shared_ptr <insight::Collector> const& collector ()
     {
         return m_collector;
     }

@@ -20,8 +20,7 @@
 #ifndef BEAST_INSIGHT_COLLECTOR_H_INCLUDED
 #define BEAST_INSIGHT_COLLECTOR_H_INCLUDED
 
-#include "../stl/function.h"
-#include "../stl/shared_ptr.h"
+#include <string>
 
 #include "Counter.h"
 #include "Event.h"

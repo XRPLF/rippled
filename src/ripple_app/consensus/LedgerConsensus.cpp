@@ -556,14 +556,14 @@ public:
 
             if (mState != lcsFINISHED) return;
 
-            fallthru ();
+            // Fall through
 
         case lcsFINISHED:
             stateFinished ();
 
             if (mState != lcsACCEPTED) return;
 
-            fallthru ();
+            // Fall through
 
         case lcsACCEPTED:
             stateAccepted ();

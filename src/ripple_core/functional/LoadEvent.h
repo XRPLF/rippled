@@ -37,7 +37,7 @@ public:
     //             Why both kinds of containers?
     //
     typedef boost::shared_ptr <LoadEvent> pointer;
-    typedef UPTR_T <LoadEvent>            autoptr;
+    typedef std::unique_ptr <LoadEvent>            autoptr;
 
 public:
     // VFALCO TODO remove the dependency on LoadMonitor. Is that possible?

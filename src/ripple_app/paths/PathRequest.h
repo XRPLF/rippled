@@ -89,7 +89,8 @@ private:
     bool                            bLastSuccess;
 
     int                             iIdentifier;
-    static Atomic<int>              siLastIdentifier;
+    
+    static std::atomic <int> s_last_id;
 
     // Track all requests
     static std::set<wptr>           sRequests;

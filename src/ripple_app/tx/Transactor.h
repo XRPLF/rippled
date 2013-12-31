@@ -25,7 +25,7 @@ class Transactor
 public:
     typedef boost::shared_ptr<Transactor> pointer;
 
-    static UPTR_T<Transactor> makeTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine);
+    static std::unique_ptr<Transactor> makeTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine);
 
     TER apply ();
 

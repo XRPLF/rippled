@@ -20,12 +20,14 @@
 #ifndef RIPPLE_PEER_NAMERESOLVER_H_INCLUDED
 #define RIPPLE_PEER_NAMERESOLVER_H_INCLUDED
 
+#include <functional>
+
 namespace ripple {
 
 class NameResolver
 {
 public:
-    typedef boost::function <
+    typedef std::function <
         void (std::string, std::vector<IPAddress>, boost::system::error_code)>
             HandlerType;
 

@@ -24,7 +24,7 @@
 
     This class is compatible with std::allocator and can be used in any
     boost interface which takes a template parameter of type Allocator.
-    This includes boost::function and especially boost::asio::streambuf
+    This includes std::function and especially boost::asio::streambuf
     and relatives. This is vastly more efficient in a variety of situations
     especially during an upcall and when using stackful coroutines.
 

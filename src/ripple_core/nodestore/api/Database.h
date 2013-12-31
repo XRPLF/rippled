@@ -46,7 +46,7 @@ public:
         backends also require a 'path' field.
         
         Some choices for 'type' are:
-            HyperLevelDB, LevelDBFactory, SQLite, KeyvaDB, MDB
+            HyperLevelDB, LevelDBFactory, SQLite, MDB
 
         If the fastBackendParameter is omitted or empty, no ephemeral database
         is used. If the scheduler parameter is omited or unspecified, a

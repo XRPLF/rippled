@@ -20,6 +20,15 @@
 #ifndef BEAST_CRYPTO_UNSIGNEDINTEGER_H_INCLUDED
 #define BEAST_CRYPTO_UNSIGNEDINTEGER_H_INCLUDED
 
+#include "../SafeBool.h"
+#include "UnsignedIntegerCalc.h"
+#include "MurmurHash.h"
+
+#include <cstdint>
+#include <memory>
+
+namespace beast {
+
 /** Represents a set of bits of fixed size.
 
     The data is stored in "canonical" format which is network (big endian)
@@ -36,13 +45,13 @@ public:
     static std::size_t const size = Bytes;
 
     // The underlying integer type we use when converting to calculation format.
-    typedef uint32             IntCalcType;
+    typedef std::uint32_t IntCalcType;
 
     // The type of object resulting from a conversion to calculation format.
     typedef UnsignedIntegerCalc <IntCalcType> CalcType;
 
     // Standard container compatibility
-    typedef uint8              value_type;
+    typedef std::uint8_t value_type;
     typedef value_type*        iterator;
     typedef value_type const*  const_iterator;
 
@@ -135,7 +144,8 @@ public:
     template <class UnsignedIntegralType>
     static UnsignedInteger createFromInteger (UnsignedIntegralType value)
     {
-        static_bassert (Bytes >= sizeof (UnsignedIntegralType));
+        static_assert (Bytes >= sizeof (UnsignedIntegralType),
+            "Bytes is too small.");
         UnsignedInteger <Bytes> result;
         value = toNetworkByteOrder <UnsignedIntegralType> (value);
         result.clear ();
@@ -295,5 +305,7 @@ private:
 
     IntCalcType m_values [CalcCount];
 };
+
+}
 
 #endif

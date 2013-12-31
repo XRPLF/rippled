@@ -147,7 +147,7 @@ public:
     //
     // Transaction operations
     //
-    typedef FUNCTION_TYPE<void (Transaction::pointer, TER)> stCallback; // must complete immediately
+    typedef std::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
     void submitTransaction (Job&, SerializedTransaction::pointer, stCallback callback = stCallback ());
     Transaction::pointer submitTransactionSync (Transaction::ref tpTrans, bool bAdmin, bool bFailHard, bool bSubmit);
 
@@ -1778,12 +1778,8 @@ NetworkOPsImp::getAccountTxs (const RippleAddress& account, int32 minLedger, int
 
             TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
 
-#ifdef C11X
+            // VFALCO NOTE Use emplace instead.
             ret.push_back (std::pair<Transaction::ref, TransactionMetaSet::ref> (txn, meta));
-#else
-            ret.push_back (std::pair<Transaction::pointer, TransactionMetaSet::pointer> (txn, meta));
-#endif
-
         }
     }
 
@@ -1937,11 +1933,7 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, int32 minLedger, int
                 --numberOfResults;
                 TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
 
-#ifdef C11X
                 ret.push_back (std::pair<Transaction::ref, TransactionMetaSet::ref> (txn, meta));
-#else
-                ret.push_back (std::pair<Transaction::pointer, TransactionMetaSet::pointer> (txn, meta));
-#endif
             }
         }
     }
@@ -3008,7 +3000,8 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
             if (reply.objects ().size () >= 256)
                 break;
 
-            haveLedger = MOVE_P(wantLedger);
+            // VFALCO NOTE Why use move?
+            haveLedger = std::move (wantLedger);
             wantLedger = getLedgerByHash (haveLedger->getParentHash ());
         }
         while (wantLedger && (UptimeTimer::getInstance ().getElapsedSeconds () <= (uUptime + 1)));
@@ -3101,7 +3094,5 @@ NetworkOPs::NetworkOPs (Stoppable& parent)
 NetworkOPs* NetworkOPs::New (LedgerMaster& ledgerMaster,
     Stoppable& parent, Journal journal)
 {
-    ScopedPointer <NetworkOPs> object (new NetworkOPsImp (
-        ledgerMaster, parent, journal));
-    return object.release ();
+    return new NetworkOPsImp (ledgerMaster, parent, journal);
 }

@@ -83,9 +83,9 @@ public:
 
     virtual ~SerializedType () { }
 
-    static UPTR_T<SerializedType> deserialize (SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SField::ref name)
     {
-        return UPTR_T<SerializedType> (new SerializedType (name));
+        return std::unique_ptr<SerializedType> (new SerializedType (name));
     }
 
     void setFName (SField::ref n)
@@ -106,9 +106,9 @@ public:
     {
         return STI_NOTPRESENT;
     }
-    UPTR_T<SerializedType> clone () const
+    std::unique_ptr<SerializedType> clone () const
     {
-        return UPTR_T<SerializedType> (duplicate ());
+        return std::unique_ptr<SerializedType> (duplicate ());
     }
 
     virtual std::string getFullText () const;
@@ -185,9 +185,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -242,9 +242,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -299,9 +299,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -356,9 +356,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -492,9 +492,9 @@ public:
 
     static STAmount createFromInt64 (SField::ref n, int64 v);
 
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     bool bSetJson (const Json::Value& jvSource);
@@ -832,9 +832,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -903,9 +903,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -974,9 +974,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -1039,9 +1039,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     virtual SerializedTypeID getSType () const
@@ -1111,9 +1111,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -1346,9 +1346,9 @@ public:
         ;
     }
 
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     //  std::string getText() const;
@@ -1508,9 +1508,9 @@ public:
     }
     void add (Serializer& s) const;
 
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     const std::vector<uint256>& peekValue () const

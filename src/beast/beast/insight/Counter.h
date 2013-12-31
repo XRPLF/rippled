@@ -20,9 +20,9 @@
 #ifndef BEAST_INSIGHT_COUNTER_H_INCLUDED
 #define BEAST_INSIGHT_COUNTER_H_INCLUDED
 
-#include "CounterImpl.h"
+#include <memory>
 
-#include "../stl/shared_ptr.h"
+#include "CounterImpl.h"
 
 namespace beast {
 namespace insight {
@@ -52,7 +52,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Counter (shared_ptr <CounterImpl> const& impl)
+    explicit Counter (std::shared_ptr <CounterImpl> const& impl)
         : m_impl (impl)
     {
     }
@@ -100,7 +100,7 @@ public:
     /** @} */
 
 private:
-    shared_ptr <CounterImpl> m_impl;
+    std::shared_ptr <CounterImpl> m_impl;
 };
 
 }

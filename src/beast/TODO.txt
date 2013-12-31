@@ -52,8 +52,6 @@ BEAST TODO
 
 - Rename include guards to boost style, e.g. BEAST_THROW_H_INCLUDED
 
-- Decide if we should get rid of AtomicCounter, AtomicFlag, AtomicPointer, AtomicState
-
 - Clean up CacheLine, StaticObject
 
 - Clean up ConcurrentObject

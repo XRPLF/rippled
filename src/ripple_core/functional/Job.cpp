@@ -43,7 +43,7 @@ Job::Job (JobType type,
           std::string const& name,
           uint64 index,
           LoadMonitor& lm,
-          FUNCTION_TYPE <void (Job&)> const& job,
+          std::function <void (Job&)> const& job,
           CancelCallback cancelCallback)
     : m_cancelCallback (cancelCallback)
     , mType (type)

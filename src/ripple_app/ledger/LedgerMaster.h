@@ -34,7 +34,7 @@ protected:
     explicit LedgerMaster (Stoppable& parent);
 
 public:
-    typedef FUNCTION_TYPE <void (Ledger::ref)> callback;
+    typedef std::function <void (Ledger::ref)> callback;
 
 public:
     typedef RippleRecursiveMutex LockType;

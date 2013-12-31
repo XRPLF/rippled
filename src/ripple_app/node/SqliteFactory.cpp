@@ -218,7 +218,7 @@ public:
 private:
     size_t const m_keyBytes;
     std::string const m_name;
-    ScopedPointer <DatabaseCon> m_db;
+    std::unique_ptr <DatabaseCon> m_db;
     NodeStore::Scheduler& m_scheduler;
 };
 

@@ -1515,12 +1515,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\KeyvaDBFactory.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2497,7 +2491,6 @@
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\Types.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\VisitCallback.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\HyperDBFactory.h" />
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\KeyvaDBFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\NullFactory.h" />

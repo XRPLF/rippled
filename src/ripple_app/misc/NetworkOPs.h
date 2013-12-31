@@ -136,7 +136,7 @@ public:
 
     // must complete immediately
     // VFALCO TODO Make this a TxCallback structure
-    typedef FUNCTION_TYPE<void (Transaction::pointer, TER)> stCallback;
+    typedef std::function<void (Transaction::pointer, TER)> stCallback;
     virtual void submitTransaction (Job&, SerializedTransaction::pointer,
         stCallback callback = stCallback ()) = 0;
     virtual Transaction::pointer submitTransactionSync (Transaction::ref tpTrans,

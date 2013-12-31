@@ -20,15 +20,7 @@
 #ifndef RIPPLE_TYPES_RIPPLEASSETS_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEASSETS_H_INCLUDED
 
-#ifndef RIPPLE_USE_C11
-#define RIPPLE_USE_C11 1
-#endif
-
-#if RIPPLE_USE_C11
-# include <type_traits>
-#else
-# include "beast/beast/mpl/IfCond.h"
-#endif
+#include <type_traits>
 
 namespace ripple {
 
@@ -55,20 +47,11 @@ template <bool ByValue>
 class RippleAssetType
 {
 public:
-#if RIPPLE_USE_C11
     typedef typename std::conditional <ByValue,
         RippleCurrency, RippleCurrency const&>::type Currency;
 
     typedef typename std::conditional <ByValue,
         RippleIssuer, RippleIssuer const&>::type Issuer;
-
-#else
-    typedef typename mpl::IfCond <ByValue,
-        RippleCurrency, RippleCurrency const&>::type Currency;
-
-    typedef typename mpl::IfCond <ByValue,
-        RippleIssuer, RippleIssuer const&>::type Issuer;
-#endif
 
     Currency currency;
     Issuer issuer;

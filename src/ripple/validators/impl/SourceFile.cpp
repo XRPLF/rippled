@@ -89,10 +89,7 @@ private:
 
 SourceFile* SourceFile::New (File const& file)
 {
-    ScopedPointer <SourceFile> object (
-        new SourceFileImp (file));
-
-    return object.release ();
+    return new SourceFileImp (file);
 }
 
 }

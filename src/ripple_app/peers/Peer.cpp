@@ -41,7 +41,7 @@ private:
 
 public:
 
-    ScopedPointer <MultiSocket> m_socket;
+    std::unique_ptr <MultiSocket> m_socket;
     boost::asio::io_service::strand m_strand;
 
     NativeSocketType& getNativeSocket ()

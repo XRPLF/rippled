@@ -330,7 +330,7 @@ STVector256* STVector256::construct (SerializerIterator& u, SField::ref name)
     Blob data = u.getVL ();
     Blob ::iterator begin = data.begin ();
 
-    UPTR_T<STVector256> vec (new STVector256 (name));
+    std::unique_ptr<STVector256> vec (new STVector256 (name));
 
     int count = data.size () / (256 / 8);
     vec->mValue.reserve (count);

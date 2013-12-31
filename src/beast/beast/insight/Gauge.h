@@ -20,9 +20,9 @@
 #ifndef BEAST_INSIGHT_GAUGE_H_INCLUDED
 #define BEAST_INSIGHT_GAUGE_H_INCLUDED
 
-#include "GaugeImpl.h"
+#include <memory>
 
-#include "../stl/shared_ptr.h"
+#include "GaugeImpl.h"
 
 namespace beast {
 namespace insight {
@@ -54,7 +54,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Gauge (shared_ptr <GaugeImpl> const& impl)
+    explicit Gauge (std::shared_ptr <GaugeImpl> const& impl)
         : m_impl (impl)
     {
     }
@@ -118,7 +118,7 @@ public:
     /** @} */
 
 private:
-    shared_ptr <GaugeImpl> m_impl;
+    std::shared_ptr <GaugeImpl> m_impl;
 };
 
 }

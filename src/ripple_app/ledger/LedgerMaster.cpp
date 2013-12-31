@@ -30,7 +30,7 @@ class LedgerMasterImp
     , public LeakChecked <LedgerMasterImp>
 {
 public:
-    typedef FUNCTION_TYPE <void (Ledger::ref)> callback;
+    typedef std::function <void (Ledger::ref)> callback;
 
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
@@ -38,7 +38,7 @@ public:
 
     Journal m_journal;
 
-    LockType mLock;
+    LockType m_mutex;
 
     TransactionEngine mEngine;
 
@@ -49,11 +49,6 @@ public:
     Ledger::pointer mPubLedger;         // The last ledger we have published
     Ledger::pointer mPathLedger;        // The last ledger we did pathfinding against
 
-    beast::Atomic<uint32> mPubLedgerClose;
-    beast::Atomic<uint32> mPubLedgerSeq;
-    beast::Atomic<uint32> mValidLedgerClose;
-    beast::Atomic<uint32> mValidLedgerSeq;
-
     LedgerHistory mLedgerHistory;
 
     CanonicalTXSet mHeldTransactions;
@@ -61,7 +56,7 @@ public:
     LockType mCompleteLock;
     RangeSet mCompleteLedgers;
 
-    ScopedPointer<LedgerCleaner> mLedgerCleaner;
+    std::unique_ptr <LedgerCleaner> mLedgerCleaner;
 
     int                         mMinValidations;    // The minimum validations to publish a ledger
     uint256                     mLastValidateHash;
@@ -77,16 +72,17 @@ public:
     bool                        mPathFindNewLedger;
     bool                        mPathFindNewRequest;
 
+    std::atomic <uint32> mPubLedgerClose;
+    std::atomic <uint32> mPubLedgerSeq;
+    std::atomic <uint32> mValidLedgerClose;
+    std::atomic <uint32> mValidLedgerSeq;
+
     //--------------------------------------------------------------------------
 
     explicit LedgerMasterImp (Stoppable& parent, Journal journal)
         : LedgerMaster (parent)
         , m_journal (journal)
-        , mLock (this, "LedgerMaster", __FILE__, __LINE__)
-        , mPubLedgerClose (0)
-        , mPubLedgerSeq (0)
-        , mValidLedgerClose (0)
-        , mValidLedgerSeq (0)
+        , m_mutex (this, "LedgerMaster", __FILE__, __LINE__)
         , mHeldTransactions (uint256 ())
         , mLedgerCleaner (LedgerCleaner::New(*this, LogPartition::getJournal<LedgerCleanerLog>()))
         , mMinValidations (0)
@@ -96,6 +92,10 @@ public:
         , mFillInProgress (0)
         , mPathFindThread (false)
         , mPathFindNewRequest (false)
+        , mPubLedgerClose (0)
+        , mPubLedgerSeq (0)
+        , mValidLedgerClose (0)
+        , mValidLedgerSeq (0)
     {
     }
 
@@ -120,7 +120,7 @@ public:
 
     int getPublishedLedgerAge ()
     {
-        uint32 pubClose = mPubLedgerClose.get();
+        uint32 pubClose = mPubLedgerClose.load();
         if (!pubClose)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "No published ledger";
@@ -137,7 +137,7 @@ public:
 
     int getValidatedLedgerAge ()
     {
-        uint32 valClose = mValidLedgerClose.get();
+        uint32 valClose = mValidLedgerClose.load();
         if (!valClose)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "No validated ledger";
@@ -159,8 +159,8 @@ public:
             reason = "No recently-published ledger";
             return false;
         }
-        uint32 validClose = mValidLedgerClose.get();
-        uint32 pubClose = mPubLedgerClose.get();
+        uint32 validClose = mValidLedgerClose.load();
+        uint32 pubClose = mPubLedgerClose.load();
         if (!validClose || !pubClose)
         {
             reason = "No published ledger";
@@ -191,7 +191,7 @@ public:
     void addHeldTransaction (Transaction::ref transaction)
     {
         // returns true if transaction was added
-        ScopedLockType ml (mLock, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
         mHeldTransactions.push_back (transaction->getSTransaction ());
     }
 
@@ -202,7 +202,7 @@ public:
         WriteLog (lsINFO, LedgerMaster) << "PushLedger: " << newLedger->getHash ();
 
         {
-            ScopedLockType ml (mLock, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
 
             if (mClosedLedger)
             {
@@ -231,7 +231,7 @@ public:
 
 
         {
-            ScopedLockType ml (mLock, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
             mClosedLedger = newLCL;
             mCurrentLedger = newOL;
             mEngine.setLedger (newOL);
@@ -254,7 +254,7 @@ public:
         assert (lastClosed && current);
 
         {
-            ScopedLockType ml (mLock, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
             mClosedLedger = lastClosed;
             mClosedLedger->setClosed ();
             mClosedLedger->setAccepted ();
@@ -284,7 +284,7 @@ public:
 
     Ledger::pointer closeLedger (bool recover)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (m_mutex, __FILE__, __LINE__);
         Ledger::pointer closingLedger = mCurrentLedger;
 
         if (recover)
@@ -331,7 +331,7 @@ public:
         TER result;
 
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (m_mutex, __FILE__, __LINE__);
             result = mEngine.applyTransaction (*txn, params, didApply);
             ledger = mEngine.getLedger ();
         }
@@ -362,7 +362,7 @@ public:
     // returns Ledgers we have all the nodes for
     bool getFullValidatedRange (uint32& minVal, uint32& maxVal)
     {
-        maxVal = mPubLedgerSeq.get();
+        maxVal = mPubLedgerSeq.load();
 
         if (!maxVal)
             return false;
@@ -383,7 +383,7 @@ public:
     // Returns Ledgers we have all the nodes for and are indexed
     bool getValidatedRange (uint32& minVal, uint32& maxVal)
     { 
-        maxVal = mPubLedgerSeq.get();
+        maxVal = mPubLedgerSeq.load();
 
         if (!maxVal)
             return false;
@@ -445,7 +445,7 @@ public:
         while (! job.shouldCancel() && seq > 0)
         {
             {
-                ScopedLockType ml (mLock, __FILE__, __LINE__);
+                ScopedLockType ml (m_mutex, __FILE__, __LINE__);
                 minHas = seq;
                 --seq;
 
@@ -483,7 +483,7 @@ public:
             mCompleteLedgers.setRange (minHas, maxHas);
         }
         {
-            ScopedLockType ml (mLock, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
             mFillInProgress = 0;
             tryAdvance();
         }
@@ -582,7 +582,7 @@ public:
                 mCompleteLedgers.setValue (ledger->getLedgerSeq ());
             }
 
-            ScopedLockType ml (mLock, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
 
             if (!mValidLedger || (ledger->getLedgerSeq() > mValidLedger->getLedgerSeq()))
                 setValidLedger(ledger);
@@ -643,11 +643,11 @@ public:
 
     void checkAccept (Ledger::ref ledger)
     {
-        if (ledger->getLedgerSeq() <= mValidLedgerSeq.get())
+        if (ledger->getLedgerSeq() <= mValidLedgerSeq.load())
             return;
 
         // Can we advance the last fully-validated ledger? If so, can we publish?
-        ScopedLockType ml (mLock, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
 
         if (mValidLedger && (ledger->getLedgerSeq() <= mValidLedger->getLedgerSeq ()))
             return;
@@ -704,7 +704,7 @@ public:
 
     void advanceThread()
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (m_mutex, __FILE__, __LINE__);
         assert (mValidLedger && mAdvanceThread);
 
         WriteLog (lsTRACE, LedgerMaster) << "advanceThread<";
@@ -749,7 +749,7 @@ public:
                     {
                         WriteLog (lsTRACE, LedgerMaster) << "advanceThread should acquire";
                         {
-                            ScopedUnlockType sl(mLock, __FILE__, __LINE__);
+                            ScopedUnlockType sl(m_mutex, __FILE__, __LINE__);
                             Ledger::pointer nextLedger = mLedgerHistory.getLedgerBySeq(missing + 1);
                             if (nextLedger)
                             {
@@ -782,7 +782,7 @@ public:
                                     setFullLedger(ledger, false, false);
                                     if ((mFillInProgress == 0) && (Ledger::getHashByIndex(ledger->getLedgerSeq() - 1) == ledger->getParentHash()))
                                     { // Previous ledger is in DB
-                                        ScopedLockType sl(mLock, __FILE__, __LINE__);
+                                        ScopedLockType sl(m_mutex, __FILE__, __LINE__);
                                         mFillInProgress = ledger->getLedgerSeq();
                                         getApp().getJobQueue().addJob(jtADVANCE, "tryFill", BIND_TYPE (
                                             &LedgerMasterImp::tryFill, this, P_1, ledger));
@@ -832,7 +832,7 @@ public:
                 BOOST_FOREACH(Ledger::ref ledger, pubLedgers)
                 {
                     {
-                        ScopedUnlockType sul (mLock, __FILE__, __LINE__);
+                        ScopedUnlockType sul (m_mutex, __FILE__, __LINE__);
                         WriteLog(lsDEBUG, LedgerMaster) << "tryAdvance publishing seq " << ledger->getLedgerSeq();
 
                         setFullLedger(ledger, true, true);
@@ -883,7 +883,7 @@ public:
             uint32 valSeq = mValidLedger->getLedgerSeq();
             Ledger::pointer valLedger = mValidLedger;
 
-            ScopedUnlockType sul(mLock, __FILE__, __LINE__);
+            ScopedUnlockType sul(m_mutex, __FILE__, __LINE__);
             try
             {
                 for (uint32 seq = pubSeq; seq <= valSeq; ++seq)
@@ -956,7 +956,7 @@ public:
 
     void tryAdvance()
     {
-        ScopedLockType ml (mLock, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
 
         // Can't advance without at least one fully-valid ledger
         mAdvanceWork = true;
@@ -1004,7 +1004,7 @@ public:
 
         if (getApp().getOPs().isNeedNetworkLedger ())
         {
-            ScopedLockType ml (mLock, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
             mPathFindThread = false;
             return;
         }
@@ -1015,7 +1015,7 @@ public:
             bool hasNew = mPathFindNewRequest;
 
             {
-                ScopedLockType ml (mLock, __FILE__, __LINE__);
+                ScopedLockType ml (m_mutex, __FILE__, __LINE__);
 
                 if (!mPathLedger || (mPathLedger->getLedgerSeq() < mValidLedger->getLedgerSeq()))
                 { // We have a new valid ledger since the last full pathfinding
@@ -1052,7 +1052,7 @@ public:
 
     void newPathRequest ()
     {
-        ScopedLockType ml (mLock, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
         mPathFindNewRequest = true;
 
         if (!mPathFindThread)
@@ -1066,7 +1066,7 @@ public:
     // If the order book is radically updated, we need to reprocess all pathfinding requests
     void newOrderBookDB ()
     {
-        ScopedLockType ml (mLock, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
         mPathLedger.reset();
 
         if (!mPathFindThread)
@@ -1079,7 +1079,7 @@ public:
 
     LockType& peekMutex ()
     {
-        return mLock;
+        return m_mutex;
     }
 
     // The current ledger is the ledger we believe new transactions should go in
@@ -1153,7 +1153,7 @@ public:
         Ledger::pointer referenceLedger;
 
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (m_mutex, __FILE__, __LINE__);
             referenceLedger = mValidLedger;
         }
         if (referenceLedger)
@@ -1200,7 +1200,7 @@ public:
     Ledger::pointer getLedgerBySeq (uint32 index)
     {
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (m_mutex, __FILE__, __LINE__);
             if (mCurrentLedger && (mCurrentLedger->getLedgerSeq () == index))
                 return mCurrentLedger;
 

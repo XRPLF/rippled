@@ -34,7 +34,7 @@ public:
     typedef ssl_socket::lowest_layer_type           lowest_layer_type;
     typedef ssl_socket::handshake_type              handshake_type;
     typedef boost::system::error_code               error_code;
-    typedef boost::function<void (error_code)>       callback;
+    typedef std::function <void (error_code)>       callback;
 
 public:
     AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c)

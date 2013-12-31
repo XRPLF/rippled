@@ -25,7 +25,6 @@
 #include <sstream>
     
 #include "../CStdInt.h"
-#include "../mpl/IfCond.h"
 
 namespace std {
 
@@ -115,7 +114,8 @@ public:
         class Proxy
         {
         public:
-            typedef typename mpl::IfCond <IsConst, uint32 const*, uint32*>::type Pointer;
+            typedef typename std::conditional <
+                IsConst, uint32 const*, uint32*>::type Pointer;
 
             Proxy (int shift, Pointer value)
                 : m_shift (shift)
