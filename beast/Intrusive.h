@@ -20,8 +20,6 @@
 #ifndef BEAST_INTRUSIVE_H_INCLUDED
 #define BEAST_INTRUSIVE_H_INCLUDED
 
-#include "intrusive/ForwardList.h"
-#include "intrusive/IntrusiveArray.h"
 #include "intrusive/List.h"
 #include "intrusive/LockFreeStack.h"
 

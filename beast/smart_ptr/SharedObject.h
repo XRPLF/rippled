@@ -24,8 +24,9 @@
 #ifndef BEAST_SHAREDOBJECT_H_INCLUDED
 #define BEAST_SHAREDOBJECT_H_INCLUDED
 
+#include <atomic>
+
 #include "../Config.h"
-#include "../Atomic.h"
 #include "../Uncopyable.h"
 
 namespace beast {
@@ -71,7 +72,7 @@ public:
         This is done automatically by the smart pointer, but is public just
         in case it's needed for nefarious purposes.
     */
-    inline void incReferenceCount() const noexcept
+    void incReferenceCount() const noexcept
     {
         ++refCount;
     }
@@ -93,15 +94,16 @@ public:
     }
 
     /** Returns the object's current reference count. */
-    inline int getReferenceCount() const noexcept
+    int getReferenceCount() const noexcept
     {
-        return refCount.get();
+        return refCount.load();
     }
 
 protected:
     //==============================================================================
     /** Creates the reference-counted object (with an initial ref count of zero). */
     SharedObject()
+        : refCount (0)
     {
     }
 
@@ -125,79 +127,12 @@ protected:
     */
     void resetReferenceCount() noexcept
     {
-        refCount = 0;
+        refCount.store (0);
     }
 
 private:
     //==============================================================================
-    Atomic <int> mutable refCount;
-};
-
-//==============================================================================
-/**
-    Adds reference-counting to an object.
-
-    This is effectively a version of the SharedObject class, but which
-    uses a non-atomic counter, and so is not thread-safe (but which will be more
-    efficient).
-    For more details on how to use it, see the SharedObject class notes.
-
-    @see SharedObject, SharedPtr, SharedObjectArray
-*/
-class BEAST_API SingleThreadedSharedObject : public Uncopyable
-{
-public:
-    //==============================================================================
-    /** Increments the object's reference count.
-
-        This is done automatically by the smart pointer, but is public just
-        in case it's needed for nefarious purposes.
-    */
-    inline void incReferenceCount() noexcept
-    {
-        ++refCount;
-    }
-
-    /** Decreases the object's reference count.
-
-        If doDelete is true the object will be deleted when the reference
-        count drops to zero. The delete is performed using the regular
-        operator and does NOT go through the ContainerDeletePolicy.
-
-        The return value indicates if the reference count dropped to zero,
-        so callers who know the derived type can use the ContainerDeletePolicy.
-    */
-    inline void decReferenceCount ()
-    {
-        bassert (getReferenceCount() > 0);
-        if (--refCount == 0)
-            destroy ();
-    }
-
-    /** Returns the object's current reference count. */
-    inline int getReferenceCount() const noexcept       { return refCount; }
-
-
-protected:
-    //==============================================================================
-    /** Creates the reference-counted object (with an initial ref count of zero). */
-    SingleThreadedSharedObject() : refCount (0)  {}
-
-    /** Destructor. */
-    virtual ~SingleThreadedSharedObject()
-    {
-        // it's dangerous to delete an object that's still referenced by something else!
-        bassert (getReferenceCount() == 0);
-    }
-
-    virtual void destroy () const
-    {
-        delete this;
-    }
-
-private:
-    //==============================================================================
-    int refCount;
+    std::atomic <int> mutable refCount;
 };
 
 }

@@ -20,9 +20,6 @@
 #ifndef BEAST_STL_H_INCLUDED
 #define BEAST_STL_H_INCLUDED
 
-#include "stl/function.h"
 #include "stl/shared_ptr.h"
-#include "stl/thread.h"
-#include "stl/unique_ptr.h"
 
 #endif

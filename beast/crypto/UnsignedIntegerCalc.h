@@ -20,22 +20,25 @@
 #ifndef BEAST_CRYPTO_UNSIGNEDINTEGERCALC_H_INCLUDED
 #define BEAST_CRYPTO_UNSIGNEDINTEGERCALC_H_INCLUDED
 
-namespace detail
-{
+#include <cstdint>
+
+namespace beast {
+
+namespace detail {
 
 template <typename UInt>
 struct DoubleWidthUInt;
 
 template <>
-struct DoubleWidthUInt <uint16>
+struct DoubleWidthUInt <std::uint16_t>
 {
-    typedef uint32 type;
+    typedef std::uint32_t type;
 };
 
 template <>
-struct DoubleWidthUInt <uint32>
+struct DoubleWidthUInt <std::uint32_t>
 {
-    typedef uint64 type;
+    typedef std::uint64_t type;
 };
 
 }
@@ -426,5 +429,7 @@ private:
     size_type m_size;
     UInt* m_values;
 };
+
+}
 
 #endif

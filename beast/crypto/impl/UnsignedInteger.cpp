@@ -3,6 +3,10 @@
     This file is part of Beast: https://github.com/vinniefalco/Beast
     Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
+    Portions are Copyright (c) 2013 the authors listed at the following URL,
+    and/or the authors of referenced articles or incorporated external code:
+    http://en.literateprograms.org/Arbitrary-precision_integer_arithmetic_(C)?action=history&offset=20100923155004
+
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
@@ -17,7 +21,13 @@
 */
 //==============================================================================
 
-//------------------------------------------------------------------------------
+#include "../UnsignedInteger.h"
+
+namespace beast {
+
+namespace multiprecsion {
+
+#if 0
 
 /*  Copyright (c) 2013 the authors listed at the following URL, and/or
     the authors of referenced articles or incorporated external code:
@@ -41,15 +51,11 @@
     CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-    Retrieved from: http://en.literateprograms.org/Arbitrary-precision_integer_arithmetic_(C)?oldid=16902
 */
 
-namespace multiprecsion
-{
-
-#if 0
-//------------------------------------------------------------------------------
+//
+// Retrieved from: http://en.literateprograms.org/Arbitrary-precision_integer_arithmetic_(C)?oldid=16902
+//
 
 typedef unsigned short component_t;
 typedef unsigned long double_component_t;
@@ -394,3 +400,5 @@ private:
 };
 
 static UnsignedIntegerTests unsignedIntegerTests;
+
+}

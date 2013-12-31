@@ -19,5 +19,9 @@
 
 #include "BeastConfig.h"
 
+#include "../../modules/beast_core/beast_core.h" // for UnitTest
+
+#include "impl/BinaryEncoding.cpp"
 #include "impl/MurmurHash.cpp"
 #include "impl/Sha256.cpp"
+#include "impl/UnsignedInteger.cpp"

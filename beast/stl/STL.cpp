@@ -19,7 +19,4 @@
 
 #include "BeastConfig.h"
 
-#include "function.h"
 #include "shared_ptr.h"
-#include "thread.h"
-#include "unique_ptr.h"

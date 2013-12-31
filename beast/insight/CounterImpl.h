@@ -20,16 +20,19 @@
 #ifndef BEAST_INSIGHT_COUNTERIMPL_H_INCLUDED
 #define BEAST_INSIGHT_COUNTERIMPL_H_INCLUDED
 
+#include <functional>
+#include <memory>
+
 namespace beast {
 namespace insight {
 
 class Counter;
 
-class CounterImpl : public enable_shared_from_this <CounterImpl>
+class CounterImpl : public std::enable_shared_from_this <CounterImpl>
 {
 public:
     typedef int64 value_type;
-    typedef beast::function <void (Counter const&)> HandlerType;
+    typedef std::function <void (Counter const&)> HandlerType;
    
     virtual ~CounterImpl () = 0;
     virtual void increment (value_type amount) = 0;

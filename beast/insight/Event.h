@@ -20,9 +20,9 @@
 #ifndef BEAST_INSIGHT_EVENT_H_INCLUDED
 #define BEAST_INSIGHT_EVENT_H_INCLUDED
 
-#include "EventImpl.h"
+#include <memory>
 
-#include "../stl/shared_ptr.h"
+#include "EventImpl.h"
 
 namespace beast {
 namespace insight {
@@ -53,7 +53,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Event (shared_ptr <EventImpl> const& impl)
+    explicit Event (std::shared_ptr <EventImpl> const& impl)
         : m_impl (impl)
     {
     }
@@ -69,7 +69,7 @@ public:
     }
 
 private:
-    shared_ptr <EventImpl> m_impl;
+    std::shared_ptr <EventImpl> m_impl;
 };
 
 }

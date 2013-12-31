@@ -110,9 +110,12 @@
     <ClInclude Include="..\..\beast\config\SelectStdlibConfig.h" />
     <ClInclude Include="..\..\beast\config\StandardConfig.h" />
     <ClInclude Include="..\..\beast\Crypto.h" />
+    <ClInclude Include="..\..\beast\crypto\BinaryEncoding.h" />
     <ClInclude Include="..\..\beast\crypto\impl\sha2\sha2.h" />
     <ClInclude Include="..\..\beast\crypto\MurmurHash.h" />
     <ClInclude Include="..\..\beast\crypto\Sha256.h" />
+    <ClInclude Include="..\..\beast\crypto\UnsignedInteger.h" />
+    <ClInclude Include="..\..\beast\crypto\UnsignedIntegerCalc.h" />
     <ClInclude Include="..\..\beast\CStdInt.h" />
     <ClInclude Include="..\..\beast\cyclic_iterator.h" />
     <ClInclude Include="..\..\beast\FixedArray.h" />
@@ -136,22 +139,11 @@
     <ClInclude Include="..\..\beast\insight\NullCollector.h" />
     <ClInclude Include="..\..\beast\insight\StatsDCollector.h" />
     <ClInclude Include="..\..\beast\Intrusive.h" />
-    <ClInclude Include="..\..\beast\intrusive\ForwardList.h" />
-    <ClInclude Include="..\..\beast\intrusive\IntrusiveArray.h" />
     <ClInclude Include="..\..\beast\intrusive\List.h" />
     <ClInclude Include="..\..\beast\intrusive\LockFreeStack.h" />
-    <ClInclude Include="..\..\beast\intrusive\PointerTraits.h" />
     <ClInclude Include="..\..\beast\Memory.h" />
     <ClInclude Include="..\..\beast\MPL.h" />
-    <ClInclude Include="..\..\beast\mpl\AddConst.h" />
-    <ClInclude Include="..\..\beast\mpl\CopyConst.h" />
-    <ClInclude Include="..\..\beast\mpl\IfCond.h" />
     <ClInclude Include="..\..\beast\mpl\IsCallPossible.h" />
-    <ClInclude Include="..\..\beast\mpl\PointerToOther.h" />
-    <ClInclude Include="..\..\beast\mpl\RemoveConst.h" />
-    <ClInclude Include="..\..\beast\mpl\RemoveConstVolatile.h" />
-    <ClInclude Include="..\..\beast\mpl\RemoveReference.h" />
-    <ClInclude Include="..\..\beast\mpl\RemoveVolatile.h" />
     <ClInclude Include="..\..\beast\Net.h" />
     <ClInclude Include="..\..\beast\net\BufferType.h" />
     <ClInclude Include="..\..\beast\net\DynamicBuffer.h" />
@@ -165,10 +157,7 @@
     <ClInclude Include="..\..\beast\smart_ptr\SharedPtr.h" />
     <ClInclude Include="..\..\beast\StaticAssert.h" />
     <ClInclude Include="..\..\beast\STL.h" />
-    <ClInclude Include="..\..\beast\stl\function.h" />
     <ClInclude Include="..\..\beast\stl\shared_ptr.h" />
-    <ClInclude Include="..\..\beast\stl\thread.h" />
-    <ClInclude Include="..\..\beast\stl\unique_ptr.h" />
     <ClInclude Include="..\..\beast\Strings.h" />
     <ClInclude Include="..\..\beast\strings\CharacterFunctions.h" />
     <ClInclude Include="..\..\beast\strings\CharPointer_ASCII.h" />
@@ -185,6 +174,7 @@
     <ClInclude Include="..\..\beast\threads\detail\DispatchedHandler.h" />
     <ClInclude Include="..\..\beast\threads\LockGuard.h" />
     <ClInclude Include="..\..\beast\threads\RecursiveMutex.h" />
+    <ClInclude Include="..\..\beast\threads\semaphore.h" />
     <ClInclude Include="..\..\beast\threads\ServiceQueue.h" />
     <ClInclude Include="..\..\beast\threads\SharedData.h" />
     <ClInclude Include="..\..\beast\threads\SharedLockGuard.h" />
@@ -265,19 +255,15 @@
     <ClInclude Include="..\..\modules\beast_asio\tests\PeerTest.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\TestPeerType.h" />
     <ClInclude Include="..\..\modules\beast_core\beast_core.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\AbstractFifo.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\Array.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\ArrayAllocationBase.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\DynamicObject.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\ElementComparator.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\LinkedListPointer.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\LockFreeQueue.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\NamedValueSet.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\OwnedArray.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\PropertySet.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\SharedObjectArray.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\ScopedValueSetter.h" />
-    <ClInclude Include="..\..\modules\beast_core\containers\SortedSet.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\SparseSet.h" />
     <ClInclude Include="..\..\modules\beast_core\containers\Variant.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FatalError.h" />
@@ -299,24 +285,16 @@
     <ClInclude Include="..\..\modules\beast_core\logging\FileLogger.h" />
     <ClInclude Include="..\..\modules\beast_core\logging\Logger.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\BigInteger.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\Expression.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\Interval.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\Math.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\Random.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\Range.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\uint24.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\AtomicCounter.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\AtomicFlag.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\AtomicPointer.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\AtomicState.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\CacheLine.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\MemoryAlignment.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\MemoryBlock.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\OptionalScopedPointer.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\RecycledObjectPool.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\SharedFunction.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\SharedSingleton.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\WeakReference.h" />
     <ClInclude Include="..\..\modules\beast_core\misc\Main.h" />
     <ClInclude Include="..\..\modules\beast_core\misc\Result.h" />
     <ClInclude Include="..\..\modules\beast_core\misc\Uuid.h" />
@@ -363,7 +341,6 @@
     <ClInclude Include="..\..\modules\beast_core\threads\ScopedWriteLock.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\SpinDelay.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\DeadlineTimer.h" />
-    <ClInclude Include="..\..\modules\beast_core\thread\Semaphore.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\Workers.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\detail\ScopedLock.h" />
     <ClInclude Include="..\..\modules\beast_core\thread\detail\TrackedMutex.h" />
@@ -391,14 +368,6 @@
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zconf.in.h" />
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zlib.h" />
     <ClInclude Include="..\..\modules\beast_core\zip\zlib\zutil.h" />
-    <ClInclude Include="..\..\modules\beast_crypto\beast_crypto.h" />
-    <ClInclude Include="..\..\modules\beast_crypto\math\BinaryEncoding.h" />
-    <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedInteger.h" />
-    <ClInclude Include="..\..\modules\beast_crypto\math\UnsignedIntegerCalc.h" />
-    <ClInclude Include="..\..\modules\beast_db\beast_db.h" />
-    <ClInclude Include="..\..\modules\beast_db\keyvalue\KeyvaDB.h" />
-    <ClInclude Include="..\..\modules\beast_extras\beast_extras.h" />
-    <ClInclude Include="..\..\modules\beast_extras\traits\BoostLockableTraits.h" />
     <ClInclude Include="..\..\modules\beast_sqdb\api\backend.h" />
     <ClInclude Include="..\..\modules\beast_sqdb\api\blob.h" />
     <ClInclude Include="..\..\modules\beast_sqdb\api\into.h" />
@@ -446,6 +415,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\Crypto.cpp" />
+    <ClCompile Include="..\..\beast\crypto\impl\BinaryEncoding.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\MurmurHash.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -471,6 +446,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2speed.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\impl\UnsignedInteger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -814,12 +795,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\beast_core.cpp" />
-    <ClCompile Include="..\..\modules\beast_core\containers\AbstractFifo.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -933,12 +908,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\maths\BigInteger.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\maths\Expression.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1244,12 +1213,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\Semaphore.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\Workers.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1376,27 +1339,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_crypto\beast_crypto.cpp" />
-    <ClCompile Include="..\..\modules\beast_crypto\math\BinaryEncoding.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_crypto\math\UnsignedInteger.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_db\beast_db.cpp" />
-    <ClCompile Include="..\..\modules\beast_db\keyvalue\KeyvaDB.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_extras\beast_extras.cpp" />
     <ClCompile Include="..\..\modules\beast_sqdb\beast_sqdb.cpp" />
     <ClCompile Include="..\..\modules\beast_sqdb\source\blob.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
