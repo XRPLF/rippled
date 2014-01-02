@@ -227,145 +227,153 @@ TER OfferCreateTransactor::takeOffers (
 
             SLE::pointer    sleOffer        = mEngine->entryCache (ltOFFER, uOfferIndex);
 
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: considering offer : " << sleOffer->getJson (0);
-
-            const uint160   uOfferOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
-            STAmount        saOfferPays     = sleOffer->getFieldAmount (sfTakerGets);
-            STAmount        saOfferGets     = sleOffer->getFieldAmount (sfTakerPays);
-
-            STAmount        saOfferFunds;   // Funds of offer owner to payout.
-            bool            bValid;
-
-            bValid  =  bValidOffer (
-                           sleOffer, uOfferIndex, uOfferOwnerID, saOfferPays, saOfferGets,
-                           uTakerAccountID,
-                           usOfferUnfundedFound, usOfferUnfundedBecame, usAccountTouched,
-                           saOfferFunds);
-
-            if (bValid)
+            if (sleOffer)
             {
-                STAmount    saSubTakerPaid;
-                STAmount    saSubTakerGot;
-                STAmount    saTakerIssuerFee;
-                STAmount    saOfferIssuerFee;
-                STAmount    saOfferRate = STAmount::setRate (uTipQuality);
+                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: considering offer : " << sleOffer->getJson (0);
 
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText ();
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText ();
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText ();
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText ();
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText ();
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText ();
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText ();
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText ();
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText ();
+                const uint160   uOfferOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
+                STAmount        saOfferPays     = sleOffer->getFieldAmount (sfTakerGets);
+                STAmount        saOfferGets     = sleOffer->getFieldAmount (sfTakerPays);
 
-                bool    bOfferDelete    = STAmount::applyOffer (
-                                              bSell,
-                                              lesActive.rippleTransferRate (uTakerAccountID, uOfferOwnerID, uTakerPaysAccountID),
-                                              lesActive.rippleTransferRate (uOfferOwnerID, uTakerAccountID, uTakerGetsAccountID),
-                                              saOfferRate,
-                                              saOfferFunds,
-                                              saTakerFunds,
-                                              saOfferPays,
-                                              saOfferGets,
-                                              saSubTakerPays,
-                                              saSubTakerGets,
-                                              saSubTakerPaid,
-                                              saSubTakerGot,
-                                              saTakerIssuerFee,
-                                              saOfferIssuerFee);
+                STAmount        saOfferFunds;   // Funds of offer owner to payout.
+                bool            bValid;
 
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText ();
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText ();
+                bValid  =  bValidOffer (
+                               sleOffer, uOfferIndex, uOfferOwnerID, saOfferPays, saOfferGets,
+                               uTakerAccountID,
+                               usOfferUnfundedFound, usOfferUnfundedBecame, usAccountTouched,
+                               saOfferFunds);
 
-                // Adjust offer
-
-                // Offer owner will pay less.  Subtract what taker just got.
-                sleOffer->setFieldAmount (sfTakerGets, saOfferPays -= saSubTakerGot);
-
-                // Offer owner will get less.  Subtract what owner just paid.
-                sleOffer->setFieldAmount (sfTakerPays, saOfferGets -= saSubTakerPaid);
-
-                mEngine->entryModify (sleOffer);
-
-                if (bOfferDelete)
+                if (bValid)
                 {
-                    // Offer now fully claimed or now unfunded.
-                    WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: Offer claimed: Delete.";
+                    STAmount    saSubTakerPaid;
+                    STAmount    saSubTakerGot;
+                    STAmount    saTakerIssuerFee;
+                    STAmount    saOfferIssuerFee;
+                    STAmount    saOfferRate = STAmount::setRate (uTipQuality);
 
-                    usOfferUnfundedBecame.insert (uOfferIndex); // Delete unfunded offer on success.
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText ();
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText ();
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText ();
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText ();
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText ();
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText ();
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText ();
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText ();
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
+                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText ();
 
-                    // Offer owner's account is no longer pristine.
-                    usAccountTouched.insert (uOfferOwnerID);
-                }
-                else if (saSubTakerGot)
-                {
-                    WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: Offer partial claim.";
+                    bool    bOfferDelete    = STAmount::applyOffer (
+                                                  bSell,
+                                                  lesActive.rippleTransferRate (uTakerAccountID, uOfferOwnerID, uTakerPaysAccountID),
+                                                  lesActive.rippleTransferRate (uOfferOwnerID, uTakerAccountID, uTakerGetsAccountID),
+                                                  saOfferRate,
+                                                  saOfferFunds,
+                                                  saTakerFunds,
+                                                  saOfferPays,
+                                                  saOfferGets,
+                                                  saSubTakerPays,
+                                                  saSubTakerGets,
+                                                  saSubTakerPaid,
+                                                  saSubTakerGot,
+                                                  saTakerIssuerFee,
+                                                  saOfferIssuerFee);
 
-                    if (!saOfferPays.isPositive () || !saOfferGets.isPositive ())
+                    WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText ();
+                    WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText ();
+
+                    // Adjust offer
+
+                    // Offer owner will pay less.  Subtract what taker just got.
+                    sleOffer->setFieldAmount (sfTakerGets, saOfferPays -= saSubTakerGot);
+
+                    // Offer owner will get less.  Subtract what owner just paid.
+                    sleOffer->setFieldAmount (sfTakerPays, saOfferGets -= saSubTakerPaid);
+
+                    mEngine->entryModify (sleOffer);
+
+                    if (bOfferDelete)
                     {
-                        WriteLog (lsWARNING, OfferCreateTransactor) << "takeOffers: ILLEGAL OFFER RESULT.";
-                        bUnfunded   = true;
-                        terResult   = bOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+                        // Offer now fully claimed or now unfunded.
+                        WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: Offer claimed: Delete.";
+
+                        usOfferUnfundedBecame.insert (uOfferIndex); // Delete unfunded offer on success.
+
+                        // Offer owner's account is no longer pristine.
+                        usAccountTouched.insert (uOfferOwnerID);
                     }
-                }
-                else
-                {
-                    // Taker got nothing, probably due to rounding. Consider taker unfunded.
-                    WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: No claim.";
-
-                    bUnfunded   = true;
-                    terResult   = tesSUCCESS;                   // Done.
-                }
-
-                assert (uTakerGetsAccountID == saSubTakerGot.getIssuer ());
-                assert (uTakerPaysAccountID == saSubTakerPaid.getIssuer ());
-
-                if (!bUnfunded)
-                {
-                    // Distribute funds. The sends charge appropriate fees which are implied by offer.
-
-                    terResult   = lesActive.accountSend (uOfferOwnerID, uTakerAccountID, saSubTakerGot);            // Offer owner pays taker.
-
-                    if (tesSUCCESS == terResult)
-                        terResult   = lesActive.accountSend (uTakerAccountID, uOfferOwnerID, saSubTakerPaid);           // Taker pays offer owner.
-
-                    if (bSell)
+                    else if (saSubTakerGot)
                     {
-                        // Sell semantics:
-                        // Reduce amount considered received to original offer's rate.
-                        // Not by crossing rate, which is higher.
-                        STAmount saEffectiveGot = STAmount::divide(saSubTakerPaid, saTakerRate, saTakerGets);
-                        saSubTakerGot = std::min(saEffectiveGot, saSubTakerGot);
+                        WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: Offer partial claim.";
+
+                        if (!saOfferPays.isPositive () || !saOfferGets.isPositive ())
+                        {
+                            WriteLog (lsWARNING, OfferCreateTransactor) << "takeOffers: ILLEGAL OFFER RESULT.";
+                            bUnfunded   = true;
+                            terResult   = bOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+                        }
                     }
                     else
                     {
-                        // Buy semantics: Reduce amount considered paid by taker's rate. Not by actual cost which is lower.
-                        // That is, take less as to just satify our buy requirement.
-                        STAmount    saTakerCould    = saTakerPays - saTakerPaid;    // Taker could pay.
+                        // Taker got nothing, probably due to rounding. Consider taker unfunded.
+                        WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: No claim.";
 
-                        if (saTakerFunds < saTakerCould)
-                            saTakerCould    = saTakerFunds;
-
-                        STAmount    saTakerUsed = STAmount::multiply (saSubTakerGot, saTakerRate, saTakerPays);
-
-                        WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText ();
-                        WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText ();
-                        WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText ();
-                        WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText ();
-
-                        saSubTakerPaid  = std::min (saTakerCould, saTakerUsed);
+                        bUnfunded   = true;
+                        terResult   = tesSUCCESS;                   // Done.
                     }
 
-                    saTakerPaid     += saSubTakerPaid;
-                    saTakerGot      += saSubTakerGot;
+                    assert (uTakerGetsAccountID == saSubTakerGot.getIssuer ());
+                    assert (uTakerPaysAccountID == saSubTakerPaid.getIssuer ());
 
-                    if (tesSUCCESS == terResult)
-                        terResult   = temUNCERTAIN;
+                    if (!bUnfunded)
+                    {
+                        // Distribute funds. The sends charge appropriate fees which are implied by offer.
+
+                        terResult   = lesActive.accountSend (uOfferOwnerID, uTakerAccountID, saSubTakerGot);            // Offer owner pays taker.
+
+                        if (tesSUCCESS == terResult)
+                            terResult   = lesActive.accountSend (uTakerAccountID, uOfferOwnerID, saSubTakerPaid);           // Taker pays offer owner.
+
+                        if (bSell)
+                        {
+                            // Sell semantics:
+                            // Reduce amount considered received to original offer's rate.
+                            // Not by crossing rate, which is higher.
+                            STAmount saEffectiveGot = STAmount::divide(saSubTakerPaid, saTakerRate, saTakerGets);
+                            saSubTakerGot = std::min(saEffectiveGot, saSubTakerGot);
+                        }
+                        else
+                        {
+                            // Buy semantics: Reduce amount considered paid by taker's rate. Not by actual cost which is lower.
+                            // That is, take less as to just satify our buy requirement.
+                            STAmount    saTakerCould    = saTakerPays - saTakerPaid;    // Taker could pay.
+
+                            if (saTakerFunds < saTakerCould)
+                                saTakerCould    = saTakerFunds;
+
+                            STAmount    saTakerUsed = STAmount::multiply (saSubTakerGot, saTakerRate, saTakerPays);
+
+                            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText ();
+                            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText ();
+                            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText ();
+                            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText ();
+
+                            saSubTakerPaid  = std::min (saTakerCould, saTakerUsed);
+                        }
+
+                        saTakerPaid     += saSubTakerPaid;
+                        saTakerGot      += saSubTakerGot;
+
+                        if (tesSUCCESS == terResult)
+                            terResult   = temUNCERTAIN;
+                    }
                 }
+            }
+            else
+            {
+                WriteLog (lsWARNING, OfferCreateTransactor) << "missing offer";
+                // WRITEME: Remove the missing offer from the directory
             }
         }
     }

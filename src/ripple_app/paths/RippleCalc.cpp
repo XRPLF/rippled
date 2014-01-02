@@ -197,137 +197,145 @@ TER RippleCalc::calcNodeAdvance (
         {
             // Got a new offer.
             sleOffer    = lesActive.entryCache (ltOFFER, uOfferIndex);
-            uOfrOwnerID = sleOffer->getFieldAccount160 (sfAccount);
-            saTakerPays = sleOffer->getFieldAmount (sfTakerPays);
-            saTakerGets = sleOffer->getFieldAmount (sfTakerGets);
-
-            const aciSource         asLine              = boost::make_tuple (uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
-
-            WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: uOfrOwnerID=%s saTakerPays=%s saTakerGets=%s uOfferIndex=%s")
-                                           % RippleAddress::createHumanAccountID (uOfrOwnerID)
-                                           % saTakerPays
-                                           % saTakerGets
-                                           % uOfferIndex);
-
-            if (sleOffer->isFieldPresent (sfExpiration) && sleOffer->getFieldU32 (sfExpiration) <= lesActive.getLedger ()->getParentCloseTimeNC ())
+            if (!sleOffer)
             {
-                // Offer is expired.
-                WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: expired offer";
-                musUnfundedFound.insert(uOfferIndex);
-                continue;
+                WriteLog (lsWARNING, RippleCalc) << "Missing offer in directory";
+                bEntryAdvance = true;
             }
-            else if (!saTakerPays.isPositive () || !saTakerGets.isPositive ())
+            else
             {
-                // Offer has bad amounts. Offers should never have a bad amounts.
+                uOfrOwnerID = sleOffer->getFieldAccount160 (sfAccount);
+                saTakerPays = sleOffer->getFieldAmount (sfTakerPays);
+                saTakerGets = sleOffer->getFieldAmount (sfTakerGets);
 
-                if (bReverse)
-                {
-                    // Past internal error, offer had bad amounts.
-                    WriteLog (lsWARNING, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: PAST INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
-                                                     % saTakerPays % saTakerGets);
+                const aciSource         asLine              = boost::make_tuple (uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
 
-                    musUnfundedFound.insert (uOfferIndex);              // Mark offer for always deletion.
-                    continue;
-                }
-                else if (musUnfundedFound.find (uOfferIndex) != musUnfundedFound.end ())
-                {
-                    // Past internal error, offer was found failed to place this in musUnfundedFound.
-                    WriteLog (lsDEBUG, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: PAST INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
-                                                   % saTakerPays % saTakerGets);
-
-                    // Just skip it. It will be deleted.
-                    continue;
-                }
-                else
-                {
-                    // Reverse should have previously put bad offer in list.
-                    // An internal error previously left a bad offer.
-                    WriteLog (lsWARNING, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
-                                                     % saTakerPays % saTakerGets);
-
-                    // Don't process at all, things are in an unexpected state for this transactions.
-                    terResult       = tefEXCEPTION;
-                }
-
-                // VFALCO NOTE What's the point of the earlier continue statements?
-                continue;
-            }
-
-            // Allowed to access source from this node?
-            // XXX This can get called multiple times for same source in a row, caching result would be nice.
-            // XXX Going forward could we fund something with a worse quality which was previously skipped? Might need to check
-            //     quality.
-            curIssuerNodeConstIterator  itForward       = psCur.umForward.find (asLine);
-            const bool                  bFoundForward   = itForward != psCur.umForward.end ();
-
-            // Only a allow a source to be used once, in the first node encountered from initial path scan.
-            // This prevents conflicting uses of the same balance when going reverse vs forward.
-            if (bFoundForward && (itForward->second != uNode) && (uOfrOwnerID != uCurIssuerID))
-            {
-                // Temporarily unfunded. Another node uses this source, ignore in this offer.
-                WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: temporarily unfunded offer (forward)";
-                continue;
-            }
-
-            // This is overly strict. For contributions to past. We should only count source if actually used.
-            curIssuerNodeConstIterator  itReverse       = psCur.umReverse.find (asLine);
-            bool                        bFoundReverse   = itReverse != psCur.umReverse.end ();
-
-            // For this quality increment, only allow a source to be used from a single node, in the first node encountered from applying offers
-            // in reverse.
-            if (bFoundReverse && (itReverse->second != uNode) && (uOfrOwnerID != uCurIssuerID))
-            {
-                // Temporarily unfunded. Another node uses this source, ignore in this offer.
-                WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: temporarily unfunded offer (reverse)";
-                continue;
-            }
-
-            // Determine if used in past.
-            // We only need to know if it might need to be marked unfunded.
-            curIssuerNodeConstIterator  itPast          = mumSource.find (asLine);
-            bool                        bFoundPast      = itPast != mumSource.end ();
-
-            // Only the current node is allowed to use the source.
-
-            saOfferFunds    = lesActive.accountFunds (uOfrOwnerID, saTakerGets); // Funds held.
-
-            if (!saOfferFunds.isPositive ())
-            {
-                // Offer is unfunded.
-                WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: unfunded offer";
-
-                if (bReverse && !bFoundReverse && !bFoundPast)
-                {
-                    // Never mentioned before, clearly just: found unfunded.
-                    // That is, even if this offer fails due to fill or kill still do deletions.
-                    musUnfundedFound.insert (uOfferIndex);              // Mark offer for always deletion.
-                }
-                else
-                {
-                    // Moving forward, don't need to insert again
-                    // Or, already found it.
-                }
-
-                // YYY Could verify offer is correct place for unfundeds.
-                continue;
-            }
-
-            if (bReverse            // Need to remember reverse mention.
-                    && !bFoundPast      // Not mentioned in previous passes.
-                    && !bFoundReverse)  // New to pass.
-            {
-                // Consider source mentioned by current path state.
-                WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: remember=%s/%s/%s")
+                WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: uOfrOwnerID=%s saTakerPays=%s saTakerGets=%s uOfferIndex=%s")
                                                % RippleAddress::createHumanAccountID (uOfrOwnerID)
-                                               % STAmount::createHumanCurrency (uCurCurrencyID)
-                                               % RippleAddress::createHumanAccountID (uCurIssuerID));
+                                               % saTakerPays
+                                               % saTakerGets
+                                               % uOfferIndex);
 
-                psCur.umReverse.insert (std::make_pair (asLine, uNode));
+                if (sleOffer->isFieldPresent (sfExpiration) && sleOffer->getFieldU32 (sfExpiration) <= lesActive.getLedger ()->getParentCloseTimeNC ())
+                {
+                    // Offer is expired.
+                    WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: expired offer";
+                    musUnfundedFound.insert(uOfferIndex);
+                    continue;
+                }
+                else if (!saTakerPays.isPositive () || !saTakerGets.isPositive ())
+                {
+                    // Offer has bad amounts. Offers should never have a bad amounts.
+
+                    if (bReverse)
+                    {
+                        // Past internal error, offer had bad amounts.
+                        WriteLog (lsWARNING, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: PAST INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+                                                         % saTakerPays % saTakerGets);
+
+                        musUnfundedFound.insert (uOfferIndex);              // Mark offer for always deletion.
+                        continue;
+                    }
+                    else if (musUnfundedFound.find (uOfferIndex) != musUnfundedFound.end ())
+                    {
+                        // Past internal error, offer was found failed to place this in musUnfundedFound.
+                        WriteLog (lsDEBUG, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: PAST INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+                                                       % saTakerPays % saTakerGets);
+
+                        // Just skip it. It will be deleted.
+                        continue;
+                    }
+                    else
+                    {
+                        // Reverse should have previously put bad offer in list.
+                        // An internal error previously left a bad offer.
+                        WriteLog (lsWARNING, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: INTERNAL ERROR: OFFER NON-POSITIVE: saTakerPays=%s saTakerGets=%s")
+                                                         % saTakerPays % saTakerGets);
+
+                        // Don't process at all, things are in an unexpected state for this transactions.
+                        terResult       = tefEXCEPTION;
+                    }
+
+                    // VFALCO NOTE What's the point of the earlier continue statements?
+                    continue;
+                }
+
+                // Allowed to access source from this node?
+                // XXX This can get called multiple times for same source in a row, caching result would be nice.
+                // XXX Going forward could we fund something with a worse quality which was previously skipped? Might need to check
+                //     quality.
+                curIssuerNodeConstIterator  itForward       = psCur.umForward.find (asLine);
+                const bool                  bFoundForward   = itForward != psCur.umForward.end ();
+
+                // Only a allow a source to be used once, in the first node encountered from initial path scan.
+                // This prevents conflicting uses of the same balance when going reverse vs forward.
+                if (bFoundForward && (itForward->second != uNode) && (uOfrOwnerID != uCurIssuerID))
+                {
+                    // Temporarily unfunded. Another node uses this source, ignore in this offer.
+                    WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: temporarily unfunded offer (forward)";
+                    continue;
+                }
+
+                // This is overly strict. For contributions to past. We should only count source if actually used.
+                curIssuerNodeConstIterator  itReverse       = psCur.umReverse.find (asLine);
+                bool                        bFoundReverse   = itReverse != psCur.umReverse.end ();
+
+                // For this quality increment, only allow a source to be used from a single node, in the first node encountered from applying offers
+                // in reverse.
+                if (bFoundReverse && (itReverse->second != uNode) && (uOfrOwnerID != uCurIssuerID))
+                {
+                    // Temporarily unfunded. Another node uses this source, ignore in this offer.
+                    WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: temporarily unfunded offer (reverse)";
+                    continue;
+                }
+
+                // Determine if used in past.
+                // We only need to know if it might need to be marked unfunded.
+                curIssuerNodeConstIterator  itPast          = mumSource.find (asLine);
+                bool                        bFoundPast      = itPast != mumSource.end ();
+
+                // Only the current node is allowed to use the source.
+
+                saOfferFunds    = lesActive.accountFunds (uOfrOwnerID, saTakerGets); // Funds held.
+
+                if (!saOfferFunds.isPositive ())
+                {
+                    // Offer is unfunded.
+                    WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: unfunded offer";
+
+                    if (bReverse && !bFoundReverse && !bFoundPast)
+                    {
+                        // Never mentioned before, clearly just: found unfunded.
+                        // That is, even if this offer fails due to fill or kill still do deletions.
+                        musUnfundedFound.insert (uOfferIndex);              // Mark offer for always deletion.
+                    }
+                    else
+                    {
+                        // Moving forward, don't need to insert again
+                        // Or, already found it.
+                    }
+
+                    // YYY Could verify offer is correct place for unfundeds.
+                    continue;
+                }
+
+                if (bReverse            // Need to remember reverse mention.
+                        && !bFoundPast      // Not mentioned in previous passes.
+                        && !bFoundReverse)  // New to pass.
+                {
+                    // Consider source mentioned by current path state.
+                    WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: remember=%s/%s/%s")
+                                                   % RippleAddress::createHumanAccountID (uOfrOwnerID)
+                                                   % STAmount::createHumanCurrency (uCurCurrencyID)
+                                                   % RippleAddress::createHumanAccountID (uCurIssuerID));
+
+                    psCur.umReverse.insert (std::make_pair (asLine, uNode));
+                }
+
+                bFundsDirty     = false;
+                bEntryAdvance   = false;
             }
-
-            bFundsDirty     = false;
-            bEntryAdvance   = false;
-        }
+       }
     }
     while (tesSUCCESS == terResult && (bEntryAdvance || bDirectAdvance));
 
