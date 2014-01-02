@@ -1074,21 +1074,17 @@ TER LedgerEntrySet::offerDelete (SLE::ref sleOffer, uint256 const& uOfferIndex, 
     bool    bOwnerNode  = sleOffer->isFieldPresent (sfOwnerNode);   // Detect legacy dirs.
     uint64  uOwnerNode  = sleOffer->getFieldU64 (sfOwnerNode);
     TER     terResult   = dirDelete (false, uOwnerNode, Ledger::getOwnerDirIndex (uOwnerID), uOfferIndex, false, !bOwnerNode);
-
     if (tesSUCCESS == terResult)
-    {
         ownerCountAdjust (uOwnerID, -1);
 
-        uint256     uDirectory  = sleOffer->getFieldH256 (sfBookDirectory);
-        uint64      uBookNode   = sleOffer->getFieldU64 (sfBookNode);
-
-        // Offer delete is always hard. Always have hints.
-        terResult   = dirDelete (false, uBookNode, uDirectory, uOfferIndex, true, true);
-    }
+    // Offer delete is always hard. Always have hints.
+    uint256     uDirectory  = sleOffer->getFieldH256 (sfBookDirectory);
+    uint64      uBookNode   = sleOffer->getFieldU64 (sfBookNode);
+    TER terResult2 = dirDelete ( false, uBookNode, uDirectory, uOfferIndex, true, false);
 
     entryDelete (sleOffer);
 
-    return terResult;
+    return (terResult == tesSUCCESS) ? terResult2 : terResult;
 }
 
 TER LedgerEntrySet::offerDelete (uint256 const& uOfferIndex)

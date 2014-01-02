@@ -47,12 +47,21 @@ void AccountItems::fillItems (const uint160& accountID, Ledger::ref ledger)
             // VFALCO TODO rename getSLEi() to something legible.
             SLE::pointer sleCur = ledger->getSLEi (uNode);
 
-            AccountItem::pointer item = mOfType->makeItem (accountID, sleCur);
-
-            // VFALCO NOTE Under what conditions would makeItem() return nullptr?
-            if (item)
+            if (!sleCur)
             {
-                mItems.push_back (item);
+                // item in directory not in ledger
+            }
+            else
+            {
+                AccountItem::pointer item = mOfType->makeItem (accountID, sleCur);
+
+                // VFALCO NOTE Under what conditions would makeItem() return nullptr?
+                // DJS NOTE If the item wasn't one this particular AccountItems was interested in
+                // (For example, if the owner is only interested in ripple lines and this is an offer)
+                if (item)
+                {
+                    mItems.push_back (item);
+                }
             }
         }
 
