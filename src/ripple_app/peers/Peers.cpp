@@ -25,6 +25,24 @@ template <> char const* LogPartition::getPartitionName <PeerFinderLog> () { retu
 class NameResolverLog;
 template <> char const* LogPartition::getPartitionName <NameResolverLog> () { return "NameResolver"; }
 
+/** Calls a function during static initialization. */
+struct static_call
+{
+    // Function must be callable as
+    //      void f (void) const
+    //
+    template <class Function>
+    static_call (Function const& f)
+    {
+        f ();
+    }
+};
+
+static static_call init_PeerFinderLog (&LogPartition::get <PeerFinderLog>);
+static static_call init_NameResolverLog (&LogPartition::get <NameResolverLog>);
+
+//------------------------------------------------------------------------------
+
 class PeersImp
     : public Peers
     , public Stoppable
