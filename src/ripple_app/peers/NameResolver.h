@@ -33,14 +33,17 @@ public:
         Journal journal);
 
     virtual ~NameResolver () = 0;
-   
+
+    /** Initiate an asynchronous cancellation. */
+    virtual void stop_async () = 0;
+
     /** Cancel all pending resolutions.
         This call blocks until all pending work items are canceled. It is
         guaranteed that no handlers will be called after this function
         returns.
         You *must* call this function before the object is destroyed.
     */
-    virtual void cancel () = 0;
+    virtual void stop () = 0;
 
     /** resolve all hostnames on the list 
         @param names the names to be resolved

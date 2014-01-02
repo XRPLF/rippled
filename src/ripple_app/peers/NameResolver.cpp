@@ -32,12 +32,12 @@ public:
     boost::asio::io_service::strand m_strand;
     boost::asio::ip::tcp::resolver m_resolver;
 
-    Atomic <int> m_cancel_called;
-    bool m_canceled;
+    std::atomic <int> m_called_stop;
+    bool m_stopped;
     bool m_idle;
 
     // Notification that we need to exit
-    WaitableEvent m_stopped;
+    WaitableEvent m_event;
 
     // Represents a unit of work for the resolver to do
     struct Work 
@@ -64,9 +64,10 @@ public:
             , m_io_service (io_service)
             , m_strand (io_service)
             , m_resolver (io_service)
-            , m_canceled (false)
+            , m_called_stop (0)
+            , m_stopped (false)
             , m_idle (true)
-            , m_stopped (true)
+            , m_event (true)
     {
         addReference ();
     }
@@ -74,43 +75,53 @@ public:
     ~NameResolverImpl ()
     {
         check_precondition (m_work.empty());
-        check_precondition (m_canceled);
+        check_precondition (m_stopped);
     }
 
-    ////-------------------------------------------------------------------------
-    //// AsyncObject
+    //--------------------------------------------------------------------------
+    //
+    // AsyncObject
+    //
+    //--------------------------------------------------------------------------
+
     void asyncHandlersComplete()
     {
-        m_stopped.signal ();
+        m_event.signal ();
     }
 
-    //-------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    //
     // NameResolver
+    //
+    //--------------------------------------------------------------------------
 
-    void do_cancel (CompletionCounter)
+    void do_stop (CompletionCounter)
     {
-        m_journal.debug << "Canceling";
-        m_canceled = true;
+        m_journal.debug << "Stopped";
+        m_stopped = true;
         m_work.clear ();
         m_resolver.cancel ();
         removeReference ();
     }
-
-    void cancel ()
+    
+    void stop_async ()
     {
-        if (meets_precondition(m_cancel_called.exchange (1) == 0))
+        if (meets_precondition (m_called_stop.exchange (1) == 0))
         {
-            m_io_service.dispatch ( m_strand.wrap ( boost::bind (
-                &NameResolverImpl::do_cancel, 
-                this, CompletionCounter(this))));
+            m_io_service.dispatch (m_strand.wrap (boost::bind (
+                &NameResolverImpl::do_stop, 
+                    this, CompletionCounter (this))));
 
-            m_journal.debug << "Waiting to stop";
-            m_stopped.wait();
-            m_journal.debug << "Stopped";
+            m_journal.debug << "Stopping";
         }
     }
 
-    // Resolving the name has completed - dispatch and continue
+    void stop ()
+    {
+        stop_async ();
+        m_event.wait();
+    }
+
     void do_finish (
         std::string name,
         const boost::system::error_code& ec,
@@ -148,9 +159,9 @@ public:
 
         std::string::size_type colon (host.find(':'));
 
-        if(colon != std::string::npos)
+        if (colon != std::string::npos)
         {
-            port = host.substr(colon + 1);
+            port = host.substr (colon + 1);
             host.erase(colon);
         }
 
@@ -159,14 +170,14 @@ public:
 
     void do_work (CompletionCounter)
     {
-        if (m_cancel_called.get() == 1)
+        if (m_called_stop.load () == 1)
             return;
 
         // We don't have any work to do at this time
         if (m_work.empty())
         {
             m_idle = true;
-            m_journal.debug << "Sleeping";
+            m_journal.trace << "Sleeping";
             return;
         }
 
@@ -207,7 +218,7 @@ public:
     {
         check_precondition (! names.empty());
 
-        if (m_cancel_called.get() == 0)
+        if (m_called_stop.load () == 0)
         {
             // TODO NIKB use emplace_back once we move to C++11
             m_work.push_back(Work(names, handler));
@@ -220,7 +231,7 @@ public:
             {
                 check_precondition (m_idle);
 
-                m_journal.debug << "Waking up";
+                m_journal.trace << "Waking up";
                 m_idle = false;
 
                 m_io_service.post (m_strand.wrap (boost::bind (
@@ -234,7 +245,7 @@ public:
         std::vector <std::string> const& names,
         HandlerType const& handler)
     {
-        check_precondition (m_cancel_called.get() == 0);
+        check_precondition (m_called_stop.load () == 0);
         check_precondition (!names.empty());
 
         // TODO NIKB use rvalue references to construct and move
@@ -246,6 +257,7 @@ public:
 };
 
 //-----------------------------------------------------------------------------
+
 NameResolver::~NameResolver()
 {
 

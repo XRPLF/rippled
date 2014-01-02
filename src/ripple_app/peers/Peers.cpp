@@ -256,11 +256,12 @@ public:
 
     void onStop ()
     {
-        m_resolver->cancel();
+        m_resolver->stop_async();
     }
 
     void onChildrenStopped ()
     {
+        m_resolver->stop ();
         // VFALCO TODO Clean this up and do it right, based on sockets
         stopped();
     }
