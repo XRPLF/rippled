@@ -157,6 +157,24 @@ TER AccountSetTransactor::doApply ()
     }
 
     //
+    // Track transaction IDs signed by this account in its root
+    //
+
+    if ((uSetFlag == asfAccountTxnID) && (uClearFlag != asfAccountTxnID) && !mTxnAccount->isFieldPresent (sfAccountTxnID))
+    {
+        WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Set AccountTxnID";
+
+        mTxnAccount->makeFieldPresent (sfAccountTxnID);
+     }
+
+    if ((uClearFlag == asfAccountTxnID) && (uSetFlag != asfAccountTxnID) && mTxnAccount->isFieldPresent (sfAccountTxnID))
+    {
+        WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Clear AccountTxnID";
+
+        mTxnAccount->makeFieldAbsent (sfAccountTxnID);
+    }
+
+    //
     // EmailHash
     //
 

@@ -63,6 +63,7 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tefPAST_SEQ,            "tefPAST_SEQ",              "This sequence number has already past."                },
         {   tefWRONG_PRIOR,         "tefWRONG_PRIOR",           "This previous transaction does not match."             },
         {   tefMASTER_DISABLED,     "tefMASTER_DISABLED",       "Master key is disabled."                               },
+        {   tefMAX_LEDGER,          "tefMAX_LEDGER",            "Ledger sequence too high."                             },
 
         {   telLOCAL_ERROR,         "telLOCAL_ERROR",           "Local failure."                                        },
         {   telBAD_DOMAIN,          "telBAD_DOMAIN",            "Domain too long."                                      },

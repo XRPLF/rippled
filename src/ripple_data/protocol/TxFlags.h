@@ -55,6 +55,7 @@ const uint32 asfRequireDest         = 1;
 const uint32 asfRequireAuth         = 2;
 const uint32 asfDisallowXRP         = 3;
 const uint32 asfDisableMaster       = 4;
+const uint32 asfAccountTxnID        = 5;
 
 // OfferCreate flags:
 const uint32 tfPassive              = 0x00010000;

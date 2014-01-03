@@ -170,11 +170,23 @@ TER Transactor::checkSeq ()
         return tefPAST_SEQ;
     }
 
+    // Deprecated: Do not use
     if (mTxn.isFieldPresent (sfPreviousTxnID) &&
             (mTxnAccount->getFieldH256 (sfPreviousTxnID) != mTxn.getFieldH256 (sfPreviousTxnID)))
         return tefWRONG_PRIOR;
 
+    if (mTxn.isFieldPresent (sfAccountTxnID) &&
+            (mTxnAccount->getFieldH256 (sfAccountTxnID) != mTxn.getFieldH256 (sfAccountTxnID)))
+        return tefWRONG_PRIOR;
+
+    if (mTxn.isFieldPresent (sfLastLedgerSequence) &&
+            (mEngine->getLedger()->getLedgerSeq() > mTxn.getFieldU32 (sfLastLedgerSequence)))
+        return tefMAX_LEDGER;
+
     mTxnAccount->setFieldU32 (sfSequence, t_seq + 1);
+
+    if (mTxnAccount->isFieldPresent (sfAccountTxnID))
+        mTxnAccount->setFieldH256 (sfAccountTxnID, mTxn.getTransactionID ());
 
     return tesSUCCESS;
 }
