@@ -633,6 +633,22 @@ TER LedgerEntrySet::dirCount (uint256 const& uRootIndex, uint32& uCount)
     return tesSUCCESS;
 }
 
+bool LedgerEntrySet::dirIsEmpty (uint256 const& uRootIndex)
+{
+    uint64  uNodeDir = 0;
+
+    SLE::pointer sleNode = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
+
+    if (!sleNode)
+        return true;
+
+    if (!sleNode->getFieldV256 (sfIndexes).peekValue ().empty ())
+        return false;
+
+    // If there's another page, it must be non-empty
+    return sleNode->getFieldU64 (sfIndexNext) == 0;
+}
+
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.
 // -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
 // --> uLedgerIndex: Value to add to directory.

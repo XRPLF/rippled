@@ -59,9 +59,9 @@ TER AccountSetTransactor::doApply ()
 
     if (bSetRequireAuth && !isSetBit (uFlagsIn, lsfRequireAuth))
     {
-        if (mTxnAccount->getFieldU32 (sfOwnerCount))
+        if (!mEngine->getNodes ().dirIsEmpty (Ledger::getOwnerDirIndex (mTxnAccountID)))
         {
-            WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Retry: OwnerCount not zero.";
+            WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: Retry: Owner directory not empty.";
 
             return isSetBit(mParams, tapRETRY) ? terOWNERS : tecOWNERS;
         }

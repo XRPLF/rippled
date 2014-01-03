@@ -172,6 +172,7 @@ public:
 
     bool                dirFirst (uint256 const & uRootIndex, SLE::pointer & sleNode, unsigned int & uDirEntry, uint256 & uEntryIndex);
     bool                dirNext (uint256 const & uRootIndex, SLE::pointer & sleNode, unsigned int & uDirEntry, uint256 & uEntryIndex);
+    bool                dirIsEmpty (uint256 const & uDirIndex);
     TER                 dirCount (uint256 const & uDirIndex, uint32 & uCount);
 
     uint256             getNextLedgerIndex (uint256 const & uHash);
