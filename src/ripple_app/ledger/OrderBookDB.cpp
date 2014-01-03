@@ -139,7 +139,7 @@ void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
     { // We don't want to search through all the to-XRP or from-XRP order books!
         BOOST_FOREACH(OrderBook::ref ob, mSourceMap[RippleAssetRef(ci, ii)])
         {
-            if ((ob->getCurrencyOut() == co) && (ob->getIssuerOut() == io))
+            if (ob->getCurrencyOut().isZero ()) // also to XRP
                 return;
         }
     }
