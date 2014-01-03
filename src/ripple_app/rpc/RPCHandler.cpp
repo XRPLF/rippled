@@ -1690,6 +1690,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
                     WriteLog (lsDEBUG, PathRequest) << "Trying with an extra path element";
                     spsComputed.addPath(extraPath);
                     vpsExpanded.clear ();
+                    lesSandbox.clear ();
                     terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                         vpsExpanded, saMaxAmount, saDstAmount,
                                                         raDst.getAccountID (), raSrc.getAccountID (),
