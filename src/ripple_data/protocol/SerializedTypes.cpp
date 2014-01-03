@@ -26,7 +26,7 @@ SerializedType& SerializedType::operator= (const SerializedType& t)
 {
     if ((t.fName != fName) && fName->isUseful () && t.fName->isUseful ())
     {
-        WriteLog ((t.getSType () == STI_AMOUNT) ? lsDEBUG : lsWARNING, SerializedType) // This is common for amounts
+        WriteLog ((t.getSType () == STI_AMOUNT) ? lsTRACE : lsWARNING, SerializedType) // This is common for amounts
                 << "Caution: " << t.fName->getName () << " not replacing " << fName->getName ();
     }
 

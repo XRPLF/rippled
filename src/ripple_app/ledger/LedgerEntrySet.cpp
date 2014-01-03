@@ -1511,7 +1511,7 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
 
         saBalance   -= saAmount;
 
-        WriteLog (lsDEBUG, LedgerEntrySet) << boost::str (boost::format ("rippleCredit: %s --> %s : before=%s amount=%s after=%s")
+        WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("rippleCredit: %s --> %s : before=%s amount=%s after=%s")
                                            % RippleAddress::createHumanAccountID (uSenderID)
                                            % RippleAddress::createHumanAccountID (uReceiverID)
                                            % saBefore.getFullText ()
@@ -1629,7 +1629,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
                                           ? entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uReceiverID))
                                           : SLE::pointer ();
 
-        WriteLog (lsDEBUG, LedgerEntrySet) << boost::str (boost::format ("accountSend> %s (%s) -> %s (%s) : %s")
+        WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("accountSend> %s (%s) -> %s (%s) : %s")
                                            % RippleAddress::createHumanAccountID (uSenderID)
                                            % (sleSender ? (sleSender->getFieldAmount (sfBalance)).getFullText () : "-")
                                            % RippleAddress::createHumanAccountID (uReceiverID)
@@ -1655,7 +1655,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
             entryModify (sleReceiver);
         }
 
-        WriteLog (lsDEBUG, LedgerEntrySet) << boost::str (boost::format ("accountSend< %s (%s) -> %s (%s) : %s")
+        WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("accountSend< %s (%s) -> %s (%s) : %s")
                                            % RippleAddress::createHumanAccountID (uSenderID)
                                            % (sleSender ? (sleSender->getFieldAmount (sfBalance)).getFullText () : "-")
                                            % RippleAddress::createHumanAccountID (uReceiverID)
@@ -1666,7 +1666,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
     {
         STAmount    saActual;
 
-        WriteLog (lsDEBUG, LedgerEntrySet) << boost::str (boost::format ("accountSend: %s -> %s : %s")
+        WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("accountSend: %s -> %s : %s")
                                            % RippleAddress::createHumanAccountID (uSenderID)
                                            % RippleAddress::createHumanAccountID (uReceiverID)
                                            % saAmount.getFullText ());

@@ -458,7 +458,7 @@ public:
     {
         clock_type::rep const now (m_clock.elapsed());
         int const balance (entry.add (fee.cost(), now));
-        m_journal.info <<
+        m_journal.trace <<
             "Charging " << entry << " for " << fee;
         return disposition (balance);
     }
