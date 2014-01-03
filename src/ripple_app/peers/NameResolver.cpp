@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <atomic>
+
 namespace ripple {
 
 class NameResolverImpl
@@ -106,7 +108,7 @@ public:
     
     void stop_async ()
     {
-        if (meets_precondition (m_called_stop.exchange (1) == 0))
+        if (m_called_stop.exchange (1) == 0)
         {
             m_io_service.dispatch (m_strand.wrap (boost::bind (
                 &NameResolverImpl::do_stop, 
