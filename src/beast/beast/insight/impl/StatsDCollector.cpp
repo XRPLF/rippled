@@ -29,6 +29,10 @@
 #include <boost/move/move.hpp>
 #include <boost/optional.hpp>
 
+#ifndef BEAST_STATSDCOLLECTOR_TRACING_ENABLED
+#define BEAST_STATSDCOLLECTOR_TRACING_ENABLED 0
+#endif
+
 namespace beast {
 namespace insight {
 
@@ -315,8 +319,9 @@ public:
 
     void do_post_buffer (std::string const& buffer)
     {
-        m_journal.info <<
-            buffer;
+#if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
+        m_journal.trace << std::endl << buffer;
+#endif
         m_data.emplace_back (buffer);
     }
 
@@ -405,9 +410,6 @@ public:
             iter->do_process();
 
         send_buffers ();
-
-        m_journal.info <<
-            "on_timer";
 
         set_timer ();
     }
