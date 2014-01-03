@@ -130,9 +130,13 @@ public:
         , mPhase (0)
         , mScanTimer (io_service)
         , mPolicyTimer (io_service)
+
+// Disable the Resolver since it is broken in this version
+#if 0
         , m_resolver (NameResolver::New (
             io_service,
             Journal()))
+#endif
     {
 
     }
@@ -256,12 +260,19 @@ public:
 
     void onStop ()
     {
+// Disable the Resolver since it is broken in this version
+#if 0
         m_resolver->stop_async();
+#endif
     }
 
     void onChildrenStopped ()
     {
+// Disable the Resolver since it is broken in this version
+#if 0
         m_resolver->stop ();
+#endif
+
         // VFALCO TODO Clean this up and do it right, based on sockets
         stopped();
     }
