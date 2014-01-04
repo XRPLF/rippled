@@ -1246,7 +1246,7 @@ void Ledger::visitStateItems (FUNCTION_TYPE<void (SLE::ref)> function)
         if (mAccountStateMap)
             mAccountStateMap->visitLeaves(BIND_TYPE(&visitHelper, beast::ref(function), P_1));
     }
-    catch (SHAMapMissingNode& sn)
+    catch (SHAMapMissingNode&)
     {
         if (mHash.isNonZero ())
             getApp().getInboundLedgers().findCreate(mHash, mLedgerSeq, false);
