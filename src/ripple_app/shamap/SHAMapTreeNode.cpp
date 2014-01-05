@@ -32,12 +32,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, uint32 seq) : SHAMap
     mHash (node.mHash), mSeq (seq), mType (node.mType), mIsBranch (node.mIsBranch), mFullBelow (false)
 {
     if (node.mItem)
-    {
-        if ((mSeq == 0) && (node.mSeq == 0))
-            mItem = node.mItem; // two immutable nodes can share an item
-        else
-            mItem = boost::make_shared<SHAMapItem> (*node.mItem);
-    }
+        mItem = node.mItem;
     else
         memcpy (mHashes, node.mHashes, sizeof (mHashes));
 }
@@ -385,12 +380,6 @@ bool SHAMapTreeNode::setItem (SHAMapItem::ref i, TNType type)
     assert (isLeaf ());
     assert (mSeq != 0);
     return updateHash ();
-}
-
-SHAMapItem::pointer SHAMapTreeNode::getItem () const
-{
-    assert (isLeaf ());
-    return boost::make_shared<SHAMapItem> (*mItem);
 }
 
 bool SHAMapTreeNode::isEmpty () const

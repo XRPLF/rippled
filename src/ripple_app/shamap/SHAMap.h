@@ -54,6 +54,7 @@ public:
     typedef const boost::shared_ptr<SHAMap>& ref;
 
     typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> DeltaItem;
+    typedef std::pair<SHAMapItem::ref, SHAMapItem::ref> DeltaRef;
     typedef std::map<uint256, DeltaItem> Delta;
     typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> NodeMap;
 

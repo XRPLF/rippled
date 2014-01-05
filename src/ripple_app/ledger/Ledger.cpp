@@ -392,7 +392,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
         return txn;
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-        txn = Transaction::sharedTransaction (item->getData (), true);
+        txn = Transaction::sharedTransaction (item->peekData (), true);
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         Blob txnData;

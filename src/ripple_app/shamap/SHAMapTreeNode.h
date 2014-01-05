@@ -141,7 +141,6 @@ public:
     { // CAUTION: Do not modify the item
         return mItem;
     }
-    SHAMapItem::pointer getItem () const;
     bool setItem (SHAMapItem::ref i, TNType type);
     uint256 const& getTag () const
     {
@@ -150,10 +149,6 @@ public:
     Blob const& peekData ()
     {
         return mItem->peekData ();
-    }
-    Blob getData () const
-    {
-        return mItem->getData ();
     }
 
     // sync functions

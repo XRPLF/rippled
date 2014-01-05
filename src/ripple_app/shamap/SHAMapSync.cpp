@@ -439,7 +439,7 @@ bool SHAMap::deepCompare (SHAMap& other)
 
             if (node->peekItem ()->getTag () != otherNode->peekItem ()->getTag ()) return false;
 
-            if (node->peekItem ()->getData () != otherNode->peekItem ()->getData ()) return false;
+            if (node->peekItem ()->peekData () != otherNode->peekItem ()->peekData ()) return false;
         }
         else if (node->isInner ())
         {

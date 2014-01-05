@@ -43,10 +43,6 @@ public:
     {
         return mTag;
     }
-    Blob getData () const
-    {
-        return mData.getData ();
-    }
     Blob const& peekData () const
     {
         return mData.peekData ();

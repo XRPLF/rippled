@@ -294,7 +294,7 @@ bool Transaction::convertToTransactions (uint32 firstLedgerSeq, uint32 secondLed
         if (!!first)
         {
             // transaction in our table
-            firstTrans = sharedTransaction (first->getData (), checkFirstTransactions);
+            firstTrans = sharedTransaction (first->peekData (), checkFirstTransactions);
 
             if ((firstTrans->getStatus () == INVALID) || (firstTrans->getID () != id ))
             {
@@ -307,7 +307,7 @@ bool Transaction::convertToTransactions (uint32 firstLedgerSeq, uint32 secondLed
         if (!!second)
         {
             // transaction in other table
-            secondTrans = sharedTransaction (second->getData (), checkSecondTransactions);
+            secondTrans = sharedTransaction (second->peekData (), checkSecondTransactions);
 
             if ((secondTrans->getStatus () == INVALID) || (secondTrans->getID () != id))
             {
