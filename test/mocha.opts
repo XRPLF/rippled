@@ -3,6 +3,6 @@
 --ui tdd
 --timeout 10000
 --slow 600
-test/server-test.js
 test/websocket-test.js
+test/server-test.js
 test/*-test.{js,coffee}
