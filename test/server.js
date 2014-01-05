@@ -91,7 +91,7 @@ Server.prototype._serverSpawnSync = function() {
   var options = {
     cwd: this.serverPath(),
     env: process.env,
-    stdio: this.quiet ? 'ignore' : 'inherit'
+    stdio: this.quiet ? 'pipe': 'inherit'
   };
 
   // Spawn in standalone mode for now.
@@ -103,12 +103,24 @@ Server.prototype._serverSpawnSync = function() {
                 this.config.rippled_path,
                 args.join(" "),
                 this.configPath());
+  
+  
+  var stderr = [];
+  self.child.stderr.on('data', function(buf) { stderr.push(buf); });
 
   // By default, just log exits.
   this.child.on('exit', function(code, signal) {
     if (!self.quiet) console.log("server: spawn: server exited code=%s: signal=%s", code, signal);
 
     self.emit('exited');
+
+    // Dump server logs on an abnormal exit
+    if (self.quiet && (!self.stopping)) {
+      process.stderr.write("rippled stderr:\n");
+      for (var i = 0; i < stderr.length; i++) {
+        process.stderr.write(stderr[i]);
+      };
+    };
 
     // If could not exec: code=127, signal=null
     // If regular exit: code=0, signal=null

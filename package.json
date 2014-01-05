@@ -22,7 +22,7 @@
   },
 
   "scripts": {
-    "test": "mocha test/*-test.{js,coffee}"
+    "test": "mocha"
   },
 
   "repository": {
