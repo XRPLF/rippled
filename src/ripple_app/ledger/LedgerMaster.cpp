@@ -42,10 +42,9 @@ public:
 
     TransactionEngine mEngine;
 
-    Ledger::pointer mCurrentLedger;     // The ledger we are currently processiong
-    Ledger::pointer mCurrentSnapshot;   // Snapshot of the current ledger
-    Ledger::pointer mClosedLedger;      // The ledger that most recently closed
-    Ledger::pointer mValidLedger;       // The highest-sequence ledger we have fully accepted
+    LedgerHolder mCurrentLedger;        // The ledger we are currently processiong
+    LedgerHolder mClosedLedger;         // The ledger that most recently closed
+    LedgerHolder mValidLedger;          // The highest-sequence ledger we have fully accepted
     Ledger::pointer mPubLedger;         // The last ledger we have published
     Ledger::pointer mPathLedger;        // The last ledger we did pathfinding against
 
@@ -104,17 +103,7 @@ public:
 
     uint32 getCurrentLedgerIndex ()
     {
-        return mCurrentLedger->getLedgerSeq ();
-    }
-
-    // An immutable snapshot of the current ledger
-    Ledger::ref getCurrentSnapshot ()
-    {
-        if (!mCurrentSnapshot || (mCurrentSnapshot->getHash () != mCurrentLedger->getHash ()))
-            mCurrentSnapshot = boost::make_shared<Ledger> (boost::ref (*mCurrentLedger), false);
-
-        assert (mCurrentSnapshot->isImmutable ());
-        return mCurrentSnapshot;
+        return mCurrentLedger.get ()->getLedgerSeq ();
     }
 
     int getPublishedLedgerAge ()
@@ -175,7 +164,7 @@ public:
 
     void setValidLedger(Ledger::ref l)
     {
-        mValidLedger =  l;
+        mValidLedger.set (l);
         mValidLedgerClose = l->getCloseTimeNC();
         mValidLedgerSeq = l->getLedgerSeq();
     }
@@ -203,14 +192,15 @@ public:
         {
             ScopedLockType ml (m_mutex, __FILE__, __LINE__);
 
-            if (mClosedLedger)
+            Ledger::pointer closedLedger = mCurrentLedger.getMutable ();
+            if (closedLedger)
             {
-                mClosedLedger->setClosed ();
-                WriteLog (lsTRACE, LedgerMaster) << "Finalizes: " << mClosedLedger->getHash ();
-            }
+                closedLedger->setClosed ();
+                closedLedger->setImmutable ();
+                mClosedLedger.set (closedLedger);
+	    }
 
-            mClosedLedger = mCurrentLedger;
-            mCurrentLedger = newLedger;
+            mCurrentLedger.set (newLedger);
             mEngine.setLedger (newLedger);
         }
 
@@ -231,8 +221,8 @@ public:
 
         {
             ScopedLockType ml (m_mutex, __FILE__, __LINE__);
-            mClosedLedger = newLCL;
-            mCurrentLedger = newOL;
+            mClosedLedger.set (newLCL);
+            mCurrentLedger.set (newOL);
             mEngine.setLedger (newOL);
         }
 
@@ -254,13 +244,15 @@ public:
 
         {
             ScopedLockType ml (m_mutex, __FILE__, __LINE__);
-            mClosedLedger = lastClosed;
-            mClosedLedger->setClosed ();
-            mClosedLedger->setAccepted ();
-            mCurrentLedger = current;
 
-            assert (!mCurrentLedger->isClosed ());
-            mEngine.setLedger (mCurrentLedger);
+            lastClosed->setClosed ();
+            lastClosed->setAccepted ();
+
+            mCurrentLedger.set (current);
+            mClosedLedger.set (lastClosed);
+
+            assert (!current->isClosed ());
+            mEngine.setLedger (current);
         }
         checkAccept (lastClosed);
     }
@@ -281,10 +273,10 @@ public:
         setFullLedger(ledger, true, false);
     }
 
-    Ledger::pointer closeLedger (bool recover)
+    void closeLedger (bool recover)
     {
         ScopedLockType sl (m_mutex, __FILE__, __LINE__);
-        Ledger::pointer closingLedger = mCurrentLedger;
+        Ledger::pointer closingLedger = mCurrentLedger.getMutable ();
 
         if (recover)
         {
@@ -318,10 +310,8 @@ public:
             mHeldTransactions.reset (closingLedger->getHash ());
         }
 
-        mCurrentLedger = boost::make_shared<Ledger> (boost::ref (*closingLedger), true);
-        mEngine.setLedger (mCurrentLedger);
-
-        return Ledger::pointer (new Ledger (*closingLedger, true));
+        mCurrentLedger.set (closingLedger);
+        mEngine.setLedger (mCurrentLedger.getMutable ());
     }
 
     TER doTransaction (SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
@@ -335,7 +325,10 @@ public:
             ledger = mEngine.getLedger ();
         }
         if (didApply)
+        {
+           mCurrentLedger.set (ledger);
            getApp().getOPs ().pubProposedTransaction (ledger, txn, result);
+        }
         return result;
     }
 
@@ -583,7 +576,7 @@ public:
 
             ScopedLockType ml (m_mutex, __FILE__, __LINE__);
 
-            if (!mValidLedger || (ledger->getLedgerSeq() > mValidLedger->getLedgerSeq()))
+            if (ledger->getLedgerSeq() > mValidLedgerSeq)
                 setValidLedger(ledger);
             if (!mPubLedger)
             {
@@ -642,13 +635,13 @@ public:
 
     void checkAccept (Ledger::ref ledger)
     {
-        if (ledger->getLedgerSeq() <= mValidLedgerSeq.load())
+        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
             return;
 
         // Can we advance the last fully-validated ledger? If so, can we publish?
         ScopedLockType ml (m_mutex, __FILE__, __LINE__);
 
-        if (mValidLedger && (ledger->getLedgerSeq() <= mValidLedger->getLedgerSeq ()))
+        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
             return;
 
         int minVal = mMinValidations;
@@ -704,7 +697,7 @@ public:
     void advanceThread()
     {
         ScopedLockType sl (m_mutex, __FILE__, __LINE__);
-        assert (mValidLedger && mAdvanceThread);
+        assert (!mValidLedger.empty () && mAdvanceThread);
 
         WriteLog (lsTRACE, LedgerMaster) << "advanceThread<";
 
@@ -734,7 +727,7 @@ public:
             {
                 if (!getConfig().RUN_STANDALONE && !getApp().getFeeTrack().isLoadedLocal() &&
                     (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
-                    (mValidLedger->getLedgerSeq() == mPubLedger->getLedgerSeq()))
+                    (mValidLedgerSeq == mPubLedgerSeq))
                 { // We are in sync, so can acquire
                     uint32 missing;
                     {
@@ -743,7 +736,7 @@ public:
                     }
                     WriteLog (lsTRACE, LedgerMaster) << "tryAdvance discovered missing " << missing;
                     if ((missing != RangeSet::absent) && (missing > 0) &&
-                        shouldAcquire(mValidLedger->getLedgerSeq(), getConfig().LEDGER_HISTORY, missing) &&
+                        shouldAcquire(mValidLedgerSeq, getConfig().LEDGER_HISTORY, missing) &&
                         ((mFillInProgress == 0) || (missing > mFillInProgress)))
                     {
                         WriteLog (lsTRACE, LedgerMaster) << "advanceThread should acquire";
@@ -809,13 +802,13 @@ public:
                             else
                             {
                                 WriteLog (lsFATAL, LedgerMaster) << "Unable to find ledger following prevMissing " << missing;
-                                WriteLog (lsFATAL, LedgerMaster) << "Pub:" << mPubLedger->getLedgerSeq() << " Val:" << mValidLedger->getLedgerSeq();
+                                WriteLog (lsFATAL, LedgerMaster) << "Pub:" << mPubLedgerSeq << " Val:" << mValidLedgerSeq;
                                 WriteLog (lsFATAL, LedgerMaster) << "Ledgers: " << getApp().getLedgerMaster().getCompleteLedgers();
                                 clearLedger (missing + 1);
                                 progress = true;
                             }
                         }
-                        if (mValidLedger->getLedgerSeq() != mPubLedger->getLedgerSeq())
+                        if (mValidLedgerSeq != mPubLedgerSeq)
                         {
                             WriteLog (lsDEBUG, LedgerMaster) << "tryAdvance found last valid changed";
                             progress = true;
@@ -857,24 +850,25 @@ public:
         WriteLog (lsTRACE, LedgerMaster) << "findNewLedgersToPublish<";
         if (!mPubLedger)
         {
-            WriteLog (lsINFO, LedgerMaster) << "First published ledger will be " << mValidLedger->getLedgerSeq();
-            ret.push_back (mValidLedger);
+            WriteLog (lsINFO, LedgerMaster) << "First published ledger will be " << mValidLedgerSeq;
+            ret.push_back (mValidLedger.get ());
         }
-        else if (mValidLedger->getLedgerSeq () > (mPubLedger->getLedgerSeq () + MAX_LEDGER_GAP))
+        else if (mValidLedgerSeq > (mPubLedgerSeq + MAX_LEDGER_GAP))
         {
-            WriteLog (lsWARNING, LedgerMaster) << "Gap in validated ledger stream " << mPubLedger->getLedgerSeq () << " - " <<
-                                               mValidLedger->getLedgerSeq () - 1;
-            ret.push_back (mValidLedger);
-            setPubLedger (mValidLedger);
-            getApp().getOrderBookDB().setup(mValidLedger);
+            WriteLog (lsWARNING, LedgerMaster) << "Gap in validated ledger stream " << mPubLedgerSeq << " - " <<
+                                               mValidLedgerSeq - 1;
+            Ledger::pointer valLedger = mValidLedger.get ();
+            ret.push_back (valLedger);
+            setPubLedger (valLedger);
+            getApp().getOrderBookDB().setup(valLedger);
         }
-        else if (mValidLedger->getLedgerSeq () > mPubLedger->getLedgerSeq ())
+        else if (mValidLedgerSeq > mPubLedgerSeq)
         {
             int acqCount = 0;
 
-            uint32 pubSeq = mPubLedger->getLedgerSeq() + 1; // Next sequence to publish
-            uint32 valSeq = mValidLedger->getLedgerSeq();
-            Ledger::pointer valLedger = mValidLedger;
+            uint32 pubSeq = mPubLedgerSeq + 1; // Next sequence to publish
+            Ledger::pointer valLedger = mValidLedger.get ();
+            uint32 valSeq = valLedger->getLedgerSeq ();
 
             ScopedUnlockType sul(m_mutex, __FILE__, __LINE__);
             try
@@ -953,7 +947,7 @@ public:
 
         // Can't advance without at least one fully-valid ledger
         mAdvanceWork = true;
-        if (!mAdvanceThread && mValidLedger)
+        if (!mAdvanceThread && !mValidLedger.empty ())
         {
             mAdvanceThread = true;
             getApp().getJobQueue ().addJob (jtADVANCE, "advanceLedger",
@@ -995,7 +989,7 @@ public:
     {
         {
             ScopedLockType ml (m_mutex, __FILE__, __LINE__);
-            if (getApp().getOPs().isNeedNetworkLedger () || !mCurrentLedger)
+            if (getApp().getOPs().isNeedNetworkLedger () || mCurrentLedger.empty ())
             {
                 --mPathFindThread;
                 return;
@@ -1009,15 +1003,15 @@ public:
             {
                 ScopedLockType ml (m_mutex, __FILE__, __LINE__);
 
-                if (mValidLedger &&
-                    (!mPathLedger || (mPathLedger->getLedgerSeq() != mValidLedger->getLedgerSeq())))
+                if (!mValidLedger.empty() &&
+                    (!mPathLedger || (mPathLedger->getLedgerSeq() != mValidLedgerSeq)))
                 { // We have a new valid ledger since the last full pathfinding
-                    mPathLedger = mValidLedger;
+                    mPathLedger = mValidLedger.get ();
                     lastLedger = mPathLedger;
                 }
                 else if (mPathFindNewRequest)
                 { // We have a new request but no new ledger
-                    lastLedger = boost::make_shared<Ledger> (boost::ref (*mCurrentLedger), false);
+                    lastLedger = mCurrentLedger.get ();
                 }
                 else
                 { // Nothing to do
@@ -1095,21 +1089,21 @@ public:
     }
 
     // The current ledger is the ledger we believe new transactions should go in
-    Ledger::ref getCurrentLedger ()
+    Ledger::pointer getCurrentLedger ()
     {
-        return mCurrentLedger;
+        return mCurrentLedger.get ();
     }
 
     // The finalized ledger is the last closed/accepted ledger
-    Ledger::ref getClosedLedger ()
+    Ledger::pointer getClosedLedger ()
     {
-        return mClosedLedger;
+        return mClosedLedger.get ();
     }
 
     // The validated ledger is the last fully validated ledger
-    Ledger::ref getValidatedLedger ()
+    Ledger::pointer getValidatedLedger ()
     {
-        return mValidLedger;
+        return mValidLedger.get ();
     }
 
     // This is the last ledger we published to clients and can lag the validated ledger
@@ -1164,10 +1158,7 @@ public:
         uint256 ledgerHash;
         Ledger::pointer referenceLedger;
 
-        {
-            ScopedLockType sl (m_mutex, __FILE__, __LINE__);
-            referenceLedger = mValidLedger;
-        }
+        referenceLedger = mValidLedger.get ();
         if (referenceLedger)
             ledgerHash = walkHashBySeq (index, referenceLedger);
         return ledgerHash;
@@ -1211,18 +1202,16 @@ public:
 
     Ledger::pointer getLedgerBySeq (uint32 index)
     {
-        {
-            ScopedLockType sl (m_mutex, __FILE__, __LINE__);
-            if (mCurrentLedger && (mCurrentLedger->getLedgerSeq () == index))
-                return mCurrentLedger;
-
-                if (mClosedLedger && (mClosedLedger->getLedgerSeq () == index))
-                return mClosedLedger;
-        }
-
         Ledger::pointer ret = mLedgerHistory.getLedgerBySeq (index);
-
         if (ret)
+            return ret;
+
+        ret = mCurrentLedger.get ();
+        if (ret && (ret->getLedgerSeq () == index))
+            return ret;
+
+        ret = mClosedLedger.get ();
+        if (ret && (ret->getLedgerSeq () == index))
             return ret;
 
         clearLedger (index);
@@ -1232,15 +1221,21 @@ public:
     Ledger::pointer getLedgerByHash (uint256 const& hash)
     {
         if (hash.isZero ())
-            return boost::make_shared<Ledger> (boost::ref (*mCurrentLedger), false);
+            return mCurrentLedger.get ();
 
-        if (mCurrentLedger && (mCurrentLedger->getHash () == hash))
-            return boost::make_shared<Ledger> (boost::ref (*mCurrentLedger), false);
+        Ledger::pointer ret = mLedgerHistory.getLedgerByHash (hash);
+        if (ret)
+            return ret;
 
-        if (mClosedLedger && (mClosedLedger->getHash () == hash))
-            return mClosedLedger;
+        ret = mCurrentLedger.get ();
+        if (ret && (ret->getHash () == hash))
+            return ret;
 
-        return mLedgerHistory.getLedgerByHash (hash);
+        ret = mClosedLedger.get ();
+        if (ret && (ret->getHash () == hash))
+            return ret;
+
+        return Ledger::pointer ();
     }
 
     void doLedgerCleaner(const Json::Value& parameters)

@@ -50,16 +50,13 @@ public:
     virtual LockType& peekMutex () = 0;
 
     // The current ledger is the ledger we believe new transactions should go in
-    virtual Ledger::ref getCurrentLedger () = 0;
-
-    // An immutable snapshot of the current ledger
-    virtual Ledger::ref getCurrentSnapshot () = 0;
+    virtual Ledger::pointer getCurrentLedger () = 0;
 
     // The finalized ledger is the last closed/accepted ledger
-    virtual Ledger::ref getClosedLedger () = 0;
+    virtual Ledger::pointer getClosedLedger () = 0;
 
     // The validated ledger is the last fully validated ledger
-    virtual Ledger::ref getValidatedLedger () = 0;
+    virtual Ledger::pointer getValidatedLedger () = 0;
 
     // This is the last ledger we published to clients and can lag the validated ledger
     virtual Ledger::ref getPublishedLedger () = 0;
@@ -89,7 +86,7 @@ public:
 
     virtual std::string getCompleteLedgers () = 0;
 
-    virtual Ledger::pointer closeLedger (bool recoverHeldTransactions) = 0;
+    virtual void closeLedger (bool recoverHeldTransactions) = 0;
 
     /** Get a ledger's hash by sequence number using the cache
     */

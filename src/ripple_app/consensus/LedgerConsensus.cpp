@@ -1764,7 +1764,8 @@ private:
         mCloseTime = getApp().getOPs ().getCloseTimeNC ();
         getApp().getOPs ().setLastCloseTime (mCloseTime);
         statusChange (protocol::neCLOSING_LEDGER, *mPreviousLedger);
-        takeInitialPosition (*getApp().getLedgerMaster ().closeLedger (true));
+        getApp().getLedgerMaster().closeLedger (true);
+        takeInitialPosition (*getApp().getLedgerMaster ().getCurrentLedger ());
     }
 
     void checkOurValidation ()

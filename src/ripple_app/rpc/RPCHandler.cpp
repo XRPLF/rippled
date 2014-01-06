@@ -86,7 +86,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
     }
     std::string sType = txJSON["TransactionType"].asString ();
 
-    Ledger::pointer lSnapshot = mNetOps->getCurrentSnapshot ();
+    Ledger::pointer lSnapshot = mNetOps->getCurrentLedger ();
     AccountState::pointer asSrc = bOffline
                                   ? AccountState::pointer ()                              // Don't look up address if offline.
                                   : mNetOps->getAccountState (lSnapshot, raSrcAddressID);
@@ -3045,7 +3045,7 @@ Json::Value RPCHandler::lookupLedger (Json::Value params, Ledger::pointer& lpLed
     switch (iLedgerIndex)
     {
     case LEDGER_CURRENT:
-        lpLedger        = mNetOps->getCurrentSnapshot ();
+        lpLedger        = mNetOps->getCurrentLedger ();
         iLedgerIndex    = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && !lpLedger->isClosed ());
         break;

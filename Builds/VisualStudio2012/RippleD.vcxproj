@@ -2371,6 +2371,7 @@
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerMaster.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerProposal.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerTiming.h" />
+    <ClInclude Include="..\..\src\ripple_app\ledger\LedgerHolder.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\OrderBookDB.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\AcceptedLedger.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\AcceptedLedgerTx.h" />

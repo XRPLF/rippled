@@ -1772,6 +1772,9 @@
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerTiming.h">
       <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\ledger\LedgerHolder.h">
+      <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\ledger\OrderBookDB.h">
       <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
     </ClInclude>

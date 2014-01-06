@@ -103,11 +103,10 @@ public:
 
     virtual OperatingMode getOperatingMode () = 0;
     virtual std::string strOperatingMode () = 0;
-    virtual Ledger::ref     getClosedLedger () = 0;
-    virtual Ledger::ref     getValidatedLedger () = 0;
-    virtual Ledger::ref     getPublishedLedger () = 0;
-    virtual Ledger::ref     getCurrentLedger () = 0;
-    virtual Ledger::ref     getCurrentSnapshot () = 0;
+    virtual Ledger::pointer getClosedLedger () = 0;
+    virtual Ledger::pointer getValidatedLedger () = 0;
+    virtual Ledger::pointer getPublishedLedger () = 0;
+    virtual Ledger::pointer getCurrentLedger () = 0;
     virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;
     virtual Ledger::pointer getLedgerBySeq (const uint32 seq) = 0;
     virtual void            missingNodeInLedger (const uint32 seq) = 0;

@@ -75,25 +75,21 @@ public:
     }
     std::string strOperatingMode ();
 
-    Ledger::ref     getClosedLedger ()
+    Ledger::pointer     getClosedLedger ()
     {
         return m_ledgerMaster.getClosedLedger ();
     }
-    Ledger::ref     getValidatedLedger ()
+    Ledger::pointer     getValidatedLedger ()
     {
         return m_ledgerMaster.getValidatedLedger ();
     }
-    Ledger::ref     getPublishedLedger ()
+    Ledger::pointer     getPublishedLedger ()
     {
         return m_ledgerMaster.getPublishedLedger ();
     }
-    Ledger::ref     getCurrentLedger ()
+    Ledger::pointer     getCurrentLedger ()
     {
         return m_ledgerMaster.getCurrentLedger ();
-    }
-    Ledger::ref     getCurrentSnapshot ()
-    {
-        return m_ledgerMaster.getCurrentSnapshot ();
     }
     Ledger::pointer getLedgerByHash (uint256 const& hash)
     {
@@ -2289,7 +2285,7 @@ void NetworkOPsImp::pubProposedTransaction (Ledger::ref lpCurrent, SerializedTra
     }
     AcceptedLedgerTx alt (stTxn, terResult);
     m_journal.trace << "pubProposed: " << alt.getJson ();
-    pubAccountTransaction (lpCurrent, AcceptedLedgerTx (stTxn, terResult), false);
+    pubAccountTransaction (lpCurrent, alt, false);
 }
 
 void NetworkOPsImp::pubLedger (Ledger::ref accepted)
