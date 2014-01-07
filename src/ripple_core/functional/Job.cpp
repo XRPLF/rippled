@@ -119,6 +119,7 @@ const char* Job::toString (JobType t)
     case jtWAL:             return "writeAhead";
     case jtVALIDATION_t:    return "trustedValidation";
     case jtWRITE:           return "writeObjects";
+    case jtACCEPT:          return "acceptLedger";
     case jtPROPOSAL_t:      return "trustedProposal";
     case jtSWEEP:           return "sweep";
     case jtNETOP_CLUSTER:   return "clusterReport";
@@ -129,7 +130,6 @@ const char* Job::toString (JobType t)
     // special types not dispatched by the job pool
     case jtPEER:            return "peerCommand";
     case jtDISK:            return "diskAccess";
-    case jtACCEPTLEDGER:    return "acceptLedger";
     case jtTXN_PROC:        return "processTransaction";
     case jtOB_SETUP:        return "orderBookSetup";
     case jtPATH_FIND:       return "pathFind";

@@ -740,8 +740,7 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
         }
     }
 
-    // FIXME: Should submit to job queue
-    getApp().getIOService ().post (boost::bind (&NetworkOPsImp::processTransaction, this,
+    getApp().getJobQueue().addJob (jtTRANSACTION, "submitTxn", boost::bind (&NetworkOPsImp::processTransaction, this,
                                   boost::make_shared<Transaction> (trans, false), false, false, callback));
 }
 

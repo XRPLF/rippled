@@ -58,7 +58,7 @@ void TransactionAcquire::done ()
         map = mMap;
     }
 
-    getApp().getIOService ().post (BIND_TYPE (&TACompletionHandler, mHash, map));
+    getApp().getJobQueue().addJob (jtTXN_DATA, "completeAcquire", BIND_TYPE (&TACompletionHandler, mHash, map));
 }
 
 void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)

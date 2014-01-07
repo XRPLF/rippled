@@ -44,11 +44,12 @@ enum JobType
     jtWAL           = 16,   // Write-ahead logging
     jtVALIDATION_t  = 17,   // A validation from a trusted source
     jtWRITE         = 18,   // Write out hashed objects
-    jtPROPOSAL_t    = 19,   // A proposal from a trusted source
-    jtSWEEP         = 20,   // Sweep for stale structures
-    jtNETOP_CLUSTER = 21,   // NetworkOPs cluster peer report
-    jtNETOP_TIMER   = 22,   // NetworkOPs net timer processing
-    jtADMIN         = 23,   // An administrative operation
+    jtACCEPT        = 19,   // Accept a consensus ledger
+    jtPROPOSAL_t    = 20,   // A proposal from a trusted source
+    jtSWEEP         = 21,   // Sweep for stale structures
+    jtNETOP_CLUSTER = 22,   // NetworkOPs cluster peer report
+    jtNETOP_TIMER   = 23,   // NetworkOPs net timer processing
+    jtADMIN         = 24,   // An administrative operation
 
     // special types not dispatched by the job pool
     jtPEER          = 30,

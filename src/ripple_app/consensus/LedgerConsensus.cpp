@@ -847,7 +847,7 @@ public:
 private:
     /** We have a new last closed ledger, process it. Final accept logic
     */
-    void accept (SHAMap::ref set, LoadEvent::pointer)
+    void accept (SHAMap::pointer set)
     {
         if (set->getHash ().isNonZero ()) 
         // put our set where others can get it later    
@@ -1832,14 +1832,11 @@ private:
             (mPeerPositions.size (), mCurrentMSeconds, mNewLedgerHash);
 
         if (synchronous)
-            accept (consensusSet, LoadEvent::pointer ());
+            accept (consensusSet);
         else
-        { // FIXME: Post to JobQueue, not I/O service
-            getApp().getIOService ().post 
-                (BIND_TYPE (&LedgerConsensusImp::accept
-                    , shared_from_this (), consensusSet
-                    , getApp().getJobQueue ().getLoadEvent 
-                    (jtACCEPTLEDGER, "LedgerConsensusImp::beginAccept")));
+        {
+            getApp().getJobQueue().addJob (jtACCEPT, "acceptLedger",
+                BIND_TYPE (&LedgerConsensusImp::accept, shared_from_this (), consensusSet));
         }
     }
 
