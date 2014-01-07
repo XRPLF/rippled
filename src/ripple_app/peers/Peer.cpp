@@ -424,7 +424,8 @@ private:
     void recvGetPeers (protocol::TMGetPeers & packet, Application::ScopedLockType& masterLockHolder);
     void recvPeers (protocol::TMPeers & packet);
     void recvEndpoints (protocol::TMEndpoints & packet);
-    void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet);
+    void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet,
+        Application::ScopedLockType& masterLockHolder);
     void recvPing (protocol::TMPing & packet);
     void recvErrorMessage (protocol::TMErrorMsg & packet);
     void recvSearchTransaction (protocol::TMSearchTransaction & packet);
@@ -1081,7 +1082,7 @@ void PeerImp::processReadBuffer ()
                 boost::shared_ptr<protocol::TMGetObjectByHash> msg = boost::make_shared<protocol::TMGetObjectByHash> ();
 
                 if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                    recvGetObjectByHash (msg);
+                    recvGetObjectByHash (msg, lock);
                 else
                     WriteLog (lsWARNING, Peer) << "parse error: " << type;
             }
@@ -1793,8 +1794,11 @@ void PeerImp::recvEndpoints (protocol::TMEndpoints& packet)
         PeerFinder::PeerID (mNodePublic), endpoints);
 }
 
-void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& ptr)
+void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& ptr,
+    Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     protocol::TMGetObjectByHash& packet = *ptr;
 
     if (packet.query ())
@@ -2131,6 +2135,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
     }
     else
     {
+        masterLockHolder.unlock ();
         if (getApp().getFeeTrack().isLoadedLocal() && !mCluster)
         {
             WriteLog (lsDEBUG, Peer) << "Too busy to fetch ledger data";
@@ -2219,13 +2224,6 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
             }
 
             return;
-        }
-
-        if (ledger->isImmutable ())
-            masterLockHolder.unlock ();
-        else
-        {
-            WriteLog (lsWARNING, Peer) << "Request for data from mutable ledger";
         }
 
         // Fill out the reply
