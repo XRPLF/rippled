@@ -63,7 +63,6 @@ public:
     uint32                      mLastValidateSeq;
     std::list<callback>         mOnValidate;        // Called when a ledger has enough validations
 
-    std::list<Ledger::pointer>  mPubLedgers;        // List of ledgers to publish
     bool                        mAdvanceThread;     // Publish thread is running
     bool                        mAdvanceWork;       // Publish thread has work to do
     int                         mFillInProgress;
@@ -297,7 +296,7 @@ public:
                 {
                     TransactionEngineParams tepFlags = tapOPEN_LEDGER;
 
-                    if (getApp().getHashRouter ().addSuppressionPeer (it->first.getTXID (), SF_SIGGOOD))
+                    if (getApp().getHashRouter ().addSuppressionFlags (it->first.getTXID (), SF_SIGGOOD))
                         tepFlags = static_cast<TransactionEngineParams> (tepFlags | tapNO_CHECK_SIGN);
 
                     bool didApply;

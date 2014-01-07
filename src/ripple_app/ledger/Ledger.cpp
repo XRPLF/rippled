@@ -1488,7 +1488,7 @@ uint256 Ledger::getLedgerFeeIndex ()
 
 uint256 Ledger::getLedgerFeatureIndex ()
 {
-    // get the index of the node that holds the last 256 ledgers
+    // get the index of the node that holds the enabled features
     Serializer s (2);
     s.add16 (spaceFeature);
     return s.getSHA512Half ();

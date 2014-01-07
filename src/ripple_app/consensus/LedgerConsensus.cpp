@@ -606,6 +606,9 @@ public:
             idleInterval = LEDGER_IDLE_INTERVAL;
         }
 
+        idleInterval = std::max (idleInterval, LEDGER_IDLE_INTERVAL);
+        idleInterval = std::max (idleInterval, 2 * mPreviousLedger->getCloseResolution ());
+
         if (ContinuousLedgerTiming::shouldClose (anyTransactions
             , mPreviousProposers, proposersClosed, proposersValidated
             , mPreviousMSeconds, sinceClose, mCurrentMSeconds

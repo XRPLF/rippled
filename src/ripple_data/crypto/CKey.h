@@ -92,10 +92,11 @@ public:
     CKey ()
     {
         pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
-        EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
 
         if (pkey == NULL)
             throw key_error ("CKey::CKey() : EC_KEY_new_by_curve_name failed");
+
+        EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
 
         fSet = false;
     }
@@ -103,10 +104,11 @@ public:
     CKey (const CKey& b)
     {
         pkey = EC_KEY_dup (b.pkey);
-        EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
 
         if (pkey == NULL)
             throw key_error ("CKey::CKey(const CKey&) : EC_KEY_dup failed");
+
+        EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
 
         fSet = b.fSet;
     }

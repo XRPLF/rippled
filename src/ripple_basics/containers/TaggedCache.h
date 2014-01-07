@@ -301,13 +301,13 @@ void TaggedCacheType<c_Key, c_Data, Timer>::sweep ()
         ScopedLockType sl (mLock, __FILE__, __LINE__);
 
         int const now = Timer::getElapsedSeconds ();
-        int target = now - mTargetAge;
+        int target = (now < mTargetAge) ? 0 : (now - mTargetAge);
 
         if ((mTargetSize != 0) && (static_cast<int> (mCache.size ()) > mTargetSize))
         {
             target = now - (mTargetAge * mTargetSize / mCache.size ());
 
-            if (target > (now - 2))
+            if ((now > 2) && (target > (now - 2)))
                 target = now - 2;
 
             WriteLog (lsINFO, TaggedCacheLog) << mName << " is growing fast " <<

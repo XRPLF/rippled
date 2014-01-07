@@ -228,7 +228,7 @@ void CBigNum::setuint64 (uint64 n)
 
 void CBigNum::setuint256 (uint256 const& n)
 {
-    BN_bin2bn (n.begin (), n.size (), NULL);
+    BN_bin2bn (n.begin (), n.size (), this);
 }
 
 uint256 CBigNum::getuint256 ()
