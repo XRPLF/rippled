@@ -289,6 +289,15 @@
     <Filter Include="[1] Ripple\rocksdb\rocksdb\include\utilities">
       <UniqueIdentifier>{013f0eb9-bf1d-4b11-8c2c-3fd99d4b8ef5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\common">
+      <UniqueIdentifier>{b99052d6-a903-4dfd-9c68-ff767a7d8f63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\common\functional">
+      <UniqueIdentifier>{70365f6a-d1e6-45f2-a064-0e842b0fdd78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\common\functional\impl">
+      <UniqueIdentifier>{9b8137bd-737d-4825-98bf-897a0635293a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -1401,8 +1410,14 @@
     <ClCompile Include="..\..\src\ripple\types\impl\RippleAssets.cpp">
       <Filter>[1] Ripple\types\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\RippleAssets.h">
-      <Filter>[1] Ripple\types\impl</Filter>
+    <ClCompile Include="..\..\src\ripple\common\ripple_common.cpp">
+      <Filter>[1] Ripple\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\functional\impl\counted_bind.cpp">
+      <Filter>[1] Ripple\common\functional\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.cpp">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2879,6 +2894,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\RippleAssets.h">
       <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\functional\counted_bind.h">
+      <Filter>[1] Ripple\common\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.h">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -22,6 +22,13 @@
     <ClCompile Include="..\..\build\proto\ripple.pb.cc" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beast.cpp" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c" />
+    <ClCompile Include="..\..\src\ripple\common\functional\impl\counted_bind.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\ripple_common.cpp" />
     <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1532,6 +1539,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\impl\BatchWriter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2128,6 +2141,7 @@
     <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h" />
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h" />
     <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h" />
+    <ClInclude Include="..\..\src\ripple\common\functional\counted_bind.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Server.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Port.h" />
@@ -2487,6 +2501,7 @@
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\NullFactory.h" />
+    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\impl\BatchWriter.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\impl\DatabaseImp.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\impl\DecodedBlob.h" />

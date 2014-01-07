@@ -65,6 +65,7 @@ UI_HEADERS_DIR += ../../src/ripple_basics
 SOURCES += \
     ../../src/ripple/beast/ripple_beast.cpp \
     ../../src/ripple/beast/ripple_beastc.c \
+    ../../src/ripple/common/ripple_common.cpp \
     ../../src/ripple/http/ripple_http.cpp \
     ../../src/ripple/json/ripple_json.cpp \
     ../../src/ripple/peerfinder/ripple_peerfinder.cpp \
