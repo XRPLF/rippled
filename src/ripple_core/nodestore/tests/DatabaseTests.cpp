@@ -47,9 +47,12 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
+        Journal j ((journal ()));
+
         // Write to source db
         {
-            ScopedPointer <Database> src (Database::New ("test", scheduler, srcParams));
+            ScopedPointer <Database> src (Database::New (
+                "test", scheduler, j, srcParams));
             storeBatch (*src, batch);
         }
 
@@ -57,7 +60,8 @@ public:
 
         {
             // Re-open the db
-            ScopedPointer <Database> src (Database::New ("test", scheduler, srcParams));
+            ScopedPointer <Database> src (Database::New (
+                "test", scheduler, j, srcParams));
 
             // Set up the destination database
             File const dest_db (File::createTempFile ("dest_db"));
@@ -65,7 +69,8 @@ public:
             destParams.set ("type", destBackendType);
             destParams.set ("path", dest_db.getFullPathName ());
 
-            ScopedPointer <Database> dest (Database::New ("test", scheduler, destParams));
+            ScopedPointer <Database> dest (Database::New (
+                "test", scheduler, j, destParams));
 
             beginTestCase (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
 
@@ -80,7 +85,6 @@ public:
         std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
         std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
         expect (areBatchesEqual (batch, copy), "Should be equal");
-
     }
 
     //--------------------------------------------------------------------------
@@ -117,9 +121,12 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
+        Journal j ((journal ()));
+
         {
             // Open the database
-            ScopedPointer <Database> db (Database::New ("test", scheduler, nodeParams, tempParams));
+            ScopedPointer <Database> db (Database::New ("test", scheduler,
+                j, nodeParams, tempParams));
 
             // Write the batch
             storeBatch (*db, batch);
@@ -144,7 +151,8 @@ public:
         {
             {
                 // Re-open the database without the ephemeral DB
-                ScopedPointer <Database> db (Database::New ("test", scheduler, nodeParams));
+                ScopedPointer <Database> db (Database::New (
+                    "test", scheduler, j, nodeParams));
 
                 // Read it back in
                 Batch copy;
@@ -160,7 +168,7 @@ public:
             {
                 // Verify the ephemeral db
                 ScopedPointer <Database> db (Database::New ("test",
-                    scheduler, tempParams, StringPairArray ()));
+                    scheduler, j, tempParams, StringPairArray ()));
 
                 // Read it back in
                 Batch copy;

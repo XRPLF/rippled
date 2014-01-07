@@ -249,7 +249,8 @@ String HyperDBFactory::getName () const
 Backend* HyperDBFactory::createInstance (
     size_t keyBytes,
     Parameters const& keyValues,
-    Scheduler& scheduler)
+    Scheduler& scheduler,
+    Journal journal)
 {
     return new HyperDBFactory::BackendImp (keyBytes, keyValues, scheduler);
 }

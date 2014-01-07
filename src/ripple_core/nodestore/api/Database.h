@@ -64,6 +64,7 @@ public:
     */
     static Database* New (char const* name,
                           Scheduler& scheduler,
+                          Journal journal,
                           Parameters const& backendParameters,
                           Parameters fastBackendParameters = Parameters ());
 

@@ -37,7 +37,9 @@ enum Status
     ok,
     notFound,
     dataCorrupt,
-    unknown
+    unknown,
+
+    customCode = 100
 };
 
 /** A batch of NodeObjects to write at once. */

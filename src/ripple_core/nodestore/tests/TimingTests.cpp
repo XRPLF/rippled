@@ -77,8 +77,11 @@ public:
         NodeStore::Batch batch2;
         createPredictableBatch (batch2, 0, numObjectsToTest, seedValue);
 
+        Journal j ((journal ()));
+
         // Open the backend
-        ScopedPointer <Backend> backend (DatabaseImp::createBackend (params, scheduler));
+        ScopedPointer <Backend> backend (DatabaseImp::createBackend (
+            params, scheduler, j));
 
         Stopwatch t;
 

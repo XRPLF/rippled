@@ -86,8 +86,10 @@ public:
 
     BackendImp (int keyBytes,
              Parameters const& keyValues,
-             Scheduler& scheduler)
-        : m_keyBytes (keyBytes)
+             Scheduler& scheduler,
+             Journal journal)
+        : m_journal (journal)
+        , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
         , m_batch (*this, scheduler)
         , m_name (keyValues ["path"].toStdString ())
@@ -200,7 +202,9 @@ public:
                 }
                 else
                 {
-                    status = unknown;
+                    status = Status (customCode + getStatus.code());
+
+                    m_journal.error << getStatus.ToString ();
                 }
             }
         }
@@ -285,6 +289,7 @@ public:
     }
 
 private:
+    Journal m_journal;
     size_t const m_keyBytes;
     Scheduler& m_scheduler;
     BatchWriter m_batch;
@@ -323,10 +328,10 @@ public:
 
     Backend* createInstance (
         size_t keyBytes, Parameters const& keyValues,
-            Scheduler& scheduler)
+            Scheduler& scheduler, Journal journal)
     {
         return new RocksDBFactory::BackendImp (
-            keyBytes, keyValues, scheduler);
+            keyBytes, keyValues, scheduler, journal);
     }
 };
 

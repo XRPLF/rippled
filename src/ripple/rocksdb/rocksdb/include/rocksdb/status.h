@@ -105,10 +105,12 @@ class Status {
     kIncomplete = 7
   };
 
+public:
   Code code() const {
     return (state_ == nullptr) ? kOk : static_cast<Code>(state_[4]);
   }
 
+private:
   Status(Code code, const Slice& msg, const Slice& msg2);
   static const char* CopyState(const char* s);
 };

@@ -42,7 +42,8 @@ public:
 
     Backend* createInstance (size_t keyBytes,
                              Parameters const& keyValues,
-                             Scheduler& scheduler);
+                             Scheduler& scheduler,
+                             Journal journal);
 };
 
 }

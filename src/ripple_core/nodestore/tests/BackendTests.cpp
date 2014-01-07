@@ -40,9 +40,12 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
+        Journal j ((journal ()));
+
         {
             // Open the backend
-            ScopedPointer <Backend> backend (DatabaseImp::createBackend (params, scheduler));
+            ScopedPointer <Backend> backend (DatabaseImp::createBackend (
+                params, scheduler, j));
 
             // Write the batch
             storeBatch (*backend, batch);
@@ -65,7 +68,8 @@ public:
 
         {
             // Re-open the backend
-            ScopedPointer <Backend> backend (DatabaseImp::createBackend (params, scheduler));
+            ScopedPointer <Backend> backend (DatabaseImp::createBackend (
+                params, scheduler, j));
 
             // Read it back in
             Batch copy;

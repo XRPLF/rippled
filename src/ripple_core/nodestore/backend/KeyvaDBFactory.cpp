@@ -184,7 +184,8 @@ String KeyvaDBFactory::getName () const
 Backend* KeyvaDBFactory::createInstance (
     size_t keyBytes,
     Parameters const& keyValues,
-    Scheduler& scheduler)
+    Scheduler& scheduler,
+    Journal journal)
 {
     return new KeyvaDBFactory::BackendImp (keyBytes, keyValues, scheduler);
 }

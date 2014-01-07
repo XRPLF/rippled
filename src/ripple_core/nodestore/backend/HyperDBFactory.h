@@ -44,7 +44,8 @@ public:
 
     NodeStore::Backend* createInstance (size_t keyBytes,
                                         Parameters const& keyValues,
-                                        NodeStore::Scheduler& scheduler);
+                                        NodeStore::Scheduler& scheduler,
+                                        Journal journal);
 };
 
 }

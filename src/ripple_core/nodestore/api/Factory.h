@@ -42,7 +42,8 @@ public:
     */
     virtual Backend* createInstance (size_t keyBytes,
                                      Parameters const& parameters,
-                                     Scheduler& scheduler) = 0;
+                                     Scheduler& scheduler,
+                                     Journal journal) = 0;
 };
 
 }

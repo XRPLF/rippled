@@ -127,7 +127,8 @@ public:
         , m_nodeStoreScheduler (*m_jobQueue, *m_jobQueue)
 
         , m_nodeStore (NodeStore::Database::New ("NodeStore.main", m_nodeStoreScheduler,
-            getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
+            LogPartition::getJournal <NodeObject> (),
+                getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
 
         , m_sntpClient (SNTPClient::New (*this))
 
@@ -1246,7 +1247,8 @@ void ApplicationImp::updateTables ()
     {
         NodeStore::DummyScheduler scheduler;
         ScopedPointer <NodeStore::Database> source (NodeStore::Database::New (
-            "NodeStore.import", scheduler, getConfig ().importNodeDatabase));
+            "NodeStore.import", scheduler, LogPartition::getJournal <NodeObject> (),
+                getConfig ().importNodeDatabase));
 
         WriteLog (lsWARNING, NodeObject) <<
             "Node import from '" << source->getName () << "' to '"

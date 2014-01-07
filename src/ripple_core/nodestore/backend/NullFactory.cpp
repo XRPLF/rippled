@@ -86,7 +86,8 @@ String NullFactory::getName () const
 Backend* NullFactory::createInstance (
     size_t,
     Parameters const&,
-    Scheduler& scheduler)
+    Scheduler& scheduler,
+    Journal journal)
 {
     return new NullFactory::BackendImp (scheduler);
 }

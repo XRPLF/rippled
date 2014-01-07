@@ -245,7 +245,8 @@ String SqliteFactory::getName () const
 NodeStore::Backend* SqliteFactory::createInstance (
     size_t keyBytes,
     NodeStore::Parameters const& keyValues,
-    NodeStore::Scheduler& scheduler)
+    NodeStore::Scheduler& scheduler,
+    Journal)
 {
     return new BackendImp (keyBytes, keyValues ["path"].toStdString (), scheduler);
 }

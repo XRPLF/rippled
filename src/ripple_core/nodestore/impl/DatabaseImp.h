@@ -28,11 +28,13 @@ public:
     DatabaseImp (char const* name,
                  Scheduler& scheduler,
                  Parameters const& backendParameters,
-                 Parameters const& fastBackendParameters)
-        : m_scheduler (scheduler)
-        , m_backend (createBackend (backendParameters, scheduler))
+                 Parameters const& fastBackendParameters,
+                 Journal journal)
+        : m_journal (journal)
+        , m_scheduler (scheduler)
+        , m_backend (createBackend (backendParameters, scheduler, journal))
         , m_fastBackend ((fastBackendParameters.size () > 0)
-            ? createBackend (fastBackendParameters, scheduler) : nullptr)
+            ? createBackend (fastBackendParameters, scheduler, journal) : nullptr)
         , m_cache ("NodeStore", 16384, 300)
     {
     }
@@ -259,7 +261,8 @@ public:
         fatal_error ("Your rippled.cfg is missing a [node_db] entry, please see the rippled-example.cfg file!");
     }
 
-    static Backend* createBackend (Parameters const& parameters, Scheduler& scheduler)
+    static Backend* createBackend (Parameters const& parameters,
+        Scheduler& scheduler, Journal journal)
     {
         Backend* backend = nullptr;
 
@@ -271,7 +274,8 @@ public:
 
             if (factory != nullptr)
             {
-                backend = factory->createInstance (NodeObject::keyBytes, parameters, scheduler);
+                backend = factory->createInstance (
+                    NodeObject::keyBytes, parameters, scheduler, journal);
             }
             else
             {
@@ -289,6 +293,8 @@ public:
     //------------------------------------------------------------------------------
 
 private:
+    Journal m_journal;
+
     Scheduler& m_scheduler;
 
     // Persistent key/value storage.
@@ -333,11 +339,12 @@ void Database::addAvailableBackends ()
 
 Database* Database::New (char const* name,
                          Scheduler& scheduler,
+                         Journal journal,
                          Parameters const& backendParameters,
                          Parameters fastBackendParameters)
 {
     return new DatabaseImp (name,
-        scheduler, backendParameters, fastBackendParameters);
+        scheduler, backendParameters, fastBackendParameters, journal);
 }
 
 }

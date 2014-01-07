@@ -121,7 +121,8 @@ String MemoryFactory::getName () const
 Backend* MemoryFactory::createInstance (
     size_t keyBytes,
     Parameters const& keyValues,
-    Scheduler& scheduler)
+    Scheduler& scheduler,
+    Journal journal)
 {
     return new MemoryFactory::BackendImp (keyBytes, keyValues, scheduler);
 }
