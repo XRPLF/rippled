@@ -371,8 +371,10 @@ template <class _CharT, class _Traits, class _Rep, class _Period>
 basic_istream<_CharT, _Traits>&
 operator>>(basic_istream<_CharT, _Traits>& __is, duration<_Rep, _Period>& __d)
 {
-    typedef basic_string<_CharT> string_type;
-    typedef durationpunct _F;
+    // These are unused and generate warnings
+    //typedef basic_string<_CharT> string_type;
+    //typedef durationpunct _F;
+
     typedef typename __duration_io_intermediate<_Rep>::type _IR;
     _IR __r;
     // read value into __r
