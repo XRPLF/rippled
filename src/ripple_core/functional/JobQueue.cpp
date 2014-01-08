@@ -114,7 +114,6 @@ public:
         m_loads [ jtCLIENT        ].setTargetLatency (2000, 5000);
         m_loads [ jtPEER          ].setTargetLatency (200, 2500);
         m_loads [ jtDISK          ].setTargetLatency (500, 1000);
-        m_loads [ jtACCEPTLEDGER  ].setTargetLatency (1000, 2500);
 
         m_loads [ jtNETOP_CLUSTER ].setTargetLatency (9999, 9999);    // once per 10 seconds
         m_loads [ jtNETOP_TIMER   ].setTargetLatency (999, 999);      // once per second
@@ -138,8 +137,24 @@ public:
         // do not add jobs to a queue with no threads
         bassert (type == jtCLIENT || m_workers.getNumberOfThreads () > 0);
 
-        // If this goes off it means that a child didn't follow the Stoppable API rules.
-        bassert (! isStopped() && ! areChildrenStopped());
+        {
+            // If this goes off it means that a child didn't follow 
+            // the Stoppable API rules. A job may only be added if:
+            //
+            //  - The JobQueue has NOT stopped 
+            //          AND
+            //      * We are currently processing jobs
+            //          OR
+            //      * We have have pending jobs
+            //          OR
+            //      * Not all children are stopped
+            //  
+            ScopedLock lock (m_mutex);
+            bassert (! isStopped() && (
+                m_processCount>0 ||
+                ! m_jobSet.empty () ||
+                ! areChildrenStopped()));
+        }
 
         // Don't even add it to the queue if we're stopping
         // and the job type is marked for skipOnStop.
@@ -576,6 +591,7 @@ private:
         case jtNETOP_CLUSTER:
         case jtNETOP_TIMER:
         case jtADMIN:
+        //case jtACCEPT:
             return true;
 
         default:
@@ -601,14 +617,12 @@ private:
         // These are not dispatched by JobQueue
         case jtPEER:
         case jtDISK:
-        case jtACCEPTLEDGER:
         case jtTXN_PROC:
         case jtOB_SETUP:
         case jtPATH_FIND:
         case jtHO_READ:
         case jtHO_WRITE:
         case jtGENERIC:
-        case jtACCEPT:
             limit = 0;
             break;
 
@@ -634,6 +648,7 @@ private:
         case jtPROPOSAL_t:
         case jtSWEEP:
         case jtADMIN:
+        case jtACCEPT:
             limit = std::numeric_limits <int>::max ();
             break;
 

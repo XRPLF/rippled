@@ -95,12 +95,14 @@ public:
         , m_rpcServiceManager (RPC::Manager::New (
             LogPartition::getJournal <RPCServiceManagerLog> ()))
 
+        , m_nodeStoreScheduler (*this)
+
         // The JobQueue has to come pretty early since
         // almost everything is a Stoppable child of the JobQueue.
         //
         , m_jobQueue (JobQueue::New (
             m_collectorManager->collector (),
-                *this, LogPartition::getJournal <JobQueueLog> ()))
+                m_nodeStoreScheduler, LogPartition::getJournal <JobQueueLog> ()))
 
         // The io_service must be a child of the JobQueue since we call addJob
         // in response to newtwork data from peers and also client requests.
@@ -132,16 +134,13 @@ public:
 #if ! RIPPLE_USE_RPC_SERVICE_MANAGER
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager) // passive object, not a Service
 #endif
-
-        , m_nodeStoreScheduler (*m_jobQueue, *m_jobQueue)
-
         , m_nodeStore (NodeStore::Database::New ("NodeStore.main", m_nodeStoreScheduler,
             LogPartition::getJournal <NodeObject> (),
                 getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
 
         , m_sntpClient (SNTPClient::New (*this))
 
-        , m_inboundLedgers (InboundLedgers::New(*m_jobQueue))
+        , m_inboundLedgers (InboundLedgers::New (*m_jobQueue))
 
         , m_txQueue (TxQueue::New ())
 
@@ -166,6 +165,9 @@ public:
 
         , mShutdown (false)
     {
+        // VFALCO HACK
+        m_nodeStoreScheduler.setJobQueue (*m_jobQueue);
+
         bassert (s_instance == nullptr);
         s_instance = this;
 
@@ -910,6 +912,7 @@ private:
     std::unique_ptr <RPC::Manager> m_rpcServiceManager;
 
     // These are Stoppable-related
+    NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr <JobQueue> m_jobQueue;
     IoServicePool m_mainIoPool;
     std::unique_ptr <SiteFiles::Manager> m_siteFiles;
@@ -922,7 +925,6 @@ private:
 #if ! RIPPLE_USE_RPC_SERVICE_MANAGER
     RPCServerHandler m_rpcServerHandler;
 #endif
-    NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr <NodeStore::Database> m_nodeStore;
     std::unique_ptr <SNTPClient> m_sntpClient;
     std::unique_ptr <InboundLedgers> m_inboundLedgers;

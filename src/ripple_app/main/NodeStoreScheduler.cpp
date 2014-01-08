@@ -17,27 +17,32 @@
 */
 //==============================================================================
 
-NodeStoreScheduler::NodeStoreScheduler (Stoppable& parent, JobQueue& jobQueue)
+NodeStoreScheduler::NodeStoreScheduler (Stoppable& parent)
     : Stoppable ("NodeStoreScheduler", parent)
-    , m_jobQueue (jobQueue)
-    , m_taskCount (1) // start it off at 1
+    , m_jobQueue (nullptr)
+    , m_taskCount (0)
 {
+}
+
+void NodeStoreScheduler::setJobQueue (JobQueue& jobQueue)
+{
+    m_jobQueue = &jobQueue;
 }
 
 void NodeStoreScheduler::onStop ()
 {
-    if (--m_taskCount == 0)
-        stopped();
 }
 
 void NodeStoreScheduler::onChildrenStopped ()
 {
+    bassert (m_taskCount == 0);
+    stopped ();
 }
 
 void NodeStoreScheduler::scheduleTask (NodeStore::Task& task)
 {
     ++m_taskCount;
-    m_jobQueue.addJob (
+    m_jobQueue->addJob (
         jtWRITE,
         "NodeObject::store",
         BIND_TYPE (&NodeStoreScheduler::doTask,

@@ -54,13 +54,12 @@ enum JobType
     // special types not dispatched by the job pool
     jtPEER          = 30,
     jtDISK          = 31,
-    jtACCEPTLEDGER  = 32,
-    jtTXN_PROC      = 33,
-    jtOB_SETUP      = 34,
-    jtPATH_FIND     = 35,
-    jtHO_READ       = 36,
-    jtHO_WRITE      = 37,
-    jtGENERIC       = 38,   // Used just to measure time
+    jtTXN_PROC      = 32,
+    jtOB_SETUP      = 33,
+    jtPATH_FIND     = 34,
+    jtHO_READ       = 35,
+    jtHO_WRITE      = 36,
+    jtGENERIC       = 37,   // Used just to measure time
 }; // CAUTION: If you add new types, add them to Job.cpp too
 
 // VFALCO TODO move this into the enum so it calculates itself?
