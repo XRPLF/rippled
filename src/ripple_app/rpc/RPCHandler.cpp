@@ -3530,10 +3530,10 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
                     || !jvSubRequest["taker_gets"].isObject ())
                 return rpcError (rpcINVALID_PARAMS);
 
-            uint160         uTakerPaysCurrencyID;
-            uint160         uTakerPaysIssuerID;
-            uint160         uTakerGetsCurrencyID;
-            uint160         uTakerGetsIssuerID;
+            RippleCurrency  uTakerPaysCurrencyID;
+            RippleIssuer    uTakerPaysIssuerID;
+            RippleCurrency  uTakerGetsCurrencyID;
+            RippleIssuer    uTakerGetsIssuerID;
             bool            bBoth           = (jvSubRequest.isMember ("both") && jvSubRequest["both"].asBool ())
                                               || (jvSubRequest.isMember ("both_sides") && jvSubRequest["both_sides"].asBool ());  // DEPRECATED
             bool            bSnapshot       = (jvSubRequest.isMember ("snapshot") && jvSubRequest["snapshot"].asBool ())

@@ -2609,6 +2609,7 @@ bool NetworkOPsImp::subBook (InfoSub::ref isrListener, RippleCurrency const& cur
     BookListeners::pointer listeners =
         getApp().getOrderBookDB ().makeBookListeners (currencyPays, currencyGets, issuerPays, issuerGets);
 
+    assert (listeners);
     if (listeners)
         listeners->addSubscriber (isrListener);
 

@@ -29,7 +29,7 @@ public:
     BookListeners ();
     void addSubscriber (InfoSub::ref sub);
     void removeSubscriber (uint64 sub);
-    void publish (Json::Value& jvObj);
+    void publish (Json::Value const& jvObj);
 
 private:
     typedef RippleRecursiveMutex LockType;
@@ -73,7 +73,7 @@ public:
             RippleIssuer const& issuerPays, RippleIssuer const& issuerGets);
 
     // see if this txn effects any orderbook
-    void processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value& jvObj);
+    void processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value const& jvObj);
 
 private:
     // by ci/ii

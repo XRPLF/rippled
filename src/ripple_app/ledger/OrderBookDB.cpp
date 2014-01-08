@@ -210,6 +210,7 @@ BookListeners::pointer OrderBookDB::makeBookListeners (RippleCurrency const& cur
         mListeners [RippleBookRef (
             RippleAssetRef (currencyPays, issuerPays),
             RippleAssetRef (currencyGets, issuerGets))] = ret;
+        assert (getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets) == ret);
     }
 
     return ret;
@@ -228,12 +229,12 @@ BookListeners::pointer OrderBookDB::getBookListeners (RippleCurrency const& curr
     if (it0 != mListeners.end ())
         ret = it0->second;
 
-    return ret;;
+    return ret;
 }
 
 // Based on the meta, send the meta to the streams that are listening
 // We need to determine which streams a given meta effects
-void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value& jvObj)
+void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value const& jvObj)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
@@ -249,6 +250,7 @@ void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, 
                 {
                     SField* field = NULL;
 
+                    // We need a field that contains the TakerGets and TakerPays parameters
                     if (node.getFName () == sfModifiedNode)
                     {
                         field = &sfPreviousFields;
@@ -313,7 +315,7 @@ void BookListeners::removeSubscriber (uint64 seq)
     mListeners.erase (seq);
 }
 
-void BookListeners::publish (Json::Value& jvObj)
+void BookListeners::publish (Json::Value const& jvObj)
 {
     Json::FastWriter jfwWriter;
     std::string sObj = jfwWriter.write (jvObj);
