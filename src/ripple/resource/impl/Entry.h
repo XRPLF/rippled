@@ -44,7 +44,7 @@ struct Entry : public List <Entry>::Node
         {
         case kindInbound:   return key->address.to_string();
         case kindOutbound:  return key->address.to_string();
-        case kindAdmin:     return key->name;
+        case kindAdmin:     return std::string ("\"") + key->name + "\"";
         default:
             bassertfalse;
         }
