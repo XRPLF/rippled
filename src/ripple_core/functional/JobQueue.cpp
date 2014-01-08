@@ -608,6 +608,7 @@ private:
         case jtHO_READ:
         case jtHO_WRITE:
         case jtGENERIC:
+        case jtACCEPT:
             limit = 0;
             break;
 
