@@ -197,9 +197,10 @@ TER RippleCalc::calcNodeAdvance (
         {
             // Got a new offer.
             sleOffer    = lesActive.entryCache (ltOFFER, uOfferIndex);
+
             if (!sleOffer)
             {
-                WriteLog (lsWARNING, RippleCalc) << "Missing offer in directory, " << uOfferIndex;
+                WriteLog (lsWARNING, RippleCalc) << "Missing offer in directory";
                 bEntryAdvance = true;
             }
             else
@@ -335,7 +336,7 @@ TER RippleCalc::calcNodeAdvance (
                 bFundsDirty     = false;
                 bEntryAdvance   = false;
             }
-       }
+        }
     }
     while (tesSUCCESS == terResult && (bEntryAdvance || bDirectAdvance));
 

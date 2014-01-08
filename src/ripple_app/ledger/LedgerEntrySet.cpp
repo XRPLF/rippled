@@ -278,11 +278,6 @@ bool LedgerEntrySet::hasChanges ()
     return false;
 }
 
-bool LedgerEntrySet::intersect (const LedgerEntrySet& lesLeft, const LedgerEntrySet& lesRight)
-{
-    return true;    // XXX Needs implementation
-}
-
 Json::Value LedgerEntrySet::getJson (int) const
 {
     Json::Value ret (Json::objectValue);
@@ -751,7 +746,7 @@ TER LedgerEntrySet::dirDelete (
     const bool                      bSoft)          // --> True, uNodeDir is not hard and fast (pass uNodeDir=0).
 {
     uint64              uNodeCur    = uNodeDir;
-    SLE::pointer        sleNode     = entryCache (ltDIR_NODE, uNodeCur ? Ledger::getDirNodeIndex (uRootIndex, uNodeCur) : uRootIndex);
+    SLE::pointer        sleNode     = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeCur));
 
     if (!sleNode)
     {
@@ -882,11 +877,11 @@ TER LedgerEntrySet::dirDelete (
         {
             // Not root and not last node. Can delete node.
 
-            SLE::pointer        slePrevious = entryCache (ltDIR_NODE, uNodePrevious ? Ledger::getDirNodeIndex (uRootIndex, uNodePrevious) : uRootIndex);
+            SLE::pointer        slePrevious = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodePrevious));
 
             assert (slePrevious);
 
-            SLE::pointer        sleNext     = entryCache (ltDIR_NODE, uNodeNext ? Ledger::getDirNodeIndex (uRootIndex, uNodeNext) : uRootIndex);
+            SLE::pointer        sleNext     = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeNext));
 
             assert (slePrevious);
             assert (sleNext);
@@ -1069,18 +1064,21 @@ void LedgerEntrySet::ownerCountAdjust (const uint160& uOwnerID, int iAmount, SLE
     }
 }
 
-TER LedgerEntrySet::offerDelete (SLE::ref sleOffer, uint256 const& uOfferIndex, const uint160& uOwnerID)
+TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
 {
-    bool    bOwnerNode  = sleOffer->isFieldPresent (sfOwnerNode);   // Detect legacy dirs.
-    uint64  uOwnerNode  = sleOffer->getFieldU64 (sfOwnerNode);
-    TER     terResult   = dirDelete (false, uOwnerNode, Ledger::getOwnerDirIndex (uOwnerID), uOfferIndex, false, !bOwnerNode);
+
+    uint256 offerIndex = sleOffer->getIndex ();
+    uint160 uOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
+    bool    bOwnerNode = sleOffer->isFieldPresent (sfOwnerNode);   // Detect legacy dirs.
+    uint64  uOwnerNode = sleOffer->getFieldU64 (sfOwnerNode);
+    uint256 uDirectory = sleOffer->getFieldH256 (sfBookDirectory);
+    uint64  uBookNode  = sleOffer->getFieldU64 (sfBookNode);
+
+    TER     terResult  = dirDelete (false, uOwnerNode, Ledger::getOwnerDirIndex (uOwnerID), offerIndex, false, !bOwnerNode);
+    TER     terResult2 = dirDelete (false, uBookNode, uDirectory, offerIndex, true, false);
+
     if (tesSUCCESS == terResult)
         ownerCountAdjust (uOwnerID, -1);
-
-    // Offer delete is always hard. Always have hints.
-    uint256     uDirectory  = sleOffer->getFieldH256 (sfBookDirectory);
-    uint64      uBookNode   = sleOffer->getFieldU64 (sfBookNode);
-    TER terResult2 = dirDelete ( false, uBookNode, uDirectory, uOfferIndex, true, false);
 
     entryDelete (sleOffer);
 
@@ -1094,8 +1092,7 @@ TER LedgerEntrySet::offerDelete (uint256 const& uOfferIndex)
     if (!sleOffer)
         return tesSUCCESS;
 
-    const uint160   uOwnerID    = sleOffer->getFieldAccount160 (sfAccount);
-    return offerDelete (sleOffer, uOfferIndex, uOwnerID);
+    return offerDelete (sleOffer);
 }
 
 // Returns amount owed by uToAccountID to uFromAccountID.

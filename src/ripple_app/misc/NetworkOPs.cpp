@@ -2782,25 +2782,9 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
     Json::Value&    jvOffers    = (jvResult["offers"] = Json::Value (Json::arrayValue));
 
     std::map<uint160, STAmount> umBalance;
-    const uint256   uBookBase   = Ledger::getBookBase (uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
-    const uint256   uBookEnd    = Ledger::getQualityNext (uBookBase);
-    uint256         uTipIndex   = uBookBase;
-
-    m_journal.trace << boost::str (boost::format ("getBookPage: uTakerPaysCurrencyID=%s uTakerPaysIssuerID=%s") % STAmount::createHumanCurrency (uTakerPaysCurrencyID) % RippleAddress::createHumanAccountID (uTakerPaysIssuerID));
-    m_journal.trace << boost::str (boost::format ("getBookPage: uTakerGetsCurrencyID=%s uTakerGetsIssuerID=%s") % STAmount::createHumanCurrency (uTakerGetsCurrencyID) % RippleAddress::createHumanAccountID (uTakerGetsIssuerID));
-    m_journal.trace << boost::str (boost::format ("getBookPage: uBookBase=%s") % uBookBase);
-    m_journal.trace << boost::str (boost::format ("getBookPage:  uBookEnd=%s") % uBookEnd);
-    m_journal.trace << boost::str (boost::format ("getBookPage: uTipIndex=%s") % uTipIndex);
 
     LedgerEntrySet  lesActive (lpLedger, tapNONE, true);
-
-    bool            bDone           = false;
-    bool            bDirectAdvance  = true;
-
-    SLE::pointer    sleOfferDir;
-    uint256         uOfferIndex;
-    unsigned int    uBookEntry;
-    STAmount        saDirRate;
+    OrderBookIterator obIterator (lesActive, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
 
     unsigned int    iLeft           = iLimit;
 
@@ -2809,146 +2793,107 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
     uint32  uTransferRate   = lesActive.rippleTransferRate (uTakerGetsIssuerID);
 
-    while (!bDone && (iLeft > 0))
+    while ((iLeft > 0) && obIterator.nextOffer ())
     {
-        if (bDirectAdvance)
+
+        SLE::pointer    sleOffer        = obIterator.getCurrentOffer();
+        if (sleOffer)
         {
-            bDirectAdvance  = false;
+            const uint160   uOfferOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
+            const STAmount& saTakerGets     = sleOffer->getFieldAmount (sfTakerGets);
+            const STAmount& saTakerPays     = sleOffer->getFieldAmount (sfTakerPays);
+            STAmount        saDirRate       = obIterator.getCurrentRate ();
+            STAmount        saOwnerFunds;
 
-            m_journal.trace << "getBookPage: bDirectAdvance";
-
-            sleOfferDir     = lesActive.entryCache (ltDIR_NODE, lpLedger->getNextLedgerIndex (uTipIndex, uBookEnd));
-
-            if (!sleOfferDir)
+            if (uTakerGetsIssuerID == uOfferOwnerID)
             {
-                m_journal.trace << "getBookPage: bDone";
-                bDone           = true;
+                // If offer is selling issuer's own IOUs, it is fully funded.
+                saOwnerFunds    = saTakerGets;
             }
             else
             {
-                uTipIndex       = sleOfferDir->getIndex ();
-                saDirRate       = STAmount::setRate (Ledger::getQuality (uTipIndex));
+                std::map<uint160, STAmount>::const_iterator umBalanceEntry  = umBalance.find (uOfferOwnerID);
 
-                lesActive.dirFirst (uTipIndex, sleOfferDir, uBookEntry, uOfferIndex);
-
-                m_journal.trace << boost::str (boost::format ("getBookPage:   uTipIndex=%s") % uTipIndex);
-                m_journal.trace << boost::str (boost::format ("getBookPage: uOfferIndex=%s") % uOfferIndex);
-            }
-        }
-
-        if (!bDone)
-        {
-            SLE::pointer    sleOffer        = lesActive.entryCache (ltOFFER, uOfferIndex);
-
-            if (sleOffer)
-            {
-                const uint160   uOfferOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
-                const STAmount& saTakerGets     = sleOffer->getFieldAmount (sfTakerGets);
-                const STAmount& saTakerPays     = sleOffer->getFieldAmount (sfTakerPays);
-                STAmount        saOwnerFunds;
-
-                if (uTakerGetsIssuerID == uOfferOwnerID)
+                if (umBalanceEntry != umBalance.end ())
                 {
-                    // If offer is selling issuer's own IOUs, it is fully funded.
-                    saOwnerFunds    = saTakerGets;
+                    // Found in running balance table.
+
+                    saOwnerFunds    = umBalanceEntry->second;
+                    // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
                 }
                 else
                 {
-                    std::map<uint160, STAmount>::const_iterator umBalanceEntry  = umBalance.find (uOfferOwnerID);
+                    // Did not find balance in table.
 
-                    if (umBalanceEntry != umBalance.end ())
+                    saOwnerFunds    = lesActive.accountHolds (uOfferOwnerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
+
+                    // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
+                    if (saOwnerFunds.isNegative ())
                     {
-                        // Found in running balance table.
+                        // Treat negative funds as zero.
 
-                        saOwnerFunds    = umBalanceEntry->second;
-                        // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
-                    }
-                    else
-                    {
-                        // Did not find balance in table.
-
-                        saOwnerFunds    = lesActive.accountHolds (uOfferOwnerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
-
-                        // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
-                        if (saOwnerFunds.isNegative ())
-                        {
-                            // Treat negative funds as zero.
-
-                            saOwnerFunds.zero ();
-                        }
+                        saOwnerFunds.zero ();
                     }
                 }
+            }
 
-                Json::Value jvOffer = sleOffer->getJson (0);
+            Json::Value jvOffer = sleOffer->getJson (0);
 
-                STAmount    saTakerGetsFunded;
-                STAmount    saOwnerFundsLimit;
-                uint32      uOfferRate;
+            STAmount    saTakerGetsFunded;
+            STAmount    saOwnerFundsLimit;
+            uint32      uOfferRate;
 
 
-                if (uTransferRate != QUALITY_ONE                // Have a tranfer fee.
-                        && uTakerID != uTakerGetsIssuerID           // Not taking offers of own IOUs.
-                        && uTakerGetsIssuerID != uOfferOwnerID)     // Offer owner not issuing ownfunds
-                {
-                    // Need to charge a transfer fee to offer owner.
-                    uOfferRate          = uTransferRate;
-                    saOwnerFundsLimit   = STAmount::divide (saOwnerFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9));
-                }
-                else
-                {
-                    uOfferRate          = QUALITY_ONE;
-                    saOwnerFundsLimit   = saOwnerFunds;
-                }
-
-                if (saOwnerFundsLimit >= saTakerGets)
-                {
-                    // Sufficient funds no shenanigans.
-                    saTakerGetsFunded   = saTakerGets;
-                }
-                else
-                {
-                    // m_journal.info << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
-                    // m_journal.info << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
-                    // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
-                    // m_journal.info << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
-                    // m_journal.info << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
-                    // m_journal.info << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
-
-                    // Only provide, if not fully funded.
-
-                    saTakerGetsFunded   = saOwnerFundsLimit;
-
-                    saTakerGetsFunded.setJson (jvOffer["taker_gets_funded"]);
-                    std::min (saTakerPays, STAmount::multiply (saTakerGetsFunded, saDirRate, saTakerPays)).setJson (jvOffer["taker_pays_funded"]);
-                }
-
-                STAmount    saOwnerPays     = (QUALITY_ONE == uOfferRate)
-                                              ? saTakerGetsFunded
-                                              : std::min (saOwnerFunds, STAmount::multiply (saTakerGetsFunded, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
-
-                umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
-
-                if (!saOwnerFunds.isZero () || uOfferOwnerID == uTakerID)
-                {
-                    // Only provide funded offers and offers of the taker.
-                    Json::Value& jvOf   = jvOffers.append (jvOffer);
-                    jvOf["quality"]     = saDirRate.getText ();
-                    --iLeft;
-                }
+            if (uTransferRate != QUALITY_ONE                // Have a tranfer fee.
+                    && uTakerID != uTakerGetsIssuerID           // Not taking offers of own IOUs.
+                    && uTakerGetsIssuerID != uOfferOwnerID)     // Offer owner not issuing ownfunds
+            {
+                // Need to charge a transfer fee to offer owner.
+                uOfferRate          = uTransferRate;
+                saOwnerFundsLimit   = STAmount::divide (saOwnerFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9));
             }
             else
             {
-                m_journal.warning << "Missing offer";
-	    }
+                uOfferRate          = QUALITY_ONE;
+                saOwnerFundsLimit   = saOwnerFunds;
+            }
 
-            if (!lesActive.dirNext (uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))
+            if (saOwnerFundsLimit >= saTakerGets)
             {
-                bDirectAdvance  = true;
+                // Sufficient funds no shenanigans.
+                saTakerGetsFunded   = saTakerGets;
             }
             else
             {
-                m_journal.trace << boost::str (boost::format ("getBookPage: uOfferIndex=%s") % uOfferIndex);
+                // m_journal.info << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
+                // m_journal.info << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
+                // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
+                // m_journal.info << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
+                // m_journal.info << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
+                // m_journal.info << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
+
+                // Only provide, if not fully funded.
+
+                saTakerGetsFunded   = saOwnerFundsLimit;
+
+                saTakerGetsFunded.setJson (jvOffer["taker_gets_funded"]);
+                std::min (saTakerPays, STAmount::multiply (saTakerGetsFunded, saDirRate, saTakerPays)).setJson (jvOffer["taker_pays_funded"]);
             }
+
+            STAmount    saOwnerPays     = (QUALITY_ONE == uOfferRate)
+                                          ? saTakerGetsFunded
+                                          : std::min (saOwnerFunds, STAmount::multiply (saTakerGetsFunded, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
+
+            umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
+
+            if (!saOwnerFunds.isZero () || uOfferOwnerID == uTakerID)
+            {
+                // Only provide funded offers and offers of the taker.
+                Json::Value& jvOf   = jvOffers.append (jvOffer);
+                jvOf["quality"]     = saDirRate.getText ();
+                --iLeft;
+            }
+
         }
     }
 

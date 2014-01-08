@@ -26,6 +26,8 @@ namespace ripple
 
 #include "ledger/LedgerEntrySet.cpp"
 #include "ledger/AcceptedLedger.cpp"
+#include "ledger/DirectoryEntryIterator.cpp"
+#include "ledger/OrderBookIterator.cpp"
 #include "consensus/DisputedTx.cpp"
 #include "misc/HashRouter.cpp"
 #include "misc/Offer.cpp"

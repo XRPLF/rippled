@@ -22,7 +22,6 @@ SETUP_LOG (OfferCreateTransactor)
 // Make sure an offer is still valid. If not, mark it unfunded.
 bool OfferCreateTransactor::bValidOffer (
     SLE::ref            sleOffer,
-    uint256 const&      uOfferIndex,
     const uint160&      uOfferOwnerID,
     const STAmount&     saOfferPays,
     const STAmount&     saOfferGets,
@@ -39,7 +38,7 @@ bool OfferCreateTransactor::bValidOffer (
         // Offer is expired. Expired offers are considered unfunded. Delete it.
         WriteLog (lsINFO, OfferCreateTransactor) << "bValidOffer: encountered expired offer";
 
-        usOfferUnfundedFound.insert (uOfferIndex);
+        usOfferUnfundedFound.insert (sleOffer->getIndex());
 
         bValid  = false;
     }
@@ -48,7 +47,7 @@ bool OfferCreateTransactor::bValidOffer (
         // Would take own offer. Consider old offer expired. Delete it.
         WriteLog (lsINFO, OfferCreateTransactor) << "bValidOffer: encountered taker's own old offer";
 
-        usOfferUnfundedFound.insert (uOfferIndex);
+        usOfferUnfundedFound.insert (sleOffer->getIndex());
 
         bValid  = false;
     }
@@ -58,7 +57,7 @@ bool OfferCreateTransactor::bValidOffer (
         WriteLog (lsWARNING, OfferCreateTransactor) << boost::str (boost::format ("bValidOffer: BAD OFFER: saOfferPays=%s saOfferGets=%s")
                 % saOfferPays % saOfferGets);
 
-        usOfferUnfundedFound.insert (uOfferIndex);
+        usOfferUnfundedFound.insert (sleOffer->getIndex());
 
         bValid = false;
     }
@@ -78,12 +77,12 @@ bool OfferCreateTransactor::bValidOffer (
             if (account != usAccountTouched.end ())
             {
                 // Previously touched account.
-                usOfferUnfundedBecame.insert (uOfferIndex); // Delete unfunded offer on success.
+                usOfferUnfundedBecame.insert (sleOffer->getIndex()); // Delete unfunded offer on success.
             }
             else
             {
                 // Never touched source account.
-                usOfferUnfundedFound.insert (uOfferIndex);  // Delete found unfunded offer when possible.
+                usOfferUnfundedFound.insert (sleOffer->getIndex());  // Delete found unfunded offer when possible.
             }
 
             bValid  = false;
@@ -130,8 +129,6 @@ TER OfferCreateTransactor::takeOffers (
     WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: bSell: " << bSell << ": against book: " << uBookBase.ToString ();
 
     LedgerEntrySet&         lesActive           = mEngine->getNodes ();
-    uint256                 uTipIndex           = uBookBase;
-    const uint256           uBookEnd            = Ledger::getQualityNext (uBookBase);
     const uint64            uTakeQuality        = STAmount::getRate (saTakerGets, saTakerPays);
     STAmount                saTakerRate         = STAmount::setRate (uTakeQuality);
     const uint160           uTakerPaysAccountID = saTakerPays.getIssuer ();
@@ -145,57 +142,35 @@ TER OfferCreateTransactor::takeOffers (
     saTakerGot      = STAmount (saTakerGets.getCurrency (), saTakerGets.getIssuer ());
     bUnfunded       = false;
 
-    while (temUNCERTAIN == terResult)
+    OrderBookIterator bookIterator (lesActive,
+        saTakerPays.getCurrency(), saTakerPays.getIssuer(),
+        saTakerGets.getCurrency(), saTakerGets.getIssuer());
+
+    while ((temUNCERTAIN == terResult) && bookIterator.nextOffer())
     {
-        SLE::pointer    sleOfferDir;
-        uint64          uTipQuality     = 0;
         STAmount        saTakerFunds    = lesActive.accountFunds (uTakerAccountID, saTakerPays);
         STAmount        saSubTakerPays  = saTakerPays - saTakerPaid; // How much more to spend.
         STAmount        saSubTakerGets  = saTakerGets - saTakerGot; // How much more is wanted.
+        uint64          uTipQuality = bookIterator.getCurrentQuality();
 
-        // Figure out next offer to take, if needed.
-        if (saTakerFunds.isPositive ()          // Taker has funds available.
-                && saSubTakerPays.isPositive ()
-                && saSubTakerGets.isPositive ())
+        if (!saTakerFunds.isPositive ())
         {
-            sleOfferDir     = mEngine->entryCache (ltDIR_NODE, lesActive.getNextLedgerIndex (uTipIndex, uBookEnd));
-
-            if (sleOfferDir)
-            {
-                uTipIndex       = sleOfferDir->getIndex ();
-                uTipQuality     = Ledger::getQuality (uTipIndex);
-
-                WriteLog (lsDEBUG, OfferCreateTransactor) << boost::str (boost::format ("takeOffers: possible counter offer found: uTipQuality=%d uTipIndex=%s")
-                        % uTipQuality
-                        % uTipIndex.ToString ());
-
-            }
-            else
-            {
-                WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: counter offer book is empty: "
-                        << uTipIndex.ToString ()
-                        << " ... "
-                        << uBookEnd.ToString ();
-            }
+            // Taker is out of funds. Don't create the offer.
+            bUnfunded = true;
+            terResult = tesSUCCESS;
         }
-
-        if (!saTakerFunds.isPositive ())                    // Taker has no funds.
+        else if (!saSubTakerPays.isPositive() || !saSubTakerGets.isPositive())
         {
-            // Done. Ran out of funds on previous round. As fees aren't calculated directly in this routine, funds are checked here.
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: done: taker unfunded.";
-
-            bUnfunded   = true;                             // Don't create an order.
-            terResult   = tesSUCCESS;
+            // Offer is completely consumed
+            terResult = tesSUCCESS;
         }
-        else if (!sleOfferDir                               // No offer directory to take.
-                 || uTakeQuality < uTipQuality                   // No offers of sufficient quality available.
+        else if ((uTakeQuality < uTipQuality)
                  || (bPassive && uTakeQuality == uTipQuality))
         {
-            // Done.
-            STAmount    saTipRate           = sleOfferDir ? STAmount::setRate (uTipQuality) : saTakerRate;
+            // Offer does not cross this offer
+            STAmount    saTipRate           = STAmount::setRate (uTipQuality);
 
-            WriteLog (lsDEBUG, OfferCreateTransactor) << boost::str (boost::format ("takeOffers: done: dir=%d uTakeQuality=%d %c uTipQuality=%d saTakerRate=%s %c saTipRate=%s bPassive=%d")
-                    % !!sleOfferDir
+            WriteLog (lsDEBUG, OfferCreateTransactor) << boost::str (boost::format ("takeOffers: done: uTakeQuality=%d %c uTipQuality=%d saTakerRate=%s %c saTipRate=%s bPassive=%d")
                     % uTakeQuality
                     % (uTakeQuality == uTipQuality
                        ? '='
@@ -216,22 +191,22 @@ TER OfferCreateTransactor::takeOffers (
         }
         else
         {
-            // Have an offer directory to consider.
-            WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: considering dir: " << sleOfferDir->getJson (0);
+            // We have a crossing offer to consider.
 
-            SLE::pointer    sleBookNode;
-            unsigned int    uBookEntry;
-            uint256         uOfferIndex;
+            SLE::pointer    sleOffer        = bookIterator.getCurrentOffer ();
 
-            lesActive.dirFirst (uTipIndex, sleBookNode, uBookEntry, uOfferIndex);
-
-            SLE::pointer    sleOffer        = mEngine->entryCache (ltOFFER, uOfferIndex);
-
-            if (sleOffer)
+            if (!sleOffer)
+            { // offer is in directory but not in ledger
+                uint256 offerIndex = bookIterator.getCurrentIndex ();
+                WriteLog (lsWARNING, OfferCreateTransactor) << "takeOffers: offer not found : " << offerIndex;
+                usMissingOffers.insert (missingOffer_t (
+                    bookIterator.getCurrentIndex (), bookIterator.getCurrentDirectory ()));
+            }
+            else
             {
                 WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: considering offer : " << sleOffer->getJson (0);
 
-                const uint160   uOfferOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
+                const uint160&  uOfferOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
                 STAmount        saOfferPays     = sleOffer->getFieldAmount (sfTakerGets);
                 STAmount        saOfferGets     = sleOffer->getFieldAmount (sfTakerPays);
 
@@ -239,7 +214,7 @@ TER OfferCreateTransactor::takeOffers (
                 bool            bValid;
 
                 bValid  =  bValidOffer (
-                               sleOffer, uOfferIndex, uOfferOwnerID, saOfferPays, saOfferGets,
+                               sleOffer, uOfferOwnerID, saOfferPays, saOfferGets,
                                uTakerAccountID,
                                usOfferUnfundedFound, usOfferUnfundedBecame, usAccountTouched,
                                saOfferFunds);
@@ -298,7 +273,7 @@ TER OfferCreateTransactor::takeOffers (
                         // Offer now fully claimed or now unfunded.
                         WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: Offer claimed: Delete.";
 
-                        usOfferUnfundedBecame.insert (uOfferIndex); // Delete unfunded offer on success.
+                        usOfferUnfundedBecame.insert (sleOffer->getIndex()); // Delete unfunded offer on success.
 
                         // Offer owner's account is no longer pristine.
                         usAccountTouched.insert (uOfferOwnerID);
@@ -370,13 +345,11 @@ TER OfferCreateTransactor::takeOffers (
                     }
                 }
             }
-            else
-            {
-                WriteLog (lsWARNING, OfferCreateTransactor) << "missing offer";
-                // WRITEME: Remove the missing offer from the directory
-            }
         }
     }
+
+    if (temUNCERTAIN == terResult)
+        terResult = tesSUCCESS;
 
     WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: " << transToken (terResult);
 
@@ -522,7 +495,7 @@ TER OfferCreateTransactor::doApply ()
         {
             WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: uCancelSequence=" << uCancelSequence;
 
-            terResult   = mEngine->getNodes ().offerDelete (sleCancel, uCancelIndex, mTxnAccountID);
+            terResult   = mEngine->getNodes ().offerDelete (sleCancel);
         }
         else
         {
@@ -627,8 +600,8 @@ TER OfferCreateTransactor::doApply ()
         lesActive.swapWith (lesCheckpoint);                                 // Restore with just fees paid.
     }
     else if (
-        !saTakerPays                                                        // Wants nothing more.
-        || !saTakerGets                                                     // Offering nothing more.
+        !saTakerPays.isPositive()                                           // Wants nothing more.
+        || !saTakerGets.isPositive()                                        // Offering nothing more.
         || bImmediateOrCancel                                               // Do not persist.
         || !lesActive.accountFunds (mTxnAccountID, saTakerGets).isPositive () // Not funded.
         || bUnfunded)                                                       // Consider unfunded.
@@ -729,6 +702,8 @@ TER OfferCreateTransactor::doApply ()
     // On storing meta data, delete offers that were found unfunded to prevent encountering them in future.
     if (tesSUCCESS == terResult)
     {
+
+        // Go through the list of unfunded offers and remove them
         BOOST_FOREACH (uint256 const & uOfferIndex, usOfferUnfundedFound)
         {
 
@@ -738,6 +713,36 @@ TER OfferCreateTransactor::doApply ()
 
             if (tesSUCCESS != terResult)
                 break;
+        }
+
+        // Go through the list of offers not found and remove them from the order book
+        BOOST_FOREACH (missingOffer_t const& indexes, usMissingOffers)
+        {
+            SLE::pointer sleDirectory = lesActive.entryCache (ltDIR_NODE, indexes.second);
+            if (sleDirectory)
+            {
+                STVector256 svIndexes = sleDirectory->getFieldV256 (sfIndexes);
+                std::vector<uint256>& vuiIndexes = svIndexes.peekValue();
+                std::vector<uint256>::iterator it = std::find (vuiIndexes.begin(), vuiIndexes.end (), indexes.first);
+                if (it != vuiIndexes.end ())
+                {
+                    vuiIndexes.erase (it);
+                    sleDirectory->setFieldV256 (sfIndexes, svIndexes);
+                    lesActive.entryModify (sleDirectory);
+                    WriteLog (lsWARNING, OfferCreateTransactor) << "takeOffers: offer " << indexes.first <<
+                        " removed from directory " << indexes.second;
+                }
+                else
+                {
+                    WriteLog (lsINFO, OfferCreateTransactor) << "takeOffers: offer " << indexes.first <<
+                        " not found in directory " << indexes.second;
+                }
+            }
+            else
+            {
+                WriteLog (lsWARNING, OfferCreateTransactor) << "takeOffers: directory " << indexes.second <<
+                    " not found for offer " << indexes.first;
+            }
         }
     }
 

@@ -182,7 +182,7 @@ public:
 
     // Offer functions.
     TER                 offerDelete (uint256 const & uOfferIndex);
-    TER                 offerDelete (SLE::ref sleOffer, uint256 const & uOfferIndex, const uint160 & uOwnerID);
+    TER                 offerDelete (SLE::pointer sleOffer);
 
     // Balance functions.
     uint32              rippleTransferRate (const uint160 & uIssuerID);
@@ -245,8 +245,6 @@ public:
     {
         return mEntries.end ();
     }
-
-    static bool intersect (const LedgerEntrySet & lesLeft, const LedgerEntrySet & lesRight);
 
 private:
     Ledger::pointer mLedger;

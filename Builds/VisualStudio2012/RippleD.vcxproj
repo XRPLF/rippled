@@ -844,6 +844,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\DirectoryEntryIterator.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ledger\Ledger.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -911,6 +917,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ledger\LedgerHistory.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\OrderBookIterator.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -2426,6 +2438,7 @@
     <ClInclude Include="..\..\src\ripple_app\data\DatabaseCon.h" />
     <ClInclude Include="..\..\src\ripple_app\data\DBInit.h" />
     <ClInclude Include="..\..\src\ripple_app\data\SqliteDatabase.h" />
+    <ClInclude Include="..\..\src\ripple_app\ledger\DirectoryEntryIterator.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\Ledger.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerCleaner.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerMaster.h" />
@@ -2439,6 +2452,7 @@
     <ClInclude Include="..\..\src\ripple_app\ledger\InboundLedgers.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerEntrySet.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\LedgerHistory.h" />
+    <ClInclude Include="..\..\src\ripple_app\ledger\OrderBookIterator.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\SerializedValidation.h" />
     <ClInclude Include="..\..\src\ripple_app\main\CollectorManager.h" />
     <ClInclude Include="..\..\src\ripple_app\main\IoServicePool.h" />

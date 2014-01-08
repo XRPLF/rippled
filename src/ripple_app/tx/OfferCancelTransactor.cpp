@@ -51,7 +51,7 @@ TER OfferCancelTransactor::doApply ()
         {
             WriteLog (lsDEBUG, OfferCancelTransactor) << "OfferCancel: uOfferSequence=" << uOfferSequence;
 
-            terResult   = mEngine->getNodes ().offerDelete (sleOffer, uOfferIndex, mTxnAccountID);
+            terResult   = mEngine->getNodes ().offerDelete (sleOffer);
         }
         else
         {
