@@ -298,8 +298,24 @@ public:
         will be nullptr and the second value will be undefined.
         The second value is a boolean indicating whether or not the path string
         specifies the wildcard character '*' as the last character.
+
+        print statement examples
+        "parent.child" prints child and all of its children
+        "parent.child." start at the parent and print down to child
+        "parent.grandchild" prints nothing- grandchild not direct discendent
+        "parent.grandchild." starts at the parent and prints down to grandchild
+        "parent.grandchild.*" starts at parent, print through grandchild children
     */
-    std::pair <Source*, bool> find (std::string const& path);
+    std::pair <Source*, bool> find (std::string path);
+
+    Source* find_one_deep (std::string const& name);
+    PropertyStream::Source* find_path(std::string path);
+    PropertyStream::Source* find_one(std::string const& name);
+
+    static bool peel_leading_slash (std::string* path);
+    static bool peel_trailing_slashstar (std::string* path);
+    static std::string peel_name(std::string* path);    
+
 
     //--------------------------------------------------------------------------
 

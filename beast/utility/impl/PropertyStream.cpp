@@ -20,6 +20,7 @@
 #include "../PropertyStream.h"
 
 #include <limits>
+#include <iostream>
 
 namespace beast {
 
@@ -235,7 +236,7 @@ void PropertyStream::Source::write (
 void PropertyStream::Source::write_one (PropertyStream& stream)
 {
     Map map (m_name, stream);
-    //onWrite (map);
+    onWrite (map);
 }
 
 void PropertyStream::Source::write (PropertyStream& stream)
@@ -266,65 +267,111 @@ void PropertyStream::Source::write (PropertyStream& stream, std::string const& p
         result.first->write_one (stream);
 }
 
-std::pair <PropertyStream::Source*, bool> PropertyStream::Source::find (std::string const& path)
+std::pair <PropertyStream::Source*, bool> PropertyStream::Source::find (std::string path)
 {
-    struct Parser
-    {
-        Parser (std::string const& path)
-            : m_first (path.begin())
-            , m_last (path.end())
-        {
-        }
-
-        std::string next ()
-        {
-            std::string::const_iterator pos (
-                std::find (m_first, m_last, '.'));
-            std::string const s (m_first, pos);
-            if (pos != m_last)
-                m_first = pos + 1;
-            else
-                m_first = pos;
-            return s;
-        }
-
-        std::string::const_iterator m_first;
-        std::string::const_iterator m_last;
-    };
-
-    if (path.empty ())
-        return std::make_pair (this, false);
-
-    Parser p (path);
+    bool const deep (peel_trailing_slashstar (&path));
+    bool const rooted (peel_leading_slash (&path));
     Source* source (this);
-    if (p.next() != this->m_name)
-        return std::make_pair (nullptr, false);
-
-    for (;;)
+    if (! path.empty())
     {
-        std::string const s (p.next());
-
-        if (s.empty())
-            return std::make_pair (source, false);
-
-        if (s == "*")
-            return std::make_pair (source, true);
-
-        SharedState::Access state (source->m_state);
-        for (List <Item>::iterator iter (state->children.begin());;)
+        if (! rooted)
         {
-            if (iter == state->children.end())
-                return std::make_pair (nullptr, false);
-
-            if (iter->source().m_name == s)
-            {
-                source = &iter->source();
-                break;
-            }
-
-            ++iter;
+            std::string const name (peel_name (&path));
+            source = find_one_deep (name);
+            if (source == nullptr)
+                return std::make_pair (nullptr, deep);
         }
+        source = source->find_path (path);
     }
+    return std::make_pair (source, deep);
+}
+
+bool PropertyStream::Source::peel_leading_slash (std::string* path)
+{
+    if (! path->empty() && path->front() == '/')
+    {
+        *path = std::string (path->begin() + 1, path->end());
+        return true;
+    }
+    return false;
+}
+
+bool PropertyStream::Source::peel_trailing_slashstar (std::string* path)
+{
+    bool found(false);
+    if (path->empty())
+        return false;
+    if (path->back() == '*')
+    {
+        found = true;
+        path->pop_back();
+    }
+    if(! path->empty() && path->back() == '/')
+        path->pop_back();
+    return found;
+}
+
+std::string PropertyStream::Source::peel_name (std::string* path)
+{
+    if (path->empty())
+        return "";
+    
+    std::string::const_iterator first = (*path).begin();
+    std::string::const_iterator last = (*path).end();
+    std::string::const_iterator pos (std::find (first, last, '/'));
+    std::string s (first, pos);
+    
+    if (pos != last)
+        *path = std::string (pos+1, last);
+    else
+        *path = std::string ();
+
+    return s;
+}
+
+// Recursive search through the whole tree until name is found
+PropertyStream::Source* PropertyStream::Source::find_one_deep (std::string const& name)
+{
+    Source* found = find_one (name);
+    if (found != nullptr)
+        return found;
+    SharedState::Access state (this->m_state);
+    for (auto iter : state->children)
+    {
+        found = iter.source().find_one_deep (name);
+        if (found != nullptr)
+            return found;
+    }
+    return nullptr;
+}
+
+PropertyStream::Source* PropertyStream::Source::find_path (std::string path)
+{
+    if (path.empty())
+        return this;
+    Source* source (this);
+    do
+    {
+        std::string const name (peel_name (&path));
+        if(name.empty ())
+            break;
+        source = source->find_one(name);
+    }
+    while (source != nullptr); 
+    return source;
+}
+
+// This function only looks at immediate children
+// If no immediate children match, then return nullptr
+PropertyStream::Source* PropertyStream::Source::find_one (std::string const& name)
+{
+    SharedState::Access state (this->m_state);
+    for (auto iter : state->children)
+    {
+        if (iter.source().m_name == name)
+            return &iter.source();
+    }
+    return nullptr;
 }
 
 void PropertyStream::Source::onWrite (Map&)
@@ -444,5 +491,208 @@ void PropertyStream::add (uint64 value)
     }
 }
 
+//------------------------------------------------------------------------------
+
+class PropertyStreamTests : public UnitTest
+{
+public:
+    typedef PropertyStream::Source Source;
+
+    void test_peel_name (std::string s, std::string const& expected,
+        std::string const& expected_remainder)
+    {
+        try
+        {
+            std::string const peeled_name = Source::peel_name (&s);
+            expect (peeled_name == expected);
+            expect (s == expected_remainder);
+        }
+        catch (...)
+        {
+            failException ();
+        }
+    }
+
+    void test_peel_leading_slash (std::string s, std::string const& expected,
+        bool should_be_found)
+    {
+        try
+        {
+            bool const found (Source::peel_leading_slash (&s));
+            expect (found == should_be_found);
+            expect (s == expected);
+        }
+        catch(...)
+        {
+            failException ();
+        }
+    }
+
+    void test_peel_trailing_slashstar (std::string s, 
+        std::string const& expected_remainder, bool should_be_found)
+    {
+        try
+        {
+            bool const found (Source::peel_trailing_slashstar (&s));
+            expect (found == should_be_found);
+            expect (s == expected_remainder);
+        }
+        catch (...)
+        {
+            failException ();
+        }  
+    }
+
+    void test_find_one (Source& root, Source* expected, std::string const& name)
+    {
+        try
+        {
+            Source* source (root.find_one (name));
+            expect (source == expected);
+        }
+        catch (...)
+        {
+            failException ();
+        }
+    }
+
+    void test_find_path (Source& root, std::string const& path,
+        Source* expected)
+    {
+        try
+        {
+            Source* source (root.find_path (path));
+            expect (source == expected);
+        }
+        catch (...)
+        {
+            failException ();
+        }
+    }
+
+    void test_find_one_deep (Source& root, std::string const& name,
+        Source* expected)
+    {
+        try
+        {
+            Source* source (root.find_one_deep (name));
+            expect (source == expected);
+        }
+        catch(...)
+        {
+            failException ();
+        }
+    }
+
+    void test_find (Source& root, std::string path, Source* expected, 
+        bool expected_star)
+    {
+        try
+        {
+            auto const result (root.find (path));
+            expect (result.first == expected);
+            expect (result.second == expected_star);
+        }
+        catch (...)
+        {
+            failException ();
+        }
+    }
+
+    void runTest()
+    {
+        Source a ("a");
+        Source b ("b");
+        Source c ("c");
+        Source d ("d");
+        Source e ("e");
+        Source f ("f");
+        Source g ("g");
+
+        //
+        // a { b { d { f }, e }, c { g } }
+        //
+
+        a.add ( b );
+        a.add ( c );
+        c.add ( g );
+        b.add ( d );
+        b.add ( e );
+        d.add ( f );
+
+        beginTestCase ("peel_name");
+        test_peel_name ("a", "a", "");
+        test_peel_name ("foo/bar", "foo", "bar");
+        test_peel_name ("foo/goo/bar", "foo", "goo/bar");
+        test_peel_name ("", "", "");
+
+        beginTestCase ("peel_leading_slash");
+        test_peel_leading_slash ("foo/", "foo/", false);
+        test_peel_leading_slash ("foo", "foo", false);
+        test_peel_leading_slash ("/foo/", "foo/", true);
+        test_peel_leading_slash ("/foo", "foo", true);
+
+        beginTestCase ("peel_trailing_slashstar");
+        test_peel_trailing_slashstar ("/foo/goo/*", "/foo/goo", true);
+        test_peel_trailing_slashstar ("foo/goo/*", "foo/goo", true);
+        test_peel_trailing_slashstar ("/foo/goo/", "/foo/goo", false);
+        test_peel_trailing_slashstar ("foo/goo", "foo/goo", false);
+        test_peel_trailing_slashstar ("", "", false);
+        test_peel_trailing_slashstar ("/", "", false);
+        test_peel_trailing_slashstar ("/*", "", true);
+        test_peel_trailing_slashstar ("//", "/", false);
+        test_peel_trailing_slashstar ("**", "*", true);
+        test_peel_trailing_slashstar ("*/", "*", false);
+
+        beginTestCase ("find_one");
+        test_find_one (a, &b, "b");
+        test_find_one (a, nullptr, "d");
+        test_find_one (b, &e, "e");
+        test_find_one (d, &f, "f");
+
+        beginTestCase ("find_path");
+        test_find_path (a, "a", nullptr); 
+        test_find_path (a, "e", nullptr); 
+        test_find_path (a, "a/b", nullptr);
+        test_find_path (a, "a/b/e", nullptr);
+        test_find_path (a, "b/e/g", nullptr);
+        test_find_path (a, "b/e/f", nullptr);
+        test_find_path (a, "b", &b);
+        test_find_path (a, "b/e", &e);
+        test_find_path (a, "b/d/f", &f);
+        
+        beginTestCase ("find_one_deep");
+        test_find_one_deep (a, "z", nullptr);
+        test_find_one_deep (a, "g", &g);
+        test_find_one_deep (a, "b", &b);
+        test_find_one_deep (a, "d", &d);
+        test_find_one_deep (a, "f", &f);
+
+        beginTestCase ("find");
+        test_find (a, "",     &a, false);
+        test_find (a, "*",    &a, true);
+        test_find (a, "/b",   &b, false);
+        test_find (a, "b",    &b, false);
+        test_find (a, "d",    &d, false);
+        test_find (a, "/b*",  &b, true);
+        test_find (a, "b*",   &b, true);
+        test_find (a, "d*",   &d, true);
+        test_find (a, "/b/*", &b, true);
+        test_find (a, "b/*",  &b, true);
+        test_find (a, "d/*",  &d, true);
+        test_find (a, "a",    nullptr, false);
+        test_find (a, "/d",   nullptr, false);
+        test_find (a, "/d*",  nullptr, true);
+        test_find (a, "/d/*", nullptr, true);
+    }
+
+    PropertyStreamTests () 
+        : UnitTest ("PropertyStream", "beast")
+    {
+    }
+};
+
+static PropertyStreamTests propertyStreamTests;
 
 }
+
