@@ -202,6 +202,7 @@
     <ClInclude Include="..\..\beast\utility\Debug.h" />
     <ClInclude Include="..\..\beast\utility\EnableIf.h" />
     <ClInclude Include="..\..\beast\utility\Error.h" />
+    <ClInclude Include="..\..\beast\utility\hash_pair.h" />
     <ClInclude Include="..\..\beast\utility\Journal.h" />
     <ClInclude Include="..\..\beast\utility\LeakChecked.h" />
     <ClInclude Include="..\..\beast\utility\PropertyStream.h" />

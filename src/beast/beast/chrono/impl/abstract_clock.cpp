@@ -27,14 +27,6 @@
 
 namespace beast {
 
-template <class CharT, class Traits, class Duration1, class Duration2>
-std::basic_ostream <CharT, Traits>& operator<< (
-    std::basic_ostream<CharT, Traits>& os, std::chrono::time_point <
-        abstract_clock <Duration1>, Duration2> const& tp)
-{
-    return os;
-}
-
 class abstract_clock_tests : public UnitTest
 {
 public:

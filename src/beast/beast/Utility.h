@@ -29,5 +29,7 @@
 #include "utility/PropertyStream.h"
 #include "utility/StaticObject.h"
 
+#include "utility/hash_pair.h"
+
 #endif
 
