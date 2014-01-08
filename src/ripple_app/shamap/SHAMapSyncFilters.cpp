@@ -17,7 +17,8 @@
 */
 //==============================================================================
 
-ConsensusTransSetSF::ConsensusTransSetSF ()
+ConsensusTransSetSF::ConsensusTransSetSF (NodeCache& nodeCache)
+    : m_nodeCache (nodeCache)
 {
 }
 
@@ -27,7 +28,7 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNode& id, uint25
     if (fromFilter)
         return;
 
-    getApp().getTempNodeCache ().store (nodeHash, nodeData);
+    m_nodeCache.insert (nodeHash, nodeData);
 
     if ((type == SHAMapTreeNode::tnTRANSACTION_NM) && (nodeData.size () > 16))
     {
@@ -53,9 +54,10 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNode& id, uint25
 bool ConsensusTransSetSF::haveNode (const SHAMapNode& id, uint256 const& nodeHash,
                                     Blob& nodeData)
 {
-    if (getApp().getTempNodeCache ().retrieve (nodeHash, nodeData))
+    if (m_nodeCache.retrieve (nodeHash, nodeData))
         return true;
 
+    // VFALCO TODO Use a dependency injection here
     Transaction::pointer txn = getApp().getMasterTransaction().fetch(nodeHash, false);
 
     if (txn)

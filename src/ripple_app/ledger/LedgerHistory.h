@@ -30,7 +30,7 @@ public:
 
     float getCacheHitRate ()
     {
-        return mLedgersByHash.getHitRate ();
+        return m_ledgers_by_hash.getHitRate ();
     }
 
     Ledger::pointer getLedgerBySeq (LedgerIndex ledgerIndex);
@@ -43,8 +43,8 @@ public:
 
     void sweep ()
     {
-        mLedgersByHash.sweep ();
-        mConsensusValidated.sweep ();
+        m_ledgers_by_hash.sweep ();
+        m_consensus_validated.sweep ();
     }
 
     void builtLedger (Ledger::ref);
@@ -53,8 +53,14 @@ public:
     bool fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
 
 private:
-    TaggedCacheType <LedgerHash, Ledger, UptimeTimerAdapter> mLedgersByHash;
-    TaggedCacheType <LedgerIndex, std::pair< LedgerHash, LedgerHash >, UptimeTimerAdapter> mConsensusValidated;
+    typedef TaggedCacheType <LedgerHash, Ledger> LedgersByHash;
+
+    LedgersByHash m_ledgers_by_hash;
+
+    //typedef std::pair <LedgerHash, LedgerHash>
+    typedef TaggedCacheType <LedgerIndex,
+        std::pair< LedgerHash, LedgerHash >> ConsensusValidated;
+    ConsensusValidated m_consensus_validated;
 
 
     // Maps ledger indexes to the corresponding hash.

@@ -2427,9 +2427,6 @@
     <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifier.h">
       <Filter>[1] Ripple\types\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\containers\BlackList.h">
-      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrackImp.h">
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClInclude>

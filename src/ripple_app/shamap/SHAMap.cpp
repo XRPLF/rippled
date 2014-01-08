@@ -59,8 +59,10 @@ SHAMap::SHAMap (SHAMapType t, uint256 const& hash,
     mTNByID.replace(*root, root);
 }
 
-TaggedCacheType< SHAMap::TNIndex, SHAMapTreeNode, UptimeTimerAdapter>
-    SHAMap::treeNodeCache ("TreeNodeCache", 65536, 60);
+TaggedCacheType< SHAMap::TNIndex, SHAMapTreeNode>
+    SHAMap::treeNodeCache ("TreeNodeCache", 65536, 60,
+        get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
+            LogPartition::getJournal <TaggedCacheLog> ());
 
 SHAMap::~SHAMap ()
 {

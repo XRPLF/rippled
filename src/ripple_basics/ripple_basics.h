@@ -30,7 +30,7 @@
 
 #include <atomic>
 
-#ifndef RIPPLE_TRACK_MUTEXES
+#ifndef  RIPPLE_TRACK_MUTEXES
 # define RIPPLE_TRACK_MUTEXES 0
 #endif
 
@@ -58,8 +58,7 @@ namespace boost
 
 #include "../ripple/types/ripple_types.h"
 
-namespace ripple
-{
+namespace ripple {
 
 using namespace beast;
 
@@ -83,10 +82,10 @@ using namespace beast;
 
 #include "containers/KeyCache.h"
 #include "containers/RangeSet.h"
-#include "containers/BlackList.h"
-#include "containers/TaggedCache.h"
 #include "containers/SyncUnorderedMap.h"
 
 }
+
+#include "containers/TaggedCache.h"
 
 #endif

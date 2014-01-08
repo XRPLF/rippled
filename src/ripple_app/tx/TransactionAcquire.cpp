@@ -150,7 +150,8 @@ void TransactionAcquire::trigger (Peer::ref peer)
     {
         std::vector<SHAMapNode> nodeIDs;
         std::vector<uint256> nodeHashes;
-        ConsensusTransSetSF sf;
+        // VFALCO TODO Use a dependency injection on the temp node cache
+        ConsensusTransSetSF sf (getApp().getTempNodeCache ());
         mMap->getMissingNodes (nodeIDs, nodeHashes, 256, &sf);
 
         if (nodeIDs.empty ())
@@ -201,7 +202,7 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNode>& nodeID
 
         std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin ();
         std::list< Blob >::const_iterator nodeDatait = data.begin ();
-        ConsensusTransSetSF sf;
+        ConsensusTransSetSF sf (getApp().getTempNodeCache ());
 
         while (nodeIDit != nodeIDs.end ())
         {

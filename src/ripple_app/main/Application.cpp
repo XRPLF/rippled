@@ -48,6 +48,9 @@ template <> char const* LogPartition::getPartitionName <ResourceManagerLog> () {
 
 template <> char const* LogPartition::getPartitionName <CollectorManager> () { return "Collector"; }
 
+struct TaggedCacheLog;
+template <> char const* LogPartition::getPartitionName <TaggedCacheLog> () { return "TaggedCache"; }
+
 //
 //------------------------------------------------------------------------------
 
@@ -73,8 +76,14 @@ public:
     ApplicationImp ()
         : RootStoppable ("Application")
         , m_journal (LogPartition::getJournal <ApplicationLog> ())
-        , m_tempNodeCache ("NodeCache", 16384, 90)
-        , m_sleCache ("LedgerEntryCache", 4096, 120)
+
+        , m_tempNodeCache ("NodeCache", 16384, 90,
+            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
+                LogPartition::getJournal <TaggedCacheLog> ())
+
+        , m_sleCache ("LedgerEntryCache", 4096, 120,
+            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
+                LogPartition::getJournal <TaggedCacheLog> ())
 
         , m_collectorManager (CollectorManager::New (
             getConfig().insightSettings,

@@ -25,6 +25,8 @@
 #ifndef RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 #define RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 
+#include <functional>
+
 namespace ripple {
 
 class uint128;
@@ -499,11 +501,8 @@ std::ostream& operator<< (std::ostream& out, const base_uint<BITS>& u)
 
 namespace std {
 
-template <typename>
-struct hash;
-
 /** Specialization for hash. */
-template<unsigned int BITS>
+template <unsigned int BITS>
 struct hash <ripple::base_uint <BITS> >
 {
 public:

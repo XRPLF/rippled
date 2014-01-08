@@ -2452,7 +2452,6 @@
     <ClInclude Include="..\..\src\ripple_app\websocket\WSConnection.h" />
     <ClInclude Include="..\..\src\ripple_app\websocket\WSDoor.h" />
     <ClInclude Include="..\..\src\ripple_app\websocket\WSServerHandler.h" />
-    <ClInclude Include="..\..\src\ripple_basics\containers\BlackList.h" />
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h" />
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h" />
     <ClInclude Include="..\..\src\ripple_basics\containers\TaggedCache.h" />

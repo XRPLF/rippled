@@ -62,18 +62,22 @@
 //
 #include "peers/PackedMessage.h"
 
-namespace ripple {
-
 // Order matters here. If you get compile errors,
 // reorder the include lines until the order is correct.
 
+namespace ripple {
 #include "data/Database.h"
 #include "data/DatabaseCon.h"
 #include "data/SqliteDatabase.h"
 #include "data/DBInit.h"
-
 #include "shamap/SHAMapItem.h"
+}
+
+// VFALCO NOTE Have to step outside the ripple namespace to
+//             get the specialization for std::hash, et. al.
 #include "shamap/SHAMapNode.h"
+
+namespace ripple {
 #include "shamap/SHAMapTreeNode.h"
 #include "shamap/SHAMapMissingNode.h"
 #include "shamap/SHAMapSyncFilter.h"
@@ -140,12 +144,11 @@ namespace ripple {
 #include "tx/AccountSetTransactor.h"
 #include "tx/TrustSetTransactor.h"
 #include "tx/WalletAddTransactor.h"
-
+// VFALCO NOTE These contracts files are bunk
 #include "contracts/ScriptData.h"
 #include "contracts/Contract.h"
 #include "contracts/Interpreter.h"
 #include "contracts/Operation.h"
-
 }
 
 #endif

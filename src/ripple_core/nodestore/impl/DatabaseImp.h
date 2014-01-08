@@ -17,8 +17,7 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace NodeStore {
 
 class DatabaseImp
     : public Database
@@ -35,7 +34,9 @@ public:
         , m_backend (createBackend (backendParameters, scheduler, journal))
         , m_fastBackend ((fastBackendParameters.size () > 0)
             ? createBackend (fastBackendParameters, scheduler, journal) : nullptr)
-        , m_cache ("NodeStore", 16384, 300)
+        , m_cache ("NodeStore", 16384, 300,
+            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
+                LogPartition::getJournal <TaggedCacheLog> ())
     {
     }
 
@@ -304,7 +305,7 @@ private:
     ScopedPointer <Backend> m_fastBackend;
 
     // VFALCO NOTE What are these things for? We need comments.
-    TaggedCacheType <uint256, NodeObject, UptimeTimerAdapter> m_cache;
+    TaggedCacheType <uint256, NodeObject> m_cache;
 };
 
 //------------------------------------------------------------------------------

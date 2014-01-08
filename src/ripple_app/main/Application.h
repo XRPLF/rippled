@@ -48,8 +48,8 @@ class LocalCredentials;
 
 class DatabaseCon;
 
-typedef TaggedCacheType <uint256, Blob , UptimeTimerAdapter> NodeCache;
-typedef TaggedCacheType <uint256, SerializedLedgerEntry, UptimeTimerAdapter> SLECache;
+typedef TaggedCacheType <uint256, Blob> NodeCache;
+typedef TaggedCacheType <uint256, SerializedLedgerEntry> SLECache;
 
 class Application : public PropertyStream::Source
 {

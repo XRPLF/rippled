@@ -50,7 +50,9 @@ public:
         , mLastCloseConvergeTime (1000 * LEDGER_IDLE_INTERVAL)
         , mLastCloseTime (0)
         , mLastValidationTime (0)
-        , mFetchPack ("FetchPack", 65536, 45)
+        , mFetchPack ("FetchPack", 65536, 45,
+            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
+                LogPartition::getJournal <TaggedCacheLog> ())
         , mFetchSeq (0)
         , mLastLoadBase (256)
         , mLastLoadFactor (256)
@@ -453,7 +455,7 @@ private:
     SubMapType                                          mSubTransactions;       // all accepted transactions
     SubMapType                                          mSubRTTransactions;     // all proposed and accepted transactions
 
-    TaggedCacheType< uint256, Blob , UptimeTimerAdapter >   mFetchPack;
+    TaggedCacheType< uint256, Blob>                     mFetchPack;
     uint32                                              mFetchSeq;
 
     uint32                                              mLastLoadBase;

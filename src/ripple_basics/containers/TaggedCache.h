@@ -17,128 +17,247 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TAGGEDCACHE_H
-#define RIPPLE_TAGGEDCACHE_H
+#ifndef RIPPLE_TAGGEDCACHE_H_INCLUDED
+#define RIPPLE_TAGGEDCACHE_H_INCLUDED
 
-// This class implements a cache and a map. The cache keeps objects alive
-// in the map. The map allows multiple code paths that reference objects
-// with the same tag to get the same actual object.
+#include <mutex>
+#include <unordered_map>
 
-// So long as data is in the cache, it will stay in memory.
-// If it stays in memory even after it is ejected from the cache,
-// the map will track it.
+namespace ripple {
 
-// CAUTION: Callers must not modify data objects that are stored in the cache
-// unless they hold their own lock over all cache operations.
-
+// VFALCO NOTE Deprecated
 struct TaggedCacheLog;
 
-// Common base
-class TaggedCache
-{
-public:
-    typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-};
+/** Map/cache combination.
+    This class implements a cache and a map. The cache keeps objects alive
+    in the map. The map allows multiple code paths that reference objects
+    with the same tag to get the same actual object.
 
-/** Combination cache/map container.
+    So long as data is in the cache, it will stay in memory.
+    If it stays in memory even after it is ejected from the cache,
+    the map will track it.
 
-    NOTE:
-
-    Timer must have this interface:
-
-    static int Timer::getElapsedSeconds ();
+    @note Callers must not modify data objects that are stored in the cache
+          unless they hold their own lock over all cache operations.
 */
-template <typename c_Key, typename c_Data, class Timer>
-class TaggedCacheType : public TaggedCache
+template <
+    class Key,
+    class T,
+    class Hash = std::hash <Key>,
+    class KeyEqual = std::equal_to <Key>,
+    //class Allocator = std::allocator <std::pair <Key const, T>>,
+    class Mutex = std::recursive_mutex
+>
+class TaggedCacheType
 {
 public:
-    typedef c_Key                           key_type;
-    typedef c_Data                          data_type;
-    typedef boost::weak_ptr<data_type>      weak_data_ptr;
-    typedef boost::shared_ptr<data_type>    data_ptr;
+    typedef Mutex mutex_type;
+    // VFALCO DEPRECATED The caller can just use std::unique_lock <type>
+    typedef std::unique_lock <mutex_type> ScopedLockType;
+    typedef std::lock_guard <mutex_type> lock_guard;
+    typedef Key key_type;
+    typedef T mapped_type;
+    // VFALCO TODO Use std::shared_ptr, std::weak_ptr
+    typedef boost::weak_ptr <mapped_type> weak_mapped_ptr;
+    typedef boost::shared_ptr <mapped_type> mapped_ptr;
+    typedef abstract_clock <std::chrono::seconds> clock_type;
 
 public:
-    typedef TaggedCache::LockType LockType;
-    typedef TaggedCache::ScopedLockType ScopedLockType;
-
-    TaggedCacheType (const char* name, int size, int age)
-        : mLock (static_cast <TaggedCache const*>(this), "TaggedCache", __FILE__, __LINE__)
-        , mName (name)
-        , mTargetSize (size)
-        , mTargetAge (age)
-        , mCacheCount (0)
-        , mHits (0)
-        , mMisses (0)
+    // VFALCO TODO Change expiration_seconds to clock_type::duration
+    TaggedCacheType (std::string const& name, int size,
+        clock_type::rep expiration_seconds, clock_type& clock, Journal journal)
+        : m_journal (journal)
+        , m_clock (clock)
+        , m_name (name)
+        , m_target_size (size)
+        , m_target_age (std::chrono::seconds (expiration_seconds))
+        , m_cache_count (0)
+        , m_hits (0)
+        , m_misses (0)
     {
     }
 
-    int getTargetSize () const;
-    int getTargetAge () const;
-
-    int getCacheSize ();
-    int getTrackSize ();
-    float getHitRate ();
-    void clearStats ();
-
-    void setTargetSize (int size);
-    void setTargetAge (int age);
-    void sweep ();
-    void clear ();
-
-    /** Refresh the expiration time on a key.
-
-        @param key The key to refresh.
-        @return `true` if the key was found and the object is cached.
-    */
-    bool refreshIfPresent (const key_type& key)
+    int getTargetSize () const
     {
-        bool found = false;
+        lock_guard lock (m_mutex);
+        return m_target_size;
+    }
 
-        // If present, make current in cache
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+    void setTargetSize (int s)
+    {
+        lock_guard lock (m_mutex);
+        m_target_size = s;
 
-        cache_iterator cit = mCache.find (key);
+        if (s > 0)
+            m_cache.rehash (static_cast<std::size_t> ((s + (s >> 2)) / m_cache.max_load_factor () + 1));
 
-        if (cit != mCache.end ())
+        if (m_journal.debug) m_journal.debug <<
+            m_name << " target size set to " << s;
+    }
+
+    clock_type::rep getTargetAge () const
+    {
+        lock_guard lock (m_mutex);
+        return m_target_age.count();
+    }
+
+    void setTargetAge (clock_type::rep s)
+    {
+        lock_guard lock (m_mutex);
+        m_target_age = std::chrono::seconds (s);
+        if (m_journal.debug) m_journal.debug <<
+            m_name << " target age set to " << m_target_age;
+    }
+
+    int getCacheSize ()
+    {
+        lock_guard lock (m_mutex);
+        return m_cache_count;
+    }
+
+    int getTrackSize ()
+    {
+        lock_guard lock (m_mutex);
+        return m_cache.size ();
+    }
+
+    float getHitRate ()
+    {
+        lock_guard lock (m_mutex);
+        return (static_cast<float> (m_hits) * 100) / (1.0f + m_hits + m_misses);
+    }
+
+    void clearStats ()
+    {
+        lock_guard lock (m_mutex);
+        m_hits = 0;
+        m_misses = 0;
+    }
+
+    void clear ()
+    {
+        lock_guard lock (m_mutex);
+        m_cache.clear ();
+        m_cache_count = 0;
+    }
+
+    void sweep ()
+    {
+        int cacheRemovals = 0;
+        int mapRemovals = 0;
+        int cc = 0;
+
+        // Keep references to all the stuff we sweep
+        // so that we can destroy them outside the lock.
+        //
+        std::vector <mapped_ptr> stuffToSweep;
+    
         {
-            cache_entry& entry = cit->second;
+            lock_guard lock (m_mutex);
 
-            if (! entry.isCached ())
+            clock_type::time_point const now (m_clock.now());
+            clock_type::time_point when_expire;
+
+            if (m_target_size == 0 ||
+                (static_cast<int> (m_cache.size ()) <= m_target_size))
             {
-                // Convert weak to strong.
-                entry.ptr = entry.lock ();
-
-                if (entry.isCached ())
-                {
-                    // We just put the object back in cache
-                    ++mCacheCount;
-                    entry.touch ();
-                    found = true;
-                }
-                else
-                {
-                    // Couldn't get strong pointer, 
-                    // object fell out of the cache so remove the entry.
-                    mCache.erase (cit);
-                }
+                when_expire = now - m_target_age;
             }
             else
             {
-                // It's cached so update the timer
-                entry.touch ();
-                found = true;
+                when_expire = now - clock_type::duration (
+                    m_target_age.count() * m_target_size / m_cache.size ());
+
+                clock_type::duration const minimumAge (
+                    std::chrono::seconds (2));
+                if (when_expire > (now - minimumAge))
+                    when_expire = now - minimumAge;
+
+                if (m_journal.trace) m_journal.trace <<
+                    m_name << " is growing fast " << m_cache.size () << " of " << m_target_size <<
+                        " aging at " << (now - when_expire) << " of " << m_target_age;
+            }
+
+            stuffToSweep.reserve (m_cache.size ());
+
+            cache_iterator cit = m_cache.begin ();
+
+            while (cit != m_cache.end ())
+            {
+                if (cit->second.isWeak ())
+                {
+                    // weak
+                    if (cit->second.isExpired ())
+                    {
+                        ++mapRemovals;
+                        cit = m_cache.erase (cit);
+                    }
+                    else
+                    {
+                        ++cit;
+                    }
+                }
+                else if (cit->second.last_access <= when_expire)
+                {
+                    // strong, expired
+                    --m_cache_count;
+                    ++cacheRemovals;
+                    if (cit->second.ptr.unique ())
+                    {
+                        stuffToSweep.push_back (cit->second.ptr);
+                        ++mapRemovals;
+                        cit = m_cache.erase (cit);
+                    }
+                    else
+                    {
+                        // remains weakly cached
+                        cit->second.ptr.reset ();
+                        ++cit;
+                    }
+                }
+                else
+                {
+                    // strong, not expired
+                    ++cc;
+                    ++cit;
+                }
             }
         }
-        else
-        {
-            // not present
-        }
 
-        return found;
+        if (m_journal.trace && (mapRemovals || cacheRemovals)) m_journal.trace <<
+            m_name << ": cache = " << m_cache.size () << "-" << cacheRemovals <<
+                ", map-=" << mapRemovals;
+
+        // At this point stuffToSweep will go out of scope outside the lock
+        // and decrement the reference count on each strong pointer.
     }
 
-    bool del (const key_type& key, bool valid);
+    bool del (const key_type& key, bool valid)
+    {
+        // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
+        lock_guard lock (m_mutex);
+
+        cache_iterator cit = m_cache.find (key);
+
+        if (cit == m_cache.end ())
+            return false;
+
+        Entry& entry = cit->second;
+
+        bool ret = false;
+
+        if (entry.isCached ())
+        {
+            --m_cache_count;
+            entry.ptr.reset ();
+            ret = true;
+        }
+
+        if (!valid || entry.isExpired ())
+            m_cache.erase (cit);
+
+        return ret;
+    }
 
     /** Replace aliased objects with originals.
 
@@ -151,368 +270,235 @@ public:
         @param data A shared pointer to the data corresponding to the object.
         @param replace `true` if `data` is the up to date version of the object.
 
-        @return `true` if the operation was successful.
+        @return `true` If the key already existed.
     */
-    bool canonicalize (const key_type& key, boost::shared_ptr<c_Data>& data, bool replace = false);
-    
-    bool store (const key_type& key, const c_Data& data);
-    boost::shared_ptr<c_Data> fetch (const key_type& key);
-    bool retrieve (const key_type& key, c_Data& data);
-
-    LockType& peekMutex ()
+    bool canonicalize (const key_type& key, boost::shared_ptr<T>& data, bool replace = false)
     {
-        return mLock;
+        // Return canonical value, store if needed, refresh in cache
+        // Return values: true=we had the data already
+        lock_guard lock (m_mutex);
+
+        cache_iterator cit = m_cache.find (key);
+
+        if (cit == m_cache.end ())
+        {
+            m_cache.insert (cache_pair (key, Entry (m_clock.now(), data)));
+            ++m_cache_count;
+            return false;
+        }
+
+        Entry& entry = cit->second;
+        entry.touch (m_clock.now());
+
+        if (entry.isCached ())
+        {
+            if (replace)
+            {
+                entry.ptr = data;
+                entry.weak_ptr = data;
+            }
+            else
+            {
+                data = entry.ptr;
+            }
+
+            return true;
+        }
+
+        mapped_ptr cachedData = entry.lock ();
+
+        if (cachedData)
+        {
+            if (replace)
+            {
+                entry.ptr = data;
+                entry.weak_ptr = data;
+            }
+            else
+            {
+                entry.ptr = cachedData;
+                data = cachedData;
+            }
+
+            ++m_cache_count;
+            return true;
+        }
+
+        entry.ptr = data;
+        entry.weak_ptr = data;
+        ++m_cache_count;
+
+        return false;
     }
 
-private:
-    class cache_entry
+    boost::shared_ptr<T> fetch (const key_type& key)
     {
-    public:
-        int             last_use;
-        data_ptr        ptr;
-        weak_data_ptr   weak_ptr;
+        // fetch us a shared pointer to the stored data object
+        lock_guard lock (m_mutex);
 
-        cache_entry (int l, const data_ptr& d) : last_use (l), ptr (d), weak_ptr (d)
+        cache_iterator cit = m_cache.find (key);
+
+        if (cit == m_cache.end ())
         {
-            ;
+            ++m_misses;
+            return mapped_ptr ();
         }
-        bool isWeak ()
+
+        Entry& entry = cit->second;
+        entry.touch (m_clock.now());
+
+        if (entry.isCached ())
         {
-            return !ptr;
+            ++m_hits;
+            return entry.ptr;
         }
-        bool isCached ()
+
+        entry.ptr = entry.lock ();
+
+        if (entry.isCached ())
         {
-            return !!ptr;
+            // independent of cache size, so not counted as a hit
+            ++m_cache_count;
+            return entry.ptr;
         }
-        bool isExpired ()
-        {
-            return weak_ptr.expired ();
-        }
-        data_ptr lock ()
-        {
-            return weak_ptr.lock ();
-        }
-        void touch ()
-        {
-            last_use = Timer::getElapsedSeconds ();
-        }
-    };
 
-    typedef std::pair<key_type, cache_entry>                cache_pair;
-    typedef boost::unordered_map<key_type, cache_entry>     cache_type;
-    typedef typename cache_type::iterator                   cache_iterator;
+        m_cache.erase (cit);
+        ++m_misses;
+        return mapped_ptr ();
+    }
 
-    mutable LockType mLock;
+    /** Insert the element into the container.
+        If the key already exists, nothing happens.
+        @return `true` If the element was inserted
+    */
+    bool insert (key_type const& key, T const& value)
+    {
+        mapped_ptr p (boost::make_shared <T> (boost::cref (value)));
+        return canonicalize (key, p);
+    }
 
-    std::string mName;          // Used for logging
-    int         mTargetSize;    // Desired number of cache entries (0 = ignore)
-    int         mTargetAge;     // Desired maximum cache age
-    int         mCacheCount;    // Number of items cached
-
-    cache_type  mCache;         // Hold strong reference to recent objects
-
-    uint64      mHits, mMisses;
-};
-
-template<typename c_Key, typename c_Data, class Timer>
-int TaggedCacheType<c_Key, c_Data, Timer>::getTargetSize () const
-{
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    return mTargetSize;
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-void TaggedCacheType<c_Key, c_Data, Timer>::setTargetSize (int s)
-{
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    mTargetSize = s;
-
-    if (s > 0)
-        mCache.rehash (static_cast<std::size_t> ((s + (s >> 2)) / mCache.max_load_factor () + 1));
-
-    WriteLog (lsDEBUG, TaggedCacheLog) << mName << " target size set to " << s;
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-int TaggedCacheType<c_Key, c_Data, Timer>::getTargetAge () const
-{
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    return mTargetAge;
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-void TaggedCacheType<c_Key, c_Data, Timer>::setTargetAge (int s)
-{
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    mTargetAge = s;
-    WriteLog (lsDEBUG, TaggedCacheLog) << mName << " target age set to " << s;
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-int TaggedCacheType<c_Key, c_Data, Timer>::getCacheSize ()
-{
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    return mCacheCount;
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-int TaggedCacheType<c_Key, c_Data, Timer>::getTrackSize ()
-{
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    return mCache.size ();
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-float TaggedCacheType<c_Key, c_Data, Timer>::getHitRate ()
-{
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    return (static_cast<float> (mHits) * 100) / (1.0f + mHits + mMisses);
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-void TaggedCacheType<c_Key, c_Data, Timer>::clearStats ()
-{
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    mHits = 0;
-    mMisses = 0;
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-void TaggedCacheType<c_Key, c_Data, Timer>::clear ()
-{
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    mCache.clear ();
-    mCacheCount = 0;
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-void TaggedCacheType<c_Key, c_Data, Timer>::sweep ()
-{
-    int cacheRemovals = 0;
-    int mapRemovals = 0;
-    int cc = 0;
-
-    // Keep references to all the stuff we sweep
-    // so that we can destroy them outside the lock.
+    // VFALCO NOTE It looks like this returns a copy of the data in
+    //             the output parameter 'data'. This could be expensive.
+    //             Perhaps it should work like standard containers, which
+    //             simply return an iterator.
     //
-    std::vector <data_ptr> stuffToSweep;
-    
+    bool retrieve (const key_type& key, T& data)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        // retrieve the value of the stored data
+        mapped_ptr entry = fetch (key);
 
-        int const now = Timer::getElapsedSeconds ();
-        int target = (now < mTargetAge) ? 0 : (now - mTargetAge);
+        if (!entry)
+            return false;
 
-        if ((mTargetSize != 0) && (static_cast<int> (mCache.size ()) > mTargetSize))
+        data = *entry;
+        return true;
+    }
+
+    /** Refresh the expiration time on a key.
+
+        @param key The key to refresh.
+        @return `true` if the key was found and the object is cached.
+    */
+    bool refreshIfPresent (const key_type& key)
+    {
+        bool found = false;
+
+        // If present, make current in cache
+        lock_guard lock (m_mutex);
+
+        cache_iterator cit = m_cache.find (key);
+
+        if (cit != m_cache.end ())
         {
-            target = now - (mTargetAge * mTargetSize / mCache.size ());
+            Entry& entry = cit->second;
 
-            if ((now > 2) && (target > (now - 2)))
-                target = now - 2;
-
-            WriteLog (lsINFO, TaggedCacheLog) << mName << " is growing fast " <<
-                                              mCache.size () << " of " << mTargetSize <<
-                                              " aging at " << (now - target) << " of " << mTargetAge;
-        }
-
-        stuffToSweep.reserve (mCache.size ());
-
-        cache_iterator cit = mCache.begin ();
-
-        while (cit != mCache.end ())
-        {
-            if (cit->second.isWeak ())
+            if (! entry.isCached ())
             {
-                // weak
-                if (cit->second.isExpired ())
+                // Convert weak to strong.
+                entry.ptr = entry.lock ();
+
+                if (entry.isCached ())
                 {
-                    ++mapRemovals;
-                    cit = mCache.erase (cit);
+                    // We just put the object back in cache
+                    ++m_cache_count;
+                    entry.touch (m_clock.now());
+                    found = true;
                 }
                 else
                 {
-                    ++cit;
-                }
-            }
-            else if (cit->second.last_use < target)
-            {
-                // strong, expired
-                --mCacheCount;
-                ++cacheRemovals;
-                if (cit->second.ptr.unique ())
-                {
-                    stuffToSweep.push_back (cit->second.ptr);
-                    ++mapRemovals;
-                    cit = mCache.erase (cit);
-                }
-                else
-                {
-                    // remains weakly cached
-                    cit->second.ptr.reset ();
-                    ++cit;
+                    // Couldn't get strong pointer, 
+                    // object fell out of the cache so remove the entry.
+                    m_cache.erase (cit);
                 }
             }
             else
             {
-                // strong, not expired
-                ++cc;
-                ++cit;
+                // It's cached so update the timer
+                entry.touch (m_clock.now());
+                found = true;
             }
         }
-    }
-
-    if (ShouldLog (lsTRACE, TaggedCacheLog) && (mapRemovals || cacheRemovals))
-    {
-        WriteLog (lsTRACE, TaggedCacheLog) << mName << ": cache = " << mCache.size () << "-" << cacheRemovals <<
-                                           ", map-=" << mapRemovals;
-    }
-
-    // At this point stuffToSweep will go out of scope outside the lock
-    // and decrement the reference count on each strong pointer.
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-bool TaggedCacheType<c_Key, c_Data, Timer>::del (const key_type& key, bool valid)
-{
-    // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-
-    cache_iterator cit = mCache.find (key);
-
-    if (cit == mCache.end ())
-        return false;
-
-    cache_entry& entry = cit->second;
-
-    bool ret = false;
-
-    if (entry.isCached ())
-    {
-        --mCacheCount;
-        entry.ptr.reset ();
-        ret = true;
-    }
-
-    if (!valid || entry.isExpired ())
-        mCache.erase (cit);
-
-    return ret;
-}
-
-// VFALCO NOTE What does it mean to canonicalize the data?
-template<typename c_Key, typename c_Data, class Timer>
-bool TaggedCacheType<c_Key, c_Data, Timer>::canonicalize (const key_type& key, boost::shared_ptr<c_Data>& data, bool replace)
-{
-    // Return canonical value, store if needed, refresh in cache
-    // Return values: true=we had the data already
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-
-    cache_iterator cit = mCache.find (key);
-
-    if (cit == mCache.end ())
-    {
-        mCache.insert (cache_pair (key, cache_entry (Timer::getElapsedSeconds (), data)));
-        ++mCacheCount;
-        return false;
-    }
-
-    cache_entry& entry = cit->second;
-    entry.touch ();
-
-    if (entry.isCached ())
-    {
-        if (replace)
-        {
-            entry.ptr = data;
-            entry.weak_ptr = data;
-        }
-        else
-            data = entry.ptr;
-
-        return true;
-    }
-
-    data_ptr cachedData = entry.lock ();
-
-    if (cachedData)
-    {
-        if (replace)
-        {
-            entry.ptr = data;
-            entry.weak_ptr = data;
-        }
         else
         {
-            entry.ptr = cachedData;
-            data = cachedData;
+            // not present
         }
 
-        ++mCacheCount;
-        return true;
+        return found;
     }
 
-    entry.ptr = data;
-    entry.weak_ptr = data;
-    ++mCacheCount;
-
-    return false;
-}
-
-template<typename c_Key, typename c_Data, class Timer>
-boost::shared_ptr<c_Data> TaggedCacheType<c_Key, c_Data, Timer>::fetch (const key_type& key)
-{
-    // fetch us a shared pointer to the stored data object
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-
-    cache_iterator cit = mCache.find (key);
-
-    if (cit == mCache.end ())
+    mutex_type& peekMutex ()
     {
-        ++mMisses;
-        return data_ptr ();
+        return m_mutex;
     }
 
-    cache_entry& entry = cit->second;
-    entry.touch ();
-
-    if (entry.isCached ())
+private:
+    class Entry
     {
-        ++mHits;
-        return entry.ptr;
-    }
+    public:
+        mapped_ptr ptr;
+        weak_mapped_ptr weak_ptr;
+        clock_type::time_point last_access;
 
-    entry.ptr = entry.lock ();
+        Entry (clock_type::time_point const& last_access_,
+            mapped_ptr const& ptr_)
+            : ptr (ptr_)
+            , weak_ptr (ptr_)
+            , last_access (last_access_)
+        {
+        }
 
-    if (entry.isCached ())
-    {
-        // independent of cache size, so not counted as a hit
-        ++mCacheCount;
-        return entry.ptr;
-    }
+        bool isWeak () const { return ptr == nullptr; }
+        bool isCached () const { return ptr != nullptr; }
+        bool isExpired () const { return weak_ptr.expired (); }
+        mapped_ptr lock () { return weak_ptr.lock (); }
+        void touch (clock_type::time_point const& now) { last_access = now; }
+    };
 
-    mCache.erase (cit);
-    ++mMisses;
-    return data_ptr ();
-}
+    typedef std::pair <key_type, Entry> cache_pair;
+    typedef std::unordered_map <key_type, Entry, Hash, KeyEqual> cache_type;
+    typedef typename cache_type::iterator cache_iterator;
 
-template<typename c_Key, typename c_Data, class Timer>
-bool TaggedCacheType<c_Key, c_Data, Timer>::store (const key_type& key, const c_Data& data)
-{
-    data_ptr d = boost::make_shared<c_Data> (boost::cref (data));
-    return canonicalize (key, d);
-}
+    Journal m_journal;
+    clock_type& m_clock;
 
-template<typename c_Key, typename c_Data, class Timer>
-bool TaggedCacheType<c_Key, c_Data, Timer>::retrieve (const key_type& key, c_Data& data)
-{
-    // retrieve the value of the stored data
-    data_ptr entry = fetch (key);
+    mutex_type mutable m_mutex;
 
-    if (!entry)
-        return false;
+    // Used for logging
+    std::string m_name;
 
-    data = *entry;
-    return true;
+    // Desired number of cache entries (0 = ignore)
+    int m_target_size;
+
+    // Desired maximum cache age
+    clock_type::duration m_target_age;
+
+    // Number of items cached
+    int m_cache_count;
+    cache_type m_cache;  // Hold strong reference to recent objects
+    uint64 m_hits;
+    uint64 m_misses;
+};
+
 }
 
 #endif
