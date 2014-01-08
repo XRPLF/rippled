@@ -141,7 +141,7 @@ public:
     virtual Transaction::pointer submitTransactionSync (Transaction::ref tpTrans,
         bool bAdmin, bool bFailHard, bool bSubmit) = 0;
     virtual void runTransactionQueue () = 0;
-    virtual Transaction::pointer processTransaction (Transaction::pointer,
+    virtual Transaction::pointer processTransactionCb (Transaction::pointer,
         bool bAdmin, bool bFailHard, stCallback) = 0;
     virtual Transaction::pointer processTransaction (Transaction::pointer transaction,
         bool bAdmin, bool bFailHard) = 0;

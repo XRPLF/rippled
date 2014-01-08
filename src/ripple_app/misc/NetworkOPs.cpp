@@ -148,10 +148,17 @@ public:
     Transaction::pointer submitTransactionSync (Transaction::ref tpTrans, bool bAdmin, bool bFailHard, bool bSubmit);
 
     void runTransactionQueue ();
-    Transaction::pointer processTransaction (Transaction::pointer, bool bAdmin, bool bFailHard, stCallback);
+    Transaction::pointer processTransactionCb (Transaction::pointer, bool bAdmin, bool bFailHard, stCallback);
     Transaction::pointer processTransaction (Transaction::pointer transaction, bool bAdmin, bool bFailHard)
     {
-        return processTransaction (transaction, bAdmin, bFailHard, stCallback ());
+        return processTransactionCb (transaction, bAdmin, bFailHard, stCallback ());
+    }
+
+    // VFALCO Workaround for MSVC std::function which doesn't swallow return types.
+    //
+    void processTransactionCbVoid (Transaction::pointer p, bool bAdmin, bool bFailHard, stCallback cb)
+    {
+        processTransactionCb (p, bAdmin, bFailHard, cb);
     }
 
     Transaction::pointer findTransactionByID (uint256 const& transactionID);
@@ -736,8 +743,9 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
         }
     }
 
-    getApp().getJobQueue().addJob (jtTRANSACTION, "submitTxn", boost::bind (&NetworkOPsImp::processTransaction, this,
-                                  boost::make_shared<Transaction> (trans, false), false, false, callback));
+    getApp().getJobQueue().addJob (jtTRANSACTION, "submitTxn",
+        std::bind (&NetworkOPsImp::processTransactionCbVoid, this,
+            boost::make_shared<Transaction> (trans, false), false, false, callback));
 }
 
 // Sterilize transaction through serialization.
@@ -860,7 +868,8 @@ void NetworkOPsImp::runTransactionQueue ()
         getApp().getIOService ().post (BIND_TYPE (&NetworkOPsImp::runTransactionQueue, this));
 }
 
-Transaction::pointer NetworkOPsImp::processTransaction (Transaction::pointer trans, bool bAdmin, bool bFailHard, stCallback callback)
+Transaction::pointer NetworkOPsImp::processTransactionCb (
+    Transaction::pointer trans, bool bAdmin, bool bFailHard, stCallback callback)
 {
     LoadEvent::autoptr ev = getApp().getJobQueue ().getLoadEventAP (jtTXN_PROC, "ProcessTXN");
 
