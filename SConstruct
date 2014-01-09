@@ -8,6 +8,7 @@ import glob
 import os
 import platform
 import re
+import sys
 
 OSX = bool(platform.mac_ver()[0])
 FreeBSD = bool('FreeBSD' == platform.system())
@@ -15,6 +16,8 @@ Linux   = bool('Linux' == platform.system())
 Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
 Debian  = bool(Linux and 'debian' == platform.linux_distribution()[0])
 Archlinux  = bool(Linux and ('','','') == platform.linux_distribution()) #Arch still has issues with the platform module
+
+USING_CLANG = OSX
 
 #
 # We expect this to be set
@@ -33,8 +36,11 @@ else:
 # scons tools
 #
 
+HONOR_ENVS = ['CC', 'CXX', 'PATH']
+
 env = Environment(
-    tools = ['default', 'protoc']
+    tools = ['default', 'protoc'],
+    ENV = dict((k, os.environ[k]) for k in HONOR_ENVS)
 )
 
 # Use a newer gcc on FreeBSD
@@ -251,10 +257,19 @@ env.Append(CXXFLAGS = ['-O1', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+D
 #
 env.Append(CXXFLAGS = ['-frtti'])
 
-if (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) == 6):
-    env.Append(CXXFLAGS = ['-std=c++0x'])
-elif (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
-    env.Append(CXXFLAGS = ['-std=c++11'])
+UBUNTU_GCC_48_INSTALL_STEPS = '''
+https://ripple.com/wiki/Ubuntu_build_instructions#Ubuntu_versions_older_than_13.10_:_Install_gcc_4.8'''
+
+if not USING_CLANG:
+    if (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) < 8):
+        print "\nrippled, using c++11, requires g++ version >= 4.8 to compile"
+
+        if Ubuntu:
+          print UBUNTU_GCC_48_INSTALL_STEPS
+
+        sys.exit(1)
+    else:
+        env.Append(CXXFLAGS = ['-std=c++11'])
 
 # FreeBSD doesn't support O_DSYNC
 if FreeBSD:
