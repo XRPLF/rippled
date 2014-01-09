@@ -413,8 +413,6 @@ public:
 
     void run ()
     {
-        m_journal.sink().console (true);
-
         boost::system::error_code ec;
 
         if (m_socket.connect (to_endpoint (m_address), ec))
