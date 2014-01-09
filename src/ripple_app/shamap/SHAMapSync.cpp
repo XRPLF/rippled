@@ -68,6 +68,10 @@ void SHAMap::visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& fu
                 }
                 else
                 {
+                    // If there are no more children, don't push this node
+                    while ((pos != 15) && (child->isEmptyBranch (pos)))
+                           ++pos;
+
                     if (pos != 15)
                         stack.push (posPair (pos + 1, node)); // save next position to resume at
                     else
@@ -92,6 +96,20 @@ void SHAMap::visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& fu
     }
 }
 
+class GMNEntry
+{
+public:
+
+    GMNEntry (SHAMapTreeNode* n, int fc, int cc, bool fb)
+        : node(n), firstChild (fc), currentChild (cc), fullBelow (fb)
+    { ; }
+
+    SHAMapTreeNode* node;
+    int             firstChild;
+    int             currentChild;
+    bool            fullBelow;
+};
+
 /** Get a list of node IDs and hashes for nodes that are part of this SHAMap but not available locally.
     The filter can hold alternate sources of nodes that are not permanently stored locally
 */
@@ -115,62 +133,77 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
         return;
     }
 
-    std::stack<SHAMapTreeNode*> stack;
-    stack.push (root.get ());
+    std::stack < GMNEntry > stack;
 
-    while (!stack.empty ())
+    SHAMapTreeNode* node = root.get ();
+    int firstChild = rand() % 256;
+    int currentChild = 0;
+    bool fullBelow = true;
+
+    do
     {
-        SHAMapTreeNode* node = stack.top ();
-        stack.pop ();
-
-        int base = rand () % 256;
-        bool have_all = true;
-
-        for (int ii = 0; ii < 16; ++ii)
+        int branch = (firstChild + ++currentChild) % 16;
+        if (!node->isEmptyBranch (branch))
         {
-            // traverse in semi-random order
-            int branch = (base + ii) % 16;
+            uint256 const& childHash = node->getChildHash (branch);
 
-            if (!node->isEmptyBranch (branch))
+            if (!fullBelowCache.isPresent (childHash))
             {
-                uint256 const& childHash = node->getChildHash (branch);
+                SHAMapNode childID = node->getChildNodeID (branch);
+                SHAMapTreeNode* d = getNodePointerNT (childID, childHash, filter);
 
-                if (!fullBelowCache.isPresent (childHash))
+                if (!d)
+                { // node is not in the database
+                    nodeIDs.push_back (childID);
+                    hashes.push_back (childHash);
+
+                    if (--max <= 0)
+                        return;
+
+                    fullBelow = false; // This node is definitely not full below
+                }
+                else if (d->isInner () && !d->isFullBelow ())
                 {
-                    SHAMapNode childID = node->getChildNodeID (branch);
-                    SHAMapTreeNode* d = getNodePointerNT (childID, childHash, filter);
+                    // If this parent node has a next child, save its place
+                    while ((currentChild < 16) && node->isEmptyBranch ((firstChild + currentChild) % 16))
+                        ++currentChild;
+                    if (currentChild < 16)
+                        stack.push (GMNEntry(node, firstChild, currentChild, fullBelow));
 
-                    if (!d)
-                    {
-                        // node is not in the database
-                        nodeIDs.push_back (childID);
-                        hashes.push_back (childHash);
-
-                        if (--max <= 0)
-                            return;
-
-                        have_all = false;
-                    }
-                    else if (d->isInner () && !d->isFullBelow ())
-                    {
-                        have_all = false;
-                        stack.push (d);
-                    }
+                    // Switch to processing the child node
+                    node = d;
+                    firstChild = rand() % 256;
+                    currentChild = 0;
+                    fullBelow = true;
                 }
             }
         }
 
-        if (have_all)
-        {
-            node->setFullBelow ();
-            if (mType == smtSTATE)
-            {
-                fullBelowCache.add (node->getNodeHash ());
-                if (getConfig().NODE_SIZE <= 3)
-                    dropBelow(node);
+        if (currentChild == 16)
+        { // We are done with this inner node (and thus all of its children)
+
+            if (fullBelow)
+            { // No partial node encountered below this node
+                node->setFullBelow ();
+                if (mType == smtSTATE)
+                    fullBelowCache.add (node->getNodeHash ());
+            }
+
+            if (stack.empty ())
+                node = NULL; // Finished processing the last node, we are done
+            else
+            { // Pick up where we left off (above this node)
+                GMNEntry& next = stack.top ();
+                node = next.node;
+                firstChild = next.firstChild;
+                currentChild = next.currentChild;
+                fullBelow = (fullBelow && next.fullBelow); // was and still is
+                stack.pop ();
             }
         }
+
     }
+    while (node != NULL);
 
     if (nodeIDs.empty ())
         clearSynching ();
@@ -377,7 +410,7 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
 
             if (iNode->getChildHash (branch) != newNode->getNodeHash ())
             {
-                WriteLog (lsWARNING, SHAMap) << "Corrupt node recevied";
+                WriteLog (lsWARNING, SHAMap) << "Corrupt node received";
                 return SHAMapAddNode::invalid ();
             }
 
