@@ -3,8 +3,18 @@ compiler:
   - gcc
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq libboost1.48-all-dev protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
-script: scons && npm install && npm test
+  - sudo apt-get install -qq python-software-properties
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo add-apt-repository -y ppa:boost-latest/ppa
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq libboost1.54-all-dev protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
+  - sudo apt-get install -qq gcc-4.8
+  - sudo apt-get install -qq g++-4.8
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
+  - sudo update-alternatives --set gcc /usr/bin/gcc-4.8
+  - g++ -v
+
+script: scons && ./build/rippled --unittest && npm install && npm test
 notifications:
   email:
     false
