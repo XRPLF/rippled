@@ -83,6 +83,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\beast\Arithmetic.h" />
     <ClInclude Include="..\..\beast\Asio.h" />
+    <ClInclude Include="..\..\beast\asio\io_latency_probe.h" />
     <ClInclude Include="..\..\beast\asio\IPAddressConversion.h" />
     <ClInclude Include="..\..\beast\Atomic.h" />
     <ClInclude Include="..\..\beast\Boost.h" />

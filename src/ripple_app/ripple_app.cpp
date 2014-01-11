@@ -41,6 +41,7 @@
 #include "../ripple/validators/ripple_validators.h"
 
 #include "beast/beast/Asio.h"
+#include "beast/beast/asio/io_latency_probe.h"
 
 # include "main/CollectorManager.h"
 #include "main/CollectorManager.cpp"

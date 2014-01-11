@@ -63,15 +63,108 @@ class ApplicationImp
     , public DeadlineTimer::Listener
     , public LeakChecked <ApplicationImp>
 {
-private:
+public:
+    Journal m_journal;
+    Application::LockType m_masterMutex;
+
+    // These are not Stoppable-derived
+    NodeCache m_tempNodeCache;
+    SLECache m_sleCache;
+    LocalCredentials m_localCredentials;
+    TransactionMaster m_txMaster;
+
+    std::unique_ptr <CollectorManager> m_collectorManager;
+    std::unique_ptr <Resource::Manager> m_resourceManager;
+    std::unique_ptr <RPC::Manager> m_rpcServiceManager;
+
+    // These are Stoppable-related
+    NodeStoreScheduler m_nodeStoreScheduler;
+    std::unique_ptr <JobQueue> m_jobQueue;
+    IoServicePool m_mainIoPool;
+    std::unique_ptr <SiteFiles::Manager> m_siteFiles;
+    // VFALCO TODO Make OrderBookDB abstract
+    OrderBookDB m_orderBookDB;
+    std::unique_ptr <PathRequests> m_pathRequests;
+    std::unique_ptr <LedgerMaster> m_ledgerMaster;
+    std::unique_ptr <NetworkOPs> m_networkOPs;
+    std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
+    std::unique_ptr <RPCHTTPServer> m_rpcHTTPServer;
+#if ! RIPPLE_USE_RPC_SERVICE_MANAGER
+    RPCServerHandler m_rpcServerHandler;
+#endif
+    std::unique_ptr <NodeStore::Database> m_nodeStore;
+    std::unique_ptr <SNTPClient> m_sntpClient;
+    std::unique_ptr <InboundLedgers> m_inboundLedgers;
+    std::unique_ptr <TxQueue> m_txQueue;
+    std::unique_ptr <Validators::Manager> m_validators;
+    std::unique_ptr <IFeatures> mFeatures;
+    std::unique_ptr <IFeeVote> mFeeVote;
+    std::unique_ptr <LoadFeeTrack> mFeeTrack;
+    std::unique_ptr <IHashRouter> mHashRouter;
+    std::unique_ptr <Validations> mValidations;
+    std::unique_ptr <ProofOfWorkFactory> mProofOfWorkFactory;
+    std::unique_ptr <LoadManager> m_loadManager;
+    DeadlineTimer m_sweepTimer;
+    bool volatile mShutdown;
+
+    std::unique_ptr <DatabaseCon> mRpcDB;
+    std::unique_ptr <DatabaseCon> mTxnDB;
+    std::unique_ptr <DatabaseCon> mLedgerDB;
+    std::unique_ptr <DatabaseCon> mWalletDB;
+
+    std::unique_ptr <SSLContext> m_peerSSLContext;
+    std::unique_ptr <SSLContext> m_wsSSLContext;
+    std::unique_ptr <Peers> m_peers;
+    OwnedArray <PeerDoor>  m_peerDoors;
+    std::unique_ptr <RPCDoor>  m_rpcDoor;
+    std::unique_ptr <WSDoor> m_wsPublicDoor;
+    std::unique_ptr <WSDoor> m_wsPrivateDoor;
+    std::unique_ptr <WSDoor> m_wsProxyDoor;
+
+    WaitableEvent m_stop;
+
+    io_latency_probe <std::chrono::steady_clock> m_probe;
+
     static ApplicationImp* s_instance;
 
-public:
     static Application& getInstance ()
     {
         bassert (s_instance != nullptr);
         return *s_instance;
     }
+
+    //--------------------------------------------------------------------------
+
+    class sample_io_service_latency
+    {
+    public:
+        insight::Event latency;
+        Journal journal;
+
+        sample_io_service_latency (insight::Event latency_,
+            Journal journal_)
+            : latency (latency_)
+            , journal (journal_)
+        {
+        }
+
+        template <class Duration>
+        void operator() (Duration const& elapsed) const
+        {
+            auto ms (std::chrono::duration_cast <
+                std::chrono::milliseconds> (elapsed));
+            latency.notify (ms.count());
+            if (ms.count() >= 500)
+                journal.warning <<
+                    "io_service latency = " << ms;
+
+#if 0
+            std::stringstream ss;
+            ss << "io_service latency = " << ms;
+            Logger::outputDebugString (ss.str());
+#endif
+        }
+    };
 
     //--------------------------------------------------------------------------
 
@@ -169,6 +262,8 @@ public:
         , m_sweepTimer (this)
 
         , mShutdown (false)
+
+        , m_probe (std::chrono::milliseconds (100), m_mainIoPool.getService())
     {
         // VFALCO HACK
         m_nodeStoreScheduler.setJobQueue (*m_jobQueue);
@@ -180,6 +275,11 @@ public:
 
         // VFALCO TODO remove these once the call is thread safe.
         HashMaps::getInstance ().initializeNonce <size_t> ();
+
+        m_probe.sample (sample_io_service_latency (
+            m_collectorManager->collector()->make_event (
+                "ios_latency"), LogPartition::getJournal <ApplicationLog> ()));
+
     }
 
     ~ApplicationImp ()
@@ -189,7 +289,7 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    
+
     CollectorManager& getCollectorManager ()
     {
         return *m_collectorManager;
@@ -734,6 +834,16 @@ public:
     {
         m_journal.debug << "Application stopping";
 
+        m_probe.cancel_async ();
+
+        // VFALCO Enormous hack, we have to force the probe to cancel
+        //        before we stop the io_service queue or else it never
+        //        unblocks in its destructor. The fix is to make all
+        //        io_objects gracefully handle exit so that we can
+        //        naturally return from io_service::run() instead of
+        //        forcing a call to io_service::stop()
+        m_probe.cancel ();
+
         m_sweepTimer.cancel();
 
         // VFALCO TODO get rid of this flag
@@ -906,66 +1016,6 @@ private:
     bool loadOldLedger (const std::string&, bool);
 
     void onAnnounceAddress ();
-
-private:
-    Journal m_journal;
-    Application::LockType m_masterMutex;
-
-    // These are not Stoppable-derived
-    NodeCache m_tempNodeCache;
-    SLECache m_sleCache;
-    LocalCredentials m_localCredentials;
-    TransactionMaster m_txMaster;
-
-    std::unique_ptr <CollectorManager> m_collectorManager;
-    std::unique_ptr <Resource::Manager> m_resourceManager;
-    std::unique_ptr <RPC::Manager> m_rpcServiceManager;
-
-    // These are Stoppable-related
-    NodeStoreScheduler m_nodeStoreScheduler;
-    std::unique_ptr <JobQueue> m_jobQueue;
-    IoServicePool m_mainIoPool;
-    std::unique_ptr <SiteFiles::Manager> m_siteFiles;
-    // VFALCO TODO Make OrderBookDB abstract
-    OrderBookDB m_orderBookDB;
-    std::unique_ptr <PathRequests> m_pathRequests;
-    std::unique_ptr <LedgerMaster> m_ledgerMaster;
-    std::unique_ptr <NetworkOPs> m_networkOPs;
-    std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
-    std::unique_ptr <RPCHTTPServer> m_rpcHTTPServer;
-#if ! RIPPLE_USE_RPC_SERVICE_MANAGER
-    RPCServerHandler m_rpcServerHandler;
-#endif
-    std::unique_ptr <NodeStore::Database> m_nodeStore;
-    std::unique_ptr <SNTPClient> m_sntpClient;
-    std::unique_ptr <InboundLedgers> m_inboundLedgers;
-    std::unique_ptr <TxQueue> m_txQueue;
-    std::unique_ptr <Validators::Manager> m_validators;
-    std::unique_ptr <IFeatures> mFeatures;
-    std::unique_ptr <IFeeVote> mFeeVote;
-    std::unique_ptr <LoadFeeTrack> mFeeTrack;
-    std::unique_ptr <IHashRouter> mHashRouter;
-    std::unique_ptr <Validations> mValidations;
-    std::unique_ptr <ProofOfWorkFactory> mProofOfWorkFactory;
-    std::unique_ptr <LoadManager> m_loadManager;
-    DeadlineTimer m_sweepTimer;
-    bool volatile mShutdown;
-
-    std::unique_ptr <DatabaseCon> mRpcDB;
-    std::unique_ptr <DatabaseCon> mTxnDB;
-    std::unique_ptr <DatabaseCon> mLedgerDB;
-    std::unique_ptr <DatabaseCon> mWalletDB;
-
-    std::unique_ptr <SSLContext> m_peerSSLContext;
-    std::unique_ptr <SSLContext> m_wsSSLContext;
-    std::unique_ptr <Peers> m_peers;
-    OwnedArray <PeerDoor>  m_peerDoors;
-    std::unique_ptr <RPCDoor>  m_rpcDoor;
-    std::unique_ptr <WSDoor> m_wsPublicDoor;
-    std::unique_ptr <WSDoor> m_wsPrivateDoor;
-    std::unique_ptr <WSDoor> m_wsProxyDoor;
-
-    WaitableEvent m_stop;
 };
 
 //------------------------------------------------------------------------------

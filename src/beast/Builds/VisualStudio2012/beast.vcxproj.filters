@@ -1242,6 +1242,9 @@
     <ClInclude Include="..\..\beast\utility\hash_pair.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\asio\io_latency_probe.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
