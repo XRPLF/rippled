@@ -789,20 +789,17 @@ public:
 
         std::vector< boost::weak_ptr<Peer> >& set = mPeerData[hashSet];
         BOOST_FOREACH (boost::weak_ptr<Peer>& iit, set)
-
-        if (iit.lock () == peer)
-            return false;
-
+            if (iit.lock () == peer)
+                return false;
         set.push_back (peer);
+
         boost::unordered_map<uint256
             , TransactionAcquire::pointer>::iterator acq 
             = mAcquiring.find (hashSet);
 
         if (acq != mAcquiring.end ())
-        {   // make sure it doesn't go away
-            TransactionAcquire::pointer ta = acq->second; 
-            ta->peerHas (peer);
-        }
+            getApp().getJobQueue().addJob(jtTXN_DATA, "peerHasTxnData",
+                std::bind(&TransactionAcquire::peerHas, acq->second, peer));
 
         return true;
     }

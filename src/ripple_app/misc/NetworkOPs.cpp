@@ -1563,7 +1563,7 @@ SHAMapAddNode NetworkOPsImp::gotTXData (const boost::shared_ptr<Peer>& peer, uin
 
 bool NetworkOPsImp::hasTXSet (const boost::shared_ptr<Peer>& peer, uint256 const& set, protocol::TxSetStatus status)
 {
-    if (!haveConsensusObject ())
+    if (mConsensus == nullptr)
     {
         m_journal.info << "Peer has TX set, not during consensus";
         return false;
