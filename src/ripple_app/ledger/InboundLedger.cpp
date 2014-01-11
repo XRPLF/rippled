@@ -147,7 +147,8 @@ bool InboundLedger::tryLocal ()
         if (mLedger->getAccountHash ().isZero ())
         {
             WriteLog (lsFATAL, InboundLedger) << "We are acquiring a ledger with a zero account hash";
-            mHaveState = true;
+            mFailed = true;
+            return true;
         }
         else
         {
