@@ -36,6 +36,58 @@ RPCHandler::RPCHandler (NetworkOPs* netOps, InfoSub::pointer infoSub)
 {
 }
 
+class LegacyPathFind
+{
+public:
+
+    LegacyPathFind (bool isAdmin) : m_isOkay (false)
+    {
+        if (isAdmin)
+            ++inProgress;
+        else
+        {
+            if ((getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 50) ||
+                    getApp().getFeeTrack().isLoadedLocal ())
+            return;
+
+            do
+            {
+                int prevVal = inProgress.load();
+                if (prevVal >= maxInProgress)
+                    return;
+
+                if (inProgress.compare_exchange_strong (prevVal, prevVal + 1,
+                    std::memory_order_release, std::memory_order_relaxed))
+                break;
+            }
+            while (1);
+        }
+
+        m_isOkay = true;
+    }
+
+    ~LegacyPathFind ()
+    {
+        if (m_isOkay)
+            --inProgress;
+    }
+
+    bool isOkay ()
+    {
+        return m_isOkay;
+    }
+
+private:
+    static std::atomic <int> inProgress;
+    static int maxInProgress;
+
+    bool m_isOkay;
+};
+
+std::atomic <int> LegacyPathFind::inProgress (0);
+int LegacyPathFind::maxInProgress (2);
+
+
 Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh)
 {
     if (getApp().getFeeTrack().isLoadedCluster() && (mRole != Config::ADMIN))
@@ -167,6 +219,10 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
             }
 
             {
+                LegacyPathFind lpf (mRole == Config::ADMIN);
+                if (!lpf.isOkay ())
+                    return rpcError (rpcTOO_BUSY);
+
                 bool bValid;
                 RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lSnapshot);
                 Pathfinder pf (cache, raSrcAddressID, dstAccountID,
@@ -1473,13 +1529,10 @@ Json::Value RPCHandler::doPathFind (Json::Value params, Resource::Charge& loadTy
 // This interface is deprecated.
 Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-    int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
-
-    if (jc > 200)
-    {
-        WriteLog (lsDEBUG, RPCHandler) << "Too busy for RPF: " << jc;
+    LegacyPathFind lpf (mRole == Config::ADMIN);
+    if (!lpf.isOkay ())
         return rpcError (rpcTOO_BUSY);
-    }
+
     loadType = Resource::feeHighBurdenRPC;
 
     RippleAddress   raSrc;
@@ -1627,7 +1680,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
             int level = getConfig().PATH_SEARCH_OLD;
             if ((getConfig().PATH_SEARCH_MAX > level) && !getApp().getFeeTrack().isLoadedLocal())
                 ++level;
-	    STPath extraPath;
+            STPath extraPath;
             if (!bValid || !pf.findPaths (level, 4, spsComputed, extraPath))
             {
                 WriteLog (lsWARNING, RPCHandler) << "ripple_path_find: No paths found.";
