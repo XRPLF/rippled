@@ -238,13 +238,16 @@ public:
     std::list<fetchPackEntry_t> getFetchPack (SHAMap * have, bool includeLeaves, int max);
     void getFetchPack (SHAMap * have, bool includeLeaves, int max, std::function<void (const uint256&, const Blob&)>);
 
+    // VFALCO NOTE These static members should be moved into a
+    //             new Application singleton class.
+    //
     // tree node cache operations
     static SHAMapTreeNode::pointer getCache (uint256 const& hash, SHAMapNode const& id);
     static void canonicalize (uint256 const& hash, SHAMapTreeNode::pointer&);
 
     static int getFullBelowSize ()
     {
-        return fullBelowCache.getSize ();
+        return fullBelowCache.size ();
     }
     static int getTreeNodeSize ()
     {

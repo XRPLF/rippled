@@ -80,12 +80,12 @@ using namespace beast;
 #include "utility/Time.h"
 #include "utility/UptimeTimer.h"
 
-#include "containers/KeyCache.h"
 #include "containers/RangeSet.h"
 #include "containers/SyncUnorderedMap.h"
 
 }
 
+#include "containers/KeyCache.h"
 #include "containers/TaggedCache.h"
 
 #endif

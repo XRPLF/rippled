@@ -40,12 +40,13 @@ struct TaggedCacheLog;
     @note Callers must not modify data objects that are stored in the cache
           unless they hold their own lock over all cache operations.
 */
+// VFALCO TODO Figure out how to pass through the allocator
 template <
     class Key,
     class T,
     class Hash = std::hash <Key>,
     class KeyEqual = std::equal_to <Key>,
-    //class Allocator = std::allocator <std::pair <Key const, T>>,
+    //class Allocator = std::allocator <std::pair <Key const, Entry>>,
     class Mutex = std::recursive_mutex
 >
 class TaggedCacheType
@@ -153,10 +154,10 @@ public:
         std::vector <mapped_ptr> stuffToSweep;
     
         {
-            lock_guard lock (m_mutex);
-
             clock_type::time_point const now (m_clock.now());
             clock_type::time_point when_expire;
+
+            lock_guard lock (m_mutex);
 
             if (m_target_size == 0 ||
                 (static_cast<int> (m_cache.size ()) <= m_target_size))
@@ -169,7 +170,7 @@ public:
                     m_target_age.count() * m_target_size / m_cache.size ());
 
                 clock_type::duration const minimumAge (
-                    std::chrono::seconds (2));
+                    std::chrono::seconds (1));
                 if (when_expire > (now - minimumAge))
                     when_expire = now - minimumAge;
 

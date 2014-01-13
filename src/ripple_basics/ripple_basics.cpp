@@ -45,6 +45,7 @@
 
 namespace ripple {
 
+#include "containers/KeyCache.cpp"
 #include "containers/RangeSet.cpp"
 #include "containers/TaggedCache.cpp"
 

@@ -1416,6 +1416,9 @@
     <ClCompile Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.cpp">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\containers\KeyCache.cpp">
+      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">

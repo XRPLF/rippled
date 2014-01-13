@@ -32,11 +32,6 @@ original object.
 class TaggedCacheTests : public UnitTest
 {
 public:
-    TaggedCacheTests () : UnitTest (
-        "TaggedCache", "ripple")
-    {
-    }
-
     void runTest ()
     {
         //Journal const j (journal());
@@ -146,6 +141,11 @@ public:
             expect (c.getCacheSize() == 0);
             expect (c.getTrackSize() == 0);
         }
+    }
+
+    TaggedCacheTests () : UnitTest (
+        "TaggedCache", "ripple")
+    {
     }
 };
 

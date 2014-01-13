@@ -20,189 +20,186 @@
 #ifndef RIPPLE_KEYCACHE_H_INCLUDED
 #define RIPPLE_KEYCACHE_H_INCLUDED
 
-// This tag is for helping track the locks
-struct KeyCacheBase { };
+#include "beast/beast/chrono/abstract_clock.h"
+
+#include <mutex>
+#include <unordered_map>
+
+namespace ripple {
 
 /** Maintains a cache of keys with no associated data.
 
     The cache has a target size and an expiration time. When cached items become
     older than the maximum age they are eligible for removal during a
     call to @ref sweep.
-
-    @note
-        Timer must provide this function:
-        @code
-        static int getElapsedSeconds ();
-        @endcode
 */
-template <class Key, class Timer>
-class KeyCache : public KeyCacheBase
+// VFALCO TODO Figure out how to pass through the allocator
+template <
+    class Key,
+    class Hash = std::hash <Key>,
+    class KeyEqual = std::equal_to <Key>,
+    //class Allocator = std::allocator <std::pair <Key const, Entry>>,
+    class Mutex = std::mutex
+>
+class KeyCache
 {
 public:
-    /** Provides a type for the key.
-    */
     typedef Key key_type;
+    typedef abstract_clock <std::chrono::seconds> clock_type;
+
+private:
+    struct Entry
+    {
+        explicit Entry (clock_type::time_point const& last_access_)
+            : last_access (last_access_)
+        {
+        }
+
+        clock_type::time_point last_access;
+    };
+
+    typedef std::unordered_map <key_type, Entry> map_type;
+    typedef typename map_type::iterator iterator;
+    typedef std::lock_guard <Mutex> lock_guard;
+    
+    Mutex mutable m_mutex;
+    map_type m_map;
+    clock_type& m_clock;
+    std::string const m_name;
+    unsigned int m_target_size;
+    clock_type::duration m_target_age;
+
+public:
+    typedef typename map_type::size_type size_type;
 
     /** Construct with the specified name.
 
         @param size The initial target size.
         @param age  The initial expiration time.
     */
-    KeyCache (const std::string& name,
-              int size = 0,
-              int age = 120)
-        : mLock (static_cast <KeyCacheBase*> (this), String ("KeyCache") +
-            "('" + name + "')", __FILE__, __LINE__)
-        , mName (name)
-        , mTargetSize (size)
-        , mTargetAge (age)
+    KeyCache (std::string const& name,
+        clock_type& clock, size_type target_size = 0,
+            clock_type::rep expiration_seconds = 120)
+        : m_clock (clock)
+        , m_name (name)
+        , m_target_size (target_size)
+        , m_target_age (std::chrono::seconds (expiration_seconds))
     {
-        assert ((size >= 0) && (age > 2));
+        assert (m_target_size >= 0);
     }
 
-    /** Returns the current size.
-    */
-    unsigned int getSize ()
+    //--------------------------------------------------------------------------
+
+    /** Retrieve the name of this object. */
+    std::string const& name () const
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        return mCache.size ();
+        return m_name;
     }
 
-    /** Returns the desired target size.
-    */
-    unsigned int getTargetSize ()
+    /** Returns the number of items in the container. */
+    size_type size () const
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        return mTargetSize;
+        lock_guard lock (m_mutex);
+        return m_map.size ();
     }
 
-    /** Returns the desired target age.
-    */
-    unsigned int getTargetAge ()
+    /** Empty the cache */
+    void clear ()
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        return mTargetAge;
+        lock_guard lock (m_mutex);
+        m_map.clear ();
     }
 
-    /** Simultaneously set the target size and age.
-
-        @param size The target size.
-        @param age  The target age.
+    /** Returns `true` if the key was found.
+        Does not update the last access time.
     */
-    void setTargets (int size, int age)
+    template <class KeyComparable>
+    bool exists (KeyComparable const& key) const
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        mTargetSize = size;
-        mTargetAge = age;
-        assert ((mTargetSize >= 0) && (mTargetAge > 2));
+        lock_guard lock (m_mutex);
+        typename map_type::const_iterator const iter (m_map.find (key));
+        return iter != m_map.end ();
     }
 
-    /** Retrieve the name of this object.
+    /** Insert the specified key.
+        The last access time is refreshed in all cases.
+        @return `true` If the key was newly inserted.
     */
-    std::string const& getName ()
+    bool insert (Key const& key)
     {
-        return mName;
-    }
-
-    /** Determine if the specified key is cached, and optionally refresh it.
-
-        @param key     The key to check
-        @param refresh Whether or not to refresh the entry.
-        @return        `true` if the key was found.
-    */
-    bool isPresent (const key_type& key, bool refresh = true)
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-
-        map_iterator it = mCache.find (key);
-
-        if (it == mCache.end ())
+        lock_guard lock (m_mutex);
+        clock_type::time_point const now (m_clock.now ());
+        std::pair <iterator, bool> result (m_map.emplace (
+            std::piecewise_construct, std::make_tuple (key),
+                std::make_tuple (now)));
+        if (! result.second)
+        {
+            result.first->second.last_access = now;
             return false;
+        }
+        return true;
+    }
 
-        if (refresh)
-            it->second = Timer::getElapsedSeconds ();
-
+    /** Refresh the last access time on a key if present.
+        @return `true` If the key was found.
+    */
+    template <class KeyComparable>
+    bool touch_if_exists (KeyComparable const& key)
+    {
+        lock_guard lock (m_mutex);
+        iterator const iter (m_map.find (key));
+        if (iter == m_map.end ())
+            return false;
+        iter->second.last_access = m_clock.now ();
         return true;
     }
 
     /** Remove the specified cache entry.
-
         @param key The key to remove.
-        @return    `false` if the key was not found.
+        @return `false` If the key was not found.
     */
-    bool del (const key_type& key)
+    bool erase (key_type const& key)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-
-        map_iterator it = mCache.find (key);
-
-        if (it == mCache.end ())
-            return false;
-
-        mCache.erase (it);
-        return true;
+        lock_guard lock (m_mutex);
+        return m_map.erase (key) > 0;
     }
 
-    /** Add the specified cache entry.
-
-        @param key The key to add.
-        @return    `true` if the key did not previously exist.
-    */
-    bool add (const key_type& key)
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-
-        map_iterator it = mCache.find (key);
-
-        if (it != mCache.end ())
-        {
-            it->second = Timer::getElapsedSeconds ();
-            return false;
-        }
-
-        mCache.insert (std::make_pair (key, Timer::getElapsedSeconds ()));
-        return true;
-    }
-
-    /** Empty the cache
-    */
-    void clear ()
-    {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
-        mCache.clear ();
-    }
-
-    /** Remove stale entries from the cache.
-    */
+    /** Remove stale entries from the cache. */
     void sweep ()
     {
-        int now = Timer::getElapsedSeconds ();
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        clock_type::time_point const now (m_clock.now ());
+        clock_type::time_point when_expire;
 
-        int target;
+        lock_guard lock (m_mutex);
 
-        if ((mTargetSize == 0) || (mCache.size () <= mTargetSize))
-            target = now - mTargetAge;
+        if (m_target_size == 0 ||
+            (m_map.size () <= m_target_size))
+        {
+            when_expire = now - m_target_age;
+        }
         else
         {
-            target = now - (mTargetAge * mTargetSize / mCache.size ());
+            when_expire = now - clock_type::duration (
+                m_target_age.count() * m_target_size / m_map.size ());
 
-            if (target > (now - 2))
-                target = now - 2;
+            clock_type::duration const minimumAge (
+                std::chrono::seconds (1));
+            if (when_expire > (now - minimumAge))
+                when_expire = now - minimumAge;
         }
 
-        map_iterator it = mCache.begin ();
+        iterator it = m_map.begin ();
 
-        while (it != mCache.end ())
+        while (it != m_map.end ())
         {
-            if (it->second > now)
+            if (it->second.last_access > now)
             {
-                it->second = now;
+                it->second.last_access = now;
                 ++it;
             }
-            else if (it->second < target)
+            else if (it->second.last_access <= when_expire)
             {
-                it = mCache.erase (it);
+                it = m_map.erase (it);
             }
             else
             {
@@ -210,21 +207,8 @@ public:
             }
         }
     }
-
-protected:
-    /** Provides a type for the underlying map. */
-    typedef boost::unordered_map<key_type, int> map_type;
-    /** The type of the iterator used for traversals. */
-    typedef typename map_type::iterator         map_iterator;
-
-    typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-    LockType mLock;
-
-    std::string const   mName;
-
-    map_type            mCache;
-    unsigned int        mTargetSize, mTargetAge;
 };
+
+}
 
 #endif

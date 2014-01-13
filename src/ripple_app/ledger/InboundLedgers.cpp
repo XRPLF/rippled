@@ -31,8 +31,9 @@ public:
     explicit InboundLedgersImp (Stoppable& parent)
         : Stoppable ("InboundLedgers", parent)
         , mLock (this, "InboundLedger", __FILE__, __LINE__)
-        , mRecentFailures ("LedgerAcquireRecentFailures", 0,
-                    kReacquireIntervalSeconds)
+        , mRecentFailures ("LedgerAcquireRecentFailures",
+            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
+                0, kReacquireIntervalSeconds)
     {
     }
 
@@ -225,12 +226,12 @@ public:
 
     void logFailure (uint256 const& h)
     {
-        mRecentFailures.add (h);
+        mRecentFailures.insert (h);
     }
 
     bool isFailure (uint256 const& h)
     {
-        return mRecentFailures.isPresent (h, false);
+        return mRecentFailures.exists (h);
     }
 
     void doLedgerData (Job&, LedgerHash hash)

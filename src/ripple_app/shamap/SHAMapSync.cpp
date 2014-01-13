@@ -21,7 +21,10 @@
 
 static const uint256 uZero;
 
-KeyCache <uint256, UptimeTimerAdapter> SHAMap::fullBelowCache ("fullBelowCache", 524288, 240);
+KeyCache <uint256, UptimeTimerAdapter> SHAMap::fullBelowCache (
+    "fullBelowCache",
+        get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
+            524288, 240);
 
 void SHAMap::visitLeaves (std::function<void (SHAMapItem::ref item)> function)
 {
@@ -149,7 +152,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
             {
                 uint256 const& childHash = node->getChildHash (branch);
 
-                if (!fullBelowCache.isPresent (childHash))
+                if (! fullBelowCache.touch_if_exists (childHash))
                 {
                     SHAMapNode childID = node->getChildNodeID (branch);
                     SHAMapTreeNode* d = getNodePointerNT (childID, childHash, filter);
@@ -184,7 +187,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
         { // No partial node encountered below this node
             node->setFullBelow ();
             if (mType == smtSTATE)
-                fullBelowCache.add (node->getNodeHash ());
+                fullBelowCache.insert (node->getNodeHash ());
         }
 
         if (stack.empty ())
@@ -394,7 +397,7 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
             return SHAMapAddNode::invalid ();
         }
 
-        if (fullBelowCache.isPresent (iNode->getChildHash (branch)))
+        if (fullBelowCache.touch_if_exists (iNode->getChildHash (branch)))
             return SHAMapAddNode::duplicate ();
 
         SHAMapTreeNode *nextNode = getNodePointerNT (iNode->getChildNodeID (branch), iNode->getChildHash (branch), filter);
