@@ -142,64 +142,61 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
 
     do
     {
-        int branch = (firstChild + ++currentChild) % 16;
-        if (!node->isEmptyBranch (branch))
+        while (currentChild < 16)
         {
-            uint256 const& childHash = node->getChildHash (branch);
-
-            if (!fullBelowCache.isPresent (childHash))
+            int branch = (firstChild + ++currentChild) % 16;
+            if (!node->isEmptyBranch (branch))
             {
-                SHAMapNode childID = node->getChildNodeID (branch);
-                SHAMapTreeNode* d = getNodePointerNT (childID, childHash, filter);
+                uint256 const& childHash = node->getChildHash (branch);
 
-                if (!d)
-                { // node is not in the database
-                    nodeIDs.push_back (childID);
-                    hashes.push_back (childHash);
-
-                    if (--max <= 0)
-                        return;
-
-                    fullBelow = false; // This node is definitely not full below
-                }
-                else if (d->isInner () && !d->isFullBelow ())
+                if (!fullBelowCache.isPresent (childHash))
                 {
-                    // If this parent node has a next child, save its place
-                    while ((currentChild < 16) && node->isEmptyBranch ((firstChild + currentChild) % 16))
-                        ++currentChild;
-                    if (currentChild < 16)
-                        stack.push (GMNEntry(node, firstChild, currentChild, fullBelow));
+                    SHAMapNode childID = node->getChildNodeID (branch);
+                    SHAMapTreeNode* d = getNodePointerNT (childID, childHash, filter);
 
-                    // Switch to processing the child node
-                    node = d;
-                    firstChild = rand() % 256;
-                    currentChild = 0;
-                    fullBelow = true;
+                    if (!d)
+                    { // node is not in the database
+                        nodeIDs.push_back (childID);
+                        hashes.push_back (childHash);
+
+                        if (--max <= 0)
+                            return;
+
+                        fullBelow = false; // This node is definitely not full below
+                    }
+                    else if (d->isInner () && !d->isFullBelow ())
+                    {
+                        stack.push (GMNEntry( node, firstChild, currentChild, fullBelow));
+
+                        // Switch to processing the child node
+                        node = d;
+                        firstChild = rand() % 256;
+                        currentChild = 0;
+                        fullBelow = true;
+                    }
                 }
             }
         }
 
-        if (currentChild == 16)
-        { // We are done with this inner node (and thus all of its children)
+        // We are done with this inner node (and thus all of its children)
 
-            if (fullBelow)
-            { // No partial node encountered below this node
-                node->setFullBelow ();
-                if (mType == smtSTATE)
-                    fullBelowCache.add (node->getNodeHash ());
-            }
+        if (fullBelow)
+        { // No partial node encountered below this node
+            node->setFullBelow ();
+            if (mType == smtSTATE)
+                fullBelowCache.add (node->getNodeHash ());
+        }
 
-            if (stack.empty ())
-                node = NULL; // Finished processing the last node, we are done
-            else
-            { // Pick up where we left off (above this node)
-                GMNEntry& next = stack.top ();
-                node = next.node;
-                firstChild = next.firstChild;
-                currentChild = next.currentChild;
-                fullBelow = (fullBelow && next.fullBelow); // was and still is
-                stack.pop ();
-            }
+        if (stack.empty ())
+            node = NULL; // Finished processing the last node, we are done
+        else
+        { // Pick up where we left off (above this node)
+            GMNEntry& next = stack.top ();
+            node = next.node;
+            firstChild = next.firstChild;
+            currentChild = next.currentChild;
+            fullBelow = (fullBelow && next.fullBelow); // was and still is
+            stack.pop ();
         }
 
     }
