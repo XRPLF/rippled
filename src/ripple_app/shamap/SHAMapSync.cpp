@@ -239,13 +239,19 @@ bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& node
     }
 
     int count;
+    bool skipNode = false;
     do
     {
 
-        Serializer s;
-        node->addRaw (s, snfWIRE);
-        nodeIDs.push_back(*node);
-        rawNodes.push_back (s.peekData ());
+        if (skipNode)
+            skipNode = false;
+        else
+        {
+            Serializer s;
+            node->addRaw (s, snfWIRE);
+            nodeIDs.push_back(*node);
+            rawNodes.push_back (s.peekData ());
+        }
 
         if ((!fatRoot && node->isRoot ()) || node->isLeaf ()) // don't get a fat root, can't get a fat leaf
             return true;
@@ -264,6 +270,7 @@ bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& node
                     nextNode->addRaw (s, snfWIRE);
                     nodeIDs.push_back (*nextNode);
                     rawNodes.push_back (s.peekData ());
+                    skipNode = true; // Don't add this node again if we loop
                 }
             }
 
