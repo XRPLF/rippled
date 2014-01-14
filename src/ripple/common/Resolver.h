@@ -32,8 +32,8 @@ namespace ripple {
 class Resolver
 {
 public:
-    typedef boost::function <
-        void (std::string, 
+    typedef std::function <
+        void (std::string,
             std::vector <beast::IPAddress>) >
         HandlerType;
 
@@ -45,7 +45,10 @@ public:
     /** Issue a synchronous stop request. */
     virtual void stop () = 0;
 
-    /** resolve all hostnames on the list 
+    /** Issue a synchronous start request. */
+    virtual void start () = 0;
+
+    /** resolve all hostnames on the list
         @param names the names to be resolved
         @param handler the handler to call
     */

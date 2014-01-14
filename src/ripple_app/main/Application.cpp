@@ -850,6 +850,8 @@ public:
         m_probe.sample (sample_io_service_latency (
             m_collectorManager->collector()->make_event (
                 "ios_latency"), LogPartition::getJournal <ApplicationLog> ()));
+
+        m_resolver->start ();
     }
 
     // Called to indicate shutdown.
@@ -867,9 +869,14 @@ public:
         //        forcing a call to io_service::stop()
         m_probe.cancel ();
 
-        m_resolver->stop();
+        m_resolver->stop_async ();
 
-        m_sweepTimer.cancel();
+        // NIKB This is a hack - we need to wait for the resolver to
+        //      stop. before we stop the io_server_queue or weird
+        //      things will happen.
+        m_resolver->stop ();
+
+        m_sweepTimer.cancel ();
 
         // VFALCO TODO get rid of this flag
         mShutdown = true;
