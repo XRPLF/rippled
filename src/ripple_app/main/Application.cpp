@@ -265,6 +265,21 @@ public:
 
         , m_probe (std::chrono::milliseconds (100), m_mainIoPool.getService())
     {
+        //
+        // VFALCO - READ THIS!
+        //
+        //  Do not start threads, open sockets, or do any sort of "real work"
+        //  inside the constructor. Put it in onStart instead. Or if you must,
+        //  put it in setup (but everything in setup should be moved to onStart
+        //  anyway.
+        //
+        //  The reason is that the unit tests require the Application object to
+        //  be created (since so much code calls getApp()). But we don't actually
+        //  start all the threads, sockets, and services when running the unit
+        //  tests. Therefore anything which needs to be stopped will not get
+        //  stopped correctly if it is started in this constructor.
+        //
+
         // VFALCO HACK
         m_nodeStoreScheduler.setJobQueue (*m_jobQueue);
 
@@ -275,11 +290,6 @@ public:
 
         // VFALCO TODO remove these once the call is thread safe.
         HashMaps::getInstance ().initializeNonce <size_t> ();
-
-        m_probe.sample (sample_io_service_latency (
-            m_collectorManager->collector()->make_event (
-                "ios_latency"), LogPartition::getJournal <ApplicationLog> ()));
-
     }
 
     ~ApplicationImp ()
@@ -827,6 +837,10 @@ public:
         m_journal.debug << "Application starting";
 
         m_sweepTimer.setExpiration (10);
+
+        m_probe.sample (sample_io_service_latency (
+            m_collectorManager->collector()->make_event (
+                "ios_latency"), LogPartition::getJournal <ApplicationLog> ()));
     }
 
     // Called to indicate shutdown.
