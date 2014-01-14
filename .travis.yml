@@ -14,7 +14,7 @@ before_install:
   - sudo update-alternatives --set gcc /usr/bin/gcc-4.8
   - g++ -v
 
-script: scons && ./build/rippled --unittest && npm install && npm test
+script: scons && ./build/rippled --unittest=ripple && npm install && npm test
 notifications:
   email:
     false
