@@ -27,10 +27,12 @@
 */
 class LedgerConsensus
 {
-public:    
+public:   
     static shared_ptr <LedgerConsensus> New(
         LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
         uint32 closeTime);
+
+    virtual ~LedgerConsensus () = 0;
 
     virtual int startup () = 0;
 

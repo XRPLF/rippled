@@ -220,9 +220,6 @@ std::istream& operator>> (std::istream& is,
 
 namespace std {
 
-template <typename>
-struct hash;
-
 /** Specialization for hash. */
 template <class Traits>
 struct hash <ripple::IdentifierType <Traits> >
@@ -253,9 +250,6 @@ private:
 };
 
 //------------------------------------------------------------------------------
-
-template <typename>
-struct equal_to;
 
 /** Specialization for equal_to. */
 template <class Traits>

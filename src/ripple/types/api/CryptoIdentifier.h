@@ -127,6 +127,9 @@ public:
     }
 };
 
+template <std::size_t Size, uint8 Token, bool Checked> 
+    typename CryptoIdentifier <Size, Token, Checked>::size_type
+    const CryptoIdentifier <Size, Token, Checked>::size;
 }
 
 #endif

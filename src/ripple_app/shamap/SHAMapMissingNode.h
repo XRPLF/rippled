@@ -27,6 +27,8 @@ enum SHAMapType
     smtFREE         = 3,    // A tree not part of a ledger
 };
 
+namespace ripple {
+
 class SHAMapMissingNode : public std::runtime_error
 {
 public:
@@ -94,5 +96,7 @@ private:
 };
 
 extern std::ostream& operator<< (std::ostream&, SHAMapMissingNode const&);
+
+}
 
 #endif

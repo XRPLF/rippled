@@ -437,10 +437,11 @@ public:
         }
     };
 
-    static int const callsPerThread = 10000;
+    static std::size_t const totalCalls = 10000;
 
     void testThreads (std::size_t n)
     {
+        std::size_t const callsPerThread (totalCalls / n);
         beginTestCase (String::fromNumber (n) + " threads");
         ServiceQueue service (n);
         std::vector <ScopedPointer <ServiceThread> > threads;

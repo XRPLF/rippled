@@ -1906,6 +1906,10 @@ private:
 
 //------------------------------------------------------------------------------
 
+LedgerConsensus::~LedgerConsensus ()
+{
+}
+
 boost::shared_ptr <LedgerConsensus> LedgerConsensus::New(LedgerHash const & prevLCLHash, 
     Ledger::ref previousLedger, uint32 closeTime)
 {

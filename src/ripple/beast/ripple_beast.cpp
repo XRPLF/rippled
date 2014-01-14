@@ -27,11 +27,7 @@
 
 // Include this to get all the basic includes included, to prevent errors
 #include "../beast/modules/beast_core/beast_core.h"
-
-// Mac builds use ripple_beastobjc.mm
-#ifndef BEAST_MAC
-# include "../beast/modules/beast_core/beast_core.cpp"
-#endif
+#include "../beast/modules/beast_core/beast_core.cpp"
 
 #include "../beast/modules/beast_asio/beast_asio.cpp"
 #include "../beast/modules/beast_sqdb/beast_sqdb.cpp"

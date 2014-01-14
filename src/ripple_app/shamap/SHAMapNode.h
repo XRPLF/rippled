@@ -135,6 +135,7 @@ inline std::ostream& operator<< (std::ostream& out, const SHAMapNode& node)
 
 //------------------------------------------------------------------------------
 
+/*
 namespace std {
 
 template <>
@@ -147,9 +148,11 @@ struct hash <ripple::SHAMapNode>
 };
 
 }
+*/
 
 //------------------------------------------------------------------------------
 
+/*
 namespace boost {
 
 template <>
@@ -158,5 +161,6 @@ struct hash <ripple::SHAMapNode> : std::hash <ripple::SHAMapNode>
 };
 
 }
+*/
 
 #endif

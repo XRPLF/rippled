@@ -29,6 +29,8 @@ enum SHANodeFormat
     snfHASH     = 3, // just the hash
 };
 
+namespace ripple {
+
 class SHAMapTreeNode
     : public SHAMapNode
     , public CountedObject <SHAMapTreeNode>
@@ -182,5 +184,7 @@ private:
 
     bool updateHash ();
 };
+
+}
 
 #endif

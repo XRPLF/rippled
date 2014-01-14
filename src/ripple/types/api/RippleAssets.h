@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TYPES_RIPPLEASSETS_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEASSETS_H_INCLUDED
 
+#include <functional>
 #include <type_traits>
 
 namespace ripple {

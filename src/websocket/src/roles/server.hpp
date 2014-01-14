@@ -55,7 +55,7 @@ namespace websocketpp {
 
 typedef boost::asio::buffers_iterator<boost::asio::streambuf::const_buffers_type> bufIterator;
 
-static std::pair<bufIterator, bool> match_header(boost::shared_ptr<std::string> string,
+static inline std::pair<bufIterator, bool> match_header(boost::shared_ptr<std::string> string,
 	bufIterator nBegin, bufIterator nEnd)
 {
 	if (nBegin == nEnd)

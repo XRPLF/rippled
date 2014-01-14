@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SHAMAPADDNODE_H
 #define RIPPLE_SHAMAPADDNODE_H
 
+namespace ripple {
+
 // results of adding nodes
 class SHAMapAddNode
 {
@@ -130,5 +132,7 @@ private:
     int mBad;
     int mDuplicate;
 };
+
+}
 
 #endif

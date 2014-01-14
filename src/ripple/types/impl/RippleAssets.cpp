@@ -28,6 +28,16 @@
 # define STL_SET_HAS_EMPLACE 0
 #endif
 
+#ifndef RIPPLE_ASSETS_ENABLE_STD_HASH
+# if BEAST_MAC || BEAST_IOS
+#  define RIPPLE_ASSETS_ENABLE_STD_HASH 0
+# else
+#  define RIPPLE_ASSETS_ENABLE_STD_HASH 1
+# endif
+#endif
+
+
+
 namespace ripple {
 
 class RippleAssetTests : public UnitTest
@@ -50,7 +60,7 @@ public:
         expect (u3 >= u2);
         expect (u3 >  u2);
 
-        std::hash <Unsigned> const hash;
+        std::hash <Unsigned> hash;
 
         expect (hash (u1) == hash (u1));
         expect (hash (u2) == hash (u2));
@@ -87,7 +97,7 @@ public:
         expect (Asset (c1, i3) >= Asset (c1, i2));
         expect (Asset (c1, i3) >  Asset (c1, i2));
 
-        std::hash <Asset> const hash;
+        std::hash <Asset> hash;
 
         expect (hash (Asset (c1, i1)) == hash (Asset (c1, i1)));
         expect (hash (Asset (c1, i2)) == hash (Asset (c1, i2)));
@@ -201,11 +211,13 @@ public:
         beginTestCase ("std::set <RippleAssetRef>");
         testAssetSet <std::set <RippleAssetRef>> ();
 
+#if RIPPLE_ASSETS_ENABLE_STD_HASH
         beginTestCase ("std::unordered_set <RippleAsset>");
         testAssetSet <std::unordered_set <RippleAsset>> ();
 
         beginTestCase ("std::unordered_set <RippleAssetRef>");
         testAssetSet <std::unordered_set <RippleAssetRef>> ();
+#endif
 
         beginTestCase ("boost::unordered_set <RippleAsset>");
         testAssetSet <boost::unordered_set <RippleAsset>> ();
@@ -216,12 +228,13 @@ public:
 
     void testAssetMaps ()
     {
-            beginTestCase ("std::map <RippleAsset, int>");
+        beginTestCase ("std::map <RippleAsset, int>");
         testAssetMap <std::map <RippleAsset, int>> ();
 
         beginTestCase ("std::map <RippleAssetRef, int>");
         testAssetMap <std::map <RippleAssetRef, int>> ();
 
+#if RIPPLE_ASSETS_ENABLE_STD_HASH
         beginTestCase ("std::unordered_map <RippleAsset, int>");
         testAssetMap <std::unordered_map <RippleAsset, int>> ();
 
@@ -233,6 +246,8 @@ public:
 
         beginTestCase ("boost::unordered_map <RippleAssetRef, int>");
         testAssetMap <boost::unordered_map <RippleAssetRef, int>> ();
+
+#endif        
     }
 
     //--------------------------------------------------------------------------
@@ -259,7 +274,7 @@ public:
         expect (Book (a3, a4) >= Book (a2, a3));
         expect (Book (a3, a4) >  Book (a2, a3));
 
-        std::hash <Book> const hash;
+        std::hash <Book> hash;
 
         expect (hash (Book (a1, a2)) == hash (Book (a1, a2)));
         expect (hash (Book (a1, a3)) == hash (Book (a1, a3)));
@@ -381,11 +396,13 @@ public:
         beginTestCase ("std::set <RippleBookRef>");
         testBookSet <std::set <RippleBookRef>> ();
 
+#if RIPPLE_ASSETS_ENABLE_STD_HASH
         beginTestCase ("std::unordered_set <RippleBook>");
         testBookSet <std::unordered_set <RippleBook>> ();
 
         beginTestCase ("std::unordered_set <RippleBookRef>");
         testBookSet <std::unordered_set <RippleBookRef>> ();
+#endif
 
         beginTestCase ("boost::unordered_set <RippleBook>");
         testBookSet <boost::unordered_set <RippleBook>> ();
@@ -402,6 +419,7 @@ public:
         beginTestCase ("std::map <RippleBookRef, int>");
         testBookMap <std::map <RippleBookRef, int>> ();
 
+#if RIPPLE_ASSETS_ENABLE_STD_HASH
         beginTestCase ("std::unordered_map <RippleBook, int>");
         testBookMap <std::unordered_map <RippleBook, int>> ();
 
@@ -413,6 +431,7 @@ public:
 
         beginTestCase ("boost::unordered_map <RippleBookRef, int>");
         testBookMap <boost::unordered_map <RippleBookRef, int>> ();
+#endif
     }
 
     //--------------------------------------------------------------------------

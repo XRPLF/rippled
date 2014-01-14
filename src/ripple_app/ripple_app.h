@@ -24,6 +24,7 @@
 #include <sys/resource.h>
 #endif
 
+
 //------------------------------------------------------------------------------
 
 // VFALCO TODO Reduce these boost dependencies. Make more interfaces
@@ -76,13 +77,13 @@ namespace ripple {
 // VFALCO NOTE Have to step outside the ripple namespace to
 //             get the specialization for std::hash, et. al.
 #include "shamap/SHAMapNode.h"
-
-namespace ripple {
 #include "shamap/SHAMapTreeNode.h"
 #include "shamap/SHAMapMissingNode.h"
 #include "shamap/SHAMapSyncFilter.h"
 #include "shamap/SHAMapAddNode.h"
 #include "shamap/SHAMap.h"
+
+namespace ripple {
 #include "misc/SerializedTransaction.h"
 #include "misc/SerializedLedger.h"
 #include "tx/TransactionMeta.h"

@@ -531,9 +531,6 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <typename>
-struct equal_to;
-
 /** Specialization for equal_to. */
 template <unsigned int BITS>
 struct equal_to <ripple::base_uint <BITS> >

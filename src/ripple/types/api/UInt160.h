@@ -194,9 +194,6 @@ extern std::size_t hash_value (const uint160&);
 
 namespace std {
 
-template <class>
-struct hash;
-
 template <>
 struct hash <ripple::uint160> : ripple::uint160::hasher
 {
@@ -209,9 +206,6 @@ struct hash <ripple::uint160> : ripple::uint160::hasher
 //------------------------------------------------------------------------------
 
 namespace boost {
-
-template <class>
-struct hash;
 
 template <>
 struct hash <ripple::uint160> : ripple::uint160::hasher

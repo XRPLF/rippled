@@ -29,6 +29,30 @@ enum SHAMapState
     smsInvalid = 4,         // Map is known not to be valid (usually synching a corrupt ledger)
 };
 
+namespace std {
+
+template <>
+struct hash <ripple::SHAMapNode>
+{
+    std::size_t operator() (ripple::SHAMapNode const& value) const
+    {
+        return value.getMHash ();
+    }
+};
+
+}
+
+namespace boost {
+
+template <>
+struct hash <ripple::SHAMapNode> : std::hash <ripple::SHAMapNode>
+{
+};
+
+}
+
+namespace ripple {
+
 class SHAMap
     : public CountedObject <SHAMap>
 {
@@ -289,5 +313,7 @@ private:
     SHAMapType mType;
     MissingNodeHandler m_missing_node_handler;
 };
+
+}
 
 #endif

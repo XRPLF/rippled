@@ -22,6 +22,8 @@
 
 /** Callback for filtering SHAMap during sync.
 */
+namespace ripple {
+
 class SHAMapSyncFilter
 {
 public:
@@ -38,5 +40,7 @@ public:
                            uint256 const& nodeHash,
                            Blob& nodeData) = 0;
 };
+
+}
 
 #endif

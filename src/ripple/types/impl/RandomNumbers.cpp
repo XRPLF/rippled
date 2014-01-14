@@ -29,7 +29,7 @@
 # include <windows.h>
 # include <wincrypt.h>
 #endif
-#if BEAST_LINUX || BEAST_BSD
+#if BEAST_LINUX || BEAST_BSD || BEAST_MAC || BEAST_IOS
 # include <sys/time.h>
 #else
 # include <time.h>
