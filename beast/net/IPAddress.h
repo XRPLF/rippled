@@ -26,16 +26,6 @@
     
 #include "../CStdInt.h"
 
-namespace std {
-
-template <typename T>
-struct hash;
-
-//template <>
-//struct hash <beast::IPAddress>;
-
-}
-
 //------------------------------------------------------------------------------
 
 namespace beast {
@@ -399,9 +389,6 @@ inline bool IPAddress::EqualWithoutPort::operator() (
 //------------------------------------------------------------------------------
 
 namespace std {
-
-template <typename T>
-struct hash;
 
 template <>
 struct hash <beast::IPAddress>

@@ -130,9 +130,6 @@ extern std::size_t hash_value (beast::URL const& url);
 
 namespace std {
 
-template <typename T>
-struct hash;
-
 template <>
 struct hash <beast::URL>
 {
