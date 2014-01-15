@@ -101,7 +101,7 @@ const char* Job::toString (JobType t)
     switch (t)
     {
     case jtINVALID:         return "invalid";
-    case jtPACK:            return "makeFetchPack";
+    case jtPACK:            return "peerLedgerReq";
     case jtPUBOLDLEDGER:    return "publishAcqLedger";
     case jtVALIDATION_ut:   return "untrustedValidation";
     case jtPROOFWORK:       return "proofOfWork";

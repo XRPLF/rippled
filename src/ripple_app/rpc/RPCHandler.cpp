@@ -633,13 +633,12 @@ Json::Value RPCHandler::accountFromString (Ledger::ref lrLedger, RippleAddress& 
 
 Json::Value RPCHandler::doAccountCurrencies (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
-    if (lpLedger->isImmutable ())
-        masterLockHolder.unlock ();
 
     if (!params.isMember ("account") && !params.isMember ("ident"))
         return rpcError (rpcINVALID_PARAMS);
@@ -699,6 +698,8 @@ Json::Value RPCHandler::doAccountCurrencies (Json::Value params, Resource::Charg
 // }
 Json::Value RPCHandler::doAccountInfo (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
@@ -1182,19 +1183,13 @@ Json::Value RPCHandler::doProofVerify (Json::Value params, Resource::Charge& loa
 // }
 Json::Value RPCHandler::doAccountLines (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
-
-    bool bUnlocked = false;
-
-    if (lpLedger->isImmutable ())
-    {
-        masterLockHolder.unlock ();
-        bUnlocked = true;
-    }
 
     if (!params.isMember ("account"))
         return rpcError (rpcINVALID_PARAMS);
@@ -1232,8 +1227,6 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, Resource::Charge& lo
     if (lpLedger->hasAccount (raAccount))
     {
         AccountItems rippleLines (raAccount.getAccountID (), lpLedger, AccountItem::pointer (new RippleState ()));
-        if (!bUnlocked)
-            masterLockHolder.unlock ();
 
         jvResult["account"] = raAccount.humanAccountID ();
         Json::Value& jsonLines = (jvResult["lines"] = Json::arrayValue);
@@ -1301,19 +1294,13 @@ static void offerAdder (Json::Value& jvLines, SLE::ref offer)
 // }
 Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
-
-    bool bUnlocked = false;
-
-    if (lpLedger->isImmutable ())
-    {
-        masterLockHolder.unlock ();
-        bUnlocked = true;
-    }
 
     if (!params.isMember ("account"))
         return rpcError (rpcINVALID_PARAMS);
@@ -1342,8 +1329,6 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& l
     Json::Value& jvsOffers = (jvResult["offers"] = Json::arrayValue);
     lpLedger->visitAccountItems (raAccount.getAccountID (), BIND_TYPE (&offerAdder, boost::ref (jvsOffers), P_1));
 
-    if (!bUnlocked)
-        masterLockHolder.unlock ();
     loadType = Resource::feeMediumBurdenRPC;
 
     return jvResult;
@@ -1361,6 +1346,8 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& l
 // }
 Json::Value RPCHandler::doBookOffers (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     if (getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 200)
     {
         return rpcError (rpcTOO_BUSY);
@@ -1371,9 +1358,6 @@ Json::Value RPCHandler::doBookOffers (Json::Value params, Resource::Charge& load
 
     if (!lpLedger)
         return jvResult;
-
-    if (lpLedger->isImmutable ())
-        masterLockHolder.unlock ();
 
     if (!params.isMember ("taker_pays") || !params.isMember ("taker_gets") || !params["taker_pays"].isObject () || !params["taker_gets"].isObject ())
         return rpcError (rpcINVALID_PARAMS);
@@ -1529,6 +1513,8 @@ Json::Value RPCHandler::doPathFind (Json::Value params, Resource::Charge& loadTy
 // This interface is deprecated.
 Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     LegacyPathFind lpf (mRole == Config::ADMIN);
     if (!lpf.isOkay ())
         return rpcError (rpcTOO_BUSY);
@@ -1602,8 +1588,6 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
             lpLedger = mNetOps->getValidatedLedger();
             cache = getApp().getPathRequests().getLineCache(lpLedger, false);
         }
-
-        masterLockHolder.unlock (); // As long as we have a locked copy of the ledger, we can unlock.
 
         Json::Value     jvSrcCurrencies;
 
@@ -1944,8 +1928,8 @@ Json::Value RPCHandler::doServerState (Json::Value, Resource::Charge& loadType, 
 // }
 Json::Value RPCHandler::doTxHistory (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-    loadType = Resource::feeMediumBurdenRPC;
     masterLockHolder.unlock ();
+    loadType = Resource::feeMediumBurdenRPC;
 
     if (!params.isMember ("start"))
         return rpcError (rpcINVALID_PARAMS);
@@ -2054,6 +2038,7 @@ Json::Value RPCHandler::doTx (Json::Value params, Resource::Charge& loadType, Ap
 
 Json::Value RPCHandler::doLedgerClosed (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     Json::Value jvResult;
 
     uint256 uLedger = mNetOps->getClosedLedgerHash ();
@@ -2067,6 +2052,7 @@ Json::Value RPCHandler::doLedgerClosed (Json::Value, Resource::Charge& loadType,
 
 Json::Value RPCHandler::doLedgerCurrent (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     Json::Value jvResult;
 
     jvResult["ledger_current_index"]    = mNetOps->getCurrentLedgerID ();
@@ -2081,6 +2067,7 @@ Json::Value RPCHandler::doLedgerCurrent (Json::Value, Resource::Charge& loadType
 // }
 Json::Value RPCHandler::doLedger (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     if (!params.isMember ("ledger") && !params.isMember ("ledger_hash") && !params.isMember ("ledger_index"))
     {
         Json::Value ret (Json::objectValue), current (Json::objectValue), closed (Json::objectValue);
@@ -2099,9 +2086,6 @@ Json::Value RPCHandler::doLedger (Json::Value params, Resource::Charge& loadType
 
     if (!lpLedger)
         return jvResult;
-
-    if (lpLedger->isImmutable ())
-        masterLockHolder.unlock ();
 
     bool    bFull           = params.isMember ("full") && params["full"].asBool ();
     bool    bTransactions   = params.isMember ("transactions") && params["transactions"].asBool ();
@@ -2150,6 +2134,8 @@ Json::Value RPCHandler::doAccountTxSwitch (Json::Value params, Resource::Charge&
 // }
 Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     RippleAddress   raAccount;
     uint32          offset      = params.isMember ("offset") ? params["offset"].asUInt () : 0;
     int             limit       = params.isMember ("limit") ? params["limit"].asUInt () : -1;
@@ -2224,7 +2210,6 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
     try
     {
 #endif
-        masterLockHolder.unlock ();
 
         Json::Value ret (Json::objectValue);
 
@@ -2310,6 +2295,8 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
 // }
 Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     RippleAddress   raAccount;
     int             limit       = params.isMember ("limit") ? params["limit"].asUInt () : -1;
     bool            bBinary     = params.isMember ("binary") && params["binary"].asBool ();
@@ -2371,8 +2358,6 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
     try
     {
 #endif
-        masterLockHolder.unlock ();
-
         Json::Value ret (Json::objectValue);
 
         ret["account"] = raAccount.humanAccountID ();
@@ -2585,6 +2570,7 @@ Json::Value RPCHandler::doWalletAccounts (Json::Value params, Resource::Charge& 
 
 Json::Value RPCHandler::doLogRotate (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     return LogSink::get()->rotateLog ();
 }
 
@@ -2929,6 +2915,7 @@ Json::Value RPCHandler::doUnlScore (Json::Value, Resource::Charge& loadType, App
 
 Json::Value RPCHandler::doSMS (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     if (!params.isMember ("text"))
         return rpcError (rpcINVALID_PARAMS);
 
@@ -2975,14 +2962,13 @@ Json::Value RPCHandler::doLedgerCleaner (Json::Value parameters, Resource::Charg
 // XXX In this case, not specify either ledger does not mean ledger current. It means any ledger.
 Json::Value RPCHandler::doTransactionEntry (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
-
-    if (lpLedger->isImmutable())
-        masterLockHolder.unlock();
 
     if (!params.isMember ("tx_hash"))
     {
@@ -3148,14 +3134,13 @@ Json::Value RPCHandler::lookupLedger (Json::Value params, Ledger::pointer& lpLed
 // }
 Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
-
-    if (lpLedger->isImmutable ())
-        masterLockHolder.unlock ();
 
     uint256     uNodeIndex;
     bool        bNodeBinary = false;
@@ -3364,6 +3349,8 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
 // }
 Json::Value RPCHandler::doLedgerHeader (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
@@ -3406,6 +3393,9 @@ boost::unordered_set<RippleAddress> RPCHandler::parseAccountIds (const Json::Val
 
 Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    // FIXME: This needs to release the master lock immediately
+    // Subscriptions need to be protected by their own lock
+
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
     uint32      uLedgerIndex = params.isMember ("ledger_index") && params["ledger_index"].isNumeric ()
@@ -3670,6 +3660,8 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
             if (bSnapshot)
             {
+                masterLockHolder.unlock ();
+
                 loadType = Resource::feeMediumBurdenRPC;
                 Ledger::pointer     lpLedger = getApp().getLedgerMaster ().getPublishedLedger ();
                 if (lpLedger)

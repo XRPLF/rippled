@@ -501,30 +501,29 @@ public:
             return;
 
         // we need to switch the ledger we're working from
-        Ledger::pointer newLCL = getApp().getLedgerMaster ().getLedgerByHash (lclHash);
-
-        if (newLCL)
+        Ledger::pointer newLCL = getApp().getLedgerMaster ().getLedgerByHash (mPrevLedgerHash);
+        if (!newLCL)
         {
-            assert (newLCL->isClosed ());
-            assert (newLCL->isImmutable ());
-            assert (newLCL->getHash () == lclHash);
-            mPreviousLedger = newLCL;
-            mPrevLedgerHash = lclHash;
-        }
-        else if (!mAcquiringLedger || (mAcquiringLedger->getHash () != mPrevLedgerHash))
-        {
-            // need to start acquiring the correct consensus LCL
-            WriteLog (lsWARNING, LedgerConsensus) << "Need consensus ledger " << mPrevLedgerHash;
+            if (mAcquiringLedger != lclHash)
+            {
+                // need to start acquiring the correct consensus LCL
+                WriteLog (lsWARNING, LedgerConsensus) << "Need consensus ledger " << mPrevLedgerHash;
 
-            if (mAcquiringLedger)
-                getApp().getInboundLedgers ().dropLedger (mAcquiringLedger->getHash ());
-
-            mAcquiringLedger = getApp().getInboundLedgers ().findCreateConsensusLedger (mPrevLedgerHash);
-            mHaveCorrectLCL = false;
+                mAcquiringLedger = mPrevLedgerHash;
+                getApp().getJobQueue().addJob (jtADVANCE, "getConsensusLedger",
+                    std::bind (
+                        &InboundLedgers::findCreateConsensusLedger,
+                        &getApp().getInboundLedgers(),
+                        mPrevLedgerHash));
+                mHaveCorrectLCL = false;
+	    }
             return;
         }
-        else
-            return;
+
+        assert (newLCL->isClosed () && newLCL->isImmutable ());
+        assert (newLCL->getHash () == lclHash);
+        mPreviousLedger = newLCL;
+        mPrevLedgerHash = lclHash;
 
         WriteLog (lsINFO, LedgerConsensus) << "Have the consensus ledger " << mPrevLedgerHash;
         mHaveCorrectLCL = true;
@@ -1872,9 +1871,8 @@ private:
 
     LCState mState;
     uint32 mCloseTime;      // The wall time this ledger closed
-    uint256 mPrevLedgerHash, mNewLedgerHash;
+    uint256 mPrevLedgerHash, mNewLedgerHash, mAcquiringLedger;
     Ledger::pointer mPreviousLedger;
-    InboundLedger::pointer mAcquiringLedger;
     LedgerProposal::pointer mOurPosition;
     RippleAddress mValPublic, mValPrivate;
     bool mProposing, mValidating, mHaveCorrectLCL, mConsensusFail;

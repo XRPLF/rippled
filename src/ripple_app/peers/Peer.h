@@ -68,6 +68,8 @@ public:
 
     virtual void sendGetPeers () = 0;
 
+    virtual void getLedger (protocol::TMGetLedger &) = 0;
+
     // VFALCO NOTE what's with this odd parameter passing? Why the static member?
     //
     /** Adjust this peer's load balance based on the type of load imposed.

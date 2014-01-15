@@ -279,11 +279,7 @@ private:
                 WriteLog (lsINFO, Peer) << "Peer: Body: Error: " << getIP () << ": " << error.category ().name () << ": " << error.message () << ": " << error;
             }
 
-            {
-                Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
-
-                detach ("hrb", true);
-            }
+            detach ("hrb", true);
             return;
         }
 
@@ -416,23 +412,22 @@ private:
 
     void recvHello (protocol::TMHello & packet);
     void recvCluster (protocol::TMCluster & packet);
-    void recvTransaction (protocol::TMTransaction & packet, Application::ScopedLockType& masterLockHolder);
-    void recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, Application::ScopedLockType& masterLockHolder);
+    void recvTransaction (protocol::TMTransaction & packet);
+    void recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet);
     void recvGetValidation (protocol::TMGetValidations & packet);
     void recvContact (protocol::TMContact & packet);
     void recvGetContacts (protocol::TMGetContacts & packet);
-    void recvGetPeers (protocol::TMGetPeers & packet, Application::ScopedLockType& masterLockHolder);
+    void recvGetPeers (protocol::TMGetPeers & packet);
     void recvPeers (protocol::TMPeers & packet);
     void recvEndpoints (protocol::TMEndpoints & packet);
-    void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet,
-        Application::ScopedLockType& masterLockHolder);
+    void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet);
     void recvPing (protocol::TMPing & packet);
     void recvErrorMessage (protocol::TMErrorMsg & packet);
     void recvSearchTransaction (protocol::TMSearchTransaction & packet);
     void recvGetAccount (protocol::TMGetAccount & packet);
     void recvAccount (protocol::TMAccount & packet);
-    void recvGetLedger (protocol::TMGetLedger & packet, Application::ScopedLockType& masterLockHolder);
-    void recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packet, Application::ScopedLockType& masterLockHolder);
+    void recvGetLedger (const boost::shared_ptr<protocol::TMGetLedger> & packet);
+    void recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packet);
     void recvStatus (protocol::TMStatusChange & packet);
     void recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& packet);
     void recvHaveTxSet (protocol::TMHaveTransactionSet & packet);
@@ -441,6 +436,7 @@ private:
     void getSessionCookie (std::string & strDst);
 
     void addLedger (uint256 const & ledger);
+    void getLedger (protocol::TMGetLedger & packet);
     void addTxSet (uint256 const & TxSet);
 
     void doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet);
@@ -823,8 +819,6 @@ void PeerImp::processReadBuffer ()
     LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtPEER, "Peer::read"));
 
     {
-        Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
-
         // If connected and get a mtHELLO or if not connected and get a non-mtHELLO, wrong message was sent.
         if (mHelloed == (type == protocol::mtHELLO))
         {
@@ -912,7 +906,7 @@ void PeerImp::processReadBuffer ()
                 protocol::TMGetPeers msg;
 
                 if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                    recvGetPeers (msg, lock);
+                    recvGetPeers (msg);
                 else
                     WriteLog (lsWARNING, Peer) << "parse error: " << type;
             }
@@ -984,7 +978,7 @@ void PeerImp::processReadBuffer ()
                 protocol::TMTransaction msg;
 
                 if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                    recvTransaction (msg, lock);
+                    recvTransaction (msg);
                 else
                     WriteLog (lsWARNING, Peer) << "parse error: " << type;
             }
@@ -1017,10 +1011,10 @@ void PeerImp::processReadBuffer ()
             case protocol::mtGET_LEDGER:
             {
                 event->reName ("Peer::getledger");
-                protocol::TMGetLedger msg;
+                boost::shared_ptr<protocol::TMGetLedger> msg = boost::make_shared<protocol::TMGetLedger> ();
 
-                if (msg.ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                    recvGetLedger (msg, lock);
+                if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
+                    recvGetLedger (msg);
                 else
                     WriteLog (lsWARNING, Peer) << "parse error: " << type;
             }
@@ -1032,7 +1026,7 @@ void PeerImp::processReadBuffer ()
                 boost::shared_ptr<protocol::TMLedgerData> msg = boost::make_shared<protocol::TMLedgerData> ();
 
                 if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                    recvLedger (msg, lock);
+                    recvLedger (msg);
                 else
                     WriteLog (lsWARNING, Peer) << "parse error: " << type;
             }
@@ -1056,7 +1050,7 @@ void PeerImp::processReadBuffer ()
                 boost::shared_ptr<protocol::TMValidation> msg = boost::make_shared<protocol::TMValidation> ();
 
                 if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                    recvValidation (msg, lock);
+                    recvValidation (msg);
                 else
                     WriteLog (lsWARNING, Peer) << "parse error: " << type;
             }
@@ -1082,7 +1076,7 @@ void PeerImp::processReadBuffer ()
                 boost::shared_ptr<protocol::TMGetObjectByHash> msg = boost::make_shared<protocol::TMGetObjectByHash> ();
 
                 if (msg->ParseFromArray (&mReadbuf[PackedMessage::kHeaderBytes], mReadbuf.size () - PackedMessage::kHeaderBytes))
-                    recvGetObjectByHash (msg, lock);
+                    recvGetObjectByHash (msg);
                 else
                     WriteLog (lsWARNING, Peer) << "parse error: " << type;
             }
@@ -1294,9 +1288,8 @@ static void checkTransaction (Job&, int flags, SerializedTransaction::pointer st
 #endif
 }
 
-void PeerImp::recvTransaction (protocol::TMTransaction& packet, Application::ScopedLockType& masterLockHolder)
+void PeerImp::recvTransaction (protocol::TMTransaction& packet)
 {
-    masterLockHolder.unlock ();
     Transaction::pointer tx;
 #ifndef TRUST_NETWORK
 
@@ -1475,7 +1468,12 @@ void PeerImp::recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& pack
 
     WriteLog (lsTRACE, Peer) << "Received " << (isTrusted ? "trusted" : "UNtrusted") << " proposal from " << mPeerId;
 
-    uint256 consensusLCL = getApp().getOPs ().getConsensusLCL ();
+    uint256 consensusLCL;
+
+    {
+        Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+        consensusLCL = getApp().getOPs ().getConsensusLCL ();
+    }
     LedgerProposal::pointer proposal = boost::make_shared<LedgerProposal> (
                                            prevLedger.isNonZero () ? prevLedger : consensusLCL,
                                            set.proposeseq (), proposeHash, set.closetime (), signerPublic, suppression);
@@ -1505,9 +1503,12 @@ void PeerImp::recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
     if (packet.status () == protocol::tsHAVE)
         addTxSet (hash);
 
-    if (!getApp().getOPs ().hasTXSet (shared_from_this (), hash, packet.status ()))
     {
-        charge (Resource::feeUnwantedData);
+        Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+        if (!getApp().getOPs ().hasTXSet (shared_from_this (), hash, packet.status ()))
+        {
+            charge (Resource::feeUnwantedData);
+        }
     }
 }
 
@@ -1567,10 +1568,9 @@ static void checkValidation (Job&, SerializedValidation::pointer val, bool isTru
 #endif
 }
 
-void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet, Application::ScopedLockType& masterLockHolder)
+void PeerImp::recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet)
 {
     uint32 closeTime = getApp().getOPs().getCloseTimeNC();
-    masterLockHolder.unlock ();
 
     if (packet->validation ().size () < 50)
     {
@@ -1677,9 +1677,8 @@ void PeerImp::recvGetContacts (protocol::TMGetContacts& packet)
 
 // Return a list of your favorite people
 // TODO: filter out all the LAN peers
-void PeerImp::recvGetPeers (protocol::TMGetPeers& packet, Application::ScopedLockType& masterLockHolder)
+void PeerImp::recvGetPeers (protocol::TMGetPeers& packet)
 {
-    masterLockHolder.unlock ();
     std::vector<std::string> addrs;
 
     getApp().getPeers ().getTopNAddrs (30, addrs);
@@ -1794,11 +1793,8 @@ void PeerImp::recvEndpoints (protocol::TMEndpoints& packet)
         PeerFinder::PeerID (mNodePublic), endpoints);
 }
 
-void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& ptr,
-    Application::ScopedLockType& masterLockHolder)
+void PeerImp::recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& ptr)
 {
-    masterLockHolder.unlock ();
-
     protocol::TMGetObjectByHash& packet = *ptr;
 
     if (packet.query ())
@@ -2069,7 +2065,17 @@ void PeerImp::recvStatus (protocol::TMStatusChange& packet)
     }
 }
 
-void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedLockType& masterLockHolder)
+/** Handle a TMGetLedger received from a peer
+    Dispatched by the JobQueue
+*/
+static void sGetLedger (boost::weak_ptr<Peer> wPeer, boost::shared_ptr<protocol::TMGetLedger> pPacket)
+{
+    boost::shared_ptr<Peer> peer = wPeer.lock ();
+    if (peer)
+        peer->getLedger (*pPacket);
+}
+
+void PeerImp::getLedger (protocol::TMGetLedger & packet)
 {
     SHAMap::pointer map;
     protocol::TMLedgerData reply;
@@ -2094,8 +2100,11 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
 
         uint256 txHash;
         memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
-        map = getApp().getOPs ().getTXMap (txHash);
-        masterLockHolder.unlock();
+
+        {
+            Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+            map = getApp().getOPs ().getTXMap (txHash);
+        }
 
         if (!map)
         {
@@ -2135,7 +2144,6 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
     }
     else
     {
-        masterLockHolder.unlock ();
         if (getApp().getFeeTrack().isLoadedLocal() && !mCluster)
         {
             WriteLog (lsDEBUG, Peer) << "Too busy to fetch ledger data";
@@ -2267,7 +2275,7 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
             }
 
             PackedMessage::pointer oPacket = boost::make_shared<PackedMessage> (reply, protocol::mtLEDGER_DATA);
-            sendPacket (oPacket, true);
+            sendPacket (oPacket, false);
             return;
         }
 
@@ -2351,12 +2359,17 @@ void PeerImp::recvGetLedger (protocol::TMGetLedger& packet, Application::ScopedL
     }
 
     PackedMessage::pointer oPacket = boost::make_shared<PackedMessage> (reply, protocol::mtLEDGER_DATA);
-    sendPacket (oPacket, true);
+    sendPacket (oPacket, false);
 }
 
-void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packet_ptr, Application::ScopedLockType& masterLockHolder)
+void PeerImp::recvGetLedger (boost::shared_ptr<protocol::TMGetLedger> const& packet)
 {
-    masterLockHolder.unlock ();
+    getApp().getJobQueue().addJob (jtPACK, "recvGetLedger",
+        std::bind (&sGetLedger, boost::weak_ptr<Peer> (shared_from_this ()), packet));
+}
+
+void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packet_ptr)
+{
     protocol::TMLedgerData& packet = *packet_ptr;
 
     if (packet.nodes ().size () <= 0)
@@ -2416,9 +2429,14 @@ void PeerImp::recvLedger (const boost::shared_ptr<protocol::TMLedgerData>& packe
             nodeData.push_back (Blob (node.nodedata ().begin (), node.nodedata ().end ()));
         }
 
-        SHAMapAddNode san =  getApp().getOPs ().gotTXData (shared_from_this (), hash, nodeIDs, nodeData);
+        bool doCharge = false;
+        {
+            Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+            if (getApp().getOPs ().gotTXData (shared_from_this (), hash, nodeIDs, nodeData).isInvalid ())
+                doCharge = true;
+        }
 
-        if (san.isInvalid ())
+        if (doCharge)
         {
             charge (Resource::feeUnwantedData);
         }
@@ -2479,7 +2497,7 @@ bool PeerImp::hasTxSet (uint256 const& hash) const
     {
         if (set == hash)
             return true;
-	}
+    }
 
     return false;
 }
@@ -2491,7 +2509,7 @@ void PeerImp::addTxSet (uint256 const& hash)
     {
         if (set == hash)
             return;
-	}
+    }
 
     if (mRecentTxSets.size () == 128)
         mRecentTxSets.pop_front ();
