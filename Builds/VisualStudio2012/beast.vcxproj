@@ -146,6 +146,7 @@
     <ClInclude Include="..\..\beast\Intrusive.h" />
     <ClInclude Include="..\..\beast\intrusive\List.h" />
     <ClInclude Include="..\..\beast\intrusive\LockFreeStack.h" />
+    <ClInclude Include="..\..\beast\make_unique.h" />
     <ClInclude Include="..\..\beast\Memory.h" />
     <ClInclude Include="..\..\beast\MPL.h" />
     <ClInclude Include="..\..\beast\mpl\IsCallPossible.h" />
@@ -162,7 +163,6 @@
     <ClInclude Include="..\..\beast\smart_ptr\SharedPtr.h" />
     <ClInclude Include="..\..\beast\StaticAssert.h" />
     <ClInclude Include="..\..\beast\STL.h" />
-    <ClInclude Include="..\..\beast\stl\shared_ptr.h" />
     <ClInclude Include="..\..\beast\Strings.h" />
     <ClInclude Include="..\..\beast\strings\CharacterFunctions.h" />
     <ClInclude Include="..\..\beast\strings\CharPointer_ASCII.h" />
@@ -569,7 +569,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\smart_ptr\SmartPtr.cpp" />
-    <ClCompile Include="..\..\beast\stl\STL.cpp" />
     <ClCompile Include="..\..\beast\strings\impl\CharacterFunctions.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
