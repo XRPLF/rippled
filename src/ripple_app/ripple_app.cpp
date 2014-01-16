@@ -42,6 +42,7 @@
 
 #include "beast/beast/Asio.h"
 #include "beast/beast/asio/io_latency_probe.h"
+#include "beast/beast/make_unique.h"
 
 # include "main/CollectorManager.h"
 #include "main/CollectorManager.cpp"

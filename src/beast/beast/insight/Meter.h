@@ -22,7 +22,7 @@
 
 #include "MeterImpl.h"
 
-#include "../stl/shared_ptr.h"
+#include <memory>
 
 namespace beast {
 namespace insight {

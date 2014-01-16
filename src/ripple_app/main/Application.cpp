@@ -1363,9 +1363,9 @@ Application::Application ()
 {
 }
 
-Application* Application::New ()
+std::unique_ptr <Application> make_Application ()
 {
-    return new ApplicationImp;
+    return std::make_unique <ApplicationImp> ();
 }
 
 Application& getApp ()

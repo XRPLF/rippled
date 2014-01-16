@@ -73,9 +73,9 @@ public:
 
         beginTestCase ("Build");
 
-        shared_ptr <Table> t1 (beast::make_shared <Table> (smtFREE));
+        boost::shared_ptr <Table> t1 (boost::make_shared <Table> (smtFREE));
         add_random_items (tableItems, *t1, random());
-        shared_ptr <Table> t2 (t1->snapShot (true));
+        boost::shared_ptr <Table> t2 (t1->snapShot (true));
         
         add_random_items (tableItemsExtra, *t1, random ());
         add_random_items (tableItemsExtra, *t2, random ());
@@ -88,23 +88,22 @@ public:
             &FetchPackTests::on_fetch, this, boost::ref (map), _1, _2));
 
         // try to rebuild t2 from the fetch pack
-        shared_ptr <Table> t3;
+        boost::shared_ptr <Table> t3;
         try
         {
             TestFilter filter (map, journal ());
 
-            t3 = beast::make_shared <Table> (smtFREE, t2->getHash () );
+            t3 = boost::make_shared <Table> (smtFREE, t2->getHash () );
 
             expect (t3->fetchRoot (t2->getHash (), &filter), "unable to get root");
 
             // everything should be in the pack, no hashes should be needed
-            std::vector<uint256> hashes = t3->getNeededHashes(1, &filter);
+            std::vector <uint256> hashes = t3->getNeededHashes(1, &filter);
             expect (hashes.empty(), "missing hashes");
         }
         catch (...)
         {
-            journal().fatal << "exception";
-            fail ();
+            failException ();
         }
 
         expect (t3->getHash () == t2->getHash (), "root hashes do not match");

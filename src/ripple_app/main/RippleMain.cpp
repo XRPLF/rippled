@@ -154,7 +154,7 @@ public:
         //             code demands the Application object exists.
         //
         //        TODO To find out who, just comment the next line out
-        m_app.reset (Application::New ());
+        m_app = make_Application();
 
         setAssertOnFailure (false);
     }
@@ -455,7 +455,7 @@ int RippleMain::run (int argc, char const* const* argv)
         if (!vm.count ("parameters"))
         {
             // No arguments. Run server.
-            std::unique_ptr <Application> app (Application::New ());
+            std::unique_ptr <Application> app (make_Application ());
             setupServer ();            
             startServer ();
         }

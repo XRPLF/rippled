@@ -162,7 +162,6 @@
     <ClInclude Include="..\..\beast\smart_ptr\SharedObject.h" />
     <ClInclude Include="..\..\beast\smart_ptr\SharedPtr.h" />
     <ClInclude Include="..\..\beast\StaticAssert.h" />
-    <ClInclude Include="..\..\beast\STL.h" />
     <ClInclude Include="..\..\beast\Strings.h" />
     <ClInclude Include="..\..\beast\strings\CharacterFunctions.h" />
     <ClInclude Include="..\..\beast\strings\CharPointer_ASCII.h" />

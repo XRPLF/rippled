@@ -24,6 +24,12 @@
 
 namespace std {
 
+#ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
+# ifdef _MSC_VER
+#  define BOOST_NO_CXX11_VARIADIC_TEMPLATES
+# endif
+#endif
+
 #ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
 
 template <class T>

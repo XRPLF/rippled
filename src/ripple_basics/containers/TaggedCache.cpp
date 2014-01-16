@@ -97,7 +97,7 @@ public:
 
             {
                 Cache::mapped_ptr const p1 (c.fetch (3));
-                Cache::mapped_ptr p2 (make_shared <Value> ("three"));
+                Cache::mapped_ptr p2 (boost::make_shared <Value> ("three"));
                 c.canonicalize (3, p2);
                 expect (p1.get() == p2.get());
             }
