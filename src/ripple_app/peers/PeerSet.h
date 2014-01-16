@@ -67,8 +67,18 @@ public:
         return mLastAction;
     }
 
+    // VFALCO TODO Rename this to addPeerToSet
+    //
     bool peerHas (Peer::ref);
+
+    // VFALCO Workaround for MSVC std::function which doesn't swallow return types.
+    void peerHasVoid (Peer::ref peer)
+    {
+        peerHas (peer);
+    }
+
     void badPeer (Peer::ref);
+
     void setTimer ();
 
     int takePeerSetFrom (const PeerSet& s);

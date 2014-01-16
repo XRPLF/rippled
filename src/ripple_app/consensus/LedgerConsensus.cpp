@@ -799,7 +799,7 @@ public:
 
         if (acq != mAcquiring.end ())
             getApp().getJobQueue().addJob(jtTXN_DATA, "peerHasTxnData",
-                std::bind(&TransactionAcquire::peerHas, acq->second, peer));
+                std::bind(&TransactionAcquire::peerHasVoid, acq->second, peer));
 
         return true;
     }
