@@ -20,7 +20,6 @@
 #ifndef BEAST_INSIGHT_COUNTERIMPL_H_INCLUDED
 #define BEAST_INSIGHT_COUNTERIMPL_H_INCLUDED
 
-#include <functional>
 #include <memory>
 
 namespace beast {

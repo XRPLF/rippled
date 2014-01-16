@@ -139,7 +139,8 @@ Error session::open(String fileName, std::string options)
 
     std::stringstream ssconn(options);
 
-    while (!err && !ssconn.eof() && ssconn.str().find('=') >= 0)
+    while (!err && !ssconn.eof() &&
+           ssconn.str().find('=') != std::string::npos)
     {
         std::string key, val;
         std::getline(ssconn, key, '=');

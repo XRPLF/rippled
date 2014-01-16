@@ -1158,9 +1158,6 @@
     <ClInclude Include="..\..\beast\smart_ptr\AbstractObject.h">
       <Filter>beast\smart_ptr</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\STL.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\Insight.h">
       <Filter>beast</Filter>
     </ClInclude>
