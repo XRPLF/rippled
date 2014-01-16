@@ -19,7 +19,8 @@
 
 class InboundLedger;
 
-PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)
+PeerSet::PeerSet (clock_type& clock_,
+    uint256 const& hash, int interval, bool txnData)
     : mLock (this, "PeerSet", __FILE__, __LINE__)
     , mHash (hash)
     , mTimerInterval (interval)
@@ -30,9 +31,19 @@ PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)
     , mTxnData (txnData)
     , mProgress (false)
     , mTimer (getApp().getIOService ())
+    , m_clock (clock_)
 {
-    mLastAction = UptimeTimer::getInstance ().getElapsedSeconds ();
+    mLastAction = clock().now();
     assert ((mTimerInterval > 10) && (mTimerInterval < 30000));
+}
+
+PeerSet::~PeerSet ()
+{
+}
+
+PeerSet::clock_type& PeerSet::clock ()
+{
+    return m_clock;
 }
 
 bool PeerSet::peerHas (Peer::ref ptr)
@@ -139,7 +150,7 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
 
     PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER);
 
-    for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
+    for (Map::iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
     {
         Peer::pointer peer = getApp().getPeers ().getPeerById (it->first);
 
@@ -153,7 +164,7 @@ int PeerSet::takePeerSetFrom (const PeerSet& s)
     int ret = 0;
     mPeers.clear ();
 
-    for (boost::unordered_map<uint64, int>::const_iterator it = s.mPeers.begin (), end = s.mPeers.end ();
+    for (Map::const_iterator it = s.mPeers.begin (), end = s.mPeers.end ();
             it != end; ++it)
     {
         mPeers.insert (std::make_pair (it->first, 0));
@@ -167,7 +178,7 @@ int PeerSet::getPeerCount () const
 {
     int ret = 0;
 
-    for (boost::unordered_map<uint64, int>::const_iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
+    for (Map::const_iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
         if (getApp().getPeers ().hasPeer (it->first))
             ++ret;
 

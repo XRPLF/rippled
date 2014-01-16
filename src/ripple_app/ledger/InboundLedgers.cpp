@@ -28,12 +28,12 @@ public:
     // How long before we try again to acquire the same ledger
     static const int kReacquireIntervalSeconds = 300;
 
-    explicit InboundLedgersImp (Stoppable& parent)
+    InboundLedgersImp (clock_type& clock, Stoppable& parent)
         : Stoppable ("InboundLedgers", parent)
+        , m_clock (clock)
         , mLock (this, "InboundLedger", __FILE__, __LINE__)
         , mRecentFailures ("LedgerAcquireRecentFailures",
-            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
-                0, kReacquireIntervalSeconds)
+            clock, 0, kReacquireIntervalSeconds)
     {
     }
 
@@ -57,7 +57,7 @@ public:
                 }
                 else
                 {
-                    ret = boost::make_shared<InboundLedger> (hash, seq);
+                    ret = boost::make_shared <InboundLedger> (std::ref (m_clock), hash, seq);
                     assert (ret);
                     mLedgers.insert (std::make_pair (hash, ret));
                     ret->init (sl, couldBeNew);
@@ -335,7 +335,7 @@ public:
     {
         mRecentFailures.sweep ();
 
-        int const now = UptimeTimer::getInstance ().getElapsedSeconds ();
+        clock_type::time_point const now (m_clock.now());
 
         // Make a list of things to sweep, while holding the lock
         std::vector <MapType::mapped_type> stuffToSweep;
@@ -353,7 +353,7 @@ public:
                     it->second->touch ();
                     ++it;
                 }
-                else if ((it->second->getLastAction () + 60) < now)
+                else if ((it->second->getLastAction () + std::chrono::minutes (1)) < now)
                 {
                     stuffToSweep.push_back (it->second);
                     // shouldn't cause the actual final delete
@@ -383,6 +383,8 @@ public:
     }
 
 private:
+    clock_type& m_clock;
+
     typedef boost::unordered_map <uint256, InboundLedger::pointer> MapType;
 
     typedef RippleRecursiveMutex LockType;
@@ -390,7 +392,7 @@ private:
     LockType mLock;
 
     MapType mLedgers;
-    KeyCache <uint256, UptimeTimerAdapter> mRecentFailures;
+    KeyCache <uint256> mRecentFailures;
 
     uint256 mConsensusLedger;
     uint256 mValidationLedger;
@@ -402,9 +404,9 @@ InboundLedgers::~InboundLedgers()
 {
 }
 
-InboundLedgers* InboundLedgers::New (Stoppable& parent)
+InboundLedgers* InboundLedgers::New (clock_type& clock, Stoppable& parent)
 {
-    return new InboundLedgersImp (parent);
+    return new InboundLedgersImp (clock, parent);
 }
 
 

@@ -267,7 +267,7 @@ public:
     typedef std::pair<uint256, SHAMapNode> TNIndex;
 
 private:
-    static KeyCache <uint256, UptimeTimerAdapter> fullBelowCache;
+    static KeyCache <uint256> fullBelowCache;
 
     static TaggedCacheType <TNIndex, SHAMapTreeNode> treeNodeCache;
 

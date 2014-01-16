@@ -27,9 +27,14 @@
 class InboundLedgers
 {
 public:
+    typedef abstract_clock <std::chrono::seconds> clock_type;
+
     virtual ~InboundLedgers() = 0;
 
-    static InboundLedgers* New (Stoppable& parent);
+    // VFALCO TODO Make this a free function outside the class:
+    //             std::unique_ptr <InboundLedger> make_InboundLedgers (...)
+    //
+    static InboundLedgers* New (clock_type& clock, Stoppable& parent);
 
     // VFALCO TODO Should this be called findOrAdd ?
     //

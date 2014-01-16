@@ -31,9 +31,10 @@ public:
 
     static char const* getCountedObjectName () { return "LedgerConsensus"; }
 
-    LedgerConsensusImp (LedgerHash const & prevLCLHash, 
+    LedgerConsensusImp (clock_type& clock, LedgerHash const & prevLCLHash, 
         Ledger::ref previousLedger, uint32 closeTime)
-        : mState (lcsPRE_CLOSE)
+        : m_clock (clock)
+        , mState (lcsPRE_CLOSE)
         , mCloseTime (closeTime)
         , mPrevLedgerHash (prevLCLHash)
         , mPreviousLedger (previousLedger)
@@ -280,7 +281,8 @@ public:
                     return empty;
                 }
 
-                acquiring = boost::make_shared<TransactionAcquire> (hash);
+                acquiring = boost::make_shared<TransactionAcquire> (
+                    std::ref (m_clock), hash);
                 startAcquiring (acquiring);
             }
         }
@@ -1855,6 +1857,8 @@ private:
             val->setFieldU32(sfLoadFee, fee);
     }
 private:
+    clock_type& m_clock;
+
     // VFALCO TODO Rename these to look pretty
     enum LCState
     {
@@ -1910,12 +1914,9 @@ LedgerConsensus::~LedgerConsensus ()
 {
 }
 
-boost::shared_ptr <LedgerConsensus> LedgerConsensus::New(LedgerHash const & prevLCLHash, 
-    Ledger::ref previousLedger, uint32 closeTime)
+boost::shared_ptr <LedgerConsensus> LedgerConsensus::New (clock_type& clock,
+    LedgerHash const &prevLCLHash, Ledger::ref previousLedger, uint32 closeTime)
 {
-    return boost::make_shared<LedgerConsensusImp>(
-        prevLCLHash, previousLedger,closeTime);
+    return boost::make_shared <LedgerConsensusImp> (
+        clock, prevLCLHash, previousLedger,closeTime);
 }
-
-
-// vim:ts=4

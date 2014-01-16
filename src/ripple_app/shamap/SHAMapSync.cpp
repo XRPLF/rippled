@@ -21,7 +21,8 @@
 
 static const uint256 uZero;
 
-KeyCache <uint256, UptimeTimerAdapter> SHAMap::fullBelowCache (
+// VFALCO TODO Put these globals into a singleton and make the clock a parameter
+KeyCache <uint256> SHAMap::fullBelowCache (
     "fullBelowCache",
         get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
             524288, 240);

@@ -58,7 +58,7 @@ private:
         clock_type::time_point last_access;
     };
 
-    typedef std::unordered_map <key_type, Entry> map_type;
+    typedef std::unordered_map <key_type, Entry, Hash, KeyEqual> map_type;
     typedef typename map_type::iterator iterator;
     typedef std::lock_guard <Mutex> lock_guard;
     

@@ -27,10 +27,12 @@
 */
 class LedgerConsensus
 {
-public:   
-    static shared_ptr <LedgerConsensus> New(
+public:    
+    typedef abstract_clock <std::chrono::seconds> clock_type;
+
+    static boost::shared_ptr <LedgerConsensus> New (clock_type& clock,
         LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
-        uint32 closeTime);
+            uint32 closeTime);
 
     virtual ~LedgerConsensus () = 0;
 

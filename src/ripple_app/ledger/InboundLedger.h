@@ -34,9 +34,9 @@ public:
     typedef std::pair < boost::weak_ptr<Peer>, boost::shared_ptr<protocol::TMLedgerData> > PeerDataPairType;
 
 public:
-    InboundLedger (uint256 const& hash, uint32 seq);
+    InboundLedger (clock_type& clock, uint256 const& hash, uint32 seq);
 
-    virtual ~InboundLedger ();
+    ~InboundLedger ();
 
     bool isBase () const
     {

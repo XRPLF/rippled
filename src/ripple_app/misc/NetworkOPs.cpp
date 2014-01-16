@@ -33,8 +33,10 @@ public:
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
-    NetworkOPsImp (LedgerMaster& ledgerMaster, Stoppable& parent, Journal journal)
+    NetworkOPsImp (clock_type& clock, LedgerMaster& ledgerMaster,
+        Stoppable& parent, Journal journal)
         : NetworkOPs (parent)
+        , m_clock (clock)
         , m_journal (journal)
         , mLock (this, "NetOPs", __FILE__, __LINE__)
         , mMode (omDISCONNECTED)
@@ -407,6 +409,8 @@ private:
     void pubServer ();
 
 private:
+    clock_type& m_clock;
+
     typedef boost::unordered_map <uint160, SubMapType>               SubInfoMapType;
     typedef boost::unordered_map <uint160, SubMapType>::iterator     SubInfoMapIterator;
 
@@ -1410,7 +1414,7 @@ int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer
     assert (!mConsensus);
     prevLedger->setImmutable ();
     
-    mConsensus = LedgerConsensus::New(
+    mConsensus = LedgerConsensus::New (m_clock,
         networkClosed, prevLedger,
         m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC ());
 
@@ -3104,10 +3108,14 @@ NetworkOPs::NetworkOPs (Stoppable& parent)
 {
 }
 
+NetworkOPs::~NetworkOPs ()
+{
+}
+
 //------------------------------------------------------------------------------
 
-NetworkOPs* NetworkOPs::New (LedgerMaster& ledgerMaster,
+NetworkOPs* NetworkOPs::New (clock_type& clock, LedgerMaster& ledgerMaster,
     Stoppable& parent, Journal journal)
 {
-    return new NetworkOPsImp (ledgerMaster, parent, journal);
+    return new NetworkOPsImp (clock, ledgerMaster, parent, journal);
 }

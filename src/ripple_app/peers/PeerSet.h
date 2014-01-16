@@ -27,42 +27,52 @@
 class PeerSet : LeakChecked <PeerSet>
 {
 public:
+    typedef abstract_clock <std::chrono::seconds> clock_type;
+
     uint256 const& getHash () const
     {
         return mHash;
     }
+
     bool isComplete () const
     {
         return mComplete;
     }
+
     bool isFailed () const
     {
         return mFailed;
     }
+
     int getTimeouts () const
     {
         return mTimeouts;
     }
 
     bool isActive ();
+
     void progress ()
     {
         mProgress = true;
         mAggressive = false;
     }
+    
     void clearProgress ()
     {
         mProgress = false;
     }
+    
     bool isProgress ()
     {
         return mProgress;
     }
+    
     void touch ()
     {
-        mLastAction = UptimeTimer::getInstance ().getElapsedSeconds ();
+        mLastAction = clock().now();
     }
-    int getLastAction ()
+    
+    clock_type::time_point getLastAction () const
     {
         return mLastAction;
     }
@@ -92,13 +102,15 @@ private:
     static void TimerEntry (boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
     static void TimerJobEntry (Job&, boost::shared_ptr<PeerSet>);
 
-    // VFALCO TODO try to make some of these private
 protected:
+    clock_type& clock ();
+
+    // VFALCO TODO try to make some of these private
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
 
-    PeerSet (uint256 const& hash, int interval, bool txnData);
-    virtual ~PeerSet () { }
+    PeerSet (clock_type& clock, uint256 const& hash, int interval, bool txnData);
+    virtual ~PeerSet () = 0;
 
     virtual void newPeer (Peer::ref) = 0;
     virtual void onTimer (bool progress, ScopedLockType&) = 0;
@@ -127,7 +139,7 @@ protected:
     bool mFailed;
     bool mAggressive;
     bool mTxnData;
-    int mLastAction;
+    clock_type::time_point mLastAction;
     bool mProgress;
 
 
@@ -137,7 +149,11 @@ protected:
     // VFALCO TODO Verify that these are used in the way that the names suggest.
     typedef uint64 PeerIdentifier;
     typedef int ReceivedChunkCount;
-    boost::unordered_map <PeerIdentifier, ReceivedChunkCount> mPeers;
+    typedef boost::unordered_map <PeerIdentifier, ReceivedChunkCount> Map;
+    Map mPeers;
+
+private:
+    clock_type& m_clock;
 };
 
 #endif

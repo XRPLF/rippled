@@ -220,8 +220,9 @@ public:
             *m_jobQueue, LogPartition::getJournal <LedgerMaster> ()))
 
         // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
-        , m_networkOPs (NetworkOPs::New (
-            *m_ledgerMaster, *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
+        , m_networkOPs (NetworkOPs::New (get_abstract_clock <
+                std::chrono::steady_clock, std::chrono::seconds> (), *m_ledgerMaster,
+                    *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
@@ -238,7 +239,8 @@ public:
 
         , m_sntpClient (SNTPClient::New (*this))
 
-        , m_inboundLedgers (InboundLedgers::New (*m_jobQueue))
+        , m_inboundLedgers (InboundLedgers::New (get_abstract_clock <
+            std::chrono::steady_clock, std::chrono::seconds> (), *m_jobQueue))
 
         , m_txQueue (TxQueue::New ())
 

@@ -56,6 +56,8 @@ protected:
     explicit NetworkOPs (Stoppable& parent);
 
 public:
+    typedef abstract_clock <std::chrono::seconds> clock_type;
+
     enum Fault
     {
         // exceptions these functions can throw
@@ -80,10 +82,10 @@ public:
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
-    static NetworkOPs* New (LedgerMaster& ledgerMaster,
+    static NetworkOPs* New (clock_type& clock, LedgerMaster& ledgerMaster,
         Stoppable& parent, Journal journal);
 
-    virtual ~NetworkOPs () { }
+    virtual ~NetworkOPs () = 0;
 
     //--------------------------------------------------------------------------
     //
