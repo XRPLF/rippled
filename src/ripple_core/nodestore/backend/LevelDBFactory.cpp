@@ -17,19 +17,27 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
-class LevelDBFactory::BackendImp
+class LevelDBBackend
     : public Backend
     , public BatchWriter::Callback
-    , public LeakChecked <LevelDBFactory::BackendImp>
+    , public LeakChecked <LevelDBBackend>
 {
 public:
-    BackendImp (int keyBytes,
-             Parameters const& keyValues,
-             Scheduler& scheduler)
-        : m_keyBytes (keyBytes)
+    Journal m_journal;
+    size_t const m_keyBytes;
+    Scheduler& m_scheduler;
+    BatchWriter m_batch;
+    StringPool m_stringPool;
+    std::string m_name;
+    std::unique_ptr <leveldb::DB> m_db;
+
+    LevelDBBackend (int keyBytes, Parameters const& keyValues,
+        Scheduler& scheduler, Journal journal)
+        : m_journal (journal)
+        , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
         , m_batch (*this, scheduler)
         , m_name (keyValues ["path"].toStdString ())
@@ -69,11 +77,7 @@ public:
         if (!status.ok () || !db)
             Throw (std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString()));
 
-        m_db = db;
-    }
-
-    ~BackendImp ()
-    {
+        m_db.reset (db);
     }
 
     std::string getName()
@@ -160,7 +164,7 @@ public:
     {
         leveldb::ReadOptions const options;
 
-        ScopedPointer <leveldb::Iterator> it (m_db->NewIterator (options));
+        std::unique_ptr <leveldb::Iterator> it (m_db->NewIterator (options));
 
         for (it->SeekToFirst (); it->Valid (); it->Next ())
         {
@@ -202,52 +206,49 @@ public:
     {
         storeBatch (batch);
     }
-
-private:
-    size_t const m_keyBytes;
-    Scheduler& m_scheduler;
-    BatchWriter m_batch;
-    StringPool m_stringPool;
-    std::string m_name;
-    ScopedPointer <leveldb::DB> m_db;
 };
 
 //------------------------------------------------------------------------------
 
-LevelDBFactory::LevelDBFactory ()
-    : m_lruCache (nullptr)
+class LevelDBFactory : public Factory
 {
-    leveldb::Options options;
-    options.create_if_missing = true;
-    options.block_cache = leveldb::NewLRUCache (
-        getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
+public:
+    std::unique_ptr <leveldb::Cache> m_lruCache;
 
-    m_lruCache = options.block_cache;
+    class BackendImp;
+
+    LevelDBFactory ()
+        : m_lruCache (nullptr)
+    {
+        leveldb::Options options;
+        options.create_if_missing = true;
+        options.block_cache = leveldb::NewLRUCache (
+            getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
+        m_lruCache.reset (options.block_cache);
+    }
+
+    String getName () const
+    {
+        return "LevelDB";
+    }
+
+    std::unique_ptr <Backend> createInstance (
+        size_t keyBytes,
+        Parameters const& keyValues,
+        Scheduler& scheduler,
+        Journal journal)
+    {
+        return std::make_unique <LevelDBBackend> (
+            keyBytes, keyValues, scheduler, journal);
+    }
+};
+
+//------------------------------------------------------------------------------
+
+std::unique_ptr <Factory> make_LevelDBFactory ()
+{
+    return std::make_unique <LevelDBFactory> ();
 }
 
-LevelDBFactory::~LevelDBFactory ()
-{
-    leveldb::Cache* cache (reinterpret_cast <leveldb::Cache*> (m_lruCache));
-    delete cache;
 }
-
-LevelDBFactory* LevelDBFactory::getInstance ()
-{
-    return new LevelDBFactory;
-}
-
-String LevelDBFactory::getName () const
-{
-    return "LevelDB";
-}
-
-Backend* LevelDBFactory::createInstance (
-    size_t keyBytes,
-    Parameters const& keyValues,
-    Scheduler& scheduler,
-    Journal journal)
-{
-    return new LevelDBFactory::BackendImp (keyBytes, keyValues, scheduler);
-}
-
 }

@@ -20,20 +20,15 @@
 #ifndef RIPPLE_NODESTORE_ROCKSDBFACTORY_H_INCLUDED
 #define RIPPLE_NODESTORE_ROCKSDBFACTORY_H_INCLUDED
 
+namespace ripple {
 namespace NodeStore {
 
 /** Factory to produce RocksDB backends for the NodeStore.
     @see Database
 */
-class RocksDBFactory : public Factory
-{
-public:
-    class BackendImp;
+std::unique_ptr <Factory> make_RocksDBFactory ();
 
-    static RocksDBFactory* New ();
-    virtual ~RocksDBFactory () = 0;
-};
-
+}
 }
 
 #endif

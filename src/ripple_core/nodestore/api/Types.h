@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_TYPES_H_INCLUDED
 #define RIPPLE_NODESTORE_TYPES_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 enum
 {
@@ -46,8 +46,10 @@ enum Status
 typedef std::vector <NodeObject::Ptr> Batch;
 
 /** A list of key/value parameter pairs passed to the backend. */
+// VFALCO TODO Use std::string, pair, vector
 typedef StringPairArray Parameters;
 
+}
 }
 
 #endif

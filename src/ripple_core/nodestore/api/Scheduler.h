@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_SCHEDULER_H_INCLUDED
 #define RIPPLE_NODESTORE_SCHEDULER_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 /** Scheduling for asynchronous backend activity
     
@@ -34,7 +34,7 @@ namespace NodeStore
 class Scheduler
 {
 public:
-    virtual ~Scheduler() { }
+    virtual ~Scheduler() = 0;
 
     /** Schedules a task.
         Depending on the implementation, the task may be invoked either on
@@ -44,6 +44,7 @@ public:
     virtual void scheduleTask (Task& task) = 0;
 };
 
+}
 }
 
 #endif

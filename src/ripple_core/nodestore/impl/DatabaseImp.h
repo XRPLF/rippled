@@ -17,24 +17,35 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
+#define RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
+
+namespace ripple {
 namespace NodeStore {
 
 class DatabaseImp
     : public Database
-    , LeakChecked <DatabaseImp>
+    , public LeakChecked <DatabaseImp>
 {
 public:
-    DatabaseImp (char const* name,
+    Journal m_journal;
+    Scheduler& m_scheduler;
+    // Persistent key/value storage.
+    std::unique_ptr <Backend> m_backend;
+    // Larger key/value storage, but not necessarily persistent.
+    std::unique_ptr <Backend> m_fastBackend;
+    TaggedCacheType <uint256, NodeObject> m_cache;
+
+    DatabaseImp (std::string const& name,
                  Scheduler& scheduler,
-                 Parameters const& backendParameters,
-                 Parameters const& fastBackendParameters,
+                 std::unique_ptr <Backend> backend,
+                 std::unique_ptr <Backend> fastBackend,
                  Journal journal)
         : m_journal (journal)
         , m_scheduler (scheduler)
-        , m_backend (createBackend (backendParameters, scheduler, journal))
-        , m_fastBackend ((fastBackendParameters.size () > 0)
-            ? createBackend (fastBackendParameters, scheduler, journal) : nullptr)
-        , m_cache ("NodeStore", 16384, 300,
+        , m_backend (std::move (backend))
+        , m_fastBackend (std::move (fastBackend))
+        , m_cache ("NodeStore", cacheTargetSize, cacheTargetSeconds,
             get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
                 LogPartition::getJournal <TaggedCacheLog> ())
     {
@@ -67,7 +78,7 @@ public:
             //
             if (m_fastBackend != nullptr)
             {
-                obj = fetchInternal (m_fastBackend, hash);
+                obj = fetchInternal (*m_fastBackend, hash);
 
                 // If we found the object, avoid storing it again later.
                 if (obj != nullptr)
@@ -89,7 +100,7 @@ public:
                     //
                     //LoadEvent::autoptr event (getApp().getJobQueue ().getLoadEventAP (jtHO_READ, "HOS::retrieve"));
 
-                    obj = fetchInternal (m_backend, hash);
+                    obj = fetchInternal (*m_backend, hash);
                 }
 
             }
@@ -124,11 +135,12 @@ public:
         return obj;
     }
 
-    NodeObject::Ptr fetchInternal (Backend* backend, uint256 const& hash)
+    NodeObject::Ptr fetchInternal (Backend& backend,
+        uint256 const& hash)
     {
         NodeObject::Ptr object;
 
-        Status const status = backend->fetch (hash.begin (), &object);
+        Status const status = backend.fetch (hash.begin (), &object);
 
         switch (status)
         {
@@ -254,96 +266,9 @@ public:
 
         sourceDatabase.visitAll (callback);
     }
-
-    //------------------------------------------------------------------------------
-
-    static void missing_backend ()
-    {
-        fatal_error ("Your rippled.cfg is missing a [node_db] entry, please see the rippled-example.cfg file!");
-    }
-
-    static Backend* createBackend (Parameters const& parameters,
-        Scheduler& scheduler, Journal journal)
-    {
-        Backend* backend = nullptr;
-
-        String const& type = parameters ["type"];
-
-        if (type.isNotEmpty ())
-        {
-            Factory* factory (Factories::get().find (type));
-
-            if (factory != nullptr)
-            {
-                backend = factory->createInstance (
-                    NodeObject::keyBytes, parameters, scheduler, journal);
-            }
-            else
-            {
-                missing_backend ();
-            }
-        }
-        else
-        {
-            missing_backend ();
-        }
-
-        return backend;
-    }
-
-    //------------------------------------------------------------------------------
-
-private:
-    Journal m_journal;
-
-    Scheduler& m_scheduler;
-
-    // Persistent key/value storage.
-    ScopedPointer <Backend> m_backend;
-
-    // Larger key/value storage, but not necessarily persistent.
-    ScopedPointer <Backend> m_fastBackend;
-
-    // VFALCO NOTE What are these things for? We need comments.
-    TaggedCacheType <uint256, NodeObject> m_cache;
 };
 
-//------------------------------------------------------------------------------
-
-void Database::addFactory (Factory* factory)
-{
-    Factories::get().add (factory);
+}
 }
 
-void Database::addAvailableBackends ()
-{
-    // This is part of the ripple_app module since it has dependencies
-    //addFactory (SqliteFactory::getInstance ());
-
-    addFactory (LevelDBFactory::getInstance ());
-
-    addFactory (MemoryFactory::getInstance ());
-    addFactory (NullFactory::getInstance ());
-
-#if RIPPLE_HYPERLEVELDB_AVAILABLE
-    addFactory (HyperDBFactory::getInstance ());
 #endif
-
-#if RIPPLE_ROCKSDB_AVAILABLE
-    addFactory (RocksDBFactory::New ());
-#endif
-}
-
-//------------------------------------------------------------------------------
-
-Database* Database::New (char const* name,
-                         Scheduler& scheduler,
-                         Journal journal,
-                         Parameters const& backendParameters,
-                         Parameters fastBackendParameters)
-{
-    return new DatabaseImp (name,
-        scheduler, backendParameters, fastBackendParameters, journal);
-}
-
-}

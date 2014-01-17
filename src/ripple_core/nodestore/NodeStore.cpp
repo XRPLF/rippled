@@ -17,13 +17,17 @@
 */
 //==============================================================================
 
+#include <memory>
+#include <vector>
+
 // backend support
 #include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
 #include "../ripple_leveldb/ripple_leveldb.h"
 #include "../ripple/rocksdb/ripple_rocksdb.h"
 
-namespace ripple {
+#include "beast/beast/make_unique.h"
 
+#include "impl/Tuning.h"
 #  include "impl/DecodedBlob.h"
 #  include "impl/EncodedBlob.h"
 #  include "impl/BatchWriter.h"
@@ -38,18 +42,21 @@ namespace ripple {
 # include "backend/RocksDBFactory.h"
 #include "backend/RocksDBFactory.cpp"
 
+#include "impl/Backend.cpp"
 #include "impl/BatchWriter.cpp"
-# include "impl/Factories.h"
 # include "impl/DatabaseImp.h"
+#include "impl/Database.cpp"
 #include "impl/DummyScheduler.cpp"
 #include "impl/DecodedBlob.cpp"
 #include "impl/EncodedBlob.cpp"
+#include "impl/Factory.cpp"
+#include "impl/Manager.cpp"
 #include "impl/NodeObject.cpp"
+#include "impl/Scheduler.cpp"
+#include "impl/Task.cpp"
 
 # include "tests/TestBase.h"
 #include "tests/BackendTests.cpp"
 #include "tests/BasicTests.cpp"
 #include "tests/DatabaseTests.cpp"
 #include "tests/TimingTests.cpp"
-
-}

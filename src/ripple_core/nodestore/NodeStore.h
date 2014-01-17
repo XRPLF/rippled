@@ -20,9 +20,6 @@
 #ifndef RIPPLE_NODESTORE_H_INCLUDED
 #define RIPPLE_NODESTORE_H_INCLUDED
 
-namespace ripple
-{
-
 #include "api/NodeObject.h"
 #include "api/Types.h"
 #include "api/VisitCallback.h"
@@ -32,7 +29,6 @@ namespace ripple
 #include "api/DummyScheduler.h"
 #include "api/Factory.h"
 #include "api/Database.h"
-
-}
+#include "api/Manager.h"
 
 #endif

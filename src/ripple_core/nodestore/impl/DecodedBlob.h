@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_DECODEDBLOB_H_INCLUDED
 #define RIPPLE_NODESTORE_DECODEDBLOB_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 /** Parsed key/value blob into NodeObject components.
 
@@ -55,6 +55,7 @@ private:
     int m_dataBytes;
 };
 
+}
 }
 
 #endif

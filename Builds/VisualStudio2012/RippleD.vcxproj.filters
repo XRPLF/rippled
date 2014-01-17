@@ -1419,6 +1419,24 @@
     <ClCompile Include="..\..\src\ripple_basics\containers\KeyCache.cpp">
       <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Backend.cpp">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Factory.cpp">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Scheduler.cpp">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Task.cpp">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Database.cpp">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Manager.cpp">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -2262,9 +2280,6 @@
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\Factory.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\impl\Factories.h">
-      <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\VisitCallback.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\api</Filter>
     </ClInclude>
@@ -2282,9 +2297,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\tests\TestBase.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\tests</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\impl\DatabaseImp.h">
-      <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\Task.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\api</Filter>
@@ -2894,6 +2906,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Manager.h">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\impl\DatabaseImp.h">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\impl\Tuning.h">
+      <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

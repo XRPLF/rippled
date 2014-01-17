@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_BATCHWRITER_H_INCLUDED
 #define RIPPLE_NODESTORE_BATCHWRITER_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 /** Batch-writing assist logic.
 
@@ -81,6 +81,7 @@ private:
     Batch mWriteSet;
 };
 
+}
 }
 
 #endif

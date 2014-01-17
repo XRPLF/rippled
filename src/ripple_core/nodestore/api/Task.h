@@ -20,13 +20,13 @@
 #ifndef RIPPLE_NODESTORE_TASK_H_INCLUDED
 #define RIPPLE_NODESTORE_TASK_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 /** Derived classes perform scheduled tasks. */
 struct Task
 {
-    virtual ~Task () { }
+    virtual ~Task () = 0;
 
     /** Performs the task.
         The call may take place on a foreign thread.
@@ -34,6 +34,7 @@ struct Task
     virtual void performScheduledTask () = 0;
 };
 
+}
 }
 
 #endif

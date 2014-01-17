@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 BatchWriter::BatchWriter (Callback& callback, Scheduler& scheduler)
     : m_callback (callback)
@@ -98,4 +98,5 @@ void BatchWriter::waitForWriting ()
         mWriteCondition.wait (sl);
 }
 
+}
 }

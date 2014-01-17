@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
 {
@@ -93,4 +93,5 @@ NodeObject::Ptr DecodedBlob::createObject ()
     return object;
 }
 
+}
 }

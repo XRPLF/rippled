@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 class DatabaseTests : public TestBase
 {
@@ -36,6 +36,8 @@ public:
 
     void testImport (String destBackendType, String srcBackendType, int64 seedValue)
     {
+        std::unique_ptr <Manager> manager (make_Manager ());
+
         DummyScheduler scheduler;
 
         File const node_db (File::createTempFile ("node_db"));
@@ -51,7 +53,7 @@ public:
 
         // Write to source db
         {
-            ScopedPointer <Database> src (Database::New (
+            std::unique_ptr <Database> src (manager->make_Database (
                 "test", scheduler, j, srcParams));
             storeBatch (*src, batch);
         }
@@ -60,7 +62,7 @@ public:
 
         {
             // Re-open the db
-            ScopedPointer <Database> src (Database::New (
+            std::unique_ptr <Database> src (manager->make_Database (
                 "test", scheduler, j, srcParams));
 
             // Set up the destination database
@@ -69,7 +71,7 @@ public:
             destParams.set ("type", destBackendType);
             destParams.set ("path", dest_db.getFullPathName ());
 
-            ScopedPointer <Database> dest (Database::New (
+            std::unique_ptr <Database> dest (manager->make_Database (
                 "test", scheduler, j, destParams));
 
             beginTestCase (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
@@ -95,6 +97,8 @@ public:
                         int64 const seedValue,
                         int numObjectsToTest = 2000)
     {
+        std::unique_ptr <Manager> manager (make_Manager ());
+
         DummyScheduler scheduler;
 
         String s;
@@ -125,7 +129,7 @@ public:
 
         {
             // Open the database
-            ScopedPointer <Database> db (Database::New ("test", scheduler,
+            std::unique_ptr <Database> db (manager->make_Database ("test", scheduler,
                 j, nodeParams, tempParams));
 
             // Write the batch
@@ -151,7 +155,7 @@ public:
         {
             {
                 // Re-open the database without the ephemeral DB
-                ScopedPointer <Database> db (Database::New (
+                std::unique_ptr <Database> db (manager->make_Database (
                     "test", scheduler, j, nodeParams));
 
                 // Read it back in
@@ -167,7 +171,7 @@ public:
             if (useEphemeralDatabase)
             {
                 // Verify the ephemeral db
-                ScopedPointer <Database> db (Database::New ("test",
+                std::unique_ptr <Database> db (manager->make_Database ("test",
                     scheduler, j, tempParams, StringPairArray ()));
 
                 // Read it back in
@@ -196,7 +200,9 @@ public:
         testNodeStore ("rocksdb", useEphemeralDatabase, true, seedValue);
     #endif
 
+    #if RIPPLE_ENABLE_SQLITE_BACKEND_TESTS
         testNodeStore ("sqlite", useEphemeralDatabase, true, seedValue);
+    #endif
     }
 
     //--------------------------------------------------------------------------
@@ -213,7 +219,9 @@ public:
         testImport ("hyperleveldb", "hyperleveldb", seedValue);
     #endif
 
+    #if RIPPLE_ENABLE_SQLITE_BACKEND_TESTS
         testImport ("sqlite", "sqlite", seedValue);
+    #endif
     }
 
     //--------------------------------------------------------------------------
@@ -234,4 +242,5 @@ public:
 
 static DatabaseTests databaseTests;
 
+}
 }

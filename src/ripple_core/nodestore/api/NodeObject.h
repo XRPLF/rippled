@@ -22,7 +22,7 @@
 
 // VFALCO NOTE Intentionally not in the NodeStore namespace
 
-
+namespace ripple {
 
 /** The types of node objects. */
 enum NodeObjectType
@@ -147,5 +147,7 @@ private:
     LedgerIndex mLedgerIndex;
     Blob mData;
 };
+
+}
 
 #endif

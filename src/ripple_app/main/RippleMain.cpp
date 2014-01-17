@@ -292,16 +292,6 @@ int RippleMain::run (int argc, char const* const* argv)
     po::positional_options_description p;
     p.add ("parameters", -1);
 
-    // NOTE: These must be added before the
-    //       Application object is created.
-    //
-    NodeStore::Database::addAvailableBackends ();
-
-    // VFALCO NOTE SqliteFactory is here because it has
-    //             dependencies like SqliteDatabase and DatabaseCon
-    //
-    NodeStore::Database::addFactory (SqliteFactory::getInstance ());
-
     if (! RandomNumbers::getInstance ().initialize ())
     {
         Log::out() << "Unable to add system entropy";

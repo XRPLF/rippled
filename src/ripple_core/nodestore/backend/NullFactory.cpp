@@ -17,18 +17,18 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
-class NullFactory::BackendImp : public Backend
+class NullBackend : public Backend
 {
 public:
-    explicit BackendImp (Scheduler& scheduler)
+    explicit NullBackend (Scheduler& scheduler)
         : m_scheduler (scheduler)
     {
     }
 
-    ~BackendImp ()
+    ~NullBackend ()
     {
     }
 
@@ -65,31 +65,27 @@ private:
 
 //------------------------------------------------------------------------------
 
-NullFactory::NullFactory ()
+class NullFactory : public Factory
 {
+public:
+    String getName () const
+    {
+        return "none";
+    }
+
+    std::unique_ptr <Backend> createInstance (
+        size_t, Parameters const&, Scheduler& scheduler, Journal journal)
+    {
+        return std::make_unique <NullBackend> (scheduler);
+    }
+};
+
+//------------------------------------------------------------------------------
+
+std::unique_ptr <Factory> make_NullFactory ()
+{
+    return std::make_unique <NullFactory> ();
 }
 
-NullFactory::~NullFactory ()
-{
 }
-
-NullFactory* NullFactory::getInstance ()
-{
-    return new NullFactory;
-}
-
-String NullFactory::getName () const
-{
-    return "none";
-}
-
-Backend* NullFactory::createInstance (
-    size_t,
-    Parameters const&,
-    Scheduler& scheduler,
-    Journal journal)
-{
-    return new NullFactory::BackendImp (scheduler);
-}
-
 }

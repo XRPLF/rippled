@@ -68,6 +68,8 @@ public:
     Application::LockType m_masterMutex;
 
     // These are not Stoppable-derived
+    std::unique_ptr <NodeStore::Manager> m_nodeStoreManager;
+
     NodeCache m_tempNodeCache;
     SLECache m_sleCache;
     LocalCredentials m_localCredentials;
@@ -166,11 +168,26 @@ public:
         }
     };
 
+    static std::vector <std::unique_ptr <NodeStore::Factory>> make_Factories ()
+    {
+        std::vector <std::unique_ptr <NodeStore::Factory>> list;
+
+        // VFALCO NOTE SqliteFactory is here because it has
+        //             dependencies like SqliteDatabase and DatabaseCon
+        //
+        list.emplace_back (make_SqliteFactory ());
+
+        return list;
+    }
+
     //--------------------------------------------------------------------------
 
     ApplicationImp ()
         : RootStoppable ("Application")
         , m_journal (LogPartition::getJournal <ApplicationLog> ())
+
+        , m_nodeStoreManager (NodeStore::make_Manager (
+            std::move (make_Factories ())))
 
         , m_tempNodeCache ("NodeCache", 16384, 90,
             get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
@@ -233,7 +250,7 @@ public:
 #if ! RIPPLE_USE_RPC_SERVICE_MANAGER
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager) // passive object, not a Service
 #endif
-        , m_nodeStore (NodeStore::Database::New ("NodeStore.main", m_nodeStoreScheduler,
+        , m_nodeStore (m_nodeStoreManager->make_Database ("NodeStore.main", m_nodeStoreScheduler,
             LogPartition::getJournal <NodeObject> (),
                 getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
 
@@ -1335,9 +1352,10 @@ void ApplicationImp::updateTables ()
     if (getConfig ().doImport)
     {
         NodeStore::DummyScheduler scheduler;
-        std::unique_ptr <NodeStore::Database> source (NodeStore::Database::New (
-            "NodeStore.import", scheduler, LogPartition::getJournal <NodeObject> (),
-                getConfig ().importNodeDatabase));
+        std::unique_ptr <NodeStore::Database> source (
+            m_nodeStoreManager->make_Database ("NodeStore.import", scheduler,
+                LogPartition::getJournal <NodeObject> (),
+                    getConfig ().importNodeDatabase));
 
         WriteLog (lsWARNING, NodeObject) <<
             "Node import from '" << source->getName () << "' to '"

@@ -20,18 +20,20 @@
 #ifndef RIPPLE_NODESTORE_VISITCALLBACK_H_INCLUDED
 #define RIPPLE_NODESTORE_VISITCALLBACK_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 /** Callback for iterating through objects.
 
     @see visitAll
 */
+// VFALCO DEPRECATED Use std::function instead
 struct VisitCallback
 {
     virtual void visitObject (NodeObject::Ptr const& object) = 0;
 };
 
+}
 }
 
 #endif

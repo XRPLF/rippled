@@ -43,10 +43,10 @@ static int s_nodeStoreDBCount = NUMBER (s_nodeStoreDBInit);
 
 //------------------------------------------------------------------------------
 
-class SqliteFactory::BackendImp : public NodeStore::Backend
+class SqliteBackend : public NodeStore::Backend
 {
 public:
-    BackendImp (size_t keyBytes, std::string const& path, NodeStore::Scheduler& scheduler)
+    SqliteBackend (size_t keyBytes, std::string const& path, NodeStore::Scheduler& scheduler)
         : m_keyBytes (keyBytes)
         , m_name (path)
         , m_db (new DatabaseCon(path, s_nodeStoreDBInit, s_nodeStoreDBCount))
@@ -60,7 +60,7 @@ public:
         m_db->getDB()->executeSQL (s.toStdString ().c_str ());
     }
 
-    ~BackendImp()
+    ~SqliteBackend()
     {
     }
 
@@ -224,29 +224,26 @@ private:
 
 //------------------------------------------------------------------------------
 
-SqliteFactory::SqliteFactory ()
+class SqliteFactory : public NodeStore::Factory
 {
-}
+public:
+    String getName () const
+    {
+        return "Sqlite";
+    }
 
-SqliteFactory::~SqliteFactory ()
-{
-}
+    std::unique_ptr <NodeStore::Backend> createInstance (
+        size_t keyBytes, NodeStore::Parameters const& keyValues,
+            NodeStore::Scheduler& scheduler, Journal)
+    {
+        return std::make_unique <SqliteBackend> (
+            keyBytes, keyValues ["path"].toStdString (), scheduler);
+    }
+};
 
-SqliteFactory* SqliteFactory::getInstance ()
-{
-    return new SqliteFactory;
-}
+//------------------------------------------------------------------------------
 
-String SqliteFactory::getName () const
+std::unique_ptr <NodeStore::Factory> make_SqliteFactory ()
 {
-    return "Sqlite";
-}
-
-NodeStore::Backend* SqliteFactory::createInstance (
-    size_t keyBytes,
-    NodeStore::Parameters const& keyValues,
-    NodeStore::Scheduler& scheduler,
-    Journal)
-{
-    return new BackendImp (keyBytes, keyValues ["path"].toStdString (), scheduler);
+    return std::make_unique <SqliteFactory> ();
 }

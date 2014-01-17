@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 DummyScheduler::DummyScheduler ()
 {
@@ -39,4 +39,4 @@ void DummyScheduler::scheduledTasksStopped ()
 }
 
 }
-
+}
