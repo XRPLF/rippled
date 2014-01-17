@@ -53,6 +53,8 @@ bool InboundLedger::checkLocal ()
 
 InboundLedger::~InboundLedger ()
 {
+    // Save any received AS data not processed. It could be useful
+    // for populating a different ledger
     BOOST_FOREACH (PeerDataPairType& entry, mReceivedData)
     {
         if (entry.second->type () == protocol::liAS_NODE)
@@ -82,6 +84,9 @@ void InboundLedger::init(ScopedLockType& collectionLock, bool couldBeNew)
     }
 }
 
+/** See how much of the ledger data, if any, is
+    in our node store
+*/
 bool InboundLedger::tryLocal ()
 {
     // return value: true = no more work to do
@@ -217,6 +222,8 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
     }
 }
 
+/** Add more peers to the set, if possible
+*/
 void InboundLedger::addPeers ()
 {
     std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
@@ -231,6 +238,7 @@ void InboundLedger::addPeers ()
 
     int found = 0;
 
+    // First look for peers that are likely to have this ledger
     for (int i = 0; i < vSize; ++i)
     {
         Peer::ref peer = peerList[ (i + firstPeer) % vSize];
@@ -243,7 +251,7 @@ void InboundLedger::addPeers ()
     }
 
     if (!found)
-    {
+    { // Oh well, try some random peers
         for (int i = 0; (i < 6) && (i < vSize); ++i)
         {
             if (peerHas (peerList[ (i + firstPeer) % vSize]))
@@ -265,6 +273,8 @@ boost::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
     return boost::dynamic_pointer_cast<PeerSet> (shared_from_this ());
 }
 
+/** Dispatch acquire completion
+*/
 static void LADispatch (
     Job& job,
     InboundLedger::pointer la,
@@ -322,6 +332,8 @@ bool InboundLedger::addOnComplete (std::function<void (InboundLedger::pointer)> 
     return true;
 }
 
+/** Request more nodes, perhaps from a specific peer
+*/
 void InboundLedger::trigger (Peer::ref peer)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
@@ -361,7 +373,7 @@ void InboundLedger::trigger (Peer::ref peer)
     tmGL.set_ledgerhash (mHash.begin (), mHash.size ());
 
     if (getTimeouts () != 0)
-    {
+    { // Be more aggressive if we've timed out at least once
         tmGL.set_querytype (protocol::qtINDIRECT);
 
         if (!isProgress () && !mFailed && mByHash && (getTimeouts () > LEDGER_TIMEOUT_AGGRESSIVE))
@@ -419,6 +431,8 @@ void InboundLedger::trigger (Peer::ref peer)
         }
     }
 
+    // We can't do much without the base data because we don't know the
+    // state or transaction root hashes.
     if (!mHaveBase && !mFailed)
     {
         tmGL.set_itype (protocol::liBASE);
@@ -430,61 +444,8 @@ void InboundLedger::trigger (Peer::ref peer)
     if (mLedger)
         tmGL.set_ledgerseq (mLedger->getLedgerSeq ());
 
-    if (mHaveBase && !mHaveTransactions && !mFailed)
-    {
-        assert (mLedger);
-
-        if (mLedger->peekTransactionMap ()->getHash ().isZero ())
-        {
-            // we need the root node
-            tmGL.set_itype (protocol::liTX_NODE);
-            * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
-            WriteLog (lsTRACE, InboundLedger) << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
-            sendRequest (tmGL, peer);
-            return;
-        }
-        else
-        {
-            std::vector<SHAMapNode> nodeIDs;
-            std::vector<uint256> nodeHashes;
-            nodeIDs.reserve (256);
-            nodeHashes.reserve (256);
-            TransactionStateSF filter (mSeq);
-            mLedger->peekTransactionMap ()->getMissingNodes (nodeIDs, nodeHashes, 256, &filter);
-
-            if (nodeIDs.empty ())
-            {
-                if (!mLedger->peekTransactionMap ()->isValid ())
-                    mFailed = true;
-                else
-                {
-                    mHaveTransactions = true;
-
-                    if (mHaveState)
-                        mComplete = true;
-                }
-            }
-            else
-            {
-                if (!mAggressive)
-                    filterNodes (nodeIDs, nodeHashes, mRecentTXNodes, 128, !isProgress ());
-
-                if (!nodeIDs.empty ())
-                {
-                    tmGL.set_itype (protocol::liTX_NODE);
-                    BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
-                    {
-                        * (tmGL.add_nodeids ()) = it.getRawString ();
-                    }
-                    WriteLog (lsTRACE, InboundLedger) << "Sending TX node " << nodeIDs.size ()
-                                                      << " request to " << (peer ? "selected peer" : "all peers");
-                    sendRequest (tmGL, peer);
-                    return;
-                }
-            }
-        }
-    }
-
+    // Get the state data first because it's the most likely to be useful
+    // if we wind up abandoning this fetch.
     if (mHaveBase && !mHaveState && !mFailed)
     {
         assert (mLedger);
@@ -537,6 +498,65 @@ void InboundLedger::trigger (Peer::ref peer)
                     sendRequest (tmGL, peer);
                     return;
                 }
+                else
+                    WriteLog (lsTRACE, InboundLedger) << "All AS nodes filtered";
+            }
+        }
+    }
+
+    if (mHaveBase && !mHaveTransactions && !mFailed)
+    {
+        assert (mLedger);
+
+        if (mLedger->peekTransactionMap ()->getHash ().isZero ())
+        {
+            // we need the root node
+            tmGL.set_itype (protocol::liTX_NODE);
+            * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
+            WriteLog (lsTRACE, InboundLedger) << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
+            sendRequest (tmGL, peer);
+            return;
+        }
+        else
+        {
+            std::vector<SHAMapNode> nodeIDs;
+            std::vector<uint256> nodeHashes;
+            nodeIDs.reserve (256);
+            nodeHashes.reserve (256);
+            TransactionStateSF filter (mSeq);
+            mLedger->peekTransactionMap ()->getMissingNodes (nodeIDs, nodeHashes, 256, &filter);
+
+            if (nodeIDs.empty ())
+            {
+                if (!mLedger->peekTransactionMap ()->isValid ())
+                    mFailed = true;
+                else
+                {
+                    mHaveTransactions = true;
+
+                    if (mHaveState)
+                        mComplete = true;
+                }
+            }
+            else
+            {
+                if (!mAggressive)
+                    filterNodes (nodeIDs, nodeHashes, mRecentTXNodes, 128, !isProgress ());
+
+                if (!nodeIDs.empty ())
+                {
+                    tmGL.set_itype (protocol::liTX_NODE);
+                    BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
+                    {
+                        * (tmGL.add_nodeids ()) = it.getRawString ();
+                    }
+                    WriteLog (lsTRACE, InboundLedger) << "Sending TX node " << nodeIDs.size ()
+                                                      << " request to " << (peer ? "selected peer" : "all peers");
+                    sendRequest (tmGL, peer);
+                    return;
+                }
+                else
+                    WriteLog (lsTRACE, InboundLedger) << "All TX nodes filtered";
             }
         }
     }
@@ -804,6 +824,7 @@ bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
 
     if (!mHaveBase)
     {
+        assert(false);
         san.incInvalid();
         return false;
     }
@@ -826,6 +847,7 @@ bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
 
     if (!mHaveBase)
     {
+        assert(false);
         san.incInvalid();
         return false;
     }
@@ -900,14 +922,20 @@ int InboundLedger::processData (boost::shared_ptr<Peer> peer, protocol::TMLedger
             return -1;
         }
 
-        if (!mHaveBase && !takeBase (packet.nodes (0).nodedata ()))
+        SHAMapAddNode san;
+
+        if (!mHaveBase)
         {
-            WriteLog (lsWARNING, InboundLedger) << "Got invalid base data";
-            peer->charge (Resource::feeInvalidRequest);
-            return -1;
+            if (takeBase (packet.nodes (0).nodedata ()))
+                san.incUseful ();
+            else
+            {
+                WriteLog (lsWARNING, InboundLedger) << "Got invalid base data";
+                peer->charge (Resource::feeInvalidRequest);
+                return -1;
+            }
         }
 
-        SHAMapAddNode san;
 
         if (!mHaveState && (packet.nodes ().size () > 1) &&
             !takeAsRootNode (strCopy (packet.nodes (1).nodedata ()), san))
@@ -1004,6 +1032,8 @@ void InboundLedger::runData ()
             data.swap(mReceivedData);
         }
 
+        // Select the peer that gives us the most nodes that are useful,
+        // breaking ties in favor of the peer that responded first.
         BOOST_FOREACH (PeerDataPairType& entry, data)
         {
             Peer::pointer peer = entry.first.lock();
