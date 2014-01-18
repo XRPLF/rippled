@@ -702,9 +702,6 @@
     <ClCompile Include="..\..\src\ripple_app\peers\Peers.cpp">
       <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\PeerSet.cpp">
-      <Filter>[2] Old Ripple\ripple_app\peers</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\peers\UniqueNodeList.cpp">
       <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClCompile>
@@ -1437,6 +1434,9 @@
     <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Manager.cpp">
       <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\peers\PeerSet.cpp">
+      <Filter>[2] Old Ripple\ripple_app\peers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
@@ -1893,9 +1893,6 @@
       <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\peers\Peer.h">
-      <Filter>[2] Old Ripple\ripple_app\peers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\peers\PeerSet.h">
       <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\peers\UniqueNodeList.h">
@@ -2915,6 +2912,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\impl\Tuning.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\peers\PeerSet.h">
+      <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

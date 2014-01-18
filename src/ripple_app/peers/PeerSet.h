@@ -69,7 +69,7 @@ public:
     
     void touch ()
     {
-        mLastAction = clock().now();
+        mLastAction = m_clock.now();
     }
     
     clock_type::time_point getLastAction () const
@@ -103,13 +103,12 @@ private:
     static void TimerJobEntry (Job&, boost::shared_ptr<PeerSet>);
 
 protected:
-    clock_type& clock ();
-
     // VFALCO TODO try to make some of these private
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
 
-    PeerSet (clock_type& clock, uint256 const& hash, int interval, bool txnData);
+    PeerSet (uint256 const& hash, int interval, bool txnData,
+        clock_type& clock, Journal journal);
     virtual ~PeerSet () = 0;
 
     virtual void newPeer (Peer::ref) = 0;
@@ -130,6 +129,9 @@ protected:
     void sendRequest (const protocol::TMGetLedger& message, Peer::ref peer);
 
 protected:
+    Journal m_journal;
+    clock_type& m_clock;
+
     LockType mLock;
 
     uint256 mHash;
@@ -151,9 +153,6 @@ protected:
     typedef int ReceivedChunkCount;
     typedef boost::unordered_map <PeerIdentifier, ReceivedChunkCount> Map;
     Map mPeers;
-
-private:
-    clock_type& m_clock;
 };
 
 #endif

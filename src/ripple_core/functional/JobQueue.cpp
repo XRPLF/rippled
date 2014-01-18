@@ -129,7 +129,8 @@ public:
         m_metrics.job_count = m_jobSet.size ();
     }
 
-    void addJob (JobType type, const std::string& name, const std::function<void (Job&)>& jobFunc)
+    void addJob (JobType type, std::string const& name,
+        boost::function <void (Job&)> const& jobFunc)
     {
         bassert (type != jtINVALID);
 

@@ -281,8 +281,7 @@ public:
                     return empty;
                 }
 
-                acquiring = boost::make_shared<TransactionAcquire> (
-                    std::ref (m_clock), hash);
+                acquiring = boost::make_shared<TransactionAcquire> (hash, std::ref (m_clock));
                 startAcquiring (acquiring);
             }
         }

@@ -31,10 +31,13 @@ public:
 
     virtual ~JobQueue () { }
 
-    // VFALCO TODO make convenience functions that allow the caller to not 
-    //             have to call bind.
+    // VFALCO NOTE Using boost::function here because Visual Studio 2012
+    //             std::function doesn't swallow return types.
     //
-    virtual void addJob (JobType type, const std::string& name, const std::function<void (Job&)>& job) = 0;
+    //        TODO Replace with std::function
+    //
+    virtual void addJob (JobType type,
+        std::string const& name, boost::function <void (Job&)> const& job) = 0;
 
     // Jobs waiting at this priority
     virtual int getJobCount (JobType t) = 0;

@@ -501,7 +501,9 @@ public:
     //
     void sendEndpoints (PeerInfo const& peer, Giveaways &giveaway)
     {
+#if 0
         typedef std::vector <Endpoint> List;
+#endif
         std::vector <Endpoint> endpoints;
 
         // Add us to the list if we want incoming
@@ -754,7 +756,9 @@ public:
         if (! results.error)
         {
             std::size_t newEntries (0);
+#if 0
             DiscreteTime now (get_now());
+#endif
 
             for (std::vector <IPAddress>::const_iterator iter (results.list.begin());
                 iter != results.list.end(); ++iter)

@@ -19,9 +19,18 @@
 
 class InboundLedger;
 
-PeerSet::PeerSet (clock_type& clock_,
-    uint256 const& hash, int interval, bool txnData)
-    : mLock (this, "PeerSet", __FILE__, __LINE__)
+// VFALCO NOTE The txnData constructor parameter is a code smell.
+//             It is true if we are the base of a TransactionAcquire,
+//             or false if we are base of InboundLedger. All it does
+//             is change the behavior of the timer depending on the
+//             derived class. Why not just make the timer callback
+//             function pure virtual?
+//
+PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData,
+    clock_type& clock, Journal journal)
+    : m_journal (journal)
+    , m_clock (clock)
+    , mLock (this, "PeerSet", __FILE__, __LINE__)
     , mHash (hash)
     , mTimerInterval (interval)
     , mTimeouts (0)
@@ -31,19 +40,13 @@ PeerSet::PeerSet (clock_type& clock_,
     , mTxnData (txnData)
     , mProgress (false)
     , mTimer (getApp().getIOService ())
-    , m_clock (clock_)
 {
-    mLastAction = clock().now();
+    mLastAction = m_clock.now();
     assert ((mTimerInterval > 10) && (mTimerInterval < 30000));
 }
 
 PeerSet::~PeerSet ()
 {
-}
-
-PeerSet::clock_type& PeerSet::clock ()
-{
-    return m_clock;
 }
 
 bool PeerSet::peerHas (Peer::ref ptr)
@@ -101,6 +104,10 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
 
     if (ptr)
     {
+        // VFALCO NOTE So this function is really two different functions depending on
+        //             the value of mTxnData, which is directly tied to whether we are
+        //             a base class of IncomingLedger or TransactionAcquire
+        //
         if (ptr->mTxnData)
         {
             getApp().getJobQueue ().addJob (jtTXN_DATA, "timerEntryTxn",

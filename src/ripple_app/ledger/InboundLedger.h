@@ -34,7 +34,7 @@ public:
     typedef std::pair < boost::weak_ptr<Peer>, boost::shared_ptr<protocol::TMLedgerData> > PeerDataPairType;
 
 public:
-    InboundLedger (clock_type& clock, uint256 const& hash, uint32 seq);
+    InboundLedger (uint256 const& hash, uint32 seq, clock_type& clock);
 
     ~InboundLedger ();
 
@@ -82,7 +82,8 @@ public:
 
     std::vector<neededHash_t> getNeededHashes ();
 
-    static void filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
+    // VFALCO TODO Replace uint256 with something semanticallyh meaningful
+    void filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
                              std::set<SHAMapNode>& recentNodes, int max, bool aggressive);
 
     Json::Value getJson (int);
@@ -106,6 +107,11 @@ private:
     bool takeTxNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
                      SHAMapAddNode&);
     bool takeTxRootNode (Blob const& data, SHAMapAddNode&);
+
+    // VFALCO TODO Rename to receiveAccountStateNode
+    //             Don't use acronyms, but if we are going to use them at least
+    //             capitalize them correctly.
+    //
     bool takeAsNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
                      SHAMapAddNode&);
     bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
@@ -133,5 +139,3 @@ private:
 };
 
 #endif
-
-// vim:ts=4

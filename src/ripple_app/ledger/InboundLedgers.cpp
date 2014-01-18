@@ -57,7 +57,7 @@ public:
                 }
                 else
                 {
-                    ret = boost::make_shared <InboundLedger> (std::ref (m_clock), hash, seq);
+                    ret = boost::make_shared <InboundLedger> (hash, seq, std::ref (m_clock));
                     assert (ret);
                     mLedgers.insert (std::make_pair (hash, ret));
                     ret->init (sl, couldBeNew);
