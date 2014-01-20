@@ -36,20 +36,17 @@ public:
     //
     //        TODO Replace with std::function
     //
-    virtual void addJob (JobType type,
-        std::string const& name, boost::function <void (Job&)> const& job) = 0;
+    virtual void addJob (JobType& type, const std::string& name,
+        boost::function<void (Job&)> const& job) = 0;
 
-    // Jobs waiting at this priority
-    virtual int getJobCount (JobType t) = 0;
+    // Number of jobs waiting at the specified priority
+    virtual int getJobCount (JobType const& t) = 0;
 
-    // Jobs waiting plus running at this priority
-    virtual int getJobCountTotal (JobType t) = 0;
+    // Number of jobs waiting as selected by the specified predicate
+    virtual int getJobCountGE (JobType const& t) = 0;
 
-    // All waiting jobs at or greater than this priority
-    virtual int getJobCountGE (JobType t) = 0;
-
-    // jobs waiting, threads doing
-    virtual std::vector< std::pair<JobType, std::pair<int, int> > > getJobCounts () = 0;
+    // Jobs waiting plus running at the specified priority
+    virtual int getJobCountTotal (JobType const& t) = 0;
 
     virtual void shutdown () = 0;
 
@@ -58,14 +55,14 @@ public:
     // VFALCO TODO Rename these to newLoadEventMeasurement or something similar
     //             since they create the object.
     //
-    virtual LoadEvent::pointer getLoadEvent (JobType t, const std::string& name) = 0;
+    virtual LoadEvent::pointer getLoadEvent (JobType& t, const std::string& name) = 0;
 
     // VFALCO TODO Why do we need two versions, one which returns a shared
     //             pointer and the other which returns an autoptr?
     //          
-    virtual LoadEvent::autoptr getLoadEventAP (JobType t, const std::string& name) = 0;
+    virtual LoadEvent::autoptr getLoadEventAP (JobType& t, const std::string& name) = 0;
 
-    virtual bool isOverloaded () = 0;
+    virtual bool isOverloaded () const = 0;
 
     virtual Json::Value getJson (int c = 0) = 0;
 };

@@ -46,9 +46,10 @@ public:
             ++inProgress;
         else
         {
-            if ((getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 50) ||
-                    getApp().getFeeTrack().isLoadedLocal ())
-            return;
+            int count = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
+
+            if ((count > 50) || getApp().getFeeTrack().isLoadedLocal ())
+                return;
 
             do
             {
