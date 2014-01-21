@@ -32,6 +32,7 @@ namespace ripple
 {
 
 #include "paths/PathRequest.cpp"
+#include "paths/PathRequests.cpp"
 #include "paths/RippleCalc.cpp"
 #include "paths/PathState.cpp"
 

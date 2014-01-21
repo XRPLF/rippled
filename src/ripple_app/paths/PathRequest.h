@@ -31,10 +31,11 @@ class PathRequests;
 #define PFR_PJ_NOCHANGE             0
 #define PFR_PJ_CHANGE               1
 
-class PathRequest : public boost::enable_shared_from_this<PathRequest>, public CountedObject <PathRequest>
+class PathRequest :
+    public boost::enable_shared_from_this <PathRequest>,
+    public CountedObject <PathRequest>
 {
 public:
-
     static char const* getCountedObjectName () { return "PathRequest"; }
 
     typedef boost::weak_ptr<PathRequest>    wptr;
@@ -45,7 +46,9 @@ public:
 
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
-    explicit PathRequest (boost::shared_ptr <InfoSub> const& subscriber, int id, PathRequests&);
+    PathRequest (boost::shared_ptr <InfoSub> const& subscriber,
+        int id, PathRequests&, Journal journal);
+    
     ~PathRequest ();
 
     bool        isValid (const boost::shared_ptr<Ledger>&);
@@ -59,12 +62,13 @@ public:
     Json::Value doStatus (const Json::Value&);
     Json::Value doUpdate (const boost::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
     InfoSub::pointer getSubscriber ();
-    Journal& journal ();
 
 private:
     void setValid ();
     void resetLevel (int level);
     int parseJson (const Json::Value&, bool complete);
+
+    Journal m_journal;
 
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
@@ -98,64 +102,4 @@ private:
 
 };
 
-
-class PathRequests
-{
-public:
-
-    PathRequests (Journal journal, std::shared_ptr <insight::Collector> const& collector)
-        : mJournal (journal)
-        , mLastIdentifier (0)
-        , mLock ("PathRequests", __FILE__, __LINE__)
-    {
-        mFast = collector->make_event ("pathfind_fast");
-        mFull = collector->make_event ("pathfind_full");
-    }
-
-    void updateAll (const boost::shared_ptr<Ledger>& ledger, CancelCallback shouldCancel);
-
-    RippleLineCache::pointer getLineCache (Ledger::pointer& ledger, bool authoritative);
-
-    Json::Value makePathRequest (
-        boost::shared_ptr <InfoSub> const& subscriber,
-        const boost::shared_ptr<Ledger>& ledger,
-        const Json::Value& request);
-
-    Journal& journal ()
-    {
-        return mJournal;
-    }
-
-    void reportFast (int milliseconds)
-    {
-        mFast.notify (static_cast < insight::Event::value_type> (milliseconds));
-    }
-
-    void reportFull (int milliseconds)
-    {
-        mFull.notify (static_cast < insight::Event::value_type> (milliseconds));
-    }
-
-private:
-    Journal                          mJournal;
-
-    insight::Event                   mFast;
-    insight::Event                   mFull;
-
-    // Track all requests
-    std::vector<PathRequest::wptr>   mRequests;
-
-    // Use a RippleLineCache
-    RippleLineCache::pointer         mLineCache;
-
-    Atomic<int>                      mLastIdentifier;
-
-    typedef RippleRecursiveMutex     LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-    LockType                         mLock;
-
-};
-
 #endif
-
-// vim:ts=4

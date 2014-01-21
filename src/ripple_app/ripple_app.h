@@ -134,6 +134,7 @@ namespace ripple {
 #include "tx/OfferCreateTransactor.h"
 #include "paths/RippleLineCache.h"
 #include "paths/PathRequest.h"
+#include "paths/PathRequests.h"
 #include "main/ParameterTable.h"
  #include "paths/RippleLineCache.h"
  #include "paths/PathState.h"
