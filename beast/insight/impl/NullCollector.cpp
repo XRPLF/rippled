@@ -50,7 +50,7 @@ private:
 class NullEventImpl : public EventImpl
 {
 public:
-    void notify (value_type)
+    void notify (value_type const&)
     {
     }
 

@@ -1239,6 +1239,9 @@
     <ClInclude Include="..\..\beast\make_unique.h">
       <Filter>beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\chrono_util.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">

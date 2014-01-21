@@ -17,17 +17,50 @@
 */
 //==============================================================================
 
-#ifndef BEAST_CHRONO_H_INCLUDED
-#define BEAST_CHRONO_H_INCLUDED
+#ifndef BEAST_CHRONO_UTIL_H_INCLUDED
+#define BEAST_CHRONO_UTIL_H_INCLUDED
 
-#include "chrono/abstract_clock.h"
-#include "chrono/chrono_io.h"
-#include "chrono/chrono_util.h"
-#include "chrono/manual_clock.h"
-#include "chrono/ratio_io.h"
+// From Howard Hinnant
+// http://home.roadrunner.com/~hinnant/duration_io/chrono_util.html
 
-#include "chrono/CPUMeter.h"
-#include "chrono/RelativeTime.h"
-#include "chrono/ScopedTimeInterval.h"
+// round down
+template <class To, class Rep, class Period>
+To floor(std::chrono::duration <Rep, Period> const& d)
+{
+    To t = std::chrono::duration_cast<To>(d);
+    if (t > d)
+        --t;
+    return t;
+}
+
+// round to nearest, to even on tie
+template <class To, class Rep, class Period>
+To round (std::chrono::duration <Rep, Period> const& d)
+{
+    To t0 = std::chrono::duration_cast<To>(d);
+    To t1 = t0;
+    ++t1;
+    auto diff0 = d - t0;
+    auto diff1 = t1 - d;
+    if (diff0 == diff1)
+    {
+        if (t0.count() & 1)
+            return t1;
+        return t0;
+    }
+    else if (diff0 < diff1)
+        return t0;
+    return t1;
+}
+
+// round up
+template <class To, class Rep, class Period>
+To ceil (std::chrono::duration <Rep, Period> const& d)
+{
+    To t = std::chrono::duration_cast<To>(d);
+    if (t < d)
+        ++t;
+    return t;
+}
 
 #endif

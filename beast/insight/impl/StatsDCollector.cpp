@@ -112,9 +112,9 @@ public:
 
     ~StatsDEventImpl ();
 
-    void notify (EventImpl::value_type value);
+    void notify (EventImpl::value_type const& alue);
 
-    void do_notify (EventImpl::value_type value);
+    void do_notify (EventImpl::value_type const& value);
     void do_process ();
 
 private:
@@ -527,7 +527,7 @@ StatsDEventImpl::~StatsDEventImpl ()
 {
 }
 
-void StatsDEventImpl::notify (EventImpl::value_type value)
+void StatsDEventImpl::notify (EventImpl::value_type const& value)
 {
     m_impl->get_io_service().dispatch (std::bind (
         &StatsDEventImpl::do_notify,
@@ -535,13 +535,13 @@ void StatsDEventImpl::notify (EventImpl::value_type value)
                 shared_from_this ()), value));
 }
 
-void StatsDEventImpl::do_notify (EventImpl::value_type value)
+void StatsDEventImpl::do_notify (EventImpl::value_type const& value)
 {
     std::stringstream ss;
     ss <<
         m_impl->prefix() << "." <<
         m_name << ":" <<
-        value << "|ms" <<
+        value.count() << "|ms" <<
         "\n";
     m_impl->post_buffer (ss.str ());
 }
@@ -617,17 +617,18 @@ void StatsDGaugeImpl::do_increment (GaugeImpl::difference_type amount)
 
     if (amount > 0)
     {
+        GaugeImpl::value_type const d (
+            static_cast <GaugeImpl::value_type> (amount));
         value +=
-            (amount >= std::numeric_limits <GaugeImpl::value_type>::max() - m_value)
+            (d >= std::numeric_limits <GaugeImpl::value_type>::max() - m_value)
             ? std::numeric_limits <GaugeImpl::value_type>::max() - m_value
-            : GaugeImpl::value_type (amount);
+            : d;
     }
     else if (amount < 0)
     {
-        value -=
-            (std::abs (amount) >= m_value)
-            ? m_value
-            : std::abs (amount);
+        GaugeImpl::value_type const d (
+            static_cast <GaugeImpl::value_type> (-amount));
+        value = (d >= value) ? 0 : value - d; 
     }
 
     do_set (value);
