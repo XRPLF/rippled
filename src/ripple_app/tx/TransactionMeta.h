@@ -86,6 +86,22 @@ public:
         return (mNodes);
     }
 
+    void setDeliveredAmount (STAmount const& delivered)
+    {
+        mDelivered.reset (delivered);
+    }
+
+    STAmount getDeliveredAmount () const
+    {
+        assert (hasDeliveredAmount ());
+        return *mDelivered;
+    }
+
+    bool hasDeliveredAmount () const
+    {
+         return mDelivered;
+    }
+
     static bool thread (STObject& node, uint256 const& prevTxID, uint32 prevLgrID);
 
 private:
@@ -93,6 +109,8 @@ private:
     uint32  mLedger;
     uint32  mIndex;
     int     mResult;
+
+    boost::optional <STAmount> mDelivered;
 
     STArray mNodes;
 };

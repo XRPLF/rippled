@@ -204,8 +204,11 @@ TER PaymentTransactor::doApply ()
                               false,                  // Not standalone, delete unfundeds.
                               isSetBit (mParams, tapOPEN_LEDGER));
 
-	    if (terNO_LINE == terResult)
-	        terResult = tecPATH_DRY;
+            if (terNO_LINE == terResult)
+                terResult = tecPATH_DRY;
+
+            if ((tesSUCCESS == terResult) && (saDstAmountAct != saDstAmount))
+                mEngine->getNodes().setDeliveredAmount (saDstAmountAct);
         }
         catch (const std::exception& e)
         {

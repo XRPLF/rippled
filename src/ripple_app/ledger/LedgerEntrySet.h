@@ -246,6 +246,11 @@ public:
         return mEntries.end ();
     }
 
+    void setDeliveredAmount (STAmount const& amt)
+    {
+        mSet.setDeliveredAmount (amt);
+    }
+
 private:
     Ledger::pointer mLedger;
     std::map<uint256, LedgerEntrySetEntry>  mEntries; // cannot be unordered!

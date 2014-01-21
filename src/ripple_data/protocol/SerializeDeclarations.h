@@ -146,6 +146,7 @@ FIELD (SendMax,              AMOUNT, 9)
 // currency amount (uncommon)
 FIELD (MinimumOffer,         AMOUNT, 16)
 FIELD (RippleEscrow,         AMOUNT, 17)
+FIELD (DeliveredAmount,      AMOUNT, 18)
 
 // variable length
 FIELD (PublicKey,            VL, 1)

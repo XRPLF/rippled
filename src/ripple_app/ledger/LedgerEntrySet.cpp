@@ -592,7 +592,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, uint32 index)
     // add any new modified nodes to the modification set
     typedef std::map<uint256, SLE::pointer>::value_type u256_sle_pair;
     BOOST_FOREACH (u256_sle_pair & it, newMod)
-    entryModify (it.second);
+        entryModify (it.second);
 
     mSet.addRaw (s, result, index);
     WriteLog (lsTRACE, LedgerEntrySet) << "Metadata:" << mSet.getJson (0);
