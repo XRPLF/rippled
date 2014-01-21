@@ -43,8 +43,7 @@ public:
         A null metric reports no information.
     */
     Meter ()
-    {
-    }
+        { }
 
     /** Create the metric reference the specified implementation.
         Normally this won't be called directly. Instead, call the appropriate
@@ -53,8 +52,7 @@ public:
     */
     explicit Meter (std::shared_ptr <MeterImpl> const& impl)
         : m_impl (impl)
-    {
-    }
+        { }
 
     /** Set a handler for polling.
         If a handler is set, it will be called once per collection interval.
@@ -79,13 +77,22 @@ public:
     }
 
     Meter const& operator+= (value_type amount) const
-        { increment (amount); return *this; }
+    {
+        increment (amount);
+        return *this;
+    }
 
     Meter const& operator++ () const
-        { increment (1); return *this; }
+    {
+        increment (1);
+        return *this;
+    }
 
     Meter const& operator++ (int) const
-        { increment (1); return *this; }
+    {
+        increment (1);
+        return *this;
+    }
     /** @} */
 
 private:

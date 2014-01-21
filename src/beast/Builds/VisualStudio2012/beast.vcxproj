@@ -90,6 +90,7 @@
     <ClInclude Include="..\..\beast\boost\ErrorCode.h" />
     <ClInclude Include="..\..\beast\ByteOrder.h" />
     <ClInclude Include="..\..\beast\chrono\chrono_io.h" />
+    <ClInclude Include="..\..\beast\chrono\chrono_util.h" />
     <ClInclude Include="..\..\beast\chrono\CPUMeter.h" />
     <ClInclude Include="..\..\beast\chrono\abstract_clock.h" />
     <ClInclude Include="..\..\beast\chrono\manual_clock.h" />

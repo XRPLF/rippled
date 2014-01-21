@@ -153,18 +153,11 @@ public:
         template <class Duration>
         void operator() (Duration const& elapsed) const
         {
-            auto ms (std::chrono::duration_cast <
-                std::chrono::milliseconds> (elapsed));
-            latency.notify (ms.count());
+            auto ms (ceil <std::chrono::milliseconds> (elapsed));
+            latency.notify (ms);
             if (ms.count() >= 500)
                 journal.warning <<
                     "io_service latency = " << ms;
-
-#if 0
-            std::stringstream ss;
-            ss << "io_service latency = " << ms;
-            Logger::outputDebugString (ss.str());
-#endif
         }
     };
 

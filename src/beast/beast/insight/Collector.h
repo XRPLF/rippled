@@ -44,6 +44,8 @@ namespace insight {
 class Collector
 {
 public:
+    typedef std::shared_ptr <Collector> ptr;
+
     virtual ~Collector() = 0;
 
     /** Create a hook.
