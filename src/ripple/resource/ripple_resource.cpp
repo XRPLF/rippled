@@ -27,6 +27,8 @@
 #include <boost/utility/base_from_member.hpp>
 #include <boost/unordered_map.hpp>
 
+#include "beast/beast/Insight.h"
+
 #include "impl/Fees.cpp"
 #  include "impl/Kind.h"
 # include "impl/Key.h"

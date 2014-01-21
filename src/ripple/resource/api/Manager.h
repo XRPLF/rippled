@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 #define RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 
+#include "beast/beast/insight/Collector.h"
+
 namespace ripple {
 namespace Resource {
 
@@ -30,9 +32,7 @@ protected:
     Manager ();
 
 public:
-    static Manager* New (Journal journal);
-
-    virtual ~Manager() { }
+    virtual ~Manager() = 0;
 
     /** Create a new endpoint keyed by inbound IP address. */
     virtual Consumer newInboundEndpoint (IPAddress const& address) = 0;
@@ -55,6 +55,12 @@ public:
     */
     virtual void importConsumers (std::string const& origin, Gossip const& gossip) = 0;
 };
+
+//------------------------------------------------------------------------------
+
+std::unique_ptr <Manager> make_Manager (
+    insight::Collector::ptr const& collector,
+        Journal journal);
 
 }
 }

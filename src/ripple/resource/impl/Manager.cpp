@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "beast/beast/make_unique.h"
+
 namespace ripple {
 namespace Resource {
 
@@ -28,11 +30,13 @@ public:
     Journal m_journal;
     Logic m_logic;
 
-    ManagerImp (Journal journal)
+    ManagerImp (insight::Collector::ptr const& collector,
+        Journal journal)
         : Thread ("Resource::Manager")
         , m_journal (journal)
-        , m_logic (get_abstract_clock <
-            std::chrono::steady_clock, std::chrono::seconds> (), journal)
+        , m_logic (collector,
+            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
+                journal)
     {
         startThread ();
     }
@@ -106,11 +110,17 @@ Manager::Manager ()
 {
 }
 
+Manager::~Manager ()
+{
+}
+
 //------------------------------------------------------------------------------
 
-Manager* Manager::New (Journal journal)
+std::unique_ptr <Manager> make_Manager (
+    insight::Collector::ptr const& collector,
+        Journal journal)
 {
-    return new ManagerImp (journal);
+    return std::make_unique <ManagerImp> (collector, journal);
 }
 
 }

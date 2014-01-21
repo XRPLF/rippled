@@ -53,19 +53,34 @@ public:
 
     typedef SharedData <State> SharedState;
 
+    struct Stats
+    {
+        Stats (insight::Collector::ptr const& collector)
+        {
+            warn = collector->make_meter ("warn");
+            drop = collector->make_meter ("drop");
+        }
+
+        insight::Meter warn;
+        insight::Meter drop;
+    };
+
     SharedState m_state;
+    Stats m_stats;
     abstract_clock <std::chrono::seconds>& m_clock;
     Journal m_journal;
 
     //--------------------------------------------------------------------------
 
-    Logic (clock_type& clock, Journal journal)
-        : m_clock (clock)
+    Logic (insight::Collector::ptr const& collector,
+        clock_type& clock, Journal journal)
+        : m_stats (collector)
+        , m_clock (clock)
         , m_journal (journal)
     {
     }
 
-    virtual ~Logic ()
+    ~Logic ()
     {
         // These have to be cleared before the Logic is destroyed
         // since their destructors call back into the class.
@@ -179,7 +194,8 @@ public:
         key.kind = kindAdmin;
         key.name = name;
 
-        m_journal.info << "Elevate " << prior << " to " << name;
+        m_journal.info <<
+            "Elevate " << prior << " to " << name;
 
         Entry* entry (nullptr);
 
@@ -478,6 +494,9 @@ public:
             m_journal.info <<
                 "Load warning: " << entry;
 
+        if (notify)
+            ++m_stats.warn;
+
         return notify;
     }
 
@@ -490,6 +509,8 @@ public:
             charge (entry, feeDrop, state);
             drop = true;
         }
+        if (drop)
+            ++m_stats.drop;
         return drop;
     }
 

@@ -74,7 +74,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    JobQueueImp (std::shared_ptr <insight::Collector> const& collector,
+    JobQueueImp (insight::Collector::ptr const& collector,
         Stoppable& parent, Journal journal)
         : JobQueue ("JobQueue", parent)
         , m_journal (journal)
@@ -743,7 +743,7 @@ JobQueue::JobQueue (char const* name, Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-JobQueue* JobQueue::New (std::shared_ptr <insight::Collector> const& collector,
+JobQueue* JobQueue::New (insight::Collector::ptr const& collector,
                          Stoppable& parent, Journal journal)
 {
     return new JobQueueImp (collector, parent, journal);

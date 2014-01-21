@@ -194,8 +194,9 @@ public:
             getConfig().insightSettings,
                 LogPartition::getJournal <CollectorManager> ()))
 
-        , m_resourceManager (add (Resource::Manager::New (
-            LogPartition::getJournal <ResourceManagerLog> ())))
+        , m_resourceManager (Resource::make_Manager (
+            m_collectorManager->collector(),
+                LogPartition::getJournal <ResourceManagerLog> ()))
 
         , m_rpcServiceManager (RPC::Manager::New (
             LogPartition::getJournal <RPCServiceManagerLog> ()))
@@ -277,6 +278,8 @@ public:
 
         , m_probe (std::chrono::milliseconds (100), m_mainIoPool.getService())
     {
+        add (m_resourceManager.get ());
+
         //
         // VFALCO - READ THIS!
         //

@@ -34,7 +34,7 @@ public:
 
     public:
         explicit TestLogic (Journal journal)
-            : Logic (member, journal)
+            : Logic (insight::NullCollector::New(), member, journal)
         {
         }
 
