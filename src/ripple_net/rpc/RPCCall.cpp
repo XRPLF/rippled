@@ -407,6 +407,9 @@ private:
 
         if (reader.parse (jvParams[1u].asString (), jvRequest))
         {
+            if (!jvRequest.isObject ())
+                return rpcError (rpcINVALID_PARAMS);
+
             jvRequest["method"] = jvParams[0u];
 
             return jvRequest;
