@@ -204,7 +204,7 @@ TER PaymentTransactor::doApply ()
                               false,                  // Not standalone, delete unfundeds.
                               isSetBit (mParams, tapOPEN_LEDGER));
 
-            if (terNO_LINE == terResult)
+            if (isTerRetry(terResult))
                 terResult = tecPATH_DRY;
 
             if ((tesSUCCESS == terResult) && (saDstAmountAct != saDstAmount))
