@@ -3384,16 +3384,6 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
                 || jvRippleState["accounts"][0u].asString () == jvRippleState["accounts"][1u].asString ()
            )
         {
-
-            WriteLog (lsINFO, RPCHandler)
-                    << boost::str (boost::format ("ledger_entry: ripple_state: accounts: %d currency: %d array: %d size: %d equal: %d")
-                                   % jvRippleState.isMember ("accounts")
-                                   % jvRippleState.isMember ("currency")
-                                   % jvRippleState["accounts"].isArray ()
-                                   % jvRippleState["accounts"].size ()
-                                   % (jvRippleState["accounts"][0u].asString () == jvRippleState["accounts"][1u].asString ())
-                                  );
-
             jvResult["error"]   = "malformedRequest";
         }
         else if (!naA.setAccountID (jvRippleState["accounts"][0u].asString ())
