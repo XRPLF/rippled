@@ -525,10 +525,7 @@ exports.verify_offer_not_found  = verify_offer_not_found;
 exports.verify_owner_count      = verify_owner_count;
 exports.verify_owner_counts     = verify_owner_counts;
 
-// ND: perhaps `exit` is more suitable, else when using suite(Setup|Teardown)
-// with build_setup we could hang.
-process.on('exit', function() {
-// process.on('uncaughtException', function() {
+process.on('uncaughtException', function() {
   Object.keys(server).forEach(function(host) {
     server[host].stop();
   });
