@@ -2793,7 +2793,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
     uint32  uTransferRate   = lesActive.rippleTransferRate (uTakerGetsIssuerID);
 
-    while ((iLeft > 0) && obIterator.nextOffer ())
+    while ((--iLeft > 0) && obIterator.nextOffer ())
     {
 
         SLE::pointer    sleOffer        = obIterator.getCurrentOffer();
@@ -2891,7 +2891,6 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                 // Only provide funded offers and offers of the taker.
                 Json::Value& jvOf   = jvOffers.append (jvOffer);
                 jvOf["quality"]     = saDirRate.getText ();
-                --iLeft;
             }
 
         }
