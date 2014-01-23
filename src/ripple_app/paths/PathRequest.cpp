@@ -76,20 +76,31 @@ bool PathRequest::isValid ()
 
 bool PathRequest::needsUpdate (bool newOnly, LedgerIndex index)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    if (newOnly)
-    { // we only want to handle new requests
-        if (iLastIndex != 0)
-            return false;
-        iLastIndex = 1;
-        return true;
-    }
-    else
+    LedgerIndex lastIndex = iLastIndex.load();
+    for (;;)
     {
-        if (iLastIndex >= index)
-            return false;
-        iLastIndex = index;
-        return true;
+        if (newOnly)
+        {
+            // Is this request new
+            if (lastIndex != 0)
+                return false;
+
+            // This thread marks this request handled
+            if (iLastIndex.compare_exchange_weak (lastIndex, 1,
+                    std::memory_order_release, std::memory_order_relaxed))
+                return true;
+        }
+        else
+        {
+            // Has the request already been handled?
+            if (lastIndex >= index)
+                return false;
+
+            // This thread marks this request handled
+            if (iLastIndex.compare_exchange_weak (lastIndex, index,
+                    std::memory_order_release, std::memory_order_relaxed))
+                return true;
+        }
     }
 }
 

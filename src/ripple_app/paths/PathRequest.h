@@ -89,7 +89,8 @@ private:
     std::map<currIssuer_t, STPathSet> mContext;
 
     bool                            bValid;
-    LedgerIndex                     iLastIndex;
+
+    std::atomic<LedgerIndex>        iLastIndex;
 
     int                             iLastLevel;
     bool                            bLastSuccess;
