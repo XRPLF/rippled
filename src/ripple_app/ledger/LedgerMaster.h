@@ -122,7 +122,7 @@ public:
     virtual void addValidateCallback (callback& c) = 0;
 
     virtual void checkAccept (Ledger::ref ledger) = 0;
-    virtual void checkAccept (uint256 const& hash) = 0;
+    virtual void checkAccept (uint256 const& hash, uint32 seq) = 0;
 
     virtual void tryAdvance () = 0;
     virtual void newPathRequest () = 0;

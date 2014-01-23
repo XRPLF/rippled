@@ -614,12 +614,18 @@ public:
         getApp().getInboundLedgers().findCreate(hash, seq, true);
     }
 
-    void checkAccept (uint256 const& hash)
+    void checkAccept (uint256 const& hash, uint32 seq)
     {
+        if ((seq == 0) && (seq <= mValidLedgerSeq))
+            return;
+
         Ledger::pointer ledger = mLedgerHistory.getLedgerByHash (hash);
 
         if (!ledger)
         {
+            // FIXME: We should really only fetch if the ledger
+            //has sufficient validations to accept it
+
             InboundLedger::pointer l = getApp().getInboundLedgers().findCreateValidationLedger(hash);
             if (l && l->isComplete() && !l->isFailed())
                 ledger = l->getLedger();

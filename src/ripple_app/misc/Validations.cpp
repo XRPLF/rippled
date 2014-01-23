@@ -126,7 +126,7 @@ private:
                                         << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 
         if (val->isTrusted () && isCurrent)
-            getApp().getLedgerMaster ().checkAccept (hash);
+            getApp().getLedgerMaster ().checkAccept (hash, val->getFieldU32 (sfLedgerSequence));
 
         // FIXME: This never forwards untrusted validations
         return isCurrent;
