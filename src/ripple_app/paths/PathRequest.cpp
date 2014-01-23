@@ -122,7 +122,8 @@ bool PathRequest::isValid (Ledger::ref lrLedger)
         else
         {
             AccountState::pointer asDst = getApp().getOPs ().getAccountState (lrLedger, raDstAccount);
-            Json::Value jvDestCur;
+
+            Json::Value& jvDestCur = (jvStatus["destination_currencies"] = Json::arrayValue);
 
             if (!asDst)
             {
@@ -144,18 +145,23 @@ bool PathRequest::isValid (Ledger::ref lrLedger)
             }
             else
             {
-                boost::unordered_set<uint160> usDestCurrID = usAccountDestCurrencies (raDstAccount, lrLedger, true);
+                bool includeXRP = !isSetBit (asDst->peekSLE ().getFlags(), lsfDisallowXRP);
+                boost::unordered_set<uint160> usDestCurrID =
+                    usAccountDestCurrencies (raDstAccount, lrLedger, includeXRP);
+
                 BOOST_FOREACH (const uint160 & uCurrency, usDestCurrID)
-                jvDestCur.append (STAmount::createHumanCurrency (uCurrency));
+                    jvDestCur.append (STAmount::createHumanCurrency (uCurrency));
+
                 jvStatus["destination_tag"] = (asDst->peekSLE ().getFlags () & lsfRequireDestTag) != 0;
             }
-
-            jvStatus["destination_currencies"] = jvDestCur;
         }
     }
 
-    jvStatus["ledger_hash"] = lrLedger->getHash ().GetHex ();
-    jvStatus["ledger_index"] = lrLedger->getLedgerSeq ();
+    if (bValid)
+    {
+        jvStatus["ledger_hash"] = lrLedger->getHash ().GetHex ();
+        jvStatus["ledger_index"] = lrLedger->getLedgerSeq ();
+    }
     return bValid;
 }
 
