@@ -1523,9 +1523,9 @@ Json::Value RPCHandler::doBookOffers (Json::Value params, Resource::Charge& load
         return RPC::make_error (rpcBAD_MARKET);
     }
 
-    if (params.isMember ("limit") && ! params ["limit"].isUInt())
+    if (params.isMember ("limit") && ! params ["limit"].isIntegral())
         return RPC::expected_field_error (
-        "taker_pays.currency", "unsigned integer");
+        "limit", "integer");
 
     unsigned int const iLimit (params.isMember ("limit")
         ? params ["limit"].asUInt ()
