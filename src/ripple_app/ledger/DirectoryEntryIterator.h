@@ -38,10 +38,7 @@ public:
     DirectoryEntryIterator (SLE::ref directory) : mEntry (0), mDirNode (directory)
     {
         if (mDirNode)
-        {
-            mDirIndex = mDirNode->getIndex();
             mRootIndex = mDirNode->getIndex();
-        }
     }
 
     /** Get the SLE this iterator currently references
@@ -69,9 +66,9 @@ public:
         return mEntryIndex;
     }
 
-    uint256 const& getDirectory () const
+    uint256 getDirectory () const
     {
-        return mDirIndex;
+        return mDirNode ? mDirNode->getIndex () : uint256();
     }
 
 private:

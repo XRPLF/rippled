@@ -30,7 +30,7 @@ bool DirectoryEntryIterator::firstEntry (LedgerEntrySet& les)
 {
     WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::firstEntry(" << mRootIndex.GetHex() << ")";
     mEntry = 0;
-    mDirIndex = mRootIndex;
+    mDirNode.reset ();
 
     return nextEntry (les);
 }
@@ -40,7 +40,7 @@ bool DirectoryEntryIterator::firstEntry (LedgerEntrySet& les)
 bool DirectoryEntryIterator::nextEntry (LedgerEntrySet& les)
 {
 
-    if (!mDirNode || mDirNode->getIndex() != mDirIndex)
+    if (!mDirNode)
     {
         WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry(" << mRootIndex.GetHex() << ") need dir node";
         // Are we already at the end
@@ -77,8 +77,11 @@ bool DirectoryEntryIterator::addJson (Json::Value& j) const
     if (mDirNode && (mEntry != 0))
     {
         j["dir_root"] = mRootIndex.GetHex();
-        j["dir_index"] = mDirIndex.GetHex();
         j["dir_entry"] = static_cast<Json::UInt> (mEntry);
+
+        if (mDirNode)
+            j["dir_index"] = mDirIndex.GetHex();
+
         return true;
     }
     return false;
