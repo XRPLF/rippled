@@ -1446,6 +1446,12 @@
     <ClCompile Include="..\..\src\ripple_app\paths\PathRequests.cpp">
       <Filter>[2] Old Ripple\ripple_app\paths</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\OrderBookIterator.cpp">
+      <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\DirectoryEntryIterator.cpp">
+      <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
