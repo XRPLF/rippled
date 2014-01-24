@@ -151,7 +151,7 @@ TER OfferCreateTransactor::takeOffers (
         STAmount        saTakerFunds    = lesActive.accountFunds (uTakerAccountID, saTakerPays);
         STAmount        saSubTakerPays  = saTakerPays - saTakerPaid; // How much more to spend.
         STAmount        saSubTakerGets  = saTakerGets - saTakerGot; // How much more is wanted.
-        uint64          uTipQuality = bookIterator.getCurrentQuality();
+        uint64          uTipQuality     = bookIterator.getCurrentQuality();
 
         if (!saTakerFunds.isPositive ())
         {

@@ -179,16 +179,15 @@ bool OrderBookIterator::nextOffer ()
              return true;
          }
 
-          // Is there a next directory
+         // Is there a next directory
+         if (!mDirectoryIterator.nextDirectory (mEntrySet))
+         {
+             WriteLog (lsTRACE, Ledger) << "OrderBookIterator: there is no next directory";
+             return false;
+         }
+         WriteLog (lsTRACE, Ledger) << "OrderBookIterator: going to next directory";
 
-          if (!mDirectoryIterator.nextDirectory (mEntrySet))
-          {
-              WriteLog (lsTRACE, Ledger) << "OrderBookIterator: there is no next directory";
-              return false;
-          }
-          WriteLog (lsTRACE, Ledger) << "OrderBookIterator: going to next directory";
-
-          // Set to before its first offer
+         // Set to before its first offer
          mOfferIterator = mDirectoryIterator.getOfferIterator ();
      }
      while (1);
