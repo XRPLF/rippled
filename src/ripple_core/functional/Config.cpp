@@ -29,6 +29,43 @@
 #define DEFAULT_FEE_OFFER               DEFAULT_FEE_DEFAULT
 #define DEFAULT_FEE_OPERATION           1
 
+/** Parses a set of strings into IP::Endpoint
+      Strings which fail to parse are not included in the output. If a stream is
+      provided, human readable diagnostic error messages are written for each
+      failed parse.
+      @param out An OutputSequence to store the IP::Endpoint list
+      @param first The begining of the string input sequence
+      @param last The one-past-the-end of the string input sequence
+*/
+template <class OutputSequence, class InputIterator>
+void parseAddresses (OutputSequence& out, InputIterator first, InputIterator last,
+    Journal::Stream stream = Journal::Stream ())
+{
+    while (first != last)
+    {
+        typename std::iterator_traits <InputIterator>::value_type const& str (*first);
+        ++first;
+        {
+            IPAddress const addr (IPAddress::from_string (str));
+            if (! addr.empty ())
+            {
+                out.push_back (addr);
+                continue;
+            }
+        }
+        {
+            IPAddress const addr (IPAddress::from_string_altform (str));
+            if (! addr.empty ())
+            {
+                out.push_back (addr);
+                continue;
+            }
+        }
+        if (stream) stream <<
+            "Config: \"" << str << "\" is not a valid IP address.";
+    }
+}
+
 //------------------------------------------------------------------------------
 
 Config::Config ()
@@ -70,7 +107,7 @@ Config::Config ()
     LEDGER_CREATOR          = false;
 
     RPC_ALLOW_REMOTE        = false;
-    RPC_ADMIN_ALLOW.push_back ("127.0.0.1");
+    RPC_ADMIN_ALLOW.push_back (beast::IPAddress::from_string("127.0.0.1"));
 
     PEER_SSL_CIPHER_LIST    = DEFAULT_PEER_SSL_CIPHER_LIST;
     PEER_SCAN_INTERVAL_MIN  = DEFAULT_PEER_SCAN_INTERVAL_MIN;
@@ -322,7 +359,10 @@ void Config::load ()
 
             if (smtTmp)
             {
-                RPC_ADMIN_ALLOW = *smtTmp;
+                std::vector<IPAddress> parsedAddresses;
+                parseAddresses<std::vector<IPAddress>, std::vector<std::string>::const_iterator> 
+                    (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
+                RPC_ADMIN_ALLOW = parsedAddresses;
             }
 
             (void) SectionSingleB (secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
@@ -789,7 +829,7 @@ void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
 
 //------------------------------------------------------------------------------
 
-Config::Role Config::getAdminRole (Json::Value const& params, std::string const& strRemoteIp) const
+Config::Role Config::getAdminRole (Json::Value const& params, beast::IPAddress const& remoteIp) const
 {
     Config::Role role;
     bool    bPasswordSupplied   = params.isMember ("admin_user") || params.isMember ("admin_password");
@@ -824,9 +864,9 @@ Config::Role Config::getAdminRole (Json::Value const& params, std::string const&
     // Meets IP restriction for admin.
     bool    bAdminIP            = false;
 
-    BOOST_FOREACH (const std::string & strAllowIp, this->RPC_ADMIN_ALLOW)
+    BOOST_FOREACH (IPAddress const& addr, this->RPC_ADMIN_ALLOW)
     {
-        if (strAllowIp == strRemoteIp)
+        if (addr == remoteIp)
             bAdminIP    = true;
     }
 
