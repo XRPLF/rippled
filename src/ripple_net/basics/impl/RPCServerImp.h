@@ -218,23 +218,9 @@ public:
     std::string handleRequest (const std::string& request)
     {
         WriteLog (lsTRACE, RPCServer) << "handleRequest " << request;
-
-        // Figure out the remote address.
-        // VFALCO TODO Clean up this try/catch nonsense.
-        //
-        std::string remoteAddress;
-
-        try
-        {
-            remoteAddress = mSocket.PlainSocket ().remote_endpoint ().address ().to_string ();
-        }
-        catch (...)
-        {
-            // endpoint already disconnected
-            return "";
-        }
-
-        return m_handler.processRequest (request, remoteAddress);
+    
+        return m_handler.processRequest (request, beast::IPAddressConversion::from_asio (
+           mSocket.PlainSocket ().remote_endpoint().address()));
     }
 
     //--------------------------------------------------------------------------

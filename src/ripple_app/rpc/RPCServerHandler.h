@@ -33,7 +33,7 @@ public:
 
     bool isAuthorized (std::map <std::string, std::string> const& headers);
 
-    std::string processRequest (std::string const& request, std::string const& remoteAddress);
+    std::string processRequest (std::string const& request, IPAddress const& remoteIPAddress);
 
 private:
     NetworkOPs& m_networkOPs;

@@ -36,7 +36,7 @@ bool RPCServerHandler::isAuthorized (
     return HTTPAuthorized (headers);
 }
 
-std::string RPCServerHandler::processRequest (std::string const& request, std::string const& remoteAddress)
+std::string RPCServerHandler::processRequest (std::string const& request, IPAddress const& remoteIPAddress)
 {
     Json::Value jvRequest;
     {
@@ -50,15 +50,15 @@ std::string RPCServerHandler::processRequest (std::string const& request, std::s
             return createResponse (400, "Unable to parse request");
         }
     }
-
-    Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteAddress));
+    
+    Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteIPAddress));
 
     Resource::Consumer usage;
 
     if (role == Config::ADMIN)
-        usage = m_resourceManager.newAdminEndpoint (remoteAddress);
+        usage = m_resourceManager.newAdminEndpoint (remoteIPAddress.to_string());
     else
-        usage = m_resourceManager.newInboundEndpoint (IPAddress::from_string (remoteAddress));
+        usage = m_resourceManager.newInboundEndpoint (remoteIPAddress);
 
     if (usage.disconnect ())
         return createResponse (503, "Server is overloaded");

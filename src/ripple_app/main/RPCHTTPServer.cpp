@@ -153,7 +153,7 @@ public:
     void processSession (Job& job, HTTP::Session& session)
     {
         session.write (m_deprecatedHandler.processRequest (
-            session.content(), session.remoteAddress().withPort(0).to_string()));
+            session.content(), session.remoteAddress().withPort(0)));
 
         session.close();
     }
@@ -172,7 +172,7 @@ public:
     }
 
     // Stolen directly from RPCServerHandler
-    std::string processRequest (std::string const& request, std::string const& remoteAddress)
+    std::string processRequest (std::string const& request, IPAddress const& remoteIPAddress)
     {
         Json::Value jvRequest;
         {
@@ -187,14 +187,14 @@ public:
             }
         }
 
-        Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteAddress));
+        Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteIPAddress));
 
         Resource::Consumer usage;
 
         if (role == Config::ADMIN)
-            usage = m_resourceManager.newAdminEndpoint(remoteAddress);
+            usage = m_resourceManager.newAdminEndpoint (remoteIPAddress.to_string());
         else
-            usage = m_resourceManager.newInboundEndpoint(IPAddress::from_string(remoteAddress));
+            usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
 
         if (usage.disconnect ())
             return createResponse (503, "Server is overloaded");
