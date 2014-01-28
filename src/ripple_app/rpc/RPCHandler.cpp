@@ -87,9 +87,85 @@ private:
 std::atomic <int> LegacyPathFind::inProgress (0);
 int LegacyPathFind::maxInProgress (2);
 
+//------------------------------------------------------------------------------
 
-Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh)
+// VFALCO TODO Move this to a Tuning.h or Defaults.h
+enum
 {
+    defaultAutoFillFeeMultiplier        = 10
+};
+
+/** Fill in the fee on behalf of the client.
+    This is called when the client does not explicitly specify the fee.
+    The client may also put a ceiling on the amount of the fee. This ceiling
+    is expressed as a multiplier based on the current ledger's fee schedule.
+
+    JSON fields
+    
+    "Fee"   The fee paid by the transaction. Omitted when the client
+            wants the fee filled in.
+
+    "fee_mult_max"  A multiplier applied to the current ledger's transaction
+                    fee that caps the maximum the fee server should auto fill.
+                    If this optional field is not specified, then a default
+                    multiplier is used.
+
+    @param tx       The JSON corresponding to the transaction to fill in
+    @param ledger   A ledger for retrieving the current fee schedule
+    @param result   A JSON object for injecting error results, if any
+    @param admin    `true` if this is called by an administrative endpoint.
+*/
+static void autofill_fee (Json::Value& request,
+    Ledger::pointer ledger, Json::Value& result, bool admin)
+{
+    Json::Value& tx (request["tx_json"]);
+
+    if (tx.isMember ("Fee"))
+        return;
+
+    int mult (defaultAutoFillFeeMultiplier);
+    if (request.isMember ("fee_mult_max"))
+    {
+        if (request["fee_mult_max"].isNumeric ())
+        {
+            mult = request["fee_mult_max"].asInt();
+        }
+        else
+        {
+            RPC::inject_error (rpcHIGH_FEE, RPC::expected_field_message (
+                "fee_mult_max", "a number"), result);
+            return;
+        }
+    }
+
+    // Administrative endpoints are exempt from local fees
+    uint64 fee = ledger->scaleFeeLoad (
+        getConfig().FEE_DEFAULT, admin);
+
+    uint64 const limit (mult * getConfig().FEE_DEFAULT);
+    if (fee > limit)
+    {
+        std::stringstream ss;
+        ss <<
+            "Fee of " << fee <<
+            " exceeds the requested tx limit of " << limit;
+        RPC::inject_error (rpcHIGH_FEE, ss.str(), result);
+        return;
+    }
+
+    tx ["Fee"] = (int) fee;
+}
+
+//------------------------------------------------------------------------------
+
+// VFALCO TODO This function should take a reference to the params, modify it
+//             as needed, and then there should be a separate function to
+//             submit the tranaction
+//
+Json::Value RPCHandler::transactionSign (Json::Value params,
+    bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh)
+{
+    mlh.unlock();
     Json::Value jvResult;
 
     WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: %s") % params);
@@ -145,7 +221,6 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
     AccountState::pointer asSrc = bOffline
                                   ? AccountState::pointer ()                              // Don't look up address if offline.
                                   : mNetOps->getAccountState (lSnapshot, raSrcAddressID);
-    mlh.unlock();
 
     if (!bOffline && !asSrc)
     {
@@ -156,17 +231,9 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
         return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    if (! tx_json.isMember ("Fee") && (
-           "AccountSet" == sType
-        || "Payment" == sType
-        || "OfferCreate" == sType
-        || "OfferCancel" == sType
-        || "TrustSet" == sType))
-    {
-        // VFALCO TODO This needs to be fixed
-//        feeReq = lSnapshot->scaleFeeLoad(, 
-        tx_json["Fee"] = (int) getConfig ().FEE_DEFAULT;
-    }
+    autofill_fee (params, lSnapshot, jvResult, mRole == Config::ADMIN);
+    if (RPC::contains_error (jvResult))
+        return jvResult;
 
     if ("Payment" == sType)
     {
@@ -4231,4 +4298,53 @@ Json::Value RPCInternalHandler::runHandler (const std::string& name, const Json:
     return rpcError (rpcBAD_SYNTAX);
 }
 
-// vim:ts=4
+//------------------------------------------------------------------------------
+
+class JSONRPCTests : public UnitTest
+{
+public:
+    void testAutoFillFees ()
+    {
+        beginTestCase ("autofill_fee");
+
+        RippleAddress rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
+        RippleAddress rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
+        RippleAddress rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
+        uint64 startAmount (100000);
+        Ledger::pointer ledger (boost::make_shared <Ledger> (
+            rootAddress, startAmount));
+
+        {
+            Json::Value req;
+            Json::Value result;
+            Json::Reader ().parse (
+                "{ \"fee_mult_max\" : 1, \"tx_json\" : { } } "
+                , req);
+            autofill_fee (req, ledger, result, true);
+
+            expect (! RPC::contains_error (result));
+        }
+
+        {
+            Json::Value req;
+            Json::Value result;
+            Json::Reader ().parse (
+                "{ \"fee_mult_max\" : 0, \"tx_json\" : { } } "
+                , req);
+            autofill_fee (req, ledger, result, true);
+
+            expect (RPC::contains_error (result));
+        }
+    }
+
+    void runTest ()
+    {
+        testAutoFillFees ();
+    }
+
+    JSONRPCTests () : UnitTest ("ripple", "JSONRPC")
+    {
+    }
+};
+
+static JSONRPCTests jsonRPCTests;
