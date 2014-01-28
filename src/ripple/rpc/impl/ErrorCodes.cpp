@@ -35,6 +35,7 @@ public:
         add (rpcACT_MALFORMED,         "actMalformed",      "Account malformed.");
         add (rpcACT_NOT_FOUND,         "actNotFound",       "Account not found.");
         add (rpcBAD_BLOB,              "badBlob",           "Blob must be a non-empty hex string.");
+        add (rpcHIGH_FEE,              "highFee",           "Current transaction fee exceeds your limit.");
         add (rpcBAD_FEATURE,           "badFeature",        "Feature unknown or invalid.");
         add (rpcBAD_ISSUER,            "badIssuer",         "Issuer account malformed.");
         add (rpcBAD_MARKET,            "badMarket",         "No such market.");
