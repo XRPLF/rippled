@@ -414,27 +414,89 @@ PropertyStream::~PropertyStream ()
 {
 }
 
-void PropertyStream::add (std::string const& key, int32 value)
+void PropertyStream::add (std::string const& key, bool value)
 {
-    lexical_add (key, value);
-}
-
-void PropertyStream::add (std::string const& key, uint32 value)
-{
-    lexical_add (key, value);
-}
-
-void PropertyStream::add (std::string const& key, int64 value)
-{
-    if (value <= std::numeric_limits <int32>::max() &&
-        value >= std::numeric_limits <int32>::min())
-    {
-        add (key, int32(value));
-    }
+    if (value)
+        add (key, "true");
     else
-    {
-        lexical_add(key, value);
-    }
+        add (key, "false");
+}
+
+void PropertyStream::add (std::string const& key, char value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, signed char value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, unsigned char value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, wchar_t value)
+{
+    lexical_add (key, value);
+}
+
+#if 0
+void PropertyStream::add (std::string const& key, char16_t value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, char32_t value)
+{
+    lexical_add (key, value);
+}
+#endif
+
+void PropertyStream::add (std::string const& key, short value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, unsigned short value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, int value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, unsigned int value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, long value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, unsigned long value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, long long value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, unsigned long long value)
+{
+    lexical_add (key, value);
+}
+
+void PropertyStream::add (std::string const& key, float value)
+{
+    lexical_add (key, value);
 }
 
 void PropertyStream::add (std::string const& key, double value)
@@ -442,53 +504,104 @@ void PropertyStream::add (std::string const& key, double value)
     lexical_add (key, value);
 }
 
-void PropertyStream::add (std::string const& key, uint64 value)
+void PropertyStream::add (std::string const& key, long double value)
 {
-    if (value <= std::numeric_limits <uint32>::max() &&
-        value >= std::numeric_limits <uint32>::min())
-    {
-        add (key, uint32(value));
-    }
-    else
-    {
-        lexical_add (key, value);
-    }
+    lexical_add (key, value);
 }
 
-void PropertyStream::add (int32 value)
+void PropertyStream::add (bool value)
+{
+    if (value)
+        add ("true");
+    else
+        add ("false");
+}
+
+void PropertyStream::add (char value)
 {
     lexical_add (value);
 }
 
-void PropertyStream::add (uint32 value)
+void PropertyStream::add (signed char value)
 {
     lexical_add (value);
 }
 
-void PropertyStream::add (int64 value)
+void PropertyStream::add (unsigned char value)
 {
-    if (value <= std::numeric_limits <int32>::max() &&
-        value >= std::numeric_limits <int32>::min())
-    {
-        add (int32(value));
-    }
-    else
-    {
-        lexical_add (value);
-    }
+    lexical_add (value);
 }
 
-void PropertyStream::add (uint64 value)
+void PropertyStream::add (wchar_t value)
 {
-    if (value <= std::numeric_limits <uint32>::max() &&
-        value >= std::numeric_limits <uint32>::min())
-    {
-        add (uint32(value));
-    }
-    else
-    {
-        lexical_add (value);
-    }
+    lexical_add (value);
+}
+
+#if 0
+void PropertyStream::add (char16_t value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (char32_t value)
+{
+    lexical_add (value);
+}
+#endif
+
+void PropertyStream::add (short value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (unsigned short value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (int value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (unsigned int value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (long value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (unsigned long value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (long long value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (unsigned long long value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (float value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (double value)
+{
+    lexical_add (value);
+}
+
+void PropertyStream::add (long double value)
+{
+    lexical_add (value);
 }
 
 //------------------------------------------------------------------------------
