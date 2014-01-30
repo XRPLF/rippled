@@ -3120,7 +3120,7 @@ Json::Value RPCHandler::doTransactionEntry (Json::Value params, Resource::Charge
     return jvResult;
 }
 
-Json::Value RPCHandler::lookupLedger (Json::Value params, Ledger::pointer& lpLedger)
+Json::Value RPCHandler::lookupLedger (Json::Value const& params, Ledger::pointer& lpLedger)
 {
     Json::Value jvResult;
 
