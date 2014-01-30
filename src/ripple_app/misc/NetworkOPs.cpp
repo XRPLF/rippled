@@ -2351,13 +2351,10 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
     }
 
     // Don't lock since pubAcceptedTransaction is locking.
-    if (!mSubTransactions.empty () || !mSubRTTransactions.empty () || !mSubAccount.empty () || !mSubRTAccount.empty ())
+    BOOST_FOREACH (const AcceptedLedger::value_type & vt, alpAccepted->getMap ())
     {
-        BOOST_FOREACH (const AcceptedLedger::value_type & vt, alpAccepted->getMap ())
-        {
-            m_journal.trace << "pubAccepted: " << vt.second->getJson ();
-            pubValidatedTransaction (lpAccepted, *vt.second);
-        }
+        m_journal.trace << "pubAccepted: " << vt.second->getJson ();
+        pubValidatedTransaction (lpAccepted, *vt.second);
     }
 }
 
