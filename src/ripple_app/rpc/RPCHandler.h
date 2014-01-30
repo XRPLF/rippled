@@ -64,7 +64,7 @@ private:
 
     Json::Value transactionSign (Json::Value jvRequest, bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh);
 
-    Json::Value lookupLedger (Json::Value jvRequest, Ledger::pointer& lpLedger);
+    Json::Value lookupLedger (Json::Value const& jvRequest, Ledger::pointer& lpLedger);
 
     Json::Value getMasterGenerator (
         Ledger::ref lrLedger,
