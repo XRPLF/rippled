@@ -1947,28 +1947,39 @@ void Ledger::initializeFees ()
 
 void Ledger::updateFees ()
 {
-    mBaseFee = getConfig ().FEE_DEFAULT;
-    mReferenceFeeUnits = 10;
-    mReserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
-    mReserveIncrement = getConfig ().FEE_OWNER_RESERVE;
+    uint64 baseFee = getConfig ().FEE_DEFAULT;
+    uint32 referenceFeeUnits = 10;
+    uint32 reserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
+    int64 reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
 
     LedgerStateParms p = lepNONE;
     SLE::pointer sle = getASNode (p, Ledger::getLedgerFeeIndex (), ltFEE_SETTINGS);
 
-    if (!sle)
-        return;
+    if (sle)
+    {
+        if (sle->getFieldIndex (sfBaseFee) != -1)
+            baseFee = sle->getFieldU64 (sfBaseFee);
 
-    if (sle->getFieldIndex (sfBaseFee) != -1)
-        mBaseFee = sle->getFieldU64 (sfBaseFee);
+        if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
+            referenceFeeUnits = sle->getFieldU32 (sfReferenceFeeUnits);
 
-    if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
-        mReferenceFeeUnits = sle->getFieldU32 (sfReferenceFeeUnits);
+        if (sle->getFieldIndex (sfReserveBase) != -1)
+            reserveBase = sle->getFieldU32 (sfReserveBase);
 
-    if (sle->getFieldIndex (sfReserveBase) != -1)
-        mReserveBase = sle->getFieldU32 (sfReserveBase);
+        if (sle->getFieldIndex (sfReserveIncrement) != -1)
+            reserveIncrement = sle->getFieldU32 (sfReserveIncrement);
+    }
 
-    if (sle->getFieldIndex (sfReserveIncrement) != -1)
-        mReserveIncrement = sle->getFieldU32 (sfReserveIncrement);
+    {
+        StaticScopedLockType sl (sPendingSaveLock, __FILE__, __LINE__);
+        if (mBaseFee == 0)
+        {
+            mBaseFee = baseFee;
+            mReferenceFeeUnits = referenceFeeUnits;
+            mReserveBase = reserveBase;
+            mReserveIncrement = reserveIncrement;
+        }
+    }
 }
 
 uint64 Ledger::scaleFeeBase (uint64 fee)
