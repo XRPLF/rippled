@@ -17,29 +17,61 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_PTRCOMPAREFUNC_H_INCLUDED
-#define RIPPLE_PEERFINDER_PTRCOMPAREFUNC_H_INCLUDED
+#ifndef RIPPLE_PEERFINDER_SIM_PREDICATES_H_INCLUDED
+#define RIPPLE_PEERFINDER_SIM_PREDICATES_H_INCLUDED
 
 namespace ripple {
 namespace PeerFinder {
+namespace Sim {
+
+/** UnaryPredicate, returns `true` if the 'to' node on a Link matches. */
+/** @{ */
+template <typename Node>
+class is_remote_node_pred
+{
+public:
+    is_remote_node_pred (Node const& node)
+        : node (node)
+        { }
+    template <typename Link>
+    bool operator() (Link const& l) const
+        { return &node == &l.remote_node(); }
+private:
+    Node const& node;
+};
+
+template <typename Node>
+is_remote_node_pred <Node> is_remote_node (Node const& node)
+{
+    return is_remote_node_pred <Node> (node);
+}
+
+template <typename Node>
+is_remote_node_pred <Node> is_remote_node (Node const* node)
+{
+    return is_remote_node_pred <Node> (*node);
+}
+/** @} */
 
 //------------------------------------------------------------------------------
 
-/** Compare two instances of a class of type T using the comparator specified
-    by class C via pointers. This does not compare the pointers themselves but
-    what the pointers point to.
-*/
-template < class T, class C = std::less<T> >
-struct PtrCompareFunctor
+/** UnaryPredicate, `true` if the remote address matches. */
+class is_remote_address
 {
-    bool operator()(T const *lhs, T const *rhs) const
+public:
+    explicit is_remote_address (IPAddress const& address)
+        : m_address (address)
+        { }
+    template <typename Link>
+    bool operator() (Link const& link) const
     {
-        C comp;
-
-        return comp(*lhs, *rhs);
+        return link.remote_address() == m_address;
     }
+private:
+    IPAddress const m_address;
 };
 
+}
 }
 }
 

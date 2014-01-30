@@ -27,10 +27,9 @@
 #include "../ripple/resource/ripple_resource.h"
 #include "../ripple/validators/ripple_validators.h"
 
-#include <deque>
+#include "../ripple/common/ResolverAsio.h"
 
-#include "peers/NameResolver.h"
-#include "peers/NameResolver.cpp"
+#include <deque>
 
 namespace ripple {
 
@@ -44,7 +43,9 @@ namespace ripple {
 #   include "misc/PowResult.h"
 #  include "misc/ProofOfWork.h"
 # include "misc/ProofOfWorkFactory.h"
-#include "peers/Peer.cpp"
 #include "peers/PackedMessage.cpp"
-#include "peers/Peers.cpp"
 }
+
+#include "peers/Peer.cpp"
+#include "peers/PeerDoor.cpp"
+#include "peers/Peers.cpp"

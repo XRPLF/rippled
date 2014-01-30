@@ -102,19 +102,19 @@ public:
     struct Helpers
     {
         // This replaces CONFIG_FILE_NAME
-        static char const* getConfigFileName (bool forTestNetwork = false)
+        static char const* getConfigFileName ()
         {
-            return forTestNetwork ? "testnet-rippled.cfg" : "rippled.cfg";
+            return "rippled.cfg";
         }
 
-        static char const* getDatabaseDirName (bool forTestNetwork = false)
+        static char const* getDatabaseDirName ()
         {
-            return forTestNetwork ? "testnet-db" : "db";
+            return "db";
         }
 
-        static char const* getValidatorsFileName (bool forTestNetwork = false)
+        static char const* getValidatorsFileName ()
         {
-            return forTestNetwork ? "testnet-validators.txt" : "validators.txt";
+            return "validators.txt";
         }
     };
 
@@ -175,18 +175,6 @@ public:
         /** Load settings from the configuration file. */
         //Error load (ParsedConfigFile const& file);
     };
-
-    //--------------------------------------------------------------------------
-
-    /** Determine the location of the config file.
-        This searches the location provided on the command line first,
-        followed by the platform specific "user's home" directory.
-        @param commandLineLocation an optional location passed from the command line.
-        @param forTestNetwork Whether or not we are operating on the test network (DEPRECATATED)
-    */
-    static File findConfigFile (
-        String commandLineLocation = String::empty,
-        bool forTestNetwork = false);
 
     //--------------------------------------------------------------------------
 
@@ -339,7 +327,6 @@ public:
 public:
     // Configuration parameters
     bool                        QUIET;
-    bool                        TESTNET;
 
     boost::filesystem::path     DEBUG_LOGFILE;
     std::string                 CONSOLE_LOG_OUTPUT;
@@ -348,7 +335,7 @@ public:
 
     std::string                 VALIDATORS_SITE;        // Where to find validators.txt on the Internet.
     std::string                 VALIDATORS_URI;         // URI of validators.txt.
-    std::string                 VALIDATORS_BASE;        // Name with testnet-, if needed.
+    std::string                 VALIDATORS_BASE;        // Name
     std::vector<std::string>    IPS;                    // Peer IPs from rippled.cfg.
     std::vector<std::string>    IPS_FIXED;              // Fixed Peer IPs from rippled.cfg.
     std::vector<std::string>    SNTP_SERVERS;           // SNTP servers from rippled.cfg.
@@ -483,7 +470,7 @@ public:
     Config ();
 
     int getSize (SizedItemName);
-    void setup (const std::string& strConf, bool bTestNet, bool bQuiet);
+    void setup (const std::string& strConf, bool bQuiet);
     void load ();
 };
 

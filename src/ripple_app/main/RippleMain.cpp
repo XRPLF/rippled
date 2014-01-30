@@ -272,7 +272,6 @@ int RippleMain::run (int argc, char const* const* argv)
     ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command. Format: <ip-address>[':'<port-number>]")
     ("rpc_port", po::value <int> (), "Specify the port number for RPC command.")
     ("standalone,a", "Run with no peers.")
-    ("testnet,t", "Run in test net mode.")
     ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
     ("unittest-format", po::value <std::string> ()->implicit_value ("text"), "Format unit test output. Choices are 'text', 'junit'")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
@@ -381,7 +380,6 @@ int RippleMain::run (int argc, char const* const* argv)
     {
         getConfig ().setup (
             vm.count ("conf") ? vm["conf"].as<std::string> () : "", // Config file.
-            !!vm.count ("testnet"),                                 // Testnet flag.
             !!vm.count ("quiet"));                                  // Quiet flag.
 
         if (vm.count ("standalone"))

@@ -23,70 +23,124 @@
 namespace ripple {
 namespace PeerFinder {
 
-/** The Giveaways holds a vector of HopVectors, one of each hop.
-*/
+/** Holds a rotating set of endpoint messages to give away. */
 class Giveaways
 {
-    std::vector <GiveawaysAtHop> m_hopVector;
-    bool m_shuffled;
+public:
+    typedef std::vector <Endpoint const*> Bucket;
+    typedef boost::array <Bucket, Tuning::maxHops + 1> Buckets;
+
+    Endpoints m_endpoints;
+    std::size_t m_remain;
+    Buckets m_buckets;
+
+    void prepare ()
+    {
+        for (Buckets::iterator iter (m_buckets.begin());
+            iter != m_buckets.end(); ++iter)
+            iter->reserve (m_endpoints.size ());
+    }
 
 public:
-    typedef std::vector <GiveawaysAtHop>::iterator iterator;
-    typedef std::vector <GiveawaysAtHop>::reverse_iterator reverse_iterator;
-
-    Giveaways()
-        : m_hopVector(maxPeerHopCount)
-        , m_shuffled(false)
+    bool is_consistent ()
     {
-
+        // Make sure the counts add up
+        std::size_t count (0);
+        for (Buckets::const_iterator iter (m_buckets.begin());
+            iter != m_buckets.end(); ++iter)
+            count += iter->size();
+        return count == m_remain;
     }
 
-    // Add the endpoint to the appropriate hop vector.
-    void add (CachedEndpoint &endpoint)
+    void refill ()
     {
-        if (endpoint.message.hops < maxPeerHopCount)
-            m_hopVector[endpoint.message.hops].add(endpoint);
-    }
-
-    // Resets the Giveaways, preparing to allow a new peer to iterate over it.
-    void reset ()
-    {
-        for (size_t i = 0; i != m_hopVector.size(); i++)
+        // Empty out the buckets
+        for (Buckets::iterator iter (m_buckets.begin());
+            iter != m_buckets.end(); ++iter)
+            iter->clear();
+        // Put endpoints back into buckets
+        for (Endpoints::const_iterator iter (m_endpoints.begin());
+            iter != m_endpoints.end(); ++iter)
         {
-            if (!m_shuffled)
-                m_hopVector[i].shuffle ();
-
-            m_hopVector[i].reset ();
+            Endpoint const& ep (*iter);
+            consistency_check (ep.hops <= Tuning::maxHops);
+            m_buckets [ep.hops].push_back (&ep);
         }
-
-        // Once this has been called, the hop vectors have all been shuffled
-        // and we do not need to shuffle them again for the lifetime of this
-        // instance.
-        m_shuffled = true;
+        // Shuffle the buckets
+        for (Buckets::iterator iter (m_buckets.begin());
+            iter != m_buckets.end(); ++iter)
+            std::random_shuffle (iter->begin(), iter->end());
+        m_remain = m_endpoints.size();
+        consistency_check (is_consistent ());
     }
 
-    // Provides an iterator that starts from hop 0 and goes all the way to
-    // the max hop.
-    iterator begin ()
+public:
+    explicit Giveaways (Endpoints const& endpoints)
+        : m_endpoints (endpoints)
+        , m_remain (0)
     {
-        return m_hopVector.begin();
+        prepare();
     }
 
-    iterator end ()
+#if BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
+    Giveaways (Endpoints&& endpoints)
+        : m_endpoints (endpoints)
+        , m_remain (0)
     {
-        return m_hopVector.end();
+        prepare();
+    }
+#endif
+
+    /** Append up to `n` Endpoint to the specified container.
+        The entries added to the container will have hops incremented.
+    */
+    template <typename EndpointContainer>
+    void append (Endpoints::size_type n, EndpointContainer& c)
+    { 
+        n = std::min (n, m_endpoints.size());
+        c.reserve (c.size () + n);
+        if (m_remain < n)
+            refill ();
+        for (cyclic_iterator <Buckets::iterator> iter (
+            m_buckets.begin (), m_buckets.begin (), m_buckets.end()); n;)
+        {
+            Bucket& bucket (*iter++);
+            if (! bucket.empty ())
+            {
+                c.emplace_back (*bucket.back ());
+                bucket.pop_back ();
+                ++c.back ().hops;
+                --n;
+                --m_remain;
+            }
+        }
+        consistency_check (is_consistent ());
     }
 
-    // Provides an iterator that starts from the max hop and goes all the way
-    // down to hop 0.
-    reverse_iterator rbegin ()
-    {
-        return m_hopVector.rbegin();
-    }
-
-    reverse_iterator rend ()
-    {
-        return m_hopVector.rend();
+    /** Retrieve a fresh set of endpoints, preferring high hops.
+        The entries added to the container will have hops incremented.
+    */
+    template <typename EndpointContainer>
+    void reverse_append (Endpoints::size_type n, EndpointContainer& c)
+    { 
+        n = std::min (n, m_endpoints.size());
+        c.reserve (c.size () + n);
+        if (m_remain < n)
+            refill ();
+        for (cyclic_iterator <Buckets::reverse_iterator> iter (
+            m_buckets.rbegin (), m_buckets.rbegin (), m_buckets.rend()); n;)
+        {
+            Bucket& bucket (*iter++);
+            if (! bucket.empty ())
+            {
+                c.emplace_back (*bucket.back ());
+                bucket.pop_back ();
+                ++c.back ().hops;
+                --n;
+                --m_remain;
+            }
+        }
+        consistency_check (is_consistent ());
     }
 };
 

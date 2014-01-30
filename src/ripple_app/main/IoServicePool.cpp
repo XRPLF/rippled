@@ -94,17 +94,19 @@ void IoServicePool::onStart ()
 
 void IoServicePool::onStop ()
 {
+    // VFALCO NOTE This is how it SHOULD work
+    //
+    //m_work = boost::none;
+}
+
+void IoServicePool::onChildrenStopped ()
+{
     // VFALCO NOTE This is a hack! We should gracefully
     //             cancel all pending I/O, and delete the work
     //             object using boost::optional, and let run()
     //             just return naturally.
     //
-    //m_work = boost::none;
     m_service.stop ();
-}
-
-void IoServicePool::onChildrenStopped ()
-{
 }
 
 // Called every time io_service::run() returns and a thread will exit.

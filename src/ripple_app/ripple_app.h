@@ -54,6 +54,8 @@
 #include "../ripple_data/ripple_data.h"
 #include "../ripple_net/ripple_net.h"
 
+#include "../ripple/common/ResolverAsio.h"
+
 //#include "beast/modules/beast_sqdb/beast_sqdb.h"
 #include "beast/modules/beast_sqlite/beast_sqlite.h"
 
@@ -101,8 +103,11 @@ namespace ripple {
 #include "misc/IFeatures.h"
 #include "misc/IFeeVote.h"
 #include "misc/IHashRouter.h"
+}
+// escape the ripple namespace
 #include "peers/Peer.h"
 #include "peers/Peers.h"
+namespace ripple {
 #include "peers/ClusterNodeStatus.h"
 #include "peers/UniqueNodeList.h"
 #include "misc/Validations.h"

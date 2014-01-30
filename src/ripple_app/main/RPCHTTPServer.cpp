@@ -68,10 +68,10 @@ public:
               getConfig ().getRpcPort() != 0)
         {
             IPAddress ep (IPAddress::from_string (getConfig().getRpcIP()));
-            if (! ep.empty())
+            if (! is_unspecified (ep))
             {
                 HTTP::Port port;
-                port.addr = ep.withPort(0);
+                port.addr = ep.at_port(0);
                 if (getConfig ().getRpcPort() != 0)
                     port.port = getConfig ().getRpcPort();
                 else
@@ -112,7 +112,7 @@ public:
     {
         // Reject non-loopback connections if RPC_ALLOW_REMOTE is not set
         if (! getConfig().RPC_ALLOW_REMOTE &&
-            ! session.remoteAddress().isLoopback())
+            ! IP::is_loopback (session.remoteAddress()))
         {
             session.close();
         }
@@ -153,7 +153,7 @@ public:
     void processSession (Job& job, HTTP::Session& session)
     {
         session.write (m_deprecatedHandler.processRequest (
-            session.content(), session.remoteAddress().withPort(0)));
+            session.content(), session.remoteAddress().at_port(0)));
 
         session.close();
     }

@@ -75,7 +75,6 @@ public:
 
     static Alphabet const& getBitcoinAlphabet ();
     static Alphabet const& getRippleAlphabet ();
-    static Alphabet const& getTestnetAlphabet ();
 
     static std::string raw_encode (
         unsigned char const* begin, unsigned char const* end,

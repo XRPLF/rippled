@@ -23,53 +23,75 @@
 
 #include "../../ripple/algorithm/api/CycledSet.h"
 #include "../../ripple/algorithm/api/DiscreteClock.h"
+#include "../../ripple/common/Resolver.h"
 
+#include <deque>
+#include <fstream>
+#include <iomanip>
+#include <random>
 #include <set>
+#include <unordered_set>
 
 #include "beast/modules/beast_core/system/BeforeBoost.h"
+#include <boost/array.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/key_extractors.hpp>
 
 #include "beast/modules/beast_sqdb/beast_sqdb.h"
 #include "beast/modules/beast_asio/beast_asio.h"
 
+#include "beast/beast/cyclic_iterator.h"
 #include "beast/beast/boost/ErrorCode.h"
+
+#include "impl/iosformat.h" // VFALCO NOTE move to beast
 
 namespace ripple {
 using namespace beast;
 }
 
+#ifndef NDEBUG
+# define consistency_check(cond) bassert(cond)
+#else
+# define consistency_check(cond)
+#endif
+
 #include "impl/PrivateTypes.h"
+
 #  include "impl/Tuning.h"
 # include "impl/Checker.h"
 # include "impl/Resolver.h"
 #include "impl/CheckerAdapter.h"
-# include "impl/CachedEndpoint.h"
-# include "impl/GiveawaysAtHop.h"
-# include "impl/Giveaways.h"
-#include "impl/PtrCompareFunctor.h"
-#include "impl/Cache.h"
-#include "impl/Slots.h"
-#include "impl/Source.h"
+#   include "impl/Sorts.h"
+#  include "impl/Giveaways.h"
+#  include "impl/Livecache.h"
+#  include "impl/Slots.h"
+# include "impl/Source.h"
 #include "impl/SourceStrings.h"
-#  include "impl/LegacyEndpoint.h"
 #  include "impl/Store.h"
-# include "impl/LegacyEndpointCache.h"
-# include "impl/PeerInfo.h"
+# include "impl/Bootcache.h"
+# include "impl/Peer.h"
 #include "impl/StoreSqdb.h"
+#  include "impl/Reporting.h"
+#include "impl/FixedPeer.h"
 # include "impl/Logic.h"
 #include "impl/LogicType.h"
 
 #include "impl/Checker.cpp"
 #include "impl/Config.cpp"
 #include "impl/Endpoint.cpp"
-#include "impl/Cache.cpp"
+#include "impl/Livecache.cpp"
 #include "impl/Manager.cpp"
 #include "impl/Resolver.cpp"
-#include "impl/Slots.cpp"
 #include "impl/SourceStrings.cpp"
-#include "impl/Tests.cpp"
+
+//#include "sim/sync_timer.h"
+
+#include "sim/GraphAlgorithms.h"
+#include "sim/WrappedSink.h"
+# include "sim/Predicates.h"
+# include "sim/FunctionQueue.h"
+# include "sim/Message.h"
+# include "sim/NodeSnapshot.h"
+# include "sim/Params.h"
+#include "sim/Tests.cpp"

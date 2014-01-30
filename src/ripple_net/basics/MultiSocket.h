@@ -110,6 +110,13 @@ public:
     /** Returns a pointer to the SSL handle or nullptr if no SSL. */
     virtual SSL* ssl_handle () = 0;
 
+    // Caller owns the socket
+    static MultiSocket* New (
+        boost::asio::ip::tcp::socket& socket,
+            boost::asio::ssl::context& ssl_context,
+                int flags = 0);
+
+    // Caller owns the io_service
     static MultiSocket* New (
         boost::asio::io_service& io_service,
             boost::asio::ssl::context& ssl_context,

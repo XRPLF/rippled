@@ -68,15 +68,6 @@ struct HashPrefix
 
     // proposal for signing
     static uint32 const proposal            = 0x50525000; // 'PRP'
-
-    // inner transaction to sign (TESTNET)
-    static uint32 const txSignTestnet       = 0x73747800; // 'stx'
-
-    // validation for signing (TESTNET)
-    static uint32 const validationTestnet   = 0x76616C00; // 'val'
-
-    // proposal for signing (TESTNET)
-    static uint32 const proposalTestnet     = 0x70727000; // 'prp'
 };
 
 #endif

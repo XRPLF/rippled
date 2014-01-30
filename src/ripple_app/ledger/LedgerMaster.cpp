@@ -488,7 +488,7 @@ public:
         Peer::pointer target;
         int count = 0;
 
-        std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
+        Peers::PeerSequence peerList = getApp().getPeers ().getActivePeers ();
         BOOST_FOREACH (const Peer::pointer & peer, peerList)
         {
             if (peer->hasRange (nextLedger->getLedgerSeq() - 1, nextLedger->getLedgerSeq()))

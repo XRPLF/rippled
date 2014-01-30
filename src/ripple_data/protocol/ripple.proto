@@ -244,12 +244,12 @@ message TMPeers
 // An Endpoint describes a network peer that can accept incoming connections
 message TMEndpoint
 {
-    required TMIPv4EndPoint ipv4 = 1;
-    required uint32         hops = 2;
-    required uint32         slots = 3;         // the number of available incoming slots
-    required uint32         maxSlots = 4;      // the maximum number of incoming slots
-    required uint32         uptimeSeconds = 5; // uptime in seconds
-    required string         features = 6;
+    required TMIPv4EndPoint ipv4    = 1;
+    required uint32         hops    = 2;
+    
+    // This field is used to allow the TMEndpoint message format to be modified
+    // as necessary in the future. 
+    required uint32         version = 3;
 }
 
 // An array of Endpoint messages

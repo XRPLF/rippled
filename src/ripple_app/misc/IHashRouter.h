@@ -39,6 +39,9 @@
 class IHashRouter
 {
 public:
+    // The type here *MUST* match the type of Peer::ShortId
+    typedef uint32 PeerShortID;
+
     // VFALCO NOTE this preferred alternative to default parameters makes
     //         behavior clear.
     //
@@ -55,9 +58,9 @@ public:
     // VFALCO TODO Replace "Supression" terminology with something more semantically meaningful.
     virtual bool addSuppression (uint256 const& index) = 0;
 
-    virtual bool addSuppressionPeer (uint256 const& index, uint64 peer) = 0;
+    virtual bool addSuppressionPeer (uint256 const& index, PeerShortID peer) = 0;
 
-    virtual bool addSuppressionPeer (uint256 const& index, uint64 peer, int& flags) = 0;
+    virtual bool addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags) = 0;
 
     virtual bool addSuppressionFlags (uint256 const& index, int flag) = 0;
 
@@ -70,7 +73,7 @@ public:
 
     virtual int getFlags (uint256 const& index) = 0;
 
-    virtual bool swapSet (uint256 const& index, std::set<uint64>& peers, int flag) = 0;
+    virtual bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag) = 0;
 
     // VFALCO TODO This appears to be unused!
     //

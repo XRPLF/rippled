@@ -59,12 +59,6 @@ namespace ripple {
 # include "main/FatalErrorReporter.h"
 #include "main/FatalErrorReporter.cpp"
 
-# include "node/SqliteFactory.h"
-#include "node/SqliteFactory.cpp"
-
-# include "peers/PeerDoor.h"
-#include "peers/PeerDoor.cpp"
-
 # include "rpc/RPCHandler.h"
 #   include "misc/PowResult.h"
 #  include "misc/ProofOfWork.h"
@@ -90,6 +84,11 @@ namespace ripple {
 }
 
 
+
+#include "../ripple/common/ResolverAsio.h"
+
+# include "node/SqliteFactory.h"
+#include "node/SqliteFactory.cpp"
 
 #include "main/Application.cpp"
 

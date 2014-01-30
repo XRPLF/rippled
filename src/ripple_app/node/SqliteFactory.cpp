@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 static const char* s_nodeStoreDBInit [] =
 {
     "PRAGMA synchronous=NORMAL;",
@@ -246,4 +248,6 @@ public:
 std::unique_ptr <NodeStore::Factory> make_SqliteFactory ()
 {
     return std::make_unique <SqliteFactory> ();
+}
+
 }

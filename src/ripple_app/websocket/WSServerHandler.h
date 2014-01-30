@@ -299,7 +299,7 @@ public:
             try
             {
                 WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                    "Ws:: Rejected(" << cpClient->get_socket ().remote_endpoint ().to_string () <<
+                    "Ws:: Rejected(" << to_string (cpClient->get_socket ().remote_endpoint ()) <<
                     ") '" << mpMessage->get_payload () << "'";
             }
             catch (...)
@@ -351,7 +351,7 @@ public:
         try
         {
             WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                "Ws:: Receiving(" << cpClient->get_socket ().remote_endpoint ().to_string () <<
+                "Ws:: Receiving(" << to_string (cpClient->get_socket ().remote_endpoint ()) <<
                 ") '" << mpMessage->get_payload () << "'";
         }
         catch (...)

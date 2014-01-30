@@ -46,10 +46,10 @@ inline std::string to_string (endpoint_t const& endpoint)
 
 inline endpoint_t to_asio (Port const& port)
 {
-    if (port.addr.isV4())
+    if (port.addr.is_v4())
     {
-        IPAddress::V4 v4 (port.addr.v4());
-        std::string const& s (v4.to_string());
+        IP::AddressV4 v4 (port.addr.to_v4());
+        std::string const& s (to_string (v4));
         return endpoint_t (address().from_string (s), port.port);
     }
 

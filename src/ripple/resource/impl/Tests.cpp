@@ -60,8 +60,8 @@ public:
         {
             Gossip::Item item;
             item.balance = 100 + random().nextInt (500);
-            item.address = IPAddress (IPAddress::V4 (
-                207, 127, 82, v + i));
+            item.address = IPAddress (
+                IP::AddressV4 (207, 127, 82, v + i));
             gossip.items.push_back (item);
         }
     }
@@ -170,7 +170,8 @@ public:
         Gossip g;
         Gossip::Item item;
         item.balance = 100;
-        item.address = IPAddress (IPAddress::V4 (207, 127, 82, 1));
+        item.address = IPAddress (
+            IP::AddressV4 (207, 127, 82, 1));
         g.items.push_back (item);
 
         logic.importConsumers ("g", g);

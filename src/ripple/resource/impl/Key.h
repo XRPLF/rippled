@@ -51,7 +51,7 @@ struct Key
         }
 
     private:
-        IPAddress::hasher m_addr_hash;
+        std::hash <IPAddress> m_addr_hash;
         boost::hash <std::string> m_name_hash;
     };
 

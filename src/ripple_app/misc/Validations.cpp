@@ -73,7 +73,7 @@ private:
         RippleAddress signer = val->getSignerPublic ();
         bool isCurrent = false;
 
-        if (getApp().getUNL ().nodeInUNL (signer) || val->isTrusted ())
+        if (val->isTrusted () || getApp().getUNL ().nodeInUNL (signer))
         {
             val->setTrusted ();
             uint32 now = getApp().getOPs ().getCloseTimeNC ();

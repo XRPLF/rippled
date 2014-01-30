@@ -92,7 +92,7 @@ public:
     void setTimer ();
 
     int takePeerSetFrom (const PeerSet& s);
-    int getPeerCount () const;
+    std::size_t getPeerCount () const;
     virtual bool isDone () const
     {
         return mComplete || mFailed;
@@ -149,10 +149,11 @@ protected:
     boost::asio::deadline_timer             mTimer;
 
     // VFALCO TODO Verify that these are used in the way that the names suggest.
-    typedef uint64 PeerIdentifier;
+    typedef Peer::ShortId PeerIdentifier;
     typedef int ReceivedChunkCount;
-    typedef boost::unordered_map <PeerIdentifier, ReceivedChunkCount> Map;
-    Map mPeers;
+    typedef boost::unordered_map <PeerIdentifier, ReceivedChunkCount> PeerSetMap;
+
+    PeerSetMap mPeers;
 };
 
 #endif

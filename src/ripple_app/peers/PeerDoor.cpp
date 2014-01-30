@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "PeerDoor.h"
+
+namespace ripple {
+
 SETUP_LOG (PeerDoor)
 
 class PeerDoorImp
@@ -24,23 +28,23 @@ class PeerDoorImp
     , public LeakChecked <PeerDoorImp>
 {
 public:
-    PeerDoorImp (Stoppable& parent, Resource::Manager& resourceManager,
-        Kind kind, std::string const& ip, int port,
-            boost::asio::io_service& io_service, boost::asio::ssl::context& ssl_context)
-        : PeerDoor (parent)
-        , m_resourceManager (resourceManager)
+    PeerDoorImp (Kind kind, Peers& peers,
+                 boost::asio::ip::tcp::endpoint const &ep,
+                 boost::asio::io_service& io_service)
+        : PeerDoor (static_cast<Stoppable&>(peers))
+        , m_peers (peers)
+        , m_journal (LogPartition::getJournal <PeerDoor> ())
         , m_kind (kind)
-        , m_ssl_context (ssl_context)
-        , mAcceptor (io_service, boost::asio::ip::tcp::endpoint (
-            boost::asio::ip::address ().from_string (ip.empty () ? "0.0.0.0" : ip), port))
-        , mDelayTimer (io_service)
+        , m_acceptor (io_service, ep)
+        , m_acceptDelay (io_service)
     {
-        if (! ip.empty () && port != 0)
-        {
-            Log (lsINFO) << "Peer port: " << ip << " " << port;
-            
-            async_accept ();
-        }
+        m_journal.info <<
+            "Listening on " <<
+            IPAddressConversion::from_asio (
+                m_acceptor.local_endpoint()) <<
+            ((m_kind == sslAndPROXYRequired) ? " (proxy)" : "");
+
+        async_accept ();
     }
 
     ~PeerDoorImp ()
@@ -53,18 +57,14 @@ public:
     //
     void async_accept ()
     {
-        bool const isInbound (true);
-        bool const requirePROXYHandshake (m_kind == sslAndPROXYRequired);
+        boost::shared_ptr <NativeSocketType> socket (
+            boost::make_shared <NativeSocketType> (
+                m_acceptor.get_io_service()));
 
-        Peer::pointer new_connection (Peer::New (
-            m_resourceManager, mAcceptor.get_io_service (),
-                m_ssl_context, getApp().getPeers ().assignPeerId (),
-                    isInbound, requirePROXYHandshake));
-
-        mAcceptor.async_accept (new_connection->getNativeSocket (),
+        m_acceptor.async_accept (*socket,
             boost::bind (&PeerDoorImp::handleAccept, this,
                 boost::asio::placeholders::error,
-                new_connection));
+                    socket));
     }
 
     //--------------------------------------------------------------------------
@@ -78,26 +78,29 @@ public:
 
     // Called when the accept socket wait completes
     //
-    void handleAccept (boost::system::error_code ec, Peer::pointer new_connection)
+    void handleAccept (boost::system::error_code ec,
+        boost::shared_ptr <NativeSocketType> const& socket)
     {
         bool delay = false;
 
         if (! ec)
         {
-            // VFALCO NOTE the error code doesnt seem to be used in connected()
-            new_connection->connected (ec);
+            bool const proxyHandshake (m_kind == sslAndPROXYRequired);
+
+            m_peers.accept (proxyHandshake, socket);
         }
         else
         {
             if (ec == boost::system::errc::too_many_files_open)
                 delay = true;
-            WriteLog (lsERROR, PeerDoor) << ec;
+
+            m_journal.info << "Error " << ec;
         }
 
         if (delay)
         {
-            mDelayTimer.expires_from_now (boost::posix_time::milliseconds (500));
-            mDelayTimer.async_wait (boost::bind (&PeerDoorImp::handleTimer,
+            m_acceptDelay.expires_from_now (boost::posix_time::milliseconds (500));
+            m_acceptDelay.async_wait (boost::bind (&PeerDoorImp::handleTimer,
                 this, boost::asio::placeholders::error));
         }
         else
@@ -112,23 +115,23 @@ public:
     {
         {
             boost::system::error_code ec;
-            mDelayTimer.cancel (ec);
+            m_acceptDelay.cancel (ec);
         }
 
         {
             boost::system::error_code ec;
-            mAcceptor.cancel (ec);
+            m_acceptor.cancel (ec);
         }
 
         stopped ();
     }
 
 private:
-    Resource::Manager& m_resourceManager;
+    Peers& m_peers;
+    Journal m_journal;
     Kind m_kind;
-    boost::asio::ssl::context& m_ssl_context;
-    boost::asio::ip::tcp::acceptor  mAcceptor;
-    boost::asio::deadline_timer     mDelayTimer;
+    boost::asio::ip::tcp::acceptor m_acceptor;
+    boost::asio::deadline_timer m_acceptDelay;
 };
 
 //------------------------------------------------------------------------------
@@ -139,13 +142,19 @@ PeerDoor::PeerDoor (Stoppable& parent)
 }
 
 //------------------------------------------------------------------------------
-
-PeerDoor* PeerDoor::New (Stoppable& parent,
-    Resource::Manager& resourceManager,
-        Kind kind, std::string const& ip, int port,
-            boost::asio::io_service& io_service,
-                boost::asio::ssl::context& ssl_context)
+PeerDoor* PeerDoor::New (
+    Kind kind, Peers& peers,
+        std::string const& ip, int port,
+        boost::asio::io_service& io_service)
 {
-    return new PeerDoorImp (parent, resourceManager,
-        kind, ip, port, io_service, ssl_context);
+    // You have to listen on something!
+    bassert(port != 0);
+
+    boost::asio::ip::tcp::endpoint ep(
+        boost::asio::ip::address ().from_string (
+            ip.empty () ? "0.0.0.0" : ip), port);
+
+    return new PeerDoorImp (kind, peers, ep, io_service);
+}
+
 }

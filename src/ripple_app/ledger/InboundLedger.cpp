@@ -245,9 +245,11 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 
         mAggressive = true;
         mByHash = true;
-        int pc = getPeerCount ();
-        if (m_journal.debug) m_journal.debug <<
-            "No progress(" << pc << ") for ledger " << mHash;
+
+        std::size_t pc = getPeerCount ();
+        WriteLog (lsDEBUG, InboundLedger) << 
+            "No progress(" << pc << 
+            ") for ledger " << mHash;
 
         trigger (Peer::pointer ());
         if (pc < 4)
@@ -258,12 +260,19 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 /** Add more peers to the set, if possible */
 void InboundLedger::addPeers ()
 {
-    std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
+    Peers::PeerSequence peerList = getApp().getPeers ().getActivePeers ();
 
     int vSize = peerList.size ();
 
     if (vSize == 0)
+    {
+        WriteLog (lsERROR, InboundLedger) << 
+            "No peers to add for ledger acquisition";
         return;
+    }
+
+    // FIXME-NIKB why are we doing this convoluted thing here instead of simply
+    // shuffling this vector and then pulling however many entries we need?
 
     // We traverse the peer list in random order so as not to favor
     // any particular peer
@@ -403,8 +412,7 @@ void InboundLedger::trigger (Peer::ref peer)
     {
         if (peer)
             m_journal.trace <<
-                "Trigger acquiring ledger " << mHash << " from " <<
-                    peer->getIP ();
+                "Trigger acquiring ledger " << mHash << " from " << peer;
         else
             m_journal.trace <<
                 "Trigger acquiring ledger " << mHash;
@@ -471,11 +479,11 @@ void InboundLedger::trigger (Peer::ref peer)
                 {
                     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-                    for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin (), end = mPeers.end ();
+                    for (PeerSetMap::iterator it = mPeers.begin (), end = mPeers.end ();
                             it != end; ++it)
                     {
                         Peer::pointer iPeer (
-                            getApp().getPeers ().getPeerById (it->first));
+                            getApp().getPeers ().findPeerByShortID (it->first));
 
                         if (iPeer)
                         {

@@ -20,9 +20,13 @@
 #ifndef RIPPLE_APP_SQLITEFACTORY_H_INCLUDED
 #define RIPPLE_APP_SQLITEFACTORY_H_INCLUDED
 
+namespace ripple {
+
 /** Factory to produce SQLite backends for the NodeStore.
     @see Database
 */
 std::unique_ptr <NodeStore::Factory> make_SqliteFactory ();
+
+}
 
 #endif

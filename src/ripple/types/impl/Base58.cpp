@@ -50,14 +50,6 @@ Base58::Alphabet const& Base58::getRippleAlphabet ()
     return alphabet;
 }
 
-Base58::Alphabet const& Base58::getTestnetAlphabet ()
-{
-    static Alphabet alphabet (
-        "RPShNAF39wBUDnEGHJKLM4pQrsT7VWXYZ2bcdeCg65jkm8ofqi1tuvaxyz"
-        );
-    return alphabet;
-}
-
 std::string Base58::raw_encode (
     unsigned char const* begin, unsigned char const* end,
         Alphabet const& alphabet, bool withCheck)

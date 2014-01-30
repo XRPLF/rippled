@@ -18,6 +18,17 @@
 //==============================================================================
 
 MultiSocket* MultiSocket::New (
+    boost::asio::ip::tcp::socket& socket,
+        boost::asio::ssl::context& ssl_context,
+            int flags)
+{
+    return new MultiSocketType <boost::asio::ip::tcp::socket&> (
+        socket, ssl_context, flags);
+}
+
+//------------------------------------------------------------------------------
+
+MultiSocket* MultiSocket::New (
     boost::asio::io_service& io_service,
         boost::asio::ssl::context& ssl_context,
             int flags)

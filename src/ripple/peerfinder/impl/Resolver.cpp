@@ -45,11 +45,11 @@ private:
     static boost::asio::ip::tcp::endpoint fromIPAddress (
         IPAddress const& ipEndpoint)
     {
-        if (ipEndpoint.isV4 ())
+        if (ipEndpoint.is_v4 ())
         {
             return boost::asio::ip::tcp::endpoint (
                 boost::asio::ip::address_v4 (
-                    ipEndpoint.v4().value),
+                    ipEndpoint.to_v4().value),
                         ipEndpoint.port ());
         }
         bassertfalse;

@@ -20,7 +20,10 @@
 #ifndef RIPPLE_PEERS_H_INCLUDED
 #define RIPPLE_PEERS_H_INCLUDED
 
+namespace ripple {
+
 namespace PeerFinder {
+struct Endpoint;
 class Manager;
 }
 
@@ -32,84 +35,263 @@ namespace SiteFiles {
 class Manager;
 }
 
+//------------------------------------------------------------------------------
+
 /** Manages the set of connected peers. */
-class Peers : public PropertyStream::Source
+class Peers
+    : public Stoppable
+    , public PropertyStream::Source
 {
+protected:
+    // VFALCO NOTE The requirement of this constructor is an
+    //             unfortunate problem with the API for
+    //             Stoppable and PropertyStream
+    //
+    Peers (Stoppable& parent)
+        : Stoppable ("Peers", parent)
+        , PropertyStream::Source ("peers")
+    {
+
+    }
+
 public:
+    typedef std::vector <Peer::pointer> PeerSequence;
+
     static Peers* New (Stoppable& parent,
         Resource::Manager& resourceManager,
             SiteFiles::Manager& siteFiles,
-            boost::asio::io_service& io_service,
-                boost::asio::ssl::context& context);
+                Resolver& resolver,
+                    boost::asio::io_service& io_service,
+                        boost::asio::ssl::context& context);
 
-    Peers ();
+    virtual ~Peers () = 0;
 
-    virtual ~Peers () { }
-
-    virtual PeerFinder::Manager& getPeerFinder() = 0;
-
-    // Begin enforcing connection policy.
-    virtual void start () = 0;
-
-    // Send message to network.
-    virtual int relayMessage (Peer* fromPeer, const PackedMessage::pointer& msg) = 0;
-    virtual int relayMessageCluster (Peer* fromPeer, const PackedMessage::pointer& msg) = 0;
-    virtual void relayMessageTo (const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg) = 0;
-    virtual void relayMessageBut (const std::set<uint64>& fromPeers, const PackedMessage::pointer& msg) = 0;
-
-    // Manual connection request.
-    // Queue for immediate scanning.
-    virtual void connectTo (const std::string& strIp, int iPort) = 0;
-
+    // NIKB TODO This is an implementation detail - a private
+    //           interface between Peers and Peer. It should
+    //           be split out and moved elsewhere.
     //
-    // Peer connectivity notification.
+    // VFALCO NOTE PeerImp should have visbility to PeersImp
     //
-    virtual bool getTopNAddrs (int n, std::vector<std::string>& addrs) = 0;
-    virtual bool savePeer (const std::string& strIp, int iPort, char code) = 0;
+    virtual void peerCreated (Peer* peer) = 0;
+    virtual void peerDestroyed (Peer *peer) = 0;
 
-    // A peer connection has been established, but we know nothing about it at
-    // this point beyond the IP address.
-    virtual void peerConnected (const IPAddress& address, bool incoming) = 0;
+    virtual void accept (bool proxyHandshake,
+        boost::shared_ptr <NativeSocketType> const& socket) = 0;
 
-    // We know peers node public key.
-    // <-- bool: false=reject
-    virtual bool peerHandshake (Peer::ref peer, const RippleAddress& naPeer, const std::string& strIP, int iPort) = 0;
+    virtual void connect (IP::Endpoint const& address) = 0;
 
-    // No longer connected.
-    virtual void peerDisconnected (Peer::ref peer, const RippleAddress& naPeer) = 0;
+    // Notification that a peer has connected.
+    virtual void onPeerActivated (Peer::ref peer) = 0;
 
-    // As client accepted.
-    virtual void peerVerified (Peer::ref peer) = 0;
+    // Notification that a peer has disconnected.
+    virtual void onPeerDisconnect (Peer::ref peer) = 0;
 
-    // As client failed connect and be accepted.
-    virtual void peerClosed (Peer::ref peer, const std::string& strIp, int iPort) = 0;
-
-    virtual int getPeerCount () = 0;
-    virtual Json::Value getPeersJson () = 0;
-    virtual std::vector<Peer::pointer> getPeerVector () = 0;
+    virtual std::size_t size () = 0;
+    virtual Json::Value json () = 0;
+    virtual PeerSequence getActivePeers () = 0;
 
     // Peer 64-bit ID function
-    virtual uint64 assignPeerId () = 0;
-    virtual Peer::pointer getPeerById (const uint64& id) = 0;
-    virtual bool hasPeer (const uint64& id) = 0;
+    virtual Peer::pointer findPeerByShortID (Peer::ShortId const& id) = 0;
 
-    //
-    // Scanning
-    //
+    virtual void addPeer (Peer::Ptr const& peer) = 0;
+    virtual void removePeer (Peer::Ptr const& peer) = 0;
 
-    virtual void scanRefresh () = 0;
+    /** Visit every active peer and return a value
+        The functor must:
+        - Be callable as:
+            void operator()(Peer::ref peer);
+         - Must have the following typedef:
+            typedef void return_type;
+         - Be callable as:
+            Function::return_type operator()() const;
 
-    //
-    // Connection policy
-    //
-    virtual void policyLowWater () = 0;
-    virtual void policyEnforce () = 0; // VFALCO This and others can be made private
+        @param f the functor to call with every peer
+        @returns `f()`
 
-    // configured connections
-    virtual void legacyConnectFixedIPs () = 0;
+        @note The functor is passed by value!
+    */
+    template<typename Function>
+    typename boost::disable_if <
+        boost::is_void <typename Function::return_type>, 
+        typename Function::return_type>::type
+    foreach(Function f)
+    {
+        PeerSequence peers (getActivePeers());
+
+        for(PeerSequence::const_iterator i = peers.begin(); i != peers.end(); ++i)
+            f (*i);
+
+        return f();
+    }
+
+    /** Visit every active peer
+        The visitor functor must:
+         - Be callable as:
+            void operator()(Peer::ref peer);
+         - Must have the following typedef:
+            typedef void return_type;
+
+        @param f the functor to call with every peer
+    */
+    template <class Function>
+    typename boost::enable_if <
+        boost::is_void <typename Function::return_type>, 
+        typename Function::return_type>::type
+    foreach(Function f)
+    {
+        PeerSequence peers (getActivePeers());
+
+        for(PeerSequence::const_iterator i = peers.begin(); i != peers.end(); ++i)
+            f (*i);
+    }
 };
 
-// VFALCO TODO Put this in some group of utilities
-extern void splitIpPort (const std::string& strIpPort, std::string& strIp, int& iPort);
+/** Sends a message to all peers */
+struct send_always
+{
+    typedef void return_type;
+
+    PackedMessage::pointer const& msg;
+
+    send_always(PackedMessage::pointer const& m)
+        : msg(m)
+    { }
+
+    void operator()(Peer::ref peer) const
+    {
+        peer->sendPacket (msg, false);
+    }
+};
+
+//------------------------------------------------------------------------------
+
+/** Sends a message to match peers */
+template <typename Predicate>
+struct send_if_pred
+{
+    typedef void return_type;
+
+	PackedMessage::pointer const& msg; 
+	Predicate const& predicate;
+
+	send_if_pred(PackedMessage::pointer const& m, Predicate const& p)
+		: msg(m), predicate(p)
+	{ }
+
+    void operator()(Peer::ref peer) const
+	{
+        if (predicate (peer))
+            peer->sendPacket (msg, false);
+	}
+};
+
+/** Helper function to aid in type deduction */
+template <typename Predicate>
+send_if_pred<Predicate> send_if (
+    PackedMessage::pointer const& m,
+        Predicate const &f)
+{
+    return send_if_pred<Predicate>(m, f);
+}
+
+//------------------------------------------------------------------------------
+
+/** Sends a message to non-matching peers */
+template <typename Predicate>
+struct send_if_not_pred
+{
+    typedef void return_type;
+
+    PackedMessage::pointer const& msg; 
+    Predicate const& predicate;
+
+    send_if_not_pred(PackedMessage::pointer const& m, Predicate const& p)
+        : msg(m), predicate(p)
+    { }
+
+    void operator()(Peer::ref peer) const
+    {
+        if (!predicate (peer))
+            peer->sendPacket (msg, false);
+    }
+};
+
+/** Helper function to aid in type deduction */
+template <typename Predicate>
+send_if_not_pred<Predicate> send_if_not (
+    PackedMessage::pointer const& m,
+        Predicate const &f)
+{
+    return send_if_not_pred<Predicate>(m, f);
+}
+
+//------------------------------------------------------------------------------
+
+/** Select the specific peer */
+struct match_peer
+{
+    Peer const* matchPeer;
+
+    match_peer (Peer const* match = nullptr)
+        : matchPeer (match)
+    { }
+
+    bool operator() (Peer::ref peer) const
+    {
+        bassert(peer->isConnected());
+
+        if(matchPeer && (peer.get () == matchPeer))
+            return true;
+
+        return false;
+    }
+};
+
+//------------------------------------------------------------------------------
+
+/** Select all peers (except optional excluded) that are in our cluster */
+struct peer_in_cluster
+{
+    match_peer skipPeer;
+
+    peer_in_cluster (Peer const* skip = nullptr)
+        : skipPeer (skip)
+    { }
+
+    bool operator() (Peer::ref peer) const
+    {
+        if (skipPeer (peer))
+            return false;
+
+        if (!peer->isInCluster ())
+            return false;
+
+        return true;
+    }
+};
+
+//------------------------------------------------------------------------------
+
+/** Select all peers that are in the specified set */
+struct peer_in_set
+{
+    std::set<Peer::ShortId> const& peerSet;
+
+    peer_in_set (std::set<Peer::ShortId> const& peers)
+        : peerSet (peers)
+    { }
+
+    bool operator() (Peer::ref peer) const
+    {
+        bassert(peer->isConnected());
+
+        if (peerSet.count (peer->getShortId ()) == 0)
+            return false;
+
+        return true;
+    }
+};
+
+}
 
 #endif

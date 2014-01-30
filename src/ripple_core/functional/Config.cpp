@@ -47,7 +47,7 @@ void parseAddresses (OutputSequence& out, InputIterator first, InputIterator las
         ++first;
         {
             IPAddress const addr (IPAddress::from_string (str));
-            if (! addr.empty ())
+            if (! is_unspecified (addr))
             {
                 out.push_back (addr);
                 continue;
@@ -55,7 +55,7 @@ void parseAddresses (OutputSequence& out, InputIterator first, InputIterator las
         }
         {
             IPAddress const addr (IPAddress::from_string_altform (str));
-            if (! addr.empty ())
+            if (! is_unspecified (addr))
             {
                 out.push_back (addr);
                 continue;
@@ -89,7 +89,6 @@ Config::Config ()
     // Defaults
     //
 
-    TESTNET                 = false;
     NETWORK_START_TIME      = 1319844908;
 
     RPC_SECURE              = 0;
@@ -149,7 +148,7 @@ Config::Config ()
     START_UP                = NORMAL;
 }
 
-void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
+void Config::setup (const std::string& strConf, bool bQuiet)
 {
     boost::system::error_code   ec;
     std::string                 strDbPath, strConfFile;
@@ -160,36 +159,19 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
     // that with "db" as the data directory.
     //
 
-    TESTNET     = bTestNet;
     QUIET       = bQuiet;
     NODE_SIZE   = 0;
 
-    // VFALCO NOTE TESTNET forces a "testnet-" prefix on the conf
-    //             file and db directory, unless --conf is specified
-    //             in which case there is no forced prefix.
+    strDbPath           = Helpers::getDatabaseDirName ();
+    strConfFile         = strConf.empty () ? Helpers::getConfigFileName () : strConf;
 
-    strDbPath           = Helpers::getDatabaseDirName (TESTNET);
-    strConfFile         = strConf.empty () ? Helpers::getConfigFileName (TESTNET) : strConf;
-
-    VALIDATORS_BASE     = Helpers::getValidatorsFileName (TESTNET);
+    VALIDATORS_BASE     = Helpers::getValidatorsFileName ();
 
     VALIDATORS_URI      = boost::str (boost::format ("/%s") % VALIDATORS_BASE);
 
-    if (TESTNET)
-    {
-        SIGN_TRANSACTION    = HashPrefix::txSignTestnet;
-        SIGN_VALIDATION     = HashPrefix::validationTestnet;
-        SIGN_PROPOSAL       = HashPrefix::proposalTestnet;
-    }
-    else
-    {
-        SIGN_TRANSACTION    = HashPrefix::txSign;
-        SIGN_VALIDATION     = HashPrefix::validation;
-        SIGN_PROPOSAL       = HashPrefix::proposal;
-    }
-
-    if (TESTNET)
-        Base58::setCurrentAlphabet (Base58::getTestnetAlphabet ());
+    SIGN_TRANSACTION    = HashPrefix::txSign;
+    SIGN_VALIDATION     = HashPrefix::validation;
+    SIGN_PROPOSAL       = HashPrefix::proposal;
 
     if (!strConf.empty ())
     {
@@ -637,139 +619,6 @@ Config& getConfig ()
 {
     static Config config;
     return config;
-}
-
-//------------------------------------------------------------------------------
-
-/*  The location of the configuration file is checked as follows,
-    in order of descending priority:
-
-    1. In the path specified by --conf command line option if present
-       (which is relative to the current directory)
-    2. In the current user's "home" directory
-    3. In the same directory as the rippled executable
-    4. In the "current" directory defined by the process which launched rippled
-*/
-File Config::findConfigFile (String commandLineLocation, bool forTestNetwork)
-{
-    File file (File::nonexistent ());
-
-#if 0
-    // Highest priority goes to commandLineLocation
-    //
-    if (file == File::nonexistent() && commandLineLocation != String::empty)
-    {
-        // If commandLineLocation is a full path,
-        // this will just assign the full path to file.
-        //
-        file = File::getCurrentDirectory().getChildFile (commandLineLocation);
-
-        if (! file.existsAsFile ())
-            file = File::nonexistent ();
-    }
-
-    // Next, we will look in the user's home directory
-    //
-#else
-
-#if 0
-    // VFALCO NOTE This is the original legacy code...
-
-    std::string strConfFile;
-
-    // Determine the config and data directories.
-    // If the config file is found in the current working directory,
-    // use the current working directory as the config directory and
-    // that with "db" as the data directory.
-    {
-        String s;
-        
-        if (forTestNetwork)
-            s += "testnet-";
-
-        if (commandLineLocation != String::empty)
-            s += Helpers::getConfigFileName (forTestNetwork);
-
-    strConfFile = boost::str (boost::format (forTestNetwork ? "testnet-%s" : "%s")
-                                      % (strConf.empty () ? Helpers::getConfigFileName() : strConf));
-
-    VALIDATORS_BASE     = boost::str (boost::format (TESTNET ? "testnet-%s" : "%s")
-                                      % VALIDATORS_FILE_NAME);
-    VALIDATORS_URI      = boost::str (boost::format ("/%s") % VALIDATORS_BASE);
-
-    if (TESTNET)
-    {
-        SIGN_TRANSACTION    = HashPrefix::txSignTestnet;
-        SIGN_VALIDATION     = HashPrefix::validationTestnet;
-        SIGN_PROPOSAL       = HashPrefix::proposalTestnet;
-    }
-    else
-    {
-        SIGN_TRANSACTION    = HashPrefix::txSign;
-        SIGN_VALIDATION     = HashPrefix::validation;
-        SIGN_PROPOSAL       = HashPrefix::proposal;
-    }
-
-    if (TESTNET)
-        Base58::setCurrentAlphabet (Base58::getTestnetAlphabet ());
-
-    if (!strConf.empty ())
-    {
-        // --conf=<path> : everything is relative that file.
-        CONFIG_FILE             = strConfFile;
-        CONFIG_DIR              = boost::filesystem::absolute (CONFIG_FILE);
-        CONFIG_DIR.remove_filename ();
-        DATA_DIR                = CONFIG_DIR / strDbPath;
-    }
-    else
-    {
-        CONFIG_DIR              = boost::filesystem::current_path ();
-        CONFIG_FILE             = CONFIG_DIR / strConfFile;
-        DATA_DIR                = CONFIG_DIR / strDbPath;
-
-        if (exists (CONFIG_FILE)
-                // Can we figure out XDG dirs?
-                || (!getenv ("HOME") && (!getenv ("XDG_CONFIG_HOME") || !getenv ("XDG_DATA_HOME"))))
-        {
-            // Current working directory is fine, put dbs in a subdir.
-            nothing ();
-        }
-        else
-        {
-            // Construct XDG config and data home.
-            // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-            std::string strHome             = strGetEnv ("HOME");
-            std::string strXdgConfigHome    = strGetEnv ("XDG_CONFIG_HOME");
-            std::string strXdgDataHome      = strGetEnv ("XDG_DATA_HOME");
-
-            if (strXdgConfigHome.empty ())
-            {
-                // $XDG_CONFIG_HOME was not set, use default based on $HOME.
-                strXdgConfigHome    = boost::str (boost::format ("%s/.config") % strHome);
-            }
-
-            if (strXdgDataHome.empty ())
-            {
-                // $XDG_DATA_HOME was not set, use default based on $HOME.
-                strXdgDataHome  = boost::str (boost::format ("%s/.local/share") % strHome);
-            }
-
-            CONFIG_DIR          = boost::str (boost::format ("%s/" SYSTEM_NAME) % strXdgConfigHome);
-            CONFIG_FILE         = CONFIG_DIR / strConfFile;
-            DATA_DIR            = boost::str (boost::format ("%s/" SYSTEM_NAME) % strXdgDataHome);
-
-            boost::filesystem::create_directories (CONFIG_DIR, ec);
-
-            if (ec)
-                throw std::runtime_error (boost::str (boost::format ("Can not create %s") % CONFIG_DIR));
-        }
-    }
-
-#endif
-
-#endif
-
-    return file;
 }
 
 //------------------------------------------------------------------------------

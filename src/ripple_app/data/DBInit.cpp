@@ -176,7 +176,8 @@ const char* WalletDBInit[] =
     "CREATE INDEX SeedDomainNext ON SeedDomains (Next);",
 
     // Table of PublicKeys user has asked to trust.
-    // Fetches are made to the CAS.  This gets the ripple.txt so even validators without a web server can publish a ripple.txt.
+    // Fetches are made to the CAS.  This gets the ripple.txt so even validators
+    // without a web server can publish a ripple.txt.
     // Source:
     //  'M' = Manually added.   : 1500
     //  'V' = validators.txt    : 1000
@@ -205,7 +206,8 @@ const char* WalletDBInit[] =
     // Allow us to easily find the next SeedNode to fetch.
     "CREATE INDEX SeedNodeNext ON SeedNodes (Next);",
 
-    // Nodes we trust to not grossly collude against us.  Derived from SeedDomains, SeedNodes, and ValidatorReferrals.
+    // Nodes we trust to not grossly collude against us.  Derived from
+    // SeedDomains, SeedNodes, and ValidatorReferrals.
     //
     // Score:
     //  Computed trust score.  Higher is better.
@@ -219,7 +221,7 @@ const char* WalletDBInit[] =
 	);",
 
     // List of referrals.
-    // - There may be multiple sources for a Validator.  The last source is used.
+    // - There may be multiple sources for a Validator. The last source is used.
     // Validator:
     //  Public key of referrer.
     // Entry:
@@ -254,41 +256,17 @@ const char* WalletDBInit[] =
 		PRIMARY KEY (Validator,Entry)					\
 	);",
 
-    // Table of IPs to contact the network.
-    // IP:
-    //  IP address to contact.
-    // Port:
-    //  Port to contact.
-    //  -1 = Default
-    // Score:
-    //  Computed trust score.  Higher is better.
-    // Source:
-    //  'C' = Configuration file
-    //  'V' = Validation file
-    //  'M' = Manually added.
-    //  'I' = Inbound connection.
-    //  'T' = Told by other peer
-    //  'O' = Other.
-    // ScanNext:
-    //  When to next scan.  Null=not scanning.
-    // ScanInterval:
-    //  Delay between scans.
-    "CREATE TABLE PeerIps (								\
-		IpPort			TEXT NOT NULL PRIMARY KEY,		\
-		Score			INTEGER NOT NULL DEFAULT 0,		\
-		Source			CHARACTER(1) NOT NULL,			\
-		ScanNext		DATETIME DEFAULT 0,				\
-		ScanInterval	INTEGER NOT NULL DEFAULT 0		\
-	);",
-
-    "CREATE INDEX PeerScanIndex ON						\
-		PeerIps(ScanNext);",
-
     "CREATE TABLE Features (							\
 		Hash			CHARACTER(64) PRIMARY KEY,		\
 		FirstMajority	BIGINT UNSIGNED,				\
 		LastMajority	BIGINT UNSIGNED					\
 	);",
+
+    // This removes an old table and its index which are now redundant. This
+    // code will eventually go away. It's only here to clean up the wallet.db
+    "DROP TABLE IF EXISTS PeerIps;",
+    "DROP INDEX IF EXISTS;",
+
 
     "END TRANSACTION;"
 };

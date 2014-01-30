@@ -24,9 +24,6 @@ namespace PeerFinder {
 
 Endpoint::Endpoint ()
     : hops (0)
-    , incomingSlotsAvailable (0)
-    , incomingSlotsMax (0)
-    , uptimeSeconds (0)
 {
 }
 

@@ -17,16 +17,24 @@
 */
 //==============================================================================
 
+#include "../../beast/modules/beast_asio/async/AsyncObject.h"
+#include "../../beast/beast/asio/IPAddressConversion.h"
+
 #include <atomic>
+#include <deque>
+
+#include "boost/asio.hpp"
+
+#include "../ResolverAsio.h"
 
 namespace ripple {
 
-class NameResolverImpl
-    : public NameResolver
-    , public AsyncObject <NameResolverImpl>
+class ResolverAsioImpl
+    : public ResolverAsio
+    , public AsyncObject <ResolverAsioImpl>
 {
 public:
-    typedef std::pair<std::string, std::string> HostAndPort;
+    typedef std::pair <std::string, std::string> HostAndPort;
 
     Journal m_journal;
 
@@ -34,12 +42,11 @@ public:
     boost::asio::io_service::strand m_strand;
     boost::asio::ip::tcp::resolver m_resolver;
 
-    std::atomic <int> m_called_stop;
-    bool m_stopped;
-    bool m_idle;
+    WaitableEvent m_stop_complete;
+    std::atomic <bool> m_stop_called;
+    std::atomic <bool> m_stopped;
 
-    // Notification that we need to exit
-    WaitableEvent m_event;
+    bool m_idle;
 
     // Represents a unit of work for the resolver to do
     struct Work 
@@ -54,79 +61,99 @@ public:
             names.reserve(names_.size());
 
             std::reverse_copy (names_.begin(), names_.end(),
-                std::back_inserter(names));
+                std::back_inserter (names));
         }
     };
 
     std::deque <Work> m_work;
 
-    NameResolverImpl (boost::asio::io_service& io_service,
+    ResolverAsioImpl (boost::asio::io_service& io_service,
         Journal journal)
             : m_journal (journal)
             , m_io_service (io_service)
             , m_strand (io_service)
             , m_resolver (io_service)
-            , m_called_stop (0)
+            , m_stop_complete (true)
+            , m_stop_called (false)
             , m_stopped (false)
             , m_idle (true)
-            , m_event (true)
     {
         addReference ();
     }
     
-    ~NameResolverImpl ()
+    ~ResolverAsioImpl ()
     {
         check_precondition (m_work.empty());
         check_precondition (m_stopped);
     }
 
-    //--------------------------------------------------------------------------
-    //
+    //-------------------------------------------------------------------------
     // AsyncObject
-    //
-    //--------------------------------------------------------------------------
-
     void asyncHandlersComplete()
     {
-        m_event.signal ();
+        m_stop_complete.signal ();
     }
 
     //--------------------------------------------------------------------------
     //
-    // NameResolver
+    // Resolver
     //
     //--------------------------------------------------------------------------
 
-    void do_stop (CompletionCounter)
-    {
-        m_journal.debug << "Stopped";
-        m_stopped = true;
-        m_work.clear ();
-        m_resolver.cancel ();
-        removeReference ();
-    }
-    
     void stop_async ()
     {
-        if (m_called_stop.exchange (1) == 0)
+        if (m_stop_called.exchange (true) == false)
         {
-            m_io_service.dispatch (m_strand.wrap (boost::bind (
-                &NameResolverImpl::do_stop, 
-                    this, CompletionCounter (this))));
+            m_io_service.dispatch ( m_strand.wrap ( boost::bind (
+                &ResolverAsioImpl::do_stop, 
+                this, CompletionCounter (this))));
 
-            m_journal.debug << "Stopping";
+            m_journal.debug << "Queued a stop request";
         }
     }
 
     void stop ()
     {
         stop_async ();
-        m_event.wait();
+        m_journal.debug << "Waiting to stop";
+        m_stop_complete.wait();
+        m_journal.debug << "Stopped";
+    }
+
+    void resolve (
+        std::vector <std::string> const& names,
+        HandlerType const& handler)
+    {
+        check_precondition (m_stop_called.load () == 0);
+        check_precondition (!names.empty());
+
+        // TODO NIKB use rvalue references to construct and move
+        //           reducing cost.
+        m_io_service.dispatch (m_strand.wrap (boost::bind (
+            &ResolverAsioImpl::do_resolve, this,
+            names, handler, CompletionCounter (this))));
+    }
+
+    //-------------------------------------------------------------------------
+    // Resolver
+    void do_stop (CompletionCounter)
+    {
+        if (meets_precondition (m_stop_called == true) &&
+            meets_precondition (m_stopped == false))
+        {
+            m_work.clear ();
+            m_resolver.cancel ();
+            m_stopped.exchange (true);
+
+            m_journal.debug << "Stopped";
+            
+            removeReference ();
+        }
     }
 
     void do_finish (
         std::string name,
-        const boost::system::error_code& ec,
+        boost::system::error_code const& ec,
         HandlerType handler,
         boost::asio::ip::tcp::resolver::iterator iter,
         CompletionCounter)
@@ -142,16 +169,16 @@ public:
         {
             while (iter != boost::asio::ip::tcp::resolver::iterator())
             {
-                addresses.push_back (IPAddressConversion::from_asio(*iter));
+                addresses.push_back (IPAddressConversion::from_asio (*iter));
                 ++iter;
             }
         }
 
-        handler (name, addresses, ec);
+        handler (name, addresses);
 
         m_io_service.post (m_strand.wrap (boost::bind (
-            &NameResolverImpl::do_work, this, 
-            CompletionCounter(this))));
+            &ResolverAsioImpl::do_work, this, 
+            CompletionCounter (this))));
     }
 
     HostAndPort parseName(std::string const& str)
@@ -159,12 +186,15 @@ public:
         std::string host (str);
         std::string port;
 
-        std::string::size_type colon (host.find(':'));
+        std::string::size_type sep (host.find(':'));
 
-        if (colon != std::string::npos)
+        if(sep == std::string::npos)
+            sep = host.find(' ');
+
+        if(sep != std::string::npos)
         {
-            port = host.substr (colon + 1);
-            host.erase(colon);
+            port = host.substr(sep + 1);
+            host.erase(sep);
         }
 
         return std::make_pair(host, port);
@@ -172,35 +202,35 @@ public:
 
     void do_work (CompletionCounter)
     {
-        if (m_called_stop.load () == 1)
+        if (m_stop_called.load () == 1)
             return;
 
         // We don't have any work to do at this time
-        if (m_work.empty())
+        if (m_work.empty ())
         {
             m_idle = true;
             m_journal.trace << "Sleeping";
             return;
         }
 
-        if (m_work.front().names.empty())
+        std::string const name (m_work.front ().names.back());
+        HandlerType handler (m_work.front ().handler);
+
+        m_work.front ().names.pop_back ();
+
+        if (m_work.front ().names.empty ())
             m_work.pop_front();
 
-        std::string const name (m_work.front().names.back());
-        HandlerType handler (m_work.front().handler);
+        HostAndPort const hp (parseName (name));
 
-        m_work.front().names.pop_back();
-
-        HostAndPort const hp (parseName(name));
-
-        if (hp.first.empty())
+        if (hp.first.empty ())
         {
             m_journal.error <<
                 "Unable to parse '" << name << "'";
 
             m_io_service.post (m_strand.wrap (boost::bind (
-                &NameResolverImpl::do_work, this,
-                CompletionCounter(this))));
+                &ResolverAsioImpl::do_work, this,
+                CompletionCounter (this))));
 
             return;
         }
@@ -209,10 +239,10 @@ public:
             hp.first, hp.second);
 
         m_resolver.async_resolve (query, boost::bind (
-            &NameResolverImpl::do_finish, this, name,
+            &ResolverAsioImpl::do_finish, this, name,
             boost::asio::placeholders::error, handler,
             boost::asio::placeholders::iterator,
-            CompletionCounter(this)));
+            CompletionCounter (this)));
     }
 
     void do_resolve (std::vector <std::string> const& names,
@@ -220,7 +250,7 @@ public:
     {
         check_precondition (! names.empty());
 
-        if (m_called_stop.load () == 0)
+        if (m_stop_called.load () == 0)
         {
             // TODO NIKB use emplace_back once we move to C++11
             m_work.push_back(Work(names, handler));
@@ -237,39 +267,25 @@ public:
                 m_idle = false;
 
                 m_io_service.post (m_strand.wrap (boost::bind (
-                    &NameResolverImpl::do_work, this,
-                    CompletionCounter(this))));
+                    &ResolverAsioImpl::do_work, this,
+                    CompletionCounter (this))));
             }
         }
-    }
-
-    void resolve (
-        std::vector <std::string> const& names,
-        HandlerType const& handler)
-    {
-        check_precondition (m_called_stop.load () == 0);
-        check_precondition (!names.empty());
-
-        // TODO NIKB use rvalue references to construct and move
-        //           reducing cost.
-        m_io_service.dispatch (m_strand.wrap (boost::bind (
-            &NameResolverImpl::do_resolve, this,
-            names, handler, CompletionCounter(this))));
     }
 };
 
 //-----------------------------------------------------------------------------
 
-NameResolver::~NameResolver()
+ResolverAsio *ResolverAsio::New (
+    boost::asio::io_service& io_service,
+    beast::Journal journal)
 {
-
+    return new ResolverAsioImpl (io_service, journal);
 }
 
-NameResolver* NameResolver::New (
-    boost::asio::io_service& io_service,
-        Journal journal)
+//-----------------------------------------------------------------------------
+Resolver::~Resolver ()
 {
-    return new NameResolverImpl (io_service, journal);
 }
 
 }

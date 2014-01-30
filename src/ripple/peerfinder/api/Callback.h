@@ -30,15 +30,22 @@ namespace PeerFinder {
 */
 struct Callback
 {
-    /** Sends a set of Endpoint records to the specified peer. */
-    virtual void sendPeerEndpoints (PeerID const& id,
-        std::vector <Endpoint> const& endpoints) = 0;
-
     /** Initiate outgoing Peer connections to the specified set of endpoints. */
-    virtual void connectPeerEndpoints (std::vector <IPAddress> const& list) = 0;
+    virtual void connectPeers (IPAddresses const& addresses) = 0;
 
-    /** Impose a load charge on the specified peer. */
-    virtual void chargePeerLoadPenalty (PeerID const& id) = 0;
+    /** Disconnect the handshaked peer with the specified address.
+        @param graceful `true` to wait for send buffers to drain before closing.
+    */
+    virtual void disconnectPeer (
+        IPAddress const& remote_address, bool graceful) = 0;
+
+    /** Activate the handshaked peer with the specified address. */
+    virtual void activatePeer (
+        IPAddress const& remote_address) = 0;
+
+    /** Sends a set of Endpoint records to the specified peer. */
+    virtual void sendEndpoints (IPAddress const& remote_address,
+        Endpoints const& endpoints) = 0;
 };
 
 }

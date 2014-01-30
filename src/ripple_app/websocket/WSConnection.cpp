@@ -139,7 +139,7 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     Config::Role const role = m_isPublic
             ? Config::GUEST     // Don't check on the public interface.
             : getConfig ().getAdminRole (
-                jvRequest, m_remoteAddress.withPort(0));
+                jvRequest, m_remoteAddress);
         
     if (Config::FORBID == role)
     {

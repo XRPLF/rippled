@@ -20,55 +20,92 @@
 #ifndef RIPPLE_PEER_H_INCLUDED
 #define RIPPLE_PEER_H_INCLUDED
 
+namespace ripple {
+
+typedef boost::asio::ip::tcp::socket NativeSocketType;
+
 namespace Resource {
 class Charge;
 class Manager;
 }
 
-// VFALCO TODO Couldn't this be a struct?
-typedef std::pair <std::string, int> IPAndPortNumber;
+namespace PeerFinder {
+class Manager;
+}
+
+class Peers;
 
 /** Represents a peer connection in the overlay.
 */
 class Peer
     : public boost::enable_shared_from_this <Peer>
-    , LeakChecked <Peer>
+    , public List <Peer>::Node
+    , private LeakChecked <Peer>
 {
 public:
+    typedef boost::shared_ptr <Peer> Ptr;
+
+     // DEPRECATED typedefs.
     typedef boost::shared_ptr <Peer> pointer;
     typedef pointer const& ref;
 
+    /** Uniquely identifies a particular connection of a peer
+        This works upto a restart of rippled.
+    */
+    typedef uint32 ShortId;
+
+    /** Current state */
+    enum State
+    {
+        /** An connection is being established (outbound) */
+         stateConnecting
+
+        /** Connection has been successfully established */
+        ,stateConnected
+
+        /** Handshake has been received from this peer */
+        ,stateHandshaked
+
+        /** Running the Ripple protocol actively */
+        ,stateActive
+
+        /** Gracefully closing */
+        ,stateGracefulClose
+    };
+
 public:
-    static pointer New (Resource::Manager& resourceManager,
-                        boost::asio::io_service& io_service,
-                        boost::asio::ssl::context& ctx,
-                        uint64 id,
-                        bool inbound,
-                        bool requirePROXYHandshake);
+    static void accept (
+        boost::shared_ptr <NativeSocketType> const& socket,
+        Peers& peers,
+        Resource::Manager& resourceManager,
+        PeerFinder::Manager& peerFinder,
+        boost::asio::ssl::context& ctx,
+        bool proxyHandshake);
 
-    // VFALCO TODO see if this and below can be private
-    virtual void handleConnect (const boost::system::error_code& error,
-                                boost::asio::ip::tcp::resolver::iterator it) = 0;
+    static void connect (
+        IP::Endpoint const& address,
+        boost::asio::io_service& io_service,
+        Peers& peers,
+        Resource::Manager& resourceManager,
+        PeerFinder::Manager& peerFinder,
+        boost::asio::ssl::context& ssl_context);
 
-    virtual std::string const& getIP () = 0;
+    //--------------------------------------------------------------------------
+    /** Called when an open slot is assigned to a handshaked peer. */
+    virtual void activate () = 0;
 
-    virtual std::string getDisplayName () = 0;
+    //--------------------------------------------------------------------------
+    //virtual void connect (IPAddress const &address) = 0;
 
-    virtual int getPort () = 0;
+    //--------------------------------------------------------------------------
+    virtual State state () const = 0;
 
-    virtual void setIpPort (const std::string& strIP, int iPort) = 0;
+    virtual void state (State new_state) = 0;
 
-    virtual void connect (const std::string& strIp, int iPort) = 0;
-
-    virtual void connected (const boost::system::error_code& error) = 0;
-
+    //--------------------------------------------------------------------------
     virtual void detach (const char*, bool onIOStrand) = 0;
 
     virtual void sendPacket (const PackedMessage::pointer& packet, bool onStrand) = 0;
-
-    virtual void sendGetPeers () = 0;
-
-    virtual void getLedger (protocol::TMGetLedger &) = 0;
 
     // VFALCO NOTE what's with this odd parameter passing? Why the static member?
     //
@@ -79,17 +116,17 @@ public:
     virtual void charge (Resource::Charge const& fee) = 0;
     static  void charge (boost::weak_ptr <Peer>& peer, Resource::Charge const& fee);
 
-    virtual Json::Value getJson () = 0;
+    virtual Json::Value json () = 0;
 
     virtual bool isConnected () const = 0;
 
     virtual bool isInCluster () const = 0;
 
+    virtual std::string getClusterNodeName() const = 0;
+
     virtual bool isInbound () const = 0;
 
     virtual bool isOutbound () const = 0;
-
-    virtual bool getConnectString(std::string&) const = 0;
 
     virtual uint256 const& getClosedLedgerHash () const = 0;
 
@@ -99,23 +136,29 @@ public:
 
     virtual bool hasTxSet (uint256 const& hash) const = 0;
 
-    virtual uint64 getPeerId () const = 0;
+    virtual void setShortId(Peer::ShortId shortId) = 0;
+
+    virtual ShortId getShortId () const = 0;
 
     virtual const RippleAddress& getNodePublic () const = 0;
 
     virtual void cycleStatus () = 0;
 
-    virtual bool hasProto (int version) = 0;
+    virtual bool supportsVersion (int version) = 0;
 
     virtual bool hasRange (uint32 uMin, uint32 uMax) = 0;
 
-    virtual IPAddress getPeerEndpoint() const = 0;
+    virtual IPAddress getRemoteAddress() const = 0;
 
-    //--------------------------------------------------------------------------
-
-    typedef boost::asio::ip::tcp::socket NativeSocketType;
-    
     virtual NativeSocketType& getNativeSocket () = 0;
 };
+
+std::string to_string (Peer const& peer);
+std::ostream& operator<< (std::ostream& os, Peer const& peer);
+
+std::string to_string (Peer const* peer);
+std::ostream& operator<< (std::ostream& os, Peer const* peer);
+
+}
 
 #endif

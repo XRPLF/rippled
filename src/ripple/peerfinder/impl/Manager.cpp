@@ -38,7 +38,7 @@ public:
     DeadlineTimer m_connectTimer;
     DeadlineTimer m_messageTimer;
     DeadlineTimer m_cacheTimer;
-
+    
     //--------------------------------------------------------------------------
 
     ManagerImp (
@@ -78,28 +78,22 @@ public:
                     config)));
     }
 
-    void addFixedPeers (
-        std::vector <std::string> const& strings)
+    void addFixedPeer (std::string const& name,
+        std::vector <IPAddress> const& addresses)
     {
-#if 1
-        m_logic.addFixedPeers (strings);
-#else
-        m_queue.dispatch (m_context.wrap (
-            bind (&Logic::addFixedPeers, &m_logic,
-                std::vector <std::string> (strings))));
-#endif
+        m_queue.dispatch (
+            m_context.wrap (
+                boost::bind (&Logic::addFixedPeer, &m_logic,
+                    name, addresses)));
     }
 
     void addFallbackStrings (std::string const& name,
         std::vector <std::string> const& strings)
     {
-#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
-                bind (
-                    &Logic::addStaticSource, &m_logic,
-                        SourceStrings::New (name, strings))));
-#endif
+                bind (&Logic::addStaticSource, &m_logic,
+                    SourceStrings::New (name, strings))));
     }
 
     void addFallbackURL (std::string const& name, std::string const& url)
@@ -107,75 +101,74 @@ public:
         // VFALCO TODO This needs to be implemented
     }
 
-    void onPeerConnectAttemptBegins (IPAddress const& address)
+    //--------------------------------------------------------------------------
+
+    void onPeerAccept (IPAddress const& local_address,
+        IPAddress const& remote_address)
     {
-#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
-                bind (&Logic::onPeerConnectAttemptBegins, &m_logic,
+                bind (&Logic::onPeerAccept, &m_logic,
+                      local_address, remote_address)));
+    }
+
+    void onPeerConnect (IPAddress const& address)
+    {
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::onPeerConnect, &m_logic,
                       address)));
-#endif
     }
 
-    void onPeerConnectAttemptCompletes (IPAddress const& address, bool success)
+    void onPeerConnected (IPAddress const& local_address,
+        IPAddress const& remote_address)
     {
-#if RIPPLE_USE_PEERFINDER
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerConnectAttemptCompletes, &m_logic,
-                      address, success)));
-#endif
-    }
-
-    void onPeerConnected (const IPAddress &address, bool incoming)
-    {
-#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerConnected, &m_logic,
-                      address, incoming)));
-#endif
+                      local_address, remote_address)));
     }
 
-    void onPeerHandshake (PeerID const& id,
-        IPAddress const& address, bool incoming)
+    void onPeerAddressChanged (
+        IPAddress const& currentAddress, IPAddress const& newAddress)
     {
-#if RIPPLE_USE_PEERFINDER
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::onPeerAddressChanged, &m_logic,
+                    currentAddress, newAddress)));
+    }
+
+    void onPeerHandshake (IPAddress const& address, PeerID const& id, 
+        bool cluster)
+    {
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Logic::onPeerHandshake, &m_logic,
-                    id, address, incoming)));
-#endif
+                      address, id, cluster)));
     }
 
-    void onPeerDisconnected (const PeerID& id)
+    void onPeerClosed (IPAddress const& address)
     {
-#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
-                bind (&Logic::onPeerDisconnected, &m_logic,
-                    id)));
-#endif
+                bind (&Logic::onPeerClosed, &m_logic,
+                    address)));
     }
 
-    void onPeerLegacyEndpoint (IPAddress const& ep)
+    void onPeerEndpoints (IPAddress const& address,
+        Endpoints const& endpoints)
     {
-#if RIPPLE_USE_PEERFINDER
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerLegacyEndpoint, &m_logic,
-                    ep)));
-#endif
-    }
-
-    void onPeerEndpoints (PeerID const& id,
-        std::vector <Endpoint> const& endpoints)
-    {
-#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             beast::bind (&Logic::onPeerEndpoints, &m_logic,
-                id, endpoints));
-#endif
+                address, endpoints));
+    }
+
+    void onLegacyEndpoints (IPAddresses const& addresses)
+    {
+        m_queue.dispatch (
+            m_context.wrap (
+                beast::bind (&Logic::onLegacyEndpoints, &m_logic,
+                    addresses)));
     }
 
     //--------------------------------------------------------------------------
@@ -192,9 +185,9 @@ public:
         {
             std::string const& s (*iter);
             IPAddress addr (IPAddress::from_string (s));
-            if (addr.empty ())
+            if (is_unspecified (addr))
                 addr = IPAddress::from_string_altform(s);
-            if (! addr.empty())
+            if (! is_unspecified (addr))
             {
                 // add IPAddress to bootstrap cache
                 ++n;
@@ -213,9 +206,9 @@ public:
         {
             std::string const& s (*iter);
             IPAddress addr (IPAddress::from_string (s));
-            if (addr.empty ())
+            if (is_unspecified (addr))
                 addr = IPAddress::from_string_altform(s);
-            if (! addr.empty())
+            if (! is_unspecified (addr))
             {
                 // add IPAddress to fixed peers
             }
@@ -282,7 +275,7 @@ public:
                 m_context.wrap (
                     bind (&Logic::makeOutgoingConnections, &m_logic)));
 
-            m_connectTimer.setExpiration (secondsPerConnect);
+            m_connectTimer.setExpiration (Tuning::secondsPerConnect);
         }
         else if (timer == m_messageTimer)
         {
@@ -290,7 +283,7 @@ public:
                 m_context.wrap (
                     bind (&Logic::sendEndpoints, &m_logic)));
 
-            m_messageTimer.setExpiration (secondsPerMessage);
+            m_messageTimer.setExpiration (Tuning::secondsPerMessage);
         }
         else if (timer == m_cacheTimer)
         {
@@ -298,8 +291,13 @@ public:
                 m_context.wrap (
                     bind (&Logic::sweepCache, &m_logic)));
 
-            m_cacheTimer.setExpiration (cacheSecondsToLive);
+            m_cacheTimer.setExpiration (Tuning::liveCacheSecondsToLive);
         }
+
+        // VFALCO NOTE Bit of a hack here...
+        m_queue.dispatch (
+            m_context.wrap (
+                bind (&Logic::periodicActivity, &m_logic)));
     }
 
     void init ()
@@ -322,13 +320,12 @@ public:
             m_logic.load ();
         }
 
-        m_connectTimer.setExpiration (secondsPerConnect);
-        m_messageTimer.setExpiration (secondsPerMessage);
-        m_cacheTimer.setExpiration (cacheSecondsToLive);
-    
-        m_queue.post (
-            m_context.wrap (
-                bind (&Logic::makeOutgoingConnections, &m_logic)));
+        m_connectTimer.setExpiration (Tuning::secondsPerConnect);
+        m_messageTimer.setExpiration (Tuning::secondsPerMessage);
+        m_cacheTimer.setExpiration (Tuning::liveCacheSecondsToLive);
+
+        m_queue.post (m_context.wrap (
+            bind (&Logic::makeOutgoingConnections, &m_logic)));
     }
 
     void run ()

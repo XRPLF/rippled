@@ -36,7 +36,7 @@ public:
     enum
     {
         // This determines the on-database format of the data
-        currentSchemaVersion = 2
+        currentSchemaVersion = 3
     };
 
     explicit StoreSqdb (Journal journal = Journal())
@@ -63,10 +63,11 @@ public:
         return error;
     }
 
-    void loadLegacyEndpoints (
-        std::vector <IPAddress>& list)
+    // Loads the entire stored bootstrap cache and returns it as an array.
+    //
+    std::vector <SavedBootstrapAddress> loadBootstrapCache ()
     {
-        list.clear ();
+        std::vector <SavedBootstrapAddress> list;
 
         Error error;
 
@@ -75,7 +76,7 @@ public:
         if (! error)
         {
             m_session.once (error) <<
-                "SELECT COUNT(*) FROM PeerFinder_LegacyEndpoints "
+                "SELECT COUNT(*) FROM PeerFinder_BootstrapCache "
                 ,sqdb::into (count)
                 ;
         }
@@ -83,25 +84,47 @@ public:
         if (error)
         {
             report (error, __FILE__, __LINE__);
-            return;
+            return list;
         }
 
         list.reserve (count);
 
         {
             std::string s;
+            int uptimeSeconds;
+            int connectionValence;
+
             sqdb::statement st = (m_session.prepare <<
-                "SELECT ipv4 FROM PeerFinder_LegacyEndpoints "
-                ,sqdb::into (s)
+                "SELECT "
+                " address, "
+                " uptime, "
+                " valence "
+                "FROM PeerFinder_BootstrapCache "
+                , sqdb::into (s)
+                , sqdb::into (uptimeSeconds)
+                , sqdb::into (connectionValence)
                 );
 
             if (st.execute_and_fetch (error))
             {
                 do
                 {
-                    IPAddress ep (IPAddress::from_string (s));
-                    if (! ep.empty())
-                        list.push_back (ep);
+                    SavedBootstrapAddress entry;
+
+                    entry.address = IPAddress::from_string (s);
+
+                    if (! is_unspecified (entry.address))
+                    {
+                        entry.cumulativeUptimeSeconds = uptimeSeconds;
+                        entry.connectionValence = connectionValence;
+
+                        list.push_back (entry);
+                    }
+                    else
+                    {
+                        m_journal.error <<
+                            "Bad address string '" << s << "' in Bootcache table";
+                    }
                 }
                 while (st.fetch (error));
             }
@@ -111,37 +134,48 @@ public:
         {
             report (error, __FILE__, __LINE__);
         }
+
+        return list;
     }
 
-    void updateLegacyEndpoints (
-        std::vector <LegacyEndpoint const*> const& list)
+    // Overwrites the stored bootstrap cache with the specified array.
+    //
+    void updateBootstrapCache (
+        std::vector <SavedBootstrapAddress> const& list)
     {
-        typedef std::vector <LegacyEndpoint const*> List;
-
         Error error;
 
         sqdb::transaction tr (m_session);
 
         m_session.once (error) <<
-            "DELETE FROM PeerFinder_LegacyEndpoints";
+            "DELETE FROM PeerFinder_BootstrapCache";
 
         if (! error)
         {
             std::string s;
+            int uptimeSeconds;
+            int connectionValence;
+
             sqdb::statement st = (m_session.prepare <<
-                "INSERT INTO PeerFinder_LegacyEndpoints ( "
-                "  ipv4 "
+                "INSERT INTO PeerFinder_BootstrapCache ( "
+                "  address, "
+                "  uptime, "
+                "  valence "
                 ") VALUES ( "
-                "  ? "
+                "  ?, ?, ? "
                 ");"
-                ,sqdb::use (s)
+                , sqdb::use (s)
+                , sqdb::use (uptimeSeconds)
+                , sqdb::use (connectionValence)
                 );
 
-            for (List::const_iterator iter (list.begin());
-                !error && iter != list.end(); ++iter)
+            for (std::vector <SavedBootstrapAddress>::const_iterator iter (
+                list.begin()); !error && iter != list.end(); ++iter)
             {
-                IPAddress const& ep ((*iter)->address);
-                s = ep.to_string();
+                s = to_string (iter->address);
+                uptimeSeconds = iter->cumulativeUptimeSeconds;
+                connectionValence = iter->connectionValence;
+
                 st.execute_and_fetch (error);
             }
         }
@@ -159,7 +193,7 @@ public:
     }
 
     // Convert any existing entries from an older schema to the
-    // current one, if approrpriate.
+    // current one, if appropriate.
     //
     Error update ()
     {
@@ -184,25 +218,37 @@ public:
                 if (!m_session.got_data())
                     version = 0;
 
-                m_journal.info << "Opened version " << version << " database";
+                m_journal.info <<
+                    "Opened version " << version << " database";
             }
         }
 
         if (!error && version != currentSchemaVersion)
         {
             m_journal.info <<
-                "Updateding database to version " << currentSchemaVersion;
+                "Updating database to version " << currentSchemaVersion;
         }
 
-        if (!error && (version < 2))
+        if (!error)
         {
-            if (!error)
-                m_session.once (error) <<
-                    "DROP TABLE IF EXISTS LegacyEndpoints";
+            if (version < 3)
+            {
+                if (!error)
+                    m_session.once (error) <<
+                        "DROP TABLE IF EXISTS LegacyEndpoints";
 
-            if (!error)
-                m_session.once (error) <<
-                    "DROP TABLE IF EXISTS PeerFinderLegacyEndpoints";
+                if (!error)
+                    m_session.once (error) <<
+                        "DROP TABLE IF EXISTS PeerFinderLegacyEndpoints";
+
+                if (!error)
+                    m_session.once (error) <<
+                        "DROP TABLE IF EXISTS PeerFinder_LegacyEndpoints";
+
+                if (!error)
+                    m_session.once (error) <<
+                        "DROP TABLE IF EXISTS PeerFinder_LegacyEndpoints_Index";
+            }
         }
 
         if (!error)
@@ -230,7 +276,6 @@ public:
         return error;
     }
 
-
 private:
     Error init ()
     {
@@ -256,9 +301,11 @@ private:
         if (! error)
         {
             m_session.once (error) <<
-                "CREATE TABLE IF NOT EXISTS PeerFinder_LegacyEndpoints ( "
-                "  id    INTEGER PRIMARY KEY AUTOINCREMENT, "
-                "  ipv4  TEXT UNIQUE NOT NULL   "
+                "CREATE TABLE IF NOT EXISTS PeerFinder_BootstrapCache ( "
+                "  id       INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "  address  TEXT UNIQUE NOT NULL, "
+                "  uptime   INTEGER,"
+                "  valence  INTEGER"
                 ");"
                 ;
         }
@@ -267,9 +314,9 @@ private:
         {
             m_session.once (error) <<
                 "CREATE INDEX IF NOT EXISTS "
-                "  PeerFinder_LegacyEndpoints_Index ON PeerFinder_LegacyEndpoints "
+                "  PeerFinder_BootstrapCache_Index ON PeerFinder_BootstrapCache "
                 "  (  "
-                "    ipv4 "
+                "    address "
                 "  ); "
                 ;
         }

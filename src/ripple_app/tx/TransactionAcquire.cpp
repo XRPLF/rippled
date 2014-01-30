@@ -89,7 +89,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
                 WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
                 mTimeouts = 0;
                 aggressive = true;
-	    }
+            }
         }
         psl.lock(__FILE__, __LINE__);
 
@@ -107,7 +107,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
         WriteLog (lsWARNING, TransactionAcquire) << "Out of peers for TX set " << getHash ();
 
         bool found = false;
-        std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
+        Peers::PeerSequence peerList = getApp().getPeers ().getActivePeers ();
         BOOST_FOREACH (Peer::ref peer, peerList)
         {
             if (peer->hasTxSet (getHash ()))

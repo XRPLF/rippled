@@ -102,7 +102,7 @@ protected:
             if (m_proxyInfo.protocol == "TCP4")
             {
                 return IPAddress (
-                    IPAddress::V4 (
+                    IP::AddressV4 (
                         m_proxyInfo.destAddress.value [0],
                         m_proxyInfo.destAddress.value [1],
                         m_proxyInfo.destAddress.value [2],

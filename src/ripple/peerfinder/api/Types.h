@@ -26,6 +26,12 @@ namespace PeerFinder {
 /** Used to identify peers. */
 typedef RipplePublicKey PeerID;
 
+/** Represents a set of addresses. */
+typedef std::vector <IPAddress> IPAddresses;
+
+/** A set of Endpoint used for connecting. */
+typedef std::vector <Endpoint> Endpoints;
+
 }
 }
 

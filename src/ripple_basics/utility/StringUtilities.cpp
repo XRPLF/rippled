@@ -271,14 +271,6 @@ bool parseQuality (const std::string& strSource, uint32& uQuality)
     return !!uQuality;
 }
 
-std::string addressToString (void const* address)
-{
-    // VFALCO TODO Clean this up, use uintptr_t and only produce a 32 bit
-    //             output on 32 bit platforms
-    //
-    return strHex (static_cast <char const*> (address) - static_cast <char const*> (0));
-}
-
 StringPairArray parseDelimitedKeyValueString (String parameters, beast_wchar delimiter)
 {
     StringPairArray keyValues;

@@ -53,7 +53,7 @@ bool PeerSet::peerHas (Peer::ref ptr)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    if (!mPeers.insert (std::make_pair (ptr->getPeerId (), 0)).second)
+    if (!mPeers.insert (std::make_pair (ptr->getShortId (), 0)).second)
         return false;
 
     newPeer (ptr);
@@ -63,7 +63,7 @@ bool PeerSet::peerHas (Peer::ref ptr)
 void PeerSet::badPeer (Peer::ref ptr)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
-    mPeers.erase (ptr->getPeerId ());
+    mPeers.erase (ptr->getShortId ());
 }
 
 void PeerSet::setTimer ()
@@ -157,9 +157,9 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
 
     PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER);
 
-    for (Map::iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
+    for (PeerSetMap::iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
     {
-        Peer::pointer peer = getApp().getPeers ().getPeerById (it->first);
+        Peer::pointer peer = getApp().getPeers ().findPeerByShortID (it->first);
 
         if (peer)
             peer->sendPacket (packet, false);
@@ -171,7 +171,7 @@ int PeerSet::takePeerSetFrom (const PeerSet& s)
     int ret = 0;
     mPeers.clear ();
 
-    for (Map::const_iterator it = s.mPeers.begin (), end = s.mPeers.end ();
+    for (PeerSetMap::const_iterator it = s.mPeers.begin (), end = s.mPeers.end ();
             it != end; ++it)
     {
         mPeers.insert (std::make_pair (it->first, 0));
@@ -181,12 +181,12 @@ int PeerSet::takePeerSetFrom (const PeerSet& s)
     return ret;
 }
 
-int PeerSet::getPeerCount () const
+std::size_t PeerSet::getPeerCount () const
 {
-    int ret = 0;
+    std::size_t ret (0);
 
-    for (Map::const_iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
-        if (getApp().getPeers ().hasPeer (it->first))
+    for (PeerSetMap::const_iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
+        if (getApp().getPeers ().findPeerByShortID (it->first))
             ++ret;
 
     return ret;

@@ -17,42 +17,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_LEGACYENDPOINT_H_INCLUDED
-#define RIPPLE_PEERFINDER_LEGACYENDPOINT_H_INCLUDED
+#ifndef RIPPLE_PEERFINDER_SIM_NODESNAPSHOT_H_INCLUDED
+#define RIPPLE_PEERFINDER_SIM_NODESNAPSHOT_H_INCLUDED
 
 namespace ripple {
 namespace PeerFinder {
+namespace Sim {
 
-struct LegacyEndpoint
+/** A snapshot of a Node in the network simulator. */
+struct NodeSnapshot
 {
-    LegacyEndpoint ()
-        : whenInserted (0)
-        , lastGet(0)
-        ,checked (false)
-        , canAccept (false)
-        { }
 
-    LegacyEndpoint (IPAddress const& address_, DiscreteTime now)
-        : address (address_)
-        , whenInserted (now)
-        , lastGet(0)
-        { }
-
-    IPAddress address;
-
-    // When we inserted the endpoint into the cache
-    DiscreteTime mutable whenInserted;
-
-    // When we last used the endpoint for outging connection attempts
-    DiscreteTime mutable lastGet;
-
-    // True if we ever tried to connect
-    bool mutable checked;
-
-    // The result of the last connect attempt
-    bool mutable canAccept;
 };
 
+}
 }
 }
 

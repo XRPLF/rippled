@@ -26,6 +26,14 @@ namespace PeerFinder {
 /** Time in seconds since some baseline event in the past. */
 typedef int DiscreteTime;
 
+/** Indicates the action the logic will take after a handshake. */
+enum HandshakeAction
+{
+    doActivate,
+    doRedirect,
+    doClose
+};
+
 }
 }
 

@@ -240,7 +240,7 @@ public:
     // VFALCO TODO Try to make all these private since they seem to be...private
     //
     void switchLastClosedLedger (Ledger::pointer newLedger, bool duringConsensus); // Used for the "jump" case
-    bool checkLastClosedLedger (const std::vector<Peer::pointer>&, uint256& networkClosed);
+    bool checkLastClosedLedger (const Peers::PeerSequence&, uint256& networkClosed);
     int beginConsensus (uint256 const& networkClosed, Ledger::pointer closingLedger);
     void tryStartConsensus ();
     void endConsensus (bool correctLCL);
@@ -507,7 +507,7 @@ void NetworkOPsImp::processHeartbeatTimer ()
         LoadManager& mgr (app.getLoadManager ());
         mgr.resetDeadlockDetector ();
 
-        std::size_t const numPeers = getApp().getPeers ().getPeerVector ().size ();
+        std::size_t const numPeers = getApp().getPeers ().size ();
 
         // do we have sufficient peers? If not, we are disconnected.
         if (numPeers < getConfig ().NETWORK_QUORUM)
@@ -579,13 +579,12 @@ void NetworkOPsImp::processClusterTimer ()
     BOOST_FOREACH (Resource::Gossip::Item const& item, gossip.items)
     {
         protocol::TMLoadSource& node = *cluster.add_loadsources();
-        node.set_name (item.address);
+        node.set_name (to_string (item.address));
         node.set_cost (item.balance);
     }
-
-    PackedMessage::pointer message = boost::make_shared<PackedMessage>(cluster, protocol::mtCLUSTER);
-    getApp().getPeers().relayMessageCluster (NULL, message);
-
+    getApp ().getPeers ().foreach (send_if (
+        boost::make_shared<PackedMessage>(cluster, protocol::mtCLUSTER),
+        peer_in_cluster ()));
     setClusterTimer ();
 }
 
@@ -847,7 +846,7 @@ void NetworkOPsImp::runTransactionQueue ()
 
                 if (didApply /*|| (mMode != omFULL)*/ )
                 {
-                    std::set <uint64> peers;
+                    std::set <Peer::ShortId> peers;
 
                     if (getApp().getHashRouter ().swapSet (txn->getID (), peers, SF_RELAYED))
                     {
@@ -858,9 +857,9 @@ void NetworkOPsImp::runTransactionQueue ()
                         tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
                         tx.set_status (protocol::tsCURRENT);
                         tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
-
-                        PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION);
-                        getApp().getPeers ().relayMessageBut (peers, packet);
+                        getApp ().getPeers ().foreach (send_if_not (
+                            boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION),
+                            peer_in_set(peers)));                        
                     }
                     else
                         m_journal.debug << "recently relayed";
@@ -971,7 +970,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
 
         if (didApply || ((mMode != omFULL) && !bFailHard))
         {
-            std::set<uint64> peers;
+            std::set<Peer::ShortId> peers;
 
             if (getApp().getHashRouter ().swapSet (trans->getID (), peers, SF_RELAYED))
             {
@@ -981,9 +980,9 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
                 tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
                 tx.set_status (protocol::tsCURRENT);
                 tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
-
-                PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION);
-                getApp().getPeers ().relayMessageBut (peers, packet);
+                getApp ().getPeers ().foreach (send_if_not (
+                    boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION),
+                    peer_in_set(peers))); 
             }
         }
     }
@@ -1181,7 +1180,7 @@ public:
 void NetworkOPsImp::tryStartConsensus ()
 {
     uint256 networkClosed;
-    bool ledgerChange = checkLastClosedLedger (getApp().getPeers ().getPeerVector (), networkClosed);
+    bool ledgerChange = checkLastClosedLedger (getApp().getPeers ().getActivePeers (), networkClosed);
 
     if (networkClosed.isZero ())
         return;
@@ -1213,7 +1212,7 @@ void NetworkOPsImp::tryStartConsensus ()
         beginConsensus (networkClosed, m_ledgerMaster.getCurrentLedger ());
 }
 
-bool NetworkOPsImp::checkLastClosedLedger (const std::vector<Peer::pointer>& peerList, uint256& networkClosed)
+bool NetworkOPsImp::checkLastClosedLedger (const Peers::PeerSequence& peerList, uint256& networkClosed)
 {
     // Returns true if there's an *abnormal* ledger issue, normal changing in TRACKING mode should return false
     // Do we have sufficient validations for our last closed ledger? Or do sufficient nodes
@@ -1385,8 +1384,9 @@ void NetworkOPsImp::switchLastClosedLedger (Ledger::pointer newLedger, bool duri
     s.set_ledgerhashprevious (hash.begin (), hash.size ());
     hash = newLedger->getHash ();
     s.set_ledgerhash (hash.begin (), hash.size ());
-    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (s, protocol::mtSTATUS_CHANGE);
-    getApp().getPeers ().relayMessage (NULL, packet);
+
+    getApp ().getPeers ().foreach (send_always (
+        boost::make_shared<PackedMessage> (s, protocol::mtSTATUS_CHANGE)));
 }
 
 int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer closingLedger)
@@ -1436,7 +1436,7 @@ bool NetworkOPsImp::haveConsensusObject ()
     {
         // we need to get into the consensus process
         uint256 networkClosed;
-        std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
+        Peers::PeerSequence peerList = getApp().getPeers ().getActivePeers ();
         bool ledgerChange = checkLastClosedLedger (peerList, networkClosed);
 
         if (!ledgerChange)
@@ -1499,10 +1499,12 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
 
         if (relay)
         {
-            std::set<uint64> peers;
-            getApp().getHashRouter ().swapSet (proposal->getHashRouter (), peers, SF_RELAYED);
-            PackedMessage::pointer message = boost::make_shared<PackedMessage> (*set, protocol::mtPROPOSE_LEDGER);
-            getApp().getPeers ().relayMessageBut (peers, message);
+            std::set<Peer::ShortId> peers;
+            getApp().getHashRouter ().swapSet (
+                proposal->getHashRouter (), peers, SF_RELAYED);
+            getApp ().getPeers ().foreach (send_if_not (
+                boost::make_shared<PackedMessage> (*set, protocol::mtPROPOSE_LEDGER),
+                peer_in_set(peers)));
         }
         else
         {
@@ -1595,7 +1597,7 @@ void NetworkOPsImp::endConsensus (bool correctLCL)
 {
     uint256 deadLedger = m_ledgerMaster.getClosedLedger ()->getParentHash ();
 
-    std::vector <Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
+    std::vector <Peer::pointer> peerList = getApp().getPeers ().getActivePeers ();
 
     BOOST_FOREACH (Peer::ref it, peerList)
     {
@@ -2116,9 +2118,6 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     info ["build_version"] = BuildInfo::getVersionString ();
 
-    if (getConfig ().TESTNET)
-        info["testnet"]     = getConfig ().TESTNET;
-
     info["server_state"] = strOperatingMode ();
 
     if (mNeedNetworkLedger)
@@ -2147,7 +2146,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     if (fp != 0)
         info["fetch_pack"] = Json::UInt (fp);
 
-    info["peers"] = getApp().getPeers ().getPeerCount ();
+    info["peers"] = Json::UInt (getApp ().getPeers ().size ());
 
     Json::Value lastClose = Json::objectValue;
     lastClose["proposers"] = getApp().getOPs ().getPreviousProposers ();
@@ -2704,9 +2703,6 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult)
 
     if (getConfig ().RUN_STANDALONE)
         jvResult["stand_alone"] = getConfig ().RUN_STANDALONE;
-
-    if (getConfig ().TESTNET)
-        jvResult["testnet"]     = getConfig ().TESTNET;
 
     RandomNumbers::getInstance ().fillBytes (uRandom.begin (), uRandom.size ());
     jvResult["random"]          = uRandom.ToString ();

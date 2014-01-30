@@ -32,7 +32,7 @@ namespace ripple {
     container.
 */
 template <class Key,
-          class Hash = typename Key::hasher,
+          class Hash = std::hash <Key>,
           class KeyEqual = std::equal_to <Key>,
           class Allocator = std::allocator <Key> >
 class CycledSet

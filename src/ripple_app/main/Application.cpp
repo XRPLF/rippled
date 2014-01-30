@@ -152,13 +152,14 @@ public:
     std::unique_ptr <SSLContext> m_peerSSLContext;
     std::unique_ptr <SSLContext> m_wsSSLContext;
     std::unique_ptr <Peers> m_peers;
-    OwnedArray <PeerDoor>  m_peerDoors;
     std::unique_ptr <RPCDoor>  m_rpcDoor;
     std::unique_ptr <WSDoor> m_wsPublicDoor;
     std::unique_ptr <WSDoor> m_wsPrivateDoor;
     std::unique_ptr <WSDoor> m_wsProxyDoor;
 
     WaitableEvent m_stop;
+
+    std::unique_ptr <ResolverAsio> m_resolver;
 
     io_latency_probe <std::chrono::steady_clock> m_probe;
 
@@ -302,6 +303,8 @@ public:
         , m_sweepTimer (this)
 
         , mShutdown (false)
+
+        , m_resolver (ResolverAsio::New (m_mainIoPool.getService (), Journal ()))
 
         , m_probe (std::chrono::milliseconds (100), m_mainIoPool.getService())
     {
@@ -673,46 +676,13 @@ public:
         }
 
         // VFALCO NOTE Unfortunately, in stand-alone mode some code still
-        //             foolishly calls getPeers(). When this is fixed we can move
-        //             the creation of the peer SSL context and Peers object into
-        //             the conditional.
+        //             foolishly calls getPeers(). When this is fixed we can
+        //             move the instantiation inside a conditional:
         //
-        m_peers.reset (add (Peers::New (m_mainIoPool, *m_resourceManager, *m_siteFiles,
-            m_mainIoPool, m_peerSSLContext->get ())));
-
-        // If we're not in standalone mode,
-        // prepare ourselves for  networking
-        //
-        if (!getConfig ().RUN_STANDALONE)
-        {
-            // Create the listening sockets for peers
-            //
-            m_peerDoors.add (PeerDoor::New (
-                m_mainIoPool,
-                *m_resourceManager,
-                PeerDoor::sslRequired,
-                getConfig ().PEER_IP,
-                getConfig ().peerListeningPort,
-                m_mainIoPool,
-                m_peerSSLContext->get ()));
-
-            if (getConfig ().peerPROXYListeningPort != 0)
-            {
-                // Also listen on a PROXY-only port.
-                m_peerDoors.add (PeerDoor::New (
-                    m_mainIoPool,
-                    *m_resourceManager,
-                    PeerDoor::sslAndPROXYRequired,
-                    getConfig ().PEER_IP,
-                    getConfig ().peerPROXYListeningPort,
-                    m_mainIoPool,
-                    m_peerSSLContext->get ()));
-            }
-        }
-        else
-        {
-            m_journal.info << "Peer interface: disabled";
-        }
+        //             if (!getConfig ().RUN_STANDALONE)
+        m_peers.reset (add (Peers::New (m_mainIoPool, *m_resourceManager, 
+            *m_siteFiles, *m_resolver, m_mainIoPool, 
+                m_peerSSLContext->get ())));
 
         // SSL context used for WebSocket connections.
         if (getConfig ().WEBSOCKET_SECURE)
@@ -817,7 +787,8 @@ public:
         //
         if (!getConfig ().RUN_STANDALONE)
         {
-            m_peers->start ();
+            // Should this message be here, conceptually? In theory this sort
+            // of message, if displayed, should be displayed from PeerFinder.
             if (getConfig ().PEER_PRIVATE && getConfig ().IPS.empty ())
                 m_journal.warning << "No outbound peer connections will be made";
 
@@ -895,6 +866,8 @@ public:
         //        naturally return from io_service::run() instead of
         //        forcing a call to io_service::stop()
         m_probe.cancel ();
+
+        m_resolver->stop();
 
         m_sweepTimer.cancel();
 

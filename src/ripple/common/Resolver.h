@@ -17,42 +17,37 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEER_NAMERESOLVER_H_INCLUDED
-#define RIPPLE_PEER_NAMERESOLVER_H_INCLUDED
+#ifndef RIPPLE_COMMON_RESOLVER_H_INCLUDED
+#define RIPPLE_COMMON_RESOLVER_H_INCLUDED
 
+#include <vector>
 #include <functional>
+
+#include "../../beast/beast/boost/ErrorCode.h"
+#include "../../beast/beast/Net.h"
+
 
 namespace ripple {
 
-class NameResolver
+class Resolver
 {
 public:
-    typedef std::function <
-        void (std::string, std::vector<IPAddress>, boost::system::error_code)>
-            HandlerType;
+    typedef boost::function <
+        void (std::string, 
+            std::vector <beast::IPAddress>) >
+        HandlerType;
 
-    static NameResolver* New (boost::asio::io_service& io_service,
-        Journal journal);
+    virtual ~Resolver () = 0;
 
-    virtual ~NameResolver () = 0;
-
-    /** Initiate an asynchronous cancellation. */
+    /** Issue an asynchronous stop request. */
     virtual void stop_async () = 0;
 
-    /** Cancel all pending resolutions.
-        This call blocks until all pending work items are canceled. It is
-        guaranteed that no handlers will be called after this function
-        returns.
-        You *must* call this function before the object is destroyed.
-    */
+    /** Issue a synchronous stop request. */
     virtual void stop () = 0;
 
     /** resolve all hostnames on the list 
         @param names the names to be resolved
         @param handler the handler to call
-
-        @note the handler may be called multiple times for a single name
-              since a name may resolve to multiple IPs.
     */
     /** @{ */
     template <class Handler>
@@ -67,6 +62,6 @@ public:
     /** @} */
 };
 
-};
+}
 
 #endif

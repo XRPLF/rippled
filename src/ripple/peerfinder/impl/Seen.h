@@ -17,3 +17,15 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PEERFINDER_SEEN_H_INCLUDED
+#define RIPPLE_PEERFINDER_SEEN_H_INCLUDED
+
+namespace ripple {
+namespace PeerFinder {
+
+/** Tracks endpoints we've seen from a peer. */
+
+}
+}
+
+#endif

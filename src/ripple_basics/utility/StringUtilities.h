@@ -165,10 +165,6 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
 
 #define ADDRESS(p) strHex(uint64( ((char*) p) - ((char*) 0)))
 
-/** Convert a pointer address to a string for display purposes.
-*/
-extern std::string addressToString (void const* address);
-
 /** Create a Parameters from a String.
 
     Parameter strings have the format:

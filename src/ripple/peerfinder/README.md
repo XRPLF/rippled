@@ -86,6 +86,17 @@ mtENDPOINTS message.
 "Bootstrap Strategy"
 --------------------
 
+Fresh endpoints are ones we have seen recently via mtENDPOINTS.
+These are best to give out to someone who needs additional
+connections as quickly as possible, since it is very likely
+that the fresh endpoints have open incoming slots.
+
+Reliable endpoints are ones which are highly likely to be
+connectible over long periods of time. They might not necessarily
+have an incoming slot, but they are good for bootstrapping when
+there are no peers yet. Typically these are what we would want
+to store in a database or local config file for a future launch.
+
 Nouns:
 
     bootstrap_ip

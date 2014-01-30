@@ -53,13 +53,13 @@ public:
     */
     virtual void setConfig (Config const& config) = 0;
 
-    /** Add a set of strings for peers that should always be connected.
+    /** Add a peer that should always be connected.
         This is useful for maintaining a private cluster of peers.
-        If a string is not parseable as a numeric IP address it will
-        be passed to a DNS resolver to perform a lookup.
+        The string is the name as specified in the configuration
+        file, along with the set of corresponding IP addresses.
     */
-    virtual void addFixedPeers (
-        std::vector <std::string> const& strings) = 0;
+    virtual void addFixedPeer (std::string const& name,
+        std::vector <IPAddress> const& addresses) = 0;
 
     /** Add a set of strings as fallback IPAddress sources.
         @param name A label used for diagnostics.
@@ -73,46 +73,42 @@ public:
     virtual void addFallbackURL (std::string const& name,
         std::string const& url) = 0;
 
-    /** Called when an (outgoing) connection attempt to a particular address
-        is about to begin.
+    //--------------------------------------------------------------------------
+
+    /** Called when a peer connection is accepted. */
+    virtual void onPeerAccept (IPAddress const& local_address,
+        IPAddress const& remote_address) = 0;
+
+    /** Called when an outgoing peer connection is attempted. */
+    virtual void onPeerConnect (IPAddress const& address) = 0;
+
+    /** Called when an outgoing peer connection attempt succeeds. */
+    virtual void onPeerConnected (IPAddress const& local_address,
+        IPAddress const& remote_address) = 0;
+
+    /** Called when the real public address is discovered.
+        Currently this happens when we receive a PROXY handshake. The
+        protocol HELLO message will happen after the PROXY handshake.
     */
-    virtual void onPeerConnectAttemptBegins (IPAddress const& address) = 0;
+    virtual void onPeerAddressChanged (
+        IPAddress const& currentAddress, IPAddress const& newAddress) = 0;
 
-    /** Called when an (outgoing) connection attempt to a particular address
-        completes, whether it succeeds or fails.
+    /** Called when a peer connection finishes the protocol handshake.
+        @param id The node public key of the peer.
+        @param inCluster The peer is a member of our cluster.
     */
-    virtual void onPeerConnectAttemptCompletes (IPAddress const& address,
-                                                bool success) = 0;
+    virtual void onPeerHandshake (
+        IPAddress const& address, PeerID const& id, bool inCluster) = 0;
 
-    /** Called when a new peer connection is established but before get
-        we exchange hello messages.
-    */
-    virtual void onPeerConnected (IPAddress const& address,
-                                  bool inbound) = 0;
-
-    /** Called when a new peer connection is established after we exchange
-        hello messages.
-		Internally, we add the peer to our tracking table, validate that
-		we can connect to it, and begin advertising it to others after
-		we are sure that its connection is stable.
-	*/
-    virtual void onPeerHandshake (PeerID const& id,
-                                  IPAddress const& address,
-                                  bool inbound) = 0;
-
-	/** Called when an existing peer connection drops for whatever reason.
-		Internally, we mark the peer as no longer connected, calculate 
-		stability metrics, and consider whether we should try to reconnect
-		to it or drop it from our list.
-	*/
-	virtual void onPeerDisconnected (PeerID const& id) = 0;
+    /** Always called when the socket closes. */
+    virtual void onPeerClosed (IPAddress const& address) = 0;
 
     /** Called when mtENDPOINTS is received. */
-    virtual void onPeerEndpoints (PeerID const& id,
-        std::vector <Endpoint> const& endpoints) = 0;
+    virtual void onPeerEndpoints (IPAddress const& address,
+        Endpoints const& endpoints) = 0;
 
-    /** Called when a legacy IP/port address is received (from mtPEER). */
-    virtual void onPeerLegacyEndpoint (IPAddress const& ep) = 0;
+    /** Called when legacy IP/port addresses are received. */
+    virtual void onLegacyEndpoints (IPAddresses const& addresses) = 0;
 };
 
 }

@@ -29,11 +29,18 @@ class Store
 public:
     virtual ~Store () { }
 
-    virtual void loadLegacyEndpoints (
-        std::vector <IPAddress>& list) = 0;
+    struct SavedBootstrapAddress
+    {
+        IPAddress address;
+        int cumulativeUptimeSeconds;
+        int connectionValence;
+    };
 
-    virtual void updateLegacyEndpoints (
-        std::vector <LegacyEndpoint const*> const& list) = 0;
+    virtual std::vector <SavedBootstrapAddress>
+        loadBootstrapCache () = 0;
+
+    virtual void updateBootstrapCache (
+        std::vector <SavedBootstrapAddress> const& list) = 0;
 };
 
 }

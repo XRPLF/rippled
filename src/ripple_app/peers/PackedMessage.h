@@ -45,7 +45,7 @@ public:
 public:
     /** Number of bytes in a message header.
     */
-    static unsigned const kHeaderBytes = 6;
+    static size_t const kHeaderBytes = 6;
 
     PackedMessage (::google::protobuf::Message const& message, int type);
 

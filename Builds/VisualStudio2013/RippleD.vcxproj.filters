@@ -304,6 +304,9 @@
     <Filter Include="[1] Ripple\radmap\impl">
       <UniqueIdentifier>{67371f65-f9be-45b1-81e8-c83ef3336e5c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\peerfinder\sim">
+      <UniqueIdentifier>{c429638b-4572-44e4-a48a-c18fdd094ae1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -1104,32 +1107,8 @@
     <ClCompile Include="..\..\src\ripple\peerfinder\ripple_peerfinder.cpp">
       <Filter>[1] Ripple\peerfinder</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Endpoint.cpp">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Config.cpp">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Manager.cpp">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Tests.cpp">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Slots.cpp">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SourceStrings.cpp">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\impl\Tests.cpp">
       <Filter>[1] Ripple\json\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Checker.cpp">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Cache.cpp">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\JsonPropertyStream.cpp">
       <Filter>[1] Ripple\types\impl</Filter>
@@ -1154,9 +1133,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\resource\impl\LegacyFees.cpp">
       <Filter>[1] Ripple\resource\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Resolver.cpp">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\sitefiles\ripple_sitefiles.cpp">
       <Filter>[1] Ripple\sitefiles</Filter>
@@ -1463,6 +1439,33 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\common\impl\TaggedCache.cpp">
       <Filter>[1] Ripple\common\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
+      <Filter>[1] Ripple\common\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Checker.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Config.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Endpoint.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Livecache.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Manager.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Resolver.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SourceStrings.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\sim\Tests.cpp">
+      <Filter>[1] Ripple\peerfinder\sim</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2472,42 +2475,6 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\ripple_peerfinder.h">
       <Filter>[1] Ripple\peerfinder</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\api\Types.h">
-      <Filter>[1] Ripple\peerfinder\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\api\Endpoint.h">
-      <Filter>[1] Ripple\peerfinder\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\api\Config.h">
-      <Filter>[1] Ripple\peerfinder\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\api\Callback.h">
-      <Filter>[1] Ripple\peerfinder\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Store.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\StoreSqdb.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Slots.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\PeerInfo.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Source.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\SourceStrings.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\api\Manager.h">
-      <Filter>[1] Ripple\peerfinder\api</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\Validator.h">
       <Filter>[1] Ripple\validators\impl</Filter>
     </ClInclude>
@@ -2519,27 +2486,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\Count.h">
       <Filter>[1] Ripple\validators\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpoint.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpointCache.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Cache.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\CachedEndpoint.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\JsonPropertyStream.h">
       <Filter>[1] Ripple\types\api</Filter>
@@ -2588,18 +2534,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\api\LegacyFees.h">
       <Filter>[1] Ripple\resource\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LogicType.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Resolver.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Giveaways.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\GiveawaysAtHop.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h">
       <Filter>[1] Ripple\algorithm\api</Filter>
@@ -2984,6 +2918,114 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\Tuning.h">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\Resolver.h">
+      <Filter>[1] Ripple\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\ResolverAsio.h">
+      <Filter>[1] Ripple\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Bootcache.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\FixedPeer.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Giveaways.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\iosformat.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Livecache.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LogicType.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Peer.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\PrivateTypes.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Reporting.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Resolver.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Seen.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Slots.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Sorts.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Source.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\SourceStrings.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Store.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\StoreSqdb.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\api\Callback.h">
+      <Filter>[1] Ripple\peerfinder\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\api\Config.h">
+      <Filter>[1] Ripple\peerfinder\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\api\Endpoint.h">
+      <Filter>[1] Ripple\peerfinder\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\api\Manager.h">
+      <Filter>[1] Ripple\peerfinder\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\api\Types.h">
+      <Filter>[1] Ripple\peerfinder\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\FunctionQueue.h">
+      <Filter>[1] Ripple\peerfinder\sim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\GraphAlgorithms.h">
+      <Filter>[1] Ripple\peerfinder\sim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\Message.h">
+      <Filter>[1] Ripple\peerfinder\sim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\NodeSnapshot.h">
+      <Filter>[1] Ripple\peerfinder\sim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\Params.h">
+      <Filter>[1] Ripple\peerfinder\sim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\Predicates.h">
+      <Filter>[1] Ripple\peerfinder\sim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\sync_timer.h">
+      <Filter>[1] Ripple\peerfinder\sim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h">
+      <Filter>[1] Ripple\peerfinder\sim</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
