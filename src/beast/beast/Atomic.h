@@ -28,6 +28,8 @@
 #include "CStdInt.h"
 #include "StaticAssert.h"
 
+#include <type_traits>
+
 namespace beast {
 
 //==============================================================================
@@ -40,7 +42,21 @@ namespace beast {
 template <typename Type>
 class Atomic
 {
+    static_assert (!std::is_void<Type>::value,
+        "You may not instantiate an Atomic of type void!");
+
 public:
+    template <typename T>
+    struct support_arithmetic
+    {
+        static constexpr bool value =
+            /* We allow anything that qualifies as an integral type */
+            (std::is_integral <T>::value) |
+            /* Any pointers, provided they aren't pointers to void */
+            (std::is_pointer <T>::value &&
+                !std::is_void <std::remove_pointer <T>>::value);
+    };
+
     /** Creates a new value, initialised to zero. */
     inline Atomic() noexcept
         : value (0)
@@ -85,15 +101,27 @@ public:
     Type exchange (Type value) noexcept;
 
     /** Atomically adds a number to this value, returning the new value. */
+    template <
+        typename U = Type,
+        typename = typename std::enable_if <support_arithmetic<U>::value, U>::type>
     Type operator+= (Type amountToAdd) noexcept;
 
     /** Atomically subtracts a number from this value, returning the new value. */
+    template <
+        typename U = Type,
+        typename = typename std::enable_if <support_arithmetic<U>::value, U>::type>
     Type operator-= (Type amountToSubtract) noexcept;
 
     /** Atomically increments this value, returning the new value. */
+    template <
+        typename U = Type,
+        typename = typename std::enable_if <support_arithmetic<U>::value, U>::type>
     Type operator++() noexcept;
 
     /** Atomically decrements this value, returning the new value. */
+    template <
+        typename U = Type,
+        typename = typename std::enable_if <support_arithmetic<U>::value, U>::type>
     Type operator--() noexcept;
 
     /** Atomically compares this value with a target value, and if it is equal, sets
@@ -294,6 +322,7 @@ inline Type Atomic<Type>::exchange (const Type newValue) noexcept
 }
 
 template <typename Type>
+template <typename U, typename>
 inline Type Atomic<Type>::operator+= (const Type amountToAdd) noexcept
 {
   #if BEAST_ATOMICS_MAC
@@ -308,12 +337,14 @@ inline Type Atomic<Type>::operator+= (const Type amountToAdd) noexcept
 }
 
 template <typename Type>
+template <typename U, typename>
 inline Type Atomic<Type>::operator-= (const Type amountToSubtract) noexcept
 {
     return operator+= (negateValue (amountToSubtract));
 }
 
 template <typename Type>
+template <typename U, typename>
 inline Type Atomic<Type>::operator++() noexcept
 {
   #if BEAST_ATOMICS_MAC
@@ -328,6 +359,7 @@ inline Type Atomic<Type>::operator++() noexcept
 }
 
 template <typename Type>
+template <typename U, typename>
 inline Type Atomic<Type>::operator--() noexcept
 {
   #if BEAST_ATOMICS_MAC

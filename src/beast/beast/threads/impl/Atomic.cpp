@@ -78,6 +78,20 @@ public:
         testFloat <Type> ();
     }
 
+    void testVoidStar ()
+    {
+        Atomic<void *> a;
+
+        void *testValue = reinterpret_cast<void*>(10);
+        
+        a.set (testValue);
+        expect (a.value == testValue);
+        expect (a.get() == testValue);
+        memoryBarrier();
+          
+        testFloat <void*> ();
+    }
+
     void runTest()
     {
         beginTestCase ("Misc");
@@ -107,7 +121,7 @@ public:
         testInteger <long> ();
 
         beginTestCase ("void*");
-        testInteger <void*> ();
+        testVoidStar ();
 
         beginTestCase ("int*");
         testInteger <int*> ();
