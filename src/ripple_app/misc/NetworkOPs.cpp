@@ -521,6 +521,8 @@ void NetworkOPsImp::processHeartbeatTimer ()
                     << "has fallen below quorum (" << getConfig ().NETWORK_QUORUM << ").";
             }
 
+            setHeartbeatTimer ();
+
             return;
         }
 
