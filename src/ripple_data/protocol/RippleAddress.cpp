@@ -327,7 +327,7 @@ std::string RippleAddress::humanAccountID () const
         //             here, switch back and forth keep one of them full and clear the
         //             other on a swap - but always check both maps for cache hits.
         //
-        if (rncMap.size () > 10000)
+        if (rncMap.size () > 250000)
             rncMap.clear ();
 
         return rncMap[vchData] = ToString ();
