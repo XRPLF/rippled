@@ -1151,8 +1151,8 @@ void RPCCall::fromNetwork (
     // Log(lsDEBUG) << "requesting" << std::endl;
     // WriteLog (lsDEBUG, RPCParser) << "send request " << strMethod << " : " << strRequest << std::endl;
 
-    const int RPC_REPLY_MAX_BYTES (128*1024*1024);
-    const int RPC_NOTIFY_SECONDS (30);
+    const int RPC_REPLY_MAX_BYTES (256*1024*1024);
+    const int RPC_NOTIFY_SECONDS (600);
 
     HTTPClient::request (
         bSSL,
