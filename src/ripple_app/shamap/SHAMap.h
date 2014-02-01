@@ -20,6 +20,9 @@
 #ifndef RIPPLE_SHAMAP_H
 #define RIPPLE_SHAMAP_H
 
+#include "../ripple/radmap/ripple_radmap.h"
+#include "../main/FullBelowCache.h"
+
 enum SHAMapState
 {
     smsModifying = 0,       // Objects can be added and removed (like an open ledger)
@@ -28,6 +31,8 @@ enum SHAMapState
     smsFloating = 3,        // Map is free to change hash (like a synching open ledger)
     smsInvalid = 4,         // Map is known not to be valid (usually synching a corrupt ledger)
 };
+
+//------------------------------------------------------------------------------
 
 namespace std {
 
@@ -42,6 +47,8 @@ struct hash <ripple::SHAMapNode>
 
 }
 
+//------------------------------------------------------------------------------
+
 namespace boost {
 
 template <>
@@ -50,6 +57,8 @@ struct hash <ripple::SHAMapNode> : std::hash <ripple::SHAMapNode>
 };
 
 }
+
+//------------------------------------------------------------------------------
 
 namespace ripple {
 
@@ -88,10 +97,10 @@ public:
 
 public:
     // build new map
-    explicit SHAMap (SHAMapType t, uint32 seq = 1,
-        MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
+    explicit SHAMap (SHAMapType t, FullBelowCache& fullBelowCache,
+        uint32 seq = 1, MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
 
-    SHAMap (SHAMapType t, uint256 const& hash,
+    SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCache,
         MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
 
     ~SHAMap ();
@@ -245,19 +254,16 @@ public:
     static SHAMapTreeNode::pointer getCache (uint256 const& hash, SHAMapNode const& id);
     static void canonicalize (uint256 const& hash, SHAMapTreeNode::pointer&);
 
-    static int getFullBelowSize ()
-    {
-        return fullBelowCache.size ();
-    }
     static int getTreeNodeSize ()
     {
         return treeNodeCache.getCacheSize ();
     }
+
     static void sweep ()
     {
-        fullBelowCache.sweep ();
         treeNodeCache.sweep ();
     }
+
     static void setTreeCache (int size, int age)
     {
         treeNodeCache.setTargetSize (size);
@@ -267,9 +273,7 @@ public:
     typedef std::pair<uint256, SHAMapNode> TNIndex;
 
 private:
-    static KeyCache <uint256> fullBelowCache;
-
-    static TaggedCacheType <TNIndex, SHAMapTreeNode> treeNodeCache;
+    static TaggedCache <TNIndex, SHAMapTreeNode> treeNodeCache;
 
     void dirtyUp (std::stack<SHAMapTreeNode::pointer>& stack, uint256 const & target, uint256 prevHash);
     std::stack<SHAMapTreeNode::pointer> getStack (uint256 const & id, bool include_nonmatching_leaf);
@@ -307,6 +311,7 @@ private:
     // With a read lock, one may not invalidate pointers to existing members of mTNByID
     mutable LockType mLock;
 
+    FullBelowCache& m_fullBelowCache;
     uint32 mSeq;
     uint32 mLedgerSeq; // sequence number of ledger this is part of
     SyncUnorderedMapType< SHAMapNode, SHAMapTreeNode::pointer > mTNByID;

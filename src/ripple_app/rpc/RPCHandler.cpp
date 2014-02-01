@@ -2925,7 +2925,7 @@ Json::Value RPCHandler::doGetCounts (Json::Value params, Resource::Charge& loadT
     ret["ledger_hit_rate"] = getApp().getLedgerMaster ().getCacheHitRate ();
     ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate ();
 
-    ret["fullbelow_size"] = SHAMap::getFullBelowSize ();
+    ret["fullbelow_size"] = int(getApp().getFullBelowCache().size());
     ret["treenode_size"] = SHAMap::getTreeNodeSize ();
 
     std::string uptime;

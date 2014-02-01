@@ -275,8 +275,8 @@ public:
             {
                 if (hash.isZero ())
                 {
-                    SHAMap::pointer empty 
-                        = boost::make_shared<SHAMap> (smtTRANSACTION);
+                    SHAMap::pointer empty = boost::make_shared<SHAMap> (
+                        smtTRANSACTION, std::ref (getApp().getFullBelowCache()));
                     mapComplete (hash, empty, false);
                     return empty;
                 }

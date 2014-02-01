@@ -83,7 +83,7 @@ private:
     void insert (AcceptedLedgerTx::ref);
 
 private:
-    static TaggedCacheType <uint256, AcceptedLedger> s_cache;
+    static TaggedCache <uint256, AcceptedLedger> s_cache;
 
     Ledger::pointer     mLedger;
     map_t               mMap;

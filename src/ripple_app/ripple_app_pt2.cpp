@@ -21,6 +21,8 @@
 
 #include "ripple_app.h"
 
+#include "../ripple/common/seconds_clock.h"
+
 namespace ripple {
 
 #include "shamap/SHAMap.cpp" // Uses theApp

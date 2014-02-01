@@ -31,13 +31,10 @@
 
 LedgerHistory::LedgerHistory ()
     : m_ledgers_by_hash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE,
-        get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
-            LogPartition::getJournal <TaggedCacheLog> ())
+        get_seconds_clock (), LogPartition::getJournal <TaggedCacheLog> ())
     , m_consensus_validated ("ConsensusValidated", 64, 300,
-        get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
-            LogPartition::getJournal <TaggedCacheLog> ())
+        get_seconds_clock (), LogPartition::getJournal <TaggedCacheLog> ())
 {
-    ;
 }
 
 void LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)

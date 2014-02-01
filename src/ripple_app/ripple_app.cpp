@@ -34,6 +34,7 @@
 // This .cpp will end up including all of the public header
 // material in Ripple since it holds the Application object.
 
+#include "../ripple/common/seconds_clock.h"
 #include "../ripple/http/ripple_http.h"
 #include "../ripple/resource/ripple_resource.h"
 #include "../ripple/rpc/ripple_rpc.h"
@@ -47,12 +48,8 @@
 # include "main/CollectorManager.h"
 #include "main/CollectorManager.cpp"
 
+
 namespace ripple {
-
-//
-// Application
-//
-
 # include "main/NodeStoreScheduler.h"
 #include "main/NodeStoreScheduler.cpp"
 
@@ -90,15 +87,17 @@ namespace ripple {
 #include "websocket/WSConnection.cpp"
 # include "websocket/WSDoor.h"
 #include "websocket/WSDoor.cpp"
+}
+
+
 
 #include "main/Application.cpp"
 
-//
-// RippleMain
-//
+
+
+namespace ripple {
 # include "main/RippleMain.h"
 #include "main/RippleMain.cpp"
-
 }
 
 //------------------------------------------------------------------------------

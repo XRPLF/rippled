@@ -121,6 +121,8 @@ public:
 
     ~JobQueueImp ()
     {
+        // Must unhook before destroying
+        m_metrics.hook = insight::Hook ();
     }
 
     void collect ()

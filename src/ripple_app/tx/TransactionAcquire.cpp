@@ -35,7 +35,8 @@ TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
         LogPartition::getJournal <TransactionAcquire> ())
     , mHaveRoot (false)
 {
-    mMap = boost::make_shared<SHAMap> (smtTRANSACTION, hash);
+    mMap = boost::make_shared<SHAMap> (smtTRANSACTION, hash,
+        std::ref (getApp().getFullBelowCache ()));
 }
 
 TransactionAcquire::~TransactionAcquire ()

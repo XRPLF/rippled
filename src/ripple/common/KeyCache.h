@@ -20,10 +20,13 @@
 #ifndef RIPPLE_KEYCACHE_H_INCLUDED
 #define RIPPLE_KEYCACHE_H_INCLUDED
 
-#include "beast/beast/chrono/abstract_clock.h"
-
 #include <mutex>
 #include <unordered_map>
+
+#include <boost/smart_ptr.hpp>
+
+#include "beast/beast/chrono/abstract_clock.h"
+#include "beast/beast/Insight.h"
 
 namespace ripple {
 
@@ -48,6 +51,26 @@ public:
     typedef abstract_clock <std::chrono::seconds> clock_type;
 
 private:
+    struct Stats
+    {
+        template <class Handler>
+        Stats (std::string const& prefix, Handler const& handler,
+            insight::Collector::ptr const& collector)
+            : hook (collector->make_hook (handler))
+            , size (collector->make_gauge (prefix, "size"))
+            , hit_rate (collector->make_gauge (prefix, "hit_rate"))
+            , hits (0)
+            , misses (0)
+            { }
+
+        insight::Hook hook;
+        insight::Gauge size;
+        insight::Gauge hit_rate;
+
+        std::size_t hits;
+        std::size_t misses;
+    };
+
     struct Entry
     {
         explicit Entry (clock_type::time_point const& last_access_)
@@ -61,9 +84,10 @@ private:
     typedef std::unordered_map <key_type, Entry, Hash, KeyEqual> map_type;
     typedef typename map_type::iterator iterator;
     typedef std::lock_guard <Mutex> lock_guard;
-    
+
     Mutex mutable m_mutex;
     map_type m_map;
+    Stats mutable m_stats;
     clock_type& m_clock;
     std::string const m_name;
     unsigned int m_target_size;
@@ -77,10 +101,27 @@ public:
         @param size The initial target size.
         @param age  The initial expiration time.
     */
-    KeyCache (std::string const& name,
-        clock_type& clock, size_type target_size = 0,
+    KeyCache (std::string const& name, clock_type& clock,
+        insight::Collector::ptr const& collector, size_type target_size = 0,
             clock_type::rep expiration_seconds = 120)
-        : m_clock (clock)
+        : m_stats (name,
+            std::bind (&KeyCache::collect_metrics, this),
+                collector)
+        , m_clock (clock)
+        , m_name (name)
+        , m_target_size (target_size)
+        , m_target_age (std::chrono::seconds (expiration_seconds))
+    {
+        assert (m_target_size >= 0);
+    }
+
+    // VFALCO TODO Use a forwarding constructor call here
+    KeyCache (std::string const& name, clock_type& clock,
+        size_type target_size = 0, clock_type::rep expiration_seconds = 120)
+        : m_stats (name,
+            std::bind (&KeyCache::collect_metrics, this),
+                insight::NullCollector::New ())
+        , m_clock (clock)
         , m_name (name)
         , m_target_size (target_size)
         , m_target_age (std::chrono::seconds (expiration_seconds))
@@ -94,6 +135,12 @@ public:
     std::string const& name () const
     {
         return m_name;
+    }
+
+    /** Return the clock associated with the cache. */
+    clock_type& clock ()
+    {
+        return m_clock;
     }
 
     /** Returns the number of items in the container. */
@@ -118,7 +165,13 @@ public:
     {
         lock_guard lock (m_mutex);
         typename map_type::const_iterator const iter (m_map.find (key));
-        return iter != m_map.end ();
+        if (iter != m_map.end ())
+        {
+            ++m_stats.hits;
+            return true;
+        }
+        ++m_stats.misses;
+        return false;
     }
 
     /** Insert the specified key.
@@ -149,8 +202,12 @@ public:
         lock_guard lock (m_mutex);
         iterator const iter (m_map.find (key));
         if (iter == m_map.end ())
+        {
+            ++m_stats.misses;
             return false;
+        }
         iter->second.last_access = m_clock.now ();
+        ++m_stats.hits;
         return true;
     }
 
@@ -161,7 +218,13 @@ public:
     bool erase (key_type const& key)
     {
         lock_guard lock (m_mutex);
-        return m_map.erase (key) > 0;
+        if (m_map.erase (key) > 0)
+        {
+            ++m_stats.hits;
+            return true;
+        }
+        ++m_stats.misses;
+        return false;
     }
 
     /** Remove stale entries from the cache. */
@@ -205,6 +268,23 @@ public:
             {
                 ++it;
             }
+        }
+    }
+
+private:
+    void collect_metrics ()
+    {
+        m_stats.size.set (size ());
+
+        {
+            insight::Gauge::value_type hit_rate (0);
+            {
+                lock_guard lock (m_mutex);
+                auto const total (m_stats.hits + m_stats.misses);
+                if (total != 0)
+                    hit_rate = (m_stats.hits * 100) / total;
+            }
+            m_stats.hit_rate.set (hit_rate);
         }
     }
 };

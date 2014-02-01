@@ -17,6 +17,11 @@
 */
 //==============================================================================
 
+#include "../ripple/common/seconds_clock.h"
+#include "Tuning.h"
+
+namespace ripple {
+
 // VFALCO TODO Clean this global up
 static bool volatile doShutdown = false;
 
@@ -107,6 +112,7 @@ public:
     std::unique_ptr <CollectorManager> m_collectorManager;
     std::unique_ptr <Resource::Manager> m_resourceManager;
     std::unique_ptr <RPC::Manager> m_rpcServiceManager;
+    std::unique_ptr <FullBelowCache> m_fullBelowCache;
 
     // These are Stoppable-related
     NodeStoreScheduler m_nodeStoreScheduler;
@@ -203,13 +209,11 @@ public:
         , m_nodeStoreManager (NodeStore::make_Manager (
             std::move (make_Factories ())))
 
-        , m_tempNodeCache ("NodeCache", 16384, 90,
-            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
-                LogPartition::getJournal <TaggedCacheLog> ())
+        , m_tempNodeCache ("NodeCache", 16384, 90, get_seconds_clock (),
+            LogPartition::getJournal <TaggedCacheLog> ())
 
-        , m_sleCache ("LedgerEntryCache", 4096, 120,
-            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
-                LogPartition::getJournal <TaggedCacheLog> ())
+        , m_sleCache ("LedgerEntryCache", 4096, 120, get_seconds_clock (),
+            LogPartition::getJournal <TaggedCacheLog> ())
 
         , m_collectorManager (CollectorManager::New (
             getConfig().insightSettings,
@@ -221,6 +225,10 @@ public:
 
         , m_rpcServiceManager (RPC::Manager::New (
             LogPartition::getJournal <RPCServiceManagerLog> ()))
+
+        , m_fullBelowCache (std::make_unique <FullBelowCache> (
+            "full_below", get_seconds_clock (), m_collectorManager->collector (),
+                fullBelowTargetSize, fullBelowExpirationSeconds))
 
         , m_nodeStoreScheduler (*this)
 
@@ -252,9 +260,8 @@ public:
             *m_jobQueue, LogPartition::getJournal <LedgerMaster> ()))
 
         // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
-        , m_networkOPs (NetworkOPs::New (get_abstract_clock <
-                std::chrono::steady_clock, std::chrono::seconds> (), *m_ledgerMaster,
-                    *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
+        , m_networkOPs (NetworkOPs::New (get_seconds_clock (), *m_ledgerMaster,
+            *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
@@ -271,8 +278,7 @@ public:
 
         , m_sntpClient (SNTPClient::New (*this))
 
-        , m_inboundLedgers (InboundLedgers::New (get_abstract_clock <
-            std::chrono::steady_clock, std::chrono::seconds> (), *m_jobQueue))
+        , m_inboundLedgers (InboundLedgers::New (get_seconds_clock (), *m_jobQueue))
 
         , m_txQueue (TxQueue::New ())
 
@@ -335,6 +341,11 @@ public:
     RPC::Manager& getRPCServiceManager()
     {
         return *m_rpcServiceManager;
+    }
+
+    FullBelowCache& getFullBelowCache ()
+    {
+        return *m_fullBelowCache;
     }
 
     JobQueue& getJobQueue ()
@@ -1016,6 +1027,8 @@ public:
         //         have listeners register for "onSweep ()" notification.
         //
 
+        m_fullBelowCache->sweep ();
+
         logTimedCall (m_journal.warning, "TransactionMaster::sweep", __FILE__, __LINE__, boost::bind (
             &TransactionMaster::sweep, &m_txMaster));
 
@@ -1395,4 +1408,4 @@ Application& getApp ()
     return ApplicationImpBase::getInstance ();
 }
 
-// class LoandObject (5removed, use git history to recover)
+}

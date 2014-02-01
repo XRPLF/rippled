@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include "beast/beast/make_unique.h"
-
 namespace ripple {
 namespace Resource {
 
@@ -34,9 +32,7 @@ public:
         Journal journal)
         : Thread ("Resource::Manager")
         , m_journal (journal)
-        , m_logic (collector,
-            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
-                journal)
+        , m_logic (collector, get_seconds_clock (), journal)
     {
         startThread ();
     }

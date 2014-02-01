@@ -69,6 +69,7 @@ SOURCES += \
     ../../src/ripple/http/ripple_http.cpp \
     ../../src/ripple/json/ripple_json.cpp \
     ../../src/ripple/peerfinder/ripple_peerfinder.cpp \
+    ../../src/ripple/radmap/ripple_radmap.cpp \
     ../../src/ripple/resource/ripple_resource.cpp \
     ../../src/ripple/rpc/ripple_rpc.cpp \
     ../../src/ripple/sitefiles/ripple_sitefiles.cpp \

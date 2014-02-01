@@ -18,11 +18,9 @@
 //==============================================================================
 
 TransactionMaster::TransactionMaster ()
-    : mCache ("TransactionCache", 65536, 1800,
-        get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
-            LogPartition::getJournal <TaggedCacheLog> ())
+    : mCache ("TransactionCache", 65536, 1800, get_seconds_clock (),
+        LogPartition::getJournal <TaggedCacheLog> ())
 {
-    ;
 }
 
 bool TransactionMaster::inLedger (uint256 const& hash, uint32 ledger)

@@ -37,7 +37,7 @@ public:
     void sweep (void);
 
 private:
-    TaggedCacheType <uint256, Transaction> mCache;
+    TaggedCache <uint256, Transaction> mCache;
 };
 
 #endif

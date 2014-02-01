@@ -21,8 +21,9 @@
 
 #include "ripple_app.h"
 
-namespace ripple
-{
+#include "../ripple/common/seconds_clock.h"
+
+namespace ripple {
 
 #include "ledger/LedgerEntrySet.cpp"
 #include "ledger/AcceptedLedger.cpp"

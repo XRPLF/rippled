@@ -21,12 +21,6 @@
 
 static const uint256 uZero;
 
-// VFALCO TODO Put these globals into a singleton and make the clock a parameter
-KeyCache <uint256> SHAMap::fullBelowCache (
-    "fullBelowCache",
-        get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
-            524288, 240);
-
 void SHAMap::visitLeaves (std::function<void (SHAMapItem::ref item)> function)
 {
     // Make a snapshot of this map so we don't need to hold
@@ -153,7 +147,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
             {
                 uint256 const& childHash = node->getChildHash (branch);
 
-                if (! fullBelowCache.touch_if_exists (childHash))
+                if (! m_fullBelowCache.touch_if_exists (childHash))
                 {
                     SHAMapNode childID = node->getChildNodeID (branch);
                     SHAMapTreeNode* d = getNodePointerNT (childID, childHash, filter);
@@ -188,7 +182,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
         { // No partial node encountered below this node
             node->setFullBelow ();
             if (mType == smtSTATE)
-                fullBelowCache.insert (node->getNodeHash ());
+                m_fullBelowCache.insert (node->getNodeHash ());
         }
 
         if (stack.empty ())
@@ -398,7 +392,7 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
             return SHAMapAddNode::invalid ();
         }
 
-        if (fullBelowCache.touch_if_exists (iNode->getChildHash (branch)))
+        if (m_fullBelowCache.touch_if_exists (iNode->getChildHash (branch)))
             return SHAMapAddNode::duplicate ();
 
         SHAMapTreeNode *nextNode = getNodePointerNT (iNode->getChildNodeID (branch), iNode->getChildHash (branch), filter);
@@ -752,13 +746,15 @@ public:
         RAND_pseudo_bytes (reinterpret_cast<unsigned char*> (&seed), sizeof (seed));
         srand (seed);
 
-        SHAMap source (smtFREE), destination (smtFREE);
+        FullBelowCache fullBelowCache ("test.full_below",
+            get_seconds_clock ());
+
+        SHAMap source (smtFREE, fullBelowCache);
+        SHAMap destination (smtFREE, fullBelowCache);
 
         int items = 10000;
         for (int i = 0; i < items; ++i)
             source.addItem (*makeRandomAS (), false, false);
-
-
 
         beginTestCase ("add/remove");
 

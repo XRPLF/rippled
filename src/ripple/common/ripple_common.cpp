@@ -21,4 +21,6 @@
 
 #include "../../beast/modules/beast_core/beast_core.h" // for UnitTest
 
-#include "functional/impl/counted_bind.cpp"
+#include "impl/counted_bind.cpp"
+#include "impl/KeyCache.cpp"
+#include "impl/TaggedCache.cpp"

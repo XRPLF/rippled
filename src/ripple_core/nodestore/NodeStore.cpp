@@ -27,6 +27,9 @@
 
 #include "beast/beast/make_unique.h"
 
+#include "../../ripple/common/seconds_clock.h"
+#include "../../ripple/common/TaggedCache.h"
+
 #include "impl/Tuning.h"
 #  include "impl/DecodedBlob.h"
 #  include "impl/EncodedBlob.h"

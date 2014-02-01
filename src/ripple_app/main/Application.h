@@ -20,6 +20,10 @@
 #ifndef RIPPLE_APP_APPLICATION_H_INCLUDED
 #define RIPPLE_APP_APPLICATION_H_INCLUDED
 
+#include "FullBelowCache.h"
+
+namespace ripple {
+
 namespace SiteFiles { class Manager; }
 namespace Validators { class Manager; }
 namespace Resource { class Manager; }
@@ -49,8 +53,8 @@ class PathRequests;
 
 class DatabaseCon;
 
-typedef TaggedCacheType <uint256, Blob> NodeCache;
-typedef TaggedCacheType <uint256, SerializedLedgerEntry> SLECache;
+typedef TaggedCache <uint256, Blob> NodeCache;
+typedef TaggedCache <uint256, SerializedLedgerEntry> SLECache;
 
 class Application : public PropertyStream::Source
 {
@@ -79,6 +83,7 @@ public:
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
     virtual RPC::Manager&           getRPCServiceManager() = 0;
+    virtual FullBelowCache&         getFullBelowCache () = 0;
     virtual JobQueue&               getJobQueue () = 0;
     virtual SiteFiles::Manager&     getSiteFiles () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
@@ -146,5 +151,7 @@ std::unique_ptr <Application> make_Application();
 //        http://en.wikipedia.org/wiki/Dependency_injection
 //
 extern Application& getApp ();
+
+}
 
 #endif

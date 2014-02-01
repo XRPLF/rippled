@@ -36,8 +36,10 @@ Ledger::Ledger (const RippleAddress& masterID, uint64 startAmount)
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
-    , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION))
-    , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE))
+    , mTransactionMap  (boost::make_shared <SHAMap> (smtTRANSACTION,
+        std::ref (getApp().getFullBelowCache())))
+    , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE,
+        std::ref (getApp().getFullBelowCache())))
 {
     // special case: put coins in root account
     AccountState::pointer startAccount = boost::make_shared<AccountState> (masterID);
@@ -81,8 +83,10 @@ Ledger::Ledger (uint256 const& parentHash,
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (true)
-    , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION, transHash))
-    , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE, accountHash))
+    , mTransactionMap (boost::make_shared <SHAMap> (
+        smtTRANSACTION, transHash, std::ref (getApp().getFullBelowCache())))
+    , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE, accountHash,
+        std::ref (getApp().getFullBelowCache())))
 {
     updateHash ();
     loaded = true;
@@ -140,7 +144,8 @@ Ledger::Ledger (bool /* dummy */,
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
-    , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION))
+    , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION,
+        std::ref (getApp().getFullBelowCache())))
     , mAccountStateMap (prevLedger.mAccountStateMap->snapShot (true))
 {
     prevLedger.updateHash ();
@@ -181,8 +186,12 @@ Ledger::Ledger (Blob const& rawLedger,
     initializeFees ();
 }
 
-Ledger::Ledger (const std::string& rawLedger, bool hasPrefix) :
-    mClosed (false), mValidated(false), mValidHash (false), mAccepted (false), mImmutable (true)
+Ledger::Ledger (const std::string& rawLedger, bool hasPrefix)
+    : mClosed (false)
+    , mValidated (false)
+    , mValidHash (false)
+    , mAccepted (false)
+    , mImmutable (true)
 {
     Serializer s (rawLedger);
     setRaw (s, hasPrefix);
@@ -261,8 +270,10 @@ void Ledger::setRaw (Serializer& s, bool hasPrefix)
 
     if (mValidHash)
     {
-        mTransactionMap = boost::make_shared<SHAMap> (smtTRANSACTION, mTransHash);
-        mAccountStateMap = boost::make_shared<SHAMap> (smtSTATE, mAccountHash);
+        mTransactionMap = boost::make_shared<SHAMap> (smtTRANSACTION, mTransHash,
+            std::ref (getApp().getFullBelowCache()));
+        mAccountStateMap = boost::make_shared<SHAMap> (smtSTATE, mAccountHash,
+            std::ref (getApp().getFullBelowCache()));
     }
 }
 

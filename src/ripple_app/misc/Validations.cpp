@@ -32,7 +32,7 @@ private:
     typedef LockType::ScopedUnlockType ScopedUnlockType;
     LockType mLock;
 
-    TaggedCacheType<uint256, ValidationSet>     mValidations;
+    TaggedCache<uint256, ValidationSet>     mValidations;
     boost::unordered_map<uint160, SerializedValidation::pointer>    mCurrentValidations;
     std::vector<SerializedValidation::pointer>                      mStaleValidations;
 
@@ -60,9 +60,8 @@ private:
 public:
     ValidationsImp ()
         : mLock (this, "Validations", __FILE__, __LINE__)
-        , mValidations ("Validations", 128, 600,
-            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
-                LogPartition::getJournal <TaggedCacheLog> ())
+        , mValidations ("Validations", 128, 600, get_seconds_clock (),
+            LogPartition::getJournal <TaggedCacheLog> ())
         , mWriting (false)
     {
         mStaleValidations.reserve (512);

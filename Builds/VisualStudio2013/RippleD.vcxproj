@@ -22,7 +22,19 @@
     <ClCompile Include="..\..\build\proto\ripple.pb.cc" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beast.cpp" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c" />
-    <ClCompile Include="..\..\src\ripple\common\functional\impl\counted_bind.cpp">
+    <ClCompile Include="..\..\src\ripple\common\impl\counted_bind.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\impl\TaggedCache.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -134,6 +146,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\ripple_peerfinder.cpp" />
+    <ClCompile Include="..\..\src\ripple\radmap\impl\BasicFullBelowCache.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\radmap\ripple_radmap.cpp" />
     <ClCompile Include="..\..\src\ripple\resource\impl\Charge.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1418,19 +1437,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\containers\KeyCache.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\containers\TaggedCache.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -2207,7 +2214,10 @@
     <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h" />
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h" />
     <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h" />
-    <ClInclude Include="..\..\src\ripple\common\functional\counted_bind.h" />
+    <ClInclude Include="..\..\src\ripple\common\counted_bind.h" />
+    <ClInclude Include="..\..\src\ripple\common\KeyCache.h" />
+    <ClInclude Include="..\..\src\ripple\common\seconds_clock.h" />
+    <ClInclude Include="..\..\src\ripple\common\TaggedCache.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Server.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Port.h" />
@@ -2251,6 +2261,9 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\StoreSqdb.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\ripple_peerfinder.h" />
+    <ClInclude Include="..\..\src\ripple\radmap\api\BasicFullBelowCache.h" />
+    <ClInclude Include="..\..\src\ripple\radmap\api\Tuning.h" />
+    <ClInclude Include="..\..\src\ripple\radmap\ripple_radmap.h" />
     <ClInclude Include="..\..\src\ripple\resource\api\Charge.h" />
     <ClInclude Include="..\..\src\ripple\resource\api\Consumer.h" />
     <ClInclude Include="..\..\src\ripple\resource\api\Disposition.h" />
@@ -2455,6 +2468,7 @@
     <ClInclude Include="..\..\src\ripple_app\ledger\OrderBookIterator.h" />
     <ClInclude Include="..\..\src\ripple_app\ledger\SerializedValidation.h" />
     <ClInclude Include="..\..\src\ripple_app\main\CollectorManager.h" />
+    <ClInclude Include="..\..\src\ripple_app\main\FullBelowCache.h" />
     <ClInclude Include="..\..\src\ripple_app\main\IoServicePool.h" />
     <ClInclude Include="..\..\src\ripple_app\main\NodeStoreScheduler.h" />
     <ClInclude Include="..\..\src\ripple_app\main\ParameterTable.h" />
@@ -2464,6 +2478,7 @@
     <ClInclude Include="..\..\src\ripple_app\main\LocalCredentials.h" />
     <ClInclude Include="..\..\src\ripple_app\main\RippleMain.h" />
     <ClInclude Include="..\..\src\ripple_app\main\RPCHTTPServer.h" />
+    <ClInclude Include="..\..\src\ripple_app\main\Tuning.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\NetworkOPs.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\PowResult.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\AccountItem.h" />
@@ -2528,10 +2543,8 @@
     <ClInclude Include="..\..\src\ripple_app\websocket\WSConnection.h" />
     <ClInclude Include="..\..\src\ripple_app\websocket\WSDoor.h" />
     <ClInclude Include="..\..\src\ripple_app\websocket\WSServerHandler.h" />
-    <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h" />
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h" />
     <ClInclude Include="..\..\src\ripple_basics\containers\SyncUnorderedMap.h" />
-    <ClInclude Include="..\..\src\ripple_basics\containers\TaggedCache.h" />
     <ClInclude Include="..\..\src\ripple_basics\log\Log.h" />
     <ClInclude Include="..\..\src\ripple_basics\log\LogFile.h" />
     <ClInclude Include="..\..\src\ripple_basics\log\LoggedTimings.h" />
@@ -2731,6 +2744,8 @@
     <None Include="..\..\src\ripple\json\TODO.md" />
     <None Include="..\..\src\ripple\peerfinder\README.md" />
     <None Include="..\..\src\ripple\peerfinder\TODO.md" />
+    <None Include="..\..\src\ripple\radmap\README.md" />
+    <None Include="..\..\src\ripple\radmap\TODO.md" />
     <None Include="..\..\src\ripple\resource\README.md" />
     <None Include="..\..\src\ripple\resource\TODO.md" />
     <None Include="..\..\src\ripple\rpc\README.md" />

@@ -23,6 +23,10 @@
 #include <mutex>
 #include <unordered_map>
 
+#include <boost/smart_ptr.hpp>
+
+#include "beast/beast/Insight.h"
+
 namespace ripple {
 
 // VFALCO NOTE Deprecated
@@ -49,7 +53,7 @@ template <
     //class Allocator = std::allocator <std::pair <Key const, Entry>>,
     class Mutex = std::recursive_mutex
 >
-class TaggedCacheType
+class TaggedCache
 {
 public:
     typedef Mutex mutex_type;
@@ -65,10 +69,14 @@ public:
 
 public:
     // VFALCO TODO Change expiration_seconds to clock_type::duration
-    TaggedCacheType (std::string const& name, int size,
-        clock_type::rep expiration_seconds, clock_type& clock, Journal journal)
+    TaggedCache (std::string const& name, int size,
+        clock_type::rep expiration_seconds, clock_type& clock, Journal journal,
+            insight::Collector::ptr const& collector = insight::NullCollector::New ())
         : m_journal (journal)
         , m_clock (clock)
+        , m_stats (name,
+            std::bind (&TaggedCache::collect_metrics, this),
+                collector)
         , m_name (name)
         , m_target_size (size)
         , m_target_age (std::chrono::seconds (expiration_seconds))
@@ -76,6 +84,13 @@ public:
         , m_hits (0)
         , m_misses (0)
     {
+    }
+
+public:
+    /** Return the clock associated with the cache. */
+    clock_type& clock ()
+    {
+        return m_clock;
     }
 
     int getTargetSize () const
@@ -453,6 +468,38 @@ public:
     }
 
 private:
+    void collect_metrics ()
+    {
+        m_stats.size.set (getCacheSize ());
+
+        {
+            insight::Gauge::value_type hit_rate (0);
+            {
+                lock_guard lock (m_mutex);
+                auto const total (m_hits + m_misses);
+                if (total != 0)
+                    hit_rate = (m_hits * 100) / total;
+            }
+            m_stats.hit_rate.set (hit_rate);
+        }
+    }
+
+private:
+    struct Stats
+    {
+        template <class Handler>
+        Stats (std::string const& prefix, Handler const& handler,
+            insight::Collector::ptr const& collector)
+            : hook (collector->make_hook (handler))
+            , size (collector->make_gauge (prefix, "size"))
+            , hit_rate (collector->make_gauge (prefix, "hit_rate"))
+            { }
+
+        insight::Hook hook;
+        insight::Gauge size;
+        insight::Gauge hit_rate;
+    };
+
     class Entry
     {
     public:
@@ -481,6 +528,7 @@ private:
 
     Journal m_journal;
     clock_type& m_clock;
+    Stats m_stats;
 
     mutex_type mutable m_mutex;
 

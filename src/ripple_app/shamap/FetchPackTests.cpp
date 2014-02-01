@@ -73,7 +73,11 @@ public:
 
         beginTestCase ("Build");
 
-        boost::shared_ptr <Table> t1 (boost::make_shared <Table> (smtFREE));
+        FullBelowCache fullBelowCache ("test.full_below",
+            get_seconds_clock ());
+        boost::shared_ptr <Table> t1 (boost::make_shared <Table> (
+            smtFREE, fullBelowCache));
+        
         add_random_items (tableItems, *t1, random());
         boost::shared_ptr <Table> t2 (t1->snapShot (true));
         
@@ -93,7 +97,8 @@ public:
         {
             TestFilter filter (map, journal ());
 
-            t3 = boost::make_shared <Table> (smtFREE, t2->getHash () );
+            t3 = boost::make_shared <Table> (smtFREE, t2->getHash (),
+                fullBelowCache);
 
             expect (t3->fetchRoot (t2->getHash (), &filter), "unable to get root");
 

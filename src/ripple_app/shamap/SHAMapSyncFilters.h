@@ -28,7 +28,7 @@
 class ConsensusTransSetSF : public SHAMapSyncFilter
 {
 public:
-    typedef TaggedCacheType <uint256, Blob> NodeCache;
+    typedef TaggedCache <uint256, Blob> NodeCache;
 
     // VFALCO TODO Use a dependency injection to get the temp node cache
     ConsensusTransSetSF (NodeCache& nodeCache);

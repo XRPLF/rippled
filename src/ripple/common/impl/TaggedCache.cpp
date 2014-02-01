@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../TaggedCache.h"
+
 namespace ripple {
 
 /*
@@ -44,7 +46,7 @@ public:
 
         typedef int Key;
         typedef std::string Value;
-        typedef TaggedCacheType <Key, Value> Cache;
+        typedef TaggedCache <Key, Value> Cache;
         
         Cache c ("test", 1, 1, clock, j);
 

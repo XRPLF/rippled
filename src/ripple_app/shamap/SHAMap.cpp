@@ -26,9 +26,10 @@ void SHAMap::DefaultMissingNodeHandler::operator() (uint32 refNUm)
 
 //------------------------------------------------------------------------------
 
-SHAMap::SHAMap (SHAMapType t, uint32 seq,
+SHAMap::SHAMap (SHAMapType t, FullBelowCache& fullBelowCache, uint32 seq,
     MissingNodeHandler missing_node_handler)
-    : mSeq (seq)
+    : m_fullBelowCache (fullBelowCache)
+    , mSeq (seq)
     , mLedgerSeq (0)
     , mState (smsModifying)
     , mType (t)
@@ -43,9 +44,10 @@ SHAMap::SHAMap (SHAMapType t, uint32 seq,
     mTNByID.replace(*root, root);
 }
 
-SHAMap::SHAMap (SHAMapType t, uint256 const& hash,
+SHAMap::SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCache,
     MissingNodeHandler missing_node_handler)
-    : mSeq (1)
+    : m_fullBelowCache (fullBelowCache)
+    , mSeq (1)
     , mLedgerSeq (0)
     , mState (smsSynching)
     , mType (t)
@@ -59,9 +61,9 @@ SHAMap::SHAMap (SHAMapType t, uint256 const& hash,
     mTNByID.replace(*root, root);
 }
 
-TaggedCacheType< SHAMap::TNIndex, SHAMapTreeNode>
+TaggedCache< SHAMap::TNIndex, SHAMapTreeNode>
     SHAMap::treeNodeCache ("TreeNodeCache", 65536, 60,
-        get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
+        get_seconds_clock (),
             LogPartition::getJournal <TaggedCacheLog> ());
 
 SHAMap::~SHAMap ()
@@ -108,7 +110,8 @@ std::size_t hash_value (const SHAMapNode& mn)
 
 SHAMap::pointer SHAMap::snapShot (bool isMutable)
 {
-    SHAMap::pointer ret = boost::make_shared<SHAMap> (mType);
+    SHAMap::pointer ret = boost::make_shared<SHAMap> (mType,
+        std::ref (m_fullBelowCache));
     SHAMap& newMap = *ret;
 
     // Return a new SHAMap that is a snapshot of this one
@@ -1220,6 +1223,9 @@ public:
     {
         beginTestCase ("add/traverse");
 
+        FullBelowCache fullBelowCache ("test.full_below",
+            get_seconds_clock ());
+
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
         uint256 h1, h2, h3, h4, h5;
         h1.SetHex ("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
@@ -1228,7 +1234,7 @@ public:
         h4.SetHex ("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
         h5.SetHex ("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
-        SHAMap sMap (smtFREE);
+        SHAMap sMap (smtFREE, fullBelowCache);
         SHAMapItem i1 (h1, IntToVUC (1)), i2 (h2, IntToVUC (2)), i3 (h3, IntToVUC (3)), i4 (h4, IntToVUC (4)), i5 (h5, IntToVUC (5));
 
         unexpected (!sMap.addItem (i2, true, false), "no add");

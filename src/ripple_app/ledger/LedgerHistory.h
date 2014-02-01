@@ -53,12 +53,12 @@ public:
     bool fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
 
 private:
-    typedef TaggedCacheType <LedgerHash, Ledger> LedgersByHash;
+    typedef TaggedCache <LedgerHash, Ledger> LedgersByHash;
 
     LedgersByHash m_ledgers_by_hash;
 
     //typedef std::pair <LedgerHash, LedgerHash>
-    typedef TaggedCacheType <LedgerIndex,
+    typedef TaggedCache <LedgerIndex,
         std::pair< LedgerHash, LedgerHash >> ConsensusValidated;
     ConsensusValidated m_consensus_validated;
 

@@ -34,7 +34,7 @@ public:
     std::unique_ptr <Backend> m_backend;
     // Larger key/value storage, but not necessarily persistent.
     std::unique_ptr <Backend> m_fastBackend;
-    TaggedCacheType <uint256, NodeObject> m_cache;
+    TaggedCache <uint256, NodeObject> m_cache;
 
     DatabaseImp (std::string const& name,
                  Scheduler& scheduler,
@@ -46,8 +46,7 @@ public:
         , m_backend (std::move (backend))
         , m_fastBackend (std::move (fastBackend))
         , m_cache ("NodeStore", cacheTargetSize, cacheTargetSeconds,
-            get_abstract_clock <std::chrono::steady_clock, std::chrono::seconds> (),
-                LogPartition::getJournal <TaggedCacheLog> ())
+            get_seconds_clock (), LogPartition::getJournal <TaggedCacheLog> ())
     {
     }
 

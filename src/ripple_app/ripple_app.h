@@ -66,6 +66,9 @@
 // Order matters here. If you get compile errors,
 // reorder the include lines until the order is correct.
 
+#include "../../ripple/common/KeyCache.h"
+#include "../../ripple/common/TaggedCache.h"
+
 namespace ripple {
 #include "data/Database.h"
 #include "data/DatabaseCon.h"
@@ -123,7 +126,9 @@ namespace ripple {
 #include "misc/NetworkOPs.h"
 #include "tx/TransactionMaster.h"
 #include "main/LocalCredentials.h"
+} // escape the namespace
 #include "main/Application.h"
+namespace ripple {
 #include "ledger/OrderBookDB.h"
 #include "tx/Transactor.h"
 #include "tx/ChangeTransactor.h"
