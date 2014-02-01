@@ -182,7 +182,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
         return RPC::make_error (rpcBAD_SEED,
             RPC::invalid_field_message ("secret"));
 
-    Json::Value tx_json (params ["tx_json"]);
+    Json::Value& tx_json (params ["tx_json"]);
 
     if (! tx_json.isObject ())
         return RPC::object_field_error ("tx_json");
