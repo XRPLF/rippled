@@ -73,7 +73,7 @@ void SHAMap::visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& fu
                 else
                 {
                     // If there are no more children, don't push this node
-                    while ((pos != 15) && (child->isEmptyBranch (pos)))
+                    while ((pos != 15) && (node->isEmptyBranch (pos + 1)))
                            ++pos;
 
                     if (pos != 15)
