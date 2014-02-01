@@ -43,7 +43,7 @@ void parseAddresses (OutputSequence& out, InputIterator first, InputIterator las
 {
     while (first != last)
     {
-        typename std::iterator_traits <InputIterator>::value_type const& str (*first);
+        auto str (*first);
         ++first;
         {
             IPAddress const addr (IPAddress::from_string (str));
@@ -342,9 +342,11 @@ void Config::load ()
             if (smtTmp)
             {
                 std::vector<IPAddress> parsedAddresses;
-                parseAddresses<std::vector<IPAddress>, std::vector<std::string>::const_iterator> 
-                    (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
-                RPC_ADMIN_ALLOW = parsedAddresses;
+                //parseAddresses<std::vector<IPAddress>, std::vector<std::string>::const_iterator> 
+                //    (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
+                parseAddresses (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
+                RPC_ADMIN_ALLOW.insert (RPC_ADMIN_ALLOW.end(),
+                        parsedAddresses.cbegin (), parsedAddresses.cend ());
             }
 
             (void) SectionSingleB (secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
@@ -680,11 +682,17 @@ void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
 
 Config::Role Config::getAdminRole (Json::Value const& params, beast::IPAddress const& remoteIp) const
 {
-    Config::Role role;
-    bool    bPasswordSupplied   = params.isMember ("admin_user") || params.isMember ("admin_password");
-    bool    bPasswordRequired   = !this->RPC_ADMIN_USER.empty () || !this->RPC_ADMIN_PASSWORD.empty ();
+    Config::Role role (Config::FORBID);
 
-    bool    bPasswordWrong;
+    bool bPasswordSupplied =
+        params.isMember ("admin_user") ||
+        params.isMember ("admin_password");
+
+    bool bPasswordRequired =
+        ! this->RPC_ADMIN_USER.empty () ||
+        ! this->RPC_ADMIN_PASSWORD.empty ();
+
+    bool bPasswordWrong;
 
     if (bPasswordSupplied)
     {
@@ -711,12 +719,16 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IPAddress c
     }
 
     // Meets IP restriction for admin.
-    bool    bAdminIP            = false;
+    IPAddress const remote_addr (remoteIp.at_port (0));
+    bool bAdminIP = false;
 
-    BOOST_FOREACH (IPAddress const& addr, this->RPC_ADMIN_ALLOW)
+    for (auto& allow_addr : RPC_ADMIN_ALLOW)
     {
-        if (addr == remoteIp)
-            bAdminIP    = true;
+        if (allow_addr == remote_addr)
+        {
+            bAdminIP = true;
+            break;
+        }
     }
 
     if (bPasswordWrong                          // Wrong
