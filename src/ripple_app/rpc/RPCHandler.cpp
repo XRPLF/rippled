@@ -90,6 +90,7 @@ int LegacyPathFind::maxInProgress (2);
 
 Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh)
 {
+    mlh.unlock();
     Json::Value jvResult;
 
     WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: %s") % params);
@@ -145,7 +146,6 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
     AccountState::pointer asSrc = bOffline
                                   ? AccountState::pointer ()                              // Don't look up address if offline.
                                   : mNetOps->getAccountState (lSnapshot, raSrcAddressID);
-    mlh.unlock();
 
     if (!bOffline && !asSrc)
     {
@@ -156,16 +156,17 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
         return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    if (! tx_json.isMember ("Fee") && (
-           "AccountSet" == sType
-        || "Payment" == sType
-        || "OfferCreate" == sType
-        || "OfferCancel" == sType
-        || "TrustSet" == sType))
+    if (! tx_json.isMember ("Fee"))
     {
-        // VFALCO TODO This needs to be fixed
-//        feeReq = lSnapshot->scaleFeeLoad(, 
-        tx_json["Fee"] = (int) getConfig ().FEE_DEFAULT;
+        int mult = 10;
+        if (params.isMember ("fee_mult_max"))
+            mult = params["fee_mult_max"].asInt();
+
+        uint64 fee = lSnapshot->scaleFeeLoad (getConfig().FEE_DEFAULT, mRole == Config::ADMIN);
+        if (fee > (mult * getConfig().FEE_DEFAULT))
+            return rpcError (rpcHIGH_FEE);
+
+        tx_json["Fee"] = (int) fee;
     }
 
     if ("Payment" == sType)
@@ -3119,7 +3120,7 @@ Json::Value RPCHandler::doTransactionEntry (Json::Value params, Resource::Charge
     return jvResult;
 }
 
-Json::Value RPCHandler::lookupLedger (Json::Value params, Ledger::pointer& lpLedger)
+Json::Value RPCHandler::lookupLedger (Json::Value const& params, Ledger::pointer& lpLedger)
 {
     Json::Value jvResult;
 

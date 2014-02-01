@@ -44,6 +44,7 @@ enum error_code_i
     rpcNOT_STANDALONE,
     rpcTOO_BUSY,
     rpcSLOW_DOWN,
+    rpcHIGH_FEE,
 
     // Networking
     rpcNO_CLOSED,
