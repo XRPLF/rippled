@@ -131,6 +131,8 @@
     <ClInclude Include="..\..\beast\http\ParsedURL.h" />
     <ClInclude Include="..\..\beast\http\URL.h" />
     <ClInclude Include="..\..\beast\Insight.h" />
+    <ClInclude Include="..\..\beast\insight\Base.h" />
+    <ClInclude Include="..\..\beast\insight\BaseImpl.h" />
     <ClInclude Include="..\..\beast\insight\Collector.h" />
     <ClInclude Include="..\..\beast\insight\Counter.h" />
     <ClInclude Include="..\..\beast\insight\CounterImpl.h" />
@@ -138,6 +140,8 @@
     <ClInclude Include="..\..\beast\insight\EventImpl.h" />
     <ClInclude Include="..\..\beast\insight\Gauge.h" />
     <ClInclude Include="..\..\beast\insight\GaugeImpl.h" />
+    <ClInclude Include="..\..\beast\insight\Group.h" />
+    <ClInclude Include="..\..\beast\insight\Groups.h" />
     <ClInclude Include="..\..\beast\insight\Hook.h" />
     <ClInclude Include="..\..\beast\insight\HookImpl.h" />
     <ClInclude Include="..\..\beast\insight\Meter.h" />

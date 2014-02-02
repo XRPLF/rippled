@@ -2943,13 +2943,13 @@
     <ClInclude Include="..\..\src\ripple_app\paths\PathRequests.h">
       <Filter>[2] Old Ripple\ripple_app\paths</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple_basics\containers\SyncUnorderedMap.h">
+      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\functional\counted_bind.h">
       <Filter>[1] Ripple\common\functional</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
-      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_basics\containers\SyncUnorderedMap.h">
       <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\containers\TaggedCache.h">

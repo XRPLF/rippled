@@ -26,6 +26,8 @@
 #include "../Insight.h"
 
 #include "impl/Collector.cpp"
+#include "impl/Group.cpp"
+#include "impl/Groups.cpp"
 #include "impl/Hook.cpp"
 #include "impl/Metric.cpp"
 #include "impl/NullCollector.cpp"

@@ -97,6 +97,7 @@
     <ClInclude Include="..\..\beast\chrono\ratio_io.h" />
     <ClInclude Include="..\..\beast\chrono\RelativeTime.h" />
     <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h" />
+    <ClInclude Include="..\..\beast\chrono\basic_seconds_clock.h" />
     <ClInclude Include="..\..\beast\Config.h" />
     <ClInclude Include="..\..\beast\config\CompilerConfig.h" />
     <ClInclude Include="..\..\beast\config\compiler\Clang.h" />
@@ -131,6 +132,8 @@
     <ClInclude Include="..\..\beast\http\ParsedURL.h" />
     <ClInclude Include="..\..\beast\http\URL.h" />
     <ClInclude Include="..\..\beast\Insight.h" />
+    <ClInclude Include="..\..\beast\insight\Base.h" />
+    <ClInclude Include="..\..\beast\insight\BaseImpl.h" />
     <ClInclude Include="..\..\beast\insight\Collector.h" />
     <ClInclude Include="..\..\beast\insight\Counter.h" />
     <ClInclude Include="..\..\beast\insight\CounterImpl.h" />
@@ -138,6 +141,8 @@
     <ClInclude Include="..\..\beast\insight\EventImpl.h" />
     <ClInclude Include="..\..\beast\insight\Gauge.h" />
     <ClInclude Include="..\..\beast\insight\GaugeImpl.h" />
+    <ClInclude Include="..\..\beast\insight\Group.h" />
+    <ClInclude Include="..\..\beast\insight\Groups.h" />
     <ClInclude Include="..\..\beast\insight\Hook.h" />
     <ClInclude Include="..\..\beast\insight\HookImpl.h" />
     <ClInclude Include="..\..\beast\insight\Meter.h" />
@@ -408,6 +413,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\boost\Boost.cpp" />
     <ClCompile Include="..\..\beast\chrono\Chrono.cpp" />
+    <ClCompile Include="..\..\beast\chrono\impl\basic_seconds_clock.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\beast\chrono\impl\chrono_io.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -519,6 +530,18 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\insight\impl\Collector.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\impl\Group.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\impl\Groups.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

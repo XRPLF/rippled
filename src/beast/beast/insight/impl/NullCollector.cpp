@@ -37,10 +37,6 @@ public:
     {
     }
 
-    void set_handler (HandlerType const&)
-    {
-    }
-
 private:
     NullCounterImpl& operator= (NullCounterImpl const&);
 };
@@ -71,10 +67,6 @@ public:
     {
     }
 
-    void set_handler (HandlerType const&)
-    {
-    }
-
 private:
     NullGaugeImpl& operator= (NullGaugeImpl const&);
 };
@@ -85,10 +77,6 @@ class NullMeterImpl : public MeterImpl
 {
 public:
     void increment (value_type)
-    {
-    }
-
-    void set_handler (HandlerType const&)
     {
     }
 

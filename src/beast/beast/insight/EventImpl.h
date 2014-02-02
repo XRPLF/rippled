@@ -22,12 +22,16 @@
 
 #include <memory>
 
+#include "BaseImpl.h"
+
 namespace beast {
 namespace insight {
 
 class Event;
 
-class EventImpl : public std::enable_shared_from_this <EventImpl>
+class EventImpl
+    : public std::enable_shared_from_this <EventImpl>
+    , public BaseImpl
 {
 public:
     typedef std::chrono::milliseconds value_type;

@@ -17,29 +17,21 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
-#define BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
+#ifndef BEAST_INSIGHT_BASEIMPL_H_INCLUDED
+#define BEAST_INSIGHT_BASEIMPL_H_INCLUDED
 
 #include <memory>
-
-#include "BaseImpl.h"
 
 namespace beast {
 namespace insight {
 
-class Gauge;
-
-class GaugeImpl
-    : public std::enable_shared_from_this <GaugeImpl>
-    , public BaseImpl
+/** Base for all metrics and hook implementations. */
+class BaseImpl
 {
 public:
-    typedef uint64  value_type;
-    typedef int64   difference_type;
+    typedef std::shared_ptr <BaseImpl> ptr;
 
-    virtual ~GaugeImpl () = 0;
-    virtual void set (value_type value) = 0;
-    virtual void increment (difference_type amount) = 0;
+    virtual ~BaseImpl () = 0;
 };
 
 }

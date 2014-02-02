@@ -85,7 +85,6 @@ public:
     ~StatsDCounterImpl ();
 
     void increment (CounterImpl::value_type amount);
-    void set_handler (HandlerType const& handler);
 
     void flush ();
     void do_increment (CounterImpl::value_type amount);
@@ -98,7 +97,6 @@ private:
     std::string m_name;
     CounterImpl::value_type m_value;
     bool m_dirty;
-    HandlerType m_handler;
 };
 
 //------------------------------------------------------------------------------
@@ -138,7 +136,6 @@ public:
 
     void set (GaugeImpl::value_type value);
     void increment (GaugeImpl::difference_type amount);
-    void set_handler (HandlerType const& handler);
 
     void flush ();
     void do_set (GaugeImpl::value_type value);
@@ -153,7 +150,6 @@ private:
     GaugeImpl::value_type m_last_value;
     GaugeImpl::value_type m_value;
     bool m_dirty;
-    HandlerType m_handler;
 };
 
 //------------------------------------------------------------------------------
@@ -169,7 +165,6 @@ public:
     ~StatsDMeterImpl ();
 
     void increment (MeterImpl::value_type amount);
-    void set_handler (HandlerType const& handler);
 
     void flush ();
     void do_increment (MeterImpl::value_type amount);
@@ -182,7 +177,6 @@ private:
     std::string m_name;
     MeterImpl::value_type m_value;
     bool m_dirty;
-    HandlerType m_handler;
 };
 
 //------------------------------------------------------------------------------
@@ -480,11 +474,6 @@ void StatsDCounterImpl::increment (CounterImpl::value_type amount)
                 shared_from_this ()), amount));
 }
 
-void StatsDCounterImpl::set_handler (HandlerType const& handler)
-{
-    m_handler = handler;
-}
-
 void StatsDCounterImpl::flush ()
 {
     if (m_dirty)
@@ -509,8 +498,6 @@ void StatsDCounterImpl::do_increment (CounterImpl::value_type amount)
 
 void StatsDCounterImpl::do_process ()
 {
-    if (m_handler)
-        m_handler (Counter (shared_from_this ()));
     flush ();
 }
 
@@ -580,11 +567,6 @@ void StatsDGaugeImpl::increment (GaugeImpl::difference_type amount)
                 shared_from_this ()), amount));
 }
 
-void StatsDGaugeImpl::set_handler (HandlerType const& handler)
-{
-    m_handler = handler;
-}
-
 void StatsDGaugeImpl::flush ()
 {
     if (m_dirty)
@@ -636,8 +618,6 @@ void StatsDGaugeImpl::do_increment (GaugeImpl::difference_type amount)
 
 void StatsDGaugeImpl::do_process ()
 {
-    if (m_handler)
-        m_handler (Gauge (shared_from_this ()));
     flush ();
 }
 
@@ -666,11 +646,6 @@ void StatsDMeterImpl::increment (MeterImpl::value_type amount)
                 shared_from_this ()), amount));
 }
 
-void StatsDMeterImpl::set_handler (HandlerType const& handler)
-{
-    m_handler = handler;
-}
-
 void StatsDMeterImpl::flush ()
 {
     if (m_dirty)
@@ -695,8 +670,6 @@ void StatsDMeterImpl::do_increment (MeterImpl::value_type amount)
 
 void StatsDMeterImpl::do_process ()
 {
-    if (m_handler)
-        m_handler (Meter (shared_from_this ()));
     flush ();
 }
 

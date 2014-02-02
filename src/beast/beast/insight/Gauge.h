@@ -22,6 +22,7 @@
 
 #include <memory>
 
+#include "Base.h"
 #include "GaugeImpl.h"
 
 namespace beast {
@@ -36,7 +37,7 @@ namespace insight {
     This is a lightweight reference wrapper which is cheap to copy and assign.
     When the last reference goes away, the metric is no longer collected.
 */
-class Gauge
+class Gauge : public Base
 {
 public:
     typedef GaugeImpl::value_type      value_type;
@@ -57,21 +58,6 @@ public:
     explicit Gauge (std::shared_ptr <GaugeImpl> const& impl)
         : m_impl (impl)
     {
-    }
-
-    /** Set a handler for polling.
-        If a handler is set, it will be called once per collection interval.
-        This may be used to implement polling style collection instead of
-        push style.
-        
-        Handler will be called with this signature:
-            void Handler (Gauge const&);
-    */
-    template <class Handler>
-    void set_handler (Handler handler) const
-    {
-        if (m_impl)
-            m_impl->set_handler (handler);
     }
 
     /** Set the value on the gauge.
@@ -116,6 +102,11 @@ public:
     Gauge const& operator-- (int) const
         { increment (-1); return *this; }
     /** @} */
+
+    std::shared_ptr <GaugeImpl> const& impl () const
+    {
+        return m_impl;
+    }
 
 private:
     std::shared_ptr <GaugeImpl> m_impl;

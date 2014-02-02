@@ -17,32 +17,31 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
-#define BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
+#include "../basic_seconds_clock.h"
 
-#include <memory>
-
-#include "BaseImpl.h"
+#include "../../Config.h"
+#include "../../../modules/beast_core/beast_core.h" // for UnitTest
 
 namespace beast {
-namespace insight {
 
-class Gauge;
-
-class GaugeImpl
-    : public std::enable_shared_from_this <GaugeImpl>
-    , public BaseImpl
+class basic_seconds_clock_Tests : public UnitTest
 {
 public:
-    typedef uint64  value_type;
-    typedef int64   difference_type;
+    void runTest ()
+    {
+        beginTestCase ("now");
 
-    virtual ~GaugeImpl () = 0;
-    virtual void set (value_type value) = 0;
-    virtual void increment (difference_type amount) = 0;
+        auto const now (basic_seconds_clock <
+            std::chrono::steady_clock>::now ());
+
+        pass ();
+    }
+
+    basic_seconds_clock_Tests() : UnitTest("basic_seconds_clock", "beast")
+    {
+    }
 };
 
-}
-}
+static basic_seconds_clock_Tests basic_seconds_clock_tests;
 
-#endif
+}
