@@ -309,8 +309,6 @@ public:
 
     ~ApplicationImp ()
     {
-        bassert (s_instance == this);
-        s_instance = nullptr;
     }
 
     //--------------------------------------------------------------------------
