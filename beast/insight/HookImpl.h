@@ -23,10 +23,14 @@
 #include <functional>
 #include <memory>
 
+#include "BaseImpl.h"
+
 namespace beast {
 namespace insight {
 
-class HookImpl : public std::enable_shared_from_this <HookImpl>
+class HookImpl
+    : public std::enable_shared_from_this <HookImpl>
+    , public BaseImpl
 {
 public:
     typedef std::function <void (void)> HandlerType;

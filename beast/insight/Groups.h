@@ -17,30 +17,37 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
-#define BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
+#ifndef BEAST_INSIGHT_GROUPS_H_INCLUDED
+#define BEAST_INSIGHT_GROUPS_H_INCLUDED
 
 #include <memory>
+#include <string>
 
-#include "BaseImpl.h"
+#include "Collector.h"
+#include "Group.h"
 
 namespace beast {
 namespace insight {
 
-class Gauge;
-
-class GaugeImpl
-    : public std::enable_shared_from_this <GaugeImpl>
-    , public BaseImpl
+/** A container for managing a set of metric groups. */
+class Groups
 {
 public:
-    typedef uint64  value_type;
-    typedef int64   difference_type;
+    virtual ~Groups() = 0;
 
-    virtual ~GaugeImpl () = 0;
-    virtual void set (value_type value) = 0;
-    virtual void increment (difference_type amount) = 0;
+    /** Find or create a new collector with a given name. */
+    /** @{ */
+    virtual Group::ptr const& get (std::string const& name) = 0;
+
+    Group::ptr const& operator[] (std::string const& name)
+    {
+        return get (name);
+    }
+    /** @} */
 };
+
+/** Create a group container that uses the specified collector. */
+std::unique_ptr <Groups> make_Groups (Collector::ptr const& collector);
 
 }
 }

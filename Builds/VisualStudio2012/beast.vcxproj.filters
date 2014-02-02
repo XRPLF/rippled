@@ -1242,6 +1242,21 @@
     <ClInclude Include="..\..\beast\chrono\chrono_util.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\basic_seconds_clock.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\Group.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\Groups.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\Base.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\insight\BaseImpl.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
@@ -1801,6 +1816,15 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\UnsignedInteger.cpp">
       <Filter>beast\crypto\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\impl\basic_seconds_clock.cpp">
+      <Filter>beast\chrono\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\impl\Group.cpp">
+      <Filter>beast\insight\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\impl\Groups.cpp">
+      <Filter>beast\insight\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

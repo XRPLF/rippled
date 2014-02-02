@@ -24,6 +24,7 @@
 
 #include "impl/abstract_clock.cpp"
 #include "impl/chrono_io.cpp"
+#include "impl/basic_seconds_clock.cpp"
 
 #include "impl/CPUMeter.cpp"
 #include "impl/RelativeTime.cpp"

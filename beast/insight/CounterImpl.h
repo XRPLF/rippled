@@ -22,20 +22,22 @@
 
 #include <memory>
 
+#include "BaseImpl.h"
+
 namespace beast {
 namespace insight {
 
 class Counter;
 
-class CounterImpl : public std::enable_shared_from_this <CounterImpl>
+class CounterImpl
+    : public std::enable_shared_from_this <CounterImpl>
+    , public BaseImpl
 {
 public:
     typedef int64 value_type;
-    typedef std::function <void (Counter const&)> HandlerType;
    
     virtual ~CounterImpl () = 0;
     virtual void increment (value_type amount) = 0;
-    virtual void set_handler (HandlerType const& handler) = 0;
 };
 
 }

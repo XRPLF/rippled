@@ -73,22 +73,58 @@ public:
     /** Create a counter with the specified name.
         @see Counter
     */
+    /** @{ */
     virtual Counter make_counter (std::string const& name) = 0;
+    
+    Counter make_counter (std::string const& prefix, std::string const& name)
+    {
+        if (prefix.empty ())
+            return make_counter (name);
+        return make_counter (prefix + "." + name);
+    }
+    /** @} */
 
     /** Create an event with the specified name.
         @see Event
     */
+    /** @{ */
     virtual Event make_event (std::string const& name) = 0;
+
+    Event make_event (std::string const& prefix, std::string const& name)
+    {
+        if (prefix.empty ())
+            return make_event (name);
+        return make_event (prefix + "." + name);
+    }
+    /** @} */
 
     /** Create a gauge with the specified name. 
         @see Gauge
     */
+    /** @{ */
     virtual Gauge make_gauge (std::string const& name) = 0;
+
+    Gauge make_gauge (std::string const& prefix, std::string const& name)
+    {
+        if (prefix.empty ())
+            return make_gauge (name);
+        return make_gauge (prefix + "." + name);
+    }
+    /** @} */
 
     /** Create a meter with the specified name.
         @see Meter
     */
+    /** @{ */
     virtual Meter make_meter (std::string const& name) = 0;
+
+    Meter make_meter (std::string const& prefix, std::string const& name)
+    {
+        if (prefix.empty ())
+            return make_meter (name);
+        return make_meter (prefix + "." + name);
+    }
+    /** @} */
 };
 
 }

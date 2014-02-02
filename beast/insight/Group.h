@@ -17,29 +17,24 @@
 */
 //==============================================================================
 
-#ifndef BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
-#define BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
+#ifndef BEAST_INSIGHT_GROUP_H_INCLUDED
+#define BEAST_INSIGHT_GROUP_H_INCLUDED
 
 #include <memory>
 
-#include "BaseImpl.h"
+#include "Collector.h"
 
 namespace beast {
 namespace insight {
 
-class Gauge;
-
-class GaugeImpl
-    : public std::enable_shared_from_this <GaugeImpl>
-    , public BaseImpl
+/** A collector front-end that manages a group of metrics. */
+class Group : public Collector
 {
 public:
-    typedef uint64  value_type;
-    typedef int64   difference_type;
+    typedef std::shared_ptr <Group> ptr;
 
-    virtual ~GaugeImpl () = 0;
-    virtual void set (value_type value) = 0;
-    virtual void increment (difference_type amount) = 0;
+    /** Returns the name of this group, for diagnostics. */
+    virtual std::string const& name () const = 0;
 };
 
 }

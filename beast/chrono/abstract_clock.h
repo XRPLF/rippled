@@ -121,7 +121,7 @@ template <class TrivialClock, class Duration>
 struct abstract_clock_wrapper
     : public basic_abstract_clock_wrapper <TrivialClock, Duration>
 {
-       // generic conversion displays the duration
+    // generic conversion displays the duration
     std::string to_string (typename basic_abstract_clock_wrapper <
         TrivialClock, Duration>::time_point const& tp)
     {

@@ -21,6 +21,7 @@
 #define BEAST_CHRONO_H_INCLUDED
 
 #include "chrono/abstract_clock.h"
+#include "chrono/basic_seconds_clock.h"
 #include "chrono/chrono_io.h"
 #include "chrono/chrono_util.h"
 #include "chrono/manual_clock.h"

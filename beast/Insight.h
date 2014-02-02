@@ -26,6 +26,8 @@
 #include "insight/EventImpl.h"
 #include "insight/Gauge.h"
 #include "insight/GaugeImpl.h"
+#include "insight/Group.h"
+#include "insight/Groups.h"
 #include "insight/Hook.h"
 #include "insight/HookImpl.h"
 #include "insight/Collector.h"

@@ -23,6 +23,7 @@
 #include <chrono>
 #include <memory>
 
+#include "Base.h"
 #include "EventImpl.h"
 
 #include "../chrono/chrono_util.h"
@@ -39,7 +40,7 @@ namespace insight {
     This is a lightweight reference wrapper which is cheap to copy and assign.
     When the last reference goes away, the metric is no longer collected.
 */
-class Event
+class Event : public Base
 {
 public:
     typedef EventImpl::value_type value_type;
@@ -65,6 +66,11 @@ public:
     {
         if (m_impl)
             m_impl->notify (ceil <value_type> (value));
+    }
+
+    std::shared_ptr <EventImpl> const& impl () const
+    {
+        return m_impl;
     }
 
 private:
