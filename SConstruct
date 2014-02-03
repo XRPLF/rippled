@@ -251,7 +251,7 @@ if not OSX:
 DEBUGFLAGS  = ['-g', '-DDEBUG', '-D_DEBUG']
 
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts']+DEBUGFLAGS)
-env.Append(CXXFLAGS = ['-O1', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+DEBUGFLAGS)
+env.Append(CXXFLAGS = ['-O1', '-pthread', '-Wno-unused-local-typedefs', '-Wno-invalid-offsetof', '-Wformat']+DEBUGFLAGS)
 
 
 # RTTI is required for Beast and CountedObject.
