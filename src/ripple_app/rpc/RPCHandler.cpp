@@ -3186,100 +3186,135 @@ Json::Value RPCHandler::doTransactionEntry (Json::Value params, Resource::Charge
     return jvResult;
 }
 
+// The previous version of the lookupLedger command would accept the
+// "ledger_index" argument as a string and silently treat it as a request to
+// return the current ledger which, while not strictly wrong, could cause a
+// lot of confusion.
+//
+// The code now robustly validates the input and ensures that the only possible
+// values for the "ledger_index" parameter are the index of a ledger passed as
+// an integer or one of the strings "current", "closed" or "validated".
+// Additionally, the code ensures that the value passed in "ledger_hash" is a
+// string and a valid hash. Invalid values will return an appropriate error
+// code.
+//
+// In the absence of the "ledger_hash" or "ledger_index" parameters, the code
+// assumes that "ledger_index" has the value "current".
 Json::Value RPCHandler::lookupLedger (Json::Value const& params, Ledger::pointer& lpLedger)
 {
     Json::Value jvResult;
 
-    uint256         uLedger         = params.isMember ("ledger_hash") ? uint256 (params["ledger_hash"].asString ()) : 0;
-    int32           iLedgerIndex    = params.isMember ("ledger_index") && params["ledger_index"].isNumeric () ? params["ledger_index"].asInt () : LEDGER_CURRENT;
+    Json::Value ledger_hash = params.get ("ledger_hash", Json::Value ("0"));
+    Json::Value ledger_index = params.get ("ledger_index", Json::Value ("current"));
 
-    std::string     strLedger;
-
-    if (params.isMember ("ledger_index") && !params["ledger_index"].isNumeric ())
-        strLedger   = params["ledger_index"].asString ();
-
-    // Support for DEPRECATED "ledger".
-    if (!params.isMember ("ledger"))
+    // Support for DEPRECATED "ledger" - attempt to deduce our input
+    if (params.isMember ("ledger"))
     {
-        nothing ();
-    }
-    else if (params["ledger"].asString ().size () > 12)
-    {
-        uLedger         = uint256 (params["ledger"].asString ());
-    }
-    else if (params["ledger"].isNumeric ())
-    {
-        iLedgerIndex    = params["ledger"].asInt ();
-    }
-    else
-    {
-        strLedger       = params["ledger"].asString ();
+        if (params["ledger"].asString ().size () > 12)
+        {
+            ledger_hash = params["ledger"];
+            ledger_index = Json::Value ("");
+        }
+        else if (params["ledger"].isNumeric ())
+        {
+            ledger_index = params["ledger"];
+            ledger_hash = Json::Value ("0");
+        }
+        else
+        {
+            ledger_index = params["ledger"];
+            ledger_hash = Json::Value ("0");
+        }
     }
 
-    if (strLedger == "current")
+    uint256 uLedger (0);
+
+    if (!ledger_hash.isString() || !uLedger.SetHex (ledger_hash.asString ()))
     {
-        iLedgerIndex = LEDGER_CURRENT;
-    }
-    else if (strLedger == "closed")
-    {
-        iLedgerIndex = LEDGER_CLOSED;
-    }
-    else if (strLedger == "validated")
-    {
-        iLedgerIndex = LEDGER_VALIDATED;
+        jvResult["error"] = "ledgerHashMalformed";
+        return jvResult;
     }
 
+    int32 iLedgerIndex = LEDGER_CURRENT;
+
+    // We only try to parse a ledger index if we have not already
+    // determined that we have a ledger hash.
+    if (!uLedger)
+    {
+        if (ledger_index.isNumeric ())
+            iLedgerIndex = ledger_index.asInt ();
+        else
+        {
+            std::string strLedger = ledger_index.asString ();
+
+            if (strLedger == "current")
+            {
+                iLedgerIndex = LEDGER_CURRENT;
+            }
+            else if (strLedger == "closed")
+            {
+                iLedgerIndex = LEDGER_CLOSED;
+            }
+            else if (strLedger == "validated")
+            {
+                iLedgerIndex = LEDGER_VALIDATED;
+            }
+            else
+            {
+                jvResult["error"] = "ledgerIndexMalformed";
+                return jvResult;
+            }
+        }
+    }
+
+    // The ledger was directly specified by hash.
     if (!!uLedger)
     {
-        // Ledger directly specified.
-        lpLedger    = mNetOps->getLedgerByHash (uLedger);
+        lpLedger = mNetOps->getLedgerByHash (uLedger);
 
         if (!lpLedger)
         {
-            jvResult["error"]   = "ledgerNotFound";
-
+            jvResult["error"] = "ledgerNotFound";
             return jvResult;
         }
 
-        iLedgerIndex    = lpLedger->getLedgerSeq (); // Set the current index, override if needed.
+        iLedgerIndex = lpLedger->getLedgerSeq ();
     }
 
     switch (iLedgerIndex)
     {
     case LEDGER_CURRENT:
-        lpLedger        = mNetOps->getCurrentLedger ();
-        iLedgerIndex    = lpLedger->getLedgerSeq ();
+        lpLedger = mNetOps->getCurrentLedger ();
+        iLedgerIndex = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && !lpLedger->isClosed ());
         break;
 
     case LEDGER_CLOSED:
-        lpLedger        = getApp().getLedgerMaster ().getClosedLedger ();
-        iLedgerIndex    = lpLedger->getLedgerSeq ();
+        lpLedger = getApp().getLedgerMaster ().getClosedLedger ();
+        iLedgerIndex = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && lpLedger->isClosed ());
         break;
 
     case LEDGER_VALIDATED:
-        lpLedger        = mNetOps->getValidatedLedger ();
-        iLedgerIndex    = lpLedger->getLedgerSeq ();
+        lpLedger = mNetOps->getValidatedLedger ();
+        iLedgerIndex = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && lpLedger->isClosed ());
         break;
     }
 
     if (iLedgerIndex <= 0)
     {
-        jvResult["error"]   = "ledgerNotFound";
-
+        jvResult["error"] = "ledgerIndexMalformed";
         return jvResult;
     }
 
     if (!lpLedger)
     {
-        lpLedger        = mNetOps->getLedgerBySeq (iLedgerIndex);
+        lpLedger = mNetOps->getLedgerBySeq (iLedgerIndex);
 
         if (!lpLedger)
         {
-            jvResult["error"]   = "ledgerNotFound"; // ledger_index from future?
-
+            jvResult["error"] = "ledgerNotFound"; // ledger_index from future?
             return jvResult;
         }
     }
@@ -3287,13 +3322,14 @@ Json::Value RPCHandler::lookupLedger (Json::Value const& params, Ledger::pointer
     if (lpLedger->isClosed ())
     {
         if (!!uLedger)
-            jvResult["ledger_hash"]         = uLedger.ToString ();
+            jvResult["ledger_hash"] = uLedger.ToString ();
 
-        jvResult["ledger_index"]        = iLedgerIndex;
+        jvResult["ledger_index"] = iLedgerIndex;
     }
     else
     {
-        jvResult["ledger_current_index"]    = iLedgerIndex;
+        // CHECKME - What is this supposed to signify?
+        jvResult["ledger_current_index"] = iLedgerIndex;
     }
 
     return jvResult;
