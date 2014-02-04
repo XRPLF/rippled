@@ -187,12 +187,6 @@
     <Filter Include="[2] Old Ripple\ripple_core\nodestore\tests">
       <UniqueIdentifier>{071582fa-cf16-4e41-8791-613cfe00eef8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\rpc">
-      <UniqueIdentifier>{7abb5fcf-8793-45d0-95db-0cf448198765}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\rpc\api">
-      <UniqueIdentifier>{005e1f40-38ac-4904-af7c-4a018c5662f4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\http">
       <UniqueIdentifier>{98e572a2-c89a-4ab7-b1d5-7687786e48dd}</UniqueIdentifier>
     </Filter>
@@ -201,9 +195,6 @@
     </Filter>
     <Filter Include="[1] Ripple\http\impl">
       <UniqueIdentifier>{386ebc1c-0cbe-43a6-b48e-ac3c503da0ee}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\rpc\impl">
-      <UniqueIdentifier>{95c93134-7e8d-47ec-9649-4a8d5d97ce12}</UniqueIdentifier>
     </Filter>
     <Filter Include="[1] Ripple\types">
       <UniqueIdentifier>{a3a2d1ec-d731-42df-9397-40a561c6809a}</UniqueIdentifier>
@@ -306,6 +297,15 @@
     </Filter>
     <Filter Include="[1] Ripple\peerfinder\sim">
       <UniqueIdentifier>{c429638b-4572-44e4-a48a-c18fdd094ae1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[2] Old Ripple\ripple_rpc">
+      <UniqueIdentifier>{21125570-1733-47a2-8f20-1d4c1f2bf2d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[2] Old Ripple\ripple_rpc\api">
+      <UniqueIdentifier>{acdb25ae-4985-483b-ad85-94e06aec7eab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[2] Old Ripple\ripple_rpc\impl">
+      <UniqueIdentifier>{b86f01de-f924-4584-bb22-d70280b224f3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1029,9 +1029,6 @@
     <ClCompile Include="..\..\src\ripple_app\main\RPCHTTPServer.cpp">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\ripple_rpc.cpp">
-      <Filter>[1] Ripple\rpc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\ripple_http.cpp">
       <Filter>[1] Ripple\http</Filter>
     </ClCompile>
@@ -1043,15 +1040,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\impl\ScopedStream.cpp">
       <Filter>[1] Ripple\http\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Handler.cpp">
-      <Filter>[1] Ripple\rpc\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Service.cpp">
-      <Filter>[1] Ripple\rpc\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\Manager.cpp">
-      <Filter>[1] Ripple\rpc\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\impl\ServerImpl.cpp">
       <Filter>[1] Ripple\http\impl</Filter>
@@ -1112,6 +1100,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\JsonPropertyStream.cpp">
       <Filter>[1] Ripple\types\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Checker.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Cache.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\resource\ripple_resource.cpp">
       <Filter>[1] Ripple\resource</Filter>
@@ -1410,9 +1404,6 @@
     <ClCompile Include="..\..\src\ripple_data\protocol\STParsedJSON.cpp">
       <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\ErrorCodes.cpp">
-      <Filter>[1] Ripple\rpc\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\paths\PathRequests.cpp">
       <Filter>[2] Old Ripple\ripple_app\paths</Filter>
     </ClCompile>
@@ -1463,6 +1454,21 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\sim\Tests.cpp">
       <Filter>[1] Ripple\peerfinder\sim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\ripple_rpc.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\ErrorCodes.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\Manager.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\DoPrint.h">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
+      <Filter>[1] Ripple\json\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2328,9 +2334,6 @@
     <ClInclude Include="..\..\src\ripple_app\main\RPCHTTPServer.h">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\ripple_rpc.h">
-      <Filter>[1] Ripple\rpc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\ripple_http.h">
       <Filter>[1] Ripple\http</Filter>
     </ClInclude>
@@ -2360,18 +2363,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\Door.h">
       <Filter>[1] Ripple\http\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\api\Handler.h">
-      <Filter>[1] Ripple\rpc\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\api\Manager.h">
-      <Filter>[1] Ripple\rpc\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\api\Service.h">
-      <Filter>[1] Ripple\rpc\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\impl\ManagerImpl.h">
-      <Filter>[1] Ripple\rpc\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\ripple_types.h">
       <Filter>[1] Ripple\types</Filter>
@@ -2486,6 +2477,27 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\JsonPropertyStream.h">
       <Filter>[1] Ripple\types\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpoint.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LegacyEndpointCache.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Cache.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\CachedEndpoint.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\resource\ripple_resource.h">
       <Filter>[1] Ripple\resource</Filter>
@@ -2877,9 +2889,6 @@
     <ClInclude Include="..\..\src\ripple_data\protocol\STParsedJSON.h">
       <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\api\ErrorCodes.h">
-      <Filter>[1] Ripple\rpc\api</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\paths\PathRequests.h">
       <Filter>[2] Old Ripple\ripple_app\paths</Filter>
     </ClInclude>
@@ -3021,6 +3030,24 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h">
       <Filter>[1] Ripple\peerfinder\sim</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\ripple_rpc.h">
+      <Filter>[2] Old Ripple\ripple_rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\api\ErrorCodes.h">
+      <Filter>[2] Old Ripple\ripple_rpc\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\api\Manager.h">
+      <Filter>[2] Old Ripple\ripple_rpc\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\api\Request.h">
+      <Filter>[2] Old Ripple\ripple_rpc\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\impl\Command.h">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\json\api\JsonPropertyStream.h">
+      <Filter>[1] Ripple\json\api</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\ripple_data\protocol\ripple.proto">
@@ -3109,12 +3136,6 @@
     <None Include="..\..\src\ripple\json\TODO.md">
       <Filter>[1] Ripple\json</Filter>
     </None>
-    <None Include="..\..\src\ripple\rpc\README.md">
-      <Filter>[1] Ripple\rpc</Filter>
-    </None>
-    <None Include="..\..\src\ripple\rpc\TODO.md">
-      <Filter>[1] Ripple\rpc</Filter>
-    </None>
     <None Include="..\..\src\ripple\sitefiles\README.md">
       <Filter>[1] Ripple\sitefiles</Filter>
     </None>
@@ -3141,6 +3162,12 @@
     </None>
     <None Include="..\..\src\ripple\radmap\TODO.md">
       <Filter>[1] Ripple\radmap</Filter>
+    </None>
+    <None Include="..\..\src\ripple_rpc\README.md">
+      <Filter>[2] Old Ripple\ripple_rpc</Filter>
+    </None>
+    <None Include="..\..\src\ripple_rpc\TODO.md">
+      <Filter>[2] Old Ripple\ripple_rpc</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

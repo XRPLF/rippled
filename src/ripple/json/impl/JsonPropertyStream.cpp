@@ -52,12 +52,32 @@ void JsonPropertyStream::map_end ()
     m_stack.pop_back ();
 }
 
-void JsonPropertyStream::add (std::string const& key, int32 v)
+void JsonPropertyStream::add (std::string const& key, short v)
 {
     (*m_stack.back())[key] = v;
 }
 
-void JsonPropertyStream::add (std::string const& key, uint32 v)
+void JsonPropertyStream::add (std::string const& key, unsigned short v)
+{
+    (*m_stack.back())[key] = v;
+}
+
+void JsonPropertyStream::add (std::string const& key, int v)
+{
+    (*m_stack.back())[key] = v;
+}
+
+void JsonPropertyStream::add (std::string const& key, unsigned int v)
+{
+    (*m_stack.back())[key] = v;
+}
+
+void JsonPropertyStream::add (std::string const& key, long v)
+{
+    (*m_stack.back())[key] = int(v);
+}
+
+void JsonPropertyStream::add (std::string const& key, float v)
 {
     (*m_stack.back())[key] = v;
 }
@@ -93,12 +113,37 @@ void JsonPropertyStream::array_end ()
     m_stack.pop_back ();
 }
 
-void JsonPropertyStream::add (int32 v)
+void JsonPropertyStream::add (short v)
 {
     m_stack.back()->append (v);
 }
 
-void JsonPropertyStream::add (uint32 v)
+void JsonPropertyStream::add (unsigned short v)
+{
+    m_stack.back()->append (v);
+}
+
+void JsonPropertyStream::add (int v)
+{
+    m_stack.back()->append (v);
+}
+
+void JsonPropertyStream::add (unsigned int v)
+{
+    m_stack.back()->append (v);
+}
+
+void JsonPropertyStream::add (long v)
+{
+    m_stack.back()->append (int (v));
+}
+
+void JsonPropertyStream::add (float v)
+{
+    m_stack.back()->append (v);
+}
+
+void JsonPropertyStream::add (double v)
 {
     m_stack.back()->append (v);
 }

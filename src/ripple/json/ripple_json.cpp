@@ -47,3 +47,5 @@
 #include "impl/json_writer.cpp"
 
 #include "impl/Tests.cpp"
+
+#include "impl/JsonPropertyStream.cpp"

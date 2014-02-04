@@ -17,47 +17,45 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_HANDLER_H_INCLUDED
-#define RIPPLE_RPC_HANDLER_H_INCLUDED
+#ifndef RIPPLE_RPC_MANAGER_H_INCLUDED
+#define RIPPLE_RPC_MANAGER_H_INCLUDED
 
-#include <vector>
+#include "Request.h"
 
 namespace ripple {
-using namespace beast;
-
 namespace RPC {
 
-/** An invokable handler for a particular RPC method. */
-class Handler
+/** Processes RPC commands. */
+class Manager
 {
 public:
-    /** Create a handler with the specified method and function. */
-    template <typename Function> // allocator
-    Handler (std::string const& method_, Function function)
-        : m_method (method_)
-        , m_function (function)
+    typedef std::function <void (Request&)> handler_type;
+
+    virtual ~Manager () = 0;
+
+    /** Add a handler for the specified JSON-RPC command. */
+    /** @{ */
+    template <class Handler>
+    void add (std::string const& method)
     {
+        add (method, handler_type (
+        [](Request& req)
+        {
+            Handler h;
+            h (req);
+        }));
     }
 
-    Handler (Handler const& other);
-    Handler& operator= (Handler const& other);
+    virtual void add (std::string const& method, handler_type&& handler) = 0;
+    /** @} */
 
-    /** Returns the method called when this handler is invoked. */
-    std::string const& method() const;
-
-    /** Synchronously invoke the method on the associated service.
-        Thread safety:
-            Determined by the owner.
+    /** Dispatch the JSON-RPC request.
+        @return `true` If the command was found.
     */
-    Json::Value operator() (Json::Value const& args) const;
-
-private:
-    std::string m_method;
-    SharedFunction <Json::Value (Json::Value const&)> m_function;
+    virtual bool dispatch (Request& req) = 0;
 };
 
-/** The type of container that holds a set of Handler objects. */
-typedef std::vector <Handler> Handlers;
+std::unique_ptr <Manager> make_Manager (Journal journal);
 
 }
 }

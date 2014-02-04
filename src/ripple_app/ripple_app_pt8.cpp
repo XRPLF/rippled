@@ -26,7 +26,7 @@
 #pragma warning (disable: 4309) // truncation of constant value
 #endif
 
-#include "../ripple/rpc/api/ErrorCodes.h"
+#include "../ripple_rpc/api/ErrorCodes.h"
 
 namespace ripple
 {

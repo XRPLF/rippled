@@ -17,15 +17,55 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef RIPPLE_RPC_REQUEST_H_INCLUDED
+#define RIPPLE_RPC_REQUEST_H_INCLUDED
 
-#include "ripple_rpc.h"
+#include "../ripple/json/ripple_json.h"
+#include "../ripple/resource/ripple_resource.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
-#include <boost/unordered_map.hpp>
 
-#include "impl/ErrorCodes.cpp"
-# include "impl/ManagerImpl.h"
-#include "impl/Manager.cpp"
-#include "impl/Handler.cpp"
-#include "impl/Service.cpp"
+namespace ripple {
+
+class Application; // forward declare
+
+namespace RPC {
+
+struct Request
+{
+    explicit Request (Journal journal_,
+        std::string const& method_, Json::Value& params_,
+            Application& app_)
+        : journal (journal_)
+        , method (method_)
+        , params (params_)
+        , fee (Resource::feeReferenceRPC)
+        , app (app_)
+    {
+    }
+
+    // [in] The Journal for logging
+    Journal journal;
+
+    // [in] The JSON-RPC method
+    std::string method;
+
+    // [in] The complete JSON-RPC request
+    Json::Value params;
+
+    // [in, out] The resource cost for the command
+    Resource::Charge fee;
+
+    // [out] The JSON-RPC response
+    Json::Value result;
+
+    // [in] The Application instance
+    Application& app;
+
+private:
+    Request& operator= (Request const&);
+};
+
+}
+}
+
+#endif

@@ -46,6 +46,5 @@
 #include "impl/UInt256.cpp"
 #include "impl/RippleIdentifierTests.cpp"
 #include "impl/RippleAssets.cpp"
-#include "impl/JsonPropertyStream.cpp"
 
 

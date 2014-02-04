@@ -20,18 +20,27 @@
 namespace ripple {
 namespace RPC {
 
-Service::Service ()
+class DoPrint
 {
-}
+public:
+    void operator() (Request& req)
+    {
+        JsonPropertyStream stream;
 
-Service::~Service ()
-{
-}
+        if (req.params.isObject() &&
+            req.params["params"].isArray() &&
+            req.params["params"][0u].isString ())
+        {
+            req.app.write (stream, req.params["params"][0u].asString());
+        }
+        else
+        {
+            req.app.write (stream);
+        }
 
-Handlers const& Service::handlers() const
-{
-    return m_handlers;
-}
+        req.result = stream.top();
+    }
+};
 
 }
 }

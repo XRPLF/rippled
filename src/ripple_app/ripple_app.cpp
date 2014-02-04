@@ -29,6 +29,7 @@
 #include "ripple_app.h"
 
 #include "../ripple_net/ripple_net.h"
+#include "../ripple_rpc/ripple_rpc.h"
 #include "../ripple_websocket/ripple_websocket.h"
 
 // This .cpp will end up including all of the public header
@@ -37,7 +38,6 @@
 #include "../ripple/common/seconds_clock.h"
 #include "../ripple/http/ripple_http.h"
 #include "../ripple/resource/ripple_resource.h"
-#include "../ripple/rpc/ripple_rpc.h"
 #include "../ripple/sitefiles/ripple_sitefiles.h"
 #include "../ripple/validators/ripple_validators.h"
 

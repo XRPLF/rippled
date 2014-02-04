@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include "../ripple/common/seconds_clock.h"
+#include "../ripple_rpc/api/Manager.h"
+
 #include "Tuning.h"
 
 namespace ripple {
@@ -52,6 +54,8 @@ class ResourceManagerLog;
 template <> char const* LogPartition::getPartitionName <ResourceManagerLog> () { return "ResourceManager"; }
 class PathRequestLog;
 template <> char const* LogPartition::getPartitionName <PathRequestLog> () { return "PathRequest"; }
+class RPCManagerLog;
+template <> char const* LogPartition::getPartitionName <RPCManagerLog> () { return "RPCManager"; }
 
 template <> char const* LogPartition::getPartitionName <CollectorManager> () { return "Collector"; }
 
@@ -111,7 +115,6 @@ public:
 
     std::unique_ptr <CollectorManager> m_collectorManager;
     std::unique_ptr <Resource::Manager> m_resourceManager;
-    std::unique_ptr <RPC::Manager> m_rpcServiceManager;
     std::unique_ptr <FullBelowCache> m_fullBelowCache;
 
     // These are Stoppable-related
@@ -119,6 +122,7 @@ public:
     std::unique_ptr <JobQueue> m_jobQueue;
     IoServicePool m_mainIoPool;
     std::unique_ptr <SiteFiles::Manager> m_siteFiles;
+    std::unique_ptr <RPC::Manager> m_rpcManager;
     // VFALCO TODO Make OrderBookDB abstract
     OrderBookDB m_orderBookDB;
     std::unique_ptr <PathRequests> m_pathRequests;
@@ -126,9 +130,7 @@ public:
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
     std::unique_ptr <RPCHTTPServer> m_rpcHTTPServer;
-#if ! RIPPLE_USE_RPC_SERVICE_MANAGER
     RPCServerHandler m_rpcServerHandler;
-#endif
     std::unique_ptr <NodeStore::Database> m_nodeStore;
     std::unique_ptr <SNTPClient> m_sntpClient;
     std::unique_ptr <InboundLedgers> m_inboundLedgers;
@@ -224,9 +226,6 @@ public:
             m_collectorManager->collector(),
                 LogPartition::getJournal <ResourceManagerLog> ()))
 
-        , m_rpcServiceManager (RPC::Manager::New (
-            LogPartition::getJournal <RPCServiceManagerLog> ()))
-
         , m_fullBelowCache (std::make_unique <FullBelowCache> (
             "full_below", get_seconds_clock (), m_collectorManager->collector (),
                 fullBelowTargetSize, fullBelowExpirationSeconds))
@@ -252,6 +251,8 @@ public:
         , m_siteFiles (SiteFiles::Manager::New (
             *this, LogPartition::getJournal <SiteFilesLog> ()))
 
+        , m_rpcManager (RPC::make_Manager (LogPartition::getJournal <RPCManagerLog> ()))
+
         , m_orderBookDB (*m_jobQueue)
 
         , m_pathRequests ( new PathRequests (
@@ -270,9 +271,8 @@ public:
         , m_rpcHTTPServer (RPCHTTPServer::New (*m_networkOPs,
             LogPartition::getJournal <HTTPServerLog> (), *m_jobQueue, *m_networkOPs, *m_resourceManager))
 
-#if ! RIPPLE_USE_RPC_SERVICE_MANAGER
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager) // passive object, not a Service
-#endif
+
         , m_nodeStore (m_nodeStoreManager->make_Database ("NodeStore.main", m_nodeStoreScheduler,
             LogPartition::getJournal <NodeObject> (),
                 getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
@@ -341,11 +341,6 @@ public:
         return *m_collectorManager;
     }
 
-    RPC::Manager& getRPCServiceManager()
-    {
-        return *m_rpcServiceManager;
-    }
-
     FullBelowCache& getFullBelowCache ()
     {
         return *m_fullBelowCache;
@@ -354,6 +349,11 @@ public:
     JobQueue& getJobQueue ()
     {
         return *m_jobQueue;
+    }
+
+    RPC::Manager& getRPCManager ()
+    {
+        return *m_rpcManager;
     }
 
     SiteFiles::Manager& getSiteFiles()
@@ -757,10 +757,6 @@ public:
         //
         // Allow RPC connections.
         //
-#if RIPPLE_USE_RPC_SERVICE_MANAGER
-        m_rpcHTTPServer->setup (m_journal);
-
-#else
         if (! getConfig ().getRpcIP().empty () && getConfig ().getRpcPort() != 0)
         {
             try
@@ -780,7 +776,6 @@ public:
         {
             m_journal.info << "RPC interface: disabled";
         }
-#endif
 
         //
         // Begin connecting to network.

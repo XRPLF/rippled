@@ -48,4 +48,6 @@
 #include "api/json_reader.h"
 #include "api/json_writer.h"
 
+#include "api/JsonPropertyStream.h"
+
 #endif

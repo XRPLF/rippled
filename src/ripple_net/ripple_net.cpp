@@ -46,7 +46,7 @@
 //             directly (instead of th emodule header). The corresponding .cpp
 //             still uses the unity style inclusion.
 //
-#include "../ripple/rpc/api/ErrorCodes.h"
+#include "../ripple_rpc/api/ErrorCodes.h"
 
 namespace ripple
 {

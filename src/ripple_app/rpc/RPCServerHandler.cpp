@@ -38,20 +38,20 @@ bool RPCServerHandler::isAuthorized (
 
 std::string RPCServerHandler::processRequest (std::string const& request, IPAddress const& remoteIPAddress)
 {
-    Json::Value jvRequest;
+    Json::Value jsonRequest;
     {
         Json::Reader reader;
 
         if ((request.size() > 1000000) ||
-            ! reader.parse (request, jvRequest) ||
-            jvRequest.isNull () ||
-            ! jvRequest.isObject ())
+            ! reader.parse (request, jsonRequest) ||
+            jsonRequest.isNull () ||
+            ! jsonRequest.isObject ())
         {
             return createResponse (400, "Unable to parse request");
         }
     }
     
-    Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteIPAddress));
+    Config::Role const role (getConfig ().getAdminRole (jsonRequest, remoteIPAddress));
 
     Resource::Consumer usage;
 
@@ -67,9 +67,9 @@ std::string RPCServerHandler::processRequest (std::string const& request, IPAddr
     //
     // VFALCO NOTE Except that "id" isn't included in the following errors...
     //
-    Json::Value const id = jvRequest ["id"];
+    Json::Value const& id = jsonRequest ["id"];
 
-    Json::Value const method = jvRequest ["method"];
+    Json::Value const& method = jsonRequest ["method"];
 
     if (method.isNull ())
     {
@@ -82,17 +82,14 @@ std::string RPCServerHandler::processRequest (std::string const& request, IPAddr
 
     std::string strMethod = method.asString ();
 
-    // Parse params
-    Json::Value params = jvRequest ["params"];
+    if (jsonRequest["params"].isNull())
+        jsonRequest["params"] = Json::Value (Json::arrayValue);
 
-    if (params.isNull ())
-    {
-        params = Json::Value (Json::arrayValue);
-    }
-    else if (!params.isArray ())
-    {
+    // Parse params
+    Json::Value& params = jsonRequest ["params"];
+
+    if (!params.isArray ())
         return HTTPReply (400, "params unparseable");
-    }
 
     // VFALCO TODO Shouldn't we handle this earlier?
     //
@@ -113,16 +110,28 @@ std::string RPCServerHandler::processRequest (std::string const& request, IPAddr
     }
 
     std::string response;
-
+   
     WriteLog (lsDEBUG, RPCServer) << "Query: " << strMethod << params;
 
+    RPC::Request req (LogPartition::getJournal <RPCServer> (),
+        strMethod, params, getApp ());
+
+    // VFALCO Try processing the command using the new code
+    if (getApp().getRPCManager().dispatch (req))
+    {
+        usage.charge (req.fee);
+        WriteLog (lsDEBUG, RPCServer) << "Reply: " << req.result;
+        return createResponse (200,
+            JSONRPCReply (req.result, Json::Value (), id));
+    }
+
+    // legacy dispatcher
+
     RPCHandler rpcHandler (&m_networkOPs);
+    Json::Value const result = rpcHandler.doRpcCommand (
+        strMethod, params, role, req.fee);
 
-    Resource::Charge loadType = Resource::feeReferenceRPC;
-
-    Json::Value const result = rpcHandler.doRpcCommand (strMethod, params, role, loadType);
-
-    usage.charge (loadType);
+    usage.charge (req.fee);
 
     WriteLog (lsDEBUG, RPCServer) << "Reply: " << result;
 

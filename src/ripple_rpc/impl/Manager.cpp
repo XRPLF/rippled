@@ -17,30 +17,58 @@
 */
 //==============================================================================
 
+#include "beast/beast/make_unique.h"
+
+#include "../api/Manager.h"
+
+#include "DoPrint.h"
+
 namespace ripple {
 namespace RPC {
 
-Handler::Handler (Handler const& other)
-    : m_method (other.m_method)
-    , m_function (other.m_function)
+class ManagerImp : public Manager
+{
+public:
+    typedef std::unordered_map <std::string, handler_type> Map;
+
+    Journal m_journal;
+    Map m_map;
+
+    ManagerImp (Journal journal)
+        : m_journal (journal)
+    {
+    }
+
+    void add (std::string const& method, handler_type&& handler)
+    {
+        std::pair <Map::iterator, bool> result (m_map.emplace (
+            std::piecewise_construct, std::make_tuple (method),
+                std::make_tuple (std::move (handler))));
+    }
+
+    bool dispatch (Request& req)
+    {
+        Map::const_iterator const iter (m_map.find (req.method));
+        if (iter == m_map.end())
+            return false;
+        iter->second (req);
+        return true;
+    }
+};
+
+//------------------------------------------------------------------------------
+
+Manager::~Manager ()
 {
 }
 
-Handler& Handler::operator= (Handler const& other)
+std::unique_ptr <Manager> make_Manager (Journal journal)
 {
-    m_method = other.m_method;
-    m_function = other.m_function;
-    return *this;
-}
+    std::unique_ptr <Manager> m (std::make_unique <ManagerImp> (journal));
 
-std::string const& Handler::method() const
-{
-    return m_method;
-}
+    m->add <DoPrint> ("print");
 
-Json::Value Handler::operator() (Json::Value const& args) const
-{
-    return m_function (args);
+    return m;
 }
 
 }

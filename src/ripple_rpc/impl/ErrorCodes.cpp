@@ -17,6 +17,23 @@
 */
 //==============================================================================
 
+#include <unordered_map>
+#include <utility>
+
+#include "../api/ErrorCodes.h"
+
+namespace std {
+
+template <>
+struct hash <ripple::error_code_i>
+{
+    std::size_t operator() (ripple::error_code_i value) const
+    {
+        return value;
+    }
+};
+
+}
 namespace ripple {
 namespace RPC {
 
@@ -25,7 +42,7 @@ namespace detail {
 class ErrorCategory
 {
 public:
-    typedef boost::unordered_map <error_code_i, ErrorInfo> Map;
+    typedef std::unordered_map <error_code_i, ErrorInfo> Map;
 
     ErrorCategory ()
         : m_unknown (rpcUNKNOWN, "unknown", "An unknown error code.")
@@ -108,10 +125,11 @@ private:
         std::string const& message)
     {
         std::pair <Map::iterator, bool> result (
-            m_map.emplace (boost::unordered::piecewise_construct,
-                boost::make_tuple (code), boost::make_tuple (
+            m_map.emplace (std::piecewise_construct,
+                std::make_tuple (code), std::make_tuple (
                     code, token, message)));
-        check_postcondition (result.second);
+        if (! result.second)
+            throw std::invalid_argument ("duplicate error code");
     }
 
 private:

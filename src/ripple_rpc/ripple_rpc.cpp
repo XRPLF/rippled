@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_H_INCLUDED
-#define RIPPLE_RPC_H_INCLUDED
+#include "BeastConfig.h"
 
-#include "beast/modules/beast_core/beast_core.h"
+#include "ripple_rpc.h"
 
-#include "../json/ripple_json.h"
+#include "beast/modules/beast_core/beast_core.h" // for UnitTest
 
-#  include "api/Handler.h"
-# include "api/Service.h"
-#include "api/Manager.h"
-#include "api/ErrorCodes.h"
+// Unfortunate but necessary since RPC handlers can literally do anything
+#include "../ripple_app/ripple_app.h"
 
-#endif
+#include "impl/ErrorCodes.cpp"
+#include "impl/Manager.cpp"
+
+

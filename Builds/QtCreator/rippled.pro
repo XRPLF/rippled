@@ -71,7 +71,6 @@ SOURCES += \
     ../../src/ripple/peerfinder/ripple_peerfinder.cpp \
     ../../src/ripple/radmap/ripple_radmap.cpp \
     ../../src/ripple/resource/ripple_resource.cpp \
-    ../../src/ripple/rpc/ripple_rpc.cpp \
     ../../src/ripple/sitefiles/ripple_sitefiles.cpp \
     ../../src/ripple/sslutil/ripple_sslutil.cpp \
     ../../src/ripple/testoverlay/ripple_testoverlay.cpp \
@@ -96,6 +95,7 @@ SOURCES += \
     ../../src/ripple_data/ripple_data.cpp \
     ../../src/ripple_hyperleveldb/ripple_hyperleveldb.cpp \
     ../../src/ripple_leveldb/ripple_leveldb.cpp \
+    ../../src/ripple_rpc/ripple_rpc.cpp \
     ../../src/ripple_net/ripple_net.cpp \
     ../../src/ripple_websocket/ripple_websocket.cpp
 

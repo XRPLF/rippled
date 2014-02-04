@@ -17,13 +17,19 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_RPC_COMMAND_H_INCLUDED
+#define RIPPLE_RPC_COMMAND_H_INCLUDED
+
 namespace ripple {
 namespace RPC {
 
-Manager* Manager::New (Journal journal)
+/** Base class common to all RPC commands. */
+class Command
 {
-    return new ManagerImpl (journal);
-}
+public:
+};
 
 }
 }
+
+#endif

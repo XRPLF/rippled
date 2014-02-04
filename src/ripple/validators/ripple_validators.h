@@ -24,7 +24,6 @@
 
 #include "beast/beast/http/URL.h"
 
-#include "../ripple/rpc/ripple_rpc.h"
 #include "../ripple/types/ripple_types.h"
 
 # include "api/Types.h"

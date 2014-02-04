@@ -4110,16 +4110,7 @@ Json::Value RPCHandler::doRpcCommand (const std::string& strMethod, Json::Value 
     // Provide the JSON-RPC method as the field "command" in the request.
     params["command"]    = strMethod;
 
-    Json::Value jvResult;
-#if RIPPLE_USE_RPC_SERVICE_MANAGER
-    std::pair <bool, Json::Value> result (getApp().
-        getRPCServiceManager().call (strMethod, params));
-    if (result.first)
-        jvResult = result.second;
-    else
-#endif
-        jvResult = doCommand (params, iRole, loadType);
-
+    Json::Value jvResult = doCommand (params, iRole, loadType);
 
     // Always report "status".  On an error report the request as received.
     if (jvResult.isMember ("error"))
