@@ -5,8 +5,8 @@
     <RepoDir>..\..</RepoDir>
   </PropertyGroup>
   <PropertyGroup>
-    <OutDir>$(RepoDir)\build\VisualStudio2012\$(Configuration).$(Platform)\</OutDir>
-    <IntDir>$(RepoDir)\build\obj\VisualStudio2012\$(Configuration).$(Platform)\</IntDir>
+    <OutDir>$(RepoDir)\build\VisualStudio2013\$(Configuration).$(Platform)\</OutDir>
+    <IntDir>$(RepoDir)\build\obj\VisualStudio2013\$(Configuration).$(Platform)\</IntDir>
     <TargetName>rippled</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup>
