@@ -53,6 +53,7 @@ public:
 
     bool        isValid (const boost::shared_ptr<Ledger>&);
     bool        isValid ();
+    bool        isNew ();
     bool        needsUpdate (bool newOnly, LedgerIndex index);
     Json::Value getStatus ();
 

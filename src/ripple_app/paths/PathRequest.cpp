@@ -74,6 +74,12 @@ bool PathRequest::isValid ()
     return bValid;
 }
 
+bool PathRequest::isNew ()
+{
+     // does this path request still need its first full path
+     return iLastIndex.load() == 0;
+}
+
 bool PathRequest::needsUpdate (bool newOnly, LedgerIndex index)
 {
     LedgerIndex lastIndex = iLastIndex.load();

@@ -67,23 +67,6 @@ void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
     do
     {
 
-        { // Get the latest requests, cache, and ledger
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
-
-            if (mRequests.empty())
-                return;
-
-            // Newest request is last in mRequests, but we want to serve it first
-            requests.empty();
-            requests.reserve (mRequests.size ());
-            BOOST_REVERSE_FOREACH (PathRequest::wptr& req, mRequests)
-            {
-               requests.push_back (req);
-            }
-
-            cache = getLineCache (ledger, false);
-        }
-
         BOOST_FOREACH (PathRequest::wref wRequest, requests)
         {
             if (shouldCancel())
@@ -152,6 +135,17 @@ void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
                 return;
         }
 
+        {
+            // Get the latest requests, cache, and ledger for next pass
+            ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+            if (mRequests.empty())
+                break;
+            requests = mRequests;
+
+            cache = getLineCache (ledger, false);
+        }
+
     }
     while (!shouldCancel ());
 
@@ -182,7 +176,20 @@ Json::Value PathRequests::makePathRequest(
     {
         {
             ScopedLockType sl (mLock, __FILE__, __LINE__);
-            mRequests.push_back (req);
+
+            // Insert after any older unserviced requests but before any serviced requests
+            std::vector<PathRequest::wptr>::iterator it = mRequests.begin ();
+            while (it != mRequests.end ())
+            {
+                PathRequest::pointer req = it->lock ();
+                if (req && !req->isNew ())
+                    break; // This request has been handled, we come before it
+
+                // This is a newer request, we come after it
+                ++it;
+            }
+            mRequests.insert (it, PathRequest::wptr (req));
+
         }
         subscriber->setPathRequest (req);
         getApp().getLedgerMaster().newPathRequest();
