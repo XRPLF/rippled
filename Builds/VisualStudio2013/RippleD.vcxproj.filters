@@ -292,8 +292,11 @@
     <Filter Include="[1] Ripple\common">
       <UniqueIdentifier>{b99052d6-a903-4dfd-9c68-ff767a7d8f63}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\common\impl">
-      <UniqueIdentifier>{c9eed7bc-87ac-4a4f-ab79-91de2319d22a}</UniqueIdentifier>
+    <Filter Include="[1] Ripple\common\functional">
+      <UniqueIdentifier>{e2a53cb6-0594-4646-a36f-68d598972da4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\common\functional\impl">
+      <UniqueIdentifier>{24383350-1f23-42f8-8b58-399fee670b17}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1440,14 +1443,14 @@
     <ClCompile Include="..\..\src\ripple_app\ledger\DirectoryEntryIterator.cpp">
       <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\counted_bind.cpp">
-      <Filter>[1] Ripple\common\impl</Filter>
+    <ClCompile Include="..\..\src\ripple\common\functional\impl\counted_bind.cpp">
+      <Filter>[1] Ripple\common\functional\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
-      <Filter>[1] Ripple\common\impl</Filter>
+    <ClCompile Include="..\..\src\ripple_basics\containers\KeyCache.cpp">
+      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\TaggedCache.cpp">
-      <Filter>[1] Ripple\common\impl</Filter>
+    <ClCompile Include="..\..\src\ripple_basics\containers\TaggedCache.cpp">
+      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2940,23 +2943,17 @@
     <ClInclude Include="..\..\src\ripple_app\paths\PathRequests.h">
       <Filter>[2] Old Ripple\ripple_app\paths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\counted_bind.h">
-      <Filter>[1] Ripple\common</Filter>
+    <ClInclude Include="..\..\src\ripple\common\functional\counted_bind.h">
+      <Filter>[1] Ripple\common\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
-      <Filter>[1] Ripple\common</Filter>
+    <ClInclude Include="..\..\src\ripple_basics\containers\KeyCache.h">
+      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\TaggedCache.h">
-      <Filter>[1] Ripple\common</Filter>
+    <ClInclude Include="..\..\src\ripple_basics\containers\SyncUnorderedMap.h">
+      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\seconds_clock.h">
-      <Filter>[1] Ripple\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\main\FullBelowCache.h">
-      <Filter>[2] Old Ripple\ripple_app\main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\main\Tuning.h">
-      <Filter>[2] Old Ripple\ripple_app\main</Filter>
+    <ClInclude Include="..\..\src\ripple_basics\containers\TaggedCache.h">
+      <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

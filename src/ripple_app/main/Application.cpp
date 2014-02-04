@@ -56,9 +56,38 @@ template <> char const* LogPartition::getPartitionName <TaggedCacheLog> () { ret
 //
 //------------------------------------------------------------------------------
 
+// This hack lets the s_instance variable remain set during
+// the call to ~Application
+class ApplicationImpBase : public Application
+{
+public:
+    ApplicationImpBase ()
+    {
+        assert (s_instance == nullptr);
+        s_instance = this;
+    }
+
+    ~ApplicationImpBase ()
+    {
+        s_instance = nullptr;
+    }
+
+    static Application* s_instance;
+
+    static Application& getInstance ()
+    {
+        bassert (s_instance != nullptr);
+        return *s_instance;
+    }
+};
+
+Application* ApplicationImpBase::s_instance;
+
+//------------------------------------------------------------------------------
+
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp
-    : public Application
+    : public ApplicationImpBase
     , public RootStoppable
     , public DeadlineTimer::Listener
     , public LeakChecked <ApplicationImp>
@@ -126,14 +155,6 @@ public:
     WaitableEvent m_stop;
 
     io_latency_probe <std::chrono::steady_clock> m_probe;
-
-    static ApplicationImp* s_instance;
-
-    static Application& getInstance ()
-    {
-        bassert (s_instance != nullptr);
-        return *s_instance;
-    }
 
     //--------------------------------------------------------------------------
 
@@ -298,17 +319,10 @@ public:
         // VFALCO HACK
         m_nodeStoreScheduler.setJobQueue (*m_jobQueue);
 
-        bassert (s_instance == nullptr);
-        s_instance = this;
-
         add (m_ledgerMaster->getPropertySource ());
 
         // VFALCO TODO remove these once the call is thread safe.
         HashMaps::getInstance ().initializeNonce <size_t> ();
-    }
-
-    ~ApplicationImp ()
-    {
     }
 
     //--------------------------------------------------------------------------
@@ -1366,10 +1380,6 @@ void ApplicationImp::onAnnounceAddress ()
 
 //------------------------------------------------------------------------------
 
-ApplicationImp* ApplicationImp::s_instance;
-
-//------------------------------------------------------------------------------
-
 Application::Application ()
     : PropertyStream::Source ("app")
 {
@@ -1382,7 +1392,7 @@ std::unique_ptr <Application> make_Application ()
 
 Application& getApp ()
 {
-    return ApplicationImp::getInstance ();
+    return ApplicationImpBase::getInstance ();
 }
 
 // class LoandObject (5removed, use git history to recover)
