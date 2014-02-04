@@ -50,10 +50,10 @@ function build_teardown() {
   return function (done) {
     var self  = this;
 
-    self.server.close(function () {
-      // console.log("server closed");
-
-      teardown.call(self, done);
+    teardown.call(self, function () {
+      self.server.close(function () {
+        done();
+      });
     });
   };
 };
