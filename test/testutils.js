@@ -140,9 +140,12 @@ function build_setup(opts, host) {
       },
 
       function create_ledger_interval(callback) {
+        if (opts.no_auto_ledger_close) {return callback(); };
+
         self.ledger_interval = setInterval(function() {
           self.remote.ledger_accept();
-        }, 200);
+        }, 200);  
+
         callback();
       }
 
@@ -170,7 +173,7 @@ function build_teardown(host) {
 
     var series = [
       function clear_ledger_interval(callback) {
-        clearInterval(self.ledger_interval);
+        if (self.ledger_interval != null) {clearInterval(self.ledger_interval)};
         callback();
       },
 
