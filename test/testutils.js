@@ -42,7 +42,13 @@ function account_dump(remote, account, callback) {
   request.account_root('root');
   request.callback(function(err, r) {
     assert(!err, self.what);
-    callback(err);
+    if (err) {
+      //console.log('error: %s', m);
+      callback(err);
+    } else {
+      //console.log('account_root: %s', JSON.stringify(r, undefined, 2));
+      callback();
+    }
   });
 
   // get closed ledger hash
@@ -131,24 +137,11 @@ function build_setup(opts, host) {
 
       function connect_websocket(callback) {
         self.remote = data.remote = Remote.from_config(host, !!opts.verbose_ws);
-        self.remote.connect(callback);
-      },
-
-      function subscribe_account(callback) {
-        var root = self.remote.account('root');
-        self.remote.request_subscribe().accounts(root._account_id).callback(callback);
-      },
-
-      function create_ledger_interval(callback) {
-        if (opts.no_auto_ledger_close) {return callback(); };
-
-        self.ledger_interval = setInterval(function() {
-          self.remote.ledger_accept();
-        }, 200);  
-
-        callback();
+        self.remote.once('ledger_closed', function(ledger) {
+          callback();
+        });
+        self.remote.connect();
       }
-
     ];
 
     async.series(series, done);
@@ -167,19 +160,16 @@ function build_teardown(host) {
   var host = host || config.server_default;
 
   function teardown(done) {
-    var self = this;
     var data = this.store[host];
     var opts = data.opts;
 
     var series = [
-      function clear_ledger_interval(callback) {
-        if (self.ledger_interval != null) {clearInterval(self.ledger_interval)};
-        callback();
-      },
-
       function disconnect_websocket(callback) {
         data.remote.once('disconnected', callback)
-        data.remote.disconnect();
+        data.remote.once('error', function (m) {
+          //console.log('server error: ', m);
+        })
+        data.remote.connect(false);
       },
 
       function stop_server(callback) {
@@ -200,25 +190,35 @@ function build_teardown(host) {
 };
 
 function create_accounts(remote, src, amount, accounts, callback) {
-  assert.strictEqual(arguments.length, 5);
+  assert(arguments.length === 5);
 
   remote.set_account_seq(src, 1);
 
-  async.forEach(accounts, function (account, nextAccount) {
+  async.forEach(accounts, function (account, callback) {
     // Cache the seq as 1.
     // Otherwise, when other operations attempt to opperate async against the account they may get confused.
-
     remote.set_account_seq(account, 1);
 
     var tx = remote.transaction();
-    tx.payment(src, account, amount);
-    tx.submit(nextAccount);
 
+    tx.payment(src, account, amount);
+
+    tx.once('proposed', function (m) {
+      //console.log('proposed: %s', JSON.stringify(m));
+      callback(m.engine_result === 'tesSUCCESS' ? null : new Error());
+    });
+
+    tx.once('error', function (m) {
+      //console.log('error: %s', JSON.stringify(m));
+      callback(m);
+    });
+
+    tx.submit();
   }, callback);
 };
 
 function credit_limit(remote, src, amount, callback) {
-  assert.strictEqual(arguments.length, 4);
+  assert(arguments.length === 4);
 
   var _m = amount.match(/^(\d+\/...\/[^\:]+)(?::(\d+)(?:,(\d+))?)?$/);
 
@@ -232,24 +232,25 @@ function credit_limit(remote, src, amount, callback) {
   var quality_in    = _m[2];
   var quality_out   = _m[3];
 
-  var tx = remote.transaction();
+  var tx = remote.transaction()
 
-  tx.ripple_line_set(src, account_limit, quality_in, quality_out);
+  tx.ripple_line_set(src, account_limit, quality_in, quality_out)
 
-  tx.submit(function(err,  m) {
-    //console.log('proposed: %s', JSON.stringify(m));
-    if (err) {
-      callback(err);
-    } else if (m.engine_result === 'tesSUCCESS') {
-      callback();
-    } else {
-      callback(m);
-    }
+  tx.once('proposed', function (m) {
+    // console.log('proposed: %s', JSON.stringify(m));
+    callback(m.engine_result === 'tesSUCCESS' ? null : new Error());
   });
+
+  tx.once('error', function (m) {
+    // console.log('error: %s', JSON.stringify(m));
+    callback(m);
+  });
+
+  tx.submit();
 };
 
 function verify_limit(remote, src, amount, callback) {
-  assert.strictEqual(arguments.length, 4);
+  assert(arguments.length === 4);
 
   var _m = amount.match(/^(\d+\/...\/[^\:]+)(?::(\d+)(?:,(\d+))?)?$/);
 
@@ -279,13 +280,13 @@ function verify_limit(remote, src, amount, callback) {
       assert(m.account_limit.equals(limit));
       assert(isNaN(quality_in) || m.account_quality_in === quality_in);
       assert(isNaN(quality_out) || m.account_quality_out === quality_out);
-      callback();
+      callback(null);
     }
   });
 };
 
 function credit_limits(remote, balances, callback) {
-  assert.strictEqual(arguments.length, 3);
+  assert(arguments.length === 3);
 
   var limits = [ ];
 
@@ -300,7 +301,7 @@ function credit_limits(remote, balances, callback) {
 
   function iterator(limit, callback) {
     credit_limit(remote, limit.source, limit.amount, callback);
-  };
+  }
 
   async.some(limits, iterator, callback);
 };
@@ -313,26 +314,26 @@ function ledger_close(remote, callback) {
 };
 
 function payment(remote, src, dst, amount, callback) {
-  assert.strictEqual(arguments.length, 5);
+  assert(arguments.length === 5);
 
   var tx = remote.transaction();
 
   tx.payment(src, dst, amount);
 
-  tx.submit(function(err, m) {
+  tx.once('proposed', function (m) {
     // console.log('proposed: %s', JSON.stringify(m));
-    if (err) {
-      callback(err);
-    } else if (m.engine_result === 'tesSUCCESS') {
-      callback();
-    } else {
-      callback(m);
-    }
+    callback(m.engine_result === 'tesSUCCESS' ? null : new Error());
   });
+
+  tx.once('error', function (m) {
+    // console.log('error: %s', JSON.stringify(m));
+    callback(m);
+  });
+  tx.submit();
 };
 
 function payments(remote, balances, callback) {
-  assert.strictEqual(arguments.length, 3);
+  assert(arguments.length === 3);
 
   var sends = [ ];
 
@@ -348,7 +349,7 @@ function payments(remote, balances, callback) {
 
   function iterator(send, callback) {
     payment(remote, send.source, send.destination, send.amount, callback);
-  };
+  }
 
   async.some(sends, iterator, callback);
 };
@@ -359,39 +360,63 @@ function transfer_rate(remote, src, billionths, callback) {
   var tx = remote.transaction();
   tx.account_set(src);
   tx.transfer_rate(billionths);
-  tx.submit(callback);
+
+  tx.once('proposed', function (m) {
+    // console.log('proposed: %s', JSON.stringify(m));
+    callback(m.engine_result === 'tesSUCCESS' ? null : new Error());
+  });
+
+  tx.once('error', function (m) {
+    // console.log('error: %s', JSON.stringify(m));
+    callback(m);
+  });
+
+  tx.submit();
 };
 
 function verify_balance(remote, src, amount_json, callback) {
-  assert.strictEqual(arguments.length, 4);
+  assert(arguments.length === 4);
 
   var amount_req  = Amount.from_json(amount_json);
 
   if (amount_req.is_native()) {
     remote.request_account_balance(src, 'CURRENT', function(err, amount_act) {
-      assert.ifError(err);
-      assert.strictEqual(amount_act.to_json(), amount_req.to_json());
-      callback();
+      if (err) {
+        return callback(err);
+      }
+      var valid_balance = amount_act.equals(amount_req, true);
+      if (!valid_balance) {
+        //console.log('verify_balance: failed: %s / %s',
+        //amount_act.to_text_full(),
+        //amount_req.to_text_full());
+      }
+      callback(valid_balance ? null : new Error());
     });
   } else {
     var issuer = amount_req.issuer().to_json();
     var currency = amount_req.currency().to_json();
     remote.request_ripple_balance(src, issuer, currency, 'CURRENT', function(err, m) {
-      if (err) return callback(err);
-
+      if (err) {
+        return callback(err);
+      }
       // console.log('BALANCE: %s', JSON.stringify(m));
       // console.log('account_balance: %s', m.account_balance.to_text_full());
       // console.log('account_limit: %s', m.account_limit.to_text_full());
       // console.log('issuer_balance: %s', m.issuer_balance.to_text_full());
       // console.log('issuer_limit: %s', m.issuer_limit.to_text_full());
       var account_balance = Amount.from_json(m.account_balance);
+
       var valid_balance = account_balance.equals(amount_req, true);
 
-      if (valid_balance) {
-        callback();
-      } else {
-        callback(new Error('Invalid balance: ' + amount_req.to_text() + '/' + Amount.from_json(account_balance).to_text()));
+      if (!valid_balance) {
+        //console.log('verify_balance: failed: %s vs %s / %s: %s',
+        //src,
+        //account_balance.to_text_full(),
+        //amount_req.to_text_full(),
+        //account_balance.not_equals_why(amount_req, true));
       }
+
+      callback(valid_balance ? null : new Error());
     })
   }
 };
@@ -407,9 +432,9 @@ function verify_balances(remote, balances, callback) {
 
   function iterator(test, callback) {
     verify_balance(remote, test.source, test.amount, callback)
-  };
+  }
 
-  async.eachSeries(tests, iterator, callback);
+  async.every(tests, iterator, callback);
 };
 
 // --> owner: account
@@ -417,7 +442,7 @@ function verify_balances(remote, balances, callback) {
 // --> taker_gets: json amount
 // --> taker_pays: json amount
 function verify_offer(remote, owner, seq, taker_pays, taker_gets, callback) {
-  assert.strictEqual(arguments.length, 6);
+  assert(arguments.length === 6);
 
   var request = remote.request_ledger_entry('offer')
   request.offer_id(owner, seq)
@@ -428,41 +453,43 @@ function verify_offer(remote, owner, seq, taker_pays, taker_gets, callback) {
 
     if (wrong) {
       //console.log('verify_offer: failed: %s', JSON.stringify(m));
-      callback(err);
-    } else {
-      callback();
     }
+
+    callback(wrong ? (err || new Error()) : null);
   });
 };
 
 function verify_offer_not_found(remote, owner, seq, callback) {
-  assert.strictEqual(arguments.length, 4);
+  assert(arguments.length === 4);
 
   var request = remote.request_ledger_entry('offer');
+
   request.offer_id(owner, seq);
-  request.callback(function(err, m) {
-    if (err && err.error === 'remoteError' && err.remote.error === 'entryNotFound') {
-      callback();
+
+  request.once('success', function (m) {
+    //console.log('verify_offer_not_found: found offer: %s', JSON.stringify(m));
+    callback(new Error('entryFound'));
+  });
+
+  request.once('error', function (m) {
+    // console.log('verify_offer_not_found: success: %s', JSON.stringify(m));
+    var is_not_found = m.error === 'remoteError' && m.remote.error === 'entryNotFound';
+    if (is_not_found) {
+      callback(null);
     } else {
-      callback(new Error('Expected remoteError entryNotFound: ' + m));
+      callback(new Error());
     }
   });
+
+  request.request();
 };
 
 function verify_owner_count(remote, account, count, callback) {
-  assert.strictEqual(arguments.length, 4);
-
+  assert(arguments.length === 4);
   var options = { account: account, ledger: 'CURRENT' };
-
   remote.request_owner_count(options, function(err, owner_count) {
     //console.log('owner_count: %s/%d', owner_count, value);
-    if (err) {
-      callback(err);
-    } else if (owner_count !== count) {
-      callback(new Error('Owner count mismatch: ' + owner_count + '/' + count));
-    } else {
-      callback();
-    }
+    callback(owner_count === count ? null : new Error());
   });
 };
 
@@ -473,15 +500,9 @@ function verify_owner_counts(remote, counts, callback) {
 
   function iterator(test, callback) {
     verify_owner_count(remote, test.account, test.count, callback)
-  };
+  }
 
-  async.eachSeries(tests, iterator, function(err) {
-    if (err) {
-      callback();
-    } else {
-      callback(new Error('Owner counts mismatch'));
-    }
-  });
+  async.every(tests, iterator, callback);
 };
 
 exports.account_dump            = account_dump;
