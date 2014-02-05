@@ -43,7 +43,7 @@ void parseAddresses (OutputSequence& out, InputIterator first, InputIterator las
 {
     while (first != last)
     {
-        auto str (*first);
+        auto const str (*first);
         ++first;
         {
             IPAddress const addr (IPAddress::from_string (str));
@@ -684,11 +684,11 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IPAddress c
 {
     Config::Role role (Config::FORBID);
 
-    bool bPasswordSupplied =
+    bool const bPasswordSupplied =
         params.isMember ("admin_user") ||
         params.isMember ("admin_password");
 
-    bool bPasswordRequired =
+    bool const bPasswordRequired =
         ! this->RPC_ADMIN_USER.empty () ||
         ! this->RPC_ADMIN_PASSWORD.empty ();
 
@@ -722,7 +722,7 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IPAddress c
     IPAddress const remote_addr (remoteIp.at_port (0));
     bool bAdminIP = false;
 
-    for (auto& allow_addr : RPC_ADMIN_ALLOW)
+    for (auto const& allow_addr : RPC_ADMIN_ALLOW)
     {
         if (allow_addr == remote_addr)
         {

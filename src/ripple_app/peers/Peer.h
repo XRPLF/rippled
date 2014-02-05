@@ -132,6 +132,8 @@ public:
 
     virtual bool hasLedger (uint256 const& hash, uint32 seq) const = 0;
 
+    virtual void getLedger (protocol::TMGetLedger &) = 0;
+
     virtual void ledgerRange (uint32& minSeq, uint32& maxSeq) const = 0;
 
     virtual bool hasTxSet (uint256 const& hash) const = 0;

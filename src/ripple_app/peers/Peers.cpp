@@ -299,8 +299,9 @@ public:
             tme.mutable_ipv4()->set_ipv4port (ep.address.port());
 
             tme.set_hops (ep.hops);
-            tme.set_version (1);
         }
+
+        tm.set_version (1);
 
         PackedMessage::pointer msg (
             boost::make_shared <PackedMessage> (
