@@ -393,7 +393,7 @@ void UnitTests::runTests (TestList const& tests, int64 randomSeed)
 void UnitTests::onFailure ()
 {
     // A failure occurred and the setting to assert on failures is turned on.
-    bassert (! m_assertOnFailure)
+    bassert (! m_assertOnFailure);
 }
 
 bool UnitTests::shouldAbortTests()

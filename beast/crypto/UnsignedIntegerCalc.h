@@ -334,7 +334,7 @@ public:
             }
             *lhs++ = UInt (part);
         }
-        bassert (carry == 0) // overflow
+        bassert (carry == 0); // overflow
         return *this;
     }
 

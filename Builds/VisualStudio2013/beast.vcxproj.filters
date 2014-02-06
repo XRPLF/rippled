@@ -1844,6 +1844,9 @@
     <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
       <Filter>beast\net\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\beast\utility\impl\Assert.cpp">
+      <Filter>beast\utility\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\TODO.txt">

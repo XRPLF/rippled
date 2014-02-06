@@ -47,7 +47,7 @@ XmlElement::XmlElement (const String& tag) noexcept
     : tagName (tag)
 {
     // the tag name mustn't be empty, or it'll look like a text element!
-    bassert (tag.containsNonWhitespaceChars())
+    bassert (tag.containsNonWhitespaceChars());
 
     // The tag can't contain spaces or other characters that would create invalid XML!
     bassert (! tag.containsAnyOf (" <>/&"));

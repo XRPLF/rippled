@@ -17,16 +17,21 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+namespace beast  {
 
-#include "impl/Error.cpp"
+class BassertUnitTests : public UnitTest
+{
+public:
+    void runTest ()
+    {
+        beginTestCase ("bassert");
+        bassert (false);
+    }
 
-// For Journal and Debug
-#include "../../modules/beast_core/beast_core.h"
+    BassertUnitTests () : UnitTest ("bassert", "beast", runManual) { }
+};
 
-#include "impl/Assert.cpp"
-#include "impl/Debug.cpp"
-#include "impl/Journal.cpp"
-#include "impl/LeakChecked.cpp"
-#include "impl/StaticObject.cpp"
-#include "impl/PropertyStream.cpp"
+//------------------------------------------------------------------------------
+
+static BassertUnitTests bassertUnitTests;
+}
