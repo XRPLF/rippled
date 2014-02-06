@@ -1371,9 +1371,6 @@
     <ClCompile Include="..\..\src\ripple_app\main\CollectorManager.cpp">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\NameResolver.cpp">
-      <Filter>[2] Old Ripple\ripple_app\peers</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\shamap\FetchPackTests.cpp">
       <Filter>[2] Old Ripple\ripple_app\shamap</Filter>
     </ClCompile>
@@ -2843,9 +2840,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\CollectorManager.h">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\peers\NameResolver.h">
-      <Filter>[2] Old Ripple\ripple_app\peers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\shamap\RadixMapTest.h">
       <Filter>[2] Old Ripple\ripple_app\shamap</Filter>
