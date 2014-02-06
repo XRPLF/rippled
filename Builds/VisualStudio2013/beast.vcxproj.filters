@@ -638,9 +638,6 @@
     <ClInclude Include="..\..\modules\beast_core\diagnostic\SemanticVersion.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\maths\uint24.h">
-      <Filter>beast_core\maths</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\MeasureFunctionCallTime.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>

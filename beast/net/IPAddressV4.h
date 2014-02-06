@@ -184,7 +184,6 @@ std::istream& operator>> (std::istream& is, AddressV4& addr);
 //------------------------------------------------------------------------------
 
 namespace std {
-template <typename T> struct hash;
 /** std::hash support. */
 template <>
 struct hash <beast::IP::AddressV4>

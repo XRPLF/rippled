@@ -146,7 +146,6 @@ class FileOutputStream;
 #include "diagnostic/FatalError.h"
 #include "text/LexicalCast.h"
 #include "maths/Math.h"
-#include "maths/uint24.h"
 #include "logging/Logger.h"
 #include "diagnostic/FPUFlags.h"
 #include "memory/SharedFunction.h"
