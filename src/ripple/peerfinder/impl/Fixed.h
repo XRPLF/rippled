@@ -17,38 +17,51 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_LOGICTYPE_H_INCLUDED
-#define RIPPLE_PEERFINDER_LOGICTYPE_H_INCLUDED
+#ifndef RIPPLE_PEERFINDER_FIXED_H_INCLUDED
+#define RIPPLE_PEERFINDER_FIXED_H_INCLUDED
+
+#include "Tuning.h"
 
 namespace ripple {
 namespace PeerFinder {
 
-template <class DiscreteClockSourceType>
-class LogicType
-    : private BaseFromMember <DiscreteClockSourceType>
-    , public Logic
+/** Metadata for a Fixed slot. */
+class Fixed
 {
 public:
-    typedef typename DiscreteClockSourceType::DiscreteClockType DiscreteClockType;
-
-    LogicType (
-        Callback& callback,
-        Store& store,
-        Checker& checker,
-        Journal journal)
-        : Logic (
-            BaseFromMember <DiscreteClockSourceType>::member(),
-            callback,
-            store,
-            checker,
-            journal)
+    explicit Fixed (clock_type& clock)
+        : m_when (clock.now ())
+        , m_failures (0)
     {
     }
 
-    DiscreteClockSourceType& get_clock()
+    Fixed (Fixed const&) = default;
+
+    /** Returns the time after which we shoud allow a connection attempt. */
+    clock_type::time_point const& when () const
     {
-        return BaseFromMember <DiscreteClockSourceType>::member();
+        return m_when;
     }
+
+    /** Updates metadata to reflect a failed connection. */
+    void failure (clock_type::time_point const& now)
+    {
+        m_failures = std::min (m_failures + 1,
+            Tuning::connectionBackoff.size() - 1);
+        m_when = now + std::chrono::minutes (
+            Tuning::connectionBackoff [m_failures]);
+    }
+
+    /** Updates metadata to reflect a successful connection. */
+    void success (clock_type::time_point const& now)
+    {
+        m_failures = 0;
+        m_when = now;
+    }
+
+private:
+    clock_type::time_point m_when;
+    std::size_t m_failures;
 };
 
 }

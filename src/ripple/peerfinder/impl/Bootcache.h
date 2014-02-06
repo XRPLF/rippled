@@ -24,9 +24,25 @@ namespace ripple {
 namespace PeerFinder {
 
 /** Stores IP addresses useful for gaining initial connections.
-    Ideal bootstrap addresses have the following attributes:
-        - High uptime
-        - Many successful connect attempts
+
+    This is one of the caches that is consulted when additional outgoing
+    connections are needed. Along with the address, each entry has this
+    additional metadata:
+
+    Uptime
+
+        The number of seconds that the address has maintained an active
+        peer connection, cumulative, without a connection attempt failure.
+
+    Valence
+
+        A signed integer which represents the number of successful
+        consecutive connection attempts when positive, and the number of
+        failed consecutive connection attempts when negative.
+
+    When choosing addresses from the boot cache for the purpose of
+    establishing outgoing connections, addresses are ranked in decreasing
+    order of high uptime, with valence as the tie breaker.
 */
 class Bootcache
 {
@@ -41,7 +57,8 @@ public:
         {
         }
 
-        Endpoint (IPAddress const& address, int uptime, int valence)
+        Endpoint (IPAddress const& address,
+            std::chrono::seconds uptime, int valence)
             : m_address (address)
             , m_uptime (uptime)
             , m_valence (valence)
@@ -53,7 +70,7 @@ public:
             return m_address;
         }
 
-        int uptime () const
+        std::chrono::seconds uptime () const
         {
             return m_uptime;
         }
@@ -65,7 +82,7 @@ public:
 
     private:
         IPAddress m_address;
-        int m_uptime;
+        std::chrono::seconds m_uptime;
         int m_valence;
     };
 
@@ -77,33 +94,33 @@ public:
     struct Entry
     {
         Entry ()
-            : cumulativeUptimeSeconds (0)
-            , sessionUptimeSeconds (0)
+            : cumulativeUptime (0)
+            , sessionUptime (0)
             , connectionValence (0)
             , active (false)
         {
         }
 
         /** Update the uptime measurement based on the time. */
-        void update (DiscreteTime const now)
+        void update (clock_type::time_point const& now)
         {
             // Must be active!
-            consistency_check (active);
+            assert (active);
             // Clock must be monotonically increasing
-            consistency_check (now >= whenActive);
+            assert (now >= whenActive);
             // Remove the uptime we added earlier in the
             // session and add back in the new uptime measurement.
-            DiscreteTime const uptimeSeconds (now - whenActive);
-            cumulativeUptimeSeconds -= sessionUptimeSeconds;
-            cumulativeUptimeSeconds += uptimeSeconds;
-            sessionUptimeSeconds = uptimeSeconds;
+            auto const uptime (now - whenActive);
+            cumulativeUptime -= sessionUptime;
+            cumulativeUptime += uptime;
+            sessionUptime = uptime;
         }
 
         /** Our cumulative uptime with this address with no failures. */
-        int cumulativeUptimeSeconds;
+        std::chrono::seconds cumulativeUptime;
 
         /** Amount of uptime from the current session (if any). */
-        int sessionUptimeSeconds;
+        std::chrono::seconds sessionUptime;
 
         /** Number of consecutive connection successes or failures.
             If the number is positive, indicates the number of
@@ -117,7 +134,7 @@ public:
         bool active;
 
         /** Time when the peer became active. */
-        DiscreteTime whenActive;
+        clock_type::time_point whenActive;
     };
 
     //--------------------------------------------------------------------------
@@ -139,14 +156,14 @@ public:
             Entry const& lhs (lhs_iter->second);
             Entry const& rhs (rhs_iter->second);
             // Higher cumulative uptime always wins
-            if (lhs.cumulativeUptimeSeconds > rhs.cumulativeUptimeSeconds)
+            if (lhs.cumulativeUptime > rhs.cumulativeUptime)
                 return true;
-            else if (lhs.cumulativeUptimeSeconds <= rhs.cumulativeUptimeSeconds
-                     && rhs.cumulativeUptimeSeconds != 0)
+            else if (lhs.cumulativeUptime <= rhs.cumulativeUptime
+                     && rhs.cumulativeUptime.count() != 0)
                 return false;
             // At this point both uptimes will be zero
-            consistency_check (lhs.cumulativeUptimeSeconds == 0 &&
-                               rhs.cumulativeUptimeSeconds == 0);
+            consistency_check (lhs.cumulativeUptime.count() == 0 &&
+                               rhs.cumulativeUptime.count() == 0);
             if (lhs.connectionValence > rhs.connectionValence)
                 return true;
             return false;
@@ -160,24 +177,24 @@ public:
     typedef std::vector <Entries::iterator> SortedEntries;
 
     Store& m_store;
-    DiscreteClock <DiscreteTime> m_clock;
+    clock_type& m_clock;
     Journal m_journal;
     Entries m_entries;
 
     // Time after which we can update the database again
-    DiscreteTime m_whenUpdate;
+    clock_type::time_point m_whenUpdate;
 
     // Set to true when a database update is needed
     bool m_needsUpdate;
 
     Bootcache (
         Store& store,
-        DiscreteClock <DiscreteTime> clock,
+        clock_type& clock,
         Journal journal)
         : m_store (store)
         , m_clock (clock)
         , m_journal (journal)
-        , m_whenUpdate (clock())
+        , m_whenUpdate (m_clock.now ())
     {
     }
 
@@ -206,7 +223,7 @@ public:
             {
                 ++count;
                 Entry& entry (result.first->second);
-                entry.cumulativeUptimeSeconds = iter->cumulativeUptimeSeconds;
+                entry.cumulativeUptime = iter->cumulativeUptime;
                 entry.connectionValence = iter->connectionValence;
             }
             else
@@ -254,7 +271,7 @@ public:
         for (Entries::const_iterator iter (m_entries.begin ());
             iter != m_entries.end (); ++iter)
             result.emplace_back (iter->first,
-                iter->second.cumulativeUptimeSeconds,
+                iter->second.cumulativeUptime,
                     iter->second.connectionValence);
         return result;
     }
@@ -295,8 +312,8 @@ public:
         // with resetting uptime to prevent the entire network
         // from settling on just a handful of addresses.
         //
-        entry.cumulativeUptimeSeconds = 0;
-        entry.sessionUptimeSeconds = 0 ;
+        entry.cumulativeUptime = std::chrono::seconds (0);
+        entry.sessionUptime = std::chrono::seconds (0);
         // Increment the number of consecutive failures.
         if (entry.connectionValence > 0)
             entry.connectionValence = 0;
@@ -320,7 +337,7 @@ public:
         // Can't already be active!
         consistency_check (! entry.active);
         // Reset session uptime
-        entry.sessionUptimeSeconds = 0;
+        entry.sessionUptime = std::chrono::seconds (0);
         // Count this as a connection success
         if (entry.connectionValence < 0)
             entry.connectionValence = 0;
@@ -329,7 +346,7 @@ public:
         if (action == doActivate)
         {
             entry.active = true;
-            entry.whenActive = m_clock();
+            entry.whenActive = m_clock.now();
         }
         else
         {
@@ -359,17 +376,20 @@ public:
         // Must exist!
         consistency_check (! result.second);
         Entry& entry (result.first->second);
-        entry.update (m_clock());
+        entry.update (m_clock.now());
         flagForUpdate();
     }
 
-    template <typename Seconds>
-    static std::string uptime_phrase (Seconds seconds)
+    template <class Rep, class Period>
+    static std::string uptime_phrase (
+        std::chrono::duration <Rep, Period> const& elapsed)
     {
-        if (seconds > 0)
-            return std::string (" with ") +
-                RelativeTime (seconds).to_string() +
-                " uptime";
+        if (elapsed.count() > 0)
+        {
+            std::stringstream ss;
+            ss << " with " << elapsed << " uptime";
+            return ss.str();
+        }
         return std::string ();
     }
     /** Called when an active outbound connection closes. */
@@ -383,9 +403,9 @@ public:
         consistency_check (entry.active);
         if (m_journal.trace) m_journal.trace << leftw (18) <<
             "Bootcache close " << address <<
-            uptime_phrase (entry.cumulativeUptimeSeconds);
-        entry.update (m_clock());
-        entry.sessionUptimeSeconds = 0;
+            uptime_phrase (entry.cumulativeUptime);
+        entry.update (m_clock.now());
+        entry.sessionUptime = std::chrono::seconds (0);
         entry.active = false;
         flagForUpdate();
     }
@@ -420,7 +440,7 @@ public:
         {
             ss << std::endl <<
                 (*iter)->first << ", " <<
-                RelativeTime ((*iter)->second.cumulativeUptimeSeconds) << ", "
+                (*iter)->second.cumulativeUptime << ", "
                 << valenceString ((*iter)->second.connectionValence);
             if ((*iter)->second.active)
                 ss <<
@@ -429,9 +449,6 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
-
 private:
     // Returns a vector of entry iterators sorted by descending score
     std::vector <Entries::const_iterator> csort () const
@@ -480,7 +497,7 @@ private:
                 continue;
             if (m_journal.trace) m_journal.trace << leftw (18) <<
                 "Bootcache pruned" << (*iter)->first <<
-                uptime_phrase (entry.cumulativeUptimeSeconds) <<
+                uptime_phrase (entry.cumulativeUptime) <<
                 " and valence " << entry.connectionValence;
             m_entries.erase (*iter);
             --count;
@@ -504,20 +521,20 @@ private:
         {
             Store::SavedBootstrapAddress entry;
             entry.address = iter->first;
-            entry.cumulativeUptimeSeconds = iter->second.cumulativeUptimeSeconds;
+            entry.cumulativeUptime = iter->second.cumulativeUptime;
             entry.connectionValence = iter->second.connectionValence;
             list.push_back (entry);
         }
         m_store.updateBootstrapCache (list);
         // Reset the flag and cooldown timer
         m_needsUpdate = false;
-        m_whenUpdate = m_clock() + Tuning::bootcacheCooldownSeconds;
+        m_whenUpdate = m_clock.now() + Tuning::bootcacheCooldownTime;
     }
 
     // Checks the clock and calls update if we are off the cooldown.
     void checkUpdate ()
     {
-        if (m_needsUpdate && m_whenUpdate < m_clock())
+        if (m_needsUpdate && m_whenUpdate < m_clock.now())
             update ();
     }
 

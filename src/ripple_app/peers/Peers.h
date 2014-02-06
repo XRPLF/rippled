@@ -20,6 +20,9 @@
 #ifndef RIPPLE_PEERS_H_INCLUDED
 #define RIPPLE_PEERS_H_INCLUDED
 
+// VFALCO TODO Remove this include dependency it shouldn't be needed
+#include "../../ripple/peerfinder/api/Slot.h"
+
 namespace ripple {
 
 namespace PeerFinder {
@@ -66,14 +69,10 @@ public:
 
     virtual ~Peers () = 0;
 
-    // NIKB TODO This is an implementation detail - a private
-    //           interface between Peers and Peer. It should
-    //           be split out and moved elsewhere.
-    //
-    // VFALCO NOTE PeerImp should have visbility to PeersImp
-    //
-    virtual void peerCreated (Peer* peer) = 0;
-    virtual void peerDestroyed (Peer *peer) = 0;
+    // VFALCO NOTE These should be a private API
+    /** @{ */
+    virtual void remove (PeerFinder::Slot::ptr const& slot) = 0;
+    /** @} */
 
     virtual void accept (bool proxyHandshake,
         boost::shared_ptr <NativeSocketType> const& socket) = 0;
@@ -92,9 +91,6 @@ public:
 
     // Peer 64-bit ID function
     virtual Peer::pointer findPeerByShortID (Peer::ShortId const& id) = 0;
-
-    virtual void addPeer (Peer::Ptr const& peer) = 0;
-    virtual void removePeer (Peer::Ptr const& peer) = 0;
 
     /** Visit every active peer and return a value
         The functor must:

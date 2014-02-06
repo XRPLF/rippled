@@ -31,21 +31,18 @@ namespace PeerFinder {
 struct Callback
 {
     /** Initiate outgoing Peer connections to the specified set of endpoints. */
-    virtual void connectPeers (IPAddresses const& addresses) = 0;
+    virtual void connect (IPAddresses const& addresses) = 0;
+
+    /** Activate the handshaked peer with the specified address. */
+    virtual void activate (Slot::ptr const& slot) = 0;
+
+    /** Sends a set of Endpoint records to the specified peer. */
+    virtual void send (Slot::ptr const& slot, Endpoints const& endpoints) = 0;
 
     /** Disconnect the handshaked peer with the specified address.
         @param graceful `true` to wait for send buffers to drain before closing.
     */
-    virtual void disconnectPeer (
-        IPAddress const& remote_address, bool graceful) = 0;
-
-    /** Activate the handshaked peer with the specified address. */
-    virtual void activatePeer (
-        IPAddress const& remote_address) = 0;
-
-    /** Sends a set of Endpoint records to the specified peer. */
-    virtual void sendEndpoints (IPAddress const& remote_address,
-        Endpoints const& endpoints) = 0;
+    virtual void disconnect (Slot::ptr const& slot, bool graceful) = 0;
 };
 
 }

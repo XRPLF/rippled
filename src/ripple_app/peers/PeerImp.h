@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-namespace ripple {
+#ifndef RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
+#define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
-SETUP_LOG (Peer)
+namespace ripple {
 
 class PeerImp;
 
@@ -60,6 +61,7 @@ struct get_usable_peers
 class PeerImp 
     : public Peer
     , public CountedObject <PeerImp>
+    , public boost::enable_shared_from_this <PeerImp>
 {
 private:
     /** Time alloted for a peer to send a HELLO message (DEPRECATED) */
@@ -72,6 +74,8 @@ private:
     static const size_t sslMinimumFinishedLength = 12;
 
 public:
+    typedef boost::shared_ptr <PeerImp> ptr;
+
     boost::shared_ptr <NativeSocketType> m_shared_socket;
 
     Journal m_journal;
@@ -84,7 +88,7 @@ public:
     // Updated at each stage of the connection process to reflect
     // the current conditions as closely as possible. This includes
     // the case where we learn the true IP via a PROXY handshake.
-    IPAddress m_remoteAddress;
+    IP::Endpoint m_remoteAddress;
 
     // These is up here to prevent warnings about order of initializations
     //
@@ -119,7 +123,7 @@ public:
     std::list<uint256>    m_recentTxSets;
     mutable boost::mutex  m_recentLock;
 
-    boost::asio::deadline_timer         mActivityTimer;
+    boost::asio::deadline_timer         m_timer;
 
     std::vector<uint8_t>                m_readBuffer;
     std::list<PackedMessage::pointer>   mSendQ;
@@ -129,6 +133,9 @@ public:
 
     Resource::Consumer m_usage;
 
+    // The slot assigned to us by PeerFinder
+    PeerFinder::Slot::ptr m_slot;
+
     //---------------------------------------------------------------------------    
     /** New incoming peer from the specified socket */
     PeerImp (
@@ -136,6 +143,7 @@ public:
         Peers& peers,
         Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder,
+        PeerFinder::Slot::ptr const& slot,
         boost::asio::ssl::context& ssl_context,
         MultiSocket::Flag flags)
             : m_shared_socket (socket)
@@ -153,9 +161,9 @@ public:
             , m_clusterNode (false)
             , m_minLedger (0)
             , m_maxLedger (0)
-            , mActivityTimer (socket->get_io_service())
+            , m_timer (socket->get_io_service())
+            , m_slot (slot)
     {
-        m_peers.peerCreated (this);
     }
         
     /** New outgoing peer
@@ -169,6 +177,7 @@ public:
         Peers& peers,
         Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder,
+        PeerFinder::Slot::ptr const& slot,
         boost::asio::ssl::context& ssl_context,
         MultiSocket::Flag flags)
             : m_journal (LogPartition::getJournal <Peer> ())
@@ -185,14 +194,14 @@ public:
             , m_clusterNode (false)
             , m_minLedger (0)
             , m_maxLedger (0)
-            , mActivityTimer (io_service)
+            , m_timer (io_service)
+            , m_slot (slot)
     {
-        m_peers.peerCreated (this);
     }
     
     virtual ~PeerImp ()
     {
-        m_peers.peerDestroyed (this);
+        m_peers.remove (m_slot);
     }
 
     NativeSocketType& getNativeSocket ()
@@ -234,37 +243,93 @@ public:
               object and begins the process of connection establishment instead
               of requiring the caller to construct a Peer and call connect.
     */
-    void connect (IPAddress const& address)
+    void connect (IP::Endpoint const& address)
     {
         m_remoteAddress = address;
-        m_peers.addPeer (shared_from_this ());
 
         m_journal.info << "Connecting to " << m_remoteAddress;
 
         boost::system::error_code err;
 
-        mActivityTimer.expires_from_now (nodeVerifySeconds, err);
+        m_timer.expires_from_now (nodeVerifySeconds, err);
 
-        mActivityTimer.async_wait (m_strand.wrap (boost::bind (
-            &PeerImp::handleVerifyTimer,
-            boost::static_pointer_cast <PeerImp> (shared_from_this ()),
-            boost::asio::placeholders::error)));
+        m_timer.async_wait (m_strand.wrap (boost::bind (&PeerImp::handleVerifyTimer,
+            shared_from_this (), boost::asio::placeholders::error)));
 
         if (err)
         {
             m_journal.error << "Failed to set verify timer.";
-            detach ("c2", false);
+            detach ("c2");
             return;
         }
 
-        m_peerFinder.onPeerConnect (m_remoteAddress);
-
         getNativeSocket ().async_connect (
             IPAddressConversion::to_asio_endpoint (address),
-            m_strand.wrap (boost::bind (
-                &PeerImp::onConnect,
-                boost::static_pointer_cast <PeerImp> (shared_from_this ()),
-                boost::asio::placeholders::error)));
+                m_strand.wrap (boost::bind (&PeerImp::onConnect,
+                    shared_from_this (), boost::asio::placeholders::error)));
+    }
+
+    /** Disconnect a peer
+
+        The peer transitions from its current state into `stateGracefulClose`
+
+        @param rsn a code indicating why the peer was disconnected
+        @param onIOStrand true if called on an I/O strand. It if is not, then
+               a callback will be queued up.
+    */
+    void detach (const char* rsn, bool graceful = true)
+    {
+        if (! m_strand.running_in_this_thread ())
+        {
+            m_strand.post (BIND_TYPE (&PeerImp::detach,
+                shared_from_this (), rsn, graceful));
+            return;
+        }
+
+        if (!m_detaching)
+        {
+            // NIKB TODO No - a race is NOT ok. This needs to be fixed
+            //           to have PeerFinder work reliably.
+            m_detaching  = true; // Race is ok.
+
+            m_peerFinder.on_closed (m_slot);
+            
+            if (m_state == stateActive)
+                m_peers.onPeerDisconnect (shared_from_this ());
+
+            m_state = stateGracefulClose;
+
+            if (m_clusterNode && m_journal.active(Journal::Severity::kWarning))
+                m_journal.warning << "Cluster peer " << m_nodeName <<
+                                     " detached: " << rsn;
+
+            mSendQ.clear ();
+
+            (void) m_timer.cancel ();
+
+            if (graceful)
+            {
+                m_socket->async_shutdown (
+                    m_strand.wrap ( boost::bind(
+                        &PeerImp::handleShutdown,
+                        boost::static_pointer_cast <PeerImp> (shared_from_this ()),
+                        boost::asio::placeholders::error)));
+            }
+            else
+            {
+                m_socket->cancel ();
+            }
+
+            // VFALCO TODO Stop doing this.
+            if (m_nodePublicKey.isValid ())
+                m_nodePublicKey.clear ();       // Be idempotent.
+        }
+    }
+
+    /** Close the connection. */
+    void close (bool graceful)
+    {
+        detach ("stop", graceful);
     }
 
     /** Outbound connection attempt has completed (not necessarily successfully)
@@ -280,24 +345,33 @@ public:
 
         @param ec indicates success or an error code.
     */
-    void onConnect (boost::system::error_code const& ec)
+    void onConnect (boost::system::error_code ec)
     {
+        if (m_detaching)
+            return;
+
+        NativeSocketType::endpoint_type local_endpoint;
+
+        if (! ec)
+            local_endpoint = m_socket->this_layer <
+                NativeSocketType> ().local_endpoint (ec);
+
         if (ec)
         {
             // VFALCO NOTE This log statement looks like ass
-            m_journal.info << "Connecting to " << m_remoteAddress <<
-                              " failed " << ec.message();
-
+            m_journal.info <<
+                "Connect to " << m_remoteAddress <<
+                " failed: " << ec.message();
             // This should end up calling onPeerClosed()
-            detach ("hc", true);
+            detach ("hc");
             return;
         }
 
         bassert (m_state == stateConnecting);
         m_state = stateConnected;
 
-        m_peerFinder.onPeerConnected (m_socket->local_endpoint(),
-            m_remoteAddress);
+        m_peerFinder.on_connected (m_slot,
+            IPAddressConversion::from_asio (local_endpoint));
 
         m_socket->set_verify_mode (boost::asio::ssl::verify_none);
         m_socket->async_handshake (
@@ -319,10 +393,6 @@ public:
         m_remoteAddress = m_socket->remote_endpoint();
 
         m_journal.info << "Accepted " << m_remoteAddress;
-
-        m_peers.addPeer (shared_from_this ());
-
-        m_peerFinder.onPeerAccept (m_socket->local_endpoint(), m_remoteAddress);
 
         m_socket->set_verify_mode (boost::asio::ssl::verify_none);
         m_socket->async_handshake (
@@ -353,56 +423,6 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    /** Disconnect a peer
-
-        The peer transitions from its current state into `stateGracefulClose`
-
-        @param rsn a code indicating why the peer was disconnected
-        @param onIOStrand true if called on an I/O strand. It if is not, then
-               a callback will be queued up.
-    */
-    void detach (const char* rsn, bool onIOStrand)
-    {
-        // VFALCO NOTE So essentially, detach() is really two different functions
-        //              depending on the value of onIOStrand.
-        //        TODO Clean this up.
-        //
-        if (!onIOStrand)
-        {
-            m_strand.post (BIND_TYPE (&Peer::detach, shared_from_this (), rsn, true));
-            return;
-        }
-
-        if (!m_detaching)
-        {
-            // NIKB TODO No - a race is NOT ok. This needs to be fixed
-            //           to have PeerFinder work reliably.
-            m_detaching  = true; // Race is ok.
-
-            m_peerFinder.onPeerClosed (m_remoteAddress);
-
-            if (m_state == stateActive)
-                m_peers.onPeerDisconnect (shared_from_this ());
-
-            m_state = stateGracefulClose;
-
-            if (m_clusterNode && m_journal.active(Journal::Severity::kWarning))
-                m_journal.warning << "Cluster peer " << m_nodeName <<
-                                     " detached: " << rsn;
-
-            mSendQ.clear ();
-
-            (void) mActivityTimer.cancel ();
-            m_socket->async_shutdown (
-                m_strand.wrap ( boost::bind(
-                    &PeerImp::handleShutdown,
-                    boost::static_pointer_cast <PeerImp> (shared_from_this ()),
-                    boost::asio::placeholders::error)));
-
-            if (m_nodePublicKey.isValid ())
-                m_nodePublicKey.clear ();       // Be idempotent.
-        }
-    }
 
     void sendPacket (const PackedMessage::pointer& packet, bool onStrand)
     {
@@ -442,7 +462,7 @@ public:
     void charge (Resource::Charge const& fee)
     {
          if ((m_usage.charge (fee) == Resource::drop) && m_usage.disconnect ())
-             detach ("resource", false);
+             detach ("resource");
     }
 
     Json::Value json ()
@@ -606,7 +626,7 @@ public:
         return (uMin >= m_minLedger) && (uMax <= m_maxLedger);
     }
 
-    IPAddress getRemoteAddress() const
+    IP::Endpoint getRemoteAddress() const
     {
         return m_remoteAddress;
     }
@@ -614,25 +634,25 @@ public:
 private:
     void handleShutdown (boost::system::error_code const& ec)
     {
-        if (ec == boost::asio::error::operation_aborted)
+        if (m_detaching)
             return;
 
-        if (m_detaching)
-        {
-            m_peers.removePeer (shared_from_this());
+        if (ec == boost::asio::error::operation_aborted)
             return;
-        }
 
         if (ec)
         {
             m_journal.info << "Shutdown: " << ec.message ();
-            detach ("hsd", true);
+            detach ("hsd");
             return;
         }
     }
 
     void handleWrite (boost::system::error_code const& ec, size_t bytes)
     {
+        if (m_detaching)
+            return;
+
         // Call on IO strand
 
         mSendingPacket.reset ();
@@ -646,7 +666,7 @@ private:
         if (ec)
         {
             m_journal.info << "Write: " << ec.message ();
-            detach ("hw", true);
+            detach ("hw");
             return;
         }
 
@@ -665,16 +685,16 @@ private:
     void handleReadHeader (boost::system::error_code const& ec,
                            std::size_t bytes)
     {
-        if (ec == boost::asio::error::operation_aborted)
+        if (m_detaching)
             return;
 
-        if (m_detaching)
+        if (ec == boost::asio::error::operation_aborted)
             return;
 
         if (ec)
         {
             m_journal.info << "ReadHeader: " << ec.message ();
-            detach ("hrh1", true);
+            detach ("hrh1");
             return;
         }
 
@@ -683,7 +703,7 @@ private:
         // WRITEME: Compare to maximum message length, abort if too large
         if ((msg_len > (32 * 1024 * 1024)) || (msg_len == 0))
         {
-            detach ("hrh2", true);
+            detach ("hrh2");
             return;
         }
 
@@ -693,10 +713,10 @@ private:
     void handleReadBody (boost::system::error_code const& ec,
                          std::size_t bytes)
     {
-        if (ec == boost::asio::error::operation_aborted)
+        if (m_detaching)
             return;
 
-        if (m_detaching)
+        if (ec == boost::asio::error::operation_aborted)
             return;
 
         if (ec)
@@ -705,7 +725,7 @@ private:
 
             {
             Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
-            detach ("hrb", true);
+            detach ("hrb");
             }
             
             return;
@@ -722,16 +742,16 @@ private:
     // is in progress.
     void handleStart (boost::system::error_code const& ec)
     {
-        if (ec == boost::asio::error::operation_aborted)
+        if (m_detaching)
             return;
 
-        if (m_detaching)
+        if (ec == boost::asio::error::operation_aborted)
             return;
 
         if (ec)
         {
             m_journal.info << "Handshake: " << ec.message ();
-            detach ("hs", true);
+            detach ("hs");
             return;
         }
 
@@ -744,14 +764,14 @@ private:
 
         if (m_usage.disconnect ())
         {
-            detach ("resource", true);
+            detach ("resource");
             return;
         }
 
         if(!sendHello ())
         {
             m_journal.error << "Unable to send HELLO to " << m_remoteAddress;
-            detach ("hello", true);
+            detach ("hello");
             return;
         }
 
@@ -760,6 +780,9 @@ private:
 
     void handleVerifyTimer (boost::system::error_code const& ec)
     {
+        if (m_detaching)
+            return;
+
         if (ec == boost::asio::error::operation_aborted)
         {
             // Timer canceled because deadline no longer needed.
@@ -772,7 +795,7 @@ private:
         {
             //  m_journal.info << "Verify: Peer failed to verify in time.";
 
-            detach ("hvt", true);
+            detach ("hvt");
         }
     }
 
@@ -795,14 +818,14 @@ private:
             if ((m_state == stateHandshaked) && (type == protocol::mtHELLO))
             {
                 m_journal.warning << "Protocol: HELLO expected!";
-                detach ("prb-hello-expected", true);
+                detach ("prb-hello-expected");
                 return;
             }
 
             if ((m_state == stateActive) && (type == protocol::mtHELLO))
             {
                 m_journal.warning << "Protocol: HELLO unexpected!";
-                detach ("prb-hello-unexpected", true);
+                detach ("prb-hello-unexpected");
                 return;
             }
 
@@ -1307,7 +1330,7 @@ private:
     {
         bool    bDetach = true;
 
-        (void) mActivityTimer.cancel ();
+        (void) m_timer.cancel ();
 
         uint32 const ourTime (getApp().getOPs ().getNetworkTimeNC ());
         uint32 const minTime (ourTime - clockToleranceDeltaSeconds);
@@ -1382,8 +1405,8 @@ private:
             bassert (m_state == stateConnected);
             m_state = stateHandshaked;
 
-            m_peerFinder.onPeerHandshake (m_remoteAddress,
-                RipplePublicKey(m_nodePublicKey), m_clusterNode);
+            m_peerFinder.on_handshake (m_slot, RipplePublicKey(m_nodePublicKey),
+                m_clusterNode);
 
             // XXX Set timer: connection is in grace period to be useful.
             // XXX Set timer: connection idle (idle may vary depending on connection type.)
@@ -1408,7 +1431,7 @@ private:
         if (bDetach)
         {
             m_nodePublicKey.clear ();
-            detach ("recvh", true);
+            detach ("recvh");
         }
         else
         {
@@ -1448,9 +1471,9 @@ private:
             {
                 protocol::TMLoadSource const& node = packet.loadsources (i);
                 Resource::Gossip::Item item;
-                item.address = IPAddress::from_string (node.name());
+                item.address = IP::Endpoint::from_string (node.name());
                 item.balance = node.cost();
-                if (item.address != IPAddress())
+                if (item.address != IP::Endpoint())
                     gossip.items.push_back(item);
             }
             m_resourceManager.importConsumers (m_nodeName, gossip);
@@ -1608,7 +1631,7 @@ private:
     // TODO: filter out all the LAN peers
     void recvPeers (protocol::TMPeers& packet)
     {
-        std::vector <IPAddress> list;
+        std::vector <IP::Endpoint> list;
         list.reserve (packet.nodes().size());
         for (int i = 0; i < packet.nodes ().size (); ++i)
         {
@@ -1618,13 +1641,13 @@ private:
 
             {
                 IP::AddressV4 v4 (ntohl (addr.s_addr));
-                IPAddress address (v4, packet.nodes (i).ipv4port ());
+                IP::Endpoint address (v4, packet.nodes (i).ipv4port ());
                 list.push_back (address);
             }
         }
 
         if (! list.empty())
-            m_peerFinder.onLegacyEndpoints (list);
+            m_peerFinder.on_legacy_endpoints (list);
     }
 
     void recvEndpoints (protocol::TMEndpoints& packet)
@@ -1647,13 +1670,13 @@ private:
                 in_addr addr;
                 addr.s_addr = tm.ipv4().ipv4();
                 IP::AddressV4 v4 (ntohl (addr.s_addr));
-                endpoint.address = IPAddress (v4, tm.ipv4().ipv4port ());
+                endpoint.address = IP::Endpoint (v4, tm.ipv4().ipv4port ());
             }
             else
             {
                 // This Endpoint describes the peer we are connected to.
                 // We will take the remote address seen on the socket and
-                // store that in the IPAddress. If this is the first time,
+                // store that in the IP::Endpoint. If this is the first time,
                 // then we'll verify that their listener can receive incoming
                 // by performing a connectivity test.
                 //
@@ -1665,7 +1688,7 @@ private:
         }
 
         if (! endpoints.empty())
-            m_peerFinder.onPeerEndpoints (m_remoteAddress, endpoints);
+            m_peerFinder.on_endpoints (m_slot, endpoints);
     }
 
     void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& ptr)
@@ -2714,58 +2737,6 @@ void Peer::charge (boost::weak_ptr <Peer>& peer, Resource::Charge const& fee)
         p->charge (fee);
 }
 
-//------------------------------------------------------------------------------
-
-void Peer::accept (
-    boost::shared_ptr <NativeSocketType> const& socket,
-    Peers& peers,
-    Resource::Manager& resourceManager,
-    PeerFinder::Manager& peerFinder,
-    boost::asio::ssl::context& ssl_context,
-    bool proxyHandshake)
-{
-    MultiSocket::Flag flags (
-        MultiSocket::Flag::server_role | MultiSocket::Flag::ssl_required);
-
-    if (proxyHandshake)
-        flags = flags.with (MultiSocket::Flag::proxy);
-
-    boost::shared_ptr<PeerImp> peer (boost::make_shared <PeerImp> (
-        socket,
-        peers,
-        resourceManager,
-        peerFinder,
-        ssl_context,
-        flags));
-
-    peer->accept ();
-}
-
-//------------------------------------------------------------------------------
-
-void Peer::connect (
-    IP::Endpoint const& address,
-    boost::asio::io_service& io_service,
-    Peers& peers,
-    Resource::Manager& resourceManager,
-    PeerFinder::Manager& peerFinder,
-    boost::asio::ssl::context& ssl_context)
-{
-    MultiSocket::Flag flags (
-        MultiSocket::Flag::client_role | MultiSocket::Flag::ssl);
-
-    boost::shared_ptr<PeerImp> peer (boost::make_shared <PeerImp> (
-        io_service,
-        peers,
-        resourceManager,
-        peerFinder,
-        ssl_context,
-        flags));
-
-    peer->connect (address);
-}
-
-//------------------------------------------------------------------------------
 const boost::posix_time::seconds PeerImp::nodeVerifySeconds (15);
 
 //------------------------------------------------------------------------------
@@ -2825,3 +2796,5 @@ std::ostream& operator<< (std::ostream& os, Peer const* peer)
 }
 
 }
+
+#endif

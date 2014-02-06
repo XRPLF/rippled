@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 
+#include <unordered_map>
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -44,20 +46,21 @@ public:
 
     struct Entry : public EntryList::Node
     {
-        Entry (Endpoint const& endpoint_, DiscreteTime whenExpires_)
+        Entry (Endpoint const& endpoint_,
+            clock_type::time_point const& whenExpires_)
             : endpoint (endpoint_)
             , whenExpires (whenExpires_)
         {
         }
 
         Endpoint endpoint;
-        DiscreteTime whenExpires;
+        clock_type::time_point whenExpires;
     };
 
     typedef std::set <Endpoint, LessEndpoints> SortedTable;
-    typedef boost::unordered_map <IPAddress, Entry> AddressTable;
+    typedef std::unordered_map <IPAddress, Entry> AddressTable;
 
-    DiscreteClock <DiscreteTime> m_clock;
+    clock_type& m_clock;
     Journal m_journal;
     AddressTable m_byAddress;
     SortedTable m_bySorted;
@@ -68,8 +71,8 @@ public:
 
 public:
     /** Create the cache. */
-    explicit Livecache (
-        DiscreteClock <DiscreteTime> clock,
+    Livecache (
+        clock_type& clock,
         Journal journal)
         : m_clock (clock)
         , m_journal (journal)
@@ -91,7 +94,7 @@ public:
     /** Erase entries whose time has expired. */
     void sweep ()
     {
-        DiscreteTime const now (m_clock());
+        auto const now (m_clock.now ());
         AddressTable::size_type count (0);
         for (EntryList::iterator iter (m_list.begin());
             iter != m_list.end();)
@@ -124,13 +127,12 @@ public:
     {
         // Caller is responsible for validation
         check_precondition (endpoint.hops <= Tuning::maxHops);
-        DiscreteTime const now (m_clock());
-        DiscreteTime const whenExpires (
-            now + Tuning::liveCacheSecondsToLive);
+        auto now (m_clock.now ());
+        auto const whenExpires (now + Tuning::liveCacheSecondsToLive);
         std::pair <AddressTable::iterator, bool> result (
-            m_byAddress.emplace (boost::unordered::piecewise_construct,
-                boost::make_tuple (endpoint.address),
-                    boost::make_tuple (endpoint, whenExpires)));
+            m_byAddress.emplace (std::piecewise_construct,
+                std::make_tuple (endpoint.address),
+                    std::make_tuple (endpoint, whenExpires)));
         Entry& entry (result.first->second);
         // Drop duplicates at higher hops
         if (! result.second && (endpoint.hops > entry.endpoint.hops))

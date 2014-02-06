@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_TUNING_H_INCLUDED
 #define RIPPLE_PEERFINDER_TUNING_H_INCLUDED
 
+#include <array>
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -39,7 +41,7 @@ enum
     secondsPerConnect = 10
 
     /** Maximum number of simultaneous connection attempts. */
-    ,maxConnectAttempts = 5
+    ,maxConnectAttempts = 20
 
     /** The percentage of total peer slots that are outbound.
         The number of outbound peers will be the larger of the
@@ -59,43 +61,63 @@ enum
 
     //---------------------------------------------------------
     //
-    // Bootcache
+    // LegacyEndpoints
     //
     //---------------------------------------------------------
 
+    // How many legacy endpoints to keep in our cache
+    ,legacyEndpointCacheSize            = 1000
+
+    // How many cache mutations between each database update
+    ,legacyEndpointMutationsPerUpdate   = 50
+};
+
+//------------------------------------------------------------------------------
+//
+// Fixed
+//
+//------------------------------------------------------------------------------
+
+static std::array <int, 10> const connectionBackoff
+    {{ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55 }};
+
+//------------------------------------------------------------------------------
+//
+// Bootcache
+//
+//------------------------------------------------------------------------------
+
+enum
+{
     // Threshold of cache entries above which we trim.
-    ,bootcacheSize = 1000
+    bootcacheSize = 1000
 
     // The percentage of addresses we prune when we trim the cache.
     ,bootcachePrunePercent = 10
+};
 
-    // The cool down wait between database updates
-    // Ideally this should be larger than the time it takes a full
-    // peer to send us a set of addresses and then disconnect.
-    //
-    ,bootcacheCooldownSeconds = 60
+// The cool down wait between database updates
+// Ideally this should be larger than the time it takes a full
+// peer to send us a set of addresses and then disconnect.
+//
+static std::chrono::seconds const bootcacheCooldownTime (60);
 
-    //---------------------------------------------------------
-    //
-    // Livecache
-    //
-    //---------------------------------------------------------
+//------------------------------------------------------------------------------
+//
+// Livecache
+//
+//------------------------------------------------------------------------------
 
+enum
+{
     // Drop incoming messages with hops greater than this number
-    ,maxHops = 10
-
-    // How often we send or accept mtENDPOINTS messages per peer
-    ,secondsPerMessage = 5
+    maxHops = 10
 
     // How many Endpoint to send in each mtENDPOINTS
     ,numberOfEndpoints = 10
 
     // The most Endpoint we will accept in mtENDPOINTS
     ,numberOfEndpointsMax = 20
-
-    // How long an Endpoint will stay in the cache
-    // This should be a small multiple of the broadcast frequency
-    ,liveCacheSecondsToLive     = 60
 
     // The maximum number of hops that we allow. Peers farther
     // away than this are dropped.
@@ -107,22 +129,16 @@ enum
 
     /** Number of addresses we provide when redirecting. */
     ,redirectEndpointCount = 10
-
-    //---------------------------------------------------------
-    //
-    // LegacyEndpoints
-    //
-    //---------------------------------------------------------
-
-    // How many legacy endpoints to keep in our cache
-    ,legacyEndpointCacheSize            = 1000
-
-    // How many cache mutations between each database update
-    ,legacyEndpointMutationsPerUpdate   = 50
 };
-/** @} */
 
+// How often we send or accept mtENDPOINTS messages per peer
+static std::chrono::seconds const secondsPerMessage (5);
+
+// How long an Endpoint will stay in the cache
+// This should be a small multiple of the broadcast frequency
+static std::chrono::seconds const liveCacheSecondsToLive (60);
 }
+/** @} */
 
 }
 }

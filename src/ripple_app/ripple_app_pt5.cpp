@@ -46,6 +46,5 @@ namespace ripple {
 #include "peers/PackedMessage.cpp"
 }
 
-#include "peers/Peer.cpp"
 #include "peers/PeerDoor.cpp"
 #include "peers/Peers.cpp"

@@ -56,19 +56,19 @@ is_remote_node_pred <Node> is_remote_node (Node const* node)
 //------------------------------------------------------------------------------
 
 /** UnaryPredicate, `true` if the remote address matches. */
-class is_remote_address
+class is_remote_endpoint
 {
 public:
-    explicit is_remote_address (IPAddress const& address)
-        : m_address (address)
+    explicit is_remote_endpoint (IPAddress const& address)
+        : m_endpoint (address)
         { }
     template <typename Link>
     bool operator() (Link const& link) const
     {
-        return link.remote_address() == m_address;
+        return link.remote_endpoint() == m_endpoint;
     }
 private:
-    IPAddress const m_address;
+    IPAddress const m_endpoint;
 };
 
 }

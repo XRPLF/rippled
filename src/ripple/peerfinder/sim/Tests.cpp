@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#if 0
+
 namespace ripple {
 namespace PeerFinder {
 namespace Sim {
@@ -37,7 +39,7 @@ public:
     typedef std::list <Node> Peers;
 
     typedef boost::unordered_map <
-        IPAddress, boost::reference_wrapper <Node>> Table;
+        IP::Endpoint, boost::reference_wrapper <Node>> Table;
 
     explicit Network (Params const& params,
         Journal journal = Journal());
@@ -48,10 +50,10 @@ public:
     void prepare ();
     Journal journal () const;
     int next_node_id ();
-    DiscreteTime now ();
+    clock_type::time_point now ();
     Peers& nodes();
     Peers const& nodes() const;
-    Node* find (IPAddress const& address);
+    Node* find (IP::Endpoint const& address);
     void step ();
 
     template <typename Function>
@@ -62,7 +64,7 @@ private:
     Params m_params;
     Journal m_journal;
     int m_next_node_id;
-    ManualClock m_clock_source;
+    manual_clock <std::chrono::seconds> m_clock;
     Peers m_nodes;
     Table m_table;
     FunctionQueue m_queue;
@@ -82,14 +84,16 @@ public:
 
     Link (
         Node& local_node,
-        IPAddress const& local_address,
+        SlotImp::ptr const& slot,
+        IP::Endpoint const& local_endpoint,
         Node& remote_node,
-        IPAddress const& remote_address,
+        IP::Endpoint const& remote_endpoint,
         bool inbound)
         : m_local_node (&local_node)
-        , m_local_address (local_address)
+        , m_slot (slot)
+        , m_local_endpoint (local_endpoint)
         , m_remote_node (&remote_node)
-        , m_remote_address (remote_address)
+        , m_remote_endpoint (remote_endpoint)
         , m_inbound (inbound)
         , m_closed (false)
     {
@@ -101,14 +105,15 @@ public:
     bool inbound ()  const { return m_inbound; }
     bool outbound () const { return ! m_inbound; }
 
-    IPAddress const& remote_address() const { return m_remote_address; }
-    IPAddress const& local_address()  const { return m_local_address; }
+    IP::Endpoint const& remote_endpoint() const { return m_remote_endpoint; }
+    IP::Endpoint const& local_endpoint()  const { return m_local_endpoint; }
 
+    SlotImp::ptr const& slot   () const { return m_slot; }
     Node&       remote_node ()       { return *m_remote_node; }
     Node const& remote_node () const { return *m_remote_node; }
     Node&       local_node  ()       { return *m_local_node; }
     Node const& local_node  () const { return *m_local_node; }
-
+        
     void post (Message const& m)
     {
         m_pending.push_back (m);
@@ -133,9 +138,10 @@ public:
 
 private:
     Node* m_local_node;
-    IPAddress m_local_address;
+    SlotImp::ptr m_slot;
+    IP::Endpoint m_local_endpoint;
     Node* m_remote_node;
-    IPAddress m_remote_address;
+    IP::Endpoint m_remote_endpoint;
     bool m_inbound;
     bool m_closed;
     Messages m_current;
@@ -161,8 +167,8 @@ public:
         }
         
         bool canAccept;
-        IPAddress listening_address;
-        IPAddress well_known_address;
+        IP::Endpoint listening_endpoint;
+        IP::Endpoint well_known_endpoint;
         PeerFinder::Config config;
     };
 
@@ -172,17 +178,17 @@ public:
     Node (
         Network& network,
         Config const& config,
-        DiscreteClock <DiscreteTime> clock,
+        clock_type& clock,
         Journal journal)
         : m_network (network)
         , m_id (network.next_node_id())
         , m_config (config)
-        , m_node_id (PeerID::createFromInteger (m_id))
+        , m_node_id (RipplePublicKey::createFromInteger (m_id))
         , m_sink (prefix(), journal.sink())
         , m_journal (Journal (m_sink, journal.severity()), Reporting::node)
-        , m_next_port (m_config.listening_address.port() + 1)
+        , m_next_port (m_config.listening_endpoint.port() + 1)
         , m_logic (boost::in_place (
-            clock, boost::ref (*this), boost::ref (*this), boost::ref (*this), m_journal))
+            boost::ref (clock), boost::ref (*this), boost::ref (*this), boost::ref (*this), m_journal))
         , m_whenSweep (m_network.now() + Tuning::liveCacheSecondsToLive)
     {
         logic().setConfig (m_config.config);
@@ -197,7 +203,7 @@ public:
 
     void dump (Journal::ScopedStream& ss) const
     {
-        ss << listening_address();
+        ss << listening_endpoint();
         logic().dump (ss);
     }
 
@@ -216,7 +222,7 @@ public:
         return m_id;
     }
 
-    PeerID const& node_id () const
+    RipplePublicKey const& node_id () const
     {
         return m_node_id;
     }
@@ -231,9 +237,9 @@ public:
         return m_logic.get();
     }
 
-    IPAddress const& listening_address () const
+    IP::Endpoint const& listening_endpoint () const
     {
-        return m_config.listening_address;
+        return m_config.listening_endpoint;
     }
 
     bool canAccept () const
@@ -243,7 +249,7 @@ public:
 
     void receive (Link const& c, Message const& m)
     {
-        logic().onPeerEndpoints (c.remote_address(), m.payload());
+        logic().on_endpoints (c.slot (), m.payload());
     }
 
     void pre_step ()
@@ -268,8 +274,8 @@ public:
             if (iter->closed ())
             {
                 // Post notification?
-                iter->local_node().logic().onPeerClosed (
-                    iter->remote_address());
+                iter->local_node().logic().on_closed (
+                    iter->remote_endpoint());
                 iter = links().erase (iter);
             }
             else
@@ -297,11 +303,11 @@ public:
     //
     //----------------------------------------------------------------------
 
-    void sendEndpoints (IPAddress const& remote_address,
+    void sendEndpoints (IP::Endpoint const& remote_endpoint,
         Endpoints const& endpoints)
     {
         m_network.post (std::bind (&Node::doSendEndpoints, this,
-            remote_address, endpoints));
+            remote_endpoint, endpoints));
     }
 
     void connectPeers (IPAddresses const& addresses)
@@ -310,23 +316,23 @@ public:
             addresses));
     }
 
-    void disconnectPeer (IPAddress const& remote_address, bool graceful)
+    void disconnectPeer (IP::Endpoint const& remote_endpoint, bool graceful)
     {
         m_network.post (std::bind (&Node::doDisconnectPeer, this,
-            remote_address, graceful));
+            remote_endpoint, graceful));
     }
 
-    void activatePeer (IPAddress const& remote_address)
+    void activatePeer (IP::Endpoint const& remote_endpoint)
     {
         /* no underlying peer to activate */
     }
 
-    void doSendEndpoints (IPAddress const& remote_address,
+    void doSendEndpoints (IP::Endpoint const& remote_endpoint,
         Endpoints const& endpoints)
     {
         Links::iterator const iter1 (std::find_if (
             links().begin (), links().end(),
-                is_remote_address (remote_address)));
+                is_remote_endpoint (remote_endpoint)));
         if (iter1 != links().end())
         {
             // Drop the message if they closed their end
@@ -336,7 +342,7 @@ public:
             // Find their link to us
             Links::iterator const iter2 (std::find_if (
                 remote_node.links().begin(), remote_node.links().end(),
-                    is_remote_address (iter1->local_address ())));
+                    is_remote_endpoint (iter1->local_endpoint ())));
             consistency_check (iter2 != remote_node.links().end());
 
             //
@@ -349,19 +355,19 @@ public:
         }
     }
 
-    void doCheckAccept (Node& remote_node, IPAddress const& remote_address)
+    void doCheckAccept (Node& remote_node, IP::Endpoint const& remote_endpoint)
     {
         // Find our link to the remote node
         Links::iterator iter (std::find_if (m_links.begin (),
-            m_links.end(), is_remote_address (remote_address)));
+            m_links.end(), is_remote_endpoint (remote_endpoint)));
         // See if the logic closed the connection
         if (iter == m_links.end())
             return;
         // Post notifications
-        m_network.post (std::bind (&Logic::onPeerHandshake,
-            &remote_node.logic(), iter->local_address(), node_id(), false));
-        m_network.post (std::bind (&Logic::onPeerHandshake,
-            &logic(), remote_address, remote_node.node_id(), false));
+        m_network.post (std::bind (&Logic::on_handshake,
+            &remote_node.logic(), iter->local_endpoint(), node_id(), false));
+        m_network.post (std::bind (&Logic::on_handshake,
+            &logic(), remote_endpoint, remote_node.node_id(), false));
     }
 
     void doConnectPeers (IPAddresses const& addresses)
@@ -369,43 +375,49 @@ public:
         for (IPAddresses::const_iterator iter (addresses.begin());
             iter != addresses.end(); ++iter)
         {
-            IPAddress const& remote_address (*iter);
-            Node* const remote_node (m_network.find (remote_address));
-            // Post notification
-            m_network.post (std::bind (&Logic::onPeerConnect,
-                &logic(), remote_address));
+            IP::Endpoint const& remote_endpoint (*iter);
+            Node* const remote_node (m_network.find (remote_endpoint));
+            // Acquire slot
+            Slot::ptr const local_slot (
+                m_logic->new_outbound_slot (remote_endpoint));
+            if (! local_slot)
+                continue;
             // See if the address is connectible
             if (remote_node == nullptr || ! remote_node->canAccept())
             {
                 // Firewalled or no one listening
                 // Post notification
-                m_network.post (std::bind (&Logic::onPeerClosed,
-                    &logic(), remote_address));
+                m_network.post (std::bind (&Logic::on_closed,
+                    &logic(), local_slot));
                 continue;
             }
+            IP::Endpoint const local_endpoint (
+                listening_endpoint().at_port (m_next_port++));
+            // Acquire slot
+            Slot::ptr const remote_slot (
+                remote_node->logic().new_inbound_slot (
+                    remote_endpoint, local_endpoint));
+            if (! remote_slot)
+                continue;
             // Connection established, create links
-            IPAddress const local_address (
-                listening_address().at_port (m_next_port++));
-            m_links.emplace_back (*this, local_address,
-                *remote_node, remote_address, false);
-            remote_node->m_links.emplace_back (*remote_node,
-                remote_address, *this, local_address, true);
+            m_links.emplace_back (*this, local_slot, local_endpoint,
+                *remote_node, remote_endpoint, false);
+            remote_node->m_links.emplace_back (*remote_node, remote_slot,
+                remote_endpoint, *this, local_endpoint, true);
             // Post notifications
-            m_network.post (std::bind (&Logic::onPeerConnected,
-                &logic(), local_address, remote_address));
-            m_network.post (std::bind (&Logic::onPeerAccept,
-                &remote_node->logic(), remote_address, local_address));
+            m_network.post (std::bind (&Logic::on_connected,
+                &logic(), local_endpoint, remote_endpoint));
             m_network.post (std::bind (&Node::doCheckAccept,
-                remote_node, boost::ref (*this), local_address));
+                remote_node, boost::ref (*this), local_endpoint));
         }
     }
 
-    void doClosed (IPAddress const& remote_address, bool graceful)
+    void doClosed (IP::Endpoint const& remote_endpoint, bool graceful)
     {
         // Find our link to them
         Links::iterator const iter (std::find_if (
             m_links.begin(), m_links.end(),
-                is_remote_address (remote_address)));
+                is_remote_endpoint (remote_endpoint)));
         // Must be connected!
         check_invariant (iter != m_links.end());
         // Must be closed!
@@ -413,46 +425,46 @@ public:
         // Remove our link to them
         m_links.erase (iter);
         // Notify
-        m_network.post (std::bind (&Logic::onPeerClosed,
-            &logic(), remote_address));
+        m_network.post (std::bind (&Logic::on_closed,
+            &logic(), remote_endpoint));
     }
 
-    void doDisconnectPeer (IPAddress const& remote_address, bool graceful)
+    void doDisconnectPeer (IP::Endpoint const& remote_endpoint, bool graceful)
     {
         // Find our link to them
         Links::iterator const iter1 (std::find_if (
             m_links.begin(), m_links.end(),
-                is_remote_address (remote_address)));
+                is_remote_endpoint (remote_endpoint)));
         if (iter1 == m_links.end())
             return;
         Node& remote_node (iter1->remote_node());
-        IPAddress const local_address (iter1->local_address());
+        IP::Endpoint const local_endpoint (iter1->local_endpoint());
         // Find their link to us
         Links::iterator const iter2 (std::find_if (
             remote_node.links().begin(), remote_node.links().end(),
-                is_remote_address (local_address)));
+                is_remote_endpoint (local_endpoint)));
         if (iter2 != remote_node.links().end())
         {
             // Notify the remote that we closed
             check_invariant (! iter2->closed());
             iter2->close();
             m_network.post (std::bind (&Node::doClosed,
-                &remote_node, local_address, graceful));
+                &remote_node, local_endpoint, graceful));
         }
         if (! iter1->closed ())
         {
             // Remove our link to them
             m_links.erase (iter1);
             // Notify
-            m_network.post (std::bind (&Logic::onPeerClosed,
-                &logic(), remote_address));
+            m_network.post (std::bind (&Logic::on_closed,
+                &logic(), remote_endpoint));
         }
 
         /*
         if (! graceful || ! iter2->pending ())
         {
             remote_node.links().erase (iter2);
-            remote_node.logic().onPeerClosed (local_address);
+            remote_node.logic().on_closed (local_endpoint);
         }
         */
     }
@@ -467,8 +479,8 @@ public:
     {
         std::vector <SavedBootstrapAddress> result;
         SavedBootstrapAddress item;
-        item.address = m_config.well_known_address;
-        item.cumulativeUptimeSeconds = 0;
+        item.address = m_config.well_known_endpoint;
+        item.cumulativeUptime = std::chrono::seconds (0);
         item.connectionValence = 0;
         result.push_back (item);
         return result;
@@ -488,7 +500,7 @@ public:
     {
     }
 
-    void async_test (IPAddress const& address,
+    void async_test (IP::Endpoint const& address,
         AbstractHandler <void (Result)> handler)
     {
         Node* const node (m_network.find (address));
@@ -516,12 +528,12 @@ private:
     Network& m_network;
     int const m_id;
     Config const m_config;
-    PeerID m_node_id;
+    RipplePublicKey m_node_id;
     WrappedSink m_sink;
     Journal m_journal;
     IP::Port m_next_port;
     boost::optional <Logic> m_logic;
-    DiscreteTime m_whenSweep;
+    clock_type::time_point m_whenSweep;
     SavedBootstrapAddresses m_bootstrap_cache;
 };
 
@@ -537,13 +549,13 @@ void Link::step ()
 
 //------------------------------------------------------------------------------
 
-static IPAddress next_address (IPAddress address)
+static IP::Endpoint next_endpoint (IP::Endpoint address)
 {
     if (address.is_v4())
     {
         do
         {
-            address = IPAddress (IP::AddressV4 (
+            address = IP::Endpoint (IP::AddressV4 (
                 address.to_v4().value + 1)).at_port (address.port());
         }
         while (! is_public (address));
@@ -554,7 +566,7 @@ static IPAddress next_address (IPAddress address)
     bassert (address.is_v6());
     // unimplemented
     bassertfalse;
-    return IPAddress();
+    return IP::Endpoint();
 }
 
 Network::Network (
@@ -569,9 +581,9 @@ Network::Network (
 
 void Network::prepare ()
 {
-    IPAddress const well_known_address (
-        IPAddress::from_string ("1.0.0.1").at_port (1));
-    IPAddress address (well_known_address);
+    IP::Endpoint const well_known_endpoint (
+        IP::Endpoint::from_string ("1.0.0.1").at_port (1));
+    IP::Endpoint address (well_known_endpoint);
 
     for (int i = 0; i < params().nodes; ++i )
     {
@@ -579,8 +591,8 @@ void Network::prepare ()
         {
             Node::Config config;
             config.canAccept = true;
-            config.listening_address = address;
-            config.well_known_address = well_known_address;
+            config.listening_endpoint = address;
+            config.well_known_endpoint = well_known_endpoint;
             config.config.maxPeers = params().maxPeers;
             config.config.outPeers = params().outPeers;
             config.config.wantIncoming = true;
@@ -589,10 +601,10 @@ void Network::prepare ()
             m_nodes.emplace_back (
                 *this,
                 config,
-                m_clock_source,
+                m_clock,
                 m_journal);
             m_table.emplace (address, boost::ref (m_nodes.back()));
-            address = next_address (address);
+            address = next_endpoint (address);
         }
 
         if (i != 0)
@@ -600,8 +612,8 @@ void Network::prepare ()
             Node::Config config;
             config.canAccept = Random::getSystemRandom().nextInt (100) >=
                 (m_params.firewalled * 100);
-            config.listening_address = address;
-            config.well_known_address = well_known_address;
+            config.listening_endpoint = address;
+            config.well_known_endpoint = well_known_endpoint;
             config.config.maxPeers = params().maxPeers;
             config.config.outPeers = params().outPeers;
             config.config.wantIncoming = true;
@@ -610,10 +622,10 @@ void Network::prepare ()
             m_nodes.emplace_back (
                 *this,
                 config,
-                m_clock_source,
+                m_clock,
                 m_journal);
             m_table.emplace (address, boost::ref (m_nodes.back()));
-            address = next_address (address);
+            address = next_endpoint (address);
         }
     }
 }
@@ -632,9 +644,9 @@ int Network::next_node_id ()
     return m_next_node_id++;
 }
 
-DiscreteTime Network::now ()
+clock_type::time_point Network::now ()
 {
-    return m_clock_source();
+    return m_clock.now();
 }
 
 Network::Peers& Network::nodes()
@@ -649,7 +661,7 @@ Network::Peers const& Network::nodes() const
 }
 #endif
 
-Node* Network::find (IPAddress const& address)
+Node* Network::find (IP::Endpoint const& address)
 {
     Table::iterator iter (m_table.find (address));
     if (iter != m_table.end())
@@ -672,8 +684,8 @@ void Network::step ()
     // Advance the manual clock so that
     // messages are broadcast at every step.
     //
-    //m_clock_source.now() += Tuning::secondsPerConnect;
-    m_clock_source.now() += 1;
+    //m_clock += Tuning::secondsPerConnect;
+    ++m_clock;
 }
 
 //------------------------------------------------------------------------------
@@ -695,7 +707,7 @@ struct PeerStats
 {
     PeerStats ()
         : inboundActive (0)
-        , outboundActive (0)
+        , out_active (0)
         , inboundSlotsFree (0)
         , outboundSlotsFree (0)
     {
@@ -704,26 +716,26 @@ struct PeerStats
     template <typename Peer>
     explicit PeerStats (Peer const& peer)
     {
-        inboundActive = peer.logic().slots().inboundActive();
-        outboundActive = peer.logic().slots().outboundActive();
-        inboundSlotsFree = peer.logic().slots().inboundSlotsFree();
-        outboundSlotsFree = peer.logic().slots().outboundSlotsFree();
+        inboundActive = peer.logic().counts().inboundActive();
+        out_active = peer.logic().counts().out_active();
+        inboundSlotsFree = peer.logic().counts().inboundSlotsFree();
+        outboundSlotsFree = peer.logic().counts().outboundSlotsFree();
     }
 
     PeerStats& operator+= (PeerStats const& rhs)
     {
         inboundActive += rhs.inboundActive;
-        outboundActive += rhs.outboundActive;
+        out_active += rhs.out_active;
         inboundSlotsFree += rhs.inboundSlotsFree;
         outboundSlotsFree += rhs.outboundSlotsFree;
         return *this;
     }
 
     int totalActive () const
-        { return inboundActive + outboundActive; }
+        { return inboundActive + out_active; }
 
     int inboundActive;
-    int outboundActive;
+    int out_active;
     int inboundSlotsFree;
     int outboundSlotsFree;
 };
@@ -766,7 +778,7 @@ public:
     double outPeers () const
     {
         if (m_size > 0)
-            return double (m_stats.outboundActive) / m_size;
+            return double (m_stats.out_active) / m_size;
         return 0;
     }
 
@@ -857,10 +869,10 @@ void report_nodes (NodeSequence const& nodes, Journal::Stream const& stream)
         Logic::State const& state (logic.state());
         stream <<
             rfield (node.id ()) <<
-            rfield (state.slots.totalActive ()) <<
-            rfield (state.slots.inboundActive ()) <<
-            rfield (state.slots.outboundActive ()) <<
-            rfield (state.slots.connectCount ()) <<
+            rfield (state.counts.totalActive ()) <<
+            rfield (state.counts.inboundActive ()) <<
+            rfield (state.counts.out_active ()) <<
+            rfield (state.counts.connectCount ()) <<
             rfield (state.livecache.size ()) <<
             rfield (state.bootcache.size ())
             ;
@@ -1024,7 +1036,7 @@ public:
                 }
                 n.journal().info <<
                     divider () << std::endl <<
-                    "Time " << n.now () << std::endl <<
+                    "Time " << n.now ().time_since_epoch () << std::endl <<
                     divider ()
                     ;
                 
@@ -1049,7 +1061,7 @@ public:
                 ss << std::endl <<
                     "--------------" << std::endl <<
                     "#" << node.id() <<
-                    " at " << node.listening_address ();
+                    " at " << node.listening_endpoint ();
                 node.logic().dump (ss);
             }
         }
@@ -1082,3 +1094,5 @@ static PeerFinderTests peerFinderTests;
 }
 }
 }
+
+#endif

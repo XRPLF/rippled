@@ -37,10 +37,7 @@ class Peers;
 
 /** Represents a peer connection in the overlay.
 */
-class Peer
-    : public boost::enable_shared_from_this <Peer>
-    , public List <Peer>::Node
-    , private LeakChecked <Peer>
+class Peer : private LeakChecked <Peer>
 {
 public:
     typedef boost::shared_ptr <Peer> Ptr;
@@ -74,28 +71,12 @@ public:
     };
 
 public:
-    static void accept (
-        boost::shared_ptr <NativeSocketType> const& socket,
-        Peers& peers,
-        Resource::Manager& resourceManager,
-        PeerFinder::Manager& peerFinder,
-        boost::asio::ssl::context& ctx,
-        bool proxyHandshake);
-
-    static void connect (
-        IP::Endpoint const& address,
-        boost::asio::io_service& io_service,
-        Peers& peers,
-        Resource::Manager& resourceManager,
-        PeerFinder::Manager& peerFinder,
-        boost::asio::ssl::context& ssl_context);
-
     //--------------------------------------------------------------------------
     /** Called when an open slot is assigned to a handshaked peer. */
     virtual void activate () = 0;
 
     //--------------------------------------------------------------------------
-    //virtual void connect (IPAddress const &address) = 0;
+    //virtual void connect (IP::Endpoint const &address) = 0;
 
     //--------------------------------------------------------------------------
     virtual State state () const = 0;
@@ -103,7 +84,7 @@ public:
     virtual void state (State new_state) = 0;
 
     //--------------------------------------------------------------------------
-    virtual void detach (const char*, bool onIOStrand) = 0;
+    //virtual void detach (const char*, bool onIOStrand) = 0;
 
     virtual void sendPacket (const PackedMessage::pointer& packet, bool onStrand) = 0;
 
@@ -150,7 +131,7 @@ public:
 
     virtual bool hasRange (uint32 uMin, uint32 uMax) = 0;
 
-    virtual IPAddress getRemoteAddress() const = 0;
+    virtual IP::Endpoint getRemoteAddress() const = 0;
 
     virtual NativeSocketType& getNativeSocket () = 0;
 };

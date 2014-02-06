@@ -184,12 +184,4 @@
 #define RIPPLE_USE_VALIDATORS 0
 #endif
 
-// Turning this on will use the new PeerFinder logic to establish connections
-// to other peers. Even with this off, PeerFinder will still send mtENDPOINTS
-// messages as needed, and collect legacy IP endpoint information.
-//
-#ifndef RIPPLE_USE_PEERFINDER
-#define RIPPLE_USE_PEERFINDER 0
-#endif
-
 #endif

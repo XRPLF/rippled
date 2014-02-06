@@ -73,6 +73,9 @@ public:
     //
     void handleTimer (boost::system::error_code ec)
     {
+        if (ec == boost::asio::error::operation_aborted || isStopping ())
+            return;
+
         async_accept ();
     }
 
@@ -81,6 +84,9 @@ public:
     void handleAccept (boost::system::error_code ec,
         boost::shared_ptr <NativeSocketType> const& socket)
     {
+        if (ec == boost::asio::error::operation_aborted || isStopping ())
+            return;
+
         bool delay = false;
 
         if (! ec)

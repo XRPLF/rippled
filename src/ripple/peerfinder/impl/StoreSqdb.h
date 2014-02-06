@@ -91,7 +91,7 @@ public:
 
         {
             std::string s;
-            int uptimeSeconds;
+            std::chrono::seconds::rep uptimeSeconds;
             int connectionValence;
 
             sqdb::statement st = (m_session.prepare <<
@@ -115,7 +115,7 @@ public:
 
                     if (! is_unspecified (entry.address))
                     {
-                        entry.cumulativeUptimeSeconds = uptimeSeconds;
+                        entry.cumulativeUptime = std::chrono::seconds (uptimeSeconds);
                         entry.connectionValence = connectionValence;
 
                         list.push_back (entry);
@@ -153,7 +153,7 @@ public:
         if (! error)
         {
             std::string s;
-            int uptimeSeconds;
+            std::chrono::seconds::rep uptimeSeconds;
             int connectionValence;
 
             sqdb::statement st = (m_session.prepare <<
@@ -173,7 +173,7 @@ public:
                 list.begin()); !error && iter != list.end(); ++iter)
             {
                 s = to_string (iter->address);
-                uptimeSeconds = iter->cumulativeUptimeSeconds;
+                uptimeSeconds = iter->cumulativeUptime.count ();
                 connectionValence = iter->connectionValence;
 
                 st.execute_and_fetch (error);

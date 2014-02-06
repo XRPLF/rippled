@@ -20,6 +20,9 @@
 #ifndef RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 #define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 
+#include "Slot.h"
+#include "Types.h"
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -37,6 +40,7 @@ public:
         Stoppable& parent,
         SiteFiles::Manager& siteFiles,
         Callback& callback,
+        clock_type& clock,
         Journal journal);
 
     /** Destroy the object.
@@ -70,45 +74,52 @@ public:
     /** Add a URL as a fallback location to obtain IPAddress sources.
         @param name A label used for diagnostics.
     */
+    /* VFALCO NOTE Unimplemented
     virtual void addFallbackURL (std::string const& name,
         std::string const& url) = 0;
+    */
 
     //--------------------------------------------------------------------------
 
-    /** Called when a peer connection is accepted. */
-    virtual void onPeerAccept (IPAddress const& local_address,
-        IPAddress const& remote_address) = 0;
-
-    /** Called when an outgoing peer connection is attempted. */
-    virtual void onPeerConnect (IPAddress const& address) = 0;
-
-    /** Called when an outgoing peer connection attempt succeeds. */
-    virtual void onPeerConnected (IPAddress const& local_address,
-        IPAddress const& remote_address) = 0;
-
-    /** Called when the real public address is discovered.
-        Currently this happens when we receive a PROXY handshake. The
-        protocol HELLO message will happen after the PROXY handshake.
+    /** Create a new inbound slot with the specified remote endpoint.
+        If nullptr is returned, then the slot could not be assigned.
+        Usually this is because of a detected self-connection.
     */
-    virtual void onPeerAddressChanged (
-        IPAddress const& currentAddress, IPAddress const& newAddress) = 0;
+    virtual Slot::ptr new_inbound_slot (
+        IP::Endpoint const& local_endpoint,
+            IP::Endpoint const& remote_endpoint) = 0;
 
-    /** Called when a peer connection finishes the protocol handshake.
-        @param id The node public key of the peer.
-        @param inCluster The peer is a member of our cluster.
+    /** Create a new outbound slot with the specified remote endpoint.
+        If nullptr is returned, then the slot could not be assigned.
+        Usually this is because of a duplicate connection.
     */
-    virtual void onPeerHandshake (
-        IPAddress const& address, PeerID const& id, bool inCluster) = 0;
+    virtual Slot::ptr new_outbound_slot (
+        IP::Endpoint const& remote_endpoint) = 0;
 
-    /** Always called when the socket closes. */
-    virtual void onPeerClosed (IPAddress const& address) = 0;
+    /** Called when an outbound connection attempt succeeds.
+        The local endpoint must be valid. If the caller receives an error
+        when retrieving the local endpoint from the socket, it should
+        proceed as if the connection attempt failed by calling on_closed
+        instead of on_connected.
+    */
+    virtual void on_connected (Slot::ptr const& slot,
+        IP::Endpoint const& local_endpoint) = 0;
+
+    /** Called when a handshake is completed. */
+    virtual void on_handshake (Slot::ptr const& slot,
+        RipplePublicKey const& key, bool cluster) = 0;
 
     /** Called when mtENDPOINTS is received. */
-    virtual void onPeerEndpoints (IPAddress const& address,
+    virtual void on_endpoints (Slot::ptr const& slot,
         Endpoints const& endpoints) = 0;
 
     /** Called when legacy IP/port addresses are received. */
-    virtual void onLegacyEndpoints (IPAddresses const& addresses) = 0;
+    virtual void on_legacy_endpoints (IPAddresses const& addresses) = 0;
+
+    /** Called when the slot is closed.
+        This always happens when the socket is closed.
+    */
+    virtual void on_closed (Slot::ptr const& slot) = 0;
 };
 
 }

@@ -18,11 +18,15 @@
 //==============================================================================
 
 #include "PeerDoor.h"
+#include "PeerImp.h"
+
 #include <boost/config.hpp>
 #include <condition_variable>
 #include <mutex>
 
 namespace ripple {
+
+SETUP_LOG (Peer)
 
 class PeersLog;
 template <> char const* LogPartition::getPartitionName <PeersLog> () { return "Peers"; }
@@ -80,7 +84,10 @@ class PeersImp
     , public LeakChecked <PeersImp>
 {    
 public:
-    typedef boost::unordered_map <IPAddress, Peer::pointer> PeerByIP;
+    typedef std::unordered_map <PeerFinder::Slot::ptr,
+        boost::weak_ptr <PeerImp>> PeersBySlot;
+    typedef std::unordered_map <IP::Endpoint,
+        boost::weak_ptr <PeerImp>> PeersByIP;
 
     typedef boost::unordered_map <
         RippleAddress, Peer::pointer> PeerByPublicKey;
@@ -104,17 +111,14 @@ public:
     boost::asio::io_service& m_io_service;
     boost::asio::ssl::context& m_ssl_context;
 
-    /** Tracks peers by their IP address and port */
-    PeerByIP m_ipMap;
+    /** Associates slots to peers. */
+    PeersBySlot m_peers;
 
     /** Tracks peers by their public key */
     PeerByPublicKey m_publicKeyMap;
 
     /** Tracks peers by their session ID */
     PeerByShortId m_shortIdMap;
-
-    /** Tracks all instances of peer objects */
-    List <Peer> m_list;
 
     /** The peer door for regular SSL connections */
     std::unique_ptr <PeerDoor> m_doorDirect;
@@ -148,12 +152,12 @@ public:
             *this,
             siteFiles,
             *this,
+            get_seconds_clock (),
             LogPartition::getJournal <PeerFinderLog> ())))
         , m_io_service (io_service)
         , m_ssl_context (ssl_context)
         , m_resolver (resolver)
     {
-
     }
 
     ~PeersImp ()
@@ -162,38 +166,86 @@ public:
         // This is just to catch improper use of the Stoppable API.
         //
         std::unique_lock <decltype(m_mutex)> lock (m_mutex);
-#ifdef BOOST_NO_CXX11_LAMBDAS
-        while (m_child_count != 0)
-            m_cond.wait (lock);
-#else
         m_cond.wait (lock, [this] {
             return this->m_child_count == 0; });
-#endif
-
     }
 
     void accept (
         bool proxyHandshake,
         boost::shared_ptr <NativeSocketType> const& socket)
     {
-        Peer::accept (
-            socket,
-            *this,
-            m_resourceManager,
-            *m_peerFinder,
-            m_ssl_context,
-            proxyHandshake);
+        // An error getting an endpoint means the connection closed.
+        // Just do nothing and the socket will be closed by the caller.
+        boost::system::error_code ec;
+        auto const local_endpoint_native (socket->local_endpoint (ec));
+        if (ec)
+            return;
+        auto const remote_endpoint_native (socket->remote_endpoint (ec));
+        if (ec)
+            return;
+
+        auto const local_endpoint (
+            IPAddressConversion::from_asio (local_endpoint_native));
+        auto const remote_endpoint (
+            IPAddressConversion::from_asio (remote_endpoint_native));
+
+        PeerFinder::Slot::ptr const slot (m_peerFinder->new_inbound_slot (
+            local_endpoint, remote_endpoint));
+
+        if (slot == nullptr)
+            return;
+
+        MultiSocket::Flag flags (
+            MultiSocket::Flag::server_role | MultiSocket::Flag::ssl_required);
+
+        if (proxyHandshake)
+            flags = flags.with (MultiSocket::Flag::proxy);
+
+        PeerImp::ptr const peer (boost::make_shared <PeerImp> (
+            socket, *this, m_resourceManager, *m_peerFinder,
+                slot, m_ssl_context, flags));
+
+        {
+            std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+            {
+                std::pair <PeersBySlot::iterator, bool> const result (
+                    m_peers.emplace (slot, peer));
+                assert (result.second);
+            }
+            ++m_child_count;
+        }
+
+        // VFALCO NOTE Why not do this in the ctor?
+        peer->accept ();
     }
 
-    void connect (IP::Endpoint const& address)
+    void connect (IP::Endpoint const& remote_endpoint)
     {
-        Peer::connect (
-            address,
-            m_io_service,
-            *this,
-            m_resourceManager,
-            *m_peerFinder,
-            m_ssl_context);
+        PeerFinder::Slot::ptr const slot (
+            m_peerFinder->new_outbound_slot (remote_endpoint));
+
+        if (slot == nullptr)
+            return;
+
+        MultiSocket::Flag const flags (
+            MultiSocket::Flag::client_role | MultiSocket::Flag::ssl);
+
+        PeerImp::ptr const peer (boost::make_shared <PeerImp> (
+            m_io_service, *this, m_resourceManager, *m_peerFinder,
+                slot, m_ssl_context, flags));
+
+        {
+            std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+            {
+                std::pair <PeersBySlot::iterator, bool> const result (
+                    m_peers.emplace (slot, peer));
+                assert (result.second);
+            }
+            ++m_child_count;
+        }
+
+        // VFALCO NOTE Why not do this in the ctor?
+        peer->connect (remote_endpoint);
     }
 
     //--------------------------------------------------------------------------
@@ -207,15 +259,10 @@ public:
         if (areChildrenStopped () && m_child_count == 0)
         {
             m_cond.notify_all ();
+            m_journal.info <<
+                "Stopped.";
             stopped ();
         }
-    }
-
-    // Increment the count of dependent objects
-    // Caller must hold the mutex
-    void addref ()
-    {
-        ++m_child_count;
     }
 
     // Decrement the count of dependent objects
@@ -226,17 +273,14 @@ public:
             check_stopped ();
     }
 
-    void peerCreated (Peer* peer)
+    void remove (PeerFinder::Slot::ptr const& slot)
     {
         std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-        m_list.push_back (*peer);
-        addref();
-    }
 
-    void peerDestroyed (Peer* peer)
-    {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-        m_list.erase (m_list.iterator_to (*peer));
+        PeersBySlot::iterator const iter (m_peers.find (slot));
+        assert (iter != m_peers.end ());
+        m_peers.erase (iter);
+
         release();
     }
 
@@ -246,41 +290,28 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void connectPeers (std::vector <IPAddress> const& list)
+    void connect (std::vector <IP::Endpoint> const& list)
     {
-        for (std::vector <IPAddress>::const_iterator iter (list.begin());
+        for (std::vector <IP::Endpoint>::const_iterator iter (list.begin());
             iter != list.end(); ++iter)
             connect (*iter);
     }
 
-    void disconnectPeer (IPAddress const& address, bool graceful)
+    void activate (PeerFinder::Slot::ptr const& slot)
     {
         m_journal.trace <<
-            "disconnectPeer (" << address <<
-            ", " << graceful << ")";
+            "Activate " << slot->remote_endpoint();
 
         std::lock_guard <decltype(m_mutex)> lock (m_mutex);
 
-        PeerByIP::iterator const it (m_ipMap.find (address));
-
-        if (it != m_ipMap.end ())
-            it->second->detach ("disc", false);
+        PeersBySlot::iterator const iter (m_peers.find (slot));
+        assert (iter != m_peers.end ());
+        PeerImp::ptr const peer (iter->second.lock());
+        assert (peer != nullptr);
+        peer->activate ();
     }
 
-    void activatePeer (IPAddress const& remote_address)
-    {
-        m_journal.trace <<
-            "activatePeer (" << remote_address << ")";
-
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-
-        PeerByIP::iterator const it (m_ipMap.find (remote_address));
-
-        if (it != m_ipMap.end ())
-            it->second->activate();
-    }
-
-    void sendEndpoints (IPAddress const& remote_address,
+    void send (PeerFinder::Slot::ptr const& slot,
         std::vector <PeerFinder::Endpoint> const& endpoints)
     {
         bassert (! endpoints.empty());
@@ -309,14 +340,31 @@ public:
 
         {
             std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-            PeerByIP::iterator const iter (m_ipMap.find (remote_address));
-            // Address must exist!
-            check_postcondition (iter != m_ipMap.end());
-            Peer::pointer peer (iter->second);
-            // VFALCO TODO Why are we checking isConnected? That should not be needed
+            PeersBySlot::iterator const iter (m_peers.find (slot));
+            assert (iter != m_peers.end ());
+            PeerImp::ptr const peer (iter->second.lock());
+            assert (peer != nullptr);
+            // VFALCO TODO Why are we checking isConnected?
+            //             That should not be needed
             if (peer->isConnected())
                 peer->sendPacket (msg, false);
         }
+    }
+
+    void disconnect (PeerFinder::Slot::ptr const& slot, bool graceful)
+    {
+        if (m_journal.trace) m_journal.trace <<
+            "Disconnect " << slot->remote_endpoint () <<
+            (graceful ? "gracefully" : "");
+
+        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+
+        PeersBySlot::iterator const iter (m_peers.find (slot));
+        assert (iter != m_peers.end ());
+        PeerImp::ptr const peer (iter->second.lock());
+        assert (peer != nullptr);
+        peer->close (graceful);
+        //peer->detach ("disc", false);
     }
 
     //--------------------------------------------------------------------------
@@ -329,7 +377,8 @@ public:
     {
         PeerFinder::Config config;
 
-        config.maxPeers = getConfig ().PEERS_MAX;
+        if (getConfig ().PEERS_MAX != 0)
+            config.maxPeers = getConfig ().PEERS_MAX;
 
         config.outPeers = config.calcOutPeers();
 
@@ -367,7 +416,7 @@ public:
                 { }
 
                 void operator()(std::string const& name,
-                    std::vector <IPAddress> const& address)
+                    std::vector <IP::Endpoint> const& address)
                 {
                     if (!address.empty())
                         m_peerFinder->addFixedPeer (name, address);
@@ -404,19 +453,19 @@ public:
     {
     }
 
-    // Close all peer connections. If graceful is true then the peer objects
-    // will wait for pending i/o before closing the socket. No new data will
-    // be sent.
-    //
-    // The caller must hold the mutex
-    //
-    // VFALCO TODO implement the graceful flag
-    //
+    /** Close all peer connections.
+        If `graceful` is true then active 
+        Requirements:
+            Caller must hold the mutex.
+    */
     void close_all (bool graceful)
     {
-        for (List <Peer>::iterator iter (m_list.begin ());
-            iter != m_list.end(); ++iter)
-            iter->detach ("stop", false);
+        for (auto entry : m_peers)
+        {
+            PeerImp::ptr const peer (entry.second.lock());
+            assert (peer != nullptr);
+            peer->close (graceful);
+        }
     }
 
     void onStop ()
@@ -424,8 +473,8 @@ public:
         std::lock_guard <decltype(m_mutex)> lock (m_mutex);
         // Take off the extra count we added in the constructor
         release();
-        // Close all peers
-        close_all (true);
+
+        close_all (false);       
     }
 
     void onChildrenStopped ()
@@ -534,33 +583,6 @@ public:
         if (iter != m_shortIdMap.end ())
             iter->second;
         return Peer::pointer();
-    }
-
-    // TODO NIKB Rename these two functions. It's not immediately clear
-    //           what they do: create a tracking entry for a peer by
-    //           the peer's remote IP.
-    /** Start tracking a peer */
-    void addPeer (Peer::Ptr const& peer)
-    {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-
-        check_precondition (! isStopping ());
-
-        m_journal.error << "Adding peer: " << peer->getRemoteAddress();
-        
-        std::pair <PeerByIP::iterator, bool> result (m_ipMap.emplace (
-            boost::unordered::piecewise_construct,
-                boost::make_tuple (peer->getRemoteAddress()),
-                    boost::make_tuple (peer)));
-
-        check_postcondition (result.second);
-    }
-
-    /** Stop tracking a peer */
-    void removePeer (Peer::Ptr const& peer)
-    {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-        m_ipMap.erase (peer->getRemoteAddress());
     }
 };
 

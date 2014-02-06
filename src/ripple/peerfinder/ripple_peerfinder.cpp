@@ -22,7 +22,6 @@
 #include "ripple_peerfinder.h"
 
 #include "../../ripple/algorithm/api/CycledSet.h"
-#include "../../ripple/algorithm/api/DiscreteClock.h"
 #include "../../ripple/common/Resolver.h"
 
 #include <deque>
@@ -60,29 +59,26 @@ using namespace beast;
 
 #  include "impl/Tuning.h"
 # include "impl/Checker.h"
-# include "impl/Resolver.h"
 #include "impl/CheckerAdapter.h"
 #   include "impl/Sorts.h"
 #  include "impl/Giveaways.h"
 #  include "impl/Livecache.h"
-#  include "impl/Slots.h"
+#   include "impl/SlotImp.h"
+#  include "impl/Counts.h"
 # include "impl/Source.h"
 #include "impl/SourceStrings.h"
 #  include "impl/Store.h"
 # include "impl/Bootcache.h"
-# include "impl/Peer.h"
+//# include "impl/Peer.h"
 #include "impl/StoreSqdb.h"
 #  include "impl/Reporting.h"
-#include "impl/FixedPeer.h"
-# include "impl/Logic.h"
-#include "impl/LogicType.h"
+#include "impl/Logic.h"
 
 #include "impl/Checker.cpp"
 #include "impl/Config.cpp"
 #include "impl/Endpoint.cpp"
 #include "impl/Livecache.cpp"
 #include "impl/Manager.cpp"
-#include "impl/Resolver.cpp"
 #include "impl/SourceStrings.cpp"
 
 //#include "sim/sync_timer.h"

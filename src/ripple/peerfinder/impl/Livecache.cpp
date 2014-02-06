@@ -23,7 +23,7 @@ namespace PeerFinder {
 class LivecacheTests : public UnitTest
 {
 public:
-    ManualClock m_clock_source;
+    manual_clock <clock_type::duration> m_clock;
 
     // Add the address as an endpoint
     void add (uint32 index, uint16 port, Livecache& c)
@@ -39,7 +39,7 @@ public:
     {
         beginTestCase ("fetch");
 
-        Livecache c (m_clock_source, Journal());
+        Livecache c (m_clock, Journal());
 
         add (1, 1, c);
         add (2, 1, c);

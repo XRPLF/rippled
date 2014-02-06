@@ -133,7 +133,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Resolver.cpp">
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotImp.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1144,7 +1144,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\Peer.cpp">
+    <ClCompile Include="..\..\src\ripple_app\peers\PeerImp.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -2235,22 +2235,20 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Config.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Endpoint.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Manager.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\api\Slot.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Types.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Bootcache.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h" />
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\FixedPeer.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Fixed.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Giveaways.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\iosformat.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Livecache.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h" />
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\LogicType.h" />
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Peer.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\PrivateTypes.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Reporting.h" />
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Resolver.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Seen.h" />
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Slots.h" />
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Counts.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Sorts.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Source.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\SourceStrings.h" />

@@ -1,234 +1,366 @@
+
 # PeerFinder
 
-The PeerFinder module has these responsibilities:
+## Introduction
 
-- Maintain a set of addresses suitable for bootstrapping into the overlay.
-- Send and receive protocol messages for peer address discovery.
-- Provide network addresses to other peers that need them.
-- Maintain connections to the configured set of fixed peers.
-- Track and manage peer connection slots.
+Each _peer_ (a running instance of the **rippled** program) on the Ripple network
+maintains multiple TCP/IP connections to other peers (neighbors) who themselves
+have neighboring peers. The resulting network is called a _peer to peer overlay
+network_, or just [_overlay network_][overlay_network]. Messages passed along these
+connections travel between peers and implement the communication layer of the
+_Ripple peer protocol_.
 
-## Description
+When a peer comes online it needs a set of IP addresses to connect to in order to
+gain initial entry into the overlay in a process called _bootstrapping_. Once they
+have established an initial set of these outbound peer connections, they need to
+gain additional addresses to establish more outbound peer connections until the
+desired limit is reached. Furthermore, they need a mechanism to advertise their
+IP address to new or existing peers in the overlay so they may receive inbound
+connections up to some desired limit. And finally, they need a mechanism to provide
+inbound connection requests with an alternate set of IP addresses to try when they
+have already reached their desired maximum number of inbound connections.
 
-## Terms
+PeerFinder is a self contained module that provides these services, along with some
+additional overlay network management services such as _fixed slots_ and _cluster
+slots_.
 
-<table>
-<tr>
-  <td>Bootstrap</td>
-  <td>The process by which a Ripple peer obtains the initial set of
-      connections into the Ripple payment network overlay.
-  </td></tr>
-</tr>
-<tr>
-  <td>Overlay</td>
-  <td>The connected graph of Ripple peers, overlaid on the public Internet.
-  </td>
-</tr>
-<tr>
-  <td>Peer</td>
-  <td>A network server running the **rippled** daemon.
-  </td>
-</tr>
-</table>
+## Features
 
-### Exposition
+PeerFinder has these responsibilities
 
-(Formerly in Manager.cpp, needs to be reformatted and tidied)
+* Maintain a persistent set of endpoint addresses suitable for bootstrapping
+  into the peer to peer overlay, ranked by relative locally observed utility.
 
-PeerFinder
-----------
+* Send and receive protocol messages for discovery of endpoint addresses.
 
-    Implements the logic for announcing and discovering IP addresses for
-    for connecting into the Ripple network.
+* Provide endpoint addresses to new peers that need them.
 
-Introduction
-------------
+* Maintain connections to a configured set of fixed peers.
 
-Each Peer (a computer running rippled) on the Ripple network requires a certain
-number of connections to other peers. These connections form an "overlay
-network." When a new peer wants to join the network, they need a robust source
-of network addresses (IP addresses) in order to establish outgoing connections.
-Once they have joined the network, they need a method of announcing their
-availaibility of accepting incoming connections.
+* Impose limits on the various slots consumed by peer connections.
 
-The Ripple network, like all peer to peer networks, defines a "directed graph"
-where each node represents a computer running the rippled software, and each
-vertex indicates a network connection. The direction of the connection tells
-us whether it is an outbound or inbound connection (from the perspective of
-a particular node).
+* Initiate outgoing connection attempts to endpoint addresses to maintain the
+  overlay connectivity and fixed peer policies.
 
-Fact #1:
-    The total inbound and outbound connections of any overlay must be equal.
+* Verify the connectivity of neighbors who advertise inbound connection slots.
 
-This follows that for each node that has an established outbound connection,
-there must exist another node that has received the corresponding inbound
-connection.
+* Prevent duplicate connections and connections to self.
 
-When a new peer joins the network it may or may not wish to receive inbound
-connections. Some peers are unable to accept incoming connections for various.
-For security reasons they may be behind a firewall that blocks accept requests.
-The administers may decide they don't want the connection traffic. Or they
-may wish to connect only to specific peers. Or they may simply be misconfigured.
+---
 
-If a peer decides that it wishes to receive incoming connections, it needs
-a method to announce its IP address and port number, the features that it
-offers (for example, that it also services client requests), and the number
-of available connection slots. This is to handle the case where the peer
-reaches its desired number of peer connections, but may still want to inform
-the network that it will service clients. It may also be desired to indicate
-the number of free client slots.
+# Concepts
 
-Once a peer is connected to the network we need a way both to inform our
-neighbors of our status with respect to accepting connections, and also to
-learn about new fresh addresses to connect to. For this we will define the
-mtENDPOINTS message.
+## Manager
 
-"Bootstrap Strategy"
---------------------
+The `Manager` is an application singleton which provides the primary interface
+to interaction with the PeerFinder.
 
-Fresh endpoints are ones we have seen recently via mtENDPOINTS.
-These are best to give out to someone who needs additional
-connections as quickly as possible, since it is very likely
-that the fresh endpoints have open incoming slots.
+### Autoconnect
 
-Reliable endpoints are ones which are highly likely to be
-connectible over long periods of time. They might not necessarily
-have an incoming slot, but they are good for bootstrapping when
-there are no peers yet. Typically these are what we would want
-to store in a database or local config file for a future launch.
+The Autoconnect feature of PeerFinder automatically establishes outgoing
+connections using addresses learned from various sources including the
+configuration file, the result of domain name lookups, and messages received
+from the overlay itself.
 
-Nouns:
+### Callback
 
-    bootstrap_ip
-        numeric IPAddress
-    
-    bootstrap_domain
-        domain name / port combinations, resolution only
+PeerFinder is an isolated code module with few external dependencies. To perform
+socket specific activities such as establishing outgoing connections or sending
+messages to connected peers, the Manager is constructed with an abstract
+interface called the `Callback`. An instance of this interface performs the
+actual required operations, making PeerFinder independent of the calling code.
 
-    bootstrap_url
-        URL leading to a text file, with a series of entries.
+### Config
 
-    ripple.txt
-        Separately parsed entity outside of PeerFinder that can provide
-        bootstrap_ip, bootstrap_domain, and bootstrap_url items.
+The `Config` structure defines the operational parameters of the PeerFinder.
+Some values come from the configuration file while others are calculated via
+tuned heuristics. The fields are as follows:
 
-The process of obtaining the initial peer connections for accessing the Ripple
-peer to peer network, when there are no current connections, is called
-"bootstrapping." The algorithm is as follows:
+* `autoConnect`
+ 
+  A flag indicating whether or not the Autoconnect feature is enabled.
 
-1. If (    unusedLiveEndpoints.count() > 0
-        OR activeConnectionAttempts.count() > 0)
-        Try addresses from unusedLiveEndpoints
-        return;
-2. If (    domainNames.count() > 0 AND (
-               unusedBootstrapIPs.count() == 0
-            OR activeNameResolutions.count() > 0) )
-        ForOneOrMore (DomainName that hasn't been resolved recently)
-            Contact DomainName and add entries to the unusedBootstrapIPs
-        return;
-3. If (unusedBootstrapIPs.count() > 0)
-        Try addresses from unusedBootstrapIPs
-        return;
-4. Try entries from [ips]
-5. Try entries from [ips_urls]
-6. Increment generation number and go to 1
+* `wantIncoming`
 
-    - Keep a map of all current outgoing connection attempts
+  A flag indicating whether or not the peer desires inbound connections. When
+  this flag is turned off, a peer will not advertise itself in Endpoint
+  messages.
 
-"Connection Strategy"
----------------------
+* `listeningPort`
 
-This is the overall strategy a peer uses to maintain its position in the Ripple
-network graph
+  The port number to use when creating the listening socket for peer
+  connections.
 
-We define these values:
+* `maxPeers`
 
-    peerCount (calculated)
-        The number of currently connected and established peers
+  The largest number of active peer connections to allow. This includes inbound
+  and outbound connections, but excludes fixed and cluster peers. There is an
+  implementation defined floor on this value.
 
-    outCount (calculated)
-        The number of peers in PeerCount that are outbound connections.
+* `outPeers`
 
-    MinOutCount (hard-coded constant)
-        The minimum number of OutCount we want. This also puts a floor
-        on PeerCount. This protects against sybil attacks and makes
-        sure that ledgers can get retrieved reliably.
-        10 is the proposed value.
+  The number of automatic outbound connections that PeerFinder will maintain
+  when the Autoconnect feature is enabled. The value is computed with fractional
+  precision as an implementation defined percentage of `maxPeers` subject to
+  an implementation defined floor. An instance of the PeerFinder rounds the
+  fractional part up or down using a uniform random number generated at
+  program startup. This allows the outdegree of the overlay network to be
+  controlled with fractional precision, ensuring that all inbound network
+  connection slots are not consumed (which would it difficult for new
+  participants to enter the network).
 
-    MaxPeerCount (a constant set in the rippled.cfg)
-        The maximum number of peer connections, inbound or outbound,
-        that a peer wishes to maintain. Setting MaxPeerCount equal to
-        or below MinOutCount would disallow incoming connections.
+Here's an example of how the network might be structured with a fractional
+value for outPeers:
 
-    OutPercent (a baked-in program constant for now)
-        The peer's target value for OutCount. When the value of OutCount
-        is below this number, the peer will employ the Outgoing Strategy
-        to raise its value of OutCount. This value is initially a constant
-        in the program, defined by the developers. However, it
-        may be changed through the consensus process.
-        15% is a proposed value.
-
-However, lets consider the case where OutDesired is exactly equal to MaxPeerCount / 2.
-In this case, a stable state will be reached when every peer is full, and
-has exactly the same number of inbound and outbound connections. The problem
-here is that there are now no available incoming connection slots. No new
-peers can enter the network.
-
-Lets consider the case where OutDesired is exactly equal to (MaxPeerCount / 2) - 1.
-The stable state for this network (assuming all peers can accept incoming) will
-leave us with network degree equal to MaxPeerCount - 2, with all peers having two
-available incoming connection slots. The global number of incoming connection slots
-will be equal to twice the number of nodes on the network. While this might seem to
-be a desirable outcome, note that the connectedness (degree of the overlay) plays
-a large part in determining the levels of traffic and ability to receive validations
-from desired nodes. Having every node with available incoming connections also
-means that entries in pong caches will continually fall out with new values and
-information will become less useful.
-
-For this reason, we advise that the value of OutDesired be fractional. Upon startup,
-a node will use its node ID (its 160 bit unique ID) to decide whether to round the
-value of OutDesired up or down. Using this method, we can precisely control the
-global number of available incoming connection slots.
-
-"Outgoing Strategy"
--------------------
-
-This is the method a peer uses to establish outgoing connections into the
-Ripple network.
-
-A peer whose PeerCount is zero will use these steps:
-    1. Attempt addresses from a local database of addresses
-    2. Attempt addresses from a set of "well known" domains in rippled.cfg
+**(Need example here)**
 
 
-This is the method used by a peer that is already connected to the Ripple network,
-to adjust the number of outgoing connections it is maintaining.
 
+### Livecache
 
-"Incoming Strategy"
-------------------------------
+The Livecache holds relayed IP addresses that have been received recently in
+the form of Endpoint messages via the peer to peer overlay. A peer periodically
+broadcasts the Endpoint message to its neighbors when it has open inbound
+connection slots. Peers store these messages in the Livecache and periodically
+forward their neighbors a handful of random entries from their Livecache, with
+an incremented hop count for each forwarded entry.
 
-This is the method used by a peer to announce its ability and desire to receive
-incoming connections both for the purpose of obtaining additional peer connections
-and also for receiving requests from clients.
+The algorithm for sending a neighbor a set of Endpoint messages chooses evenly
+from all available hop counts on each send. This ensures that each peer
+will see some entries with the farthest hops at each iteration. The result is
+to expand a peer's horizon with respect to which overlay endpoints are visible.
+This is designed to force the overlay to become highly connected and reduce
+the network diameter with each connection establishment.
 
-Overlay Network
-    http://en.wikipedia.org/wiki/Overlay_network
+When a peer receives an Endpoint message that originates from a neighbor
+(identified by a hop count of zero) for the first time, it performs an incoming
+connection test on that neighbor by initiating an outgoing connection to the
+remote IP address as seen on the connection combined with the port advertised
+in the Endpoint message. If the test fails, then the peer considers its neighbor
+firewalled (intentionally or due to misconfiguration) and no longer forwards
+Endpoint messages for that peer. This prevents poor quality unconnectible
+addresses from landing in the caches. If the incoming connection test passes,
+then the peer fills in the Endpoint message with the remote address as seen on
+the connection before storing it in its cache and forwarding it to other peers.
+This relieves the neighbor from the responsibility of knowing its own IP address
+before it can start receiving incoming connections.
 
-Directed Graph
-    http://en.wikipedia.org/wiki/Directed_graph
+Livecache entries expire quickly. Since a peer stops advertising itself when
+it no longer has available inbound slots, its address will shortly after stop
+being handed out by other peers. Livecache entries are very likely to result
+in both a successful connection establishment and the acquisition of an active
+outbound slot. Compare this with Bootcache addresses, which are very likely to
+be connectible but unlikely to have an open slot.
 
-References:
+Because entries in the Livecache are ephemeral, they are not persisted across
+launches in the database. The Livecache is continually updated and expired as
+Endpoint messages are received from the overlay over time.
 
-Gnutella 0.6 Protocol
-    2.2.2   Ping (0x00)
-    2.2.3   Pong (0x01)
-    2.2.4   Use of Ping and Pong messages
-    2.2.4.1   A simple pong caching scheme
-    2.2.4.2   Other pong caching schemes
-    http://rfc-gnutella.sourceforge.net/src/rfc-0_6-draft.html
+### Bootcache
 
-Revised Gnutella Ping Pong Scheme
-    By Christopher Rohrs and Vincent Falco
-    http://rfc-gnutella.sourceforge.net/src/pong-caching.html
+The `Bootcache` stores IP addresses useful for gaining initial connections.
+Each address is associated with the following metadata:
 
+* **Uptime**
+
+  The number of seconds that the address has maintained an active
+  peer connection, cumulative, without a connection attempt failure.
+ 
+* **Valence**
+
+  A signed integer which represents the number of successful
+  consecutive connection attempts when positive, and the number of
+  failed consecutive connection attempts when negative. If an outgoing
+  connection attempt to the corresponding IP address fails to complete the
+  handshake, the valence is reset to negative one, and all accrued uptime is
+  reset to zero. This harsh penalty is intended to prevent popular servers
+  from forever remaining top ranked in all peer databases.
+
+When choosing addresses from the boot cache for the purpose of
+establishing outgoing connections, addresses are ranked in decreasing
+order of high uptime, with valence as the tie breaker. The Bootcache is
+persistent. Entries are periodically inserted and updated in the corresponding
+SQLite database during program operation. When **rippled** is launched, the
+existing Bootcache database data is accessed and loaded to accelerate the
+bootstrap process.
+
+Desirable entries in the Bootcache are addresses for servers which are known to
+have high uptimes, and for which connection attempts usually succeed. However,
+these servers do not necessarily have available inbound connection slots.
+However, it is assured that these servers will have a well populated Livecache
+since they will have moved towards the core of the overlay over their high
+uptime. When a connected server is full it will return a handful of new
+addresses from its Livecache and gracefully close the connection. Addresses
+from the Livecache are highly likely to have inbound connection slots and be
+connectible.
+
+For security, all information that contributes to the ranking of Bootcache
+entries is observed locally. PeerFinder never trusts external sources of information.
+
+### Slot
+
+Each TCP/IP socket that can participate in the peer to peer overlay occupies
+a slot. Slots have properties and state associated with them:
+
+#### State (Slot)
+
+The slot state represents the current stage of the connection as it passes
+through the business logic for establishing peer connections.
+
+* `accept`
+
+  The accept state is an initial state resulting from accepting an incoming
+  connection request on a listening socket. The remote IP address and port
+  are known, and a handshake is expected next.
+
+* `connect`
+
+  The connect state is an initial state used when actively establishing outbound
+  connection attempts. The desired remote IP address and port are known.
+
+* `connected`
+
+  When an outbound connection attempt succeeds, it moves to the connected state.
+  The handshake is initiated but not completed.
+
+* `active`
+
+  The state becomes Active when a connection in either the Accepted or Connected
+  state completes the handshake process, and a slot is available based on the
+  properties. If no slot is available when the handshake completes, the socket
+  is gracefully closed.
+
+* `closing`
+
+  The Closing state represents a connected socket in the process of being
+  gracefully closed.
+
+#### Properties (Slot)
+
+Slot properties may be combined and are not mutually exclusive.
+
+* **Inbound**
+
+  An inbound slot is the condition of a socket which has accepted an incoming
+  connection request. A connection which is not inbound is by definition
+  outbound.
+
+* **Fixed**
+
+  A fixed slot is a desired connection to a known peer identified by IP address,
+  usually entered manually in the configuration file. For the purpose of
+  establishing outbound connections, the peer also has an associated port number
+  although only the IP address is checked to determine if the fixed peer is
+  already connected. Fixed slots do not count towards connection limits.
+
+* **Cluster**
+
+  A cluster slot is a connection which has completed the handshake stage, whose
+  public key matches a known public key usually entered manually in the
+  configuration file or learned through overlay messages from other trusted
+  peers. Cluster slots do not count towards connection limits.
+
+* **Superpeer** (2.0)
+
+  A superpeer slot is a connection to a peer which can accept incoming
+  connections, meets certain resource availaibility requirements (such as
+  bandwidth, CPU, and storage capacity), and operates full duplex in the
+  overlay. Connections which are not superpeers are by definition leaves. A
+  leaf slot is a connection to a peer which does not route overlay messages to
+  other peers, and operates in a partial half duplex fashion in the overlay.
+
+#### Fixed Slots
+
+Fixed slots are identified by IP address and set up during the initialization
+of the Manager, usually from the configuration file. The Logic will always make
+outgoing connection attempts to each fixed slot which is not currently
+connected. If we receive an inbound connection from an endpoint whose address
+portion (without port) matches a fixed slot address, we consider the fixed
+slot to be connected.
+
+#### Cluster Slots
+
+Cluster slots are identified by the public key and set up during the
+initialization of the manager or discovered upon receipt of messages in the
+overlay from trusted connections.
+
+--------------------------------------------------------------------------------
+
+# Algorithms
+
+## Connection Strategy
+
+The _Connection Strategy_ applies the configuration settings to establish
+desired outbound connections. It runs periodically and progresses through a
+series of stages, remaining in each stage until a condition is met
+
+### Stage 1: Fixed Slots
+
+This stage is invoked when the number of active fixed connections is below the
+number of fixed connections specified in the configuration, and one of the
+following is true:
+
+* There are eligible fixed addresses to try
+* Any outbound connection attempts are in progress
+
+Each fixed address is associated with a retry timer. On a fixed connection
+failure, the timer is reset so that the address is not tried for some amount
+of time, which increases according to a scheduled sequence up to some maximum
+which is currently set to approximately one hour between retries. A fixed
+address is considered eligible if we are not currently connected or attempting
+the address, and its retry timer has expired.
+
+The PeerFinder makes its best effort to become fully connected to the fixed
+addresses specified in the configuration file before moving on to establish
+outgoing connections to foreign peers. This security feature helps rippled
+establish itself with a trusted set of peers first before accepting untrusted
+data from the network.
+
+### Stage 2: Livecache
+
+The Livecache is invoked when Stage 1 is not active, autoconnect is enabled,
+and the number of active outbound connections is below the number desired. The
+stage remains active while:
+
+* The Livecache has addresses to try
+* Any outbound connection attempts are in progress
+
+PeerFinder makes its best effort to exhaust addresses in the Livecache before
+moving on to the Bootcache, because Livecache addresses are highly likely
+to be connectible (since they are known to have been online within the last
+minute), and highly likely to have an open slot for an incoming connection
+(because peers only advertise themselves in the Livecache when they have
+open slots).
+
+### Stage 3: Bootcache
+
+The Bootcache is invoked when Stage 1 and Stage 2 are not active, autoconnect
+is enabled, and the number of active outbound connections is below the number
+desired. The stage remains active while:
+
+* There are addresses in the cache that have not been tried recently.
+
+Entries in the Bootcache are ranked, with high uptime and highly connectible
+addresses preferred over others. Connection attempts to Bootcache addresses
+are very likely to succeed but unlikely to produce an active connection since
+the peers likely do not have open slots. Before the remote peer closes the
+connection it will send a handful of addresses from its Livecache to help the
+new peer coming online obtain connections.
+
+--------------------------------------------------------------------------------
+
+# References
+
+Much of the work in PeerFinder was inspired by earlier work in Gnutella:
+
+[Revised Gnutella Ping Pong Scheme](http://rfc-gnutella.sourceforge.net/src/pong-caching.html)<br>
+_By Christopher Rohrs and Vincent Falco_
+
+[Gnutella 0.6 Protocol:](http://rfc-gnutella.sourceforge.net/src/rfc-0_6-draft.html) Sections:
+* 2.2.2   Ping (0x00)
+* 2.2.3   Pong (0x01)
+* 2.2.4   Use of Ping and Pong messages
+* 2.2.4.1   A simple pong caching scheme
+* 2.2.4.2   Other pong caching schemes
+
+[overlay_network]: http://en.wikipedia.org/wiki/Overlay_network
