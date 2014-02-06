@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_TYPES_H_INCLUDED
 #define RIPPLE_PEERFINDER_TYPES_H_INCLUDED
 
+#include "beast/beast/chrono/abstract_clock.h"
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -31,6 +33,8 @@ typedef std::vector <IPAddress> IPAddresses;
 
 /** A set of Endpoint used for connecting. */
 typedef std::vector <Endpoint> Endpoints;
+
+typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
 }
 }

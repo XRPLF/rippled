@@ -83,7 +83,7 @@ public:
         bool proxyHandshake);
 
     static void connect (
-        IP::Endpoint const& address,
+        IP::Endpoint const& remote_endpoint,
         boost::asio::io_service& io_service,
         Peers& peers,
         Resource::Manager& resourceManager,

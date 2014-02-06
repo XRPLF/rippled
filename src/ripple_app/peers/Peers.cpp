@@ -148,6 +148,7 @@ public:
             *this,
             siteFiles,
             *this,
+            get_seconds_clock (),
             LogPartition::getJournal <PeerFinderLog> ())))
         , m_io_service (io_service)
         , m_ssl_context (ssl_context)
@@ -162,14 +163,8 @@ public:
         // This is just to catch improper use of the Stoppable API.
         //
         std::unique_lock <decltype(m_mutex)> lock (m_mutex);
-#ifdef BOOST_NO_CXX11_LAMBDAS
-        while (m_child_count != 0)
-            m_cond.wait (lock);
-#else
         m_cond.wait (lock, [this] {
             return this->m_child_count == 0; });
-#endif
-
     }
 
     void accept (
@@ -185,10 +180,10 @@ public:
             proxyHandshake);
     }
 
-    void connect (IP::Endpoint const& address)
+    void connect (IP::Endpoint const& remote_address)
     {
         Peer::connect (
-            address,
+            remote_address,
             m_io_service,
             *this,
             m_resourceManager,

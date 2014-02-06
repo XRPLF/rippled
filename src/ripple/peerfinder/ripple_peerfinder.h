@@ -30,6 +30,7 @@ using namespace beast;
 
 #include "../types/api/RipplePublicKey.h"
 
+#include "api/Slot.h"
 # include "api/Endpoint.h"
 # include "api/Types.h"
 #include "api/Callback.h"

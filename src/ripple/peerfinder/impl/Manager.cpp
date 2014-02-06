@@ -30,6 +30,7 @@ class ManagerImp
 public:
     ServiceQueue m_queue;
     SiteFiles::Manager& m_siteFiles;
+    clock_type& m_clock;
     Journal m_journal;
     StoreSqdb m_store;
     SerializedContext m_context;
@@ -45,10 +46,12 @@ public:
         Stoppable& stoppable,
         SiteFiles::Manager& siteFiles,
         Callback& callback,
+        clock_type& clock,
         Journal journal)
         : Manager (stoppable)
         , Thread ("PeerFinder")
         , m_siteFiles (siteFiles)
+        , m_clock (clock)
         , m_journal (journal)
         , m_store (journal)
         , m_checker (m_context, m_queue)
@@ -99,6 +102,37 @@ public:
     void addFallbackURL (std::string const& name, std::string const& url)
     {
         // VFALCO TODO This needs to be implemented
+    }
+
+    //--------------------------------------------------------------------------
+
+    Slot::ptr new_inbound_slot (
+        IP::Endpoint const& local_endpoint,
+            IP::Endpoint const& remote_endpoint)
+    {
+        return m_logic.new_inbound_slot (local_endpoint, remote_endpoint);
+    }
+
+    Slot::ptr new_outbound_slot (IP::Endpoint const& remote_endpoint)
+    {
+        return m_logic.new_outbound_slot (remote_endpoint);
+    }
+
+    void on_connected (Slot::ptr const& slot,
+        IP::Endpoint const& local_endpoint)
+    {
+        m_logic.on_connected (slot, local_endpoint);
+    }
+
+    void on_handshake (Slot::ptr const& slot,
+        RipplePublicKey const& key, bool cluster)
+    {
+        m_logic.on_handshake (slot, key, cluster);
+    }
+
+    void on_closed (Slot::ptr const& slot)
+    {
+        m_logic.on_closed (slot);
     }
 
     //--------------------------------------------------------------------------
@@ -359,9 +393,10 @@ Manager* Manager::New (
     Stoppable& parent,
     SiteFiles::Manager& siteFiles,
     Callback& callback,
+    clock_type& clock,
     Journal journal)
 {
-    return new ManagerImp (parent, siteFiles, callback, journal);
+    return new ManagerImp (parent, siteFiles, callback, clock, journal);
 }
 
 }
