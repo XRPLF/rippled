@@ -31,49 +31,43 @@ struct VertexTraits;
     Function will be called with this signature:
         void (Vertex&, std::size_t diameter);
 */
+
 template <typename Vertex, typename Function>
 void breadth_first_traverse (Vertex& start, Function f)
 {
     typedef VertexTraits <Vertex>  Traits;
     typedef typename Traits::Edges Edges;
     typedef typename Traits::Edge  Edge;
-
-    struct Probe
-    {
-        Probe (Vertex* v, int d)
-            : vertex (v), distance (d)
-            { }
-        Vertex* const vertex;
-        int const distance;
-    };
-
-    typedef std::deque <Probe> Work;
+    
+    typedef std::pair <Vertex*, int> Probe;
+    typedef std::deque <Probe const> Work;
     typedef std::set <Vertex*> Visited;
     Work work;
     Visited visited;
-    work.emplace_back (&start, 0);
+    work.emplace_back (std::make_pair (&start, 0));
     int diameter (0);
     while (! work.empty ())
     {
         Probe const p (work.front());
         work.pop_front ();
-        if (visited.find (p.vertex) != visited.end ())
+        if (visited.find (p.first) != visited.end ())
             continue;
-        diameter = std::max (p.distance, diameter);
-        visited.insert (p.vertex);
+        diameter = std::max (p.second, diameter);
+        visited.insert (p.first);
         for (typename Edges::iterator iter (
-            Traits::edges (*p.vertex).begin());
-                iter != Traits::edges (*p.vertex).end(); ++iter)
+            Traits::edges (*p.first).begin());
+                iter != Traits::edges (*p.first).end(); ++iter)
         {
             Vertex* v (Traits::vertex (*iter));
             if (visited.find (v) != visited.end())
                 continue;
             if (! iter->closed())
-                work.emplace_back (v, p.distance + 1);
+                work.emplace_back (std::make_pair (v, p.second + 1));
         }
-        f (*p.vertex, diameter);
+        f (*p.first, diameter);
     }
 }
+
 
 }
 }

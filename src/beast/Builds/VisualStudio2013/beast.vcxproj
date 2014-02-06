@@ -302,7 +302,6 @@
     <ClInclude Include="..\..\modules\beast_core\maths\Math.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\Random.h" />
     <ClInclude Include="..\..\modules\beast_core\maths\Range.h" />
-    <ClInclude Include="..\..\modules\beast_core\maths\uint24.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\CacheLine.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\MemoryAlignment.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\MemoryBlock.h" />
