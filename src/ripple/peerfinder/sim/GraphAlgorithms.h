@@ -40,11 +40,11 @@ void breadth_first_traverse (Vertex& start, Function f)
     typedef typename Traits::Edge  Edge;
     
     typedef std::pair <Vertex*, int> Probe;
-    typedef std::deque <Probe const> Work;
+    typedef std::deque <Probe> Work;
     typedef std::set <Vertex*> Visited;
     Work work;
     Visited visited;
-    work.emplace_back (std::make_pair (&start, 0));
+    work.emplace_back (&start, 0);
     int diameter (0);
     while (! work.empty ())
     {
@@ -62,7 +62,7 @@ void breadth_first_traverse (Vertex& start, Function f)
             if (visited.find (v) != visited.end())
                 continue;
             if (! iter->closed())
-                work.emplace_back (std::make_pair (v, p.second + 1));
+                work.emplace_back (v, p.second + 1);
         }
         f (*p.first, diameter);
     }
