@@ -310,9 +310,6 @@ public:
 
     void do_post_buffer (std::string const& buffer)
     {
-#if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
-        m_journal.trace << std::endl << buffer;
-#endif
         m_data.emplace_back (buffer);
     }
 
@@ -336,6 +333,22 @@ public:
         }
     }
 
+    void log (std::vector <boost::asio::const_buffer> const& buffers)
+    {
+        buffers;
+#if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
+        std::stringstream ss;
+        for (auto const& buffer : buffers)
+        {
+            std::string const s (boost::asio::buffer_cast <char const*> (buffer),
+                boost::asio::buffer_size (buffer));
+            ss << s;
+        }
+        //m_journal.trace << std::endl << ss.str ();
+        Logger::outputDebugString (ss.str ());
+#endif
+    }
+
     // Send what we have
     void send_buffers ()
     {
@@ -354,6 +367,9 @@ public:
             check_precondition (! buffer.empty ());
             if (! buffers.empty () && (size + length) > max_packet_size)
             {
+#if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
+                log (buffers);
+#endif
                 m_socket.async_send (buffers, boost::bind (
                     &StatsDCollectorImp::on_send, this,
                         boost::asio::placeholders::error,
@@ -366,6 +382,9 @@ public:
         }
         if (! buffers.empty ())
         {
+#if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
+            log (buffers);
+#endif
             m_socket.async_send (buffers, boost::bind (
                 &StatsDCollectorImp::on_send, this,
                     boost::asio::placeholders::error,
