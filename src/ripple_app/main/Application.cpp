@@ -127,13 +127,13 @@ public:
     OrderBookDB m_orderBookDB;
     std::unique_ptr <PathRequests> m_pathRequests;
     std::unique_ptr <LedgerMaster> m_ledgerMaster;
+    std::unique_ptr <InboundLedgers> m_inboundLedgers;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
     std::unique_ptr <RPCHTTPServer> m_rpcHTTPServer;
     RPCServerHandler m_rpcServerHandler;
     std::unique_ptr <NodeStore::Database> m_nodeStore;
     std::unique_ptr <SNTPClient> m_sntpClient;
-    std::unique_ptr <InboundLedgers> m_inboundLedgers;
     std::unique_ptr <TxQueue> m_txQueue;
     std::unique_ptr <Validators::Manager> m_validators;
     std::unique_ptr <IFeatures> mFeatures;
@@ -261,6 +261,11 @@ public:
         , m_ledgerMaster (LedgerMaster::New (
             *m_jobQueue, LogPartition::getJournal <LedgerMaster> ()))
 
+        // VFALCO NOTE must come before NetworkOPs to prevent a crash due
+        //             to dependencies in the destructor.
+        //
+        , m_inboundLedgers (InboundLedgers::New (get_seconds_clock (), *m_jobQueue))
+
         // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
         , m_networkOPs (NetworkOPs::New (get_seconds_clock (), *m_ledgerMaster,
             *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
@@ -278,8 +283,6 @@ public:
                 getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
 
         , m_sntpClient (SNTPClient::New (*this))
-
-        , m_inboundLedgers (InboundLedgers::New (get_seconds_clock (), *m_jobQueue))
 
         , m_txQueue (TxQueue::New ())
 
