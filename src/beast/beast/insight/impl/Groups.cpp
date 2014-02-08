@@ -35,7 +35,6 @@ public:
 
     std::string const m_name;
     Collector::ptr m_collector;
-    Items m_items;
 
     GroupImp (std::string const& name_,
         Collector::ptr const& collector)
@@ -60,37 +59,27 @@ public:
 
     Hook make_hook (HookImpl::HandlerType const& handler)
     {
-        Hook hook (m_collector->make_hook (handler));
-        m_items.emplace_back (hook.impl ());
-        return hook;
+        return m_collector->make_hook (handler);
     }
 
     Counter make_counter (std::string const& name)
     {
-        Counter counter (m_collector->make_counter (make_name (name)));
-        m_items.emplace_back (counter.impl ());
-        return counter;
+        return m_collector->make_counter (make_name (name));
     }
 
     Event make_event (std::string const& name)
     {
-        Event event (m_collector->make_event (make_name (name)));
-        m_items.emplace_back (event.impl ());
-        return event;
+        return m_collector->make_event (make_name (name));
     }
 
     Gauge make_gauge (std::string const& name)
     {
-        Gauge gauge (m_collector->make_gauge (make_name (name)));
-        m_items.emplace_back (gauge.impl ());
-        return gauge;
+        return m_collector->make_gauge (make_name (name));
     }
 
     Meter make_meter (std::string const& name)
     {
-        Meter meter (m_collector->make_meter (make_name (name)));
-        m_items.emplace_back (meter.impl ());
-        return meter;
+        return m_collector->make_meter (make_name (name));
     }
 
 private:
