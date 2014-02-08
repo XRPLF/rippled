@@ -40,6 +40,7 @@ namespace ripple
 #include "functional/LoadFeeTrack.h"
 #  include "functional/LoadEvent.h"
 #  include "functional/LoadMonitor.h"
+#include "functional/JobType.h"
 # include "functional/Job.h"
 #include "functional/JobQueue.h"
 

@@ -28,34 +28,7 @@ public:
         insight::Gauge job_count;
     };
 
-    // Statistics for each JobType
-    //
-    struct Count
-    {
-        Count () noexcept
-            : type (jtINVALID)
-            , waiting (0)
-            , running (0)
-            , deferred (0)
-        {
-        }
-
-        Count (JobType type_) noexcept
-            : type (type_)
-            , waiting (0)
-            , running (0)
-            , deferred (0)
-        {
-        }
-
-        JobType type;    // The type of Job these counts reflect
-        int waiting;     // The number waiting
-        int running;     // How many are running
-        int deferred;    // Number of jobs we didn't signal due to limits
-    };
-
     typedef std::set <Job> JobSet;
-    typedef std::map <JobType, Count> MapType;
     typedef CriticalSection::ScopedLockType ScopedLock;
 
     Journal m_journal;
@@ -63,13 +36,11 @@ public:
     CriticalSection m_mutex;
     uint64 m_lastJob;
     JobSet m_jobSet;
-    MapType m_jobCounts;
 
     // The number of jobs running through processTask()
     int m_processCount;
 
     Workers m_workers;
-    LoadMonitor m_loads [NUM_JOB_TYPES];
     CancelCallback m_cancelCallback;
 
     //--------------------------------------------------------------------------
@@ -87,36 +58,24 @@ public:
             &JobQueueImp::collect, this));
         m_metrics.job_count = collector->make_gauge ("job_count");
 
-        {
-            ScopedLock lock (m_mutex);
+        jtPUBOLDLEDGER.load.setTargetLatency (10000, 15000);
+        jtVALIDATION_ut.load.setTargetLatency (2000, 5000);
+        jtPROOFWORK.load.setTargetLatency (2000, 5000);
+        jtTRANSACTION.load.setTargetLatency (250, 1000);
+        jtPROPOSAL_ut.load.setTargetLatency (500, 1250);
+        jtPUBLEDGER.load.setTargetLatency (3000, 4500);
+        jtWAL.load.setTargetLatency (1000, 2500);
+        jtVALIDATION_t.load.setTargetLatency (500, 1500);
+        jtWRITE.load.setTargetLatency (1750, 2500);
+        jtTRANSACTION_l.load.setTargetLatency (100, 500);
+        jtPROPOSAL_t.load.setTargetLatency (100, 500);
 
-            // Initialize the job counts.
-            // The 'limit' field in particular will be set based on the limit
-            for (int i = 0; i < NUM_JOB_TYPES; ++i)
-            {
-                JobType const type (static_cast <JobType> (i));
-                m_jobCounts [type] = Count (type);
-            }
-        }
+        jtCLIENT.load.setTargetLatency (2000, 5000);
+        jtPEER.load.setTargetLatency (200, 2500);
+        jtDISK.load.setTargetLatency (500, 1000);
 
-        m_loads [ jtPUBOLDLEDGER  ].setTargetLatency (10000, 15000);
-        m_loads [ jtVALIDATION_ut ].setTargetLatency (2000, 5000);
-        m_loads [ jtPROOFWORK     ].setTargetLatency (2000, 5000);
-        m_loads [ jtTRANSACTION   ].setTargetLatency (250, 1000);
-        m_loads [ jtPROPOSAL_ut   ].setTargetLatency (500, 1250);
-        m_loads [ jtPUBLEDGER     ].setTargetLatency (3000, 4500);
-        m_loads [ jtWAL           ].setTargetLatency (1000, 2500);
-        m_loads [ jtVALIDATION_t  ].setTargetLatency (500, 1500);
-        m_loads [ jtWRITE         ].setTargetLatency (1750, 2500);
-        m_loads [ jtTRANSACTION_l ].setTargetLatency (100, 500);
-        m_loads [ jtPROPOSAL_t    ].setTargetLatency (100, 500);
-
-        m_loads [ jtCLIENT        ].setTargetLatency (2000, 5000);
-        m_loads [ jtPEER          ].setTargetLatency (200, 2500);
-        m_loads [ jtDISK          ].setTargetLatency (500, 1000);
-
-        m_loads [ jtNETOP_CLUSTER ].setTargetLatency (9999, 9999);    // once per 10 seconds
-        m_loads [ jtNETOP_TIMER   ].setTargetLatency (999, 999);      // once per second
+        jtNETOP_CLUSTER.load.setTargetLatency (9999, 9999);  // once per 10 seconds
+        jtNETOP_TIMER.load.setTargetLatency (999, 999);      // once per second
     }
 
     ~JobQueueImp ()
@@ -131,11 +90,9 @@ public:
         m_metrics.job_count = m_jobSet.size ();
     }
 
-    void addJob (JobType type, std::string const& name,
-        boost::function <void (Job&)> const& jobFunc)
+    void addJob (JobType& type, const std::string& name, 
+        boost::function<void (Job&)> const& jobFunc)
     {
-        bassert (type != jtINVALID);
-
         // FIXME: Workaround incorrect client shutdown ordering
         // do not add jobs to a queue with no threads
         bassert (type == jtCLIENT || m_workers.getNumberOfThreads () > 0);
@@ -160,9 +117,9 @@ public:
         }
 
         // Don't even add it to the queue if we're stopping
-        // and the job type is marked for skipOnStop.
+        // and the job is of a type that will be skipped.
         //
-        if (isStopping() && skipOnStop (type))
+        if (isStopping() && type.skip)
         {
             m_journal.debug <<
                 "Skipping addJob ('" << name << "')";
@@ -172,68 +129,49 @@ public:
         {
             ScopedLock lock (m_mutex);
 
-            std::pair< std::set <Job>::iterator, bool > it =
+            std::pair <std::set <Job>::iterator, bool> it =
                 m_jobSet.insert (Job (
-                    type, name, ++m_lastJob, m_loads[type], jobFunc, m_cancelCallback));
+                    type, name, ++m_lastJob, jobFunc, m_cancelCallback));
 
             queueJob (*it.first, lock);
         }
     }
 
-    int getJobCount (JobType t)
+    int getJobCount (JobType const& t)
     {
         ScopedLock lock (m_mutex);
 
-        MapType::const_iterator c = m_jobCounts.find (t);
-
-        return (c == m_jobCounts.end ()) ? 0 : c->second.waiting;
+        return t.waiting;
     }
 
-    int getJobCountTotal (JobType t)
+    // NIKB TODO This function should take a predicate which can select
+    //           jobs according to any criteria necessary. The current
+    //           behavior is emulated using std::greater_equal. The predicate
+    //           should be unary with the job type to compare against bound
+    //           to it.
+    int getJobCountGE (JobType const& t)
     {
         ScopedLock lock (m_mutex);
 
-        MapType::const_iterator c = m_jobCounts.find (t);
+        int count = 0;
 
-        return (c == m_jobCounts.end ()) ? 0 : (c->second.waiting + c->second.running);
+        std::for_each (JobType::Jobs.begin (), JobType::Jobs.end (),
+            [&count, &t](std::pair <const int, std::reference_wrapper<ripple::JobType>>& entry)
+            {
+                JobType& type = entry.second;
+
+                if (type >= t)
+                    count += type.waiting;
+            });
+
+        return count;
     }
 
-    int getJobCountGE (JobType t)
+    int getJobCountTotal (JobType const& t)
     {
-        // return the number of jobs at this priority level or greater
-        int ret = 0;
-
         ScopedLock lock (m_mutex);
 
-        typedef MapType::value_type jt_int_pair;
-
-        BOOST_FOREACH (jt_int_pair const& it, m_jobCounts)
-        {
-            if (it.first >= t)
-                ret += it.second.waiting;
-        }
-
-        return ret;
-    }
-
-    std::vector< std::pair<JobType, std::pair<int, int> > > getJobCounts ()
-    {
-        // return all jobs at all priority levels
-        std::vector< std::pair<JobType, std::pair<int, int> > > ret;
-
-        ScopedLock lock (m_mutex);
-
-        ret.reserve (m_jobCounts.size ());
-
-        typedef MapType::value_type jt_int_pair;
-
-        BOOST_FOREACH (const jt_int_pair & it, m_jobCounts)
-        {
-            ret.push_back (std::make_pair (it.second.type,
-                std::make_pair (it.second.waiting, it.second.running)));
-        }
-
-        return ret;
+        return t.waiting + t.running;
     }
 
     // shut down the job queue without completing pending jobs
@@ -245,7 +183,7 @@ public:
         m_workers.pauseAllThreadsAndWait ();
     }
 
-    // set the number of thread serving the job queue to precisely this number
+    // set the number of thread serving the job queue
     void setThreadCount (int c, bool const standaloneMode)
     {
         if (standaloneMode)
@@ -267,30 +205,32 @@ public:
 
             c += 2;
 
-            m_journal.info <<  "Auto-tuning to " << c << " validation/transaction/proposal threads";
+            m_journal.info <<  "Auto-tuning to " << c <<
+                               " validation/transaction/proposal threads";
         }
 
         m_workers.setNumberOfThreads (c);
     }
 
 
-    LoadEvent::pointer getLoadEvent (JobType t, const std::string& name)
+    LoadEvent::pointer getLoadEvent (JobType& t, const std::string& name)
     {
-        return boost::make_shared<LoadEvent> (boost::ref (m_loads[t]), name, true);
+        return boost::make_shared<LoadEvent> (boost::ref (t.load), name, true);
     }
 
-    LoadEvent::autoptr getLoadEventAP (JobType t, const std::string& name)
+    LoadEvent::autoptr getLoadEventAP (JobType& t, const std::string& name)
     {
-        return LoadEvent::autoptr (new LoadEvent (m_loads[t], name, true));
+        return LoadEvent::autoptr (new LoadEvent (t.load, name, true));
     }
 
-    bool isOverloaded ()
+    bool isOverloaded () const
     {
-        int count = 0;
-
-        for (int i = 0; i < NUM_JOB_TYPES; ++i)
-            if (m_loads[i].isOver ())
-                ++count;
+        auto count = std::count_if (JobType::Jobs.begin (), JobType::Jobs.end (),
+            [](std::pair <const int, std::reference_wrapper<ripple::JobType>>& entry)
+            {
+                JobType& type = entry.second;
+                return type.load.isOver ();
+            });
 
         return count > 0;
     }
@@ -306,56 +246,39 @@ public:
 
         ScopedLock lock (m_mutex);
 
-        for (int i = 0; i < NUM_JOB_TYPES; ++i)
-        {
-            JobType const type (static_cast <JobType> (i));
-
-            if (type == jtGENERIC)
-                continue;
-
-            LoadMonitor::Stats stats = m_loads [i].getStats ();
-            int jobCount;
-            int threadCount;
-
-            MapType::const_iterator it = m_jobCounts.find (type);
-
-            if (it == m_jobCounts.end ())
+        std::for_each (JobType::Jobs.begin (), JobType::Jobs.end (),
+            [&priorities](std::pair <const int, std::reference_wrapper<ripple::JobType>>& entry)
             {
-                jobCount = 0;
-                threadCount = 0;
-            }
-            else
-            {
-                jobCount = it->second.waiting;
-                threadCount = it->second.running;
-            }
+                JobType& type = entry.second;
 
-            if ((stats.count != 0) || (jobCount != 0) ||
-                (stats.latencyPeak != 0) || (threadCount != 0))
-            {
-                Json::Value& pri = priorities.append (Json::objectValue);
+                LoadMonitor::Stats stats = type.load.getStats ();
 
-                pri["job_type"] = Job::toString (type);
+                if ((stats.count != 0) || (type.waiting != 0) ||
+                    (stats.latencyPeak != 0) || (type.running != 0))
+                {
+                    Json::Value& pri = priorities.append (Json::objectValue);
 
-                if (stats.isOverloaded)
-                    pri["over_target"] = true;
+                    pri["job_type"] = type.name;
 
-                if (jobCount != 0)
-                    pri["waiting"] = jobCount;
+                    if (stats.isOverloaded)
+                        pri["over_target"] = true;
 
-                if (stats.count != 0)
-                    pri["per_second"] = static_cast<int> (stats.count);
+                    if (type.waiting != 0)
+                        pri["waiting"] = type.waiting;
 
-                if (stats.latencyPeak != 0)
-                    pri["peak_time"] = static_cast<int> (stats.latencyPeak);
+                    if (stats.count != 0)
+                        pri["per_second"] = static_cast<int> (stats.count);
 
-                if (stats.latencyAvg != 0)
-                    pri["avg_time"] = static_cast<int> (stats.latencyAvg);
+                    if (stats.latencyPeak != 0)
+                        pri["peak_time"] = static_cast<int> (stats.latencyPeak);
 
-                if (threadCount != 0)
-                    pri["in_progress"] = threadCount;
-            }
-        }
+                    if (stats.latencyAvg != 0)
+                        pri["avg_time"] = static_cast<int> (stats.latencyAvg);
+
+                    if (type.running != 0)
+                        pri["in_progress"] = type.running;
+                }
+            });
 
         ret["job_types"] = priorities;
 
@@ -403,24 +326,10 @@ private:
     //  
     void queueJob (Job const& job, ScopedLock const& lock)
     {
-        JobType const type (job.getType ());
-
-        bassert (type != jtINVALID);
         bassert (m_jobSet.find (job) != m_jobSet.end ());
 
-        Count& count (m_jobCounts [type]);
-
-        if (count.waiting + count.running < getJobLimit (type))
-        {
+        if (job.getType ().addTask ())
             m_workers.addTask ();
-        }
-        else
-        {
-            // defer the task until we go below the limit
-            //
-            ++count.deferred;
-        }
-        ++count.waiting;
     }
 
     //------------------------------------------------------------------------------
@@ -443,37 +352,38 @@ private:
     // Invariants:
     //  The calling thread owns the JobLock
     //
-    void getNextJob (Job& job, ScopedLock const& lock)
+    Job getNextJob (ScopedLock const&)
     {
         bassert (! m_jobSet.empty ());
 
         JobSet::const_iterator iter;
+
         for (iter = m_jobSet.begin (); iter != m_jobSet.end (); ++iter)
         {
-            Count& count (m_jobCounts [iter->getType ()]);
+            JobType& type = iter->getType ();
 
-            bassert (count.running <= getJobLimit (count.type));
+            bassert (type.running <= type.limit);
 
             // Run this job if we're running below the limit.
-            if (count.running < getJobLimit (count.type))
+            if (type.running < type.limit)
             {
-                bassert (count.waiting > 0);
+                bassert (type.waiting > 0);
                 break;
             }
         }
 
         bassert (iter != m_jobSet.end ());
 
-        JobType const type = iter->getType ();
-        Count& count (m_jobCounts [type]);
+        Job job (*iter);
 
-        bassert (type != jtINVALID);
-
-        job = *iter;
         m_jobSet.erase (iter);
 
-        --count.waiting;
-        ++count.running;
+        --job.getType ().waiting;
+        ++job.getType ().running;
+
+        ++m_processCount;
+
+        return job;
     }
 
     //------------------------------------------------------------------------------
@@ -491,25 +401,24 @@ private:
     // Invariants:
     //  <none>
     //
-    void finishJob (Job const& job, ScopedLock const& lock)
+    void finishJob (Job const& job, ScopedLock const&)
     {
-        JobType const type = job.getType ();
+        JobType& type = job.getType ();
 
         bassert (m_jobSet.find (job) == m_jobSet.end ());
-        bassert (type != jtINVALID);
-
-        Count& count (m_jobCounts [type]);
 
         // Queue a deferred task if possible
-        if (count.deferred > 0)
+        if (type.deferred > 0)
         {
-            bassert (count.running + count.waiting >= getJobLimit (type));
+            bassert (type.running + type.waiting >= type.limit);
 
-            --count.deferred;
+            --type.deferred;
             m_workers.addTask ();
         }
 
-        --count.running;
+        --type.running;
+
+        --m_processCount;
     }
 
     //------------------------------------------------------------------------------
@@ -520,32 +429,25 @@ private:
     //  A RunnableJob must exist in the JobSet
     //
     // Post-conditions:
-    //  The chosen RunnableJob will have Job::doJob() called.
+    //  The chosen RunnableJob will have Job::work() called.
     //
     // Invariants:
     //  <none>
     //
     void processTask ()
     {
-        Job job;
+        Job job (getNextJob (ScopedLock (m_mutex)));
 
-        {
-            ScopedLock lock (m_mutex);
-            getNextJob (job, lock);
-            ++m_processCount;
-        }
-
-        JobType const type (job.getType ());
-        String const name (Job::toString (type));
+        String const name (job.getType ().name);
 
         // Skip the job if we are stopping and the
-        // skipOnStop flag is set for the job type
+        // job is of a type that will be skipped
         //
-        if (!isStopping() || !skipOnStop (type))
+        if (!isStopping() || !job.getType ().skip)
         {
             Thread::setCurrentThreadName (name);
             m_journal.trace << "Doing " << name << " job";
-            job.doJob ();
+            job.work ();
         }
         else
         {
@@ -555,123 +457,11 @@ private:
         {
             ScopedLock lock (m_mutex);
             finishJob (job, lock);
-            --m_processCount;
             checkStopped (lock);
         }
 
         // Note that when Job::~Job is called, the last reference
         // to the associated LoadEvent object (in the Job) may be destroyed.
-    }
-
-    //------------------------------------------------------------------------------
-
-    // Returns `true` if all jobs of this type should be skipped when
-    // the JobQueue receives a stop notification. If the job type isn't
-    // skipped, the Job will be called and the job must call Job::shouldCancel
-    // to determine if a long running or non-mandatory operation should be canceled.
-    static bool skipOnStop (JobType type)
-    {
-        switch (type)
-        {
-        // These are skipped when a stop notification is received
-        case jtPACK:
-        case jtPUBOLDLEDGER:
-        case jtVALIDATION_ut:
-        case jtPROOFWORK:
-        case jtTRANSACTION_l:
-        case jtPROPOSAL_ut:
-        case jtLEDGER_DATA:
-        case jtUPDATE_PF:
-        case jtCLIENT:
-        case jtTRANSACTION:
-        case jtUNL:
-        case jtADVANCE:
-        case jtPUBLEDGER:
-        case jtTXN_DATA:
-        case jtVALIDATION_t:
-        case jtPROPOSAL_t:
-        case jtSWEEP:
-        case jtNETOP_CLUSTER:
-        case jtNETOP_TIMER:
-        case jtADMIN:
-        //case jtACCEPT:
-            return true;
-
-        default:
-            bassertfalse;
-        case jtWAL:
-        case jtWRITE:
-            break;
-        }
-
-        return false;
-    }
-
-    // Returns the limit of running jobs for the given job type.
-    // For jobs with no limit, we return the largest int. Hopefully that
-    // will be enough.
-    //
-    static int getJobLimit (JobType type)
-    {
-        int limit = std::numeric_limits <int>::max ();
-
-        switch (type)
-        {
-        // These are not dispatched by JobQueue
-        case jtPEER:
-        case jtDISK:
-        case jtTXN_PROC:
-        case jtOB_SETUP:
-        case jtPATH_FIND:
-        case jtHO_READ:
-        case jtHO_WRITE:
-        case jtGENERIC:
-            limit = 0;
-            break;
-
-        default:
-            // Someone added a JobType but forgot to set a limit.
-            // Did they also forget to add it to Job.cpp?
-            bassertfalse;
-            break;
-
-        case jtVALIDATION_ut:
-        case jtPROOFWORK:
-        case jtTRANSACTION_l:
-        case jtPROPOSAL_ut:
-        case jtUPDATE_PF:
-        case jtCLIENT:
-        case jtRPC:
-        case jtTRANSACTION:
-        case jtPUBLEDGER:
-        case jtADVANCE:
-        case jtWAL:
-        case jtVALIDATION_t:
-        case jtWRITE:
-        case jtPROPOSAL_t:
-        case jtSWEEP:
-        case jtADMIN:
-        case jtACCEPT:
-            limit = std::numeric_limits <int>::max ();
-            break;
-
-        case jtLEDGER_DATA:         limit = 2; break;
-        case jtPACK:                limit = 1; break;
-        case jtPUBOLDLEDGER:        limit = 2; break;
-        case jtTXN_DATA:            limit = 1; break;
-        case jtUNL:                 limit = 1; break;
-
-        // If either of the next two are processing so slowly
-        // or we are so busy we have two of them at once, it
-        // indicates a serious problem!
-        //
-        case jtNETOP_TIMER:
-        case jtNETOP_CLUSTER:
-            limit = 1;
-            break;
-        };
-
-        return limit;
     }
 
     //--------------------------------------------------------------------------
