@@ -30,19 +30,16 @@
 
 #include "nodestore/NodeStore.h"
 
-namespace ripple
-{
-
+namespace ripple {
 // Order matters
-
 # include "functional/ConfigSections.h"
 #include "functional/Config.h"
 #include "functional/LoadFeeTrack.h"
 #  include "functional/LoadEvent.h"
 #  include "functional/LoadMonitor.h"
+}
+
 # include "functional/Job.h"
 #include "functional/JobQueue.h"
-
-}
 
 #endif

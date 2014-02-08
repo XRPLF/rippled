@@ -20,6 +20,8 @@
 #ifndef RIPPLE_JOB_H
 #define RIPPLE_JOB_H
 
+namespace ripple {
+
 // Note that this queue should only be used for CPU-bound jobs
 // It is primarily intended for signature checking
 enum JobType
@@ -68,6 +70,8 @@ enum JobType
 class Job
 {
 public:
+    typedef std::chrono::steady_clock clock_type;
+
     /** Default constructor.
 
         Allows Job to be used as a container type.
@@ -81,7 +85,7 @@ public:
     //
     Job ();
 
-    Job (Job const& other);
+    //Job (Job const& other);
 
     Job (JobType type, uint64 index);
 
@@ -93,11 +97,14 @@ public:
          std::function <void (Job&)> const& job,
          CancelCallback cancelCallback);
 
-    Job& operator= (Job const& other);
+    //Job& operator= (Job const& other);
 
     JobType getType () const;
 
     CancelCallback getCancelCallback () const;
+
+    /** Returns the time when the job was queued. */
+    clock_type::time_point const& queue_time () const;
 
     /** Returns `true` if the running job should make a best-effort cancel. */
     bool shouldCancel () const;
@@ -121,6 +128,9 @@ private:
     std::function <void (Job&)> mJob;
     LoadEvent::pointer          m_loadEvent;
     std::string                 mName;
+    clock_type::time_point m_queue_time;
 };
+
+}
 
 #endif

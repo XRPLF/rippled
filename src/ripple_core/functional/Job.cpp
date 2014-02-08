@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 Job::Job ()
     : mType (jtINVALID)
     , mJobIndex (0)
@@ -29,6 +31,7 @@ Job::Job (JobType type, uint64 index)
 {
 }
 
+#if 0
 Job::Job (Job const& other)
     : m_cancelCallback (other.m_cancelCallback)
     , mType (other.mType)
@@ -36,8 +39,10 @@ Job::Job (Job const& other)
     , mJob (other.mJob)
     , m_loadEvent (other.m_loadEvent)
     , mName (other.mName)
+    , m_queue_time (other.m_queue_time)
 {
 }
+#endif
 
 Job::Job (JobType type,
           std::string const& name,
@@ -50,10 +55,12 @@ Job::Job (JobType type,
     , mJobIndex (index)
     , mJob (job)
     , mName (name)
+    , m_queue_time (clock_type::now ())
 {
     m_loadEvent = boost::make_shared <LoadEvent> (boost::ref (lm), name, false);
 }
 
+/*
 Job& Job::operator= (Job const& other)
 {
     mType = other.mType;
@@ -64,6 +71,7 @@ Job& Job::operator= (Job const& other)
     m_cancelCallback = other.m_cancelCallback;
     return *this;
 }
+*/
 
 JobType Job::getType () const
 {
@@ -74,6 +82,11 @@ CancelCallback Job::getCancelCallback () const
 {
     bassert (! m_cancelCallback.empty());
     return m_cancelCallback;
+}
+
+Job::clock_type::time_point const& Job::queue_time () const
+{
+    return m_queue_time;
 }
 
 bool Job::shouldCancel () const
@@ -184,4 +197,6 @@ bool Job::operator<= (const Job& j) const
         return true;
 
     return mJobIndex <= j.mJobIndex;
+}
+
 }

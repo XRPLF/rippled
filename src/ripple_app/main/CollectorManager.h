@@ -32,6 +32,7 @@ public:
         Journal journal);
     virtual ~CollectorManager () = 0;
     virtual insight::Collector::ptr const& collector () = 0;
+    virtual insight::Group::ptr const& group (std::string const& name) = 0;
 };
 
 }

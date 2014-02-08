@@ -17,19 +17,90 @@
 */
 //==============================================================================
 
+#include "JobQueue.h"
+
+#include "beast/beast/make_unique.h"
+#include "beast/beast/chrono/chrono_util.h"
+
+#include <chrono>
+
+namespace ripple {
+
 class JobQueueImp
     : public JobQueue
     , private Workers::Callback
 {
 public:
-    struct Metrics
+    struct Stats
     {
         insight::Hook hook;
         insight::Gauge job_count;
+
+        // VFALCO TODO should enumerate the map of jobtypes instead
+        explicit Stats (insight::Collector::ptr const& collector)
+            : m_collector (collector)
+        {
+            add (jtPACK         , "make_pack");
+            add (jtPUBOLDLEDGER , "pub_oldledgx");
+            add (jtVALIDATION_ut, "ut_validx");
+            add (jtPROOFWORK    , "proof_of_work");
+            add (jtTRANSACTION_l, "local_tx");
+            add (jtPROPOSAL_ut  , "ut_proposal");
+            add (jtLEDGER_DATA  , "ledgx_data");
+            add (jtUPDATE_PF    , "upd_paths");
+            add (jtCLIENT       , "client_cmd");
+            add (jtRPC          , "rpc_cmd");
+            add (jtTRANSACTION  , "recv_tx");
+            add (jtUNL          , "unl_op");
+            add (jtADVANCE      , "next_ledgx");
+            add (jtPUBLEDGER    , "pub_ledgx");
+            add (jtTXN_DATA     , "tx_data");
+            add (jtWAL          , "wal");
+            add (jtVALIDATION_t , "t_validx");
+            add (jtWRITE        , "write");
+            add (jtACCEPT       , "accept_ledgx");
+            add (jtPROPOSAL_t   , "t_prop");
+            add (jtSWEEP        , "sweep");
+            add (jtNETOP_CLUSTER, "netop_clust");
+            add (jtNETOP_TIMER  , "netop_heart");
+            add (jtADMIN        , "admin");
+        }
+
+        template <class Rep, class Period>
+        void on_dequeue (JobType type,
+            std::chrono::duration <Rep, Period> const& value) const
+        {
+            auto const ms (ceil <std::chrono::milliseconds> (value));
+            if (ms.count() >= 10)
+                m_dequeue.find (type)->second.notify (ms);
+        }
+
+        template <class Rep, class Period>
+        void on_execute (JobType type,
+            std::chrono::duration <Rep, Period> const& value) const
+        {
+            auto const ms (ceil <std::chrono::milliseconds> (value));
+            if (ms.count() >= 10)
+                m_execute.find (type)->second.notify (ms);
+        }
+
+    private:
+        void add (JobType type, std::string const& label)
+        {
+            m_dequeue.emplace (type, m_collector->make_event (label + "_q"));
+            m_execute.emplace (type, m_collector->make_event (label));
+        }
+
+        typedef std::unordered_map <JobType, insight::Event,
+            std::hash <int>> JobEvents;
+
+        insight::Collector::ptr m_collector;
+        JobEvents m_dequeue;
+        JobEvents m_execute;
     };
 
-    // Statistics for each JobType
-    //
+    //--------------------------------------------------------------------------
+
     struct Count
     {
         Count () noexcept
@@ -59,7 +130,7 @@ public:
     typedef CriticalSection::ScopedLockType ScopedLock;
 
     Journal m_journal;
-    Metrics m_metrics;
+    Stats m_stats;
     CriticalSection m_mutex;
     uint64 m_lastJob;
     JobSet m_jobSet;
@@ -78,14 +149,15 @@ public:
         Stoppable& parent, Journal journal)
         : JobQueue ("JobQueue", parent)
         , m_journal (journal)
+        , m_stats (collector)
         , m_lastJob (0)
         , m_processCount (0)
         , m_workers (*this, "JobQueue", 0)
         , m_cancelCallback (boost::bind (&Stoppable::isStopping, this))
     {
-        m_metrics.hook = collector->make_hook (std::bind (
+        m_stats.hook = collector->make_hook (std::bind (
             &JobQueueImp::collect, this));
-        m_metrics.job_count = collector->make_gauge ("job_count");
+        m_stats.job_count = collector->make_gauge ("job_count");
 
         {
             ScopedLock lock (m_mutex);
@@ -122,13 +194,13 @@ public:
     ~JobQueueImp ()
     {
         // Must unhook before destroying
-        m_metrics.hook = insight::Hook ();
+        m_stats.hook = insight::Hook ();
     }
 
     void collect ()
     {
         ScopedLock lock (m_mutex);
-        m_metrics.job_count = m_jobSet.size ();
+        m_stats.job_count = m_jobSet.size ();
     }
 
     void addJob (JobType type, std::string const& name,
@@ -172,11 +244,10 @@ public:
         {
             ScopedLock lock (m_mutex);
 
-            std::pair< std::set <Job>::iterator, bool > it =
-                m_jobSet.insert (Job (
-                    type, name, ++m_lastJob, m_loads[type], jobFunc, m_cancelCallback));
-
-            queueJob (*it.first, lock);
+            std::pair <std::set <Job>::iterator, bool> result (
+                m_jobSet.insert (Job (type, name, ++m_lastJob,
+                    m_loads[type], jobFunc, m_cancelCallback)));
+            queueJob (*result.first, lock);
         }
     }
 
@@ -404,9 +475,8 @@ private:
     void queueJob (Job const& job, ScopedLock const& lock)
     {
         JobType const type (job.getType ());
-
-        bassert (type != jtINVALID);
-        bassert (m_jobSet.find (job) != m_jobSet.end ());
+        assert (type != jtINVALID);
+        assert (m_jobSet.find (job) != m_jobSet.end ());
 
         Count& count (m_jobCounts [type]);
 
@@ -545,7 +615,15 @@ private:
         {
             Thread::setCurrentThreadName (name);
             m_journal.trace << "Doing " << name << " job";
+
+            Job::clock_type::time_point const start_time (
+                Job::clock_type::now());
+
+            m_stats.on_dequeue (type, start_time - job.queue_time ());
+
             job.doJob ();
+
+            m_stats.on_execute (type, Job::clock_type::now() - start_time);
         }
         else
         {
@@ -745,8 +823,11 @@ JobQueue::JobQueue (char const* name, Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-JobQueue* JobQueue::New (insight::Collector::ptr const& collector,
-                         Stoppable& parent, Journal journal)
+std::unique_ptr <JobQueue> make_JobQueue (
+    insight::Collector::ptr const& collector,
+        Stoppable& parent, Journal journal)
 {
-    return new JobQueueImp (collector, parent, journal);
+    return std::make_unique <JobQueueImp> (collector, parent, journal);
+}
+
 }

@@ -20,15 +20,14 @@
 #ifndef RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 #define RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 
+namespace ripple {
+
 class JobQueue : public Stoppable
 {
 protected:
     JobQueue (char const* name, Stoppable& parent);
 
 public:
-    static JobQueue* New (insight::Collector::ptr const& collector,
-        Stoppable& parent, Journal journal);
-
     virtual ~JobQueue () { }
 
     // VFALCO NOTE Using boost::function here because Visual Studio 2012
@@ -69,5 +68,10 @@ public:
 
     virtual Json::Value getJson (int c = 0) = 0;
 };
+
+std::unique_ptr <JobQueue> make_JobQueue (insight::Collector::ptr const& collector,
+    Stoppable& parent, Journal journal);
+
+}
 
 #endif

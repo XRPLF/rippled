@@ -184,7 +184,8 @@ public:
         void operator() (Duration const& elapsed) const
         {
             auto ms (ceil <std::chrono::milliseconds> (elapsed));
-            latency.notify (ms);
+            if (ms.count() >= 10)
+                latency.notify (ms);
             if (ms.count() >= 500)
                 journal.warning <<
                     "io_service latency = " << ms;
@@ -235,9 +236,8 @@ public:
         // The JobQueue has to come pretty early since
         // almost everything is a Stoppable child of the JobQueue.
         //
-        , m_jobQueue (JobQueue::New (
-            m_collectorManager->collector (),
-                m_nodeStoreScheduler, LogPartition::getJournal <JobQueueLog> ()))
+        , m_jobQueue (make_JobQueue (m_collectorManager->group ("jobq"),
+            m_nodeStoreScheduler, LogPartition::getJournal <JobQueueLog> ()))
 
         // The io_service must be a child of the JobQueue since we call addJob
         // in response to newtwork data from peers and also client requests.

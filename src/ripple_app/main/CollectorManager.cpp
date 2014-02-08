@@ -25,6 +25,7 @@ class CollectorManagerImp
 public:
     Journal m_journal;
     insight::Collector::ptr m_collector;
+    std::unique_ptr <insight::Groups> m_groups;
 
     CollectorManagerImp (StringPairArray const& params,
         Journal journal)
@@ -44,6 +45,8 @@ public:
         {
             m_collector = insight::NullCollector::New ();
         }
+
+        m_groups = insight::make_Groups (m_collector);
     }
 
     ~CollectorManagerImp ()
@@ -53,6 +56,11 @@ public:
     insight::Collector::ptr const& collector ()
     {
         return m_collector;
+    }
+
+    insight::Group::ptr const& group (std::string const& name)
+    {
+        return m_groups->get (name);
     }
 };
 
