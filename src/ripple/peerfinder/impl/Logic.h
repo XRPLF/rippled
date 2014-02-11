@@ -526,18 +526,29 @@ public:
         if (m_journal.debug) m_journal.debug << leftw (18) <<
             "Logic connect " << remote_endpoint;
 
+        SharedState::Access state (m_state);
+
+        // Check for duplicate connection
+        if (state->slots_by_ip.find (remote_endpoint) !=
+            state->slots_by_ip.end ())
+        {
+            if (m_journal.warning) m_journal.warning << leftw (18) <<
+                "Logic dropping " << remote_endpoint <<
+                " as duplicate connect";
+            return Slot::ptr ();
+        }
+
         // Create the slot
         Slot::ptr const slot (std::make_shared <SlotImp> (
             remote_endpoint, fixed (remote_endpoint.address ())));
 
-        SharedState::Access state (m_state);
-
         // Add slot to table
         std::pair <SlotsByIP::iterator, bool> result (
             state->slots_by_ip.emplace (slot->remote_endpoint (),
-                slot));
+                slot));        
         // Remote address must not already exist
         assert (result.second);
+
         // Add to the connected address list
         state->connected_addresses.emplace (remote_endpoint.at_port (0));
 
