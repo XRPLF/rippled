@@ -992,9 +992,6 @@
     <ClInclude Include="..\..\beast\Chrono.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\RelativeTime.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\SafeBool.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1061,12 +1058,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPResponseParser.h">
       <Filter>beast_asio\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\CPUMeter.h">
-      <Filter>beast\chrono</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\smart_ptr\SharedObject.h">
       <Filter>beast\smart_ptr</Filter>
@@ -1215,18 +1206,6 @@
     <ClInclude Include="..\..\beast\crypto\UnsignedIntegerCalc.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\abstract_clock.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\manual_clock.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\ratio_io.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\chrono_io.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\utility\hash_pair.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
@@ -1235,9 +1214,6 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\make_unique.h">
       <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\chrono_util.h">
-      <Filter>beast\chrono</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\insight\Base.h">
       <Filter>beast\insight</Filter>
@@ -1265,6 +1241,33 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\net\IPEndpoint.h">
       <Filter>beast\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\abstract_clock.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\basic_seconds_clock.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\chrono_io.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\chrono_util.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\CPUMeter.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\manual_clock.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\ratio_io.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\RelativeTime.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h">
+      <Filter>beast\chrono</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1724,9 +1727,6 @@
     <ClCompile Include="..\..\beast\chrono\impl\RelativeTime.cpp">
       <Filter>beast\chrono\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\chrono\Chrono.cpp">
-      <Filter>beast\chrono</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\utility\impl\Debug.cpp">
       <Filter>beast\utility\impl</Filter>
     </ClCompile>
@@ -1843,6 +1843,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\impl\Assert.cpp">
       <Filter>beast\utility\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\Chrono.cpp">
+      <Filter>beast\chrono</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
