@@ -24,9 +24,25 @@ namespace ripple {
 namespace PeerFinder {
 
 /** Stores IP addresses useful for gaining initial connections.
-    Ideal bootstrap addresses have the following attributes:
-        - High uptime
-        - Many successful connect attempts
+
+    This is one of the caches that is consulted when additional outgoing
+    connections are needed. Along with the address, each entry has this
+    additional metadata:
+
+    Uptime
+
+        The number of seconds that the address has maintained an active
+        peer connection, cumulative, without a connection attempt failure.
+
+    Valence
+
+        A signed integer which represents the number of successful
+        consecutive connection attempts when positive, and the number of
+        failed consecutive connection attempts when negative.
+
+    When choosing addresses from the boot cache for the purpose of
+    establishing outgoing connections, addresses are ranked in decreasing
+    order of high uptime, with valence as the tie breaker.
 */
 class Bootcache
 {
@@ -429,9 +445,6 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    //
-    //--------------------------------------------------------------------------
-
 private:
     // Returns a vector of entry iterators sorted by descending score
     std::vector <Entries::const_iterator> csort () const

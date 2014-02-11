@@ -60,17 +60,16 @@ using namespace beast;
 
 #  include "impl/Tuning.h"
 # include "impl/Checker.h"
-# include "impl/Resolver.h"
 #include "impl/CheckerAdapter.h"
 #   include "impl/Sorts.h"
 #  include "impl/Giveaways.h"
 #  include "impl/Livecache.h"
+#   include "impl/SlotImp.h"
 #  include "impl/Slots.h"
 # include "impl/Source.h"
 #include "impl/SourceStrings.h"
 #  include "impl/Store.h"
 # include "impl/Bootcache.h"
-# include "impl/Peer.h"
 #include "impl/StoreSqdb.h"
 #  include "impl/Reporting.h"
 #include "impl/FixedPeer.h"
@@ -82,11 +81,12 @@ using namespace beast;
 #include "impl/Endpoint.cpp"
 #include "impl/Livecache.cpp"
 #include "impl/Manager.cpp"
-#include "impl/Resolver.cpp"
 #include "impl/SourceStrings.cpp"
 
 //#include "sim/sync_timer.h"
 
+// NIKB TEMPORARY
+#if 0
 #include "sim/GraphAlgorithms.h"
 #include "sim/WrappedSink.h"
 # include "sim/Predicates.h"
@@ -95,3 +95,4 @@ using namespace beast;
 # include "sim/NodeSnapshot.h"
 # include "sim/Params.h"
 #include "sim/Tests.cpp"
+#endif

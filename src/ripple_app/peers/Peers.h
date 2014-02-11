@@ -66,14 +66,17 @@ public:
 
     virtual ~Peers () = 0;
 
-    // NIKB TODO This is an implementation detail - a private
-    //           interface between Peers and Peer. It should
-    //           be split out and moved elsewhere.
-    //
-    // VFALCO NOTE PeerImp should have visbility to PeersImp
-    //
+    //==========================================================================
+    // NIKB TODO The following group of functions are a private interface
+    //           between PeerImp and PeersImp that is, unfortunately, exposed
+    //           here as an implementation detail. 
+    //           We can fix this having PeerImp have visibility to PeersImp,
+    //           which are tightly coupled anyways, without polluting the
+    //           public interface exported by either Peer or Peers.
     virtual void peerCreated (Peer* peer) = 0;
     virtual void peerDestroyed (Peer *peer) = 0;
+    virtual void track (Peer::ref peer);
+    //==========================================================================    
 
     virtual void accept (bool proxyHandshake,
         boost::shared_ptr <NativeSocketType> const& socket) = 0;

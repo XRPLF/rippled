@@ -129,6 +129,9 @@ public:
 
     Resource::Consumer m_usage;
 
+    // The slot assigned to us by PeerFinder
+    PeerFinder::Slot::ptr m_slot;
+
     //---------------------------------------------------------------------------    
     /** New incoming peer from the specified socket */
     PeerImp (
@@ -136,6 +139,7 @@ public:
         Peers& peers,
         Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder,
+        PeerFinder::Slot::ptr const& slot,
         boost::asio::ssl::context& ssl_context,
         MultiSocket::Flag flags)
             : m_shared_socket (socket)
@@ -154,6 +158,7 @@ public:
             , m_minLedger (0)
             , m_maxLedger (0)
             , mActivityTimer (socket->get_io_service())
+            , m_slot (slot)
     {
         m_peers.peerCreated (this);
     }
@@ -169,6 +174,7 @@ public:
         Peers& peers,
         Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder,
+        PeerFinder::Slot::ptr const& slot,
         boost::asio::ssl::context& ssl_context,
         MultiSocket::Flag flags)
             : m_journal (LogPartition::getJournal <Peer> ())
@@ -186,6 +192,7 @@ public:
             , m_minLedger (0)
             , m_maxLedger (0)
             , mActivityTimer (io_service)
+            , m_slot (slot)
     {
         m_peers.peerCreated (this);
     }
@@ -257,8 +264,6 @@ public:
             return;
         }
 
-        m_peerFinder.onPeerConnect (m_remoteAddress);
-
         getNativeSocket ().async_connect (
             IPAddressConversion::to_asio_endpoint (address),
             m_strand.wrap (boost::bind (
@@ -280,14 +285,20 @@ public:
 
         @param ec indicates success or an error code.
     */
-    void onConnect (boost::system::error_code const& ec)
+    void onConnect (boost::system::error_code ec)
     {
+        NativeSocketType::endpoint_type local_endpoint;
+
+        if (! ec)
+            local_endpoint = m_socket->this_layer <
+                NativeSocketType> ().local_endpoint (ec);
+
         if (ec)
         {
             // VFALCO NOTE This log statement looks like ass
-            m_journal.info << "Connecting to " << m_remoteAddress <<
-                              " failed " << ec.message();
-
+            m_journal.info <<
+                "Connect to " << m_remoteAddress <<
+                " failed: " << ec.message();
             // This should end up calling onPeerClosed()
             detach ("hc", true);
             return;
@@ -296,8 +307,8 @@ public:
         bassert (m_state == stateConnecting);
         m_state = stateConnected;
 
-        m_peerFinder.onPeerConnected (m_socket->local_endpoint(),
-            m_remoteAddress);
+        m_peerFinder.on_connected (m_slot,
+            IPAddressConversion::from_asio (local_endpoint));
 
         m_socket->set_verify_mode (boost::asio::ssl::verify_none);
         m_socket->async_handshake (
@@ -321,8 +332,6 @@ public:
         m_journal.info << "Accepted " << m_remoteAddress;
 
         m_peers.addPeer (shared_from_this ());
-
-        m_peerFinder.onPeerAccept (m_socket->local_endpoint(), m_remoteAddress);
 
         m_socket->set_verify_mode (boost::asio::ssl::verify_none);
         m_socket->async_handshake (
@@ -379,8 +388,8 @@ public:
             //           to have PeerFinder work reliably.
             m_detaching  = true; // Race is ok.
 
-            m_peerFinder.onPeerClosed (m_remoteAddress);
-
+            m_peerFinder.on_closed (m_slot);
+            
             if (m_state == stateActive)
                 m_peers.onPeerDisconnect (shared_from_this ());
 
@@ -1382,8 +1391,8 @@ private:
             bassert (m_state == stateConnected);
             m_state = stateHandshaked;
 
-            m_peerFinder.onPeerHandshake (m_remoteAddress,
-                RipplePublicKey(m_nodePublicKey), m_clusterNode);
+            m_peerFinder.on_handshake (m_slot, RipplePublicKey(m_nodePublicKey),
+                m_clusterNode);
 
             // XXX Set timer: connection is in grace period to be useful.
             // XXX Set timer: connection idle (idle may vary depending on connection type.)
@@ -1624,7 +1633,7 @@ private:
         }
 
         if (! list.empty())
-            m_peerFinder.onLegacyEndpoints (list);
+            m_peerFinder.on_legacy_endpoints (list);
     }
 
     void recvEndpoints (protocol::TMEndpoints& packet)
@@ -1665,7 +1674,7 @@ private:
         }
 
         if (! endpoints.empty())
-            m_peerFinder.onPeerEndpoints (m_remoteAddress, endpoints);
+            m_peerFinder.on_endpoints (m_slot, endpoints);
     }
 
     void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& ptr)
@@ -2724,45 +2733,83 @@ void Peer::accept (
     boost::asio::ssl::context& ssl_context,
     bool proxyHandshake)
 {
+    // An error getting an endpoint means the connection closed.
+    // Just do nothing and the socket will be deleted by the caller.
+    boost::system::error_code ec;
+    // NIKB FIX Maybe log?
+    auto local_endpoint (socket->local_endpoint (ec));
+    if (ec)
+        return;
+    auto remote_endpoint (socket->remote_endpoint (ec));
+    if (ec)
+        return;
+
+    PeerFinder::Slot::ptr const slot (peerFinder.new_inbound_slot (
+        IPAddressConversion::from_asio (local_endpoint),
+            IPAddressConversion::from_asio (remote_endpoint)));
+
+    if (slot == nullptr)
+        return;
+
     MultiSocket::Flag flags (
         MultiSocket::Flag::server_role | MultiSocket::Flag::ssl_required);
 
     if (proxyHandshake)
         flags = flags.with (MultiSocket::Flag::proxy);
 
-    boost::shared_ptr<PeerImp> peer (boost::make_shared <PeerImp> (
+    boost::shared_ptr <PeerImp> peer (boost::make_shared <PeerImp> (
         socket,
         peers,
         resourceManager,
         peerFinder,
+        slot,
         ssl_context,
         flags));
 
+    // Associate the peer with its slot. We cannot do this from the 
+    // constructor since shared_from_this is not available.
+    // NIKB FIX ME
+    peers.track (peer);
+
+    // NIKB FIX Just make this part of the PeerImp constructor for inbound
     peer->accept ();
 }
 
 //------------------------------------------------------------------------------
 
 void Peer::connect (
-    IP::Endpoint const& address,
+    IP::Endpoint const& remote_endpoint,
     boost::asio::io_service& io_service,
     Peers& peers,
     Resource::Manager& resourceManager,
     PeerFinder::Manager& peerFinder,
     boost::asio::ssl::context& ssl_context)
 {
+    PeerFinder::Slot::ptr const slot (
+        peerFinder.new_outbound_slot (remote_endpoint));
+
+    if (slot == nullptr)
+        return;
+
     MultiSocket::Flag flags (
         MultiSocket::Flag::client_role | MultiSocket::Flag::ssl);
 
-    boost::shared_ptr<PeerImp> peer (boost::make_shared <PeerImp> (
+    boost::shared_ptr <PeerImp> peer (boost::make_shared <PeerImp> (
         io_service,
         peers,
         resourceManager,
         peerFinder,
+        slot,
         ssl_context,
         flags));
 
-    peer->connect (address);
+    // Associate the peer with its slot. We cannot do this from the 
+    // constructor since shared_from_this is not available.
+    // NIKB FIX ME
+    peers.track (peer);
+    
+    // NIKB FIX Just make this part of the PeerImp constructor for outbound
+    peer->connect (remote_endpoint);
 }
 
 //------------------------------------------------------------------------------

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_SLOTS_H_INCLUDED
 #define RIPPLE_PEERFINDER_SLOTS_H_INCLUDED
 
+#include "../api/Slot.h"
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -32,6 +34,7 @@ public:
         , m_inboundActive (0)
         , m_outboundSlots (0)
         , m_outboundActive (0)
+        , m_totalActive (0)
         , m_fixedPeerConnections (0)
         , m_clusterPeerConnections (0)
         , m_acceptCount (0)
@@ -47,6 +50,84 @@ public:
         m_roundingThreshold = Random::getSystemRandom().nextDouble();
 #endif
     }
+
+    //--------------------------------------------------------------------------
+
+    /** Adds the slot state and properties to the slot counts. */
+    void add (Slot const& s)
+    {
+        adjust (s, 1);
+    }
+
+    /** Removes the slot state and properties from the slot counts. */
+    void remove (Slot const& s)
+    {
+        adjust (s, -1);
+    }
+
+    /** Returns `true` if the slot can become an active peer. */
+    bool available (Slot const& s) const
+    {
+        // Must be handshaked and in the right state
+        assert (s.state() == Slot::connected || s.state() == Slot::accept);
+
+        if (s.fixed () || s.cluster ())
+            return true;
+
+        if (s.inbound ())
+            return m_inboundActive < m_inboundSlots;
+
+        return m_outboundActive < m_outboundSlots;
+    }
+
+private:
+    // Adjusts slot counts based on the specified slot,
+    // in the direction indicated.
+    void adjust (Slot const& s, int const n)
+    {
+        if (s.fixed ())
+            m_fixedPeerConnections += n;
+
+        if (s.cluster ())
+            m_clusterPeerConnections += n;
+
+        switch (s.state ())
+        {
+        case Slot::accept:
+            assert (s.inbound ());
+            m_acceptCount += n;
+            break;
+
+        case Slot::connect:
+        case Slot::connected:
+            assert (! s.inbound ());
+            m_connectCount += n;
+            break;
+
+        case Slot::active:
+            if (! s.fixed () && ! s.cluster ())
+            {
+                if (s.inbound ())
+                    m_inboundActive += n;
+                else
+                    m_outboundActive += n;
+            }
+            m_totalActive += n;
+            break;
+
+        case Slot::closing:
+            m_closingCount += n;
+            break;
+
+        default:
+            assert (false);
+            break;
+        };
+    }
+
+public:
+
+    //--------------------------------------------------------------------------
 
     /** Called when the config is set or changed. */
     void onConfig (Config const& config)
@@ -179,35 +260,13 @@ public:
     }
 
     /** Determines if an outbound slot is available and assigns it */
-    HandshakeAction grabOutboundSlot(bool self, bool fixed, 
-        bool available, bool cluster)
-    {
-        // If this is a connection to ourselves, we bail.
-        if (self)
-        {
-            ++m_closingCount;
-            return doClose;
-        }
-
-        // Fixed and cluster peers are tracked but are not subject
-        // to limits and don't consume slots. They are always allowed
-        // to connect.
-        if (fixed || cluster)
-        {
-            if (fixed)
-                ++m_fixedPeerConnections;
-                
-            if (cluster)
-                ++m_clusterPeerConnections;
-            
-            return doActivate;
-        }
-        
+    HandshakeAction grabOutboundSlot(bool available)
+    {   
         // If we don't have any slots for this peer then reject the
         // connection.
         if (!available)
         {
-            ++m_closingCount;
+            //++m_closingCount;
             return doClose;
         }
 
@@ -216,35 +275,13 @@ public:
     }
 
     /** Determines if an inbound slot is available and assigns it */
-    HandshakeAction grabInboundSlot(bool self, bool fixed, 
-        bool available, bool cluster)
+    HandshakeAction grabInboundSlot(bool available)
     {
-        // If this is a connection to ourselves, we bail.
-        if (self)
-        {
-            ++m_closingCount;
-            return doClose;
-        }
-
-        // Fixed and cluster peers are tracked but are not subject
-        // to limits and don't consume slots. They are always allowed
-        // to connect.
-        if (fixed || cluster)
-        {
-            if (fixed)
-                ++m_fixedPeerConnections;
-                
-            if (cluster)
-                ++m_clusterPeerConnections;
-            
-            return doActivate;
-        }
-        
         // If we don't have any slots for this peer then reject the
         // connection and redirect them.
         if (!available)
         {
-            ++m_closingCount;
+            //++m_closingCount;
             return doRedirect;
         }
         
@@ -256,35 +293,50 @@ public:
         Returns the disposition for this peer, including whether we should
         activate the connection, issue a redirect or simply close it.
     */
-    HandshakeAction onPeerHandshake (bool inbound, bool self, bool fixed, bool cluster)
+    HandshakeAction onPeerHandshake (bool inbound, bool fixed, bool cluster)
     {
-        if (cluster)
-            return doActivate;
+        // Fixed and cluster peers are tracked but are not subject
+        // to limits and don't consume slots. They are always allowed
+        // to connect.
+        //
+        // DSCHWARTZ This could allow a server to have more connections
+        //           than configured. e.g. you set a limit of 5 peers
+        //           and you configure 15 fixed peers. All of a sudden
+        //           your server will hold up to 15+5=20 peers. Is this
+        //           the way we want it to work?
+        if (fixed || cluster)
+        {
+            if (fixed)
+                ++m_fixedPeerConnections;
                 
+            if (cluster)
+                ++m_clusterPeerConnections;
+            
+            return doActivate;
+        }
+
         if (inbound)
         {
             // Must not be zero!
             consistency_check (m_acceptCount > 0);
             --m_acceptCount;
 
-            return grabInboundSlot (self, fixed, 
-                inboundSlotsFree () > 0, cluster);
+            return grabInboundSlot (inboundSlotsFree () > 0);
         }
 
         // Must not be zero!
         consistency_check (m_connectCount > 0);
         --m_connectCount;
 
-        return grabOutboundSlot (self, fixed, 
-            outboundSlotsFree () > 0, cluster);
+        return grabOutboundSlot (outboundSlotsFree () > 0);
     }
 
     /** Called when a peer socket is closed gracefully. */
     void onPeerGracefulClose ()
     {
         // Must not be zero!
-        consistency_check (m_closingCount > 0);
-        --m_closingCount;
+        //consistency_check (m_closingCount > 0);
+        //--m_closingCount;
     }
 
     /** Called when a peer socket is closed.
@@ -390,12 +442,13 @@ public:
     /** Output statistics. */
     void onWrite (PropertyStream::Map& map)
     {
-        map ["accept"]  = acceptCount();
-        map ["connect"] = connectCount();
-        map ["close"]   = closingCount();
-        map ["in"]      << inboundActive() << "/" << inboundSlots();
-        map ["out"]     << outboundActive() << "/" << outboundSlots();
-        map ["fixed"]   = fixedPeers();
+        map ["accept"]  = acceptCount ();
+        map ["connect"] = connectCount ();
+        map ["close"]   = closingCount ();
+        map ["in"]      << inboundActive () << "/" << inboundSlots ();
+        map ["out"]     << outboundActive () << "/" << outboundSlots ();
+        map ["fixed"]   = fixedPeers ();
+        map ["cluster"] = clusterPeers ();
     }
 
     /** Records the state for diagnostics. */
@@ -403,8 +456,8 @@ public:
     {
         std::stringstream ss;
         ss <<
-            outboundActive() << "/" << outboundSlots() << " out, " <<
-            inboundActive() << "/" << inboundSlots() << " in, " <<
+            outboundActive() << "/" << outboundSlots () << " out, " <<
+            inboundActive() << "/" << inboundSlots () << " in, " <<
             connectCount() << " connecting, " <<
             closingCount() << " closing"
             ;
@@ -427,6 +480,9 @@ private:
 
     /** Number of outbound slots assigned to active peers. */
     int m_outboundActive;
+
+    /** Total active connections including fixed and cluster peers. */
+    int m_totalActive;
 
     /** Number of fixed peer connections that we have. */
     int m_fixedPeerConnections;
