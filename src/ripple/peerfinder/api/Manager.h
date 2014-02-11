@@ -78,41 +78,12 @@ public:
         std::string const& url) = 0;
 
     //--------------------------------------------------------------------------
-
-    /** Called when a peer connection is accepted. */
-    virtual void onPeerAccept (IPAddress const& local_address,
-        IPAddress const& remote_address) = 0;
-
-    /** Called when an outgoing peer connection is attempted. */
-    virtual void onPeerConnect (IPAddress const& address) = 0;
-
-    /** Called when an outgoing peer connection attempt succeeds. */
-    virtual void onPeerConnected (IPAddress const& local_address,
-        IPAddress const& remote_address) = 0;
-
     /** Called when the real public address is discovered.
         Currently this happens when we receive a PROXY handshake. The
         protocol HELLO message will happen after the PROXY handshake.
     */
     virtual void onPeerAddressChanged (
         IPAddress const& currentAddress, IPAddress const& newAddress) = 0;
-
-    /** Called when a peer connection finishes the protocol handshake.
-        @param id The node public key of the peer.
-        @param inCluster The peer is a member of our cluster.
-    */
-    virtual void onPeerHandshake (
-        IPAddress const& address, PeerID const& id, bool inCluster) = 0;
-
-    /** Always called when the socket closes. */
-    virtual void onPeerClosed (IPAddress const& address) = 0;
-
-    /** Called when mtENDPOINTS is received. */
-    virtual void onPeerEndpoints (IPAddress const& address,
-        Endpoints const& endpoints) = 0;
-
-    /** Called when legacy IP/port addresses are received. */
-    virtual void onLegacyEndpoints (IPAddresses const& addresses) = 0;
 
     //--------------------------------------------------------------------------
 
@@ -148,6 +119,13 @@ public:
         This always happens when the socket is closed.
     */
     virtual void on_closed (Slot::ptr const& slot) = 0;
+
+    /** Called when mtENDPOINTS is received by a peer. */
+    virtual void on_endpoints (Slot::ptr const& slot,
+        Endpoints const& endpoints) = 0;
+
+    /** Called when legacy IP/port addresses are received. */
+    virtual void on_legacy_endpoints (IPAddresses const& addresses) = 0;
 };
 
 }

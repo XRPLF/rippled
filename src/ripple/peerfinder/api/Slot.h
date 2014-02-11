@@ -73,6 +73,9 @@ public:
         The public key is established when the handshake is complete.
     */
     virtual boost::optional <RipplePublicKey> const& public_key () const = 0;
+
+    /** Write the configuration into a property stream */
+    virtual void onWrite (PropertyStream::Map& map);
 };
 
 }

@@ -264,8 +264,6 @@ public:
             return;
         }
 
-        m_peerFinder.onPeerConnect (m_remoteAddress);
-
         getNativeSocket ().async_connect (
             IPAddressConversion::to_asio_endpoint (address),
             m_strand.wrap (boost::bind (
@@ -309,8 +307,6 @@ public:
         bassert (m_state == stateConnecting);
         m_state = stateConnected;
 
-        m_peerFinder.onPeerConnected (m_socket->local_endpoint(),
-            m_remoteAddress);
         m_peerFinder.on_connected (m_slot,
             IPAddressConversion::from_asio (local_endpoint));
 
@@ -336,8 +332,6 @@ public:
         m_journal.info << "Accepted " << m_remoteAddress;
 
         m_peers.addPeer (shared_from_this ());
-
-        m_peerFinder.onPeerAccept (m_socket->local_endpoint(), m_remoteAddress);
 
         m_socket->set_verify_mode (boost::asio::ssl::verify_none);
         m_socket->async_handshake (
@@ -394,7 +388,6 @@ public:
             //           to have PeerFinder work reliably.
             m_detaching  = true; // Race is ok.
 
-            m_peerFinder.onPeerClosed (m_remoteAddress);
             m_peerFinder.on_closed (m_slot);
             
             if (m_state == stateActive)
@@ -1398,8 +1391,6 @@ private:
             bassert (m_state == stateConnected);
             m_state = stateHandshaked;
 
-            m_peerFinder.onPeerHandshake (m_remoteAddress,
-                RipplePublicKey(m_nodePublicKey), m_clusterNode);
             m_peerFinder.on_handshake (m_slot, RipplePublicKey(m_nodePublicKey),
                 m_clusterNode);
 
@@ -1642,7 +1633,7 @@ private:
         }
 
         if (! list.empty())
-            m_peerFinder.onLegacyEndpoints (list);
+            m_peerFinder.on_legacy_endpoints (list);
     }
 
     void recvEndpoints (protocol::TMEndpoints& packet)
@@ -1683,7 +1674,7 @@ private:
         }
 
         if (! endpoints.empty())
-            m_peerFinder.onPeerEndpoints (m_remoteAddress, endpoints);
+            m_peerFinder.on_endpoints (m_slot, endpoints);
     }
 
     void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& ptr)
@@ -2775,6 +2766,11 @@ void Peer::accept (
         ssl_context,
         flags));
 
+    // Associate the peer with its slot. We cannot do this from the 
+    // constructor since shared_from_this is not available.
+    // NIKB FIX ME
+    peers.track (peer);
+
     // NIKB FIX Just make this part of the PeerImp constructor for inbound
     peer->accept ();
 }
@@ -2807,6 +2803,11 @@ void Peer::connect (
         ssl_context,
         flags));
 
+    // Associate the peer with its slot. We cannot do this from the 
+    // constructor since shared_from_this is not available.
+    // NIKB FIX ME
+    peers.track (peer);
+    
     // NIKB FIX Just make this part of the PeerImp constructor for outbound
     peer->connect (remote_endpoint);
 }

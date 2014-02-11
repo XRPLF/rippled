@@ -38,13 +38,7 @@ class Logic
 public:
     // Maps remote endpoints to slots. Since a slot has a
     // remote endpoint upon construction, this holds all slots.
-    // 
     typedef std::unordered_map <IP::Endpoint, Slot::ptr> SlotsByIP;
-
-
-
-    // Maps live sockets to the metadata
-    typedef boost::unordered_map <IPAddress, Peer> Peers;
 
     // A set of unique Ripple public keys
     typedef std::set <PeerID> Keys;
@@ -86,9 +80,6 @@ public:
 
         // LiveCache of addresses suitable for gaining initial connections
         Bootcache bootcache;
-
-        // Metadata for live sockets
-        Peers peers;
 
         // Holds all slots
         SlotsByIP slots_by_ip;
@@ -513,8 +504,8 @@ public:
         // Remote address must not already exist
         assert (result.second);
         // Add to the connected address list
-        state->connected_addresses.emplace (remote_endpoint.at_port (0));
-
+//        state->connected_addresses.emplace (remote_endpoint.at_port (0));
+        state->connected_addresses.insert (remote_endpoint.at_port (0));
         // Update slots
         state->slots.add (*slot);
 
@@ -550,7 +541,8 @@ public:
         assert (result.second);
 
         // Add to the connected address list
-        state->connected_addresses.emplace (remote_endpoint.at_port (0));
+//        state->connected_addresses.emplace (remote_endpoint.at_port (0));
+        state->connected_addresses.insert (remote_endpoint.at_port (0));
 
         // Update slots
         state->slots.add (*slot);
@@ -811,25 +803,25 @@ public:
     {
         SharedState::Access state (m_state);
         state->livecache.sweep ();
-        for (Peers::iterator iter (state->peers.begin());
-            iter != state->peers.end(); ++iter)
+
+        for (auto i : state->slots_by_ip)
         {
-            //Peer& peer (iter->second);
-            //peer.received.cycle();
+            Slot::ptr slot (i.second);
+
+            //i.second.received.cycle ();
         }
     }
 
     // Called periodically to update uptime for connected outbound peers.
     void processUptime (SharedState::Access& state)
     {
-        for (Peers::iterator iter (state->peers.begin());
-            iter != state->peers.end(); ++iter)
+        for (auto i : state->slots_by_ip)
         {
-            Peer const& peer (iter->second);
+            Slot::ptr slot (i.second);
 
-            if (! peer.inbound() && peer.state() == Peer::stateActive)
+            if (! slot->inbound() && slot->state() == Slot::active)
                 state->bootcache.onConnectionActive (
-                    peer.remote_address());
+                    slot->remote_endpoint());
         }
     }
 
@@ -958,7 +950,7 @@ public:
     }
 
     // Send mtENDPOINTS for the specified peer
-    void sendEndpointsTo (Peer const& peer, Giveaways& g)
+    void sendEndpointsTo (SlotImp const& slot, Giveaways& g)
     {
         Endpoints endpoints;
 
@@ -983,10 +975,10 @@ public:
         if (! endpoints.empty())
         {
             if (m_journal.trace) m_journal.trace << leftw (18) <<
-                "Logic sending " << peer.remote_address() << 
+                "Logic sending " << slot.remote_endpoint() << 
                 " with " << endpoints.size() <<
                 ((endpoints.size() > 1) ? " endpoints" : " endpoint");
-            m_callback.sendEndpoints (peer.remote_address(), endpoints);
+            m_callback.sendEndpoints (slot.remote_endpoint(), endpoints);
         }
     }
 
@@ -994,22 +986,22 @@ public:
     void sendEndpoints ()
     {
         SharedState::Access state (m_state);
-        if (! state->peers.empty())
+        if (! state->slots_by_ip.empty())
         {
             DiscreteTime const now (m_clock());
             DiscreteTime const whenSendEndpoints (
                 now + Tuning::secondsPerMessage);
             Giveaways g (state->livecache.giveaways ());
-            for (Peers::iterator iter (state->peers.begin());
-                iter != state->peers.end(); ++iter)
+            for (auto x : state->slots_by_ip)
             {
-                Peer& peer (iter->second);
-                if (peer.state() == Peer::stateActive)
+                SlotImp& slot (*std::dynamic_pointer_cast <SlotImp> (x.second));
+
+                if (slot.state() == Slot::active)
                 {
-                    if (peer.whenSendEndpoints <= now)
+                    if (slot.whenSendEndpoints <= now)
                     {
-                        sendEndpointsTo (peer, g);
-                        peer.whenSendEndpoints = whenSendEndpoints;
+                        sendEndpointsTo (slot, g);
+                        slot.whenSendEndpoints = whenSendEndpoints;
                     }
                 }
             }
@@ -1024,10 +1016,9 @@ public:
             return;
 
         SharedState::Access state (m_state);
-        Peers::iterator const iter (state->peers.find (address));
-        Peer& peer (iter->second);
-
-        if (iter == state->peers.end())
+        SlotsByIP::iterator const iter (state->slots_by_ip.find (address));
+        
+        if (iter == state->slots_by_ip.end())
         {
             // The peer disconnected before we finished the check
             if (m_journal.debug) m_journal.debug << leftw (18) <<
@@ -1036,15 +1027,17 @@ public:
             return;
         }
 
+        SlotImp& slot (*std::dynamic_pointer_cast <SlotImp> (iter->second));
+
         // Mark that a check for this peer is finished.
-        peer.connectivityCheckInProgress = false;
+        slot.connectivityCheckInProgress = false;
 
         if (! result.error)
         {
-            peer.checked = true;
-            peer.canAccept = result.canAccept;
+            slot.checked = true;
+            slot.canAccept = result.canAccept;
 
-            if (peer.canAccept)
+            if (slot.canAccept)
             {
                 if (m_journal.debug) m_journal.debug << leftw (18) <<
                     "Logic testing " << address << " succeeded";
@@ -1058,15 +1051,15 @@ public:
         else
         {
             // VFALCO TODO Should we retry depending on the error?
-            peer.checked = true;
-            peer.canAccept = false;
+            slot.checked = true;
+            slot.canAccept = false;
 
             if (m_journal.error) m_journal.error << leftw (18) <<
                 "Logic testing " << iter->first << " with error, " <<
                 result.error.message();
         }
 
-        if (peer.canAccept)
+        if (slot.canAccept)
         {
             // VFALCO TODO Why did I think this line was needed?
             //state->bootcache.onConnectionHandshake (address);
@@ -1083,278 +1076,7 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    // Returns `true` if the address matches the remote address of one
-    // of our outbound sockets.
-    //
-    // VFALCO TODO Do the lookup using an additional index by local address
-    bool haveLocalOutboundAddress (IPAddress const& local_address,
-        SharedState::Access& state)
-    {
-        for (Peers::const_iterator iter (state->peers.begin());
-            iter != state->peers.end(); ++iter)
-        {
-            Peer const& peer (iter->second);
-            if (peer.outbound () &&
-                peer.local_address() == local_address)
-                return true;
-        }
-        return false;
-    }
-
     //--------------------------------------------------------------------------
-    bool isFixed (IPAddress const& address) const
-    {
-        struct EqualWithoutPort
-        {
-            bool operator() (IPAddress const& lhs,
-                IPAddress const& rhs) const
-            {
-                return lhs.at_port (0) == rhs.at_port (0);
-            }
-        };
-
-        for (FixedPeers::const_iterator iter = m_fixedPeers.cbegin();
-            iter != m_fixedPeers.cend(); ++iter)
-        {
-            if (iter->second.hasAddress (address, EqualWithoutPort ()))
-                return true;
-        }
-
-        return false;
-    }
-
-    //--------------------------------------------------------------------------
-
-    void onPeerAccept (IPAddress const& local_address,
-        IPAddress const& remote_endpoint)
-    {
-return;
-        if (m_journal.debug) m_journal.debug << leftw (18) <<
-            "Logic accept" << remote_endpoint <<
-            " on local " << local_address;
-        SharedState::Access state (m_state);
-        state->slots.onPeerAccept ();
-        state->connected_addresses.insert (remote_endpoint.at_port (0));
-
-        // FIXME m_fixedPeers contains both an IP and a port and incoming peers
-        // wouldn't match the port, so wouldn't get identified as fixed. One
-        // solution is to have fixed peers tracked by IP and not port. The
-        // port will be used only for outbound connections. Another option is
-        // to always consider incoming connections as non-fixed, then after
-        // an outbound connection to the peer is established and we realize
-        // we have a duplicate connection to a fixed peer, to find that peer
-        // and mark it as fixed.
-        //
-        //bool fixed (m_fixedPeers.count (
-        //    remote_endpoint.address ()) != 0);
-
-        bool fixed (false);
-
-        std::pair <Peers::iterator, bool> result (
-            state->peers.emplace (boost::unordered::piecewise_construct,
-                boost::make_tuple (remote_endpoint),
-                    boost::make_tuple (remote_endpoint, true, fixed)));
-        // Address must not already exist!
-        consistency_check (result.second);
-        // Prevent self connect
-        if (haveLocalOutboundAddress (remote_endpoint, state))
-        {
-            if (m_journal.warning) m_journal.warning << leftw (18) <<
-                "Logic dropping " << remote_endpoint << " as self connect";
-            m_callback.disconnectPeer (remote_endpoint, false);
-            return;
-        }
-    }
-
-    void onPeerConnect (IPAddress const& remote_endpoint)
-    {
-return;
-        if (m_journal.debug) m_journal.debug << leftw (18) <<
-            "Logic connect " << remote_endpoint;
-        SharedState::Access state (m_state);
-        state->slots.onPeerConnect ();
-        state->connected_addresses.insert (remote_endpoint.at_port (0));
-
-        bool fixed (isFixed (remote_endpoint));
-
-        // VFALCO TODO Change to use forward_as_tuple
-        std::pair <Peers::iterator, bool> result (
-            state->peers.emplace (boost::unordered::piecewise_construct,
-                boost::make_tuple (remote_endpoint),
-                    boost::make_tuple (remote_endpoint, false, fixed)));
-        // Address must not already exist!
-        consistency_check (result.second);
-    }
-
-    void onPeerConnected (IPAddress const& local_address,
-        IPAddress const& remote_endpoint)
-    {
-return;
-        if (m_journal.trace) m_journal.trace << leftw (18) <<
-            "Logic connected" << remote_endpoint <<
-            " on local " << local_address;
-        SharedState::Access state (m_state);
-        Peers::iterator const iter (state->peers.find (remote_endpoint));
-        // Address must exist!
-        consistency_check (iter != state->peers.end());
-        Peer& peer (iter->second);
-        peer.local_address (local_address);
-        peer.state (Peer::stateConnected);
-    }
-
-    void onPeerHandshake (IPAddress const& remote_endpoint, 
-        PeerID const& key, bool inCluster)
-    {
-return;
-        if (m_journal.debug) m_journal.debug << leftw (18) <<
-            "Logic handshake " << remote_endpoint <<
-            " with key " << key;
-        SharedState::Access state (m_state);
-        Peers::iterator const iter (state->peers.find (remote_endpoint));
-        // Address must exist!
-        consistency_check (iter != state->peers.end());
-        Peer& peer (iter->second);
-        // Must be accepted or connected
-        consistency_check (
-            peer.state() == Peer::stateAccept ||
-            peer.state() == Peer::stateConnected);
-        // Mark cluster peers as necessary
-        peer.cluster (inCluster);        
-
-        // We track connections by their public key to allow us to reliably
-        // detect duplicates even for multi-homed servers.
-
-        // NIKB FIXME Doing this will cause the Slots count to miscount the
-        //            closing count, as the code below puts the server in
-        //            Peer::stateClosing which attempts to decrement the slot
-        //            closing code which we have not incremented.
-        HandshakeAction action (doClose);
-
-        // If the public key of the server is on our list, it means that we already
-        // have a connection to that server, so we don't even need to bother with
-        // attempting to assign a slot.
-        if (state->keys.find (key) == state->keys.end())
-            action = state->slots.onPeerHandshake (
-                peer.inbound(), peer.fixed(), peer.cluster());
-
-        // Pass address metadata to bootcache
-        if (peer.outbound())
-            state->bootcache.onConnectionHandshake (remote_endpoint, action);
-        if (action == doActivate)
-        {
-            // Track the public key
-            std::pair <Keys::iterator, bool> const result (
-                state->keys.insert (key));
-            // Must not already exist!
-            consistency_check (result.second);
-            peer.activate (key, m_clock());
-            m_callback.activatePeer (remote_endpoint);
-        }
-        else
-        {
-            peer.state (Peer::stateClosing);
-            if (action == doRedirect)
-            {
-                // Must be inbound!
-                consistency_check (peer.inbound());
-                Endpoints const endpoints (getSomeEndpoints ());
-                if (! endpoints.empty ())
-                {
-                    if (m_journal.trace) m_journal.trace << leftw (18) <<
-                        "Logic redirect " << remote_endpoint <<
-                        " with " << endpoints.size() <<
-                        ((endpoints.size() > 1) ? " addresses" : " address");
-                    m_callback.sendEndpoints (peer.remote_address(), endpoints);
-                }
-                else
-                {
-                    if (m_journal.warning) m_journal.warning << leftw (18) <<
-                        "Logic deferred " << remote_endpoint;
-                }
-            }
-            m_callback.disconnectPeer (remote_endpoint, true);
-        }
-    }
-
-    void onPeerClosed (IPAddress const& remote_endpoint)
-    {
-return;
-        SharedState::Access state (m_state);
-        {
-            ConnectedAddresses::iterator iter (state->connected_addresses.find (
-                remote_endpoint.at_port (0)));
-            // Address must exist!
-            consistency_check (iter != state->connected_addresses.end());
-            state->connected_addresses.erase (iter);
-        }
-        Peers::iterator const iter (state->peers.find (remote_endpoint));
-        // Address must exist!
-        consistency_check (iter != state->peers.end());
-        Peer& peer (iter->second);
-        switch (peer.state())
-        {
-        // Accepted but no handshake
-        case Peer::stateAccept:
-        // Connection attempt failed
-        case Peer::stateConnect:
-        // Connected but no handshake
-        case Peer::stateConnected:
-            {
-                // Update slots
-                state->slots.onPeerClosed (peer.inbound (), false, 
-                    peer.fixed (), peer.cluster ());
-                if (peer.outbound())
-                {
-                    state->bootcache.onConnectionFailure (remote_endpoint);
-                }
-                else
-                {
-                    if (m_journal.trace) m_journal.trace << leftw (18) <<
-                        "Logic accept " << remote_endpoint << " failed";
-                }
-
-                // VFALCO TODO If the address exists in the ephemeral/live
-                //             endpoint livecache then we should mark the failure
-                // as if it didn't pass the listening test. We should also
-                // avoid propagating the address.
-            }
-            break;
-
-        // The peer was assigned an open slot.
-        case Peer::stateActive:
-            {
-                // Remove the key
-                Keys::iterator const iter (state->keys.find (peer.id()));
-                // Key must exist!
-                consistency_check (iter != state->keys.end());
-                state->keys.erase (iter);
-                if (peer.outbound())
-                    state->bootcache.onConnectionClosed (remote_endpoint);
-                state->slots.onPeerClosed (peer.inbound (), true, 
-                    peer.fixed (), peer.cluster ());
-                if (m_journal.trace) m_journal.trace << leftw (18) <<
-                    "Logic closed active " << peer.remote_address();
-            }
-            break;
-
-        // The peer handshaked but we were full on slots
-        // or it was a self connection.
-        case Peer::stateClosing:
-            {
-                if (m_journal.trace) m_journal.trace << leftw (18) <<
-                    "Logic closed " << remote_endpoint;
-                state->slots.onPeerGracefulClose ();
-            }
-            break;
-
-        default:
-            consistency_check (false);
-            break;
-        };
-
-        state->peers.erase (iter);
-    }
-
     void onPeerAddressChanged (
         IPAddress const& currentAddress, IPAddress const& newAddress)
     {
@@ -1397,24 +1119,22 @@ return;
 #endif
     }
 
-    void onPeerEndpoints (IPAddress const& address, Endpoints list)
+    void on_endpoints (Slot::ptr const& slot_, Endpoints list)
     {
+        SlotImp& slot (*std::dynamic_pointer_cast <SlotImp> (slot_));
+
         if (m_journal.trace) m_journal.trace << leftw (18) <<
-            "Endpoints from " << address <<
+            "Endpoints from " << slot.remote_endpoint () <<
             " contained " << list.size () <<
             ((list.size() > 1) ? " entries" : " entry");
+
         SharedState::Access state (m_state);
-        Peers::iterator const iter (state->peers.find (address));
-        // Address must exist!
-        consistency_check (iter != state->peers.end());
-        Peer& peer (iter->second);
         // Must be handshaked!
-        consistency_check (peer.state() == Peer::stateActive);
+        consistency_check (slot.state () == Slot::active);
         // Preprocess the endpoints
         {
             bool neighbor (false);
-            for (Endpoints::iterator iter (list.begin());
-                iter != list.end();)
+            for (Endpoints::iterator iter (list.begin()); iter != list.end(); )
             {
                 Endpoint& ep (*iter);
                 if (ep.hops > Tuning::maxHops)
@@ -1431,7 +1151,7 @@ return;
                     {
                         // Fill in our neighbors remote address
                         neighbor = true;
-                        ep.address = peer.remote_address().at_port (
+                        ep.address = slot.remote_endpoint().at_port (
                             ep.address.port ());
                     }
                     else
@@ -1466,21 +1186,21 @@ return;
 
             if (ep.hops == 0)
             {
-                if (peer.connectivityCheckInProgress)
+                if (slot.connectivityCheckInProgress)
                 {
                     if (m_journal.warning) m_journal.warning << leftw (18) <<
                         "Logic testing " << ep.address << " already in progress";
                 }
-                else if (! peer.checked)
+                else if (! slot.checked)
                 {
                     // Mark that a check for this peer is now in progress.
-                    peer.connectivityCheckInProgress = true;
+                    slot.connectivityCheckInProgress = true;
 
                     // Test the peer's listening port before
                     // adding it to the livecache for the first time.
                     //                     
                     m_checker.async_test (ep.address, bind (
-                        &Logic::checkComplete, this, address,
+                        &Logic::checkComplete, this, slot.remote_endpoint (),
                             ep.address, _1));
 
                     // Note that we simply discard the first Endpoint
@@ -1488,7 +1208,7 @@ return;
                     // listening test. They will just send us another
                     // one in a few seconds.
                 }
-                else if (peer.canAccept)
+                else if (slot.canAccept)
                 {
                     // We only add to the livecache if the neighbor passed the
                     // listening test, else we silently drop their messsage
@@ -1505,10 +1225,10 @@ return;
             }
         }
 
-        peer.whenAcceptEndpoints = now + Tuning::secondsPerMessage;
+        slot.whenAcceptEndpoints = now + Tuning::secondsPerMessage;
     }
 
-    void onLegacyEndpoints (
+    void on_legacy_endpoints (
         IPAddresses const& list)
     {
         // Ignoring them also seems a valid choice.
@@ -1524,26 +1244,6 @@ return;
     //
     //--------------------------------------------------------------------------
 
-    void writePeers (PropertyStream::Set& set, Peers const& peers)
-    {
-        for (Peers::const_iterator iter (peers.begin());
-            iter != peers.end(); ++iter)
-        {
-            PropertyStream::Map item (set);
-            Peer const& peer (iter->second);
-            item ["local_address"]   = to_string (peer.local_address ());
-            item ["remote_address"]   = to_string (peer.remote_address ());
-            if (peer.inbound())
-                item ["inbound"]    = "yes";
-            if (peer.fixed())
-                item ["fixed"]      = "yes";
-            if (peer.cluster())
-                item ["cluster"]    = "yes";
-            
-            item ["state"] = stateString (peer.state());
-        }
-    }
-
     void onWrite (PropertyStream::Map& map)
     {
         SharedState::Access state (m_state);
@@ -1557,7 +1257,14 @@ return;
 
         {
             PropertyStream::Set child ("peers", map);
-            writePeers (child, state->peers);
+
+            for (auto x : state->slots_by_ip)
+            {
+                Slot::ptr const& slot (x.second);
+
+                PropertyStream::Map item(child);
+                slot->onWrite (item);
+            }
         }
 
         {
@@ -1592,17 +1299,15 @@ return;
         return SharedState::ConstAccess (m_state)->slots;
     }
 
-    static std::string stateString (Peer::State state)
+    static std::string stateString (Slot::State state)
     {
         switch (state)
         {
-        case Peer::stateAccept:     return "accept";
-        case Peer::stateConnect:    return "connect";
-        case Peer::stateConnected:  return "connected";
-        case Peer::stateActive:     return "active";
-        case Peer::stateClosing:    return "closing";
-        default:
-            break;
+        case Slot::accept:     return "accept";
+        case Slot::connect:    return "connect";
+        case Slot::connected:  return "connected";
+        case Slot::active:     return "active";
+        case Slot::closing:    return "closing";
         };
         return "?";
     }
@@ -1612,15 +1317,15 @@ return;
     {
         ss << std::endl << std::endl <<
             "Peers";
-        for (Peers::const_iterator iter (state->peers.begin());
-            iter != state->peers.end(); ++iter)
+
+        for (auto x : state->slots_by_ip)
         {
-            Peer const& peer (iter->second);
-            ss << std::endl <<
-                peer.remote_address () <<
-                (peer.inbound () ? " (in) " : " ") <<
-                stateString (peer.state ()) << " " <<
-                peer.id();
+            Slot::ptr const& slot (x.second);
+
+            ss << std::endl << 
+                slot->remote_endpoint () <<
+                (slot->inbound () ? " (in) " : " ") <<
+                stateString (slot->state ());
         }
     }
 

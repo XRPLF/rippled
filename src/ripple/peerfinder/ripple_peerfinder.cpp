@@ -70,7 +70,6 @@ using namespace beast;
 #include "impl/SourceStrings.h"
 #  include "impl/Store.h"
 # include "impl/Bootcache.h"
-# include "impl/Peer.h"
 #include "impl/StoreSqdb.h"
 #  include "impl/Reporting.h"
 #include "impl/FixedPeer.h"
@@ -86,6 +85,8 @@ using namespace beast;
 
 //#include "sim/sync_timer.h"
 
+// NIKB TEMPORARY
+#if 0
 #include "sim/GraphAlgorithms.h"
 #include "sim/WrappedSink.h"
 # include "sim/Predicates.h"
@@ -94,3 +95,4 @@ using namespace beast;
 # include "sim/NodeSnapshot.h"
 # include "sim/Params.h"
 #include "sim/Tests.cpp"
+#endif

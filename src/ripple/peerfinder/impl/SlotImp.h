@@ -25,7 +25,8 @@
 namespace ripple {
 namespace PeerFinder {
 
-class SlotImp : public Slot
+class SlotImp 
+    : public Slot
 {
 public:
     bool const m_inbound;
@@ -36,6 +37,27 @@ public:
     boost::optional <IP::Endpoint> m_local_endpoint;
     boost::optional <RipplePublicKey> m_public_key;
 
+    // The time after which we will send another mtENDPOINTS
+    DiscreteTime whenSendEndpoints;
+
+    // The time after which we will accept mtENDPOINTS from the peer
+    // This is to prevent flooding or spamming. Receipt of mtENDPOINTS
+    // sooner than the allotted time should impose a load charge.
+    //
+    DiscreteTime whenAcceptEndpoints;
+
+    // Tells us if we checked the connection. Outbound connections
+    // are always considered checked since we successfuly connected.
+    bool checked;
+
+    // Set to indicate if the connection can receive incoming at the
+    // address advertised in mtENDPOINTS. Only valid if checked is true.
+    bool canAccept;
+
+    // Set to indicate that a connection check for this peer is in
+    // progress. Valid always.
+    bool connectivityCheckInProgress;
+
     // inbound
     SlotImp (IP::Endpoint const& local_endpoint,
         IP::Endpoint const& remote_endpoint, bool fixed)
@@ -45,6 +67,9 @@ public:
         , m_state (accept)
         , m_remote_endpoint (remote_endpoint)
         , m_local_endpoint (local_endpoint)
+        , checked (false)
+        , canAccept (false)
+        , connectivityCheckInProgress (false)
     {
     }
 
@@ -55,6 +80,9 @@ public:
         , m_cluster (false)
         , m_state (connect)
         , m_remote_endpoint (remote_endpoint)
+        , checked (true)
+        , canAccept (true)
+        , connectivityCheckInProgress (false)
     {
     }
 
@@ -137,6 +165,30 @@ public:
     void cluster (bool cluster_)
     {
         m_cluster = cluster_;
+    }
+
+    void onWrite (PropertyStream::Map& map)
+    {
+        map ["remote_address"]   = to_string (remote_endpoint ());
+
+        if (local_endpoint ())
+            map ["local_address"]   = to_string (*local_endpoint ());
+
+        if (inbound())
+            map ["inbound"]    = "yes";
+        if (fixed())
+            map ["fixed"]      = "yes";
+        if (cluster())
+            map ["cluster"]    = "yes";
+        
+        switch (state ())
+        {
+        case accept:    map ["state"] = "accept";
+        case connect:   map ["state"] = "connect";
+        case connected: map ["state"] = "connected";
+        case active:    map ["state"] = "active";
+        case closing:   map ["state"] = "closing";
+        }
     }
 };
 

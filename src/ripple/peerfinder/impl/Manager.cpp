@@ -135,34 +135,18 @@ public:
         m_logic.on_closed (slot);
     }
 
+    void on_endpoints (Slot::ptr const& slot,
+        Endpoints const& endpoints)
+    {
+        m_logic.on_endpoints (slot, endpoints);
+    }
+
+    void on_legacy_endpoints (IPAddresses const& addresses)
+    {
+        m_logic.on_legacy_endpoints (addresses);
+    }
+    
     //--------------------------------------------------------------------------
-
-    void onPeerAccept (IPAddress const& local_address,
-        IPAddress const& remote_address)
-    {
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerAccept, &m_logic,
-                      local_address, remote_address)));
-    }
-
-    void onPeerConnect (IPAddress const& address)
-    {
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerConnect, &m_logic,
-                      address)));
-    }
-
-    void onPeerConnected (IPAddress const& local_address,
-        IPAddress const& remote_address)
-    {
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerConnected, &m_logic,
-                      local_address, remote_address)));
-    }
-
     void onPeerAddressChanged (
         IPAddress const& currentAddress, IPAddress const& newAddress)
     {
@@ -170,39 +154,6 @@ public:
             m_context.wrap (
                 bind (&Logic::onPeerAddressChanged, &m_logic,
                     currentAddress, newAddress)));
-    }
-
-    void onPeerHandshake (IPAddress const& address, PeerID const& id, 
-        bool cluster)
-    {
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerHandshake, &m_logic,
-                      address, id, cluster)));
-    }
-
-    void onPeerClosed (IPAddress const& address)
-    {
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerClosed, &m_logic,
-                    address)));
-    }
-
-    void onPeerEndpoints (IPAddress const& address,
-        Endpoints const& endpoints)
-    {
-        m_queue.dispatch (
-            beast::bind (&Logic::onPeerEndpoints, &m_logic,
-                address, endpoints));
-    }
-
-    void onLegacyEndpoints (IPAddresses const& addresses)
-    {
-        m_queue.dispatch (
-            m_context.wrap (
-                beast::bind (&Logic::onLegacyEndpoints, &m_logic,
-                    addresses)));
     }
 
     //--------------------------------------------------------------------------

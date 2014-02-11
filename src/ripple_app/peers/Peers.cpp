@@ -88,6 +88,9 @@ public:
     typedef boost::unordered_map <
         Peer::ShortId, Peer::pointer> PeerByShortId;
 
+    typedef std::unordered_map <
+        PeerFinder::Slot::ptr, Peer::pointer> PeerBySlot;
+
     std::recursive_mutex m_mutex;
 
     // Blocks us until dependent objects have been destroyed
@@ -113,6 +116,9 @@ public:
     /** Tracks peers by their session ID */
     PeerByShortId m_shortIdMap;
 
+    /** Tracks peers by their slots */
+    PeerBySlot m_slotMap;
+    
     /** Tracks all instances of peer objects */
     List <Peer> m_list;
 
@@ -235,6 +241,11 @@ public:
         release();
     }
 
+    void track (Peer::ref peer)
+    {
+        
+    }
+
     //--------------------------------------------------------------------------
     //
     // PeerFinder::Callback
@@ -264,10 +275,10 @@ public:
 
     void activatePeer (IPAddress const& remote_address)
     {
+        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+
         m_journal.trace <<
             "activatePeer (" << remote_address << ")";
-
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
 
         PeerByIP::iterator const it (m_ipMap.find (remote_address));
 
