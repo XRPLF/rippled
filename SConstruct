@@ -17,12 +17,12 @@ Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
 Debian  = bool(Linux and 'debian' == platform.linux_distribution()[0])
 Archlinux  = bool(Linux and ('','','') == platform.linux_distribution()) #Arch still has issues with the platform module
 
-USING_CLANG = OSX
+USING_CLANG = OSX or os.environ.get('CC', None) == 'clang'
 
 #
 # We expect this to be set
-# 
-BOOST_HOME = os.environ.get("RIPPLED_BOOST_HOME", None) 
+#
+BOOST_HOME = os.environ.get("RIPPLED_BOOST_HOME", None)
 
 
 if OSX or Ubuntu or Debian or Archlinux:
@@ -51,12 +51,18 @@ if FreeBSD:
     env.Append(CCFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
     env.Append(LINKFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
 
-if OSX:
+if USING_CLANG:
     env.Replace(CC= 'clang')
     env.Replace(CXX= 'clang++')
-    env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libc++'])
-    env.Append(LINKFLAGS='-stdlib=libc++') 
-    env['FRAMEWORKS'] = ['AppKit','Foundation']
+
+    if Linux:
+        env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libstdc++'])
+        env.Append(LINKFLAGS='-stdlib=libstdc++')
+
+    if OSX:
+        env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libc++'])
+        env.Append(LINKFLAGS='-stdlib=libc++')
+        env['FRAMEWORKS'] = ['AppKit','Foundation']
 
 GCC_VERSION = re.split('\.', commands.getoutput(env['CXX'] + ' -dumpversion'))
 
@@ -105,12 +111,23 @@ BOOST_LIBS = [
 # We whitelist platforms where the non -mt version is linked with pthreads. This
 # can be verified with: ldd libboost_filesystem.* If a threading library is
 # included the platform can be whitelisted.
-if FreeBSD or Ubuntu or Archlinux:
-# if FreeBSD or Ubuntu or Archlinux or OSX:    
+# if FreeBSD or Ubuntu or Archlinux:
+
+if not (USING_CLANG and Linux) and (FreeBSD or Ubuntu or Archlinux or OSX):
     # non-mt libs do link with pthreads.
     env.Append(
         LIBS = BOOST_LIBS
     )
+elif Linux and USING_CLANG and Ubuntu:
+    # It's likely going to be here if using boost 1.55 
+    boost_statics = [ ("/usr/lib/x86_64-linux-gnu/lib%s.a" % a) for a in 
+                      BOOST_LIBS ]
+
+    if not all(os.path.exists(f) for f in boost_statics):
+        # Else here
+        boost_statics = [("/usr/lib/lib%s.a" % a) for a in BOOST_LIBS]
+    
+    env.Append(LIBS = [File(f) for f in boost_statics])
 else:
     env.Append(
         LIBS = [l + '-mt' for l in BOOST_LIBS]
@@ -235,7 +252,7 @@ env.Append(
         ['rt'] if not OSX else [] +\
         [
             'z'
-        ] 
+        ]
 )
 
 # We prepend, in case there's another BOOST somewhere on the path
@@ -246,14 +263,23 @@ if BOOST_HOME is not None:
 
 if not OSX:
     env.Append(LINKFLAGS = [
-        '-rdynamic', '-pthread', 
+        '-rdynamic',
+        '-pthread',
         ])
 
 DEBUGFLAGS  = ['-g', '-DDEBUG', '-D_DEBUG']
 
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts']+DEBUGFLAGS)
-env.Append(CXXFLAGS = ['-O1', '-pthread', '-Wno-unused-local-typedefs', '-Wno-invalid-offsetof', '-Wformat']+DEBUGFLAGS)
+if not USING_CLANG:
+     more_warnings = ['-Wno-unused-local-typedefs']
+else:
+     # This disables the "You said it was a struct AND a class, wth is going on
+     # warnings"
+     more_warnings = ['-Wno-mismatched-tags']
+     # This needs to be a CCFLAGS not a CXXFLAGS
+     env.Append(CCFLAGS = more_warnings)
 
+env.Append(CXXFLAGS = ['-O1','-pthread', '-Wno-invalid-offsetof', '-Wformat']+more_warnings+DEBUGFLAGS)
 
 # RTTI is required for Beast and CountedObject.
 #
