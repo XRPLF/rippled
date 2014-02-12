@@ -106,7 +106,7 @@ protected:
                         m_proxyInfo.destAddress.value [0],
                         m_proxyInfo.destAddress.value [1],
                         m_proxyInfo.destAddress.value [2],
-                        m_proxyInfo.destAddress.value [4])
+                        m_proxyInfo.destAddress.value [3])
                     , m_proxyInfo.destPort);
             }
 
