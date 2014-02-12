@@ -63,7 +63,16 @@ public:
                                     will send a notification. This must be
                                     greater than zero.
     */
+    /** @{ */
     void setExpiration (double secondsUntilDeadline);
+
+    template <class Rep, class Period>
+    void setExpiration (std::chrono::duration <Rep, Period> const& amount)
+    {
+        setExpiration (std::chrono::duration_cast <
+            std::chrono::duration <double>> (amount).count ());
+    }
+    /** @} */
 
     /** Set the timer to go off repeatedly with the specified frequency.
         If the timer is already active, this will reset it.
