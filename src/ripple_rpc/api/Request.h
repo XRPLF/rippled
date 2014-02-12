@@ -49,7 +49,7 @@ struct Request
     // [in] The JSON-RPC method
     std::string method;
 
-    // [in] The complete JSON-RPC request
+    // [in] The Ripple-specific "params" object
     Json::Value params;
 
     // [in, out] The resource cost for the command

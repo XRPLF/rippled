@@ -113,25 +113,30 @@ std::string RPCServerHandler::processRequest (std::string const& request, IPAddr
    
     WriteLog (lsDEBUG, RPCServer) << "Query: " << strMethod << params;
 
-    RPC::Request req (LogPartition::getJournal <RPCServer> (),
-        strMethod, params, getApp ());
-
-    // VFALCO Try processing the command using the new code
-    if (getApp().getRPCManager().dispatch (req))
     {
-        usage.charge (req.fee);
-        WriteLog (lsDEBUG, RPCServer) << "Reply: " << req.result;
-        return createResponse (200,
-            JSONRPCReply (req.result, Json::Value (), id));
+        Json::Value ripple_params (params.size()
+            ? params [0u] : Json::Value (Json::objectValue));
+        ripple_params ["command"] = strMethod;
+        RPC::Request req (LogPartition::getJournal <RPCServer> (),
+            strMethod, ripple_params, getApp ());
+
+        // VFALCO Try processing the command using the new code
+        if (getApp().getRPCManager().dispatch (req))
+        {
+            usage.charge (req.fee);
+            WriteLog (lsDEBUG, RPCServer) << "Reply: " << req.result;
+            return createResponse (200,
+                JSONRPCReply (req.result, Json::Value (), id));
+        }
     }
 
     // legacy dispatcher
-
+    Resource::Charge fee (Resource::feeReferenceRPC);
     RPCHandler rpcHandler (&m_networkOPs);
     Json::Value const result = rpcHandler.doRpcCommand (
-        strMethod, params, role, req.fee);
+        strMethod, params, role, fee);
 
-    usage.charge (req.fee);
+    usage.charge (fee);
 
     WriteLog (lsDEBUG, RPCServer) << "Reply: " << result;
 
