@@ -2198,7 +2198,7 @@ private:
     
     void getLedger (protocol::TMGetLedger& packet)
     {
-	    SHAMap::pointer map;
+            SHAMap::pointer map;
 	    protocol::TMLedgerData reply;
 	    bool fatLeaves = true, fatRoot = false;
 
@@ -2304,29 +2304,34 @@ private:
 	                    seq = packet.ledgerseq ();
 
 	                Peers::PeerSequence peerList = m_peers.getActivePeers ();
-                    Peers::PeerSequence usablePeers;
-                    BOOST_FOREACH (Peer::ref peer, peerList)
-                    {
-                        if (peer->hasLedger (ledgerhash, seq) && (peer.get () != this))
-                            usablePeers.push_back (peer);
-                    }
+                        Peers::PeerSequence usablePeers;
+                        BOOST_FOREACH (Peer::ref peer, peerList)
+                        {
+                            if (peer->hasLedger (ledgerhash, seq) && (peer.get () != this))
+                                usablePeers.push_back (peer);
+                        }
 
-                    if (usablePeers.empty ())
-                    {
-                        m_journal.trace << "Unable to route ledger request";
+                        if (usablePeers.empty ())
+                        {
+                            m_journal.trace << "Unable to route ledger request";
+                            return;
+                        }
+
+                        Peer::ref selectedPeer = usablePeers[rand () % usablePeers.size ()];
+                        packet.set_requestcookie (getShortId ());
+                        selectedPeer->sendPacket (
+                            boost::make_shared<PackedMessage> (packet, protocol::mtGET_LEDGER), false);
+                        m_journal.debug << "Ledger request routed";
                         return;
                     }
-
-                    Peer::ref selectedPeer = usablePeers[rand () % usablePeers.size ()];
-                    packet.set_requestcookie (getShortId ());
-                    selectedPeer->sendPacket (
-                    	boost::make_shared<PackedMessage> (packet, protocol::mtGET_LEDGER), false);
-                    m_journal.debug << "Ledger request routed";
-                    return;
-	            }
 	        }
 	        else if (packet.has_ledgerseq ())
 	        {
+	            if (packet.ledgerseq() < getApp().getLedgerMaster().getEarliestFetch())
+	            {
+	                m_journal.debug << "Peer requests early ledger";
+	                return;
+	            }
 	            ledger = getApp().getLedgerMaster ().getLedgerBySeq (packet.ledgerseq ());
 	            if (m_journal.debug)
 	            	m_journal.debug << "Don't have ledger " << packet.ledgerseq ();
@@ -2358,6 +2363,12 @@ private:
 
 	            return;
 	        }
+
+                if (!packet.has_ledgerseq() && (ledger->getLedgerSeq() < getApp().getLedgerMaster().getEarliestFetch()))
+                {
+                    m_journal.debug << "Peer requests early ledger";
+                    return;
+                }
 
 	        // Fill out the reply
 	        uint256 lHash = ledger->getHash ();
@@ -2540,7 +2551,14 @@ private:
 
         if (!haveLedger->isClosed ())
         {
-             m_journal.warning << "Peer requests fetch pack from open ledger: " << hash;
+            m_journal.warning << "Peer requests fetch pack from open ledger: " << hash;
+            charge (Resource::feeInvalidRequest);
+            return;
+        }
+
+        if (haveLedger->getLedgerSeq() < getApp().getLedgerMaster().getEarliestFetch())
+        {
+            m_journal.debug << "Peer requests fetch pack that is too early";
             charge (Resource::feeInvalidRequest);
             return;
         }

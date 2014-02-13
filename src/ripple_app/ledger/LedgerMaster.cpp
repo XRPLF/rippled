@@ -424,6 +424,14 @@ public:
         return true;
     }
 
+    uint32 getEarliestFetch ()
+    {
+        uint32 e = getClosedLedger()->getLedgerSeq();
+        if (e > getConfig().FETCH_DEPTH)
+            e -= getConfig().FETCH_DEPTH;
+        return e;
+    }
+
     void tryFill (Job& job, Ledger::pointer ledger)
     {
         uint32 seq = ledger->getLedgerSeq ();

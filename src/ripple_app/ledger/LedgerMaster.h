@@ -73,6 +73,8 @@ public:
 
     virtual void setMinValidations (int v) = 0;
 
+    virtual uint32 getEarliestFetch () = 0;
+
     virtual void pushLedger (Ledger::pointer newLedger) = 0;
     virtual void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL) = 0;
     virtual void storeLedger (Ledger::pointer) = 0;

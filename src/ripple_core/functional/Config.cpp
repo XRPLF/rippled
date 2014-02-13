@@ -130,6 +130,7 @@ Config::Config ()
     FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
 
     LEDGER_HISTORY          = 256;
+    FETCH_DEPTH             = 1000000000;
 
     PATH_SEARCH_OLD         = DEFAULT_PATH_SEARCH_OLD;
     PATH_SEARCH             = DEFAULT_PATH_SEARCH;
@@ -533,12 +534,24 @@ void Config::load ()
             {
                 boost::to_lower (strTemp);
 
-                if (strTemp == "none")
-                    LEDGER_HISTORY = 0;
-                else if (strTemp == "full")
+                if (strTemp == "full")
                     LEDGER_HISTORY = 1000000000u;
                 else
                     LEDGER_HISTORY = lexicalCastThrow <uint32> (strTemp);
+            }
+            if (SectionSingleB (secConfig, SECTION_FETCH_DEPTH, strTemp))
+            {
+                boost::to_lower (strTemp);
+
+                if (strTemp == "none")
+                    FETCH_DEPTH = 0;
+                else if (strTemp == "full")
+                    FETCH_DEPTH = 1000000000u;
+                else
+                    FETCH_DEPTH = lexicalCastThrow <uint32> (strTemp);
+
+                if (FETCH_DEPTH < 10)
+                    FETCH_DEPTH = 10;
             }
 
             if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_OLD, strTemp))

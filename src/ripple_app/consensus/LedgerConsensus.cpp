@@ -1445,6 +1445,13 @@ private:
             uMin = 0;
             uMax = 0;
         }
+        else
+        {
+            // Don't advertise ledgers we're not willing to serve
+            uint32 early = getApp().getLedgerMaster().getEarliestFetch ();
+            if (uMin < early)
+               uMin = early;
+        }
         s.set_firstseq (uMin);
         s.set_lastseq (uMax);
         getApp ().getPeers ().foreach (send_always (
