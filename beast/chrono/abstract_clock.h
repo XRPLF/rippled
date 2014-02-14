@@ -72,15 +72,15 @@ public:
     virtual bool is_steady () const = 0;
 
     /** Returns the current time. */
-    virtual time_point now () = 0;
+    virtual time_point now () const = 0;
 
     /** Convert the specified time point to a string. */
     /** @{ */
-    virtual std::string to_string (time_point const& tp) = 0;
+    virtual std::string to_string (time_point const& tp) const = 0;
 
     template <class Duration2>
     std::string to_string (
-        std::chrono::time_point <abstract_clock, Duration2> const& tp)
+        std::chrono::time_point <abstract_clock, Duration2> const& tp) const
     {
         return to_string (
             std::chrono::time_point_cast <Duration> (tp));
@@ -88,7 +88,7 @@ public:
     /** @} */
 
     /** Returning elapsed ticks since the epoch. */
-    rep elapsed ()
+    rep elapsed () const
     {
         return now().time_since_epoch().count();
     }
@@ -109,7 +109,7 @@ struct basic_abstract_clock_wrapper : public abstract_clock <Duration>
         return TrivialClock::is_steady;
     }
 
-    time_point now ()
+    time_point now () const
     {
         return time_point (duration (
             std::chrono::duration_cast <duration> (
@@ -123,7 +123,7 @@ struct abstract_clock_wrapper
 {
     // generic conversion displays the duration
     std::string to_string (typename basic_abstract_clock_wrapper <
-        TrivialClock, Duration>::time_point const& tp)
+        TrivialClock, Duration>::time_point const& tp) const
     {
         std::stringstream ss;
         ss << tp.time_since_epoch();
