@@ -1912,7 +1912,12 @@ private:
                 nodeData.push_back (Blob (node.nodedata ().begin (), node.nodedata ().end ()));
             }
 
-            SHAMapAddNode san =  getApp().getOPs ().gotTXData (shared_from_this (), hash, nodeIDs, nodeData);
+            SHAMapAddNode san;
+            {
+                Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+
+                san =  getApp().getOPs ().gotTXData (shared_from_this (), hash, nodeIDs, nodeData);
+            }
 
             if (san.isInvalid ())
             {

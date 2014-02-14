@@ -1544,25 +1544,18 @@ void NetworkOPsImp::takePosition (int seq, SHAMap::ref position)
     }
 }
 
+// Call with the master lock for now
 SHAMapAddNode NetworkOPsImp::gotTXData (const boost::shared_ptr<Peer>& peer, uint256 const& hash,
                                      const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData)
 {
 
-    boost::shared_ptr<LedgerConsensus> consensus;
-
-    {
-        Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
-
-        consensus = mConsensus;
-    }
-
-    if (!consensus)
+    if (!mConsensus)
     {
         m_journal.warning << "Got TX data with no consensus object";
         return SHAMapAddNode ();
     }
 
-    return consensus->peerGaveNodes (peer, hash, nodeIDs, nodeData);
+    return mConsensus->peerGaveNodes (peer, hash, nodeIDs, nodeData);
 }
 
 bool NetworkOPsImp::hasTXSet (const boost::shared_ptr<Peer>& peer, uint256 const& set, protocol::TxSetStatus status)
