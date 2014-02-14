@@ -1110,7 +1110,6 @@ public:
         ep.hops = 0;
         ep.address = IPAddress (
             IP::AddressV4 ()).at_port (state->config.listeningPort);
-        ep.features = state->config.features;
         return ep;
     }
 
@@ -1360,7 +1359,6 @@ public:
         // VFALCO NOTE These ugly casts are needed because
         //             of how std::size_t is declared on some linuxes
         //
-        map ["livecache"]   = uint32 (state->livecache.size());
         map ["bootcache"]   = uint32 (state->bootcache.size());
         map ["fixed"]       = uint32 (state->fixed.size());
 
@@ -1377,6 +1375,11 @@ public:
         {
             PropertyStream::Map child ("config", map);
             state->config.onWrite (child);
+        }
+
+        {
+            PropertyStream::Map child ("livecache", map);
+            state->livecache.onWrite (child);
         }
 
         {

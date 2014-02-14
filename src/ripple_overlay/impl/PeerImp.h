@@ -24,6 +24,12 @@ namespace ripple {
 
 class PeerImp;
 
+std::string to_string (Peer const& peer);
+std::ostream& operator<< (std::ostream& os, Peer const& peer);
+
+std::string to_string (Peer const* peer);
+std::ostream& operator<< (std::ostream& os, Peer const* peer);
+
 std::string to_string (PeerImp const& peer);
 std::ostream& operator<< (std::ostream& os, PeerImp const& peer);
 
@@ -74,6 +80,25 @@ private:
     static const size_t sslMinimumFinishedLength = 12;
 
 public:
+    /** Current state */
+    enum State
+    {
+        /** An connection is being established (outbound) */
+         stateConnecting
+
+        /** Connection has been successfully established */
+        ,stateConnected
+
+        /** Handshake has been received from this peer */
+        ,stateHandshaked
+
+        /** Running the Ripple protocol actively */
+        ,stateActive
+
+        /** Gracefully closing */
+        ,stateGracefulClose
+    };
+
     typedef boost::shared_ptr <PeerImp> ptr;
 
     boost::shared_ptr <NativeSocketType> m_shared_socket;
@@ -217,12 +242,13 @@ public:
     static char const* getCountedObjectName () { return "Peer"; }
 
     //--------------------------------------------------------------------------
-    Peer::State state() const
+
+    State state() const
     {
         return m_state;
     }
 
-    void state(Peer::State new_state)
+    void state (State new_state)
     {
         m_state = new_state;
     }
@@ -404,7 +430,6 @@ public:
     }
 
     /** Indicates that the peer must be activated.
-
         A peer is activated after the handshake is completed and if it is not
         a second connection from a peer that we already have. Once activated
         the peer transitions to `stateActive` and begins operating.
@@ -543,14 +568,6 @@ public:
     bool isInCluster () const
     {
         return m_clusterNode;
-    }
-    bool isInbound () const
-    {
-        return m_inbound;
-    }
-    bool isOutbound () const
-    {
-        return !m_inbound;
     }
 
     uint256 const& getClosedLedgerHash () const
@@ -2096,6 +2113,8 @@ private:
 
             uint256 response;
             memcpy (response.begin (), packet.response ().data (), 256 / 8);
+
+            // VFALCO TODO Use a dependency injection here
             PowResult r = getApp().getProofOfWorkFactory ().checkProof (packet.token (), response);
 
             if (r == powOK)
@@ -2768,6 +2787,7 @@ std::ostream& operator<< (std::ostream& os, PeerImp const* peer)
 }
 
 //------------------------------------------------------------------------------
+
 std::string to_string (Peer const& peer)
 {
     if (peer.isInCluster())

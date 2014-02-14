@@ -22,6 +22,12 @@
 
 // VFALCO TODO Remove this include dependency it shouldn't be needed
 #include "../../ripple/peerfinder/api/Slot.h"
+#include "../../ripple/common/Resolver.h"
+
+#include <set>
+
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
 namespace ripple {
 
@@ -271,7 +277,7 @@ struct peer_in_cluster
 /** Select all peers that are in the specified set */
 struct peer_in_set
 {
-    std::set<Peer::ShortId> const& peerSet;
+    std::set <Peer::ShortId> const& peerSet;
 
     peer_in_set (std::set<Peer::ShortId> const& peers)
         : peerSet (peers)

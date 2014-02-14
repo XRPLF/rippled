@@ -58,7 +58,7 @@ public:
     };
 
     typedef std::set <Endpoint, LessEndpoints> SortedTable;
-    typedef std::unordered_map <IPAddress, Entry> AddressTable;
+    typedef std::unordered_map <IP::Endpoint, Entry> AddressTable;
 
     clock_type& m_clock;
     Journal m_journal;
@@ -118,7 +118,7 @@ public:
         {
             if (m_journal.debug) m_journal.debug << leftw (18) <<
                 "Livecache expired " << count <<
-                ((count > 1) ? "entries" : "entry");
+                ((count > 1) ? " entries" : " entry");
         }
     }
 
@@ -163,7 +163,6 @@ public:
                     " at hops " << endpoint.hops;
             }
 
-            entry.endpoint.features = endpoint.features;
             entry.whenExpires = whenExpires;
 
             m_list.erase (m_list.iterator_to(entry));
@@ -245,6 +244,24 @@ public:
             iter != m_list.end(); ++iter)
             ++h[iter->endpoint.hops];
         return h;
+    }
+
+    /** Output statistics. */
+    void onWrite (PropertyStream::Map& map)
+    {
+        clock_type::time_point const now (m_clock.now ());
+        map ["size"] = size ();
+        PropertyStream::Set set ("entries", map);
+        for (auto entry : m_byAddress)
+        {
+            PropertyStream::Map item (set);
+            Entry const& e (entry.second);
+            item ["hops"] = e.endpoint.hops;
+            item ["address"] = e.endpoint.address.to_string ();
+            std::stringstream ss;
+            ss << e.whenExpires - now;
+            item ["expires"] = ss.str();
+        }
     }
 };
 

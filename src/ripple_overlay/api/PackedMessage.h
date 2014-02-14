@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PACKEDMESSAGE_H_INCLUDED
-#define RIPPLE_PACKEDMESSAGE_H_INCLUDED
+#ifndef RIPPLE_OVERLAY_PACKEDMESSAGE_H_INCLUDED
+#define RIPPLE_OVERLAY_PACKEDMESSAGE_H_INCLUDED
 
 #include "ripple.pb.h"
 
@@ -27,6 +27,11 @@
 #include <boost/shared_ptr.hpp>
 
 namespace ripple {
+
+// VFALCO NOTE If we forward declare PackedMessage and write out shared_ptr
+//             instead of using the in-class typedef, we can remove the entire
+//             ripple.pb.h from the main headers.
+//
 
 // packaging of messages into length/type-prepended buffers
 // ready for transmission.

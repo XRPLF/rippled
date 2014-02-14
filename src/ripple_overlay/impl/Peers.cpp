@@ -20,6 +20,8 @@
 #include "PeerDoor.h"
 #include "PeerImp.h"
 
+#include "../../ripple/common/seconds_clock.h"
+
 #include <boost/config.hpp>
 #include <condition_variable>
 #include <mutex>

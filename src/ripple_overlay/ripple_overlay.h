@@ -17,35 +17,19 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef RIPPLE_OVERLAY_H_INCLUDED
+#define RIPPLE_OVERLAY_H_INCLUDED
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
-#include <boost/bimap.hpp>
-#include <boost/bimap/multiset_of.hpp>
-#include <boost/bimap/unordered_set_of.hpp>
+#include "beast/modules/beast_core/beast_core.h"
 
-#include "ripple_app.h"
-
-#include "../ripple/validators/ripple_validators.h"
-
-#include "misc/PowResult.h"
-
-#include "misc/ProofOfWorkFactory.h"
+#include "../ripple_data/ripple_data.h"
 
 namespace ripple {
-
-#include "peers/PeerSet.cpp"
-#include "misc/OrderBook.cpp"
-#include "misc/ProofOfWorkFactory.cpp"
-#include "misc/ProofOfWork.cpp"
-#include "misc/SerializedTransaction.cpp"
-
-#include "shamap/SHAMapSyncFilters.cpp" // requires Application
-
-#include "consensus/LedgerConsensus.cpp"
-
-# include "ledger/LedgerCleaner.h"
-#include "ledger/LedgerCleaner.cpp"
-#include "ledger/LedgerMaster.cpp"
-
+using namespace beast;
 }
+
+#include "api/PackedMessage.h"
+#include "api/Peer.h"
+#include "api/Peers.h"
+
+#endif

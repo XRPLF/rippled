@@ -1132,30 +1132,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\PackedMessage.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\PeerDoor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\PeerImp.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\peers\Peers.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\peers\PeerSet.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1825,6 +1801,25 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_overlay\impl\PackedMessage.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_overlay\impl\PeerDoor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_overlay\impl\Peers.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_overlay\ripple_overlay.cpp" />
     <ClCompile Include="..\..\src\ripple_rpc\impl\DoPrint.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2500,11 +2495,7 @@
     <ClInclude Include="..\..\src\ripple_app\paths\RippleCalc.h" />
     <ClInclude Include="..\..\src\ripple_app\paths\RippleLineCache.h" />
     <ClInclude Include="..\..\src\ripple_app\paths\RippleState.h" />
-    <ClInclude Include="..\..\src\ripple_app\peers\PackedMessage.h" />
-    <ClInclude Include="..\..\src\ripple_app\peers\PeerDoor.h" />
     <ClInclude Include="..\..\src\ripple_app\peers\ClusterNodeStatus.h" />
-    <ClInclude Include="..\..\src\ripple_app\peers\Peers.h" />
-    <ClInclude Include="..\..\src\ripple_app\peers\Peer.h" />
     <ClInclude Include="..\..\src\ripple_app\peers\PeerSet.h" />
     <ClInclude Include="..\..\src\ripple_app\peers\UniqueNodeList.h" />
     <ClInclude Include="..\..\src\ripple_app\ripple_app.h" />
@@ -2627,6 +2618,12 @@
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCErr.h" />
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCSub.h" />
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCUtil.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\api\PackedMessage.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\api\Peer.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\api\Peers.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\impl\PeerDoor.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\impl\PeerImp.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\ripple_overlay.h" />
     <ClInclude Include="..\..\src\ripple_rpc\api\ErrorCodes.h" />
     <ClInclude Include="..\..\src\ripple_rpc\api\Manager.h" />
     <ClInclude Include="..\..\src\ripple_rpc\api\Request.h" />
@@ -2760,6 +2757,8 @@
     <None Include="..\..\src\ripple\validators\README.md" />
     <None Include="..\..\src\ripple_app\ledger\TODO.md" />
     <None Include="..\..\src\ripple_app\TODO.md" />
+    <None Include="..\..\src\ripple_overlay\README.md" />
+    <None Include="..\..\src\ripple_overlay\TODO.md" />
     <None Include="..\..\src\ripple_rpc\README.md" />
     <None Include="..\..\src\ripple_rpc\TODO.md" />
     <None Include="..\QtCreator\rippled.pro" />

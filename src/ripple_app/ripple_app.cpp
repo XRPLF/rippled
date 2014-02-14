@@ -48,6 +48,7 @@
 # include "main/CollectorManager.h"
 #include "main/CollectorManager.cpp"
 
+#include "misc/ProofOfWorkFactory.h"
 
 namespace ripple {
 # include "main/NodeStoreScheduler.h"
@@ -60,9 +61,8 @@ namespace ripple {
 #include "main/FatalErrorReporter.cpp"
 
 # include "rpc/RPCHandler.h"
-#   include "misc/PowResult.h"
-#  include "misc/ProofOfWork.h"
-# include "misc/ProofOfWorkFactory.h"
+}
+namespace ripple {
 #include "rpc/RPCHandler.cpp"
 
 # include "rpc/RPCServerHandler.h"

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_POWRESULT_H_INCLUDED
 #define RIPPLE_POWRESULT_H_INCLUDED
 
+namespace ripple {
+
 enum PowResult
 {
     powOK       = 0,
@@ -29,5 +31,7 @@ enum PowResult
     powCORRUPT  = 4,
     powTOOEASY  = 5, // the difficulty increased too much while you solved it
 };
+
+}
 
 #endif

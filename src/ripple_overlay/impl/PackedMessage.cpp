@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 PackedMessage::PackedMessage (::google::protobuf::Message const& message, int type)
 {
     unsigned const messageBytes = message.ByteSize ();
@@ -84,4 +86,6 @@ void PackedMessage::encodeHeader (unsigned size, int type)
     mBuffer[3] = static_cast<boost::uint8_t> (size & 0xFF);
     mBuffer[4] = static_cast<boost::uint8_t> ((type >> 8) & 0xFF);
     mBuffer[5] = static_cast<boost::uint8_t> (type & 0xFF);
+}
+
 }

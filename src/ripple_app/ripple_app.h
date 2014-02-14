@@ -59,17 +59,13 @@
 //#include "beast/modules/beast_sqdb/beast_sqdb.h"
 #include "beast/modules/beast_sqlite/beast_sqlite.h"
 
-// VFALCO NOTE If we forward declare PackedMessage and write out shared_ptr
-//             instead of using the in-class typedef, we can remove the entire
-//             ripple.pb.h from the main headers.
-//
-#include "peers/PackedMessage.h"
-
 // Order matters here. If you get compile errors,
 // reorder the include lines until the order is correct.
 
 #include "../../ripple/common/KeyCache.h"
 #include "../../ripple/common/TaggedCache.h"
+
+#include "../../ripple_overlay/ripple_overlay.h"
 
 namespace ripple {
 #include "data/Database.h"
@@ -103,11 +99,6 @@ namespace ripple {
 #include "misc/IFeatures.h"
 #include "misc/IFeeVote.h"
 #include "misc/IHashRouter.h"
-}
-// escape the ripple namespace
-#include "peers/Peer.h"
-#include "peers/Peers.h"
-namespace ripple {
 #include "peers/ClusterNodeStatus.h"
 #include "peers/UniqueNodeList.h"
 #include "misc/Validations.h"

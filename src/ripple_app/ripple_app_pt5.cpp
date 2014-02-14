@@ -31,6 +31,8 @@
 
 #include <deque>
 
+#include "misc/ProofOfWork.h"
+
 namespace ripple {
 
 #include "ledger/LedgerTiming.cpp"
@@ -40,11 +42,4 @@ namespace ripple {
 #include "tx/OfferCreateTransactor.cpp"
 #include "tx/WalletAddTransactor.cpp"
 #include "misc/FeeVote.cpp"
-#   include "misc/PowResult.h"
-#  include "misc/ProofOfWork.h"
-# include "misc/ProofOfWorkFactory.h"
-#include "peers/PackedMessage.cpp"
 }
-
-#include "peers/PeerDoor.cpp"
-#include "peers/Peers.cpp"

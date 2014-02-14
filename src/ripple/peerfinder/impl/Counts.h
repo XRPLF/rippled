@@ -44,7 +44,7 @@ public:
         , m_acceptCount (0)
         , m_closingCount (0)
     {
-#if 0
+#if 1
         std::random_device rd;
         std::mt19937 gen (rd());
         m_roundingThreshold =
@@ -209,20 +209,6 @@ public:
     }
 
     //--------------------------------------------------------------------------
-
-    /** Returns the number of new connection attempts we should make. */
-    int additionalAttemptsNeeded () const
-    {
-        // Don't go over the maximum concurrent attempt limit
-        if (m_attempts >= Tuning::maxConnectAttempts)
-            return 0;
-        int needed (outboundSlotsFree ());
-        // This is the most we could attempt right now
-        int const available (
-            Tuning::maxConnectAttempts - m_attempts);
-        //return std::min (needed, available);
-        return available;
-    }
 
     /** Returns true if the slot logic considers us "connected" to the network. */
     bool isConnectedToNetwork () const

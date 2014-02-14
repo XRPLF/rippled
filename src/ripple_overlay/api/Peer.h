@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEER_H_INCLUDED
-#define RIPPLE_PEER_H_INCLUDED
+#ifndef RIPPLE_OVERLAY_PEER_H_INCLUDED
+#define RIPPLE_OVERLAY_PEER_H_INCLUDED
+
+#include <boost/asio.hpp>
 
 namespace ripple {
 
@@ -51,45 +53,8 @@ public:
     */
     typedef uint32 ShortId;
 
-    /** Current state */
-    enum State
-    {
-        /** An connection is being established (outbound) */
-         stateConnecting
-
-        /** Connection has been successfully established */
-        ,stateConnected
-
-        /** Handshake has been received from this peer */
-        ,stateHandshaked
-
-        /** Running the Ripple protocol actively */
-        ,stateActive
-
-        /** Gracefully closing */
-        ,stateGracefulClose
-    };
-
-public:
-    //--------------------------------------------------------------------------
-    /** Called when an open slot is assigned to a handshaked peer. */
-    virtual void activate () = 0;
-
-    //--------------------------------------------------------------------------
-    //virtual void connect (IP::Endpoint const &address) = 0;
-
-    //--------------------------------------------------------------------------
-    virtual State state () const = 0;
-
-    virtual void state (State new_state) = 0;
-
-    //--------------------------------------------------------------------------
-    //virtual void detach (const char*, bool onIOStrand) = 0;
-
     virtual void sendPacket (const PackedMessage::pointer& packet, bool onStrand) = 0;
 
-    // VFALCO NOTE what's with this odd parameter passing? Why the static member?
-    //
     /** Adjust this peer's load balance based on the type of load imposed.
 
         @note Formerly named punishPeer
@@ -104,10 +69,6 @@ public:
     virtual bool isInCluster () const = 0;
 
     virtual std::string getClusterNodeName() const = 0;
-
-    virtual bool isInbound () const = 0;
-
-    virtual bool isOutbound () const = 0;
 
     virtual uint256 const& getClosedLedgerHash () const = 0;
 
@@ -135,12 +96,6 @@ public:
 
     virtual NativeSocketType& getNativeSocket () = 0;
 };
-
-std::string to_string (Peer const& peer);
-std::ostream& operator<< (std::ostream& os, Peer const& peer);
-
-std::string to_string (Peer const* peer);
-std::ostream& operator<< (std::ostream& os, Peer const* peer);
 
 }
 

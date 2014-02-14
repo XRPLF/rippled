@@ -1257,21 +1257,18 @@ bool NetworkOPsImp::checkLastClosedLedger (const Peers::PeerSequence& peerList, 
             ourVC.highNodeUsing = ourAddress;
     }
 
-    BOOST_FOREACH (Peer::ref it, peerList)
+    BOOST_FOREACH (Peer::ref peer, peerList)
     {
-        if (it && it->isConnected ())
+        uint256 peerLedger = peer->getClosedLedgerHash ();
+
+        if (peerLedger.isNonZero ())
         {
-            uint256 peerLedger = it->getClosedLedgerHash ();
+            ValidationCount& vc = ledgers[peerLedger];
 
-            if (peerLedger.isNonZero ())
-            {
-                ValidationCount& vc = ledgers[peerLedger];
+            if ((vc.nodesUsing == 0) || (peer->getNodePublic ().getNodeID () > vc.highNodeUsing))
+                vc.highNodeUsing = peer->getNodePublic ().getNodeID ();
 
-                if ((vc.nodesUsing == 0) || (it->getNodePublic ().getNodeID () > vc.highNodeUsing))
-                    vc.highNodeUsing = it->getNodePublic ().getNodeID ();
-
-                ++vc.nodesUsing;
-            }
+            ++vc.nodesUsing;
         }
     }
 

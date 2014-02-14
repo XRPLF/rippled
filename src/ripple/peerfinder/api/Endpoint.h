@@ -29,8 +29,7 @@ struct Endpoint
     Endpoint ();
     
     int hops;
-    IPAddress address;
-    std::string features;
+    IP::Endpoint address;
 };
 
 }
