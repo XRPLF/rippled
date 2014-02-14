@@ -48,12 +48,12 @@ public:
         return IsSteady;
     }
 
-    time_point now ()
+    time_point now () const
     {
         return m_now;
     }
 
-    std::string to_string (time_point const& tp)
+    std::string to_string (time_point const& tp) const
     {
         std::stringstream ss;
         ss << tp.time_since_epoch() << " from start";
