@@ -74,7 +74,7 @@ void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
                 return;
 
             // Newest request is last in mRequests, but we want to serve it first
-            requests.empty();
+            requests.clear();
             requests.reserve (mRequests.size ());
             BOOST_REVERSE_FOREACH (PathRequest::wptr& req, mRequests)
             {
