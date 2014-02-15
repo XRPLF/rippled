@@ -260,7 +260,7 @@ Slot properties may be combined and are not mutually exclusive.
   configuration file or learned through overlay messages from other trusted
   peers. Cluster slots do not count towards connection limits.
 
-* **Superpeer** (2.0)
+* **Superpeer** (forthcoming)
 
   A superpeer slot is a connection to a peer which can accept incoming
   connections, meets certain resource availaibility requirements (such as

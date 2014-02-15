@@ -560,11 +560,6 @@ public:
         return ret;
     }
 
-    bool isConnected () const
-    {
-        // CHECKME should this be stateActive or something else?
-        return (m_state == stateActive) && !m_detaching;
-    }
     bool isInCluster () const
     {
         return m_clusterNode;

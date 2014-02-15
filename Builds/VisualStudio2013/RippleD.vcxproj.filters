@@ -1473,6 +1473,21 @@
     <ClCompile Include="..\..\src\ripple_overlay\ripple_overlay.cpp">
       <Filter>[2] Old Ripple\ripple_overlay</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Bootcache.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\ConnectHandouts.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\RedirectHandouts.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotHandouts.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotImp.cpp">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">
@@ -2913,9 +2928,6 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Giveaways.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\iosformat.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
@@ -2931,12 +2943,6 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Reporting.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Seen.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Sorts.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Source.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
@@ -2944,9 +2950,6 @@
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Store.h">
-      <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\StoreSqdb.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h">
@@ -3035,6 +3038,21 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_overlay\ripple_overlay.h">
       <Filter>[2] Old Ripple\ripple_overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\handout.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\SlotHandouts.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\RedirectHandouts.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\ConnectHandouts.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\StoreSqdb.h">
+      <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

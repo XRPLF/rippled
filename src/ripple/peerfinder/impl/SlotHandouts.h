@@ -17,13 +17,47 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_SEEN_H_INCLUDED
-#define RIPPLE_PEERFINDER_SEEN_H_INCLUDED
+#ifndef RIPPLE_PEERFINDER_SLOTHANDOUTS_H_INCLUDED
+#define RIPPLE_PEERFINDER_SLOTHANDOUTS_H_INCLUDED
+
+#include "SlotImp.h"
+#include "Tuning.h"
 
 namespace ripple {
 namespace PeerFinder {
 
-/** Tracks endpoints we've seen from a peer. */
+/** Functor to receive endpoints for a slot during handout. */
+class SlotHandouts
+{
+public:
+    explicit SlotHandouts (SlotImp::ptr const& slot);
+
+    bool full () const
+    {
+        return m_list.size() >= Tuning::numberOfEndpoints;
+    }
+
+    void insert (Endpoint const& ep)
+    {
+        m_list.push_back (ep);
+    }
+
+    SlotImp::ptr const& slot () const
+    {
+        return m_slot;
+    }
+
+    std::vector <Endpoint> const& list() const
+    {
+        return m_list;
+    }
+
+    bool try_insert (Endpoint const& ep);
+
+private:
+    SlotImp::ptr m_slot;
+    std::vector <Endpoint> m_list;
+};
 
 }
 }

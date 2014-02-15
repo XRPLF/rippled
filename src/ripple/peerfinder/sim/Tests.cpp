@@ -189,7 +189,7 @@ public:
         , m_next_port (m_config.listening_endpoint.port() + 1)
         , m_logic (boost::in_place (
             boost::ref (clock), boost::ref (*this), boost::ref (*this), boost::ref (*this), m_journal))
-        , m_whenSweep (m_network.now() + Tuning::liveCacheSecondsToLive)
+        , m_when_expire (m_network.now() + std::chrono::seconds (1))
     {
         logic().setConfig (m_config.config);
         logic().load ();
@@ -285,10 +285,10 @@ public:
         logic().makeOutgoingConnections ();
         logic().sendEndpoints ();
 
-        if (m_network.now() >= m_whenSweep)
+        if (m_network.now() >= m_when_expire)
         {
-            logic().sweepCache();
-            m_whenSweep = m_network.now() + Tuning::liveCacheSecondsToLive;
+            logic().expire();
+            m_when_expire = m_network.now() + std::chrono::seconds (1);
         }
 
         m_livecache_history.emplace_back (
@@ -533,7 +533,7 @@ private:
     Journal m_journal;
     IP::Port m_next_port;
     boost::optional <Logic> m_logic;
-    clock_type::time_point m_whenSweep;
+    clock_type::time_point m_when_expire;
     SavedBootstrapAddresses m_bootstrap_cache;
 };
 

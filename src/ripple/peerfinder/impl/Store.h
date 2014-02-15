@@ -29,18 +29,17 @@ class Store
 public:
     virtual ~Store () { }
 
-    struct SavedBootstrapAddress
+    // load the bootstrap cache
+    typedef std::function <void (IP::Endpoint, int)> load_callback;
+    virtual std::size_t load (load_callback const& cb) = 0;
+
+    // save the bootstrap cache
+    struct Entry
     {
-        IP::Endpoint address;
-        std::chrono::seconds cumulativeUptime;
-        int connectionValence;
+        IP::Endpoint endpoint;
+        int valence;
     };
-
-    virtual std::vector <SavedBootstrapAddress>
-        loadBootstrapCache () = 0;
-
-    virtual void updateBootstrapCache (
-        std::vector <SavedBootstrapAddress> const& list) = 0;
+    virtual void save (std::vector <Entry> const& v) = 0;
 };
 
 }

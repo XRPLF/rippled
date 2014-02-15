@@ -20,10 +20,150 @@
 #ifndef RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 
-#include <unordered_map>
+#include "../../../beast/beast/container/aged_map.h"
+#include "../../../beast/beast/type_traits/maybe_const.h"
+
+#include <boost/intrusive/list.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 
 namespace ripple {
 namespace PeerFinder {
+
+template <class>
+class Livecache;
+
+namespace detail {
+
+class LivecacheBase
+{
+protected:
+    struct Element
+        : boost::intrusive::list_base_hook <>
+    {
+        Element (Endpoint const& endpoint_)
+            : endpoint (endpoint_)
+        {
+        }
+
+        Endpoint endpoint;
+    };
+
+    typedef boost::intrusive::make_list <Element,
+        boost::intrusive::constant_time_size <false>
+            >::type list_type;
+
+public:
+    /** A list of Endpoint at the same hops
+        This is a lightweight wrapper around a reference to the underlying
+        container.
+    */
+    template <bool IsConst>
+    class Hop
+    {
+    public:
+        // Iterator transformation to extract the endpoint from Element
+        struct Transform
+            : public std::unary_function <Element, Endpoint>
+        {
+            Endpoint const& operator() (Element const& e) const
+            {
+                return e.endpoint;
+            }
+        };
+
+    public:
+        typedef boost::transform_iterator <Transform,
+            typename list_type::const_iterator> iterator;
+
+        typedef iterator const_iterator;
+
+        typedef boost::transform_iterator <Transform,
+            typename list_type::const_reverse_iterator> reverse_iterator;
+
+        typedef reverse_iterator const_reverse_iterator;
+
+        iterator begin () const
+        {
+            return iterator (m_list.get().cbegin(),
+                Transform());
+        }
+
+        iterator cbegin () const
+        {
+            return iterator (m_list.get().cbegin(),
+                Transform());
+        }
+
+        iterator end () const
+        {
+            return iterator (m_list.get().cend(),
+                Transform());
+        }
+
+        iterator cend () const
+        {
+            return iterator (m_list.get().cend(),
+                Transform());
+        }
+
+        reverse_iterator rbegin () const
+        {
+            return reverse_iterator (m_list.get().crbegin(),
+                Transform());
+        }
+
+        reverse_iterator crbegin () const
+        {
+            return reverse_iterator (m_list.get().crbegin(),
+                Transform());
+        }
+
+        reverse_iterator rend () const
+        {
+            return reverse_iterator (m_list.get().crend(),
+                Transform());
+        }
+
+        reverse_iterator crend () const
+        {
+            return reverse_iterator (m_list.get().crend(),
+                Transform());
+        }
+
+        // move the element to the end of the container
+        void move_back (const_iterator pos)
+        {
+            auto& e (const_cast <Element&>(*pos.base()));
+            m_list.get().erase (m_list.get().iterator_to (e));
+            m_list.get().push_back (e);
+        }
+
+    private:
+        explicit Hop (typename maybe_const <
+            IsConst, list_type>::type& list)
+            : m_list (list)
+        {
+        }
+
+        friend class LivecacheBase;
+
+        std::reference_wrapper <typename maybe_const <
+            IsConst, list_type>::type> m_list;
+    };
+
+protected:
+    // Work-around to call Hop's private constructor from Livecache
+    template <bool IsConst>
+    static Hop <IsConst> make_hop (typename maybe_const <
+        IsConst, list_type>::type& list)
+    {
+        return Hop <IsConst> (list);
+    }
+};
+
+}
+
+//------------------------------------------------------------------------------
 
 /** The Livecache holds the short-lived relayed Endpoint messages.
     
@@ -37,233 +177,381 @@ namespace PeerFinder {
     launches or for bootstrapping, because they do not have verifiable
     and locally observed uptime and connectibility information.
 */
-class Livecache
+template <class Allocator = std::allocator <char>>
+class Livecache : protected detail::LivecacheBase
 {
-public:
-    struct Entry;
+private:
+    typedef aged_map <
+        IP::Endpoint,
+        Element,
+        std::chrono::seconds,
+        std::less <IP::Endpoint>,
+        Allocator
+            > cache_type;
 
-    typedef List <Entry> EntryList;
-
-    struct Entry : public EntryList::Node
-    {
-        Entry (Endpoint const& endpoint_,
-            clock_type::time_point const& whenExpires_)
-            : endpoint (endpoint_)
-            , whenExpires (whenExpires_)
-        {
-        }
-
-        Endpoint endpoint;
-        clock_type::time_point whenExpires;
-    };
-
-    typedef std::set <Endpoint, LessEndpoints> SortedTable;
-    typedef std::unordered_map <IP::Endpoint, Entry> AddressTable;
-
-    clock_type& m_clock;
     Journal m_journal;
-    AddressTable m_byAddress;
-    SortedTable m_bySorted;
-
-    // Tracks all the cached endpoints stored in the endpoint table
-    // in oldest-to-newest order. The oldest item is at the head.
-    EntryList m_list;
+    cache_type m_cache;
 
 public:
+    typedef Allocator allocator_type;
+
     /** Create the cache. */
     Livecache (
         clock_type& clock,
-        Journal journal)
-        : m_clock (clock)
-        , m_journal (journal)
+        Journal journal,
+        Allocator alloc = Allocator());
+
+    //
+    // Iteration by hops
+    //
+    // The range [begin, end) provides a sequence of list_type
+    // where each list contains endpoints at a given hops.
+    //
+
+    class hops_t
     {
-    }
+    private:
+        // An endpoint at hops=0 represents the local node.
+        // Endpoints coming in at maxHops are stored at maxHops +1,
+        // but not given out (since they would exceed maxHops). They
+        // are used for automatic connection attempts.
+        //
+        typedef std::array <int, 1 + Tuning::maxHops + 1> Histogram;
+        typedef std::array <list_type, 1 + Tuning::maxHops + 1> lists_type;
+
+        template <bool IsConst>
+        struct Transform
+            : public std::unary_function <
+                typename lists_type::value_type, Hop <IsConst>>
+        {
+            Hop <IsConst> operator() (typename maybe_const <
+                IsConst, typename lists_type::value_type>::type& list) const
+            {
+                return make_hop <IsConst> (list);
+            }
+        };
+
+    public:
+        typedef boost::transform_iterator <Transform <false>,
+            typename lists_type::iterator> iterator;
+
+        typedef boost::transform_iterator <Transform <true>,
+            typename lists_type::const_iterator> const_iterator;
+
+        typedef boost::transform_iterator <Transform <false>,
+            typename lists_type::reverse_iterator> reverse_iterator;
+
+        typedef boost::transform_iterator <Transform <true>,
+            typename lists_type::const_reverse_iterator> const_reverse_iterator;
+
+        iterator begin ()
+        {
+            return iterator (m_lists.begin(),
+                Transform <false>());
+        }
+
+        const_iterator begin () const
+        {
+            return const_iterator (m_lists.cbegin(),
+                Transform <true>());
+        }
+
+        const_iterator cbegin () const
+        {
+            return const_iterator (m_lists.cbegin(),
+                Transform <true>());
+        }
+
+        iterator end ()
+        {
+            return iterator (m_lists.end(),
+                Transform <false>());
+        }
+
+        const_iterator end () const
+        {
+            return const_iterator (m_lists.cend(),
+                Transform <true>());
+        }
+
+        const_iterator cend () const
+        {
+            return const_iterator (m_lists.cend(),
+                Transform <true>());
+        }
+
+        reverse_iterator rbegin ()
+        {
+            return reverse_iterator (m_lists.rbegin(),
+                Transform <false>());
+        }
+
+        const_reverse_iterator rbegin () const
+        {
+            return const_reverse_iterator (m_lists.crbegin(),
+                Transform <true>());
+        }
+
+        const_reverse_iterator crbegin () const
+        {
+            return const_reverse_iterator (m_lists.crbegin(),
+                Transform <true>());
+        }
+
+        reverse_iterator rend ()
+        {
+            return reverse_iterator (m_lists.rend(),
+                Transform <false>());
+        }
+
+        const_reverse_iterator rend () const
+        {
+            return const_reverse_iterator (m_lists.crend(),
+                Transform <true>());
+        }
+
+        const_reverse_iterator crend () const
+        {
+            return const_reverse_iterator (m_lists.crend(),
+                Transform <true>());
+        }
+
+        /** Shuffle each hop list. */
+        void shuffle ();
+
+        std::string histogram() const;
+
+    private:
+        explicit hops_t (Allocator const& alloc);
+
+        void insert (Element& e);
+
+        // Reinsert e at a new hops
+        void reinsert (Element& e, int hops);
+
+        void remove (Element& e);
+
+        friend class Livecache;
+        lists_type m_lists;
+        Histogram m_hist;
+    } hops;
 
     /** Returns `true` if the cache is empty. */
     bool empty () const
     {
-        return m_byAddress.empty ();
+        return m_cache.empty ();
     }
 
     /** Returns the number of entries in the cache. */
-    AddressTable::size_type size() const
+    typename cache_type::size_type size() const
     {
-        return m_byAddress.size();
+        return m_cache.size();
     }
 
     /** Erase entries whose time has expired. */
-    void sweep ()
-    {
-        auto const now (m_clock.now ());
-        AddressTable::size_type count (0);
-        for (EntryList::iterator iter (m_list.begin());
-            iter != m_list.end();)
-        {
-            // Short circuit the loop since the list is sorted
-            if (iter->whenExpires > now)
-                break;
-            Entry& entry (*iter);
-            if (m_journal.trace) m_journal.trace << leftw (18) <<
-                "Livecache expired " << entry.endpoint.address;
-            // Must erase from list before map
-            iter = m_list.erase (iter);
-            meets_postcondition (m_bySorted.erase (
-                entry.endpoint) == 1);
-            meets_postcondition (m_byAddress.erase (
-                entry.endpoint.address) == 1);
-            ++count;
-        }
+    void expire ();
 
-        if (count > 0)
-        {
-            if (m_journal.debug) m_journal.debug << leftw (18) <<
-                "Livecache expired " << count <<
-                ((count > 1) ? " entries" : " entry");
-        }
-    }
-
-    /** Creates or updates an existing entry based on a new message. */
-    void insert (Endpoint endpoint)
-    {
-        // Caller is responsible for validation
-        check_precondition (endpoint.hops <= Tuning::maxHops);
-        auto now (m_clock.now ());
-        auto const whenExpires (now + Tuning::liveCacheSecondsToLive);
-        std::pair <AddressTable::iterator, bool> result (
-            m_byAddress.emplace (std::piecewise_construct,
-                std::make_tuple (endpoint.address),
-                    std::make_tuple (endpoint, whenExpires)));
-        Entry& entry (result.first->second);
-        // Drop duplicates at higher hops
-        if (! result.second && (endpoint.hops > entry.endpoint.hops))
-        {
-            std::size_t const excess (
-                endpoint.hops - entry.endpoint.hops);
-            if (m_journal.trace) m_journal.trace << leftw(18) <<
-                "Livecache drop " << endpoint.address <<
-                " at hops +" << excess;
-            return;
-        }
-        // Update metadata if the address already exists
-        if (! result.second)
-        {
-            meets_postcondition (m_bySorted.erase (
-                result.first->second.endpoint) == 1);
-            if (endpoint.hops < entry.endpoint.hops)
-            {
-                if (m_journal.debug) m_journal.debug << leftw (18) <<
-                    "Livecache update " << endpoint.address <<
-                    " at hops " << endpoint.hops;
-                entry.endpoint.hops = endpoint.hops;
-            }
-            else
-            {
-                if (m_journal.trace) m_journal.trace << leftw (18) <<
-                    "Livecache refresh " << endpoint.address <<
-                    " at hops " << endpoint.hops;
-            }
-
-            entry.whenExpires = whenExpires;
-
-            m_list.erase (m_list.iterator_to(entry));
-        }
-        else
-        {
-            if (m_journal.debug) m_journal.debug << leftw (18) <<
-                "Livecache insert " << endpoint.address <<
-                " at hops " << endpoint.hops;
-        }
-        meets_postcondition (m_bySorted.insert (entry.endpoint).second);
-        m_list.push_back (entry);
-    }
-
-    /** Returns the full set of endpoints in a Giveaways class. */
-    Giveaways giveaways()
-    {
-        Endpoints endpoints;
-        endpoints.reserve (m_list.size());
-        for (EntryList::const_iterator iter (m_list.cbegin());
-            iter != m_list.cend(); ++iter)
-        {
-            endpoints.push_back (iter->endpoint);
-            endpoints.back ().hops;
-        }
-        if (! endpoints.empty())
-            return Giveaways (endpoints);
-        return Giveaways (endpoints);
-    }
-
-    /** Returns an ordered list all entries with unique addresses. */
-    Endpoints fetch_unique () const
-    {
-        Endpoints result;
-        if (m_bySorted.empty ())
-            return result;
-        result.reserve (m_bySorted.size ());
-        Endpoint const& front (*m_bySorted.begin());
-        IP::Address prev (front.address.address());
-        result.emplace_back (front);
-        for (SortedTable::const_iterator iter (++m_bySorted.begin());
-            iter != m_bySorted.end(); ++iter)
-        {
-            IP::Address const addr (iter->address.address());
-            if (addr != prev)
-            {
-                result.emplace_back (*iter);
-                ++result.back().hops;
-                prev = addr;
-            }
-        }
-        return result;
-    }
+    /** Creates or updates an existing Element based on a new message. */
+    void insert (Endpoint const& ep);
 
     /** Produce diagnostic output. */
-    void dump (Journal::ScopedStream& ss) const
-    {
-        ss << std::endl << std::endl <<
-            "Livecache (size " << m_byAddress.size() << ")";
-        for (AddressTable::const_iterator iter (m_byAddress.begin());
-            iter != m_byAddress.end(); ++iter)
-        {
-            Entry const& entry (iter->second);
-            ss << std::endl <<
-                entry.endpoint.address << ", " <<
-                entry.endpoint.hops << " hops";
-        }
-    }
-
-    /** Returns a histogram of message counts by hops. */
-    typedef boost::array <int, Tuning::maxHops + 1> Histogram;
-    Histogram histogram () const
-    {
-        Histogram h;
-        for (Histogram::iterator iter (h.begin());
-            iter != h.end(); ++iter)
-            *iter = 0;
-        for (EntryList::const_iterator iter (m_list.begin());
-            iter != m_list.end(); ++iter)
-            ++h[iter->endpoint.hops];
-        return h;
-    }
+    void dump (Journal::ScopedStream& ss) const;
 
     /** Output statistics. */
-    void onWrite (PropertyStream::Map& map)
-    {
-        clock_type::time_point const now (m_clock.now ());
-        map ["size"] = size ();
-        PropertyStream::Set set ("entries", map);
-        for (auto entry : m_byAddress)
-        {
-            PropertyStream::Map item (set);
-            Entry const& e (entry.second);
-            item ["hops"] = e.endpoint.hops;
-            item ["address"] = e.endpoint.address.to_string ();
-            std::stringstream ss;
-            ss << e.whenExpires - now;
-            item ["expires"] = ss.str();
-        }
-    }
+    void onWrite (PropertyStream::Map& map);
 };
+
+//------------------------------------------------------------------------------
+
+template <class Allocator>
+Livecache <Allocator>::Livecache (
+    clock_type& clock,
+    Journal journal,
+    Allocator alloc)
+    : m_journal (journal)
+    , m_cache (clock, alloc)
+    , hops (alloc)
+{
+}
+
+template <class Allocator>
+void
+Livecache <Allocator>::expire()
+{
+    std::size_t n (0);
+    typename cache_type::time_point const expired (
+        m_cache.clock().now() - Tuning::liveCacheSecondsToLive);
+    for (auto iter (m_cache.chronological.begin());
+        iter != m_cache.chronological.end() && iter.when() <= expired;)
+    {
+        Element& e (iter->second);
+        hops.remove (e);
+        iter = m_cache.erase (iter);
+        ++n;
+    }
+    if (n > 0)
+    {
+        if (m_journal.debug) m_journal.debug << leftw (18) <<
+            "Livecache expired " << n <<
+            ((n > 1) ? " entries" : " entry");
+    }
+}
+
+template <class Allocator>
+void Livecache <Allocator>::insert (Endpoint const& ep)
+{
+    // The caller already incremented hop, so if we got a
+    // message at maxHops we will store it at maxHops + 1.
+    // This means we won't give out the address to other peers
+    // but we will use it to make connections and hand it out
+    // when redirecting.
+    //
+    assert (ep.hops <= (Tuning::maxHops + 1));
+    std::pair <typename cache_type::iterator, bool> result (
+        m_cache.emplace (ep.address, ep));
+    Element& e (result.first->second);
+    if (result.second)
+    {
+        hops.insert (e);
+        if (m_journal.debug) m_journal.debug << leftw (18) <<
+            "Livecache insert " << ep.address <<
+            " at hops " << ep.hops;
+        return;
+    }
+    else if (! result.second && (ep.hops > e.endpoint.hops))
+    {
+        // Drop duplicates at higher hops
+        std::size_t const excess (
+            ep.hops - e.endpoint.hops);
+        if (m_journal.trace) m_journal.trace << leftw(18) <<
+            "Livecache drop " << ep.address <<
+            " at hops +" << excess;
+        return;
+    }
+
+    m_cache.touch (result.first);
+
+    // Address already in the cache so update metadata
+    if (ep.hops < e.endpoint.hops)
+    {
+        hops.reinsert (e, ep.hops);
+        if (m_journal.debug) m_journal.debug << leftw (18) <<
+            "Livecache update " << ep.address <<
+            " at hops " << ep.hops;
+    }
+    else
+    {
+        if (m_journal.trace) m_journal.trace << leftw (18) <<
+            "Livecache refresh " << ep.address <<
+            " at hops " << ep.hops;
+    }
+}
+
+template <class Allocator>
+void
+Livecache <Allocator>::dump (Journal::ScopedStream& ss) const
+{
+    ss << std::endl << std::endl <<
+        "Livecache (size " << m_cache.size() << ")";
+    for (auto const& entry : m_cache)
+    {
+        auto const& e (entry.second);
+        ss << std::endl <<
+            e.endpoint.address << ", " <<
+            e.endpoint.hops << " hops";
+    }
+}
+
+template <class Allocator>
+void
+Livecache <Allocator>::onWrite (PropertyStream::Map& map)
+{
+    typename cache_type::time_point const expired (
+        m_cache.clock().now() - Tuning::liveCacheSecondsToLive);
+    map ["size"] = size ();
+    map ["hist"] = hops.histogram();
+    PropertyStream::Set set ("entries", map);
+    for (auto iter (m_cache.cbegin()); iter != m_cache.cend(); ++iter)
+    {
+        auto const& e (iter->second);
+        PropertyStream::Map item (set);
+        item ["hops"] = e.endpoint.hops;
+        item ["address"] = e.endpoint.address.to_string ();
+        std::stringstream ss;
+        ss << iter.when() - expired;
+        item ["expires"] = ss.str();
+    }
+}
+
+//------------------------------------------------------------------------------
+
+template <class Allocator>
+void
+Livecache <Allocator>::hops_t::shuffle()
+{
+    for (auto& list : m_lists)
+    {
+        std::vector <std::reference_wrapper <Element>> v;
+        v.reserve (list.size());
+        std::copy (list.begin(), list.end(),
+            std::back_inserter (v));
+        std::random_shuffle (v.begin(), v.end());
+        list.clear();
+        for (auto& e : v)
+            list.push_back (e);
+    }
+}
+
+template <class Allocator>
+std::string
+Livecache <Allocator>::hops_t::histogram() const
+{
+    std::stringstream ss;
+    for (auto i : m_hist)
+        ss <<
+            i <<
+            ((i < Tuning::maxHops + 1) ? ", " : "");
+    return ss.str();
+}
+
+template <class Allocator>
+Livecache <Allocator>::hops_t::hops_t (Allocator const& alloc)
+{
+    std::fill (m_hist.begin(), m_hist.end(), 0);
+}
+
+template <class Allocator>
+void
+Livecache <Allocator>::hops_t::insert (Element& e)
+{
+    assert (e.endpoint.hops >= 0 &&
+        e.endpoint.hops <= Tuning::maxHops + 1);
+    // This has security implications without a shuffle
+    m_lists [e.endpoint.hops].push_front (e);
+    ++m_hist [e.endpoint.hops];
+}
+
+template <class Allocator>
+void
+Livecache <Allocator>::hops_t::reinsert (Element& e, int hops)
+{
+    assert (hops >= 0 && hops <= Tuning::maxHops + 1);
+    list_type& list (m_lists [e.endpoint.hops]);
+    list.erase (list.iterator_to (e));
+    --m_hist [e.endpoint.hops];
+
+    e.endpoint.hops = hops;
+    insert (e);
+}
+
+template <class Allocator>
+void
+Livecache <Allocator>::hops_t::remove (Element& e)
+{
+    --m_hist [e.endpoint.hops];
+    list_type& list (m_lists [e.endpoint.hops]);
+    list.erase (list.iterator_to (e));
+}
 
 }
 }

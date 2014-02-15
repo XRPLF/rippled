@@ -17,26 +17,48 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
-#define RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
+#include "ConnectHandouts.h"
 
 namespace ripple {
 namespace PeerFinder {
 
-/** Describes a connectible peer address along with some metadata. */
-struct Endpoint
+ConnectHandouts::ConnectHandouts (
+    std::size_t needed, Squelches& squelches)
+    : m_needed (needed)
+    , m_squelches (squelches)
 {
-    Endpoint ();
+    m_list.reserve (needed);
+}
 
-    Endpoint (IP::Endpoint const& ep, int hops_);
+bool
+ConnectHandouts::try_insert (IP::Endpoint const& endpoint)
+{
+    if (full ())
+        return false;
 
-    int hops;
-    IP::Endpoint address;
-};
+    // Make sure the address isn't already in our list
+    if (std::any_of (m_list.begin(), m_list.end(),
+        [&endpoint](IP::Endpoint const& other)
+        {
+            // Ignore port for security reasons
+            return other.address() ==
+                endpoint.address();
+        }))
+    {
+        return false;
+    }
 
-bool operator< (Endpoint const& lhs, Endpoint const& rhs);
+    // Add to squelch list so we don't try it too often.
+    // If its already there, then make try_insert fail.
+    auto const result (m_squelches.insert (
+        endpoint.address()));
+    if (! result.second)
+        return false;
+    
+    m_list.push_back (endpoint);
+
+    return true;
+}
 
 }
 }
-
-#endif

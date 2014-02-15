@@ -17,34 +17,60 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_SORTS_H_INCLUDED
-#define RIPPLE_PEERFINDER_SORTS_H_INCLUDED
+#ifndef RIPPLE_PEERFINDER_CONNECTHANDOUTS_H_INCLUDED
+#define RIPPLE_PEERFINDER_CONNECTHANDOUTS_H_INCLUDED
+
+#include "Tuning.h"
+
+#include "../../../beast/beast/container/aged_set.h"
 
 namespace ripple {
 namespace PeerFinder {
 
-/** Total ordering for Endpoint.
-
-    The ordering must have these properties:
-
-    - Endpoints with addresses differing only by port should be
-      sorted adjacent, by descending hop count.
-
-    - The port number must participate in the ordering
-*/
-struct LessEndpoints
+/** Receives handouts for making automatic connections. */
+class ConnectHandouts
 {
-    bool operator() (Endpoint const& lhs, Endpoint const& rhs) const
+public:
+    // Keeps track of addresses we have made outgoing connections
+    // to, for the purposes of not connecting to them too frequently.
+    typedef beast::aged_set <IP::Address> Squelches;
+
+    typedef std::vector <IP::Endpoint> list_type;
+
+private:
+    std::size_t m_needed;
+    Squelches& m_squelches;
+    list_type m_list;
+
+public:
+    ConnectHandouts (std::size_t needed, Squelches& squelches);
+
+    bool empty() const
     {
-        if (lhs.address.address() < rhs.address.address())
-            return true;
-        if (lhs.address.address() > rhs.address.address())
-            return false;
-        // Break ties by preferring higher hops
-        if (lhs.hops > rhs.hops)
-            return true;
-        return lhs.address.port () < rhs.address.port ();
+        return m_list.empty();
     }
+
+    bool full() const
+    {
+        return m_list.size() >= m_needed;
+    }
+
+    bool try_insert (Endpoint const& endpoint)
+    {
+        return try_insert (endpoint.address);
+    }
+
+    list_type& list()
+    {
+        return m_list;
+    }
+
+    list_type const& list() const
+    {
+        return m_list;
+    }
+
+    bool try_insert (IP::Endpoint const& endpoint);
 };
 
 }

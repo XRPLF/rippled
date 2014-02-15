@@ -22,6 +22,9 @@
 
 #include "../api/Slot.h"
 
+#include "../../../beast/beast/container/aged_unordered_map.h"
+#include "../../../beast/beast/container/aged_container_utility.h"
+
 #include <boost/optional.hpp>
 
 namespace ripple {
@@ -29,40 +32,20 @@ namespace PeerFinder {
 
 class SlotImp : public Slot
 {
+private:
+    typedef beast::aged_unordered_map <IP::Endpoint, int> recent_type;
+
 public:
     typedef std::shared_ptr <SlotImp> ptr;
 
     // inbound
     SlotImp (IP::Endpoint const& local_endpoint,
-        IP::Endpoint const& remote_endpoint, bool fixed)
-        : m_inbound (true)
-        , m_fixed (fixed)
-        , m_cluster (false)
-        , m_state (accept)
-        , m_remote_endpoint (remote_endpoint)
-        , m_local_endpoint (local_endpoint)
-        , checked (false)
-        , canAccept (false)
-        , connectivityCheckInProgress (false)
-    {
-    }
+        IP::Endpoint const& remote_endpoint, bool fixed,
+            clock_type& clock);
 
     // outbound
-    SlotImp (IP::Endpoint const& remote_endpoint, bool fixed)
-        : m_inbound (false)
-        , m_fixed (fixed)
-        , m_cluster (false)
-        , m_state (connect)
-        , m_remote_endpoint (remote_endpoint)
-        , checked (true)
-        , canAccept (true)
-        , connectivityCheckInProgress (false)
-    {
-    }
-
-    ~SlotImp ()
-    {
-    }
+    SlotImp (IP::Endpoint const& remote_endpoint,
+        bool fixed, clock_type& clock);
 
     bool inbound () const
     {
@@ -99,38 +82,6 @@ public:
         return m_public_key;
     }
 
-    //--------------------------------------------------------------------------
-
-    void state (State state_)
-    {
-        // Must go through activate() to set active state
-        assert (state_ != active);
-
-        // The state must be different
-        assert (state_ != m_state);
-
-        // You can't transition into the initial states
-        assert (state_ != accept && state_ != connect);
-
-        // Can only become connected from outbound connect state
-        assert (state_ != connected || (! m_inbound && m_state == connect));
-
-        // Can't gracefully close on an outbound connection attempt
-        assert (state_ != closing || m_state != connect);
-
-        m_state = state_;
-    }
-
-    void activate (clock_type::time_point const& now)
-    {
-        // Can only become active from the accept or connected state
-        assert (m_state == accept || m_state == connected);
-
-        m_state = active;
-        whenSendEndpoints = now;
-        whenAcceptEndpoints = now;
-    }
-
     void local_endpoint (IP::Endpoint const& endpoint)
     {
         m_local_endpoint = endpoint;
@@ -149,6 +100,43 @@ public:
     void cluster (bool cluster_)
     {
         m_cluster = cluster_;
+    }
+
+    //--------------------------------------------------------------------------
+
+    void state (State state_);
+
+    void activate (clock_type::time_point const& now);
+
+    // "Memberspace"
+    //
+    // The set of all recent addresses that we have seen from this peer.
+    // We try to avoid sending a peer the same addresses they gave us.
+    //
+    class recent_t
+    {
+    public:
+        explicit recent_t (clock_type& clock);
+
+        /** Called for each valid endpoint received for a slot.
+            We also insert messages that we send to the slot to prevent
+            sending a slot the same address too frequently.
+        */
+        void insert (IP::Endpoint const& ep, int hops);
+
+        /** Returns `true` if we should not send endpoint to the slot. */
+        bool filter (IP::Endpoint const& ep, int hops);
+
+    private:
+        void expire ();
+
+        friend class SlotImp;
+        recent_type cache;
+    } recent;
+
+    void expire()
+    {
+        recent.expire();
     }
 
 private:
@@ -175,26 +163,12 @@ public:
     // progress. Valid always.
     bool connectivityCheckInProgress;
     
-    // The time after which we will send the peer mtENDPOINTS
-    clock_type::time_point whenSendEndpoints;
-
     // The time after which we will accept mtENDPOINTS from the peer
     // This is to prevent flooding or spamming. Receipt of mtENDPOINTS
     // sooner than the allotted time should impose a load charge.
     //
     clock_type::time_point whenAcceptEndpoints;
-
-    // The set of all recent IP::Endpoint that we have seen from this peer.
-    // We try to avoid sending a peer the same addresses they gave us.
-    //
-    //std::set <IP::Endpoint> received;
 };
-
-//------------------------------------------------------------------------------
-
-Slot::~Slot ()
-{
-}
 
 }
 }

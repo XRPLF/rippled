@@ -23,6 +23,14 @@
 #include "Fixed.h"
 #include "SlotImp.h"
 
+#include "handout.h"
+#include "ConnectHandouts.h"
+#include "RedirectHandouts.h"
+#include "SlotHandouts.h"
+
+#include "../../../beast/beast/container/aged_container_utility.h"
+
+#include <map>
 #include <unordered_map>
 
 namespace ripple {
@@ -82,7 +90,7 @@ public:
         FixedSlots fixed;
 
         // Live livecache from mtENDPOINTS messages
-        Livecache livecache;
+        Livecache <> livecache;
 
         // LiveCache of addresses suitable for gaining initial connections
         Bootcache bootcache;
@@ -111,6 +119,10 @@ public:
     // A list of dynamic sources to consult as a fallback
     std::vector <SharedPtr <Source>> m_sources;
 
+    clock_type::time_point m_whenBroadcast;
+
+    ConnectHandouts::Squelches m_squelches;
+
     //--------------------------------------------------------------------------
 
     Logic (
@@ -125,6 +137,8 @@ public:
         , m_callback (callback)
         , m_store (store)
         , m_checker (checker)
+        , m_whenBroadcast (m_clock.now())
+        , m_squelches (m_clock)
     {
         setConfig (Config ());
     }
@@ -177,7 +191,7 @@ public:
             return;
         }
 
-        for (auto remote_address : addresses)
+        for (auto const& remote_address : addresses)
         {
             auto result (state->fixed.emplace (std::piecewise_construct,
                 std::forward_as_tuple (remote_address),
@@ -191,6 +205,62 @@ public:
                 return;
             }
         }
+    }
+
+    //--------------------------------------------------------------------------
+
+    // Called when the Checker completes a connectivity test
+    void checkComplete (IP::Endpoint const& address,
+        IP::Endpoint const & checkedAddress, Checker::Result const& result)
+    {
+        if (result.error == boost::asio::error::operation_aborted)
+            return;
+
+        SharedState::Access state (m_state);
+        Slots::iterator const iter (state->slots.find (address));
+        SlotImp& slot (*iter->second);
+
+        if (iter == state->slots.end())
+        {
+            // The slot disconnected before we finished the check
+            if (m_journal.debug) m_journal.debug << leftw (18) <<
+                "Logic tested " << address <<
+                " but the connection was closed";
+            return;
+        }
+
+        // Mark that a check for this slot is finished.
+        slot.connectivityCheckInProgress = false;
+
+        if (! result.error)
+        {
+            slot.checked = true;
+            slot.canAccept = result.canAccept;
+
+            if (slot.canAccept)
+            {
+                if (m_journal.debug) m_journal.debug << leftw (18) <<
+                    "Logic testing " << address << " succeeded";
+            }
+            else
+            {
+                if (m_journal.info) m_journal.info << leftw (18) <<
+                    "Logic testing " << address << " failed";
+            }
+        }
+        else
+        {
+            // VFALCO TODO Should we retry depending on the error?
+            slot.checked = true;
+            slot.canAccept = false;
+
+            if (m_journal.error) m_journal.error << leftw (18) <<
+                "Logic testing " << iter->first << " with error, " <<
+                result.error.message();
+        }
+
+        if (! slot.canAccept)
+            state->bootcache.on_failure (address);
     }
 
     //--------------------------------------------------------------------------
@@ -220,7 +290,8 @@ public:
 
         // Create the slot
         SlotImp::ptr const slot (std::make_shared <SlotImp> (local_endpoint,
-            remote_endpoint, fixed (remote_endpoint.address (), state)));
+            remote_endpoint, fixed (remote_endpoint.address (), state),
+                m_clock));
         // Add slot to table
         auto const result (state->slots.emplace (
             slot->remote_endpoint (), slot));
@@ -254,7 +325,7 @@ public:
 
         // Create the slot
         SlotImp::ptr const slot (std::make_shared <SlotImp> (
-            remote_endpoint, fixed (remote_endpoint, state)));
+            remote_endpoint, fixed (remote_endpoint, state), m_clock));
 
         // Add slot to table
         std::pair <Slots::iterator, bool> result (
@@ -353,8 +424,8 @@ public:
             state->counts.add (*slot);
 
             if (! slot->inbound())
-                state->bootcache.onConnectionHandshake (
-                    slot->remote_endpoint(), doActivate);
+                state->bootcache.on_success (
+                    slot->remote_endpoint());
 
             // Mark fixed slot success
             if (slot->fixed() && ! slot->inbound())
@@ -371,30 +442,88 @@ public:
         else
         {
             if (! slot->inbound())
-                state->bootcache.onConnectionHandshake (
-                    slot->remote_endpoint(), doClose);
+                state->bootcache.on_success (
+                    slot->remote_endpoint());
 
+            // Maybe give them some addresses to try
             if (slot->inbound ())
+                redirect (slot, state);
+
+            m_callback.disconnect (slot, true);
+        }
+    }
+
+    //--------------------------------------------------------------------------
+
+    // Validate and clean up the list that we received from the slot.
+    void preprocess (SlotImp::ptr const& slot, Endpoints& list,
+        SharedState::Access& state)
+    {
+        bool neighbor (false);
+        for (auto iter (list.begin()); iter != list.end();)
+        {
+            Endpoint& ep (*iter);
+
+            // Enforce hop limit
+            if (ep.hops > Tuning::maxHops)
             {
-                // We are full, so send the inbound connection some
-                // new addresses to try then gracefully close them.
-                Endpoints const endpoints (getSomeEndpoints ());
-                if (! endpoints.empty ())
+                if (m_journal.warning) m_journal.warning << leftw (18) <<
+                    "Endpoints drop " << ep.address <<
+                    " for excess hops " << ep.hops;
+                iter = list.erase (iter);
+                continue;
+            }
+
+            // See if we are directly connected
+            if (ep.hops == 0)
+            {
+                if (! neighbor)
                 {
-                    if (m_journal.trace) m_journal.trace << leftw (18) <<
-                        "Logic redirect " << slot->remote_endpoint() <<
-                        " with " << endpoints.size() <<
-                        ((endpoints.size() > 1) ? " addresses" : " address");
-                    m_callback.send (slot, endpoints);
+                    // Fill in our neighbors remote address
+                    neighbor = true;
+                    ep.address = slot->remote_endpoint().at_port (
+                        ep.address.port ());
                 }
                 else
                 {
                     if (m_journal.warning) m_journal.warning << leftw (18) <<
-                        "Logic deferred " << slot->remote_endpoint();
+                        "Endpoints drop " << ep.address <<
+                        " for extra self";
+                    iter = list.erase (iter);
+                    continue;
                 }
             }
 
-            m_callback.disconnect (slot, true);
+            // Discard invalid addresses
+            if (! is_valid_address (ep.address))
+            {
+                if (m_journal.warning) m_journal.warning << leftw (18) <<
+                    "Endpoints drop " << ep.address <<
+                    " as invalid";
+                iter = list.erase (iter);
+                continue;
+            }
+
+            // Filter duplicates
+            if (std::any_of (list.begin(), iter,
+                [ep](Endpoints::value_type const& other)
+                {
+                    return ep.address == other.address;
+                }))
+            {
+                if (m_journal.warning) m_journal.warning << leftw (18) <<
+                    "Endpoints drop " << ep.address <<
+                    " as duplicate";
+                iter = list.erase (iter);
+                continue;
+            }
+
+            // Increment hop count on the incoming message, so
+            // we store it at the hop count we will send it at.
+            //
+            ++ep.hops;
+
+            ++iter;
         }
     }
 
@@ -404,74 +533,41 @@ public:
             "Endpoints from " << slot->remote_endpoint () <<
             " contained " << list.size () <<
             ((list.size() > 1) ? " entries" : " entry");
+
         SharedState::Access state (m_state);
+   
         // The object must exist in our table
         assert (state->slots.find (slot->remote_endpoint ()) !=
             state->slots.end ());
+
         // Must be handshaked!
         assert (slot->state() == Slot::active);
-        // Preprocess the endpoints
-        {
-            bool neighbor (false);
-            for (Endpoints::iterator iter (list.begin());
-                iter != list.end();)
-            {
-                Endpoint& ep (*iter);
-                if (ep.hops > Tuning::maxHops)
-                {
-                    if (m_journal.warning) m_journal.warning << leftw (18) <<
-                        "Endpoints drop " << ep.address <<
-                        " for excess hops " << ep.hops;
-                    iter = list.erase (iter);
-                    continue;
-                }
-                if (ep.hops == 0)
-                {
-                    if (! neighbor)
-                    {
-                        // Fill in our neighbors remote address
-                        neighbor = true;
-                        ep.address = slot->remote_endpoint().at_port (
-                            ep.address.port ());
-                    }
-                    else
-                    {
-                        if (m_journal.warning) m_journal.warning << leftw (18) <<
-                            "Endpoints drop " << ep.address <<
-                            " for extra self";
-                        iter = list.erase (iter);
-                        continue;
-                    }
-                }
-                if (! is_valid_address (ep.address))
-                {
-                    if (m_journal.warning) m_journal.warning << leftw (18) <<
-                        "Endpoints drop " << ep.address <<
-                        " as invalid";
-                    iter = list.erase (iter);
-                    continue;
-                }
-                ++iter;
-            }
-        }
+
+        preprocess (slot, list, state);
 
         clock_type::time_point const now (m_clock.now());
 
-        for (Endpoints::const_iterator iter (list.begin());
-            iter != list.end(); ++iter)
+        for (auto iter (list.cbegin()); iter != list.cend(); ++iter)
         {
             Endpoint const& ep (*iter);
 
-            //slot->received.insert (ep.address);
+            assert (ep.hops != 0);
 
-            if (ep.hops == 0)
+            slot->recent.insert (ep.address, ep.hops);
+
+            // Note hops has been incremented, so 1
+            // means a directly connected neighbor.
+            //
+            if (ep.hops == 1)
             {
                 if (slot->connectivityCheckInProgress)
                 {
                     if (m_journal.warning) m_journal.warning << leftw (18) <<
                         "Logic testing " << ep.address << " already in progress";
+                    continue;
                 }
-                else if (! slot->checked)
+                
+                if (! slot->checked)
                 {
                     // Mark that a check for this slot is now in progress.
                     slot->connectivityCheckInProgress = true;
@@ -487,26 +583,27 @@ public:
                     // that the neighbor sends when we perform the
                     // listening test. They will just send us another
                     // one in a few seconds.
+
+                    continue;
                 }
-                else if (slot->canAccept)
-                {
-                    // We only add to the livecache if the neighbor passed the
-                    // listening test, else we silently drop their messsage
-                    // since their listening port is misconfigured.
-                    //
-                    state->livecache.insert (ep);
-                    state->bootcache.insert (ep.address);
-                }
+ 
+                // If they failed the test then skip the address
+                if (! slot->canAccept)
+                    continue;
             }
-            else
-            {
-                state->livecache.insert (ep);
-                state->bootcache.insert (ep.address);
-            }
+
+            // We only add to the livecache if the neighbor passed the
+            // listening test, else we silently drop their messsage
+            // since their listening port is misconfigured.
+            //
+            state->livecache.insert (ep);
+            state->bootcache.insert (ep.address);
         }
 
         slot->whenAcceptEndpoints = now + Tuning::secondsPerMessage;
     }
+
+    //--------------------------------------------------------------------------
 
     void on_legacy_endpoints (IPAddresses const& list)
     {
@@ -566,7 +663,7 @@ public:
 
         case Slot::connect:
         case Slot::connected:
-            state->bootcache.onConnectionFailure (slot->remote_endpoint ());
+            state->bootcache.on_failure (slot->remote_endpoint ());
             // VFALCO TODO If the address exists in the ephemeral/live
             //             endpoint livecache then we should mark the failure
             // as if it didn't pass the listening test. We should also
@@ -574,15 +671,13 @@ public:
             break;
 
         case Slot::active:
-            if (! slot->inbound ())
-                state->bootcache.onConnectionClosed (slot->remote_endpoint ());
             if (m_journal.trace) m_journal.trace << leftw (18) <<
-                "Logic closed active " << slot->remote_endpoint();
+                "Logic close " << slot->remote_endpoint();
             break;
 
         case Slot::closing:
             if (m_journal.trace) m_journal.trace << leftw (18) <<
-                "Logic closed " << slot->remote_endpoint();
+                "Logic finished " << slot->remote_endpoint();
             break;
 
         default:
@@ -596,7 +691,7 @@ public:
     // Returns `true` if the address matches a fixed slot address
     bool fixed (IP::Endpoint const& endpoint, SharedState::Access& state) const
     {
-        for (auto entry : state->fixed)
+        for (auto const& entry : state->fixed)
             if (entry.first == endpoint)
                 return true;
         return false;
@@ -606,74 +701,10 @@ public:
     // Note that this does not use the port information in the IP::Endpoint
     bool fixed (IP::Address const& address, SharedState::Access& state) const
     {
-        for (auto entry : state->fixed)
+        for (auto const& entry : state->fixed)
             if (entry.first.address () == address)
                 return true;
         return false;
-    }
-
-    //--------------------------------------------------------------------------
-
-    /** Returns a new set of connection addresses from the live cache. */
-    IPAddresses fetch_livecache (std::size_t needed, SharedState::Access& state)
-    {
-        Endpoints endpoints (state->livecache.fetch_unique());
-        Endpoints temp;
-        temp.reserve (endpoints.size ());
-
-        {
-            // Remove the addresses we are currently connected to
-            struct LessWithoutPortSet
-            {
-                bool operator() (
-                    Endpoint const& lhs, IP::Endpoint const& rhs) const
-                {
-                    return lhs.address.address()  < rhs.address();
-                }
-                bool operator() (
-                    Endpoint const& lhs, Endpoint const& rhs) const
-                {
-                    return lhs.address.address() < rhs.address.address();
-                }
-                bool operator() (
-                    IP::Endpoint const& lhs, Endpoint const& rhs) const
-                {
-                    return lhs.address() < rhs.address.address();
-                }
-                bool operator() (
-                    IP::Endpoint const& lhs, IP::Endpoint const& rhs) const
-                {
-                    return lhs.address() < rhs.address();
-                }
-            };
-            std::set_difference (endpoints.begin (), endpoints.end (),
-                state->connected_addresses.begin (), state->connected_addresses.end (),
-                    std::back_inserter (temp), LessWithoutPortSet ());
-            std::swap (endpoints, temp);
-            temp.clear ();
-        }
-
-        {
-            // Sort by hops descending
-            struct LessHops
-            {
-                bool operator() (Endpoint const& lhs, Endpoint const& rhs) const
-                {
-                    return lhs.hops > rhs.hops;
-                }
-            };
-            std::sort (endpoints.begin (), endpoints.end (), LessHops ());
-        }
-
-        if (endpoints.size () > needed)
-            endpoints.resize (needed);
-
-        IPAddresses result;
-        result.reserve (endpoints.size ());
-        for (Endpoints::const_iterator iter (endpoints.begin ());
-            iter != endpoints.end (); ++iter)
-            result.push_back (iter->address);
-        return result;
     }
 
     //--------------------------------------------------------------------------
@@ -705,184 +736,24 @@ public:
         }
     }
 
-    /** Adds eligible bootcache addresses for outbound attempts. */
-    template <class Container>
-    void get_bootcache (std::size_t needed, Container& c, SharedState::Access& state)
-    {
-        // Get everything
-        auto endpoints (state->bootcache.fetch ());
-
-        struct LessRank
-        {
-            bool operator() (Bootcache::Endpoint const& lhs,
-                Bootcache::Endpoint const& rhs) const
-            {
-                if (lhs.uptime() > rhs.uptime())
-                    return true;
-                else if (lhs.uptime() <= rhs.uptime() && rhs.uptime().count() != 0)
-                    return false;
-                if (lhs.valence() > rhs.valence())
-                    return true;
-                return false;
-            }
-        };
-
-        {
-            // Sort ignoring port
-            struct LessWithoutPort
-            {
-                bool operator() (Bootcache::Endpoint const& lhs,
-                    Bootcache::Endpoint const& rhs) const
-                {
-                    if (lhs.address().at_port (0) < rhs.address().at_port (0))
-                        return true;
-                    // Break ties by preferring higher ranks
-                    //return m_rank (lhs, rhs);
-                    return false;
-                }
-
-                LessRank m_rank;
-            };
-            std::sort (endpoints.begin (), endpoints.end (), LessWithoutPort());
-        }
-
-        Bootcache::Endpoints temp;
-        temp.reserve (endpoints.size ());
-
-        {
-            // Remove all but the first unique addresses ignoring port
-            struct EqualWithoutPort
-            {
-                bool operator() (Bootcache::Endpoint const& lhs,
-                    Bootcache::Endpoint const& rhs) const
-                {
-                    return lhs.address().at_port (0) ==
-                        rhs.address().at_port (0);
-                }
-            };
-
-            std::unique_copy (endpoints.begin (), endpoints.end (),
-                std::back_inserter (temp), EqualWithoutPort ());
-            std::swap (endpoints, temp);
-            temp.clear ();
-        }
-
-        {
-            // Remove the addresses we are currently connected to
-            struct LessWithoutPortSet
-            {
-                bool operator() (Bootcache::Endpoint const& lhs,
-                    IP::Endpoint const& rhs) const
-                {
-                    return lhs.address().at_port (0) < rhs.at_port (0);
-                }
-                bool operator() (Bootcache::Endpoint const& lhs,
-                    Bootcache::Endpoint const& rhs) const
-                {
-                    return lhs.address().at_port (0) <
-                        rhs.address().at_port (0);
-                }
-                bool operator() (IP::Endpoint const& lhs,
-                    Bootcache::Endpoint const& rhs) const
-                {
-                    return lhs.at_port (0) < rhs.address().at_port (0);
-                }
-                bool operator() (IP::Endpoint const& lhs,
-                    IP::Endpoint const& rhs) const
-                {
-                    return lhs.at_port (0) < rhs.at_port (0);
-                }
-            };
-            std::set_difference (endpoints.begin (), endpoints.end (),
-                state->connected_addresses.begin (), state->connected_addresses.end (),
-                    std::back_inserter (temp), LessWithoutPortSet ());
-            std::swap (endpoints, temp);
-            temp.clear ();
-        }
-
-        {
-            // Sort by rank descending
-            std::sort (endpoints.begin (), endpoints.end (), LessRank ());
-        }
-
-        if (endpoints.size () > needed)
-            endpoints.resize (needed);
-
-        c.reserve (endpoints.size ());
-        for (Bootcache::Endpoints::const_iterator iter (endpoints.begin ());
-            iter != endpoints.end (); ++iter)
-            c.emplace_back (iter->address());
-    }
-
-    /** Returns a new set of connection addresses from the live cache. */
-    template <class Container>
-    void get_livecache (std::size_t needed, Container& c,
-        SharedState::Access& state)
-    {
-        Endpoints endpoints (state->livecache.fetch_unique());
-        Endpoints temp;
-        temp.reserve (endpoints.size ());
-
-        {
-            // Remove the addresses we are currently connected to
-            struct LessWithoutPortSet
-            {
-                bool operator() (
-                    Endpoint const& lhs, IP::Endpoint const& rhs) const
-                {
-                    return lhs.address.address()  < rhs.address();
-                }
-                bool operator() (
-                    Endpoint const& lhs, Endpoint const& rhs) const
-                {
-                    return lhs.address.address() < rhs.address.address();
-                }
-                bool operator() (
-                    IP::Endpoint const& lhs, Endpoint const& rhs) const
-                {
-                    return lhs.address() < rhs.address.address();
-                }
-                bool operator() (
-                    IP::Endpoint const& lhs, IP::Endpoint const& rhs) const
-                {
-                    return lhs.address() < rhs.address();
-                }
-            };
-            std::set_difference (endpoints.begin (), endpoints.end (),
-                state->connected_addresses.begin (), state->connected_addresses.end (),
-                    std::back_inserter (temp), LessWithoutPortSet ());
-            std::swap (endpoints, temp);
-            temp.clear ();
-        }
-
-        {
-            // Sort by hops descending
-            struct LessHops
-            {
-                bool operator() (Endpoint const& lhs, Endpoint const& rhs) const
-                {
-                    return lhs.hops > rhs.hops;
-                }
-            };
-            std::sort (endpoints.begin (), endpoints.end (), LessHops ());
-        }
-
-        if (endpoints.size () > needed)
-            endpoints.resize (needed);
-
-        IPAddresses result;
-        result.reserve (endpoints.size ());
-        for (Endpoints::const_iterator iter (endpoints.begin ());
-            iter != endpoints.end (); ++iter)
-            c.push_back (iter->address);
-    }
-
     //--------------------------------------------------------------------------
+
+    // Adds slot addresses to the squelched set
+    void squelch_slots (SharedState::Access& state)
+    {
+        for (auto const& s : state->slots)
+        {
+            auto const result (m_squelches.insert (
+                s.second->remote_endpoint().address()));
+            if (! result.second)
+                m_squelches.touch (result.first);
+        }
+    }
 
     /** Create new outbound connection attempts as needed.
         This implements PeerFinder's "Outbound Connection Strategy"
     */
-    void makeOutgoingConnections ()
+    void autoconnect ()
     {
         SharedState::Access state (m_state);
 
@@ -891,8 +762,11 @@ public:
         auto needed (state->counts.attempts_needed ());
         if (needed == 0)
             return;
-        std::vector <IP::Endpoint> list;
-        list.reserve (needed);
+
+        ConnectHandouts h (needed, m_squelches);
+
+        // Make sure we don't connect to already-connected entries.
+        squelch_slots (state);
 
         // 1. Use Fixed if:
         //    Fixed active count is below fixed count AND
@@ -901,16 +775,16 @@ public:
         //
         if (state->counts.fixed_active() < state->fixed.size ())
         {
-            get_fixed (needed, list, state);
+            get_fixed (needed, h.list(), state);
 
-            if (! list.empty ())
+            if (! h.list().empty ())
             {
                 if (m_journal.debug) m_journal.debug << leftw (18) <<
-                    "Logic connect " << list.size() << " fixed";
-                m_callback.connect (list);
+                    "Logic connect " << h.list().size() << " fixed";
+                m_callback.connect (h.list());
                 return;
             }
-            
+
             if (state->counts.attempts() > 0)
             {
                 if (m_journal.debug) m_journal.debug << leftw (18) <<
@@ -931,21 +805,26 @@ public:
         //    There are any entries in the cache OR
         //    Any outbound attempts are in progress
         //
-        get_livecache (needed, list, state);
-        if (! list.empty ())
         {
-            if (m_journal.debug) m_journal.debug << leftw (18) <<
-                "Logic connect " << list.size () << " live " <<
-                ((list.size () > 1) ? "endpoints" : "endpoint");
-            m_callback.connect (list);
-            return;
-        }
-        else if (state->counts.attempts() > 0)
-        {
-            if (m_journal.debug) m_journal.debug << leftw (18) <<
-                "Logic waiting on " <<
-                    state->counts.attempts() << " attempts";
-            return;
+            state->livecache.hops.shuffle();
+            handout (&h, (&h)+1,
+                state->livecache.hops.rbegin(),
+                    state->livecache.hops.rend());
+            if (! h.list().empty ())
+            {
+                if (m_journal.debug) m_journal.debug << leftw (18) <<
+                    "Logic connect " << h.list().size () << " live " <<
+                    ((h.list().size () > 1) ? "endpoints" : "endpoint");
+                m_callback.connect (h.list());
+                return;
+            }
+            else if (state->counts.attempts() > 0)
+            {
+                if (m_journal.debug) m_journal.debug << leftw (18) <<
+                    "Logic waiting on " <<
+                        state->counts.attempts() << " attempts";
+                return;
+            }
         }
 
         /*  3. Bootcache refill
@@ -964,13 +843,16 @@ public:
         // 4. Use Bootcache if:
         //    There are any entries we haven't tried lately
         //
-        get_bootcache (needed, list, state);
-        if (! list.empty ())
+        for (auto iter (state->bootcache.begin());
+            ! h.full() && iter != state->bootcache.end(); ++iter)
+            h.try_insert (*iter);
+
+        if (! h.list().empty ())
         {
             if (m_journal.debug) m_journal.debug << leftw (18) <<
-                "Logic connect " << list.size () << " boot " <<
-                ((list.size () > 1) ? "addresses" : "address");
-            m_callback.connect (list);
+                "Logic connect " << h.list().size () << " boot " <<
+                ((h.list().size () > 1) ? "addresses" : "address");
+            m_callback.connect (h.list());
             return;
         }
 
@@ -992,35 +874,38 @@ public:
     //--------------------------------------------------------------------------
 
     // Called periodically to sweep the livecache and remove aged out items.
-    void sweepCache ()
+    void expire ()
     {
         SharedState::Access state (m_state);
-        state->livecache.sweep ();
-        for (auto iter : state->slots)
-        {
-            //Slot& slot (*iter->second);
-            //slot.received.cycle();
-        }
-    }
 
-    // Called periodically to update uptime for connected outbound peers.
-    void processUptime (SharedState::Access& state)
-    {
-        for (auto entry : state->slots)
-        {
-            Slot const& slot (*entry.second);
-            if (! slot.inbound() && slot.state() == Slot::active)
-                state->bootcache.onConnectionActive (
-                    slot.remote_endpoint());
-        }
+        // Expire the Livecache
+        state->livecache.expire ();
+
+        // Expire the recent cache in each slot
+        for (auto const& entry : state->slots)
+            entry.second->expire();
+
+        // Expire the recent attempts table
+        beast::expire (m_squelches,
+            Tuning::recentAttemptDuration);
     }
 
     // Called every so often to perform periodic tasks.
     void periodicActivity ()
     {
         SharedState::Access state (m_state);
-        processUptime (state);
+
+        clock_type::time_point const now (m_clock.now());
+
+        autoconnect ();
+        expire ();
         state->bootcache.periodicActivity ();
+
+        if (m_whenBroadcast <= now)
+        {
+            broadcast ();
+            m_whenBroadcast = now + Tuning::secondsPerMessage;
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -1092,7 +977,6 @@ public:
                 "Logic failed " << "'" << source->name() << "' fetch, " <<
                 results.error.message();
         }
-
     }
 
     //--------------------------------------------------------------------------
@@ -1125,49 +1009,29 @@ public:
         return true;
     }
 
-    // Creates a set of endpoints suitable for a temporary slot.
-    // Sent to a slot when we are full, before disconnecting them.
-    //
-    Endpoints getSomeEndpoints ()
+    //--------------------------------------------------------------------------
+
+    // Gives a slot a set of addresses to try next since we're full
+    void redirect (SlotImp::ptr const& slot, SharedState::Access& state)
     {
-        SharedState::Access state (m_state);
-        Endpoints result (state->livecache.fetch_unique ());
-        std::random_shuffle (result.begin(), result.end());
-        if (result.size () > Tuning::redirectEndpointCount)
-            result.resize (Tuning::redirectEndpointCount);       
-        return result;
-    }
+        RedirectHandouts h (slot);
+        state->livecache.hops.shuffle();
+        handout (&h, (&h)+1,
+            state->livecache.hops.begin(),
+                state->livecache.hops.end());
 
-    // Send mtENDPOINTS for the specified slot
-    void sendEndpointsTo (Slot::ptr const& slot, Giveaways& g)
-    {
-        Endpoints endpoints;
-
-        if (endpoints.size() < Tuning::numberOfEndpoints)
-        {
-            SharedState::Access state (m_state);
-
-            // Add an entry for ourselves if:
-            //  1. We want incoming
-            //  2. We have counts
-            //  3. We haven't failed the firewalled test
-            //
-            if (state->config.wantIncoming && state->counts.inboundSlots() > 0)
-                endpoints.push_back (thisEndpoint (state));
-        }
-
-        if (endpoints.size() < Tuning::numberOfEndpoints)
-        {
-            g.append (Tuning::numberOfEndpoints - endpoints.size(), endpoints);
-        }
-
-        if (! endpoints.empty())
+        if (! h.list().empty ())
         {
             if (m_journal.trace) m_journal.trace << leftw (18) <<
-                "Logic sending " << slot->remote_endpoint() << 
-                " with " << endpoints.size() <<
-                ((endpoints.size() > 1) ? " endpoints" : " endpoint");
-            m_callback.send (slot, endpoints);
+                "Logic redirect " << slot->remote_endpoint() <<
+                " with " << h.list().size() <<
+                ((h.list().size() == 1) ? " address" : " addresses");
+            m_callback.send (slot, h.list());
+        }
+        else
+        {
+            if (m_journal.warning) m_journal.warning << leftw (18) <<
+                "Logic deferred " << slot->remote_endpoint();
         }
     }
 
@@ -1175,156 +1039,48 @@ public:
     void broadcast ()
     {
         SharedState::Access state (m_state);
-        if (! state->slots.empty())
+
+        std::vector <SlotHandouts> targets;
+
         {
-            clock_type::time_point const now (m_clock.now());
-            clock_type::time_point const whenSendEndpoints (
-                now + Tuning::secondsPerMessage);
-            Giveaways g (state->livecache.giveaways ());
-            for (auto entry : state->slots)
-            {
-                auto& slot (entry.second);
-                if (slot->state() == Slot::active)
+            // build list of active slots
+            std::vector <SlotImp::ptr> slots;
+            slots.reserve (state->slots.size());
+            std::for_each (state->slots.cbegin(), state->slots.cend(),
+                [&slots](Slots::value_type const& value)
                 {
-                    if (slot->whenSendEndpoints <= now)
-                    {
-                        sendEndpointsTo (slot, g);
-                        slot->whenSendEndpoints = whenSendEndpoints;
-                    }
-                }
-            }
+                    if (value.second->state() == Slot::active)
+                        slots.emplace_back (value.second);
+                });
+            std::random_shuffle (slots.begin(), slots.end());
+
+            // build target vector
+            targets.reserve (slots.size());
+            std::for_each (slots.cbegin(), slots.cend(),
+                [&targets](SlotImp::ptr const& slot)
+                {
+                    targets.emplace_back (slot);
+                });
+        }
+
+        // build sequence of endpoints by hops
+        state->livecache.hops.shuffle();
+        handout (targets.begin(), targets.end(),
+            state->livecache.hops.begin(),
+                state->livecache.hops.end());
+
+        // broadcast
+        for (auto const& t : targets)
+        {
+            SlotImp::ptr const& slot (t.slot());
+            auto const& list (t.list());
+            if (m_journal.trace) m_journal.trace << leftw (18) <<
+                "Logic sending " << slot->remote_endpoint() << 
+                " with " << list.size() <<
+                ((list.size() == 1) ? " endpoint" : " endpoints");
+            m_callback.send (slot, list);
         }
     }
-
-    // Called when the Checker completes a connectivity test
-    void checkComplete (IP::Endpoint const& address,
-        IP::Endpoint const & checkedAddress, Checker::Result const& result)
-    {
-        if (result.error == boost::asio::error::operation_aborted)
-            return;
-
-        SharedState::Access state (m_state);
-        Slots::iterator const iter (state->slots.find (address));
-        SlotImp& slot (*iter->second);
-
-        if (iter == state->slots.end())
-        {
-            // The slot disconnected before we finished the check
-            if (m_journal.debug) m_journal.debug << leftw (18) <<
-                "Logic tested " << address <<
-                " but the connection was closed";
-            return;
-        }
-
-        // Mark that a check for this slot is finished.
-        slot.connectivityCheckInProgress = false;
-
-        if (! result.error)
-        {
-            slot.checked = true;
-            slot.canAccept = result.canAccept;
-
-            if (slot.canAccept)
-            {
-                if (m_journal.debug) m_journal.debug << leftw (18) <<
-                    "Logic testing " << address << " succeeded";
-            }
-            else
-            {
-                if (m_journal.info) m_journal.info << leftw (18) <<
-                    "Logic testing " << address << " failed";
-            }
-        }
-        else
-        {
-            // VFALCO TODO Should we retry depending on the error?
-            slot.checked = true;
-            slot.canAccept = false;
-
-            if (m_journal.error) m_journal.error << leftw (18) <<
-                "Logic testing " << iter->first << " with error, " <<
-                result.error.message();
-        }
-
-        if (slot.canAccept)
-        {
-            // VFALCO TODO Why did I think this line was needed?
-            //state->bootcache.onConnectionHandshake (address);
-        }
-        else
-        {
-            state->bootcache.onConnectionFailure (address);
-        }
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // Socket Hooks
-    //
-    //--------------------------------------------------------------------------
-
-    // Returns `true` if the address matches the remote address of one
-    // of our outbound sockets.
-    //
-    // VFALCO TODO Do the lookup using an additional index by local address
-    bool haveLocalOutboundAddress (IP::Endpoint const& local_address,
-        SharedState::Access& state)
-    {
-        for (Slots::const_iterator iter (state->slots.begin());
-            iter != state->slots.end(); ++iter)
-        {
-            Slot const& slot (*iter->second);
-            if (! slot.inbound () &&
-                slot.local_endpoint() != boost::none &&
-                *slot.local_endpoint() == local_address)
-                return true;
-        }
-        return false;
-    }
-
-    //--------------------------------------------------------------------------
-
-#if 0
-    void onPeerAddressChanged (
-        IP::Endpoint const& currentAddress, IP::Endpoint const& newAddress)
-    {
-        // VFALCO TODO Demote this to trace after PROXY is tested.
-        m_journal.debug <<
-            "onPeerAddressChanged (" << currentAddress <<
-            ", " << newAddress << ")";
-
-        SharedState::Access state (m_state);
-
-        Connections::iterator iter (
-            state->connections.find (currentAddress));
-
-        // Current address must exist!
-        consistency_check (iter != state->connections.end());
-
-        Connection& connection (iter->second);
-
-        // Connection must be inbound!
-        consistency_check (connection.inbound());
-
-        // Connection must be connected!
-        consistency_check (connection.state() == Connection::stateConnected);
-
-        // Create a new Connection entry for the new address
-        std::pair <Connections::iterator, bool> result (
-            state->connections.emplace (newAddress,
-                Connection (iter->second)));
-
-        // New address must not already exist!
-        consistency_check (result.second);
-
-        // Remove old Connection entry
-        state->connections.erase (iter);
-
-        // Update the address on the slot
-        Slot& slot (result.first->second.peersIterator()->second);
-        slot.address = newAddress;
-    }
-#endif
 
     //--------------------------------------------------------------------------
     //
@@ -1334,7 +1090,7 @@ public:
 
     void writeSlots (PropertyStream::Set& set, Slots const& slots)
     {
-        for (auto entry : slots)
+        for (auto const& entry : slots)
         {
             PropertyStream::Map item (set);
             SlotImp const& slot (*entry.second);
@@ -1418,40 +1174,6 @@ public:
         };
         return "?";
     }
-
-    void dump_peers (Journal::ScopedStream& ss,
-        SharedState::ConstAccess const& state) const
-    {
-        ss << std::endl << std::endl <<
-            "Slots";
-        for (auto const entry : state->slots)
-        {
-            SlotImp const& slot (*entry.second);
-            ss << std::endl <<
-                slot.remote_endpoint () <<
-                (slot.inbound () ? " (in) " : " ") <<
-                stateString (slot.state ()) << " "
-                // VFALCO NOTE currently this is broken
-                /*
-                << ((slot.public_key() != boost::none) ?
-                    *slot.public_key() : "")
-                */
-                ;
-        }
-    }
-
-    void dump (Journal::ScopedStream& ss) const
-    {
-        SharedState::ConstAccess state (m_state);
-
-        state->bootcache.dump (ss);
-        state->livecache.dump (ss);
-        dump_peers (ss, state);
-        ss << std::endl <<
-            state->counts.state_string ();
-        ss << std::endl;
-    }
-
 };
 
 }
@@ -1461,33 +1183,16 @@ public:
 
 /*
 
-Terms
+- recent tables entries should last equal to the cache time to live
+- never send a slot a message thats in its recent table at a lower hop count
+- when sending a message to a slot, add it to its recent table at one lower hop count
 
-'Book' an order book
-'Offer' an entry in a book
-'Inverse Book' the book for the opposite direction
+Giveaway logic
 
-'Directory' Holds offers with the same quality level
+When do we give away?
 
-An order book is a list of offers. The book has the following
-canonical order. The primary key is the quality (ratio of input to
-output). The secondary key is an ordinal to break ties for two offers
-with the same quality (first come first serve).
+- To one inbound connection when we redirect due to full
 
-Three places where books are iterated in canonical order:
-
-1. When responding to a client request for a book
-
-2. When placing an offer in the inverse book
-
-3. When processing a payment that goes through the book
-
-A directory is a type of structure in the ledger
-
-
-
-Invariants:
-
-- All that is needed to process a transaction is the current Ledger object.
+- To all slots at every broadcast
 
 */

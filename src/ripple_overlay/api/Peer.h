@@ -64,8 +64,6 @@ public:
 
     virtual Json::Value json () = 0;
 
-    virtual bool isConnected () const = 0;
-
     virtual bool isInCluster () const = 0;
 
     virtual std::string getClusterNodeName() const = 0;

@@ -240,8 +240,6 @@ struct match_peer
 
     bool operator() (Peer::ref peer) const
     {
-        bassert(peer->isConnected());
-
         if(matchPeer && (peer.get () == matchPeer))
             return true;
 
@@ -285,8 +283,6 @@ struct peer_in_set
 
     bool operator() (Peer::ref peer) const
     {
-        bassert(peer->isConnected());
-
         if (peerSet.count (peer->getShortId ()) == 0)
             return false;
 

@@ -17,25 +17,53 @@
 */
 //==============================================================================
 
-#include "../api/Endpoint.h"
+#include "RedirectHandouts.h"
 
 namespace ripple {
 namespace PeerFinder {
 
-Endpoint::Endpoint ()
-    : hops (0)
+RedirectHandouts::RedirectHandouts (SlotImp::ptr const& slot)
+    : m_slot (slot)
 {
+    m_list.reserve (Tuning::redirectEndpointCount);
 }
 
-Endpoint::Endpoint (IP::Endpoint const& ep, int hops_)
-    : hops (hops_)
-    , address (ep)
+bool
+RedirectHandouts::try_insert (Endpoint const& ep)
 {
-}
+    if (full ())
+        return false;
 
-bool operator< (Endpoint const& lhs, Endpoint const& rhs)
-{
-    return lhs.address < rhs.address;
+    // VFALCO NOTE This check can be removed when we provide the
+    //             addresses in a peer HTTP handshake instead of
+    //             the tmENDPOINTS message.
+    //
+    if (ep.hops > Tuning::maxHops)
+        return false;
+
+    // Don't send them our address
+    if (ep.hops == 0)
+        return false;
+
+    // Don't send them their own address
+    if (m_slot->remote_endpoint().address() ==
+        ep.address.address())
+        return false;
+
+    // Make sure the address isn't already in our list
+    if (std::any_of (m_list.begin(), m_list.end(),
+        [&ep](Endpoint const& other)
+        {
+            // Ignore port for security reasons
+            return other.address.address() == ep.address.address();
+        }))
+    {
+        return false;
+    }
+
+    m_list.emplace_back (ep.address, ep.hops);
+
+    return true;
 }
 
 }

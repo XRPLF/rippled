@@ -17,24 +17,44 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
-#define RIPPLE_PEERFINDER_ENDPOINT_H_INCLUDED
+#ifndef RIPPLE_PEERFINDER_REDIRECTHANDOUTS_H_INCLUDED
+#define RIPPLE_PEERFINDER_REDIRECTHANDOUTS_H_INCLUDED
+
+#include "SlotImp.h"
+#include "Tuning.h"
 
 namespace ripple {
 namespace PeerFinder {
 
-/** Describes a connectible peer address along with some metadata. */
-struct Endpoint
+/** Receives handouts for redirecting a connection.
+    An incoming connection request is redirected when we are full on slots.
+*/
+class RedirectHandouts
 {
-    Endpoint ();
+public:
+    RedirectHandouts (SlotImp::ptr const& slot);
 
-    Endpoint (IP::Endpoint const& ep, int hops_);
+    bool full () const
+    {
+        return m_list.size() >= Tuning::redirectEndpointCount;
+    }
 
-    int hops;
-    IP::Endpoint address;
+    SlotImp::ptr const& slot () const
+    {
+        return m_slot;
+    }
+
+    std::vector <Endpoint> const& list() const
+    {
+        return m_list;
+    }
+
+    bool try_insert (Endpoint const& ep);
+
+private:
+    SlotImp::ptr m_slot;
+    std::vector <Endpoint> m_list;
 };
-
-bool operator< (Endpoint const& lhs, Endpoint const& rhs);
 
 }
 }

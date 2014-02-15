@@ -36,9 +36,7 @@ public:
     SerializedContext m_context;
     CheckerAdapter m_checker;
     Logic m_logic;
-    DeadlineTimer m_connectTimer;
-    DeadlineTimer m_messageTimer;
-    DeadlineTimer m_cacheTimer;
+    DeadlineTimer m_secondsTimer;
     
     //--------------------------------------------------------------------------
 
@@ -56,9 +54,7 @@ public:
         , m_store (journal)
         , m_checker (m_context, m_queue)
         , m_logic (clock, callback, m_store, m_checker, journal)
-        , m_connectTimer (this)
-        , m_messageTimer (this)
-        , m_cacheTimer (this)
+        , m_secondsTimer (this)
     {
     }
 
@@ -223,9 +219,7 @@ public:
         m_journal.debug << "Stopping";
         m_checker.cancel ();
         m_logic.stop ();
-        m_connectTimer.cancel();
-        m_messageTimer.cancel();
-        m_cacheTimer.cancel();
+        m_secondsTimer.cancel();
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Thread::signalThreadShouldExit, this)));
@@ -248,35 +242,14 @@ public:
 
     void onDeadlineTimer (DeadlineTimer& timer)
     {
-        if (timer == m_connectTimer)
+        if (timer == m_secondsTimer)
         {
             m_queue.dispatch (
                 m_context.wrap (
-                    bind (&Logic::makeOutgoingConnections, &m_logic)));
+                    bind (&Logic::periodicActivity, &m_logic)));
 
-            m_connectTimer.setExpiration (Tuning::secondsPerConnect);
+            m_secondsTimer.setExpiration (Tuning::secondsPerConnect);
         }
-        else if (timer == m_messageTimer)
-        {
-            m_queue.dispatch (
-                m_context.wrap (
-                    bind (&Logic::broadcast, &m_logic)));
-
-            m_messageTimer.setExpiration (Tuning::secondsPerMessage);
-        }
-        else if (timer == m_cacheTimer)
-        {
-            m_queue.dispatch (
-                m_context.wrap (
-                    bind (&Logic::sweepCache, &m_logic)));
-
-            m_cacheTimer.setExpiration (Tuning::liveCacheSecondsToLive);
-        }
-
-        // VFALCO NOTE Bit of a hack here...
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::periodicActivity, &m_logic)));
     }
 
     void init ()
@@ -299,12 +272,7 @@ public:
             m_logic.load ();
         }
 
-        m_connectTimer.setExpiration (Tuning::secondsPerConnect);
-        m_messageTimer.setExpiration (Tuning::secondsPerMessage);
-        m_cacheTimer.setExpiration (Tuning::liveCacheSecondsToLive);
-
-        m_queue.post (m_context.wrap (
-            bind (&Logic::makeOutgoingConnections, &m_logic)));
+        m_secondsTimer.setExpiration (std::chrono::seconds (1));
     }
 
     void run ()

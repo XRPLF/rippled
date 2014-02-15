@@ -316,7 +316,6 @@ public:
     void send (PeerFinder::Slot::ptr const& slot,
         std::vector <PeerFinder::Endpoint> const& endpoints)
     {
-        bassert (! endpoints.empty());
         typedef std::vector <PeerFinder::Endpoint> List;
         protocol::TMEndpoints tm;
         for (List::const_iterator iter (endpoints.begin());
@@ -346,10 +345,7 @@ public:
             assert (iter != m_peers.end ());
             PeerImp::ptr const peer (iter->second.lock());
             assert (peer != nullptr);
-            // VFALCO TODO Why are we checking isConnected?
-            //             That should not be needed
-            if (peer->isConnected())
-                peer->sendPacket (msg, false);
+            peer->sendPacket (msg, false);
         }
     }
 
