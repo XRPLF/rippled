@@ -17,30 +17,27 @@
 */
 //==============================================================================
 
-#include "../basic_seconds_clock.h"
+#ifndef BEAST_CONTAINER_AGED_MULTIMAP_H_INCLUDED
+#define BEAST_CONTAINER_AGED_MULTIMAP_H_INCLUDED
 
-#include "../../Config.h"
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include "detail/aged_ordered_container.h"
+
+#include <chrono>
+#include <functional>
+#include <memory>
 
 namespace beast {
 
-class basic_seconds_clock_Tests : public UnitTest
-{
-public:
-    void runTest ()
-    {
-        beginTestCase ("now");
-
-        basic_seconds_clock <std::chrono::steady_clock>::now ();
-
-        pass ();
-    }
-
-    basic_seconds_clock_Tests() : UnitTest("basic_seconds_clock", "beast")
-    {
-    }
-};
-
-static basic_seconds_clock_Tests basic_seconds_clock_tests;
+template <
+    class Key,
+    class T,
+    class Duration = std::chrono::seconds,
+    class Compare = std::less <Key>,
+    class Allocator = std::allocator <std::pair <Key const, T>>
+>
+using aged_multimap = detail::aged_ordered_container <
+    true, true, Key, T, Duration, Compare, Allocator>;
 
 }
+
+#endif

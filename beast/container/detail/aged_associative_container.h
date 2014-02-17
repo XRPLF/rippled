@@ -17,30 +17,38 @@
 */
 //==============================================================================
 
-#include "../basic_seconds_clock.h"
+#ifndef BEAST_CONTAINER_AGED_ASSOCIATIVE_CONTAINER_H_INCLUDED
+#define BEAST_CONTAINER_AGED_ASSOCIATIVE_CONTAINER_H_INCLUDED
 
-#include "../../Config.h"
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include <type_traits>
 
 namespace beast {
+namespace detail {
 
-class basic_seconds_clock_Tests : public UnitTest
+// Extracts the key portion of value
+template <bool maybe_map>
+struct aged_associative_container_extract_t
 {
-public:
-    void runTest ()
+    template <class Value>
+    decltype (Value::first) const&
+    operator() (Value const& value) const
     {
-        beginTestCase ("now");
-
-        basic_seconds_clock <std::chrono::steady_clock>::now ();
-
-        pass ();
-    }
-
-    basic_seconds_clock_Tests() : UnitTest("basic_seconds_clock", "beast")
-    {
+        return value.first;
     }
 };
 
-static basic_seconds_clock_Tests basic_seconds_clock_tests;
+template <>
+struct aged_associative_container_extract_t <false>
+{
+    template <class Value>
+    Value const&
+    operator() (Value const& value) const
+    {
+        return value;
+    }
+};
 
 }
+}
+
+#endif

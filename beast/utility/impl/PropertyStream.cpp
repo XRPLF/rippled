@@ -336,9 +336,9 @@ PropertyStream::Source* PropertyStream::Source::find_one_deep (std::string const
     if (found != nullptr)
         return found;
     SharedState::Access state (this->m_state);
-    for (auto iter : state->children)
+    for (auto& s : state->children)
     {
-        found = iter.source().find_one_deep (name);
+        found = s.source().find_one_deep (name);
         if (found != nullptr)
             return found;
     }
@@ -366,10 +366,10 @@ PropertyStream::Source* PropertyStream::Source::find_path (std::string path)
 PropertyStream::Source* PropertyStream::Source::find_one (std::string const& name)
 {
     SharedState::Access state (this->m_state);
-    for (auto iter : state->children)
+    for (auto& s : state->children)
     {
-        if (iter.source().m_name == name)
-            return &iter.source();
+        if (s.source().m_name == name)
+            return &s.source();
     }
     return nullptr;
 }

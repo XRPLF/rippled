@@ -116,6 +116,20 @@
     <ClInclude Include="..\..\beast\config\SelectPlatformConfig.h" />
     <ClInclude Include="..\..\beast\config\SelectStdlibConfig.h" />
     <ClInclude Include="..\..\beast\config\StandardConfig.h" />
+    <ClInclude Include="..\..\beast\container\aged_container_utility.h" />
+    <ClInclude Include="..\..\beast\container\aged_container.h" />
+    <ClInclude Include="..\..\beast\container\aged_map.h" />
+    <ClInclude Include="..\..\beast\container\aged_multimap.h" />
+    <ClInclude Include="..\..\beast\container\aged_multiset.h" />
+    <ClInclude Include="..\..\beast\container\aged_set.h" />
+    <ClInclude Include="..\..\beast\container\aged_unordered_map.h" />
+    <ClInclude Include="..\..\beast\container\aged_unordered_multimap.h" />
+    <ClInclude Include="..\..\beast\container\aged_unordered_multiset.h" />
+    <ClInclude Include="..\..\beast\container\aged_unordered_set.h" />
+    <ClInclude Include="..\..\beast\container\detail\aged_associative_container.h" />
+    <ClInclude Include="..\..\beast\container\detail\aged_ordered_container.h" />
+    <ClInclude Include="..\..\beast\container\detail\aged_container_iterator.h" />
+    <ClInclude Include="..\..\beast\container\detail\aged_unordered_container.h" />
     <ClInclude Include="..\..\beast\Crypto.h" />
     <ClInclude Include="..\..\beast\crypto\BinaryEncoding.h" />
     <ClInclude Include="..\..\beast\crypto\impl\sha2\sha2.h" />
@@ -125,6 +139,8 @@
     <ClInclude Include="..\..\beast\crypto\UnsignedIntegerCalc.h" />
     <ClInclude Include="..\..\beast\CStdInt.h" />
     <ClInclude Include="..\..\beast\cyclic_iterator.h" />
+    <ClInclude Include="..\..\beast\equal.h" />
+    <ClInclude Include="..\..\beast\equal_to.h" />
     <ClInclude Include="..\..\beast\FixedArray.h" />
     <ClInclude Include="..\..\beast\HeapBlock.h" />
     <ClInclude Include="..\..\beast\HTTP.h" />
@@ -152,6 +168,7 @@
     <ClInclude Include="..\..\beast\Intrusive.h" />
     <ClInclude Include="..\..\beast\intrusive\List.h" />
     <ClInclude Include="..\..\beast\intrusive\LockFreeStack.h" />
+    <ClInclude Include="..\..\beast\is_constructible.h" />
     <ClInclude Include="..\..\beast\make_unique.h" />
     <ClInclude Include="..\..\beast\Memory.h" />
     <ClInclude Include="..\..\beast\MPL.h" />
@@ -205,11 +222,13 @@
     <ClInclude Include="..\..\beast\type_traits\IntegralConstant.h" />
     <ClInclude Include="..\..\beast\type_traits\IsIntegral.h" />
     <ClInclude Include="..\..\beast\type_traits\IsSigned.h" />
+    <ClInclude Include="..\..\beast\type_traits\maybe_const.h" />
     <ClInclude Include="..\..\beast\type_traits\RemoveSigned.h" />
     <ClInclude Include="..\..\beast\Uncopyable.h" />
     <ClInclude Include="..\..\beast\Utility.h" />
     <ClInclude Include="..\..\beast\utility\BaseFromMember.h" />
     <ClInclude Include="..\..\beast\utility\Debug.h" />
+    <ClInclude Include="..\..\beast\utility\empty_base_optimization.h" />
     <ClInclude Include="..\..\beast\utility\EnableIf.h" />
     <ClInclude Include="..\..\beast\utility\Error.h" />
     <ClInclude Include="..\..\beast\utility\hash_pair.h" />
@@ -416,6 +435,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\boost\Boost.cpp" />
     <ClCompile Include="..\..\beast\chrono\Chrono.cpp" />
+    <ClCompile Include="..\..\beast\chrono\impl\basic_seconds_clock.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\beast\chrono\impl\chrono_io.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -435,6 +460,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\chrono\impl\RelativeTime.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\container\Container.cpp" />
+    <ClCompile Include="..\..\beast\container\impl\aged_associative_container.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
