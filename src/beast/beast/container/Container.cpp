@@ -17,30 +17,6 @@
 */
 //==============================================================================
 
-#include "../basic_seconds_clock.h"
+#include "BeastConfig.h"
 
-#include "../../Config.h"
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
-
-namespace beast {
-
-class basic_seconds_clock_Tests : public UnitTest
-{
-public:
-    void runTest ()
-    {
-        beginTestCase ("now");
-
-        basic_seconds_clock <std::chrono::steady_clock>::now ();
-
-        pass ();
-    }
-
-    basic_seconds_clock_Tests() : UnitTest("basic_seconds_clock", "beast")
-    {
-    }
-};
-
-static basic_seconds_clock_Tests basic_seconds_clock_tests;
-
-}
+#include "impl/aged_associative_container.cpp"

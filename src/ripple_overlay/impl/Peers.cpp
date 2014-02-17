@@ -462,7 +462,7 @@ public:
     */
     void close_all (bool graceful)
     {
-        for (auto entry : m_peers)
+        for (auto const& entry : m_peers)
         {
             PeerImp::ptr const peer (entry.second.lock());
             assert (peer != nullptr);

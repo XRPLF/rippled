@@ -17,30 +17,22 @@
 */
 //==============================================================================
 
-#include "../basic_seconds_clock.h"
+#ifndef BEAST_TYPE_TRAITS_MAYBE_CONST_H_INCLUDED
+#define BEAST_TYPE_TRAITS_MAYBE_CONST_H_INCLUDED
 
-#include "../../Config.h"
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include <type_traits>
 
 namespace beast {
 
-class basic_seconds_clock_Tests : public UnitTest
+/** Makes T const or non const depending on a bool. */
+template <bool IsConst, class T>
+struct maybe_const
 {
-public:
-    void runTest ()
-    {
-        beginTestCase ("now");
-
-        basic_seconds_clock <std::chrono::steady_clock>::now ();
-
-        pass ();
-    }
-
-    basic_seconds_clock_Tests() : UnitTest("basic_seconds_clock", "beast")
-    {
-    }
+    typedef typename std::conditional <IsConst,
+        typename std::remove_const <T>::type const,
+        typename std::remove_const <T>::type>::type type;
 };
 
-static basic_seconds_clock_Tests basic_seconds_clock_tests;
-
 }
+
+#endif

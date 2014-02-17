@@ -17,30 +17,19 @@
 */
 //==============================================================================
 
-#include "../basic_seconds_clock.h"
+#ifndef BEAST_CONTAINER_AGED_CONTAINER_H_INCLUDED
+#define BEAST_CONTAINER_AGED_CONTAINER_H_INCLUDED
 
-#include "../../Config.h"
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include <type_traits>
 
 namespace beast {
 
-class basic_seconds_clock_Tests : public UnitTest
+template <class T>
+struct is_aged_container
+    : std::false_type
 {
-public:
-    void runTest ()
-    {
-        beginTestCase ("now");
-
-        basic_seconds_clock <std::chrono::steady_clock>::now ();
-
-        pass ();
-    }
-
-    basic_seconds_clock_Tests() : UnitTest("basic_seconds_clock", "beast")
-    {
-    }
 };
 
-static basic_seconds_clock_Tests basic_seconds_clock_tests;
-
 }
+
+#endif

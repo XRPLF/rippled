@@ -17,30 +17,35 @@
 */
 //==============================================================================
 
-#include "../basic_seconds_clock.h"
+#ifndef BEAST_CONTAINER_AGED_CONTAINER_UTILITY_H_INCLUDED
+#define BEAST_CONTAINER_AGED_CONTAINER_UTILITY_H_INCLUDED
 
-#include "../../Config.h"
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include "aged_container.h"
+
+#include <type_traits>
 
 namespace beast {
 
-class basic_seconds_clock_Tests : public UnitTest
+/** Expire aged container items past the specified age. */
+template <class AgedContainer, class Rep, class Period>
+typename std::enable_if <
+    is_aged_container <AgedContainer>::value,
+    std::size_t
+>::type
+expire (AgedContainer& c, std::chrono::duration <Rep, Period> const& age)
 {
-public:
-    void runTest ()
+    std::size_t n (0);
+    auto const expired (c.clock().now() - age);
+    for (auto iter (c.chronological.cbegin());
+        iter != c.chronological.cend() &&
+            iter.when() <= expired;)
     {
-        beginTestCase ("now");
-
-        basic_seconds_clock <std::chrono::steady_clock>::now ();
-
-        pass ();
+        iter = c.erase (iter);
+        ++n;
     }
-
-    basic_seconds_clock_Tests() : UnitTest("basic_seconds_clock", "beast")
-    {
-    }
-};
-
-static basic_seconds_clock_Tests basic_seconds_clock_tests;
+    return n;
+}
 
 }
+
+#endif

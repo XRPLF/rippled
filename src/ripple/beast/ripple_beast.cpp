@@ -35,6 +35,7 @@
 #include "../beast/beast/asio/Asio.cpp"
 #include "../beast/beast/boost/Boost.cpp"
 #include "../beast/beast/chrono/Chrono.cpp"
+#include "../beast/beast/container/Container.cpp"
 #include "../beast/beast/crypto/Crypto.cpp"
 #include "../beast/beast/http/HTTP.cpp"
 #include "../beast/beast/insight/Insight.cpp"

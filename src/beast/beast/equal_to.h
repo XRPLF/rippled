@@ -17,30 +17,35 @@
 */
 //==============================================================================
 
-#include "../basic_seconds_clock.h"
+#ifndef BEAST_EQUAL_TO_H_INCLUDED
+#define BEAST_EQUAL_TO_H_INCLUDED
 
-#include "../../Config.h"
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include <functional>
+#include <type_traits>
 
-namespace beast {
+namespace std {
 
-class basic_seconds_clock_Tests : public UnitTest
+#ifndef _MSC_VER
+
+/** C++14 implementation of std::equal_to <void> specialization.
+    This supports heterogeneous comparisons.
+*/
+template <>
+struct equal_to <void>
 {
-public:
-    void runTest ()
+    // VFALCO NOTE Its not clear how to support is_transparent pre c++14
+    typedef std::true_type is_transparent;
+
+    template <class T, class U>
+    auto operator() (T&& lhs, U&& rhs) const ->
+        decltype (std::forward <T> (lhs) == std::forward <U> (rhs))
     {
-        beginTestCase ("now");
-
-        basic_seconds_clock <std::chrono::steady_clock>::now ();
-
-        pass ();
-    }
-
-    basic_seconds_clock_Tests() : UnitTest("basic_seconds_clock", "beast")
-    {
+        return std::forward <T> (lhs) == std::forward <U> (rhs);
     }
 };
 
-static basic_seconds_clock_Tests basic_seconds_clock_tests;
+#endif
 
 }
+
+#endif

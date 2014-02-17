@@ -195,9 +195,6 @@
     <Filter Include="beast">
       <UniqueIdentifier>{92d1bb42-289a-4444-85c7-cb87540f2fff}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\intrusive">
-      <UniqueIdentifier>{8832eb52-53f9-4850-8dc9-1d579a386a0e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\mpl">
       <UniqueIdentifier>{5904368f-a0f2-4d26-a031-8cbe4448dc3f}</UniqueIdentifier>
     </Filter>
@@ -296,6 +293,18 @@
     </Filter>
     <Filter Include="beast\net\detail">
       <UniqueIdentifier>{43cc0f2a-9905-4081-8104-48d2c4be9e7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\container">
+      <UniqueIdentifier>{48c7ee12-704c-42cb-99ea-9a486bb4b57e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\container\impl">
+      <UniqueIdentifier>{e30eda19-95b4-4831-b86a-ee5fae88abd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\container\detail">
+      <UniqueIdentifier>{a4dca8cc-7d1f-4353-b7e1-15eab33e8bd4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\intrusive">
+      <UniqueIdentifier>{8832eb52-53f9-4850-8dc9-1d579a386a0e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1269,6 +1278,66 @@
     <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\equal_to.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\equal.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\type_traits\maybe_const.h">
+      <Filter>beast\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\utility\empty_base_optimization.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\detail\aged_associative_container.h">
+      <Filter>beast\container\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\detail\aged_container_iterator.h">
+      <Filter>beast\container\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\aged_map.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\aged_multimap.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\aged_multiset.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\aged_set.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\aged_unordered_map.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\aged_unordered_multimap.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\aged_unordered_multiset.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\aged_unordered_set.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\detail\aged_ordered_container.h">
+      <Filter>beast\container\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\detail\aged_unordered_container.h">
+      <Filter>beast\container\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\detail\aged_associative_container.h">
+      <Filter>beast\container\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\is_constructible.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\aged_container_utility.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\aged_container.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
@@ -1846,6 +1915,15 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\chrono\Chrono.cpp">
       <Filter>beast\chrono</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\impl\basic_seconds_clock.cpp">
+      <Filter>beast\chrono\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\container\Container.cpp">
+      <Filter>beast\container</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\container\impl\aged_associative_container.cpp">
+      <Filter>beast\container\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
