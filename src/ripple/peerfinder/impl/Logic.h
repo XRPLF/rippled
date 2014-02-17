@@ -166,7 +166,7 @@ public:
     }
 
     void addFixedPeer (std::string const& name,
-        std::vector <IPAddress> const& addresses)
+        std::vector <IP::Endpoint> const& addresses)
     {
         SharedState::Access state (m_state);
 
@@ -626,7 +626,7 @@ public:
             struct LessWithoutPortSet
             {
                 bool operator() (
-                    Endpoint const& lhs, IPAddress const& rhs) const
+                    Endpoint const& lhs, IP::Endpoint const& rhs) const
                 {
                     return lhs.address.address()  < rhs.address();
                 }
@@ -636,12 +636,12 @@ public:
                     return lhs.address.address() < rhs.address.address();
                 }
                 bool operator() (
-                    IPAddress const& lhs, Endpoint const& rhs) const
+                    IP::Endpoint const& lhs, Endpoint const& rhs) const
                 {
                     return lhs.address() < rhs.address.address();
                 }
                 bool operator() (
-                    IPAddress const& lhs, IPAddress const& rhs) const
+                    IP::Endpoint const& lhs, IP::Endpoint const& rhs) const
                 {
                     return lhs.address() < rhs.address();
                 }
@@ -772,7 +772,7 @@ public:
             struct LessWithoutPortSet
             {
                 bool operator() (Bootcache::Endpoint const& lhs,
-                    IPAddress const& rhs) const
+                    IP::Endpoint const& rhs) const
                 {
                     return lhs.address().at_port (0) < rhs.at_port (0);
                 }
@@ -782,13 +782,13 @@ public:
                     return lhs.address().at_port (0) <
                         rhs.address().at_port (0);
                 }
-                bool operator() (IPAddress const& lhs,
+                bool operator() (IP::Endpoint const& lhs,
                     Bootcache::Endpoint const& rhs) const
                 {
                     return lhs.at_port (0) < rhs.address().at_port (0);
                 }
-                bool operator() (IPAddress const& lhs,
-                    IPAddress const& rhs) const
+                bool operator() (IP::Endpoint const& lhs,
+                    IP::Endpoint const& rhs) const
                 {
                     return lhs.at_port (0) < rhs.at_port (0);
                 }
@@ -828,7 +828,7 @@ public:
             struct LessWithoutPortSet
             {
                 bool operator() (
-                    Endpoint const& lhs, IPAddress const& rhs) const
+                    Endpoint const& lhs, IP::Endpoint const& rhs) const
                 {
                     return lhs.address.address()  < rhs.address();
                 }
@@ -838,12 +838,12 @@ public:
                     return lhs.address.address() < rhs.address.address();
                 }
                 bool operator() (
-                    IPAddress const& lhs, Endpoint const& rhs) const
+                    IP::Endpoint const& lhs, Endpoint const& rhs) const
                 {
                     return lhs.address() < rhs.address.address();
                 }
                 bool operator() (
-                    IPAddress const& lhs, IPAddress const& rhs) const
+                    IP::Endpoint const& lhs, IP::Endpoint const& rhs) const
                 {
                     return lhs.address() < rhs.address();
                 }
@@ -1032,7 +1032,7 @@ public:
     // Add one address.
     // Returns `true` if the address is new.
     //
-    bool addBootcacheAddress (IPAddress const& address,
+    bool addBootcacheAddress (IP::Endpoint const& address,
         SharedState::Access& state)
     {
         return state->bootcache.insert (address);
@@ -1108,13 +1108,13 @@ public:
         consistency_check (state->config.wantIncoming);
         Endpoint ep;
         ep.hops = 0;
-        ep.address = IPAddress (
+        ep.address = IP::Endpoint (
             IP::AddressV4 ()).at_port (state->config.listeningPort);
         return ep;
     }
 
-    // Returns true if the IPAddress contains no invalid data.
-    bool is_valid_address (IPAddress const& address)
+    // Returns true if the IP::Endpoint contains no invalid data.
+    bool is_valid_address (IP::Endpoint const& address)
     {
         if (is_unspecified (address))
             return false;
@@ -1197,8 +1197,8 @@ public:
     }
 
     // Called when the Checker completes a connectivity test
-    void checkComplete (IPAddress const& address,
-        IPAddress const & checkedAddress, Checker::Result const& result)
+    void checkComplete (IP::Endpoint const& address,
+        IP::Endpoint const & checkedAddress, Checker::Result const& result)
     {
         if (result.error == boost::asio::error::operation_aborted)
             return;
@@ -1267,7 +1267,7 @@ public:
     // of our outbound sockets.
     //
     // VFALCO TODO Do the lookup using an additional index by local address
-    bool haveLocalOutboundAddress (IPAddress const& local_address,
+    bool haveLocalOutboundAddress (IP::Endpoint const& local_address,
         SharedState::Access& state)
     {
         for (Slots::const_iterator iter (state->slots.begin());
@@ -1286,7 +1286,7 @@ public:
 
 #if 0
     void onPeerAddressChanged (
-        IPAddress const& currentAddress, IPAddress const& newAddress)
+        IP::Endpoint const& currentAddress, IP::Endpoint const& newAddress)
     {
         // VFALCO TODO Demote this to trace after PROXY is tested.
         m_journal.debug <<

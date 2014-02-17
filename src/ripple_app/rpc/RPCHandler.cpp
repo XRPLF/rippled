@@ -847,7 +847,7 @@ Json::Value RPCHandler::doConnect (Json::Value params,
     else
         iPort = SYSTEM_PEER_PORT;
 
-    IPAddress ip (IPAddress::from_string(params["ip"].asString ()));
+    IP::Endpoint ip (IP::Endpoint::from_string(params["ip"].asString ()));
 
     if (! is_unspecified (ip))
         getApp().getPeers ().connect (ip.at_port(iPort));

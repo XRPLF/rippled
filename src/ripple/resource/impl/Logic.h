@@ -92,7 +92,7 @@ public:
         state->table.clear();
     }
 
-    Consumer newInboundEndpoint (IPAddress const& address)
+    Consumer newInboundEndpoint (IP::Endpoint const& address)
     {
         if (isWhitelisted (address))
             return newAdminEndpoint (to_string (address));
@@ -125,7 +125,7 @@ public:
         return Consumer (*this, *entry);
     }
 
-    Consumer newOutboundEndpoint (IPAddress const& address)
+    Consumer newOutboundEndpoint (IP::Endpoint const& address)
     {
         if (isWhitelisted (address))
             return newAdminEndpoint (to_string (address));
@@ -360,7 +360,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool isWhitelisted (IPAddress const& address)
+    bool isWhitelisted (IP::Endpoint const& address)
     {
         if (! is_public (address))
             return true;

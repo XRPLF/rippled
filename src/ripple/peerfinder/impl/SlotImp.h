@@ -184,10 +184,10 @@ public:
     //
     clock_type::time_point whenAcceptEndpoints;
 
-    // The set of all recent IPAddress that we have seen from this peer.
+    // The set of all recent IP::Endpoint that we have seen from this peer.
     // We try to avoid sending a peer the same addresses they gave us.
     //
-    //std::set <IPAddress> received;
+    //std::set <IP::Endpoint> received;
 };
 
 //------------------------------------------------------------------------------

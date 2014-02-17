@@ -22,7 +22,7 @@ David Features:
 
 - std::priority_queue for DeadlineTimer
 
-- Change ProxyInfo to use IPAddress, get rid of IPv4Address from the parsing
+- Change ProxyInfo to use IP::Endpoint, get rid of IPv4Address from the parsing
   code
 
 - Validators should delay the application of newly downloaded lists from
@@ -34,7 +34,7 @@ David Features:
 
 - Look into using CMake
 
-- IPv6 support in IPAddress
+- IPv6 support in IP::Endpoint
 
 - Configuration list for Jenkins
 

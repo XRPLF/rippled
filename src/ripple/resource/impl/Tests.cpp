@@ -60,7 +60,7 @@ public:
         {
             Gossip::Item item;
             item.balance = 100 + random().nextInt (500);
-            item.address = IPAddress (
+            item.address = IP::Endpoint (
                 IP::AddressV4 (207, 127, 82, v + i));
             gossip.items.push_back (item);
         }
@@ -80,8 +80,8 @@ public:
         Tests::TestLogic logic (j);
 
         Charge const fee (dropThreshold + 1);
-        IPAddress const addr (
-            IPAddress::from_string ("207.127.82.2"));
+        IP::Endpoint const addr (
+            IP::Endpoint::from_string ("207.127.82.2"));
         
         {
             Consumer c (logic.newInboundEndpoint (addr));
@@ -170,7 +170,7 @@ public:
         Gossip g;
         Gossip::Item item;
         item.balance = 100;
-        item.address = IPAddress (
+        item.address = IP::Endpoint (
             IP::AddressV4 (207, 127, 82, 1));
         g.items.push_back (item);
 
@@ -186,7 +186,7 @@ public:
         TestLogic logic (j);
 
         {
-            IPAddress address (IPAddress::from_string ("207.127.82.1"));
+            IP::Endpoint address (IP::Endpoint::from_string ("207.127.82.1"));
             Consumer c (logic.newInboundEndpoint (address));
             Charge fee (1000);
             j.info <<
@@ -202,7 +202,7 @@ public:
         }
 
         {
-            IPAddress address (IPAddress::from_string ("207.127.82.2"));
+            IP::Endpoint address (IP::Endpoint::from_string ("207.127.82.2"));
             Consumer c (logic.newInboundEndpoint (address));
             Charge fee (1000);
             j.info <<

@@ -42,12 +42,12 @@ public:
         stopThread ();
     }
 
-    Consumer newInboundEndpoint (IPAddress const& address)
+    Consumer newInboundEndpoint (IP::Endpoint const& address)
     {
         return m_logic.newInboundEndpoint (address);
     }
 
-    Consumer newOutboundEndpoint (IPAddress const& address)
+    Consumer newOutboundEndpoint (IP::Endpoint const& address)
     {
         return m_logic.newOutboundEndpoint (address);
     }

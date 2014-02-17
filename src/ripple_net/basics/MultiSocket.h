@@ -103,8 +103,8 @@ public:
     // Note that this returns the original flags
     virtual Flag getFlags () = 0;
 
-    virtual IPAddress local_endpoint() = 0;
-    virtual IPAddress remote_endpoint() = 0;
+    virtual IP::Endpoint local_endpoint() = 0;
+    virtual IP::Endpoint remote_endpoint() = 0;
     virtual ProxyInfo getProxyInfo () = 0;
 
     /** Returns a pointer to the SSL handle or nullptr if no SSL. */

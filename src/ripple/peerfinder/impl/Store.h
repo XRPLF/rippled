@@ -31,7 +31,7 @@ public:
 
     struct SavedBootstrapAddress
     {
-        IPAddress address;
+        IP::Endpoint address;
         std::chrono::seconds cumulativeUptime;
         int connectionValence;
     };

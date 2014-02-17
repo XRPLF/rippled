@@ -111,7 +111,7 @@ public:
                 {
                     SavedBootstrapAddress entry;
 
-                    entry.address = IPAddress::from_string (s);
+                    entry.address = IP::Endpoint::from_string (s);
 
                     if (! is_unspecified (entry.address))
                     {

@@ -57,7 +57,7 @@ public:
         {
         }
 
-        Endpoint (IPAddress const& address,
+        Endpoint (IP::Endpoint const& address,
             std::chrono::seconds uptime, int valence)
             : m_address (address)
             , m_uptime (uptime)
@@ -65,7 +65,7 @@ public:
         {
         }
 
-        IPAddress const& address () const
+        IP::Endpoint const& address () const
         {
             return m_address;
         }
@@ -81,7 +81,7 @@ public:
         }
 
     private:
-        IPAddress m_address;
+        IP::Endpoint m_address;
         std::chrono::seconds m_uptime;
         int m_valence;
     };
@@ -172,7 +172,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    typedef boost::unordered_map <IPAddress, Entry> Entries;
+    typedef boost::unordered_map <IP::Endpoint, Entry> Entries;
 
     typedef std::vector <Entries::iterator> SortedEntries;
 
@@ -283,7 +283,7 @@ public:
     }
 
     /** Called when an address is learned from a message. */
-    bool insert (IPAddress const& address)
+    bool insert (IP::Endpoint const& address)
     {
         std::pair <Entries::iterator, bool> result (
             m_entries.emplace (boost::unordered::piecewise_construct,
@@ -299,7 +299,7 @@ public:
     }
 
     /** Called when an outbound connection attempt fails to handshake. */
-    void onConnectionFailure (IPAddress const& address)
+    void onConnectionFailure (IP::Endpoint const& address)
     {
         Entries::iterator iter (m_entries.find (address));
         // If the entry doesn't already exist don't bother remembering
@@ -327,7 +327,7 @@ public:
     }
 
     /** Called when an outbound connection handshake completes. */
-    void onConnectionHandshake (IPAddress const& address,
+    void onConnectionHandshake (IP::Endpoint const& address,
         HandshakeAction action)
     {
         std::pair <Entries::iterator, bool> result (
@@ -368,7 +368,7 @@ public:
     //             and update their uptime in periodicActivity() now that
     //             we have the m_clock member?
     //
-    void onConnectionActive (IPAddress const& address)
+    void onConnectionActive (IP::Endpoint const& address)
     {
         std::pair <Entries::iterator, bool> result (
             m_entries.emplace (boost::unordered::piecewise_construct,
@@ -393,7 +393,7 @@ public:
         return std::string ();
     }
     /** Called when an active outbound connection closes. */
-    void onConnectionClosed (IPAddress const& address)
+    void onConnectionClosed (IP::Endpoint const& address)
     {
         Entries::iterator iter (m_entries.find (address));
         // Must exist!

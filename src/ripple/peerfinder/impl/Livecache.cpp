@@ -30,7 +30,7 @@ public:
     {
         Endpoint ep;
         ep.hops = 0;
-        ep.address = IPAddress (
+        ep.address = IP::Endpoint (
             IP::AddressV4 (index), port);
         c.insert (ep);
     }

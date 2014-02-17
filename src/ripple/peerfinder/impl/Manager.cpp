@@ -82,7 +82,7 @@ public:
     }
 
     void addFixedPeer (std::string const& name,
-        std::vector <IPAddress> const& addresses)
+        std::vector <IP::Endpoint> const& addresses)
     {
         m_queue.dispatch (
             m_context.wrap (
@@ -163,12 +163,12 @@ public:
             section.data().begin()); iter != section.data().end(); ++iter)
         {
             std::string const& s (*iter);
-            IPAddress addr (IPAddress::from_string (s));
+            IP::Endpoint addr (IP::Endpoint::from_string (s));
             if (is_unspecified (addr))
-                addr = IPAddress::from_string_altform(s);
+                addr = IP::Endpoint::from_string_altform(s);
             if (! is_unspecified (addr))
             {
-                // add IPAddress to bootstrap cache
+                // add IP::Endpoint to bootstrap cache
                 ++n;
             }
         }
@@ -184,12 +184,12 @@ public:
             section.data().begin()); iter != section.data().end(); ++iter)
         {
             std::string const& s (*iter);
-            IPAddress addr (IPAddress::from_string (s));
+            IP::Endpoint addr (IP::Endpoint::from_string (s));
             if (is_unspecified (addr))
-                addr = IPAddress::from_string_altform(s);
+                addr = IP::Endpoint::from_string_altform(s);
             if (! is_unspecified (addr))
             {
-                // add IPAddress to fixed peers
+                // add IP::Endpoint to fixed peers
             }
         }
     }

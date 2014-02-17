@@ -63,15 +63,15 @@ public:
         file, along with the set of corresponding IP addresses.
     */
     virtual void addFixedPeer (std::string const& name,
-        std::vector <IPAddress> const& addresses) = 0;
+        std::vector <IP::Endpoint> const& addresses) = 0;
 
-    /** Add a set of strings as fallback IPAddress sources.
+    /** Add a set of strings as fallback IP::Endpoint sources.
         @param name A label used for diagnostics.
     */
     virtual void addFallbackStrings (std::string const& name,
         std::vector <std::string> const& strings) = 0;
 
-    /** Add a URL as a fallback location to obtain IPAddress sources.
+    /** Add a URL as a fallback location to obtain IP::Endpoint sources.
         @param name A label used for diagnostics.
     */
     /* VFALCO NOTE Unimplemented

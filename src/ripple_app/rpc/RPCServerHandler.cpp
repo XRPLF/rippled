@@ -36,7 +36,7 @@ bool RPCServerHandler::isAuthorized (
     return HTTPAuthorized (headers);
 }
 
-std::string RPCServerHandler::processRequest (std::string const& request, IPAddress const& remoteIPAddress)
+std::string RPCServerHandler::processRequest (std::string const& request, IP::Endpoint const& remoteIPAddress)
 {
     Json::Value jsonRequest;
     {

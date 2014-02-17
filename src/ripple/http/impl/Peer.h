@@ -120,7 +120,7 @@ public:
         return m_impl.journal();
     }
 
-    IPAddress remoteAddress()
+    IP::Endpoint remoteAddress()
     {
         return from_asio (get_socket().remote_endpoint());
     }

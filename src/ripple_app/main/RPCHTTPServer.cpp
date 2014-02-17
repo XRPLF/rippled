@@ -67,7 +67,7 @@ public:
         if (! getConfig ().getRpcIP().empty () &&
               getConfig ().getRpcPort() != 0)
         {
-            IPAddress ep (IPAddress::from_string (getConfig().getRpcIP()));
+            IP::Endpoint ep (IP::Endpoint::from_string (getConfig().getRpcIP()));
             if (! is_unspecified (ep))
             {
                 HTTP::Port port;
@@ -172,7 +172,7 @@ public:
     }
 
     // Stolen directly from RPCServerHandler
-    std::string processRequest (std::string const& request, IPAddress const& remoteIPAddress)
+    std::string processRequest (std::string const& request, IP::Endpoint const& remoteIPAddress)
     {
         Json::Value jvRequest;
         {

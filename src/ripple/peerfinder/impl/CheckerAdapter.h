@@ -88,7 +88,7 @@ public:
         m_checker->cancel();
     }
 
-    void async_test (IPAddress const& endpoint,
+    void async_test (IP::Endpoint const& endpoint,
         AbstractHandler <void (Checker::Result)> handler)
     {
         m_checker->async_test (endpoint, Handler (

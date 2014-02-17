@@ -171,7 +171,7 @@ public:
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        std::vector <IPAddress> addresses;
+        std::vector <IP::Endpoint> addresses;
 
         // If we get an error message back, we don't return any
         // results that we may have gotten.

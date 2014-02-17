@@ -55,14 +55,14 @@ private:
 
         CheckerImp& m_owner;
         boost::asio::io_service& m_io_service;
-        IPAddress m_address;
+        IP::Endpoint m_address;
         AbstractHandler <void (Result)> m_handler;
         socket_type m_socket;
         boost::system::error_code m_error;
         bool m_canAccept;
 
         Request (CheckerImp& owner, boost::asio::io_service& io_service,
-            IPAddress const& address, AbstractHandler <void (Result)> handler)
+            IP::Endpoint const& address, AbstractHandler <void (Result)> handler)
             : m_owner (owner)
             , m_io_service (io_service)
             , m_address (address)
@@ -150,7 +150,7 @@ public:
             iter->cancel();
     }
 
-    void async_test (IPAddress const& endpoint,
+    void async_test (IP::Endpoint const& endpoint,
         AbstractHandler <void (Result)> handler)
     {
         new Request (*this, m_io_service, endpoint, handler);

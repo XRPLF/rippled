@@ -34,7 +34,7 @@ class Resolver
 public:
     typedef std::function <
         void (std::string,
-            std::vector <beast::IPAddress>) >
+            std::vector <beast::IP::Endpoint>) >
         HandlerType;
 
     virtual ~Resolver () = 0;

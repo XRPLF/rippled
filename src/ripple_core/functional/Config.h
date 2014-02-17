@@ -261,7 +261,7 @@ public:
         ADMIN,
         FORBID
     };
-    Role getAdminRole (Json::Value const& params, IPAddress const& remoteIp) const;
+    Role getAdminRole (Json::Value const& params, IP::Endpoint const& remoteIp) const;
 
     /** Listening port number for peer connections. */
     int peerListeningPort;
@@ -410,7 +410,7 @@ public:
     std::string                 WEBSOCKET_SSL_KEY;
 
     // RPC parameters
-    std::vector<beast::IPAddress>   RPC_ADMIN_ALLOW;
+    std::vector<beast::IP::Endpoint>   RPC_ADMIN_ALLOW;
     std::string                     RPC_ADMIN_PASSWORD;
     std::string                     RPC_ADMIN_USER;
     std::string                     RPC_PASSWORD;

@@ -35,7 +35,7 @@ public:
 
         if (server == "statsd")
         {
-            IPAddress const address (IPAddress::from_string (
+            IP::Endpoint const address (IP::Endpoint::from_string (
                 params ["address"].toStdString ()));
             std::string const& prefix (params ["prefix"].toStdString ());
 

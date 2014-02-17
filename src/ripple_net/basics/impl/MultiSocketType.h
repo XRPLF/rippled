@@ -89,19 +89,19 @@ protected:
         return m_origFlags;
     }
 
-    IPAddress local_endpoint()
+    IP::Endpoint local_endpoint()
     {
         return IPAddressConversion::from_asio (
             m_next_layer.local_endpoint());
     }
 
-    IPAddress remote_endpoint()
+    IP::Endpoint remote_endpoint()
     {
         if (m_proxyInfoSet)
         {
             if (m_proxyInfo.protocol == "TCP4")
             {
-                return IPAddress (
+                return IP::Endpoint (
                     IP::AddressV4 (
                         m_proxyInfo.destAddress.value [0],
                         m_proxyInfo.destAddress.value [1],
@@ -112,7 +112,7 @@ protected:
 
             // VFALCO TODO IPv6 support
             bassertfalse;
-            return IPAddress();
+            return IP::Endpoint();
         }
 
         return IPAddressConversion::from_asio (

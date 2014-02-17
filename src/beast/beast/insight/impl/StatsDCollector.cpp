@@ -200,7 +200,7 @@ private:
     typedef SharedData <StateType> State;
 
     Journal m_journal;
-    IPAddress m_address;
+    IP::Endpoint m_address;
     std::string m_prefix;
     boost::asio::io_service m_io_service;
     boost::optional <boost::asio::io_service::work> m_work;
@@ -213,7 +213,7 @@ private:
     std::thread m_thread;
 
     static boost::asio::ip::udp::endpoint to_endpoint (
-        IPAddress const &address)
+        IP::Endpoint const &address)
     {
         if (address.is_v4 ())
         {
@@ -230,7 +230,7 @@ private:
 
 public:
     StatsDCollectorImp (
-        IPAddress const& address,
+        IP::Endpoint const& address,
         std::string const& prefix,
         Journal journal)
         : m_journal (journal)
@@ -697,7 +697,7 @@ void StatsDMeterImpl::do_process ()
 //------------------------------------------------------------------------------
 
 std::shared_ptr <StatsDCollector> StatsDCollector::New (
-    IPAddress const& address, std::string const& prefix, Journal journal)
+    IP::Endpoint const& address, std::string const& prefix, Journal journal)
 {
     return std::make_shared <detail::StatsDCollectorImp> (
         address, prefix, journal);

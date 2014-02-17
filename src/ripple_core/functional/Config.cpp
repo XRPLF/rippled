@@ -46,7 +46,7 @@ void parseAddresses (OutputSequence& out, InputIterator first, InputIterator las
         auto const str (*first);
         ++first;
         {
-            IPAddress const addr (IPAddress::from_string (str));
+            IP::Endpoint const addr (IP::Endpoint::from_string (str));
             if (! is_unspecified (addr))
             {
                 out.push_back (addr);
@@ -54,7 +54,7 @@ void parseAddresses (OutputSequence& out, InputIterator first, InputIterator las
             }
         }
         {
-            IPAddress const addr (IPAddress::from_string_altform (str));
+            IP::Endpoint const addr (IP::Endpoint::from_string_altform (str));
             if (! is_unspecified (addr))
             {
                 out.push_back (addr);
@@ -106,7 +106,7 @@ Config::Config ()
     LEDGER_CREATOR          = false;
 
     RPC_ALLOW_REMOTE        = false;
-    RPC_ADMIN_ALLOW.push_back (beast::IPAddress::from_string("127.0.0.1"));
+    RPC_ADMIN_ALLOW.push_back (beast::IP::Endpoint::from_string("127.0.0.1"));
 
     PEER_SSL_CIPHER_LIST    = DEFAULT_PEER_SSL_CIPHER_LIST;
     PEER_SCAN_INTERVAL_MIN  = DEFAULT_PEER_SCAN_INTERVAL_MIN;
@@ -342,8 +342,8 @@ void Config::load ()
 
             if (smtTmp)
             {
-                std::vector<IPAddress> parsedAddresses;
-                //parseAddresses<std::vector<IPAddress>, std::vector<std::string>::const_iterator> 
+                std::vector<IP::Endpoint> parsedAddresses;
+                //parseAddresses<std::vector<IP::Endpoint>, std::vector<std::string>::const_iterator> 
                 //    (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
                 parseAddresses (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
                 RPC_ADMIN_ALLOW.insert (RPC_ADMIN_ALLOW.end(),
@@ -693,7 +693,7 @@ void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
 
 //------------------------------------------------------------------------------
 
-Config::Role Config::getAdminRole (Json::Value const& params, beast::IPAddress const& remoteIp) const
+Config::Role Config::getAdminRole (Json::Value const& params, beast::IP::Endpoint const& remoteIp) const
 {
     Config::Role role (Config::FORBID);
 
@@ -732,7 +732,7 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IPAddress c
     }
 
     // Meets IP restriction for admin.
-    IPAddress const remote_addr (remoteIp.at_port (0));
+    IP::Endpoint const remote_addr (remoteIp.at_port (0));
     bool bAdminIP = false;
 
     for (auto const& allow_addr : RPC_ADMIN_ALLOW)

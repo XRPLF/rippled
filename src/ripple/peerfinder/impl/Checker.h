@@ -54,7 +54,7 @@ public:
             { }
 
         /** The original address. */
-        IPAddress address;
+        IP::Endpoint address;
 
         /** The error code from the operation. */
         boost::system::error_code error;
@@ -71,7 +71,7 @@ public:
             void (Result const& result);
     */
     template <typename Handler>
-    void async_test (IPAddress const& endpoint,
+    void async_test (IP::Endpoint const& endpoint,
         BEAST_MOVE_ARG(Handler) handler)
     {
         async_test (endpoint,
@@ -79,7 +79,7 @@ public:
                 BEAST_MOVE_CAST(Handler)(handler)));
     }
 
-    virtual void async_test (IPAddress const& endpoint,
+    virtual void async_test (IP::Endpoint const& endpoint,
         AbstractHandler <void (Result)> handler) = 0;
 };
 

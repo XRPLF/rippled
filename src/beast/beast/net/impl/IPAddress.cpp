@@ -389,7 +389,7 @@ public:
         testParse <Endpoint> ("Parse Endpoint");
     }
 
-    IPAddressTests () : UnitTest ("IPAddress", "beast")
+    IPAddressTests () : UnitTest ("IP::Endpoint", "beast")
     {
     }
 };

@@ -53,14 +53,14 @@ inline endpoint_t to_asio (Port const& port)
         return endpoint_t (address().from_string (s), port.port);
     }
 
-    //IPAddress::V6 v6 (ep.v6());
+    //IP::Endpoint::V6 v6 (ep.v6());
     return endpoint_t ();
 }
 
-inline IPAddress from_asio (endpoint_t const& endpoint)
+inline IP::Endpoint from_asio (endpoint_t const& endpoint)
 {
     std::stringstream ss (to_string (endpoint));
-    IPAddress ep;
+    IP::Endpoint ep;
     ss >> ep;
     return ep;
 }

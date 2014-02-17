@@ -44,8 +44,8 @@ public:
         results.addresses.reserve (m_strings.size());
         for (int i = 0; i < m_strings.size (); ++i)
         {
-            IPAddress ep (
-                IPAddress::from_string_altform (
+            IP::Endpoint ep (
+                IP::Endpoint::from_string_altform (
                     m_strings [i]));
             if (! is_unspecified (ep))
                 results.addresses.push_back (ep);
