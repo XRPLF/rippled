@@ -41,8 +41,10 @@ HONOR_ENVS = ['CC', 'CXX', 'PATH']
 env = Environment(
     tools = ['default', 'protoc'],
     #ENV = dict((k, os.environ[k]) for k in HONOR_ENVS)
-    ENV = dict((k, os.environ[k]) for k in HONOR_ENVS if k in os.environ)
+    ENV = dict((k, os.environ[k]) for k in HONOR_ENVS if k in os.environ) 
 )
+
+env.Append(DISPLAY_FULL_CMD_LINE = '1')
 
 # Use a newer gcc on FreeBSD
 if FreeBSD:
@@ -113,7 +115,7 @@ BOOST_LIBS = [
 # included the platform can be whitelisted.
 # if FreeBSD or Ubuntu or Archlinux:
 
-if not (USING_CLANG and Linux) and (FreeBSD or Ubuntu or Archlinux or OSX):
+if not (USING_CLANG and Linux) and (FreeBSD or Ubuntu or Debian or Archlinux or OSX):
     # non-mt libs do link with pthreads.
     env.Append(
         LIBS = BOOST_LIBS
@@ -132,6 +134,28 @@ else:
     env.Append(
         LIBS = [l + '-mt' for l in BOOST_LIBS]
     )
+
+#-------------------------------------------------------------------------------
+# Change the way that information is printed so that we can get a nice
+# output
+#-------------------------------------------------------------------------------
+
+def print_cmd_line(s, target, src, env):
+    Tgt = (''.join([str(x) for x in target]))
+    
+    if (env['DISPLAY_FULL_CMD_LINE'] == '1'):
+        sys.stdout.write("Sample command line used: '\033[94m%s\033[0m'...\n" % s)
+        env['DISPLAY_FULL_CMD_LINE'] = '0'
+
+    if ('build/rippled' == Tgt):
+        sys.stdout.write("Linking '\033[94m%s\033[0m'...\n" % Tgt)
+    elif ('tags' == Tgt):
+        sys.stdout.write("Generating tags...\n")
+    else:
+        sys.stdout.write("Compiling '\033[94m%s\033[0m'...\n" % \
+             (' and '.join([str(x) for x in src])))
+
+env['PRINT_CMD_LINE_FUNC'] = print_cmd_line
 
 #-------------------------------------------------------------------------------
 #
