@@ -100,6 +100,7 @@ void TxFormats::addCommonFields (Item& item)
         << SOElement(sfAccountTxnID,        SOE_OPTIONAL)
         << SOElement(sfFee,                 SOE_REQUIRED) 
         << SOElement(sfOperationLimit,      SOE_OPTIONAL) 
+        << SOElement(sfMemos,               SOE_OPTIONAL)
         << SOElement(sfSigningPubKey,       SOE_REQUIRED) 
         << SOElement(sfTxnSignature,        SOE_OPTIONAL)
         ;

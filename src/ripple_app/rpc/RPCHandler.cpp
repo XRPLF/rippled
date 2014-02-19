@@ -165,7 +165,6 @@ static void autofill_fee (Json::Value& request,
 Json::Value RPCHandler::transactionSign (Json::Value params,
     bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh)
 {
-    mlh.unlock();
     Json::Value jvResult;
 
     WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: %s") % params);
@@ -427,6 +426,14 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
     {
         jvResult["error"]           = "invalidTransaction";
         jvResult["error_exception"] = e.what ();
+
+        return jvResult;
+    }
+
+    if (!stpTrans->isMemoOkay ())
+    {
+        jvResult["error"]           = "invalidTransaction";
+        jvResult["error_exception"] = "overlong memos";
 
         return jvResult;
     }
@@ -1975,6 +1982,8 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
 // }
 Json::Value RPCHandler::doSign (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     loadType = Resource::feeHighBurdenRPC;
     bool bFailHard = params.isMember ("fail_hard") && params["fail_hard"].asBool ();
     return transactionSign (params, false, bFailHard, masterLockHolder);
@@ -1986,6 +1995,8 @@ Json::Value RPCHandler::doSign (Json::Value params, Resource::Charge& loadType, 
 // }
 Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     loadType = Resource::feeMediumBurdenRPC;
 
     if (!params.isMember ("tx_blob"))
@@ -2048,7 +2059,6 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
         return jvResult;
     }
 
-    masterLockHolder.unlock ();
 
     try
     {

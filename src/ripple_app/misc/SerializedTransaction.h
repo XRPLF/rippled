@@ -124,6 +124,8 @@ public:
         mSigBad = true;
     }
 
+    bool isMemoOkay ();
+
     // SQL Functions
     static std::string getSQLValueHeader ();
     static std::string getSQLInsertHeader ();

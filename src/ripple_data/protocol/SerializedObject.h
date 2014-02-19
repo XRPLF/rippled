@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERIALIZEDOBJECT_H
 #define RIPPLE_SERIALIZEDOBJECT_H
 
+class STArray;
+
 class STObject
     : public SerializedType
     , public CountedObject <STObject>
@@ -197,6 +199,7 @@ public:
     const STAmount& getFieldAmount (SField::ref field) const;
     const STPathSet& getFieldPathSet (SField::ref field) const;
     const STVector256& getFieldV256 (SField::ref field) const;
+    const STArray& getFieldArray (SField::ref field) const;
 
     void setFieldU8 (SField::ref field, unsigned char);
     void setFieldU16 (SField::ref field, uint16);

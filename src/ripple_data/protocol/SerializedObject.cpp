@@ -832,6 +832,25 @@ const STAmount& STObject::getFieldAmount (SField::ref field) const
     return *cf;
 }
 
+const STArray& STObject::getFieldArray (SField::ref field) const
+{
+    static STArray empty;
+    const SerializedType* rf = peekAtPField (field);
+
+    if (!rf) throw std::runtime_error ("Field not found");
+
+    SerializedTypeID id = rf->getSType ();
+
+    if (id == STI_NOTPRESENT) return empty;
+
+    const STArray* cf = dynamic_cast<const STArray*> (rf);
+
+    if (!cf)
+        throw std::runtime_error ("Wrong field type");
+
+    return *cf;
+}
+
 const STPathSet& STObject::getFieldPathSet (SField::ref field) const
 {
     static STPathSet empty;

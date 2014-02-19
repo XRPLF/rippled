@@ -31,7 +31,7 @@ Transaction::Transaction (SerializedTransaction::ref sit, bool bValidate)
         return;
     }
 
-    if (!bValidate || checkSign ())
+    if (!bValidate || (mTransaction->isMemoOkay () && checkSign ()))
         mStatus = NEW;
 }
 

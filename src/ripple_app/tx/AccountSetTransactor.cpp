@@ -226,6 +226,12 @@ TER AccountSetTransactor::doApply ()
     {
         Blob    vucPublic   = mTxn.getFieldVL (sfMessageKey);
 
+        if (vucPublic.empty ())
+        {
+            WriteLog (lsDEBUG, AccountSetTransactor) << "AccountSet: set message key";
+
+            mTxnAccount->makeFieldAbsent (sfMessageKey);
+        }
         if (vucPublic.size () > PUBLIC_BYTES_MAX)
         {
             WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: message key too long";
@@ -234,7 +240,7 @@ TER AccountSetTransactor::doApply ()
         }
         else
         {
-            WriteLog (lsINFO, AccountSetTransactor) << "AccountSet: set message key";
+            WriteLog (lsDEBUG, AccountSetTransactor) << "AccountSet: set message key";
 
             mTxnAccount->setFieldVL (sfMessageKey, vucPublic);
         }

@@ -160,6 +160,7 @@ FIELD (FundCode,             VL, 8)
 FIELD (RemoveCode,           VL, 9)
 FIELD (ExpireCode,           VL, 10)
 FIELD (CreateCode,           VL, 11)
+FIELD (MemoType,             VL, 12)
 
 // account
 FIELD (Account,              ACCOUNT, 1)
@@ -187,6 +188,7 @@ FIELD (PreviousFields,       OBJECT, 6)
 FIELD (FinalFields,          OBJECT, 7)
 FIELD (NewFields,            OBJECT, 8)
 FIELD (TemplateEntry,        OBJECT, 9)
+FIELD (Memo,                 OBJECT, 10)
 
 // array of objects
 // ARRAY/1 is reserved for end of array
@@ -197,5 +199,6 @@ FIELD (Template,             ARRAY, 5)
 FIELD (Necessary,            ARRAY, 6)
 FIELD (Sufficient,           ARRAY, 7)
 FIELD (AffectedNodes,        ARRAY, 8)
+FIELD (Memos,                ARRAY, 9)
 
 // vim:ts=4

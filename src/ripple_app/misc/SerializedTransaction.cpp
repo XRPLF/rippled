@@ -307,6 +307,19 @@ std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, uint32 inLedge
                 % getSequence () % inLedger % status % rTxn % escapedMetaData);
 }
 
+bool SerializedTransaction::isMemoOkay ()
+{
+    bool ret = true;
+    if (isFieldPresent (sfMemos))
+    {
+        Serializer s (2048); // Try to avoid allocate/copy/free's
+        getFieldArray (sfMemos).add (s);
+        if (s.getDataLength () > 1024)
+            ret = false;
+    }
+    return ret;
+}
+
 //------------------------------------------------------------------------------
 
 class SerializedTransactionTests : public UnitTest
