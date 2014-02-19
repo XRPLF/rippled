@@ -39,7 +39,7 @@ TER RegularKeySetTransactor::doApply ()
 
     const uint32        uTxFlags        = mTxn.getFlags ();
 
-    if (uTxFlags)
+    if (uTxFlags & tfUniversalMask)
     {
         WriteLog (lsINFO, RegularKeySetTransactor) << "RegularKeySet: Malformed transaction: Invalid flags set.";
 

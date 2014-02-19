@@ -38,6 +38,11 @@ public:
 };
 // VFALCO TODO Move all flags into this container after some study.
 
+// Universal Transaction flags:
+const uint32 tfFullyCanonicalSig    = 0x80000000;
+const uint32 tfUniversal            = tfFullyCanonicalSig;
+const uint32 tfUniversalMask        = ~ tfUniversal;
+
 // AccountSet flags:
 // VFALCO TODO Javadoc comment every one of these constants
 //const uint32 TxFlag::requireDestTag       = 0x00010000;
@@ -62,18 +67,18 @@ const uint32 tfPassive              = 0x00010000;
 const uint32 tfImmediateOrCancel    = 0x00020000;
 const uint32 tfFillOrKill           = 0x00040000;
 const uint32 tfSell                 = 0x00080000;
-const uint32 tfOfferCreateMask      = ~ (tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
+const uint32 tfOfferCreateMask      = ~ (tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
 
 // Payment flags:
 const uint32 tfNoRippleDirect       = 0x00010000;
 const uint32 tfPartialPayment       = 0x00020000;
 const uint32 tfLimitQuality         = 0x00040000;
-const uint32 tfPaymentMask          = ~ (tfPartialPayment | tfLimitQuality | tfNoRippleDirect);
+const uint32 tfPaymentMask          = ~ (tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect);
 
 // TrustSet flags:
 const uint32 tfSetfAuth             = 0x00010000;
 const uint32 tfSetNoRipple          = 0x00020000;
 const uint32 tfClearNoRipple        = 0x00040000;
-const uint32 tfTrustSetMask         = ~ (tfSetfAuth | tfSetNoRipple | tfClearNoRipple);
+const uint32 tfTrustSetMask         = ~ (tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple);
 
 #endif

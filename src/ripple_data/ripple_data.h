@@ -22,6 +22,7 @@
 
 #include "../ripple_basics/ripple_basics.h"
 #include "../ripple/json/ripple_json.h"
+#include "../ripple/sslutil/api/ECDSACanonical.h"
 
 struct bignum_st;
 typedef struct bignum_st BIGNUM;

@@ -92,8 +92,11 @@ bool SerializedValidation::isValid (uint256 const& signingHash) const
 {
     try
     {
+        const ECDSA fullyCanonical = getFlags () & vfFullyCanonicalSig ?
+                                            ECDSA::strict : ECDSA::not_strict;
         RippleAddress   raPublicKey = RippleAddress::createNodePublic (getFieldVL (sfSigningPubKey));
-        return raPublicKey.isValid () && raPublicKey.verifyNodePublic (signingHash, getFieldVL (sfSignature));
+        return raPublicKey.isValid () &&
+            raPublicKey.verifyNodePublic (signingHash, getFieldVL (sfSignature), fullyCanonical);
     }
     catch (...)
     {

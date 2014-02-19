@@ -38,5 +38,6 @@ using namespace beast;
 #include "api/CBigNum.h"
 #include "api/DHUtil.h"
 #include "api/HashUtilities.h"
+#include "api/ECDSACanonical.h"
 
 #endif

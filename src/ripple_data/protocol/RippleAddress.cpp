@@ -161,12 +161,14 @@ void RippleAddress::setNodePublic (Blob const& vPublic)
     SetData (VER_NODE_PUBLIC, vPublic);
 }
 
-bool RippleAddress::verifyNodePublic (uint256 const& hash, Blob const& vchSig) const
+bool RippleAddress::verifyNodePublic (uint256 const& hash, Blob const& vchSig, ECDSA fullyCanonical) const
 {
     CKey    pubkey  = CKey ();
     bool    bVerified;
 
-    if (!pubkey.SetPubKey (getNodePublic ()))
+    bVerified = isCanonicalECDSASig (vchSig, fullyCanonical);
+
+    if (bVerified && !pubkey.SetPubKey (getNodePublic ()))
     {
         // Failed to set public key.
         bVerified   = false;
@@ -179,11 +181,11 @@ bool RippleAddress::verifyNodePublic (uint256 const& hash, Blob const& vchSig) c
     return bVerified;
 }
 
-bool RippleAddress::verifyNodePublic (uint256 const& hash, const std::string& strSig) const
+bool RippleAddress::verifyNodePublic (uint256 const& hash, const std::string& strSig, ECDSA fullyCanonical) const
 {
     Blob vchSig (strSig.begin (), strSig.end ());
 
-    return verifyNodePublic (hash, vchSig);
+    return verifyNodePublic (hash, vchSig, fullyCanonical);
 }
 
 //
@@ -442,12 +444,13 @@ void RippleAddress::setAccountPublic (const RippleAddress& generator, int seq)
     setAccountPublic (pubkey.GetPubKey ());
 }
 
-bool RippleAddress::accountPublicVerify (uint256 const& uHash, Blob const& vucSig) const
+bool RippleAddress::accountPublicVerify (uint256 const& uHash, Blob const& vucSig, ECDSA fullyCanonical) const
 {
     CKey        ckPublic;
-    bool        bVerified;
 
-    if (!ckPublic.SetPubKey (getAccountPublic ()))
+    bool        bVerified = isCanonicalECDSASig (vucSig, fullyCanonical);
+
+    if (bVerified && !ckPublic.SetPubKey (getAccountPublic ()))
     {
         // Bad private key.
         WriteLog (lsWARNING, RippleAddress) << "accountPublicVerify: Bad private key.";
@@ -919,7 +922,7 @@ public:
         Blob vucTextSig;
 
         naNodePrivate.signNodePrivate (uHash, vucTextSig);
-        expect (naNodePublic.verifyNodePublic (uHash, vucTextSig), "Verify failed.");
+        expect (naNodePublic.verifyNodePublic (uHash, vucTextSig, ECDSA::strict), "Verify failed.");
 
         // Construct a public generator from the seed.
         RippleAddress   naGenerator     = RippleAddress::createGeneratorPublic (naSeed);
@@ -944,12 +947,14 @@ public:
 
         // Check account signing.
         expect (naAccountPrivate0.accountPrivateSign (uHash, vucTextSig), "Signing failed.");
-        expect (naAccountPublic0.accountPublicVerify (uHash, vucTextSig), "Verify failed.");
-        expect (!naAccountPublic1.accountPublicVerify (uHash, vucTextSig), "Anti-verify failed.");
+        expect (naAccountPublic0.accountPublicVerify (uHash, vucTextSig, ECDSA::strict), "Verify failed.");
+        expect (!naAccountPublic1.accountPublicVerify (uHash, vucTextSig, ECDSA::not_strict), "Anti-verify failed.");
+        expect (!naAccountPublic1.accountPublicVerify (uHash, vucTextSig, ECDSA::strict), "Anti-verify failed.");
 
         expect (naAccountPrivate1.accountPrivateSign (uHash, vucTextSig), "Signing failed.");
-        expect (naAccountPublic1.accountPublicVerify (uHash, vucTextSig), "Verify failed.");
-        expect (!naAccountPublic0.accountPublicVerify (uHash, vucTextSig), "Anti-verify failed.");
+        expect (naAccountPublic1.accountPublicVerify (uHash, vucTextSig, ECDSA::strict), "Verify failed.");
+        expect (!naAccountPublic0.accountPublicVerify (uHash, vucTextSig, ECDSA::not_strict), "Anti-verify failed.");
+        expect (!naAccountPublic0.accountPublicVerify (uHash, vucTextSig, ECDSA::strict), "Anti-verify failed.");
 
         // Check account encryption.
         Blob vucTextCipher

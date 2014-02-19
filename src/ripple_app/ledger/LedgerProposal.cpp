@@ -61,7 +61,7 @@ uint256 LedgerProposal::getSigningHash () const
 
 bool LedgerProposal::checkSign (const std::string& signature, uint256 const& signingHash)
 {
-    return mPublicKey.verifyNodePublic (signingHash, signature);
+    return mPublicKey.verifyNodePublic (signingHash, signature, ECDSA::not_strict);
 }
 
 bool LedgerProposal::changePosition (uint256 const& newPosition, uint32 closeTime)

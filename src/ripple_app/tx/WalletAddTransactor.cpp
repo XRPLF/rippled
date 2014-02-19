@@ -31,7 +31,7 @@ TER WalletAddTransactor::doApply ()
 
     const uint32                        uTxFlags        = mTxn.getFlags ();
 
-    if (uTxFlags)
+    if (uTxFlags & tfUniversalMask)
     {
         WriteLog (lsINFO, WalletAddTransactor) << "WalletAdd: Malformed transaction: Invalid flags set.";
 
@@ -39,7 +39,8 @@ TER WalletAddTransactor::doApply ()
     }
 
     // FIXME: This should be moved to the transaction's signature check logic and cached
-    if (!naMasterPubKey.accountPublicVerify (Serializer::getSHA512Half (uAuthKeyID.begin (), uAuthKeyID.size ()), vucSignature))
+    if (!naMasterPubKey.accountPublicVerify (
+        Serializer::getSHA512Half (uAuthKeyID.begin (), uAuthKeyID.size ()), vucSignature, ECDSA::not_strict))
     {
         Log::out() << "WalletAdd: unauthorized: bad signature ";
 

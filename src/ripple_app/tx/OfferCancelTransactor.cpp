@@ -29,7 +29,7 @@ TER OfferCancelTransactor::doApply ()
 
     const uint32    uTxFlags                = mTxn.getFlags ();
 
-    if (uTxFlags)
+    if (uTxFlags & tfUniversalMask)
     {
         WriteLog (lsINFO, OfferCancelTransactor) << "OfferCancel: Malformed transaction: Invalid flags set.";
 
