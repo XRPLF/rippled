@@ -380,42 +380,6 @@ uint256 Serializer::getPrefixHash (uint32 prefix, const unsigned char* data, int
     return j[0];
 }
 
-bool Serializer::checkSignature (int pubkeyOffset, int signatureOffset) const
-{
-    Blob pubkey, signature;
-
-    if (!getRaw (pubkey, pubkeyOffset, 65)) return false;
-
-    if (!getRaw (signature, signatureOffset, 72)) return false;
-
-    CKey pubCKey;
-
-    if (!pubCKey.SetPubKey (pubkey)) return false;
-
-    return pubCKey.Verify (getSHA512Half (signatureOffset), signature);
-}
-
-bool Serializer::checkSignature (Blob const& signature, CKey& key) const
-{
-    return key.Verify (getSHA512Half (), signature);
-}
-
-bool Serializer::makeSignature (Blob& signature, CKey& key) const
-{
-    return key.Sign (getSHA512Half (), signature);
-}
-
-bool Serializer::addSignature (CKey& key)
-{
-    Blob signature;
-
-    if (!key.Sign (getSHA512Half (), signature)) return false;
-
-    assert (signature.size () == 72);
-    addRaw (signature);
-    return true;
-}
-
 int Serializer::addVL (Blob const& vector)
 {
     int ret = addRaw (encodeVL (vector.size ()));

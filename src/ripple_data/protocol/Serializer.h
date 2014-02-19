@@ -217,12 +217,6 @@ public:
         return v.mData != mData;
     }
 
-    // signature functions
-    bool checkSignature (int pubkeyOffset, int signatureOffset) const;
-    bool checkSignature (Blob const& signature, CKey& rkey) const;
-    bool makeSignature (Blob& signature, CKey& rkey) const;
-    bool addSignature (CKey& rkey);
-
     // low-level VL length encode/decode functions
     static Blob encodeVL (int length);
     static int lengthVL (int length)
