@@ -202,16 +202,19 @@ bool Pathfinder::findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet&
     BOOST_FOREACH(const STPath& path, pathsOut)
     { // make sure no paths were lost
         bool found = false;
-        BOOST_FOREACH(const STPath& ePath, mCompletePaths)
+        if (!path.isEmpty ())
         {
-            if (ePath == path)
+            BOOST_FOREACH(const STPath& ePath, mCompletePaths)
             {
-                found = true;
-                break;
+                if (ePath == path)
+                {
+                    found = true;
+                    break;
+                }
             }
+            if (!found)
+                mCompletePaths.addPath(path);
         }
-        if (!found)
-            mCompletePaths.addPath(path);
     }
 
     WriteLog (lsDEBUG, Pathfinder) << mCompletePaths.size() << " paths to filter";
@@ -385,7 +388,8 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     return spsDst;
 }
 
-boost::unordered_set<uint160> usAccountSourceCurrencies (const RippleAddress& raAccountID, Ledger::ref lrLedger,
+boost::unordered_set<uint160> usAccountSourceCurrencies (
+        const RippleAddress& raAccountID, RippleLineCache::ref lrCache,
         bool includeXRP)
 {
     boost::unordered_set<uint160>   usCurrencies;
@@ -395,7 +399,7 @@ boost::unordered_set<uint160> usAccountSourceCurrencies (const RippleAddress& ra
         usCurrencies.insert (uint160 (CURRENCY_XRP));
 
     // List of ripple lines.
-    AccountItems rippleLines (raAccountID.getAccountID (), lrLedger, AccountItem::pointer (new RippleState ()));
+    AccountItems& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
 
     BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
     {
@@ -415,7 +419,9 @@ boost::unordered_set<uint160> usAccountSourceCurrencies (const RippleAddress& ra
     return usCurrencies;
 }
 
-boost::unordered_set<uint160> usAccountDestCurrencies (const RippleAddress& raAccountID, Ledger::ref lrLedger,
+boost::unordered_set<uint160> usAccountDestCurrencies (
+        const RippleAddress& raAccountID,
+        RippleLineCache::ref lrCache,
         bool includeXRP)
 {
     boost::unordered_set<uint160>   usCurrencies;
@@ -424,7 +430,7 @@ boost::unordered_set<uint160> usAccountDestCurrencies (const RippleAddress& raAc
         usCurrencies.insert (uint160 (CURRENCY_XRP)); // Even if account doesn't exist
 
     // List of ripple lines.
-    AccountItems rippleLines (raAccountID.getAccountID (), lrLedger, AccountItem::pointer (new RippleState ()));
+    AccountItems& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
 
     BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
     {
@@ -474,6 +480,7 @@ int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& ac
 
     int count = 0;
     AccountItems& rippleLines (mRLCache->getRippleLines (accountID));
+
     BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
     {
         RippleState* rspEntry = (RippleState*) item.get ();
@@ -635,7 +642,7 @@ void Pathfinder::addLink(
                 bool const bIsEndCurrency = (uEndCurrency == mDstAmount.getCurrency());
                 bool const bIsNoRippleOut = isNoRippleOut (currentPath);
 
-                AccountItems& rippleLines(mRLCache->getRippleLines(uEndAccount));
+                AccountItems& rippleLines (mRLCache->getRippleLines(uEndAccount));
 
                 std::vector< std::pair<int, uint160> > candidates;
                 candidates.reserve(rippleLines.getItems().size());
@@ -866,7 +873,7 @@ void Pathfinder::initPathTable()
     { // XRP to non-XRP
         CostedPathList_t& list = mPathTable[pt_XRP_to_nonXRP];
 
-        list.push_back(CostedPath_t(0,  makePath("sfd")));       // source -> book -> gateway
+        list.push_back(CostedPath_t(1,  makePath("sfd")));       // source -> book -> gateway
         list.push_back(CostedPath_t(3,  makePath("sfad")));      // source -> book -> account -> destination
         list.push_back(CostedPath_t(5,  makePath("sfaad")));     // source -> book -> account -> account -> destination
         list.push_back(CostedPath_t(6,  makePath("sbfd")));      // source -> book -> book -> destination
@@ -878,8 +885,8 @@ void Pathfinder::initPathTable()
     { // non-XRP to XRP
         CostedPathList_t& list = mPathTable[pt_nonXRP_to_XRP];
 
-        list.push_back(CostedPath_t(0, makePath("sxd")));              // gateway buys XRP
-        list.push_back(CostedPath_t(1, makePath("saxd")));             // source -> gateway -> book(XRP) -> dest
+        list.push_back(CostedPath_t(1, makePath("sxd")));              // gateway buys XRP
+        list.push_back(CostedPath_t(2, makePath("saxd")));             // source -> gateway -> book(XRP) -> dest
         list.push_back(CostedPath_t(6, makePath("saaxd")));
         list.push_back(CostedPath_t(7, makePath("sbxd")));
         list.push_back(CostedPath_t(8, makePath("sabxd")));

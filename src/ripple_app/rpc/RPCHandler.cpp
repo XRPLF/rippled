@@ -1780,7 +1780,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
         }
         else
         {
-            boost::unordered_set<uint160>   usCurrencies    = usAccountSourceCurrencies (raSrc, lpLedger, true);
+            boost::unordered_set<uint160>   usCurrencies    = usAccountSourceCurrencies (raSrc, cache, true);
 
             jvSrcCurrencies             = Json::Value (Json::arrayValue);
 
@@ -1797,7 +1797,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
         // Fill in currencies destination will accept
         Json::Value jvDestCur (Json::arrayValue);
 
-        boost::unordered_set<uint160> usDestCurrID = usAccountDestCurrencies (raDst, lpLedger, true);
+        boost::unordered_set<uint160> usDestCurrID = usAccountDestCurrencies (raDst, cache, true);
         BOOST_FOREACH (const uint160 & uCurrency, usDestCurrID)
         jvDestCur.append (STAmount::createHumanCurrency (uCurrency));
 
@@ -1847,6 +1847,22 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
             int level = getConfig().PATH_SEARCH_OLD;
             if ((getConfig().PATH_SEARCH_MAX > level) && !getApp().getFeeTrack().isLoadedLocal())
                 ++level;
+            if (params.isMember("depth") && params["depth"].isIntegral())
+            {
+                int rLev = params["search_depth"].asInt ();
+                if ((rLev < level) || (mRole == Config::ADMIN))
+                    level = rLev;
+            }
+
+            if (params.isMember("paths"))
+            {
+                STParsedJSON paths ("paths", params["paths"]);
+                if (paths.object.get() == nullptr)
+                    return paths.error;
+                else
+                    spsComputed = paths.object.get()->downcast<STPathSet> ();
+            }
+
             STPath extraPath;
             if (!bValid || !pf.findPaths (level, 4, spsComputed, extraPath))
             {

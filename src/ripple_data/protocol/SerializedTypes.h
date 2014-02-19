@@ -166,6 +166,24 @@ public:
         return true;
     }
 
+    template <class D>
+    D&  downcast()
+    {
+        D* ptr = dynamic_cast<D*> (this);
+        if (ptr == nullptr)
+            throw std::runtime_error ("type mismatch");
+        return *ptr;
+    }
+
+    template <class D>
+    D const& downcast() const
+    {
+        D const * ptr = dynamic_cast<D const*> (this);
+        if (ptr == nullptr)
+            throw std::runtime_error ("type mismatch");
+        return *ptr;
+    }
+
 protected:
     // VFALCO TODO make accessors for this
     SField::ptr fName;

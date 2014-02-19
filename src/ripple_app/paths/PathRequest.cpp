@@ -110,14 +110,15 @@ bool PathRequest::needsUpdate (bool newOnly, LedgerIndex index)
     }
 }
 
-bool PathRequest::isValid (Ledger::ref lrLedger)
+bool PathRequest::isValid (RippleLineCache::ref crCache)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
     bValid = raSrcAccount.isSet () && raDstAccount.isSet () && saDstAmount.isPositive ();
+    Ledger::pointer lrLedger = crCache->getLedger ();
 
     if (bValid)
     {
-        AccountState::pointer asSrc = getApp().getOPs ().getAccountState (lrLedger, raSrcAccount);
+        AccountState::pointer asSrc = getApp().getOPs ().getAccountState (crCache->getLedger(), raSrcAccount);
 
         if (!asSrc)
         {
@@ -153,7 +154,7 @@ bool PathRequest::isValid (Ledger::ref lrLedger)
             {
                 bool includeXRP = !isSetBit (asDst->peekSLE ().getFlags(), lsfDisallowXRP);
                 boost::unordered_set<uint160> usDestCurrID =
-                    usAccountDestCurrencies (raDstAccount, lrLedger, includeXRP);
+                    usAccountDestCurrencies (raDstAccount, crCache, includeXRP);
 
                 BOOST_FOREACH (const uint160 & uCurrency, usDestCurrID)
                     jvDestCur.append (STAmount::createHumanCurrency (uCurrency));
@@ -179,7 +180,7 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, RippleLineCache::ref& c
 
     if (parseJson (value, true) != PFR_PJ_INVALID)
     {
-        bValid = isValid (lrLedger);
+        bValid = isValid (cache);
 
         if (bValid)
             status = doUpdate (cache, true);
@@ -324,7 +325,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    if (!isValid (cache->getLedger ()))
+    if (!isValid (cache))
         return jvStatus;
     jvStatus = Json::objectValue;
 
@@ -333,7 +334,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     if (sourceCurrencies.empty ())
     {
         boost::unordered_set<uint160> usCurrencies =
-            usAccountSourceCurrencies (raSrcAccount, cache->getLedger (), true);
+            usAccountSourceCurrencies (raSrcAccount, cache, true);
         bool sameAccount = raSrcAccount == raDstAccount;
         BOOST_FOREACH (const uint160 & c, usCurrencies)
         {

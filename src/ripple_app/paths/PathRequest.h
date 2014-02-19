@@ -51,7 +51,7 @@ public:
     
     ~PathRequest ();
 
-    bool        isValid (const boost::shared_ptr<Ledger>&);
+    bool        isValid (RippleLineCache::ref crCache);
     bool        isValid ();
     bool        isNew ();
     bool        needsUpdate (bool newOnly, LedgerIndex index);

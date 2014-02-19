@@ -136,10 +136,14 @@ private:
     static const uint32 afAC_LAST      = 0x080;  // Destination account only
 };
 
-boost::unordered_set<uint160> usAccountDestCurrencies (const RippleAddress& raAccountID, Ledger::ref lrLedger,
+boost::unordered_set<uint160> usAccountDestCurrencies
+        (const RippleAddress& raAccountID,
+        RippleLineCache::ref cache,
         bool includeXRP);
 
-boost::unordered_set<uint160> usAccountSourceCurrencies (const RippleAddress& raAccountID, Ledger::ref lrLedger,
+boost::unordered_set<uint160> usAccountSourceCurrencies
+        (const RippleAddress& raAccountID,
+        RippleLineCache::ref lrLedger,
         bool includeXRP);
 
 #endif
