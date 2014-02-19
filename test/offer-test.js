@@ -699,8 +699,7 @@ suite("Offer tests", function() {
         });
     });
 
-  test("//new user offer_create then ledger_accept then offer_cancel then ledger_accept.", function (done) {
-    return done();
+  test.skip("new user offer_create then ledger_accept then offer_cancel then ledger_accept.", function (done) {
 
       var self = this;
       var final_create;

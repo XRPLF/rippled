@@ -110,7 +110,7 @@ function build_setup(opts, host) {
 
     data.opts = opts;
 
-    var series = [
+    var steps = [
       function run_server(callback) {
         if (opts.no_server)  {
           return callback();
@@ -137,14 +137,14 @@ function build_setup(opts, host) {
 
       function connect_websocket(callback) {
         self.remote = data.remote = Remote.from_config(host, !!opts.verbose_ws);
-        self.remote.once('ledger_closed', function(ledger) {
+        self.remote.once('ledger_closed', function() {
           callback();
         });
         self.remote.connect();
       }
     ];
 
-    async.series(series, done);
+    async.series(steps, done);
   };
 
   return setup;
@@ -190,7 +190,7 @@ function build_teardown(host) {
 };
 
 function create_accounts(remote, src, amount, accounts, callback) {
-  assert(arguments.length === 5);
+  assert.strictEqual(arguments.length, 5);
 
   remote.set_account_seq(src, 1);
 
@@ -218,7 +218,7 @@ function create_accounts(remote, src, amount, accounts, callback) {
 };
 
 function credit_limit(remote, src, amount, callback) {
-  assert(arguments.length === 4);
+  assert.strictEqual(arguments.length, 4);
 
   var _m = amount.match(/^(\d+\/...\/[^\:]+)(?::(\d+)(?:,(\d+))?)?$/);
 
@@ -250,7 +250,7 @@ function credit_limit(remote, src, amount, callback) {
 };
 
 function verify_limit(remote, src, amount, callback) {
-  assert(arguments.length === 4);
+  assert.strictEqual(arguments.length, 4);
 
   var _m = amount.match(/^(\d+\/...\/[^\:]+)(?::(\d+)(?:,(\d+))?)?$/);
 
@@ -286,7 +286,7 @@ function verify_limit(remote, src, amount, callback) {
 };
 
 function credit_limits(remote, balances, callback) {
-  assert(arguments.length === 3);
+  assert.strictEqual(arguments.length, 3);
 
   var limits = [ ];
 
@@ -303,7 +303,7 @@ function credit_limits(remote, balances, callback) {
     credit_limit(remote, limit.source, limit.amount, callback);
   }
 
-  async.some(limits, iterator, callback);
+  async.eachSeries(limits, iterator, callback);
 };
 
 function ledger_close(remote, callback) {
@@ -314,7 +314,7 @@ function ledger_close(remote, callback) {
 };
 
 function payment(remote, src, dst, amount, callback) {
-  assert(arguments.length === 5);
+  assert.strictEqual(arguments.length, 5);
 
   var tx = remote.transaction();
 
@@ -333,7 +333,7 @@ function payment(remote, src, dst, amount, callback) {
 };
 
 function payments(remote, balances, callback) {
-  assert(arguments.length === 3);
+  assert.strictEqual(arguments.length, 3);
 
   var sends = [ ];
 
@@ -351,7 +351,7 @@ function payments(remote, balances, callback) {
     payment(remote, send.source, send.destination, send.amount, callback);
   }
 
-  async.some(sends, iterator, callback);
+  async.eachSeries(sends, iterator, callback);
 };
 
 function transfer_rate(remote, src, billionths, callback) {
@@ -375,7 +375,7 @@ function transfer_rate(remote, src, billionths, callback) {
 };
 
 function verify_balance(remote, src, amount_json, callback) {
-  assert(arguments.length === 4);
+  assert.strictEqual(arguments.length, 4);
 
   var amount_req  = Amount.from_json(amount_json);
 
@@ -442,7 +442,7 @@ function verify_balances(remote, balances, callback) {
 // --> taker_gets: json amount
 // --> taker_pays: json amount
 function verify_offer(remote, owner, seq, taker_pays, taker_gets, callback) {
-  assert(arguments.length === 6);
+  assert.strictEqual(arguments.length, 6);
 
   var request = remote.request_ledger_entry('offer')
   request.offer_id(owner, seq)
@@ -460,7 +460,7 @@ function verify_offer(remote, owner, seq, taker_pays, taker_gets, callback) {
 };
 
 function verify_offer_not_found(remote, owner, seq, callback) {
-  assert(arguments.length === 4);
+  assert.strictEqual(arguments.length, 4);
 
   var request = remote.request_ledger_entry('offer');
 

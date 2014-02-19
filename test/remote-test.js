@@ -14,6 +14,37 @@ suite('Remote functions', function() {
     testutils.build_teardown().call($, done);
   });
 
+  test('request_ledger with ledger index', function(done) {
+    var request = $.remote.request_ledger();
+    request.ledger_index(3);
+    request.callback(function(err, m) {
+      assert(!err);
+      assert.strictEqual(m.ledger.ledger_index, '3');
+      done();
+    });
+  });
+
+  test('request_ledger with ledger index string', function(done) {
+    var request = $.remote.request_ledger();
+    request.ledger_index('3');
+    request.callback(function(err, m) {
+      assert(err);
+      assert.strictEqual(err.error, 'remoteError');
+      assert.strictEqual(err.remote.error, 'ledgerIndexMalformed');
+      done();
+    });
+  });
+
+  test('request_ledger with ledger identifier', function(done) {
+    var request = $.remote.request_ledger();
+    request.ledger_index('current');
+    request.callback(function(err, m) {
+      assert(!err);
+      assert.strictEqual(m.ledger.ledger_index, '3');
+      done();
+    });
+  });
+
   test('request_ledger_current', function(done) {
     $.remote.request_ledger_current(function(err, m) {
       assert(!err);
@@ -24,7 +55,6 @@ suite('Remote functions', function() {
 
   test('request_ledger_hash', function(done) {
     $.remote.request_ledger_hash(function(err, m) {
-      // console.log("result: %s", JSON.stringify(m));
       assert(!err);
       assert.strictEqual(m.ledger_index, 2);
       done();
@@ -37,7 +67,7 @@ suite('Remote functions', function() {
     $.remote.request_ledger_hash(function(err, r) {
       //console.log("result: %s", JSON.stringify(r));
       assert(!err);
-      assert('ledger_hash' in r);
+      assert('ledger_hash' in r, 'Result missing property "ledger_hash"');
 
       var request = $.remote.request_ledger_entry('account_root')
       .ledger_hash(r.ledger_hash)
@@ -46,7 +76,7 @@ suite('Remote functions', function() {
       request.callback(function(err, r) {
         // console.log("account_root: %s", JSON.stringify(r));
         assert(!err);
-        assert('node' in r);
+        assert('node' in r, 'Result missing property "node"');
         done();
       });
     });
@@ -107,7 +137,7 @@ suite('Remote functions', function() {
 
       request.callback(function(err, r) {
         assert(!err);
-        assert('node_binary' in r);
+        assert('node_binary' in r, 'Result missing property "node_binary"');
         done();
       });
     })
