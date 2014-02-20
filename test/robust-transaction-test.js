@@ -12,24 +12,17 @@ suite('Robust transaction submission', function() {
   var $ = { };
 
   setup(function(done) {
-    testutils.build_setup({ automatic_ledger_close: true }).call($, function() {
+    testutils.build_setup().call($, function() {
       $.remote.local_signing = true;
 
       $.remote.request_subscribe()
       .accounts($.remote.account('root')._account_id)
       .callback(done);
-
-      $._ledger_interval = setInterval(function() {
-        $.remote.ledger_accept();
-      }, 200);
     });
   });
 
   teardown(function(done) {
-    testutils.build_teardown().call($, function() {
-      clearInterval($._ledger_interval);
-      done();
-    });
+    testutils.build_teardown().call($, done);
   });
 
   // Payment is submitted (without a destination tag)
@@ -62,6 +55,10 @@ suite('Robust transaction submission', function() {
       },
 
       function (callback) {
+        $.remote.ledger_accept(callback);
+      },
+
+      function (callback) {
         self.what = 'Set RequireDestTag';
 
         var tx = $.remote.transaction().account_set('alice');
@@ -69,6 +66,7 @@ suite('Robust transaction submission', function() {
 
         tx.once('submitted', function(m) {
           assert.strictEqual('tesSUCCESS', m.engine_result);
+          $.remote.ledger_accept();
         });
 
         tx.submit(callback);
@@ -114,11 +112,8 @@ suite('Robust transaction submission', function() {
         //First attempt at submission should result in
         //terPRE_SEQ as the sequence is still in the future
         tx.once('submitted', function(m) {
+          $.remote.ledger_accept();
           assert.strictEqual('terPRE_SEQ', m.engine_result);
-        });
-
-        tx.once('resubmitted', function() {
-          self.resubmitted = true;
         });
 
         tx.submit(callback);
@@ -134,14 +129,11 @@ suite('Robust transaction submission', function() {
         });
 
         tx.once('submitted', function(m) {
+          $.remote.ledger_accept();
           assert.strictEqual(m.engine_result, 'tesSUCCESS');
         });
 
         tx.submit(callback);
-      },
-
-      function (callback) {
-        setTimeout(callback, 1000 * 2);
       },
 
       function checkPending(callback) {
@@ -293,6 +285,8 @@ suite('Robust transaction submission', function() {
         tx.once('submitted', function(m) {
           assert.strictEqual(m.engine_result, 'tesSUCCESS');
 
+          $.remote.ledger_accept();
+
           process.nextTick(function() {
             $.remote.disconnect();
           });
@@ -313,10 +307,6 @@ suite('Robust transaction submission', function() {
       function checkPending(callback) {
         assert.strictEqual($.remote.getAccount('root')._transactionManager._pending.length(), 0, 'Pending transactions persisting');
         callback();
-      },
-
-      function (callback) {
-        setTimeout(callback, 1000 * 2);
       },
 
       function (callback) {
