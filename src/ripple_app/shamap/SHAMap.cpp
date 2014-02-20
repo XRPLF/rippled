@@ -899,6 +899,76 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal (const SHAMapNode& id, uint256
     return ret;
 }
 
+// Non-blocking version
+SHAMapTreeNode* SHAMap::getNodeAsync (
+    const SHAMapNode& id,
+    uint256 const& hash,
+    SHAMapSyncFilter *filter,
+    bool& pending)
+{
+    pending = false;
+
+    // If the node is in mTNByID, return it
+    SHAMapTreeNode::pointer ptr = mTNByID.retrieve (id);
+    if (ptr)
+        return ptr.get ();
+
+    // Try the tree node cache
+    ptr = getCache (hash, id);
+
+    if (!ptr)
+    {
+
+        // Try the filter
+        if (filter)
+        {
+            Blob nodeData;
+            if (filter->haveNode (id, hash, nodeData))
+            {
+                ptr = boost::make_shared <SHAMapTreeNode> (
+                    boost::cref (id), boost::cref (nodeData), 0, snfPREFIX, boost::cref (hash), true);
+                filter->gotNode (true, id, hash, nodeData, ptr->getType ());
+            }
+        }
+
+        if (!ptr)
+        {
+            NodeObject::pointer obj;
+
+            if (!getApp().getNodeStore().asyncFetch (hash, obj))
+            { // We would have to block
+                pending = true;
+                assert (!obj);
+                return nullptr;
+            }
+
+            if (!obj)
+                return nullptr;
+
+            ptr = boost::make_shared <SHAMapTreeNode> (id, obj->getData(), 0, snfPREFIX, hash, true);
+            if (id != *ptr)
+            {
+                assert (false);
+                return nullptr;
+            }
+        }
+
+        // Put it in the tree node cache
+        canonicalize (hash, ptr);
+    }
+
+    if (id.isRoot ())
+    {
+        // It is legal to replace the root
+        mTNByID.replace (id, ptr);
+        root = ptr;
+    }
+    else
+        mTNByID.canonicalize (id, &ptr);
+
+    return ptr.get ();
+}
+
 /** Look at the cache and back end (things external to this SHAMap) to
     find a tree node. Only a read lock is required because mTNByID has its
     own, internal synchronization. Every thread calling this function must
@@ -953,7 +1023,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint2
                 return SHAMapTreeNode::pointer ();
             }
 
-            // Share this immutable tree node in thre TreeNodeCache
+            // Share this immutable tree node in the TreeNodeCache
             canonicalize (hash, ret);
         }
         catch (...)

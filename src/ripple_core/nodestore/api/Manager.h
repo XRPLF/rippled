@@ -63,13 +63,14 @@ public:
 
         @param name A diagnostic label for the database.
         @param scheduler The scheduler to use for performing asynchronous tasks.
+        @param readThreads The number of async read threads to create
         @param backendParameters The parameter string for the persistent backend.
         @param fastBackendParameters [optional] The parameter string for the ephemeral backend.
 
         @return The opened database.
     */
     virtual std::unique_ptr <Database> make_Database (std::string const& name,
-        Scheduler& scheduler, Journal journal,
+        Scheduler& scheduler, Journal journal, int readThreads,
             Parameters const& backendParameters,
                 Parameters fastBackendParameters = Parameters ()) = 0;
 };

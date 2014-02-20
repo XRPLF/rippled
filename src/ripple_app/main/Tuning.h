@@ -26,7 +26,7 @@ enum
 {
     fullBelowTargetSize = 524288
 
-    ,fullBelowExpirationSeconds = 240
+    ,fullBelowExpirationSeconds = 600
 };
 
 }

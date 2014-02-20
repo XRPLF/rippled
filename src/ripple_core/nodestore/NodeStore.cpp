@@ -29,6 +29,7 @@
 
 #include "../../ripple/common/seconds_clock.h"
 #include "../../ripple/common/TaggedCache.h"
+#include "../../ripple/common/KeyCache.h"
 
 #include "impl/Tuning.h"
 #  include "impl/DecodedBlob.h"

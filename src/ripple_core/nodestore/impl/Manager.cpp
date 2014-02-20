@@ -109,7 +109,7 @@ public:
     }
 
     std::unique_ptr <Database> make_Database (std::string const& name,
-        Scheduler& scheduler, Journal journal,
+        Scheduler& scheduler, Journal journal, int readThreads,
             Parameters const& backendParameters,
                 Parameters fastBackendParameters)
     {
@@ -121,7 +121,7 @@ public:
                 ? make_Backend (fastBackendParameters, scheduler, journal)
                 : nullptr);
 
-        return std::make_unique <DatabaseImp> (name, scheduler,
+        return std::make_unique <DatabaseImp> (name, scheduler, readThreads,
             std::move (backend), std::move (fastBackend), journal);
     }
 };

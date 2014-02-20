@@ -293,6 +293,10 @@ private:
     SHAMapTreeNode* firstBelow (SHAMapTreeNode*);
     SHAMapTreeNode* lastBelow (SHAMapTreeNode*);
 
+    // Non-blocking version of getNodePointerNT
+    SHAMapTreeNode* getNodeAsync (
+        const SHAMapNode & id, uint256 const & hash, SHAMapSyncFilter * filter, bool& pending);
+
     SHAMapItem::pointer onlyBelow (SHAMapTreeNode*);
     void eraseChildren (SHAMapTreeNode::pointer);
     void dropBelow (SHAMapTreeNode*);

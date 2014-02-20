@@ -280,7 +280,7 @@ public:
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager) // passive object, not a Service
 
         , m_nodeStore (m_nodeStoreManager->make_Database ("NodeStore.main", m_nodeStoreScheduler,
-            LogPartition::getJournal <NodeObject> (),
+            LogPartition::getJournal <NodeObject> (), 4, // four read threads for now
                 getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
 
         , m_sntpClient (SNTPClient::New (*this))
@@ -1356,7 +1356,7 @@ void ApplicationImp::updateTables ()
         NodeStore::DummyScheduler scheduler;
         std::unique_ptr <NodeStore::Database> source (
             m_nodeStoreManager->make_Database ("NodeStore.import", scheduler,
-                LogPartition::getJournal <NodeObject> (),
+                LogPartition::getJournal <NodeObject> (), 0,
                     getConfig ().importNodeDatabase));
 
         WriteLog (lsWARNING, NodeObject) <<

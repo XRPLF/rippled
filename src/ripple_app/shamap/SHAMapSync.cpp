@@ -119,6 +119,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
     assert (root->isValid ());
     assert (root->getNodeHash().isNonZero ());
 
+
     if (root->isFullBelow ())
     {
         clearSynching ();
@@ -131,74 +132,102 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
         return;
     }
 
-    std::stack < GMNEntry > stack;
+    // Track the missing hashes we have found so far
+    std::set <uint256> missingHashes;
 
-    SHAMapTreeNode* node = root.get ();
-    int firstChild = rand() % 256;
-    int currentChild = 0;
-    bool fullBelow = true;
-
-    do
+    while (1)
     {
-        while (currentChild < 16)
+
+        std::stack <GMNEntry> stack;
+        int deferCount = 0;
+
+        // Traverse the map without blocking
+
+        SHAMapTreeNode *node = root.get ();
+        int firstChild = rand() % 256;
+        int currentChild = 0;
+        bool fullBelow = true;
+
+        do
         {
-            int branch = (firstChild + ++currentChild) % 16;
-            if (!node->isEmptyBranch (branch))
+            while (currentChild < 16)
             {
-                uint256 const& childHash = node->getChildHash (branch);
-
-                if (! m_fullBelowCache.touch_if_exists (childHash))
+                int branch = (firstChild + currentChild++) % 16;
+                if (!node->isEmptyBranch (branch))
                 {
-                    SHAMapNode childID = node->getChildNodeID (branch);
-                    SHAMapTreeNode* d = getNodePointerNT (childID, childHash, filter);
+                    uint256 const& childHash = node->getChildHash (branch);
 
-                    if (!d)
-                    { // node is not in the database
-                        nodeIDs.push_back (childID);
-                        hashes.push_back (childHash);
-
-                        if (--max <= 0)
-                            return;
-
-                        fullBelow = false; // This node is definitely not full below
-                    }
-                    else if (d->isInner () && !d->isFullBelow ())
+                    if (! m_fullBelowCache.touch_if_exists (childHash))
                     {
-                        stack.push (GMNEntry( node, firstChild, currentChild, fullBelow));
+                        SHAMapNode childID = node->getChildNodeID (branch);
+                        bool pending = false;
+                        SHAMapTreeNode* d = getNodeAsync (childID, childHash, filter, pending);
 
-                        // Switch to processing the child node
-                        node = d;
-                        firstChild = rand() % 256;
-                        currentChild = 0;
-                        fullBelow = true;
+                        if (!d)
+                        {
+                            if (!pending)
+                            { // node is not in the database
+                                if (missingHashes.insert (childHash).second)
+                                {
+                                    nodeIDs.push_back (childID);
+                                    hashes.push_back (childHash);
+
+                                    if (--max <= 0)
+                                        return;
+                                }
+                            }
+                            else
+                            {
+                                // read is deferred
+                                ++deferCount;
+                            }
+
+                            fullBelow = false; // This node is not known full below
+                        }
+                        else if (d->isInner () && !d->isFullBelow ())
+                        {
+                            stack.push (GMNEntry (node, firstChild, currentChild, fullBelow));
+
+                            // Switch to processing the child node
+                            node = d;
+                            firstChild = rand() % 256;
+                            currentChild = 0;
+                            fullBelow = true;
+                        }
                     }
                 }
             }
+
+            // We are done with this inner node (and thus all of its children)
+
+            if (fullBelow)
+            { // No partial node encountered below this node
+                node->setFullBelow ();
+                if (mType == smtSTATE)
+                    m_fullBelowCache.insert (node->getNodeHash ());
+            }
+
+            if (stack.empty ())
+                node = NULL; // Finished processing the last node, we are done
+            else
+            { // Pick up where we left off (above this node)
+                GMNEntry& next = stack.top ();
+                node = next.node;
+                firstChild = next.firstChild;
+                currentChild = next.currentChild;
+                fullBelow = (fullBelow && next.fullBelow); // was and still is
+                stack.pop ();
+            }
+
         }
+        while (node != NULL);
 
-        // We are done with this inner node (and thus all of its children)
+        // If we didn't defer any reads, we're done
+        if (deferCount == 0)
+            break;
 
-        if (fullBelow)
-        { // No partial node encountered below this node
-            node->setFullBelow ();
-            if (mType == smtSTATE)
-                m_fullBelowCache.insert (node->getNodeHash ());
-        }
-
-        if (stack.empty ())
-            node = NULL; // Finished processing the last node, we are done
-        else
-        { // Pick up where we left off (above this node)
-            GMNEntry& next = stack.top ();
-            node = next.node;
-            firstChild = next.firstChild;
-            currentChild = next.currentChild;
-            fullBelow = (fullBelow && next.fullBelow); // was and still is
-            stack.pop ();
-        }
-
+        getApp().getNodeStore().waitReads();
     }
-    while (node != NULL);
 
     if (nodeIDs.empty ())
         clearSynching ();

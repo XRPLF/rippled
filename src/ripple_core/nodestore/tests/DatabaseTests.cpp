@@ -54,7 +54,7 @@ public:
         // Write to source db
         {
             std::unique_ptr <Database> src (manager->make_Database (
-                "test", scheduler, j, srcParams));
+                "test", scheduler, j, 2, srcParams));
             storeBatch (*src, batch);
         }
 
@@ -63,7 +63,7 @@ public:
         {
             // Re-open the db
             std::unique_ptr <Database> src (manager->make_Database (
-                "test", scheduler, j, srcParams));
+                "test", scheduler, j, 2, srcParams));
 
             // Set up the destination database
             File const dest_db (File::createTempFile ("dest_db"));
@@ -72,7 +72,7 @@ public:
             destParams.set ("path", dest_db.getFullPathName ());
 
             std::unique_ptr <Database> dest (manager->make_Database (
-                "test", scheduler, j, destParams));
+                "test", scheduler, j, 2, destParams));
 
             beginTestCase (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
 
@@ -130,7 +130,7 @@ public:
         {
             // Open the database
             std::unique_ptr <Database> db (manager->make_Database ("test", scheduler,
-                j, nodeParams, tempParams));
+                j, 2, nodeParams, tempParams));
 
             // Write the batch
             storeBatch (*db, batch);
@@ -156,7 +156,7 @@ public:
             {
                 // Re-open the database without the ephemeral DB
                 std::unique_ptr <Database> db (manager->make_Database (
-                    "test", scheduler, j, nodeParams));
+                    "test", scheduler, j, 2, nodeParams));
 
                 // Read it back in
                 Batch copy;
@@ -172,7 +172,7 @@ public:
             {
                 // Verify the ephemeral db
                 std::unique_ptr <Database> db (manager->make_Database ("test",
-                    scheduler, j, tempParams, StringPairArray ()));
+                    scheduler, j, 2, tempParams, StringPairArray ()));
 
                 // Read it back in
                 Batch copy;

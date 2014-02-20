@@ -62,6 +62,23 @@ public:
     */
     virtual NodeObject::pointer fetch (uint256 const& hash) = 0;
 
+    /** Fetch an object without waiting.
+        If I/O is required to determine whether or not the object is present,
+        `false` is returned. Otherwise, `true` is returned and `object` is set
+        to refer to the object, or `nullptr` if the object is not present.
+        If I/O is required, the I/O is scheduled.
+
+        @note This can be called concurrently.
+        @param hash The key of the object to retrieve
+        @param object The object retrieved
+        @return Whether the operation completed
+    */
+    virtual bool asyncFetch (uint256 const& hash, NodeObject::pointer& object) = 0;
+
+    /** Wait for all currently pending async reads to complete.
+    */
+    virtual void waitReads () = 0;
+
     /** Store the object.
 
         The caller's Blob parameter is overwritten.

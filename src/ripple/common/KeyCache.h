@@ -157,6 +157,18 @@ public:
         m_map.clear ();
     }
 
+    void setTargetSize (size_type s)
+    {
+        lock_guard lock (m_mutex);
+        m_target_size = s;
+    }
+
+    void setTargetAge (size_type s)
+    {
+        lock_guard lock (m_mutex);
+        m_target_age = std::chrono::seconds (s);
+    }
+
     /** Returns `true` if the key was found.
         Does not update the last access time.
     */
