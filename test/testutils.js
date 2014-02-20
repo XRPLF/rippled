@@ -32,30 +32,6 @@ function prepare_tests(tests, fn) {
   return result;
 };
 
-function account_dump(remote, account, callback) {
-  var self = this;
-
-  this.what = 'Get latest account_root';
-
-  var request = remote.request_ledger_entry('account_root');
-  request.ledger_hash(remote.ledger_hash());
-  request.account_root('root');
-  request.callback(function(err, r) {
-    assert(!err, self.what);
-    if (err) {
-      //console.log('error: %s', m);
-      callback(err);
-    } else {
-      //console.log('account_root: %s', JSON.stringify(r, undefined, 2));
-      callback();
-    }
-  });
-
-  // get closed ledger hash
-  // get account root
-  // construct a json result
-};
-
 /**
  * Helper called by test cases to generate a setUp routine.
  *
@@ -155,6 +131,7 @@ function build_setup(opts, host) {
  *
  * @param host {String} Identifier for the host configuration to be used.
  */
+
 function build_teardown(host) {
   var config = get_config();
   var host = host || config.server_default;
@@ -187,6 +164,30 @@ function build_teardown(host) {
   };
 
   return teardown;
+};
+
+function account_dump(remote, account, callback) {
+  var self = this;
+
+  this.what = 'Get latest account_root';
+
+  var request = remote.request_ledger_entry('account_root');
+  request.ledger_hash(remote.ledger_hash());
+  request.account_root('root');
+  request.callback(function(err, r) {
+    assert(!err, self.what);
+    if (err) {
+      //console.log('error: %s', m);
+      callback(err);
+    } else {
+      //console.log('account_root: %s', JSON.stringify(r, undefined, 2));
+      callback();
+    }
+  });
+
+  // get closed ledger hash
+  // get account root
+  // construct a json result
 };
 
 function create_accounts(remote, src, amount, accounts, callback) {
@@ -505,25 +506,37 @@ function verify_owner_counts(remote, counts, callback) {
   async.every(tests, iterator, callback);
 };
 
-exports.account_dump            = account_dump;
-exports.build_setup             = build_setup;
-exports.build_teardown          = build_teardown;
-exports.create_accounts         = create_accounts;
-exports.credit_limit            = credit_limit;
-exports.credit_limits           = credit_limits;
-exports.get_config              = get_config;
-exports.init_config             = init_config;
-exports.ledger_close            = ledger_close;
-exports.payment                 = payment;
-exports.payments                = payments;
-exports.transfer_rate           = transfer_rate;
-exports.verify_balance          = verify_balance;
-exports.verify_balances         = verify_balances;
-exports.verify_limit            = verify_limit;
-exports.verify_offer            = verify_offer;
-exports.verify_offer_not_found  = verify_offer_not_found;
-exports.verify_owner_count      = verify_owner_count;
-exports.verify_owner_counts     = verify_owner_counts;
+function ledger_wait(remote, tx) {
+  ;(function nextLedger() {
+    remote.once('ledger_closed', function() {
+      if (!tx.finalized) {
+        setTimeout(nextLedger, 50);
+      }
+    });
+    remote.ledger_accept();
+  })();
+};
+
+exports.account_dump           = account_dump;
+exports.build_setup            = build_setup;
+exports.build_teardown         = build_teardown;
+exports.create_accounts        = create_accounts;
+exports.credit_limit           = credit_limit;
+exports.credit_limits          = credit_limits;
+exports.get_config             = get_config;
+exports.init_config            = init_config;
+exports.ledger_close           = ledger_close;
+exports.payment                = payment;
+exports.payments               = payments;
+exports.transfer_rate          = transfer_rate;
+exports.verify_balance         = verify_balance;
+exports.verify_balances        = verify_balances;
+exports.verify_limit           = verify_limit;
+exports.verify_offer           = verify_offer;
+exports.verify_offer_not_found = verify_offer_not_found;
+exports.verify_owner_count     = verify_owner_count;
+exports.verify_owner_counts    = verify_owner_counts;
+exports.ledger_wait            = ledger_wait;
 
 process.on('uncaughtException', function() {
   Object.keys(server).forEach(function(host) {
