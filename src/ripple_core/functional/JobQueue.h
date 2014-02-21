@@ -47,9 +47,6 @@ public:
     // All waiting jobs at or greater than this priority
     virtual int getJobCountGE (JobType t) = 0;
 
-    // jobs waiting, threads doing
-    virtual std::vector< std::pair<JobType, std::pair<int, int> > > getJobCounts () = 0;
-
     virtual void shutdown () = 0;
 
     virtual void setThreadCount (int c, bool const standaloneMode) = 0;
