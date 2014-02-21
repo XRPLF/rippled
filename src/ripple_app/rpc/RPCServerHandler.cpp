@@ -116,6 +116,9 @@ std::string RPCServerHandler::processRequest (std::string const& request, IP::En
     {
         Json::Value ripple_params (params.size()
             ? params [0u] : Json::Value (Json::objectValue));
+        if (!ripple_params.isObject())
+            return HTTPReply (400, "params must be an object");
+
         ripple_params ["command"] = strMethod;
         RPC::Request req (LogPartition::getJournal <RPCServer> (),
             strMethod, ripple_params, getApp ());
