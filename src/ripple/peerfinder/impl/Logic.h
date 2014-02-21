@@ -180,7 +180,7 @@ public:
         for (auto remote_address : addresses)
         {
             auto result (state->fixed.emplace (std::piecewise_construct,
-                std::make_tuple (remote_address),
+                std::forward_as_tuple (remote_address),
                     std::make_tuple (std::ref (m_clock))));
 
             if (result.second)

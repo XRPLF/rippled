@@ -126,7 +126,7 @@ private:
     {
         std::pair <Map::iterator, bool> result (
             m_map.emplace (std::piecewise_construct,
-                std::make_tuple (code), std::make_tuple (
+                std::forward_as_tuple (code), std::forward_as_tuple (
                     code, token, message)));
         if (! result.second)
             throw std::invalid_argument ("duplicate error code");

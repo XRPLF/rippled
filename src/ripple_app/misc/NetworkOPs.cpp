@@ -1828,7 +1828,11 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
             else
                 rawMeta.resize (metaSize);
 
-            ret.push_back (boost::make_tuple (strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq")));
+            // VFALCO TODO Change the container's type to be std::tuple so
+            //             we can use std::forward_as_tuple here
+            //
+            ret.push_back (boost::make_tuple (
+                strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq")));
         }
     }
 
@@ -2039,7 +2043,8 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, int32 minLedger, in
                 else
                     rawMeta.resize (metaSize);
 
-                ret.push_back (boost::make_tuple (strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq")));
+                ret.push_back (boost::make_tuple (
+                    strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq")));
                 --numberOfResults;
             }
         }

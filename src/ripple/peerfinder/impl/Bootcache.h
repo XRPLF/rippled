@@ -172,7 +172,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    typedef boost::unordered_map <IP::Endpoint, Entry> Entries;
+    typedef std::unordered_map <IP::Endpoint, Entry> Entries;
 
     typedef std::vector <Entries::iterator> SortedEntries;
 
@@ -217,8 +217,9 @@ public:
             iter != list.end(); ++iter)
         {
             std::pair <Entries::iterator, bool> result (
-                m_entries.emplace (boost::unordered::piecewise_construct,
-                    boost::make_tuple (iter->address), boost::make_tuple ()));
+                m_entries.emplace (std::piecewise_construct,
+                    std::forward_as_tuple (iter->address),
+                        std::make_tuple ()));
             if (result.second)
             {
                 ++count;
@@ -286,8 +287,9 @@ public:
     bool insert (IP::Endpoint const& address)
     {
         std::pair <Entries::iterator, bool> result (
-            m_entries.emplace (boost::unordered::piecewise_construct,
-                boost::make_tuple (address), boost::make_tuple ()));
+            m_entries.emplace (std::piecewise_construct,
+                std::forward_as_tuple (address),
+                    std::make_tuple ()));
         if (result.second)
         {
             if (m_journal.trace) m_journal.trace << leftw (18) <<
@@ -331,8 +333,9 @@ public:
         HandshakeAction action)
     {
         std::pair <Entries::iterator, bool> result (
-            m_entries.emplace (boost::unordered::piecewise_construct,
-                boost::make_tuple (address), boost::make_tuple ()));
+            m_entries.emplace (std::piecewise_construct,
+                std::forward_as_tuple (address),
+                    std::make_tuple ()));
         Entry& entry (result.first->second);
         // Can't already be active!
         consistency_check (! entry.active);
@@ -371,8 +374,9 @@ public:
     void onConnectionActive (IP::Endpoint const& address)
     {
         std::pair <Entries::iterator, bool> result (
-            m_entries.emplace (boost::unordered::piecewise_construct,
-                boost::make_tuple (address), boost::make_tuple ()));
+            m_entries.emplace (std::piecewise_construct,
+                std::forward_as_tuple (address),
+                    std::make_tuple ()));
         // Must exist!
         consistency_check (! result.second);
         Entry& entry (result.first->second);

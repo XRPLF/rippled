@@ -183,8 +183,8 @@ public:
         lock_guard lock (m_mutex);
         clock_type::time_point const now (m_clock.now ());
         std::pair <iterator, bool> result (m_map.emplace (
-            std::piecewise_construct, std::make_tuple (key),
-                std::make_tuple (now)));
+            std::piecewise_construct, std::forward_as_tuple (key),
+                std::forward_as_tuple (now)));
         if (! result.second)
         {
             result.first->second.last_access = now;
