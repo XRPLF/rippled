@@ -825,9 +825,6 @@ private:
             getApp().getJobQueue ().getLoadEventAP (jtPEER, "Peer::read"));
 
         {
-            Application::ScopedLockType lock (getApp ().getMasterLock (),
-                __FILE__, __LINE__);
-
             // An mtHELLO message must be the first message receiced by a peer
             // and it must be received *exactly* once during a connection; any
             // other scenario constitutes a protocol violation.
