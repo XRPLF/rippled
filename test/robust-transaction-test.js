@@ -47,12 +47,12 @@ suite('Robust transaction submission', function() {
 
     var steps = [
 
-      function (callback) {
+      function createAccounts(callback) {
         self.what = 'Create accounts';
         testutils.create_accounts($.remote, 'root', '20000.0', [ 'alice', 'bob' ], callback);
       },
 
-      function (callback) {
+      function setRequireDestTag(callback) {
         self.what = 'Set RequireDestTag';
 
         var tx = $.remote.transaction().account_set('alice');
@@ -71,7 +71,7 @@ suite('Robust transaction submission', function() {
         testutils.ledger_wait($.remote, tx);
       },
 
-      function (callback) {
+      function sendInvalidTransaction(callback) {
         self.what = 'Send transaction without a destination tag';
 
         var tx = $.remote.transaction().payment({
@@ -90,7 +90,7 @@ suite('Robust transaction submission', function() {
         callback();
       },
 
-      function (callback) {
+      function sendValidTransaction(callback) {
         self.what = 'Send normal transaction which should succeed';
 
         var tx = $.remote.transaction().payment({
@@ -118,7 +118,7 @@ suite('Robust transaction submission', function() {
         testutils.ledger_wait($.remote, tx);
       },
 
-      function (callback) {
+      function sendAnotherValidTransaction(callback) {
         self.what = 'Send another normal transaction which should succeed';
 
         var tx = $.remote.transaction().payment({
@@ -141,12 +141,14 @@ suite('Robust transaction submission', function() {
       },
 
       function checkPending(callback) {
+        self.what = 'Check pending';
         var pending = $.remote.getAccount('root')._transactionManager._pending;
         assert.strictEqual(pending._queue.length, 0, 'Pending transactions persisting');
         callback();
       },
 
-      function (callback) {
+      function verifyBalance(callback) {
+        self.what = 'Verify balance';
         testutils.verify_balance($.remote, 'bob', '20002000000', callback);
       }
 
@@ -181,12 +183,12 @@ suite('Robust transaction submission', function() {
 
     var steps = [
 
-      function (callback) {
+      function createAccounts(callback) {
         self.what = 'Create accounts';
         testutils.create_accounts($.remote, 'root', '20000.0', [ 'alice' ], callback);
       },
 
-      function (callback) {
+      function submitTransaction(callback) {
         self.what = 'Submit a transaction';
 
         var tx = $.remote.transaction().payment({
@@ -198,9 +200,7 @@ suite('Robust transaction submission', function() {
         tx.submit();
 
         process.nextTick(function() {
-          $.remote.disconnect();
-
-          setTimeout(function() {
+          $.remote.once('disconnect', function remoteDisconnected() {
             assert(!$.remote._connected);
 
             tx.once('final', function(m) {
@@ -209,19 +209,23 @@ suite('Robust transaction submission', function() {
             });
 
             $.remote.connect();
-          }, 500);
+          });
+
+          $.remote.disconnect();
         });
 
         testutils.ledger_wait($.remote, tx);
       },
 
       function checkPending(callback) {
+        self.what = 'Check pending';
         var pending = $.remote.getAccount('root')._transactionManager._pending;
         assert.strictEqual(pending._queue.length, 0, 'Pending transactions persisting');
         callback();
       },
 
-      function (callback) {
+      function verifyBalance(callback) {
+        self.what = 'Verify balance';
         testutils.verify_balance($.remote, 'alice', '20001000000', callback);
       }
 
@@ -237,12 +241,26 @@ suite('Robust transaction submission', function() {
     var self = this;
 
     var steps = [
-      function (callback) {
+
+      function createAccounts(callback) {
         self.what = 'Create accounts';
         testutils.create_accounts($.remote, 'root', '20000.0', [ 'alice' ], callback);
       },
 
-      function (callback) {
+      function waitLedgers(callback) {
+        self.what = 'Wait ledger';
+        $.remote.once('ledger_closed', function() {
+          callback();
+        });
+        $.remote.ledger_accept();
+      },
+
+      function verifyBalance(callback) {
+        self.what = 'Verify balance';
+        testutils.verify_balance($.remote, 'alice', '20000000000', callback);
+      },
+
+      function submitTransaction(callback) {
         self.what = 'Submit a transaction';
 
         var tx = $.remote.transaction().payment({
@@ -254,25 +272,36 @@ suite('Robust transaction submission', function() {
         tx.once('submitted', function(m) {
           assert.strictEqual(m.engine_result, 'tesSUCCESS');
 
-          $.remote.disconnect();
+          var handleMessage = $.remote._handleMessage;
+          $.remote._handleMessage = function(){};
 
-          setTimeout(function() {
-            assert(!$.remote._connected);
+          var ledgers = 0;
 
-            tx.once('final', function() {
-              callback();
-            });
-
-            $.remote.connect();
-          }, 50 * 10);
+          ;(function nextLedger() {
+            if (++ledgers > 8) {
+              tx.once('final', function() { callback(); });
+              $.remote._handleMessage = handleMessage;
+              $.remote.disconnect(function() {
+                assert(!$.remote._connected);
+                var pending = $.remote.getAccount('root')._transactionManager._pending;
+                assert.strictEqual(pending._queue.length, 1, 'Pending transactions persisting');
+                $.remote.connect();
+              });
+            } else {
+              $.remote._getServer().once('ledger_closed', function() {
+                setTimeout(nextLedger, 20);
+              });
+              $.remote.ledger_accept();
+            }
+          })();
         });
 
         tx.submit();
-
-        testutils.ledger_wait($.remote, tx);
       },
 
-      function (callback) {
+      function waitLedgers(callback) {
+        self.what = 'Wait legers';
+
         var ledgers = 0;
 
         ;(function nextLedger() {
@@ -288,14 +317,17 @@ suite('Robust transaction submission', function() {
       },
 
       function checkPending(callback) {
+        self.what = 'Check pending';
         var pending = $.remote.getAccount('root')._transactionManager._pending;
         assert.strictEqual(pending._queue.length, 0, 'Pending transactions persisting');
         callback();
       },
 
-      function (callback) {
+      function verifyBalance(callback) {
+        self.what = 'Verify balance';
         testutils.verify_balance($.remote, 'alice', '20001000000', callback);
       }
+
     ]
 
     async.series(steps, function(err) {
@@ -315,12 +347,13 @@ suite('Robust transaction submission', function() {
     var self = this;
 
     var steps = [
-      function (callback) {
+
+      function createAccounts(callback) {
         self.what = 'Create accounts';
         testutils.create_accounts($.remote, 'root', '20000.0', [ 'alice' ], callback);
       },
 
-      function (callback) {
+      function submitTransaction(callback) {
         self.what = 'Submit a transaction whose submit request times out';
 
         var tx = $.remote.transaction().payment({
@@ -349,13 +382,16 @@ suite('Robust transaction submission', function() {
       },
 
       function checkPending(callback) {
+        self.what = 'Check pending';
         assert.strictEqual($.remote.getAccount('root')._transactionManager._pending.length(), 0, 'Pending transactions persisting');
         callback();
       },
 
-      function (callback) {
+      function verifyBalance(callback) {
+        self.what = 'Verify balance';
         testutils.verify_balance($.remote, 'alice', '20001000000', callback);
       }
+
     ]
 
     async.series(steps, function(err) {
@@ -374,7 +410,8 @@ suite('Robust transaction submission', function() {
     var self = this;
 
     var series = [
-      function (callback) {
+
+      function subscribeToAccountsProposed(callback) {
         self.what = 'Subscribe to accounts_proposed';
 
         $.remote.requestSubscribe()
@@ -382,8 +419,8 @@ suite('Robust transaction submission', function() {
         .callback(callback);
       },
 
-      function (callback) {
-        self.what = 'Create accounts';
+      function submitTransaction(callback) {
+        self.what = 'Submit a transaction';
 
         var tx = $.remote.transaction().payment({
           from: 'root',
@@ -399,7 +436,13 @@ suite('Robust transaction submission', function() {
         });
 
         testutils.ledger_wait($.remote, tx);
+      },
+
+      function verifyBalance(callback) {
+        self.what = 'Verify balance';
+        testutils.verify_balance($.remote, 'alice', '20000000000', callback);
       }
+
     ]
 
     async.series(series, function(err, m) {
