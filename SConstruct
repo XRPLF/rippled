@@ -41,7 +41,7 @@ HONOR_ENVS = ['CC', 'CXX', 'PATH']
 env = Environment(
     tools = ['default', 'protoc'],
     #ENV = dict((k, os.environ[k]) for k in HONOR_ENVS)
-    ENV = dict((k, os.environ[k]) for k in HONOR_ENVS if k in os.environ)
+    ENV = dict((k, os.environ[k]) for k in HONOR_ENVS if k in os.environ) 
 )
 
 # Use a newer gcc on FreeBSD
@@ -138,18 +138,35 @@ else:
 # output
 #-------------------------------------------------------------------------------
 
+BuildLogFile = None
+CmdLineShown = 0
+
 def print_cmd_line(s, target, src, env):
+    global BuildLogFile
+    global CmdLineShown
+
+    if BuildLogFile is None:
+        BuildLogFile = open('build.log', 'w')
+
     Tgt = (''.join([str(x) for x in target]))
 
+    if BuildLogFile is not None:
+        BuildLogFile.write("%s\n" % s);
+
     if ('build/rippled' == Tgt):
+	sys.stdout.write("Link Cmd: '\033[37m%s\033[0m'\n" % s)
         sys.stdout.write("Linking '\033[94m%s\033[0m'...\n" % Tgt)
     elif ('tags' == Tgt):
         sys.stdout.write("Generating tags...\n")
     else:
+        if CmdLineShown == 0:
+            sys.stdout.write("Build Cmd: '\033[37m%s\033[0m'\n" % s)
+            CmdLineShown = 1
         sys.stdout.write("Compiling '\033[94m%s\033[0m'...\n" % \
              (' and '.join([str(x) for x in src])))
 
-env['PRINT_CMD_LINE_FUNC'] = print_cmd_line
+if os.environ.get('TRAVIS') is None:
+    env['PRINT_CMD_LINE_FUNC'] = print_cmd_line
 
 #-------------------------------------------------------------------------------
 #
