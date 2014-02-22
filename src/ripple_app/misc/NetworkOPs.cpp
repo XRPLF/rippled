@@ -1263,12 +1263,19 @@ bool NetworkOPsImp::checkLastClosedLedger (const Peers::PeerSequence& peerList, 
 
         if (peerLedger.isNonZero ())
         {
-            ValidationCount& vc = ledgers[peerLedger];
+            try
+            {
+                ValidationCount& vc = ledgers[peerLedger];
 
-            if ((vc.nodesUsing == 0) || (peer->getNodePublic ().getNodeID () > vc.highNodeUsing))
-                vc.highNodeUsing = peer->getNodePublic ().getNodeID ();
+                if ((vc.nodesUsing == 0) || (peer->getNodePublic ().getNodeID () > vc.highNodeUsing))
+                    vc.highNodeUsing = peer->getNodePublic ().getNodeID ();
 
-            ++vc.nodesUsing;
+                ++vc.nodesUsing;
+	    }
+	    catch (...)
+	    {
+	        // Peer is likely not connected anymore
+	    }
         }
     }
 
