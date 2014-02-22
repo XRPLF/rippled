@@ -264,7 +264,8 @@ public:
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
         //
-        , m_inboundLedgers (InboundLedgers::New (get_seconds_clock (), *m_jobQueue))
+        , m_inboundLedgers (InboundLedgers::New (get_seconds_clock (), *m_jobQueue,
+                            m_collectorManager->collector ()))
 
         // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
         , m_networkOPs (NetworkOPs::New (get_seconds_clock (), *m_ledgerMaster,
