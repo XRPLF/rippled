@@ -208,13 +208,21 @@ suite('Robust transaction submission', function() {
               callback();
             });
 
-            $.remote.connect();
+            $.remote.connect(function() {
+              testutils.ledger_wait($.remote, tx);
+            });
           });
 
           $.remote.disconnect();
         });
+      },
 
-        testutils.ledger_wait($.remote, tx);
+      function waitLedger(callback) {
+        self.what = 'Wait ledger';
+        $.remote.once('ledger_closed', function() {
+          callback();
+        });
+        $.remote.ledger_accept();
       },
 
       function checkPending(callback) {
@@ -300,7 +308,7 @@ suite('Robust transaction submission', function() {
       },
 
       function waitLedgers(callback) {
-        self.what = 'Wait legers';
+        self.what = 'Wait ledgers';
 
         var ledgers = 0;
 
