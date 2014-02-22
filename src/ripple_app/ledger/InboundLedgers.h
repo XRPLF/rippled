@@ -34,7 +34,8 @@ public:
     // VFALCO TODO Make this a free function outside the class:
     //             std::unique_ptr <InboundLedger> make_InboundLedgers (...)
     //
-    static InboundLedgers* New (clock_type& clock, Stoppable& parent);
+    static InboundLedgers* New (clock_type& clock, Stoppable& parent,
+                                insight::Collector::ptr const& collector);
 
     // VFALCO TODO Should this be called findOrAdd ?
     //

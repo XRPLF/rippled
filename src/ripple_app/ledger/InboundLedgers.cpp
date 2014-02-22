@@ -28,12 +28,14 @@ public:
     // How long before we try again to acquire the same ledger
     static const int kReacquireIntervalSeconds = 300;
 
-    InboundLedgersImp (clock_type& clock, Stoppable& parent)
+    InboundLedgersImp (clock_type& clock, Stoppable& parent,
+                       insight::Collector::ptr const& collector)
         : Stoppable ("InboundLedgers", parent)
         , m_clock (clock)
         , mLock (this, "InboundLedger", __FILE__, __LINE__)
         , mRecentFailures ("LedgerAcquireRecentFailures",
             clock, 0, kReacquireIntervalSeconds)
+        , mCounter(collector->make_counter("ledger_fetches"))
     {
     }
 
@@ -61,6 +63,7 @@ public:
                     assert (ret);
                     mLedgers.insert (std::make_pair (hash, ret));
                     ret->init (sl, couldBeNew);
+                    ++mCounter;
                 }
             }
         }
@@ -396,6 +399,8 @@ private:
 
     uint256 mConsensusLedger;
     uint256 mValidationLedger;
+
+    beast::insight::Counter mCounter;
 };
 
 //------------------------------------------------------------------------------
@@ -404,9 +409,10 @@ InboundLedgers::~InboundLedgers()
 {
 }
 
-InboundLedgers* InboundLedgers::New (clock_type& clock, Stoppable& parent)
+InboundLedgers* InboundLedgers::New (clock_type& clock, Stoppable& parent,
+                                     insight::Collector::ptr const& collector)
 {
-    return new InboundLedgersImp (clock, parent);
+    return new InboundLedgersImp (clock, parent, collector);
 }
 
 
