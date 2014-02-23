@@ -32,7 +32,7 @@ script:
   # Set so any failing command will abort the build
   - set -e
   # If only we could do -j12 ;)
-  - scons 
+  - scons
   # See what we've actually built
   - ldd ./build/rippled
   # Run unittests (under gdb)
