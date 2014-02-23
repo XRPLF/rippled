@@ -23,7 +23,7 @@ template <> char const* LogPartition::getPartitionName <InboundLedger> () { retu
 enum
 {
     // millisecond for each ledger timeout
-    ledgerAcquireTimeoutMillis = 6000
+    ledgerAcquireTimeoutMillis = 2500
 
     // how many timeouts before we giveup
     ,ledgerTimeoutRetriesMax = 10
@@ -83,6 +83,7 @@ void InboundLedger::init(ScopedLockType& collectionLock, bool couldBeNew)
     {
         addPeers ();
         setTimer ();
+        trigger (Peer::pointer ());
     }
     else if (!isFailed ())
     {
