@@ -871,6 +871,7 @@ private:
                 else
                     m_journal.warning << "parse error: " << type;
             }
+                break;
 
             case protocol::mtERROR_MSG:
             {
