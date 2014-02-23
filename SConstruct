@@ -139,11 +139,9 @@ else:
 #-------------------------------------------------------------------------------
 
 BuildLogFile = None
-CmdLineShown = 0
 
 def print_cmd_line(s, target, src, env):
     global BuildLogFile
-    global CmdLineShown
 
     if BuildLogFile is None:
         BuildLogFile = open('build.log', 'w')
@@ -154,16 +152,14 @@ def print_cmd_line(s, target, src, env):
         BuildLogFile.write("%s\n" % s);
 
     if ('build/rippled' == Tgt):
-	sys.stdout.write("Link Cmd: '\033[37m%s\033[0m'\n" % s)
         sys.stdout.write("Linking '\033[94m%s\033[0m'...\n" % Tgt)
+	sys.stdout.write("%s\n" % s)
     elif ('tags' == Tgt):
         sys.stdout.write("Generating tags...\n")
     else:
-        if CmdLineShown == 0:
-            sys.stdout.write("Build Cmd: '\033[37m%s\033[0m'\n" % s)
-            CmdLineShown = 1
         sys.stdout.write("Compiling '\033[94m%s\033[0m'...\n" % \
              (' and '.join([str(x) for x in src])))
+        sys.stdout.write("%s\n" % s)
 
 if os.environ.get('TRAVIS') is None:
     env['PRINT_CMD_LINE_FUNC'] = print_cmd_line
