@@ -1255,7 +1255,7 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> function)
     catch (SHAMapMissingNode&)
     {
         if (mHash.isNonZero ())
-            getApp().getInboundLedgers().findCreate(mHash, mLedgerSeq, false);
+            getApp().getInboundLedgers().findCreate(mHash, mLedgerSeq, InboundLedger::fcGENERIC);
         throw;
     }
 }

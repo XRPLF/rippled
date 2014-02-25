@@ -37,19 +37,15 @@ public:
     static InboundLedgers* New (clock_type& clock, Stoppable& parent,
                                 insight::Collector::ptr const& collector);
 
+
     // VFALCO TODO Should this be called findOrAdd ?
     //
     virtual InboundLedger::pointer findCreate (uint256 const& hash, 
-        uint32 seq, bool bCouldBeNew) = 0;
+        uint32 seq, InboundLedger::fcReason) = 0;
 
     virtual InboundLedger::pointer find (LedgerHash const& hash) = 0;
 
     virtual bool hasLedger (LedgerHash const& ledgerHash) = 0;
-
-    virtual InboundLedger::pointer findCreateConsensusLedger (
-        LedgerHash const& hash) = 0;
-    virtual InboundLedger::pointer findCreateValidationLedger (
-        LedgerHash const& hash) = 0;
 
     virtual void dropLedger (LedgerHash const& ledgerHash) = 0;
 

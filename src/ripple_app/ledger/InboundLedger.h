@@ -33,8 +33,18 @@ public:
     typedef boost::shared_ptr <InboundLedger> pointer;
     typedef std::pair < boost::weak_ptr<Peer>, boost::shared_ptr<protocol::TMLedgerData> > PeerDataPairType;
 
+    // These are the reasons we might acquire a ledger
+    enum fcReason
+    {
+        fcHISTORY,      // Acquiring past ledger
+        fcGENERIC,      // Generic other reasons
+        fcVALIDATION,   // Validations suggest this ledger is important
+        fcCURRENT,      // This might be the current ledger
+        fcCONSENSUS,    // We believe the consensus round requires this ledger
+    };
+
 public:
-    InboundLedger (uint256 const& hash, uint32 seq, clock_type& clock);
+    InboundLedger (uint256 const& hash, uint32 seq, fcReason reason, clock_type& clock);
 
     ~InboundLedger ();
 
@@ -74,7 +84,7 @@ public:
     bool tryLocal ();
     void addPeers ();
     bool checkLocal ();
-    void init(ScopedLockType& collectionLock, bool couldBeNew);
+    void init (ScopedLockType& collectionLock);
 
     bool gotData (boost::weak_ptr<Peer>, boost::shared_ptr<protocol::TMLedgerData>);
 
@@ -125,6 +135,7 @@ private:
     bool               mSignaled;
     bool               mByHash;
     uint32             mSeq;
+    fcReason           mReason;
 
     std::set <SHAMapNode> mRecentTXNodes;
     std::set <SHAMapNode> mRecentASNodes;

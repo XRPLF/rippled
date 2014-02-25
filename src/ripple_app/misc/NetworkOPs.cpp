@@ -1343,7 +1343,7 @@ bool NetworkOPsImp::checkLastClosedLedger (const Peers::PeerSequence& peerList, 
         m_journal.info << "Acquiring consensus ledger " << closedLedger;
 
         if (!mAcquiringLedger || (mAcquiringLedger->getHash () != closedLedger))
-            mAcquiringLedger = getApp().getInboundLedgers ().findCreate (closedLedger, 0, true);
+            mAcquiringLedger = getApp().getInboundLedgers ().findCreate (closedLedger, 0, InboundLedger::fcCONSENSUS);
 
         if (!mAcquiringLedger || mAcquiringLedger->isFailed ())
         {
@@ -3226,7 +3226,7 @@ void NetworkOPsImp::missingNodeInLedger (uint32 seq)
     else
     {
         m_journal.warning << "Missing a node in ledger " << seq << " fetching";
-        getApp().getInboundLedgers ().findCreate (hash, seq, false);
+        getApp().getInboundLedgers ().findCreate (hash, seq, InboundLedger::fcGENERIC);
     }
 }
 

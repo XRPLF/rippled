@@ -245,7 +245,7 @@ public:
             m_journal.warning <<
                 "Node missing from ledger " << ledger->getLedgerSeq();
             getApp().getInboundLedgers().findCreate (
-                ledger->getHash(), ledger->getLedgerSeq(), false);
+                ledger->getHash(), ledger->getLedgerSeq(), InboundLedger::fcGENERIC);
         }
         return hash;
     }
@@ -290,7 +290,7 @@ public:
         if (doNodes && !nodeLedger->walkLedger())
         {
             m_journal.debug << "Ledger " << ledgerIndex << " is missing nodes";
-            getApp().getInboundLedgers().findCreate(ledgerHash, ledgerIndex, false);
+            getApp().getInboundLedgers().findCreate(ledgerHash, ledgerIndex, InboundLedger::fcGENERIC);
             return false;
         }
 

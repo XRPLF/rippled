@@ -32,7 +32,7 @@ enum
     ,ledgerBecomeAggressiveThreshold = 6
 };
 
-InboundLedger::InboundLedger (uint256 const& hash, uint32 seq,
+InboundLedger::InboundLedger (uint256 const& hash, uint32 seq, fcReason reason,
     clock_type& clock)
     : PeerSet (hash, ledgerAcquireTimeoutMillis, false, clock,
         LogPartition::getJournal <InboundLedger> ())
@@ -43,6 +43,7 @@ InboundLedger::InboundLedger (uint256 const& hash, uint32 seq,
     , mSignaled (false)
     , mByHash (true)
     , mSeq (seq)
+    , mReason (reason)
     , mReceiveDispatched (false)
 {
 
@@ -74,7 +75,7 @@ InboundLedger::~InboundLedger ()
 
 }
 
-void InboundLedger::init(ScopedLockType& collectionLock, bool couldBeNew)
+void InboundLedger::init (ScopedLockType& collectionLock)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
     collectionLock.unlock ();
@@ -83,7 +84,11 @@ void InboundLedger::init(ScopedLockType& collectionLock, bool couldBeNew)
     {
         addPeers ();
         setTimer ();
-        trigger (Peer::pointer ());
+
+        // For historical nodes, wait a bit since a
+        // fetch pack is probably coming
+        if (mReason != fcHISTORY)
+            trigger (Peer::pointer ());
     }
     else if (!isFailed ())
     {
@@ -92,7 +97,9 @@ void InboundLedger::init(ScopedLockType& collectionLock, bool couldBeNew)
         mLedger->setClosed ();
         mLedger->setImmutable ();
         getApp ().getLedgerMaster ().storeLedger (mLedger);
-        if (couldBeNew)
+
+        // Check if this could be a newer fully-validated ledger
+        if ((mReason == fcVALIDATION) || (mReason == fcCURRENT) || (mReason ==  fcCONSENSUS))
             getApp ().getLedgerMaster ().checkAccept (mLedger);
     }
 }

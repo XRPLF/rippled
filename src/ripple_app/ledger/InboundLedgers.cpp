@@ -41,16 +41,47 @@ public:
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
-    InboundLedger::pointer findCreate (uint256 const& hash, uint32 seq, bool couldBeNew)
+    InboundLedger::pointer findCreate (uint256 const& hash, uint32 seq, InboundLedger::fcReason reason)
     {
         assert (hash.isNonZero ());
         InboundLedger::pointer ret;
+
+        // Ensure that any previous IL is destroyed outside the lock
+        InboundLedger::pointer oldLedger;
 
         {
             ScopedLockType sl (mLock, __FILE__, __LINE__);
 
             if (! isStopping ())
             {
+
+                if (reason == InboundLedger::fcCONSENSUS)
+                {
+		    if (mConsensusLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mConsensusLedger))
+		    {
+			boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (mConsensusLedger);
+			if (it != mLedgers.end ())
+			{
+			    oldLedger = it->second;
+			    mLedgers.erase (it);
+		       }
+		    }
+		    mConsensusLedger = hash;
+                }
+                else if (reason == InboundLedger::fcVALIDATION)
+                {
+		    if (mValidationLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mValidationLedger))
+		    {
+			boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (mValidationLedger);
+			if (it != mLedgers.end ())
+			{
+			    oldLedger = it->second;
+			    mLedgers.erase (it);
+		       }
+		    }
+		    mValidationLedger = hash;
+                }
+
                 boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
                 if (it != mLedgers.end ())
                 {
@@ -59,61 +90,16 @@ public:
                 }
                 else
                 {
-                    ret = boost::make_shared <InboundLedger> (hash, seq, std::ref (m_clock));
+                    ret = boost::make_shared <InboundLedger> (hash, seq, reason, std::ref (m_clock));
                     assert (ret);
                     mLedgers.insert (std::make_pair (hash, ret));
-                    ret->init (sl, couldBeNew);
+                    ret->init (sl);
                     ++mCounter;
                 }
             }
         }
 
         return ret;
-    }
-
-    InboundLedger::pointer findCreateConsensusLedger (uint256 const& hash)
-    {
-        // We do not want to destroy the ledger while holding the collection lock
-        InboundLedger::pointer oldLedger;
-
-        {
-            // If there was an old consensus inbound ledger, remove it
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
-            if (mConsensusLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mConsensusLedger))
-            {
-                boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (mConsensusLedger);
-                if (it != mLedgers.end ())
-                {
-                    oldLedger = it->second;
-                    mLedgers.erase (it);
-               }
-            }
-            mConsensusLedger = hash;
-        }
-
-        return findCreate (hash, 0, true);
-    }
-
-    InboundLedger::pointer findCreateValidationLedger (uint256 const& hash)
-    {
-        InboundLedger::pointer oldLedger;
-
-        {
-            // If there was an old validation inbound ledger, remove it
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
-            if (mValidationLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mValidationLedger))
-            {
-                boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (mValidationLedger);
-                if (it != mLedgers.end ())
-                {
-                    oldLedger = it->second;
-                    mLedgers.erase (it);
-               }
-            }
-            mValidationLedger = hash;
-        }
-
-        return findCreate (hash, 0, true);
     }
 
     InboundLedger::pointer find (uint256 const& hash)
