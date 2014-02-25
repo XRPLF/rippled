@@ -33,9 +33,8 @@ protected:
         SharedHandler. A reference to the SharedHandler is maintained
         for the lifetime of the composed operation.
     */
-     ComposedAsyncOperation (std::size_t size, SharedHandlerPtr const& ptr)
-        : m_size (size)
-        , m_ptr (ptr)
+    explicit ComposedAsyncOperation (SharedHandlerPtr const& ptr)
+        : m_ptr (ptr)
     {
         // Illegal to do anything with handler here, because
         // usually it hasn't been assigned by the derived class yet.
@@ -93,7 +92,6 @@ protected:
     }
 
 private:
-    std::size_t const m_size;
     SharedHandlerPtr const m_ptr;
 };
 

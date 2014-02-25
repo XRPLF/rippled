@@ -129,7 +129,7 @@ private:
         
         AsyncOp (HandshakeDetectLogicType <Logic>& logic, Stream& stream,
             BuffersType& buffer, SharedHandlerPtr const& handler)
-            : ComposedAsyncOperation (sizeof (*this), handler)
+            : ComposedAsyncOperation (handler)
             , m_logic (logic)
             , m_stream (stream)
             , m_buffer (buffer)
