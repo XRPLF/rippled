@@ -280,7 +280,8 @@ public:
             if (iter != state->slots.end ())
             {
                 Slot::ptr const& self (iter->second);
-                assert (self->local_endpoint () == remote_endpoint);
+                assert ((self->local_endpoint () == boost::none) ||
+                    (self->local_endpoint () == remote_endpoint));
                 if (m_journal.warning) m_journal.warning << leftw (18) <<
                     "Logic dropping " << remote_endpoint <<
                     " as self connect";
