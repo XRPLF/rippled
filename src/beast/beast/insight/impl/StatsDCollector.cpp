@@ -335,7 +335,7 @@ public:
 
     void log (std::vector <boost::asio::const_buffer> const& buffers)
     {
-        buffers;
+        (void)buffers;
 #if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
         std::stringstream ss;
         for (auto const& buffer : buffers)

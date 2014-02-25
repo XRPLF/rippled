@@ -437,11 +437,11 @@ public:
     {
         int         iDomains    = 0;
         int         iNodes      = 0;
-        Database*   db          = getApp().getWalletDB ()->getDB ();
 
 #if 0
         {
             DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL (str (boost::format ("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows ())
                 iDomains    = db->getInt ("Count");

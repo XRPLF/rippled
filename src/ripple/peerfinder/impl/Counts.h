@@ -29,9 +29,8 @@ namespace PeerFinder {
 class Counts
 {
 public:
-    explicit Counts (clock_type& clock)
-        : m_clock (clock)
-        , m_attempts (0)
+    Counts ()
+        : m_attempts (0)
         , m_active (0)
         , m_in_max (0)
         , m_in_active (0)
@@ -299,8 +298,6 @@ private:
     }
 
 private:
-    clock_type& m_clock;
-
     /** Outbound connection attempts. */
     int m_attempts;
 

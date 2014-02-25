@@ -2077,7 +2077,7 @@ operator[] (Key const& key)
                 std::forward_as_tuple (key),
                     std::forward_as_tuple ()));
         chronological.list.push_back (*p);
-        auto const iter (m_cont.insert_commit (*p, d));
+        m_cont.insert_commit (*p, d);
         return p->value.second;
     }
     return result.first->value.second;
@@ -2103,7 +2103,7 @@ operator[] (Key&& key)
                 std::forward_as_tuple (std::move (key)),
                     std::forward_as_tuple ()));
         chronological.list.push_back (*p);
-        auto const iter (m_cont.insert_commit (*p, d));
+        m_cont.insert_commit (*p, d);
         return p->value.second;
     }
     return result.first->value.second;

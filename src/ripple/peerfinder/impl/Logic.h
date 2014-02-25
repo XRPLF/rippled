@@ -65,7 +65,7 @@ public:
             clock_type& clock,
             Journal journal)
             : stopping (false)
-            , counts (clock)
+            , counts ()
             , livecache (clock, Journal (
                 journal, Reporting::livecache))
             , bootcache (*store, clock, Journal (

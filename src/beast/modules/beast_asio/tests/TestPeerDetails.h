@@ -27,7 +27,7 @@ class TestPeerDetails
 public:
     virtual ~TestPeerDetails () { }
 
-    virtual String name () = 0;
+    virtual String name () const = 0;
 
     virtual Socket& get_socket () = 0;
 

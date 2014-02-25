@@ -100,7 +100,7 @@ public:
             return holder.context->get ();
         }
 
-        String name ()
+        String name () const
         {
             return getArgName (m_flags);
         }

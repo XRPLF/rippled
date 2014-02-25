@@ -87,7 +87,7 @@ public:
             Consumer c (logic.newInboundEndpoint (addr));
 
             // Create load until we get a warning
-            for (std::size_t n (maxLoopCount); n>=0; --n)
+            for (std::size_t n (maxLoopCount); true; --n)
             {
                 if (n == 0)
                 {
@@ -104,7 +104,7 @@ public:
             }
 
             // Create load until we get dropped
-            for (std::size_t n (maxLoopCount); n>=0; --n)
+            for (std::size_t n (maxLoopCount); true; --n)
             {
                 if (n == 0)
                 {
@@ -127,7 +127,7 @@ public:
             expect (c.disconnect ());
         }
 
-        for (std::size_t n (maxLoopCount); n>=0; --n)
+        for (std::size_t n (maxLoopCount); true; --n)
         {
             Consumer c (logic.newInboundEndpoint (addr));
             if (n == 0)

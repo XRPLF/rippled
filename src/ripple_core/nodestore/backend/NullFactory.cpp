@@ -23,8 +23,7 @@ namespace NodeStore {
 class NullBackend : public Backend
 {
 public:
-    explicit NullBackend (Scheduler& scheduler)
-        : m_scheduler (scheduler)
+    NullBackend ()
     {
     }
 
@@ -60,7 +59,6 @@ public:
     }
 
 private:
-    Scheduler& m_scheduler;
 };
 
 //------------------------------------------------------------------------------
@@ -74,9 +72,9 @@ public:
     }
 
     std::unique_ptr <Backend> createInstance (
-        size_t, Parameters const&, Scheduler& scheduler, Journal journal)
+        size_t, Parameters const&, Scheduler&, Journal)
     {
-        return std::make_unique <NullBackend> (scheduler);
+        return std::make_unique <NullBackend> ();
     }
 };
 

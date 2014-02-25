@@ -64,6 +64,9 @@ public:
 #pragma warning (push)
 #pragma warning (disable: 4127) // conditional expression is constant
 #pragma warning (disable: 4146) // unary minus operator applied to unsigned type, result still unsigned
+#elif defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-compare"
 #endif
     // pass in a pointer to the END of a buffer..
     template <typename IntegerType>
@@ -86,6 +89,8 @@ public:
     }
 #ifdef _MSC_VER
 #pragma warning (pop)
+#elif defined(__clang__)
+#pragma clang diagnostic pop
 #endif
 
     struct StackArrayStream : public std::basic_streambuf <char, std::char_traits <char> >

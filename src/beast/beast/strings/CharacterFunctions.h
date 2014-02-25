@@ -343,9 +343,9 @@ public:
             const beast_wchar c = src.getAndAdvance();
             const size_t bytesNeeded = DestCharPointerType::getBytesRequiredFor (c);
 
-            maxBytes -= bytesNeeded;
-            if (c == 0 || maxBytes < 0)
+            if (c == 0 || maxBytes < bytesNeeded)
                 break;
+            maxBytes -= bytesNeeded;
 
             dest.write (c);
         }

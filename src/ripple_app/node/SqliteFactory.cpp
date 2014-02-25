@@ -48,11 +48,9 @@ static int s_nodeStoreDBCount = NUMBER (s_nodeStoreDBInit);
 class SqliteBackend : public NodeStore::Backend
 {
 public:
-    SqliteBackend (size_t keyBytes, std::string const& path, NodeStore::Scheduler& scheduler)
-        : m_keyBytes (keyBytes)
-        , m_name (path)
+    explicit SqliteBackend (std::string const& path)
+        : m_name (path)
         , m_db (new DatabaseCon(path, s_nodeStoreDBInit, s_nodeStoreDBCount))
-        , m_scheduler (scheduler)
     {
         String s;
 
@@ -218,10 +216,8 @@ public:
     }
 
 private:
-    size_t const m_keyBytes;
     std::string const m_name;
     std::unique_ptr <DatabaseCon> m_db;
-    NodeStore::Scheduler& m_scheduler;
 };
 
 //------------------------------------------------------------------------------
@@ -235,11 +231,10 @@ public:
     }
 
     std::unique_ptr <NodeStore::Backend> createInstance (
-        size_t keyBytes, NodeStore::Parameters const& keyValues,
-            NodeStore::Scheduler& scheduler, Journal)
+        size_t, NodeStore::Parameters const& keyValues,
+            NodeStore::Scheduler&, Journal)
     {
-        return std::make_unique <SqliteBackend> (
-            keyBytes, keyValues ["path"].toStdString (), scheduler);
+        return std::make_unique <SqliteBackend> (keyValues ["path"].toStdString ());
     }
 };
 

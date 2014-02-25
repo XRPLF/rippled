@@ -195,14 +195,19 @@ Data::pointer Interpreter::getUint160Data ()
 
 bool Interpreter::jumpTo (int offset)
 {
-    mInstructionPointer += offset;
-
-    if ( (mInstructionPointer < 0) || (mInstructionPointer > mCode->size ()) )
+    if (offset < 0)
     {
-        mInstructionPointer -= offset;
-        return (false);
+        if (-offset > mInstructionPointer)
+            return false;
+    }
+    else
+    {
+        if (offset > mCode->size () ||
+                mInstructionPointer > mCode->size () - offset)
+            return false;
     }
 
+    mInstructionPointer += offset;
     return (true);
 }
 

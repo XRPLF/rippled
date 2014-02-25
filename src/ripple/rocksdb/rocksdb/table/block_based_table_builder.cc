@@ -296,6 +296,15 @@ Status BlockBasedTableBuilder::status() const {
   return rep_->status;
 }
 
+//
+// Warning:  This function is also being used in the file
+// block_based_table_reader.cc even though it is declared static, due
+// to the source-file-concatenation build scheme.  There is an idential
+// file-local function in block_based_table_reader.cc too, but it was
+// not being used.
+// Do not change this function without reviewing its impact on the code
+// in block_based_table_reader.cc.
+//
 static void DeleteCachedBlock(const Slice& key, void* value) {
   Block* block = reinterpret_cast<Block*>(value);
   delete block;

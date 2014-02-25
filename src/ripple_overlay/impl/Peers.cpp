@@ -497,7 +497,7 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onWrite (PropertyStream& stream)
+    void onWrite (PropertyStream::Map& stream)
     {
     }
 
@@ -589,7 +589,7 @@ public:
         PeerByShortId::iterator const iter (
             m_shortIdMap.find (id));
         if (iter != m_shortIdMap.end ())
-            iter->second;
+            return iter->second;
         return Peer::pointer();
     }
 };

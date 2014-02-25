@@ -161,7 +161,7 @@ protected:
     //--------------------------------------------------------------------------
 
     // What would we return from here?
-    bool native_handle (char const*, void*) const
+    bool native_handle (char const*, void*)
     {
         pure_virtual_called (__FILE__, __LINE__);
         return false;
@@ -832,7 +832,7 @@ protected:
         AsyncOp (MultiSocketType <StreamSocket>& owner, Stream& stream,
             handshake_type type, ConstBuffers const& buffers,
                 SharedHandlerPtr const& handler)
-            : ComposedAsyncOperation (sizeof (*this), handler)
+            : ComposedAsyncOperation (handler)
             , m_handler (handler)
             , m_owner (owner)
             , m_stream (stream)

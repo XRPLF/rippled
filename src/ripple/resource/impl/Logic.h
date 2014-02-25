@@ -201,8 +201,6 @@ public:
 
         {
             SharedState::Access state (m_state);
-            Table::iterator iter (
-                state->table.find (*prior.key));
             std::pair <Table::iterator, bool> result (
                 state->table.emplace (key, 0));
             entry = &result.first->second;

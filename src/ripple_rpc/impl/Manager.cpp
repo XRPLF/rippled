@@ -41,9 +41,8 @@ public:
 
     void add (std::string const& method, handler_type&& handler)
     {
-        std::pair <Map::iterator, bool> result (m_map.emplace (
-            std::piecewise_construct, std::forward_as_tuple (method),
-                std::forward_as_tuple (std::move (handler))));
+        m_map.emplace (std::piecewise_construct, std::forward_as_tuple (method),
+                                   std::forward_as_tuple (std::move (handler)));
     }
 
     bool dispatch (Request& req)
