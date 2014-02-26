@@ -933,6 +933,12 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
 
         if (!ptr)
         {
+            if (mType == smtTRANSACTION)
+            {
+                // We don't store proposed transaction nodes in the node store
+                return nullptr;
+            }
+
             NodeObject::pointer obj;
 
             if (!getApp().getNodeStore().asyncFetch (hash, obj))
