@@ -546,47 +546,55 @@ void InboundLedger::trigger (Peer::ref peer)
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
             AccountStateSF filter (mSeq);
+
+            // Release the lock while we process the large state map
+            sl.unlock();
             mLedger->peekAccountStateMap ()->getMissingNodes (
                 nodeIDs, nodeHashes, 256, &filter);
+            sl.lock();
 
-            if (nodeIDs.empty ())
+            // Make sure nothing happened while we released the lock
+            if (!mFailed && !mComplete && !mHaveState)
             {
-                if (!mLedger->peekAccountStateMap ()->isValid ())
-                    mFailed = true;
-                else
+                if (nodeIDs.empty ())
                 {
-                    mHaveState = true;
-
-                    if (mHaveTransactions)
-                        mComplete = true;
-                }
-            }
-            else
-            {
-                // VFALCO Why 128? Make this a constant
-                if (!mAggressive)
-                    filterNodes (nodeIDs, nodeHashes, mRecentASNodes,
-                        128, !isProgress ());
-
-                if (!nodeIDs.empty ())
-                {
-                    tmGL.set_itype (protocol::liAS_NODE);
-                    BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
+                    if (!mLedger->peekAccountStateMap ()->isValid ())
+                        mFailed = true;
+                    else
                     {
-                        * (tmGL.add_nodeids ()) = it.getRawString ();
+                        mHaveState = true;
+
+                        if (mHaveTransactions)
+                            mComplete = true;
                     }
-                    if (m_journal.trace) m_journal.trace <<
-                        "Sending AS node " << nodeIDs.size () <<
-                            " request to " << (
-                                peer ? "selected peer" : "all peers");
-                    if (nodeIDs.size () == 1 && m_journal.trace) m_journal.trace <<
-                        "AS node: " << nodeIDs[0];
-                    sendRequest (tmGL, peer);
-                    return;
                 }
                 else
-                    if (m_journal.trace) m_journal.trace <<
-                        "All AS nodes filtered";
+                {
+                    // VFALCO Why 128? Make this a constant
+                    if (!mAggressive)
+                        filterNodes (nodeIDs, nodeHashes, mRecentASNodes,
+                            128, !isProgress ());
+
+                    if (!nodeIDs.empty ())
+                    {
+                        tmGL.set_itype (protocol::liAS_NODE);
+                        BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
+                        {
+                            * (tmGL.add_nodeids ()) = it.getRawString ();
+                        }
+                        if (m_journal.trace) m_journal.trace <<
+                            "Sending AS node " << nodeIDs.size () <<
+                                " request to " << (
+                                    peer ? "selected peer" : "all peers");
+                        if (nodeIDs.size () == 1 && m_journal.trace) m_journal.trace <<
+                            "AS node: " << nodeIDs[0];
+                        sendRequest (tmGL, peer);
+                        return;
+                    }
+                    else
+                        if (m_journal.trace) m_journal.trace <<
+                            "All AS nodes filtered";
+                }
             }
         }
     }
