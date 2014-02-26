@@ -300,8 +300,8 @@ public:
 
             LoadMonitor::Stats stats (data.stats ());
             
-            int waiting (data.running);
-            int running (data.waiting);
+            int waiting (data.waiting);
+            int running (data.running);
 
             if ((stats.count != 0) || (waiting != 0) ||
                 (stats.latencyPeak != 0) || (running != 0))
