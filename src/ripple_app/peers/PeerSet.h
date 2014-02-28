@@ -91,7 +91,7 @@ public:
 
     void setTimer ();
 
-    int takePeerSetFrom (const PeerSet& s);
+    std::size_t takePeerSetFrom (const PeerSet& s);
     std::size_t getPeerCount () const;
     virtual bool isDone () const
     {

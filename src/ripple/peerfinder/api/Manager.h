@@ -117,9 +117,16 @@ public:
     virtual void on_legacy_endpoints (IPAddresses const& addresses) = 0;
 
     /** Called when the slot is closed.
-        This always happens when the socket is closed.
+        This always happens when the socket is closed, unless the socket
+        was canceled.
     */
     virtual void on_closed (Slot::ptr const& slot) = 0;
+
+    /** Called when the slot is closed via canceling operations.
+        This is instead of on_closed.
+    */
+    virtual void on_cancel (Slot::ptr const& slot) = 0;
+
 };
 
 }

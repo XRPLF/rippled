@@ -146,6 +146,12 @@ public:
         m_logic.on_closed (impl);
     }
 
+    void on_cancel (Slot::ptr const& slot)
+    {
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        m_logic.on_cancel (impl);
+    }
+
     //--------------------------------------------------------------------------
     //
     // SiteFiles

@@ -161,6 +161,9 @@ public:
     // The slot assigned to us by PeerFinder
     PeerFinder::Slot::ptr m_slot;
 
+    // True if close was called
+    bool m_was_canceled;
+
     //---------------------------------------------------------------------------    
     /** New incoming peer from the specified socket */
     PeerImp (
@@ -188,6 +191,7 @@ public:
             , m_maxLedger (0)
             , m_timer (socket->get_io_service())
             , m_slot (slot)
+            , m_was_canceled (false)
     {
     }
         
@@ -221,6 +225,7 @@ public:
             , m_maxLedger (0)
             , m_timer (io_service)
             , m_slot (slot)
+            , m_was_canceled (false)
     {
     }
     
@@ -318,7 +323,10 @@ public:
             //           to have PeerFinder work reliably.
             m_detaching  = true; // Race is ok.
 
-            m_peerFinder.on_closed (m_slot);
+            if (m_was_canceled)
+                m_peerFinder.on_cancel (m_slot);
+            else
+                m_peerFinder.on_closed (m_slot);
             
             if (m_state == stateActive)
                 m_peers.onPeerDisconnect (shared_from_this ());
@@ -355,6 +363,7 @@ public:
     /** Close the connection. */
     void close (bool graceful)
     {
+        m_was_canceled = true;
         detach ("stop", graceful);
     }
 

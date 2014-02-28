@@ -155,29 +155,29 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
     if (mPeers.empty ())
         return;
 
-    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER);
+    PackedMessage::pointer packet (
+        boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER));
 
-    for (PeerSetMap::iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
+    for (auto const& p : mPeers)
     {
-        Peer::pointer peer = getApp().getPeers ().findPeerByShortID (it->first);
+        Peer::pointer peer (getApp().getPeers ().findPeerByShortID (p.first));
 
         if (peer)
             peer->sendPacket (packet, false);
     }
 }
 
-int PeerSet::takePeerSetFrom (const PeerSet& s)
+std::size_t PeerSet::takePeerSetFrom (const PeerSet& s)
 {
-    int ret = 0;
+    std::size_t ret = 0;
     mPeers.clear ();
 
-    for (PeerSetMap::const_iterator it = s.mPeers.begin (), end = s.mPeers.end ();
-            it != end; ++it)
+    for (auto const& p : s.mPeers)
     {
-        mPeers.insert (std::make_pair (it->first, 0));
+        mPeers.insert (std::make_pair (p.first, 0));
         ++ret;
     }
-
+    
     return ret;
 }
 
@@ -185,9 +185,11 @@ std::size_t PeerSet::getPeerCount () const
 {
     std::size_t ret (0);
 
-    for (PeerSetMap::const_iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
-        if (getApp().getPeers ().findPeerByShortID (it->first))
+    for (auto const& p : mPeers)
+    {
+        if (getApp ().getPeers ().findPeerByShortID (p.first))
             ++ret;
+    }
 
     return ret;
 }

@@ -25,6 +25,7 @@
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/optional.hpp>
+#include <boost/version.hpp>
 
 #include "ripple_app.h"
 
@@ -113,6 +114,9 @@ struct ProtobufLibrary
 //
 int main (int argc, char** argv)
 {
+    static_assert (BOOST_VERSION >= 105500,
+        "Boost version 1.55 or later is required to compile.");
+
     //
     // These debug heap calls do nothing in release or non Visual Studio builds.
     //

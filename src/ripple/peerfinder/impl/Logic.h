@@ -615,9 +615,8 @@ public:
             state->bootcache.insert (*iter);
     }
 
-    void on_closed (SlotImp::ptr const& slot)
+    void remove (SlotImp::ptr const& slot, SharedState::Access& state)
     {
-        SharedState::Access state (m_state);
         Slots::iterator const iter (state->slots.find (
             slot->remote_endpoint ()));
         // The slot must exist in the table
@@ -643,6 +642,13 @@ public:
 
         // Update counts
         state->counts.remove (*slot);
+    }
+
+    void on_closed (SlotImp::ptr const& slot)
+    {
+        SharedState::Access state (m_state);
+
+        remove (slot, state);
 
         // Mark fixed slot failure
         if (slot->fixed() && ! slot->inbound() && slot->state() != Slot::active)
@@ -685,6 +691,16 @@ public:
             assert (false);
             break;
         }
+    }
+
+    void on_cancel (SlotImp::ptr const& slot)
+    {
+        SharedState::Access state (m_state);
+
+        remove (slot, state);
+
+        if (m_journal.trace) m_journal.trace << leftw (18) <<
+            "Logic cancel " << slot->remote_endpoint();
     }
 
     //--------------------------------------------------------------------------

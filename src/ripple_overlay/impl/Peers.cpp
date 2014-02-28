@@ -215,14 +215,23 @@ public:
                 assert (result.second);
             }
             ++m_child_count;
-        }
 
-        // VFALCO NOTE Why not do this in the ctor?
-        peer->accept ();
+            // This has to happen while holding the lock,
+            // otherwise the socket might not be canceled during a stop.
+            peer->accept ();
+        }
     }
 
     void connect (IP::Endpoint const& remote_endpoint)
     {
+        if (isStopping())
+        {
+            m_journal.debug <<
+                "Skipping " << remote_endpoint <<
+                " connect on stop";
+            return;
+        }
+
         PeerFinder::Slot::ptr const slot (
             m_peerFinder->new_outbound_slot (remote_endpoint));
 
@@ -244,10 +253,11 @@ public:
                 assert (result.second);
             }
             ++m_child_count;
-        }
 
-        // VFALCO NOTE Why not do this in the ctor?
-        peer->connect (remote_endpoint);
+            // This has to happen while holding the lock,
+            // otherwise the socket might not be canceled during a stop.
+            peer->connect (remote_endpoint);
+        }
     }
 
     //--------------------------------------------------------------------------
