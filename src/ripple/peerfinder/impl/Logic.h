@@ -946,11 +946,12 @@ public:
     int addBootcacheAddresses (IPAddresses const& list)
     {
         int count (0);
-        SharedState::Access state (m_state);
-        for (IPAddresses::const_iterator iter (
-            list.begin()); iter != list.end(); ++iter)
-            if (addBootcacheAddress (*iter, state))
+        SharedState::Access state (m_state);        
+        for (auto addr : list)
+        {
+            if (addBootcacheAddress (addr, state))
                 ++count;
+        }
         return count;
     }
 

@@ -193,47 +193,39 @@ public:
 
     HostAndPort parseName(std::string const& str)
     {
-        struct find_whitespace
-        {
-            bool operator() (const char c)
-            {
-                return std::isspace (c);
-            }
-        };
+        // Attempt to find the first and last non-whitespace
+        auto const find_whitespace = std::bind (
+            std::isspace <std::string::value_type>,
+            std::placeholders::_1, 
+            std::locale ());
 
-        struct find_port_separator
-        {
-            bool operator() (const char c)
-            {
-                if (std::isspace (c))
-                    return true;
-
-                if (c == ':')
-                    return true;
-
-                return false;
-            }
-        };
-
-        // Find the first non-whitespace
         auto host_first = std::find_if_not (
-            str.begin (), str.end (), find_whitespace ());
+            str.begin (), str.end (), find_whitespace);
 
-        // Find the last non-whitespace
         auto port_last = std::find_if_not (
-            str.rbegin (), str.rend(), find_whitespace ()).base();
+            str.rbegin (), str.rend(), find_whitespace).base();
 
         // This should only happen for all-whitespace strings
         if (host_first >= port_last)
             return std::make_pair(std::string (), std::string ());
 
-        // Attempt to find the first valid port separator
-        auto host_last = std::find_if (
-            host_first, port_last, find_port_separator ());
+        // Attempt to find the first and last valid port separators
+        auto const find_port_separator = [](char const c) -> bool
+        {
+            if (std::isspace (c))
+                return true;
 
-        // Attempt to find the last valid port separator
+            if (c == ':')
+                return true;
+
+            return false;
+        };
+
+        auto host_last = std::find_if (
+            host_first, port_last, find_port_separator);
+
         auto port_first = std::find_if_not (
-            host_last, port_last, find_port_separator ());
+            host_last, port_last, find_port_separator);
 
         return make_pair (
             std::string (host_first, host_last),

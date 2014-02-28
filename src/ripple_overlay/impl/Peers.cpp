@@ -411,30 +411,36 @@ public:
 
         m_peerFinder->setConfig (config);
 
-        // Add the static IPs from the rippled.cfg file
-        m_peerFinder->addFallbackStrings ("rippled.cfg", getConfig().IPS);
+        if (!getConfig ().IPS.empty ())
+        {
+            m_resolver.resolve (getConfig ().IPS,
+                [this](
+                    std::string const& name, 
+                    std::vector <IP::Endpoint> const& addresses)
+                {
+                    std::vector <std::string> ips;
+
+                    for (auto const& addr : addresses)
+                        ips.push_back (to_string (addr));
+
+                    std::string const base ("config: ");
+
+                    if (!ips.empty ())
+                        m_peerFinder->addFallbackStrings (base + name, ips);
+                });
+        }
 
         // Add the ips_fixed from the rippled.cfg file
         if (! getConfig ().RUN_STANDALONE && !getConfig ().IPS_FIXED.empty ())
         {
-            struct resolve_fixed_peers
-            {
-                PeerFinder::Manager* m_peerFinder;
-
-                resolve_fixed_peers (PeerFinder::Manager* peerFinder)
-                    : m_peerFinder (peerFinder)
-                { }
-
-                void operator()(std::string const& name,
-                    std::vector <IP::Endpoint> const& address)
-                {
-                    if (!address.empty())
-                        m_peerFinder->addFixedPeer (name, address);
-                }
-            };
-
             m_resolver.resolve (getConfig ().IPS_FIXED,
-                resolve_fixed_peers (m_peerFinder.get ()));
+                [this](
+                    std::string const& name, 
+                    std::vector <IP::Endpoint> const& addresses)
+                {
+                    if (!addresses.empty ())
+                        m_peerFinder->addFixedPeer (name, addresses);
+                });
         }
 
         // Configure the peer doors, which allow the server to accept incoming
