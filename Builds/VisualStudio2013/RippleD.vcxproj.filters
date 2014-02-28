@@ -2538,9 +2538,6 @@
     <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h">
       <Filter>[1] Ripple\algorithm\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h">
-      <Filter>[1] Ripple\algorithm\api</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\sitefiles\ripple_sitefiles.h">
       <Filter>[1] Ripple\sitefiles</Filter>
     </ClInclude>

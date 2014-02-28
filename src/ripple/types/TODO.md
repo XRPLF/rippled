@@ -4,4 +4,3 @@
 
 - Clean up and optimize Base58 conversions
 
-- Generalize AgedHistory to use a DiscreteClock and not have two maps

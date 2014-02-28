@@ -2229,7 +2229,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h" />
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h" />
-    <ClInclude Include="..\..\src\ripple\algorithm\api\DiscreteClock.h" />
     <ClInclude Include="..\..\src\ripple\common\counted_bind.h" />
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h" />
     <ClInclude Include="..\..\src\ripple\common\Resolver.h" />

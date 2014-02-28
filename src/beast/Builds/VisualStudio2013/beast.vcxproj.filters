@@ -866,12 +866,6 @@
     <ClInclude Include="..\..\beast\type_traits\IsIntegral.h">
       <Filter>beast\type_traits</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\type_traits\RemoveSigned.h">
-      <Filter>beast\type_traits</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\utility\EnableIf.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\utility\Journal.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
@@ -1139,9 +1133,6 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\threads\ScopedWrapperContext.h">
       <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\utility\BaseFromMember.h">
-      <Filter>beast\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Asio.h">
       <Filter>beast</Filter>
