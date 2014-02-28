@@ -39,6 +39,7 @@ public:
     static Manager* New (
         Stoppable& parent,
         SiteFiles::Manager& siteFiles,
+        File const& pathToDbFileOrDirectory,
         Callback& callback,
         clock_type& clock,
         Journal journal);

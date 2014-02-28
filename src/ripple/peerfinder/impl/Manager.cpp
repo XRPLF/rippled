@@ -30,6 +30,7 @@ class ManagerImp
 public:
     ServiceQueue m_queue;
     SiteFiles::Manager& m_siteFiles;
+    File m_databaseFile;
     clock_type& m_clock;
     Journal m_journal;
     StoreSqdb m_store;
@@ -43,12 +44,14 @@ public:
     ManagerImp (
         Stoppable& stoppable,
         SiteFiles::Manager& siteFiles,
+        File const& pathToDbFileOrDirectory,
         Callback& callback,
         clock_type& clock,
         Journal journal)
         : Manager (stoppable)
         , Thread ("PeerFinder")
         , m_siteFiles (siteFiles)
+        , m_databaseFile (pathToDbFileOrDirectory)
         , m_clock (clock)
         , m_journal (journal)
         , m_store (journal)
@@ -56,6 +59,8 @@ public:
         , m_logic (clock, callback, m_store, m_checker, journal)
         , m_secondsTimer (this)
     {
+        if (m_databaseFile.isDirectory ())
+            m_databaseFile = m_databaseFile.getChildFile("peerfinder.sqlite");
     }
 
     ~ManagerImp ()
@@ -262,15 +267,12 @@ public:
     {
         m_journal.debug << "Initializing";
 
-        File const file (File::getSpecialLocation (
-            File::userDocumentsDirectory).getChildFile ("PeerFinder.sqlite"));
-
-        Error error (m_store.open (file));
+        Error error (m_store.open (m_databaseFile));
 
         if (error)
         {
             m_journal.fatal <<
-                "Failed to open '" << file.getFullPathName() << "'";
+                "Failed to open '" << m_databaseFile.getFullPathName() << "'";
         }
 
         if (! error)
@@ -311,11 +313,13 @@ Manager::Manager (Stoppable& parent)
 Manager* Manager::New (
     Stoppable& parent,
     SiteFiles::Manager& siteFiles,
+    File const& databaseFile,
     Callback& callback,
     clock_type& clock,
     Journal journal)
 {
-    return new ManagerImp (parent, siteFiles, callback, clock, journal);
+    return new ManagerImp (parent, siteFiles, databaseFile, 
+        callback, clock, journal);
 }
 
 }

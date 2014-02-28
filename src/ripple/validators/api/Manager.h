@@ -36,9 +36,13 @@ protected:
 public:
     /** Create a new Manager object.
         @param parent The parent Stoppable.
+        @param pathToDbFileOrDirectory The directory where our database is stored
         @param journal Where to send log output.
     */
-    static Manager* New (Stoppable& stoppableParent, Journal journal);
+    static Manager* New (
+        Stoppable& stoppableParent, 
+        File const& pathToDbFileOrDirectory,
+        Journal journal);
 
     /** Destroy the object.
         Any pending source fetch operations are aborted. This will block

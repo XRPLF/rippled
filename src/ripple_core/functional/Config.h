@@ -282,7 +282,20 @@ public:
 private:
     std::string m_rpcIP;
     int m_rpcPort; // VFALCO TODO This should be a short.
+
+private:
+    /** The folder where new module databases should be located */
+    File m_moduleDbPath;
+
 public:
+    //--------------------------------------------------------------------------
+    /** Returns the location were databases should be located
+        The location may be a file, in which case databases should be placed in
+        the file, or it may be a directory, in which cases databases should be
+        stored in a file named after the module (e.g. "peerfinder.sqlite") that
+        is inside that directory.
+    */
+    File const& getModuleDatabasePath ();
 
     //--------------------------------------------------------------------------
 

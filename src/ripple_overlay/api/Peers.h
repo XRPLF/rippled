@@ -66,12 +66,14 @@ protected:
 public:
     typedef std::vector <Peer::pointer> PeerSequence;
 
-    static Peers* New (Stoppable& parent,
+    static Peers* New (
+        Stoppable& parent,
         Resource::Manager& resourceManager,
-            SiteFiles::Manager& siteFiles,
-                Resolver& resolver,
-                    boost::asio::io_service& io_service,
-                        boost::asio::ssl::context& context);
+        SiteFiles::Manager& siteFiles,
+        File const& pathToDbFileOrDirectory,
+        Resolver& resolver,
+        boost::asio::io_service& io_service,
+        boost::asio::ssl::context& context);
 
     virtual ~Peers () = 0;
 

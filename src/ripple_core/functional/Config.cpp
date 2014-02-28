@@ -239,6 +239,12 @@ void Config::setup (const std::string& strConf, bool bQuiet)
 
     if (ec)
         throw std::runtime_error (boost::str (boost::format ("Can not create %s") % DATA_DIR));
+
+    // Create the new unified database
+    m_moduleDbPath = getDatabaseDir();
+    
+    if (m_moduleDbPath.isDirectory ())
+        m_moduleDbPath = m_moduleDbPath.getChildFile("rippled.sqlite");
 }
 
 void Config::load ()
@@ -757,6 +763,12 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IP::Endpoin
     }
 
     return role;
+}
+
+//------------------------------------------------------------------------------
+File const& Config::getModuleDatabasePath ()
+{
+    return m_moduleDbPath;
 }
 
 //

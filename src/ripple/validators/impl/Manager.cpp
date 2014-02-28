@@ -134,6 +134,7 @@ class ManagerImp
 {
 public:
     Journal m_journal;
+    File m_databaseFile;
     StoreSqdb m_store;
     Logic m_logic;
     DeadlineTimer m_checkTimer;
@@ -149,10 +150,14 @@ public:
     //
     bool m_checkSources;
 
-    ManagerImp (Stoppable& parent, Journal journal)
+    ManagerImp (
+        Stoppable& parent, 
+        File const& pathToDbFileOrDirectory, 
+        Journal journal)
         : Stoppable ("Validators::Manager", parent)
         , Thread ("Validators")
         , m_journal (journal)
+        , m_databaseFile (pathToDbFileOrDirectory)
         , m_store (m_journal)
         , m_logic (m_store, m_journal)
         , m_checkTimer (this)
@@ -164,6 +169,11 @@ public:
             "Validators constructed (debug)";
         m_journal.info <<
             "Validators constructed (info)";
+
+        if (m_databaseFile.isDirectory ())
+            m_databaseFile = m_databaseFile.getChildFile("validators.sqlite");
+
+
     }
 
     ~ManagerImp ()
@@ -306,11 +316,8 @@ public:
 
     void init ()
     {
-        File const file (File::getSpecialLocation (
-            File::userDocumentsDirectory).getChildFile ("validators.sqlite"));
+        Error error (m_store.open (m_databaseFile));
         
-        Error error (m_store.open (file));
-
         if (! error)
         {
             m_logic.load ();
@@ -375,9 +382,12 @@ Manager::Manager ()
 {
 }
 
-Validators::Manager* Validators::Manager::New (Stoppable& parent, Journal journal)
+Validators::Manager* Validators::Manager::New (
+    Stoppable& parent, 
+    File const& pathToDbFileOrDirectory,
+    Journal journal)
 {
-    return new Validators::ManagerImp (parent, journal);
+    return new Validators::ManagerImp (parent, pathToDbFileOrDirectory, journal);
 }
 
 }
