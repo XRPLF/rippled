@@ -41,9 +41,9 @@ enum JobType
     jtTRANSACTION_l, // A local transaction
     jtPROPOSAL_ut,   // A proposal from an untrusted source
     jtLEDGER_DATA,   // Received data for a ledger we're acquiring
-    jtUPDATE_PF,     // Update pathfinding requests
     jtCLIENT,        // A websocket command from the client
     jtRPC,           // A websocket command from the client
+    jtUPDATE_PF,     // Update pathfinding requests
     jtTRANSACTION,   // A transaction received from the network
     jtUNL,           // A Score or Fetch of the UNL (DEPRECATED)
     jtADVANCE,       // Advance validated/acquired ledgers
