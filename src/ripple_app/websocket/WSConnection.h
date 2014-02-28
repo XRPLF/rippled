@@ -50,6 +50,7 @@ public:
     void onPong (const std::string&);
     void rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueue);
     message_ptr getMessage ();
+    bool checkMessage ();
     void returnMessage (message_ptr ptr);
     Json::Value invokeCommand (Json::Value& jvRequest);
 
