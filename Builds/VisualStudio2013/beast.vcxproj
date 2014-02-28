@@ -223,13 +223,10 @@
     <ClInclude Include="..\..\beast\type_traits\IsIntegral.h" />
     <ClInclude Include="..\..\beast\type_traits\IsSigned.h" />
     <ClInclude Include="..\..\beast\type_traits\maybe_const.h" />
-    <ClInclude Include="..\..\beast\type_traits\RemoveSigned.h" />
     <ClInclude Include="..\..\beast\Uncopyable.h" />
     <ClInclude Include="..\..\beast\Utility.h" />
-    <ClInclude Include="..\..\beast\utility\BaseFromMember.h" />
     <ClInclude Include="..\..\beast\utility\Debug.h" />
     <ClInclude Include="..\..\beast\utility\empty_base_optimization.h" />
-    <ClInclude Include="..\..\beast\utility\EnableIf.h" />
     <ClInclude Include="..\..\beast\utility\Error.h" />
     <ClInclude Include="..\..\beast\utility\hash_pair.h" />
     <ClInclude Include="..\..\beast\utility\Journal.h" />
