@@ -318,6 +318,9 @@
     <Filter Include="beast\workaround">
       <UniqueIdentifier>{84acd0d5-5531-470e-b9a7-42af9003aa64}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\streams">
+      <UniqueIdentifier>{899ea9a6-1969-4cde-b26d-8ad60acebfa4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1332,6 +1335,15 @@
     <ClInclude Include="..\..\beast\workaround\noexcept.h">
       <Filter>beast\workaround</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\streams\abstract_ostream.h">
+      <Filter>beast\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\streams\basic_abstract_ostream.h">
+      <Filter>beast\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\streams\basic_scoped_ostream.h">
+      <Filter>beast\streams</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
@@ -1924,6 +1936,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\http\impl\joyent_parser.cpp">
       <Filter>beast\http\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\streams\streams.cpp">
+      <Filter>beast\streams</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
