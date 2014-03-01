@@ -204,6 +204,9 @@
     <ClInclude Include="..\..\beast\smart_ptr\SharedObject.h" />
     <ClInclude Include="..\..\beast\smart_ptr\SharedPtr.h" />
     <ClInclude Include="..\..\beast\StaticAssert.h" />
+    <ClInclude Include="..\..\beast\streams\abstract_ostream.h" />
+    <ClInclude Include="..\..\beast\streams\basic_abstract_ostream.h" />
+    <ClInclude Include="..\..\beast\streams\basic_scoped_ostream.h" />
     <ClInclude Include="..\..\beast\Strings.h" />
     <ClInclude Include="..\..\beast\strings\CharacterFunctions.h" />
     <ClInclude Include="..\..\beast\strings\CharPointer_ASCII.h" />
@@ -681,6 +684,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\smart_ptr\SmartPtr.cpp" />
+    <ClCompile Include="..\..\beast\streams\streams.cpp" />
     <ClCompile Include="..\..\beast\strings\impl\CharacterFunctions.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
