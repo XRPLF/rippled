@@ -30,7 +30,7 @@
 #include <boost/foreach.hpp>
 
 #include "nodestore/NodeStore.cpp"
-
+#include "../beast/beast/http/ParsedURL.h"
 #include "../ripple_net/ripple_net.h" // for HTTPClient
 
 namespace ripple {

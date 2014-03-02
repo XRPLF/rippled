@@ -24,14 +24,6 @@
 #include "impl/counted_bind.cpp"
 #include "impl/KeyCache.cpp"
 #include "impl/TaggedCache.cpp"
-
-using namespace beast;
-
-#ifndef NDEBUG
-# define consistency_check(cond) bassert(cond)
-#else
-# define consistency_check(cond)
-#endif
-
 #include "impl/ResolverAsio.cpp"
-
+#include "impl/MultiSocket.cpp"
+#include "impl/RippleSSLContext.cpp"

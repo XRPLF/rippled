@@ -20,6 +20,8 @@
 #ifndef RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 #define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
+#include "../../ripple/common/MultiSocket.h"
+
 namespace ripple {
 
 class PeerImp;

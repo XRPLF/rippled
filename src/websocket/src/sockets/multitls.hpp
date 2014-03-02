@@ -28,6 +28,8 @@
 #ifndef WEBSOCKETPP_SOCKET_MULTITLS_HPP
 #define WEBSOCKETPP_SOCKET_MULTITLS_HPP
 
+#include "../../ripple/common/MultiSocket.h"
+
 namespace websocketpp {
 namespace socket {
 

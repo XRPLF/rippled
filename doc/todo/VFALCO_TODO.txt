@@ -22,9 +22,6 @@ David Features:
 
 - std::priority_queue for DeadlineTimer
 
-- Change ProxyInfo to use IP::Endpoint, get rid of IPv4Address from the parsing
-  code
-
 - Validators should delay the application of newly downloaded lists from
   sources, to mitigate the effects of attacks. Unless there's no validators
   in the list.

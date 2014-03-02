@@ -17,6 +17,12 @@
 */
 //==============================================================================
 
+#include "MultiSocketType.h"
+
+#include "../RippleSSLContext.h"
+
+namespace ripple {
+
 MultiSocket* MultiSocket::New (
     boost::asio::ip::tcp::socket& socket,
         boost::asio::ssl::context& ssl_context,
@@ -39,10 +45,10 @@ MultiSocket* MultiSocket::New (
 
 //------------------------------------------------------------------------------
 
-class MultiSocketTests : public UnitTest
+class MultiSocketTests : public beast::UnitTest
 {
 public:
-    class MultiSocketDetails : public TestPeerDetails
+    class MultiSocketDetails : public beast::TestPeerDetails
     {
     public:
         typedef int arg_type;
@@ -52,9 +58,9 @@ public:
         {
         }
 
-        static String getArgName (arg_type arg)
+        static beast::String getArgName (arg_type arg)
         {
-            String s;
+            beast::String s;
 
             if (arg & MultiSocket::Flag::client_role)
                 s << "client,";
@@ -71,7 +77,7 @@ public:
             if (arg & MultiSocket::Flag::proxy)
                 s << "proxy,";
 
-            if (s != String::empty)
+            if (s != beast::String::empty)
             {
                 s = "(" + s.substring (0, s.length () - 1) + ")";
             }
@@ -92,7 +98,7 @@ public:
                         boost::asio::ssl::verify_none);
                 }
 
-                ScopedPointer <RippleSSLContext> context;
+                std::unique_ptr <RippleSSLContext> context;
             };
 
             static ContextHolder holder;
@@ -100,7 +106,7 @@ public:
             return holder.context->get ();
         }
 
-        String name () const
+        beast::String name () const
         {
             return getArgName (m_flags);
         }
@@ -139,12 +145,12 @@ public:
         {
         }
 
-        Socket& get_socket ()
+        beast::Socket& get_socket ()
         {
             return m_multiSocket;
         }
 
-        Socket& get_acceptor ()
+        beast::Socket& get_acceptor ()
         {
             return m_acceptor_wrapper;
         }
@@ -159,9 +165,9 @@ public:
             return m_acceptor;
         }
 
-        endpoint_type get_endpoint (PeerRole role)
+        endpoint_type get_endpoint (beast::PeerRole role)
         {
-            if (role == PeerRole::server)
+            if (role == beast::PeerRole::server)
                 return endpoint_type (boost::asio::ip::tcp::v6 (), 1052);
             else
                 return endpoint_type (boost::asio::ip::address_v6 ().from_string ("::1"), 1052);
@@ -171,7 +177,7 @@ public:
         socket_type m_socket;
         acceptor_type m_acceptor;
         MultiSocketType <socket_type&> m_multiSocket;
-        SocketWrapper <acceptor_type&> m_acceptor_wrapper;
+        beast::SocketWrapper <acceptor_type&> m_acceptor_wrapper;
     };
 
     //--------------------------------------------------------------------------
@@ -288,3 +294,4 @@ public:
 
 static MultiSocketTests multiSocketTests;
 
+}

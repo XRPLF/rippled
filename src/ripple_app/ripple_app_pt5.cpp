@@ -26,8 +26,7 @@
 #include "../ripple/peerfinder/ripple_peerfinder.h"
 #include "../ripple/resource/ripple_resource.h"
 #include "../ripple/validators/ripple_validators.h"
-
-#include "../ripple/common/ResolverAsio.h"
+#include "../ripple/common/RippleSSLContext.h"
 
 #include <deque>
 

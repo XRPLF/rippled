@@ -765,16 +765,10 @@
     <ClCompile Include="..\..\src\ripple_data\protocol\BuildInfo.cpp">
       <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_net\basics\RippleSSLContext.cpp">
-      <Filter>[2] Old Ripple\ripple_net\basics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\basics\HTTPRequest.cpp">
       <Filter>[2] Old Ripple\ripple_net\basics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\basics\HTTPClient.cpp">
-      <Filter>[2] Old Ripple\ripple_net\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_net\basics\MultiSocket.cpp">
       <Filter>[2] Old Ripple\ripple_net\basics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\basics\SNTPClient.cpp">
@@ -1494,6 +1488,12 @@
     <ClCompile Include="..\..\src\ripple_app\transactors\WalletAddTransactor.cpp">
       <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\impl\MultiSocket.cpp">
+      <Filter>[1] Ripple\common\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\impl\RippleSSLContext.cpp">
+      <Filter>[1] Ripple\common\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">
@@ -1997,16 +1997,10 @@
     <ClInclude Include="..\..\src\ripple_data\protocol\BuildInfo.h">
       <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_net\basics\RippleSSLContext.h">
-      <Filter>[2] Old Ripple\ripple_net\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\HTTPRequest.h">
       <Filter>[2] Old Ripple\ripple_net\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\HTTPClient.h">
-      <Filter>[2] Old Ripple\ripple_net\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_net\basics\MultiSocket.h">
       <Filter>[2] Old Ripple\ripple_net\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\RPCServer.h">
@@ -2014,9 +2008,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\SNTPClient.h">
       <Filter>[2] Old Ripple\ripple_net\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_net\basics\impl\MultiSocketType.h">
-      <Filter>[2] Old Ripple\ripple_net\basics\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\RPCDoor.h">
       <Filter>[2] Old Ripple\ripple_net\basics</Filter>
@@ -3047,6 +3038,16 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\transactors\WalletAddTransactor.h">
       <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\BeastConfig\BeastConfig.h" />
+    <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketType.h">
+      <Filter>[1] Ripple\common\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\MultiSocket.h">
+      <Filter>[1] Ripple\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\RippleSSLContext.h">
+      <Filter>[1] Ripple\common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\byte_view.h">
       <Filter>[1] Ripple\common</Filter>

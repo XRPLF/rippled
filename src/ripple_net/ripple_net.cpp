@@ -48,25 +48,16 @@
 //
 #include "../ripple_rpc/api/ErrorCodes.h"
 
-namespace ripple
-{
-
+namespace ripple {
 #include "basics/HTTPRequest.cpp"
 #include "basics/HTTPClient.cpp"
-
-# include "basics/impl/MultiSocketType.h"
-#include "basics/MultiSocket.cpp"
-
-#include "basics/RippleSSLContext.cpp"
-
 # include "basics/impl/RPCServerImp.h"
-#include "basics/RPCDoor.cpp"
 #include "basics/SNTPClient.cpp"
-
 #include "rpc/RPCCall.cpp"
 #include "rpc/RPCErr.cpp"
 #include "rpc/RPCSub.cpp"
 #include "rpc/RPCUtil.cpp"
 #include "rpc/InfoSub.cpp"
-
 }
+
+#include "basics/RPCDoor.cpp"

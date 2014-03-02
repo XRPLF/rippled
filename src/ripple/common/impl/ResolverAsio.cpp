@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../beast/modules/beast_asio/async/AsyncObject.h"
+#include "../../beast/modules/beast_asio/beast_asio.h"
 #include "../../beast/beast/asio/IPAddressConversion.h"
 
 #include <atomic>

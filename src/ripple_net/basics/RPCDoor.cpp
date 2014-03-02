@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../ripple/common/RippleSSLContext.h"
+
+namespace ripple {
+
 SETUP_LOG (RPCDoor)
 
 class RPCDoorImp : public RPCDoor, public LeakChecked <RPCDoorImp>
@@ -136,4 +140,6 @@ RPCDoor* RPCDoor::New (boost::asio::io_service& io_service, RPCServer::Handler& 
     ScopedPointer <RPCDoor> result (new RPCDoorImp (io_service, handler));
 
     return result.release ();
+}
+
 }

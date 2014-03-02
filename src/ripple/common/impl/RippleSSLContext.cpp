@@ -17,6 +17,14 @@
 */
 //==============================================================================
 
+#include "../RippleSSLContext.h"
+
+#include "../../beast/modules/beast_core/beast_core.h"
+
+#include <cstdint>
+
+namespace ripple {
+
 class RippleSSLContextImp : public RippleSSLContext
 {
 private:
@@ -55,7 +63,7 @@ public:
             {
                 // These are the DH parameters that OpenCoin has chosen for Ripple
                 //
-                uint8 const raw [] = {
+                std::uint8_t const raw [] = {
                     0x30, 0x46, 0x02, 0x41, 0x00, 0x98, 0x15, 0xd2, 0xd0, 0x08, 0x32, 0xda,
                     0xaa, 0xac, 0xc4, 0x71, 0xa3, 0x1b, 0x11, 0xf0, 0x6c, 0x62, 0xb2, 0x35,
                     0x8a, 0x10, 0x92, 0xc6, 0x0a, 0xa3, 0x84, 0x7e, 0xaf, 0x17, 0x29, 0x0b,
@@ -90,16 +98,16 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void initAnonymous (String const& cipherList)
+    void initAnonymous (std::string const& cipherList)
     {
         initCommon ();
 
         int const result = SSL_CTX_set_cipher_list (
             m_context.native_handle (),
-            cipherList.toStdString ().c_str ());
+            cipherList.c_str ());
 
         if (result != 1)
-            FatalError ("invalid cipher list", __FILE__, __LINE__);
+            beast::FatalError ("invalid cipher list", __FILE__, __LINE__);
     }
 
     //--------------------------------------------------------------------------
@@ -122,7 +130,7 @@ public:
 
             if (error)
             {
-                FatalError ("Problem with SSL certificate file.",
+                beast::FatalError ("Problem with SSL certificate file.",
                     __FILE__, __LINE__);
             }
 
@@ -136,7 +144,7 @@ public:
 
             if (!f)
             {
-                FatalError ("Problem opening SSL chain file.",
+                beast::FatalError ("Problem opening SSL chain file.",
                     __FILE__, __LINE__);
             }
 
@@ -152,7 +160,7 @@ public:
                     if (! cert_set)
                     {
                         if (SSL_CTX_use_certificate (ssl, x) != 1)
-                            FatalError ("Problem retrieving SSL certificate from chain file.",
+                            beast::FatalError ("Problem retrieving SSL certificate from chain file.",
                                 __FILE__, __LINE__);
 
                         cert_set = true;
@@ -160,7 +168,7 @@ public:
                     else if (SSL_CTX_add_extra_chain_cert (ssl, x) != 1)
                     {
                         X509_free (x);
-                        FatalError ("Problem adding SSL chain certificate.",
+                        beast::FatalError ("Problem adding SSL chain certificate.",
                             __FILE__, __LINE__);
                     }
                 }
@@ -170,7 +178,7 @@ public:
             catch (...)
             {
                 fclose (f);
-                FatalError ("Reading the SSL chain file generated an exception.",
+                beast::FatalError ("Reading the SSL chain file generated an exception.",
                     __FILE__, __LINE__);
             }
         }
@@ -184,14 +192,14 @@ public:
 
             if (error)
             {
-                FatalError ("Problem using the SSL private key file.",
+                beast::FatalError ("Problem using the SSL private key file.",
                     __FILE__, __LINE__);
             }
         }
 
         if (SSL_CTX_check_private_key (ssl) != 1)
         {
-            FatalError ("Invalid key in SSL private key file.",
+            beast::FatalError ("Invalid key in SSL private key file.",
                 __FILE__, __LINE__);
         }
     }
@@ -213,10 +221,11 @@ public:
         //
         explicit ScopedDHPointer (std::string const& params)
         {
-            uint8 const* p (reinterpret_cast <uint8 const*>(&params [0]));
+            auto const* p (
+                reinterpret_cast <std::uint8_t const*>(&params [0]));
             m_dh = d2i_DHparams (nullptr, &p, params.size ());
             if (m_dh == nullptr)
-                FatalError ("d2i_DHparams returned nullptr.",
+                beast::FatalError ("d2i_DHparams returned nullptr.",
                     __FILE__, __LINE__);
         }
 
@@ -252,7 +261,7 @@ public:
         }
         else
         {
-            FatalError ("unsupported key length", __FILE__, __LINE__);
+            beast::FatalError ("unsupported key length", __FILE__, __LINE__);
         }
 
         return nullptr;
@@ -268,23 +277,23 @@ RippleSSLContext::RippleSSLContext (ContextType& context)
 
 RippleSSLContext* RippleSSLContext::createBare ()
 {
-    ScopedPointer <RippleSSLContextImp> context (new RippleSSLContextImp ());
+    std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
 
     return context.release ();
 }
 
 RippleSSLContext* RippleSSLContext::createWebSocket ()
 {
-    ScopedPointer <RippleSSLContextImp> context (new RippleSSLContextImp ());
+    std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
 
     context->initCommon ();
 
     return context.release ();
 }
 
-RippleSSLContext* RippleSSLContext::createAnonymous (String const& cipherList)
+RippleSSLContext* RippleSSLContext::createAnonymous (std::string const& cipherList)
 {
-    ScopedPointer <RippleSSLContextImp> context (new RippleSSLContextImp ());
+    std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
 
     context->initAnonymous (cipherList);
 
@@ -294,7 +303,7 @@ RippleSSLContext* RippleSSLContext::createAnonymous (String const& cipherList)
 RippleSSLContext* RippleSSLContext::createAuthenticated (
     std::string key_file, std::string cert_file, std::string chain_file)
 {
-    ScopedPointer <RippleSSLContextImp> context (new RippleSSLContextImp ());
+    std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
 
     context->initAuthenticated (key_file, cert_file, chain_file);
 
@@ -306,3 +315,4 @@ std::string RippleSSLContext::getRawDHParams (int keySize)
     return RippleSSLContextImp::getRawDHParams (keySize);
 }
 
+}

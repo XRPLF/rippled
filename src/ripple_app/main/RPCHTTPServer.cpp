@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../ripple/common/RippleSSLContext.h"
+
+namespace ripple {
+
 class RPCHTTPServerImp
     : public RPCHTTPServer
     , public LeakChecked <RPCHTTPServerImp>
@@ -287,3 +291,4 @@ RPCHTTPServer* RPCHTTPServer::New (Stoppable& parent,
     return new RPCHTTPServerImp (parent, journal, jobQueue, networkOPs, resourceManager);
 }
 
+}

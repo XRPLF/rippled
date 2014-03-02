@@ -17,8 +17,14 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_BASICS_RIPPLESSLCONTEXT_H_INCLUDED
-#define RIPPLE_NET_BASICS_RIPPLESSLCONTEXT_H_INCLUDED
+#ifndef RIPPLE_COMMON_SSLCONTEXT_H_INCLUDED
+#define RIPPLE_COMMON_SSLCONTEXT_H_INCLUDED
+
+#include "../beast/modules/beast_asio/beast_asio.h"
+
+#include <string>
+
+namespace ripple {
 
 /** The SSL contexts used by Ripple.
 
@@ -27,7 +33,7 @@
     sslv23, Transport Layer Security / General. This is primarily used for peer to peer servers that don't care
     about certificates or identity verification.
 */
-class RippleSSLContext : public SSLContext
+class RippleSSLContext : public beast::SSLContext
 {
 public:
     /** Retrieve raw DH parameters.
@@ -52,7 +58,7 @@ public:
         No certificates are required. Peers use this context.
         If the cipher list is invalid, a fatal error is raised.
     */
-    static RippleSSLContext* createAnonymous (String const& cipherList);
+    static RippleSSLContext* createAnonymous (std::string const& cipherList);
 
     /** Create a context with authentication requirements.
         This is used for WebSocket connections.
@@ -65,5 +71,7 @@ public:
 protected:
     explicit RippleSSLContext (ContextType& context);
 };
+
+}
 
 #endif

@@ -22,6 +22,8 @@
 
 #include <memory>
 
+#include "../../ripple/common/MultiSocket.h"
+
 namespace ripple {
 namespace HTTP {
 

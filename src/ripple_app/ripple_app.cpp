@@ -63,13 +63,13 @@ namespace ripple {
 
 # include "rpc/RPCHandler.h"
 }
-namespace ripple {
-#include "rpc/RPCHandler.cpp"
-
 # include "rpc/RPCServerHandler.h"
 # include "main/RPCHTTPServer.h"
 #include "main/RPCHTTPServer.cpp"
 #include "rpc/RPCServerHandler.cpp"
+namespace ripple {
+#include "rpc/RPCHandler.cpp"
+
 #include "websocket/WSConnection.h"
 
 # include "tx/TxQueueEntry.h"

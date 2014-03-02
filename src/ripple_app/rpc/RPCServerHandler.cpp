@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 RPCServerHandler::RPCServerHandler (NetworkOPs& networkOPs, Resource::Manager& resourceManager)
     : m_networkOPs (networkOPs)
     , m_resourceManager (resourceManager)
@@ -146,4 +148,6 @@ std::string RPCServerHandler::processRequest (std::string const& request, IP::En
     response = JSONRPCReply (result, Json::Value (), id);
 
     return createResponse (200, response);
+}
+
 }

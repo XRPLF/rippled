@@ -17,11 +17,16 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_BASICS_IMPOL_MULTISOCKETTYPE_H_INCLUDED
-#define RIPPLE_NET_BASICS_IMPOL_MULTISOCKETTYPE_H_INCLUDED
+#ifndef RIPPLE_COMMON_MULTISOCKETTYPE_H_INCLUDED
+#define RIPPLE_COMMON_MULTISOCKETTYPE_H_INCLUDED
 
-/** Template for producing instances of MultiSocket
-*/
+#include "../MultiSocket.h"
+
+#include <memory>
+
+namespace ripple {
+
+/** Template for producing instances of MultiSocket */
 template <class StreamSocket>
 class MultiSocketType
     : public MultiSocket
@@ -43,8 +48,8 @@ private:
     State m_state;
     boost::asio::ssl::context& m_ssl_context;
     int m_verify_mode;
-    ScopedPointer <Socket> m_stream;
-    ScopedPointer <Socket> m_ssl_stream; // the ssl portion of our stream if it exists
+    std::unique_ptr <Socket> m_stream;
+    std::unique_ptr <Socket> m_ssl_stream; // the ssl portion of our stream if it exists
     bool m_needsShutdown;
     StreamSocket m_next_layer;
     ProxyInfo m_proxyInfo;
@@ -89,13 +94,13 @@ protected:
         return m_origFlags;
     }
 
-    IP::Endpoint local_endpoint()
+    beast::IP::Endpoint local_endpoint()
     {
         return IPAddressConversion::from_asio (
             m_next_layer.local_endpoint());
     }
 
-    IP::Endpoint remote_endpoint()
+    beast::IP::Endpoint remote_endpoint()
     {
         if (m_proxyInfoSet)
         {
@@ -145,7 +150,7 @@ protected:
         This object gets dynamically created and replaced with other
         objects as we process the various flags for handshaking.
     */
-    Socket& stream () const noexcept
+    beast::Socket& stream () const noexcept
     {
         bassert (m_stream != nullptr);
         return *m_stream;
@@ -219,26 +224,26 @@ protected:
     // basic_stream_socket
     //
 
-    std::size_t read_some (MutableBuffers const& buffers, error_code& ec)
+    std::size_t read_some (beast::MutableBuffers const& buffers, error_code& ec)
     {
         return stream ().read_some (buffers, ec);
     }
 
-    std::size_t write_some (ConstBuffers const& buffers, error_code& ec)
+    std::size_t write_some (beast::ConstBuffers const& buffers, error_code& ec)
     {
         return stream ().write_some (buffers, ec);
     }
 
-    void async_read_some (MutableBuffers const& buffers, SharedHandlerPtr handler)
+    void async_read_some (beast::MutableBuffers const& buffers, beast::SharedHandlerPtr handler)
     {
         stream ().async_read_some (buffers,
-            BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler));
+            BOOST_ASIO_MOVE_CAST(beast::SharedHandlerPtr)(handler));
     }
 
-    void async_write_some (ConstBuffers const& buffers, SharedHandlerPtr handler)
+    void async_write_some (beast::ConstBuffers const& buffers, beast::SharedHandlerPtr handler)
     {
         stream ().async_write_some (buffers,
-            BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler));
+            BOOST_ASIO_MOVE_CAST(beast::SharedHandlerPtr)(handler));
     }
 
     //--------------------------------------------------------------------------
@@ -291,28 +296,28 @@ protected:
     // we need the ability to re-use data for multiple handshake stages anyway.
     //
     error_code handshake (handshake_type type,
-        ConstBuffers const& buffers, error_code& ec)
+        beast::ConstBuffers const& buffers, error_code& ec)
     {
         return do_handshake (type, buffers, ec);
     }
 
     //--------------------------------------------------------------------------
 
-    void async_handshake (handshake_type type, SharedHandlerPtr handler)
+    void async_handshake (handshake_type type, beast::SharedHandlerPtr handler)
     {
-        do_async_handshake (type, ConstBuffers (), handler);
+        do_async_handshake (type, beast::ConstBuffers (), handler);
     }
 
     void async_handshake (handshake_type type,
-        ConstBuffers const& buffers, SharedHandlerPtr handler)
+        beast::ConstBuffers const& buffers, beast::SharedHandlerPtr handler)
     {
         do_async_handshake (type, buffers, handler);
     }
 
     void do_async_handshake (handshake_type type,
-        ConstBuffers const& buffers, SharedHandlerPtr const& handler)
+        beast::ConstBuffers const& buffers, beast::SharedHandlerPtr const& handler)
     {
-        return get_io_service ().dispatch (SharedHandlerPtr (
+        return get_io_service ().dispatch (beast::SharedHandlerPtr (
             new AsyncOp <next_layer_type> (*this, m_next_layer, type, buffers, handler)));
     }
 
@@ -332,7 +337,7 @@ protected:
         return ec = handshake_error ();
     }
 
-    void async_shutdown (SharedHandlerPtr handler)
+    void async_shutdown (beast::SharedHandlerPtr handler)
     {
         error_code ec;
 
@@ -341,7 +346,7 @@ protected:
             if (stream ().needs_handshake ())
             {
                 stream ().async_shutdown (
-                    BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler));
+                    BOOST_ASIO_MOVE_CAST(beast::SharedHandlerPtr)(handler));
 
                 return;
             }
@@ -355,7 +360,7 @@ protected:
         }
 
         get_io_service ().wrap (
-            BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(handler))
+            BOOST_ASIO_MOVE_CAST(beast::SharedHandlerPtr)(handler))
                 (ec);
     }
 
@@ -441,17 +446,17 @@ protected:
 
                 // Client sends PROXY in the plain so make
                 // sure they have an underlying stream right away.
-                m_stream = new_plain_stream ();
+                m_stream.reset (new_plain_stream ());
             }
             else if (m_flags.set (Flag::ssl))
             {
                 m_state = stateHandshakeFinal;
-                m_stream = nullptr;
+                m_stream.reset (nullptr);
             }
             else
             {
                 m_state = stateReady;
-                m_stream = new_plain_stream ();
+                m_stream.reset (new_plain_stream ());
             }
         }
         else if (is_server ())
@@ -461,27 +466,27 @@ protected:
                 // We expect a PROXY handshake.
                 // Create the plain stream at handshake time.
                 m_state = stateHandshake;
-                m_stream = nullptr;
+                m_stream.reset (nullptr);
             }
             else if (m_flags.set (Flag::ssl_required))
             {
                 // We require an SSL handshake.
                 // Create the stream at handshake time.
                 m_state = stateHandshakeFinal;
-                m_stream = nullptr;
+                m_stream.reset (nullptr);
             }
             else if (m_flags.set (Flag::ssl))
             {
                 // We will use the SSL detector at handshake
                 // time decide which type of stream to create.
                 m_state = stateHandshake;
-                m_stream = nullptr;
+                m_stream.reset (nullptr);
             }
             else
             {
                 // No handshaking required.
                 m_state = stateReady;
-                m_stream = new_plain_stream ();
+                m_stream.reset (new_plain_stream ());
             }
         }
         else
@@ -496,12 +501,12 @@ protected:
             {
                 // We will decide stream type at handshake time
                 m_state = stateHandshake;
-                m_stream = nullptr;
+                m_stream.reset (nullptr);
             }
             else
             {
                 m_state = stateReady;
-                m_stream = new_plain_stream ();
+                m_stream.reset (new_plain_stream ());
             }
         }
 
@@ -517,7 +522,7 @@ protected:
     //
     error_code initHandshake (handshake_type type)
     {
-        return initHandshake (type, ConstBuffers ());
+        return initHandshake (type, beast::ConstBuffers ());
     }
 
     // Updates the state based on the now-known handshake type. The
@@ -525,7 +530,7 @@ protected:
     // This can come from the results of SSL detection, or from the buffered
     // handshake API calls added in Boost v1.54.0.
     //
-    error_code initHandshake (handshake_type type, ConstBuffers const& buffers)
+    error_code initHandshake (handshake_type type, beast::ConstBuffers const& buffers)
     {
         switch (m_state)
         {
@@ -582,7 +587,7 @@ protected:
                 return handshake_error ();
 
             m_state = stateHandshakeFinal;
-            m_stream = new_ssl_stream (buffers);
+            m_stream.reset (new_ssl_stream (buffers));
         }
         else
         {
@@ -593,26 +598,26 @@ protected:
                 // We will expect and consume a PROXY handshake,
                 // then come back here with the flag cleared.
                 m_state = stateExpectPROXY;
-                m_stream = new_plain_stream ();
+                m_stream.reset (new_plain_stream ());
             }
             else if (m_flags.set (Flag::ssl_required))
             {
                 // WE will perform a required final SSL handshake.
                 m_state = stateHandshakeFinal;
-                m_stream = new_ssl_stream (buffers);
+                m_stream.reset (new_ssl_stream (buffers));
             }
             else if (m_flags.set (Flag::ssl))
             {
                 // We will use the SSL detector to update
                 // our flags and come back through here.
                 m_state = stateDetectSSL;
-                m_stream = nullptr;
+                m_stream.reset (nullptr);
             }
             else
             {
                 // Done with auto-detect
                 m_state = stateReady;
-                m_stream = new_plain_stream (buffers);
+                m_stream.reset (new_plain_stream (buffers));
             }
         }
 
@@ -624,8 +629,8 @@ protected:
     template <typename Stream>
     void set_ssl_stream (boost::asio::ssl::stream <Stream>& ssl_stream)
     {
-        m_ssl_stream = new SocketWrapper <boost::asio::ssl::stream <Stream>&>
-            (ssl_stream);
+        m_ssl_stream.reset (new SocketWrapper <boost::asio::ssl::stream <Stream>&>
+            (ssl_stream));
         m_ssl_stream->set_verify_mode (m_verify_mode);
         m_native_ssl_handle = ssl_stream.native_handle ();
     }
@@ -634,7 +639,7 @@ protected:
 
     // Create a plain stream that just wraps the next layer.
     //
-    Socket* new_plain_stream ()
+    beast::Socket* new_plain_stream ()
     {
         typedef SocketWrapper <next_layer_type&> Wrapper;
         Wrapper* const socket (new Wrapper (m_next_layer));
@@ -645,7 +650,7 @@ protected:
     // A copy of the buffers is made.
     //
     template <typename ConstBufferSequence>
-    Socket* new_plain_stream (ConstBufferSequence const& buffers)
+    beast::Socket* new_plain_stream (ConstBufferSequence const& buffers)
     {
         if (boost::asio::buffer_size (buffers) > 0)
         {
@@ -659,7 +664,7 @@ protected:
 
     // Creates an ssl stream
     //
-    Socket* new_ssl_stream ()
+    beast::Socket* new_ssl_stream ()
     {
         typedef typename boost::asio::ssl::stream <next_layer_type&> SslStream;
         typedef SocketWrapper <SslStream> Wrapper;
@@ -672,7 +677,7 @@ protected:
     // A copy of the buffers is made.
     //
     template <typename ConstBufferSequence>
-    Socket* new_ssl_stream (ConstBufferSequence const& buffers)
+    beast::Socket* new_ssl_stream (ConstBufferSequence const& buffers)
     {
         if (boost::asio::buffer_size (buffers) > 0)
         {
@@ -693,7 +698,7 @@ protected:
     //
 
     error_code do_handshake (handshake_type type,
-        ConstBuffers const& buffers, error_code& ec)
+        beast::ConstBuffers const& buffers, error_code& ec)
     {
         ec = initHandshake (type);
         if (ec)
@@ -823,22 +828,22 @@ protected:
     //
 
     template <typename Stream>
-    struct AsyncOp : ComposedAsyncOperation
+    struct AsyncOp : beast::ComposedAsyncOperation
     {
-        typedef SharedHandlerAllocator <char> Allocator;
+        typedef beast::SharedHandlerAllocator <char> Allocator;
 
-        SharedHandlerPtr m_handler;
+        beast::SharedHandlerPtr m_handler;
         MultiSocketType <StreamSocket>& m_owner;
         Stream& m_stream;
         handshake_type const m_type;
         boost::asio::basic_streambuf <Allocator> m_buffer;
-        HandshakeDetectorType <next_layer_type, HandshakeDetectLogicPROXY> m_proxy;
-        HandshakeDetectorType <next_layer_type, HandshakeDetectLogicSSL3> m_ssl;
+        beast::HandshakeDetectorType <next_layer_type, beast::HandshakeDetectLogicPROXY> m_proxy;
+        beast::HandshakeDetectorType <next_layer_type, beast::HandshakeDetectLogicSSL3> m_ssl;
         bool m_running;
         
         AsyncOp (MultiSocketType <StreamSocket>& owner, Stream& stream,
-            handshake_type type, ConstBuffers const& buffers,
-                SharedHandlerPtr const& handler)
+            handshake_type type, beast::ConstBuffers const& buffers,
+                beast::SharedHandlerPtr const& handler)
             : ComposedAsyncOperation (handler)
             , m_handler (handler)
             , m_owner (owner)
@@ -884,7 +889,7 @@ protected:
 
             // Call the original handler with the error code and end.
             m_owner.get_io_service ().wrap (
-                BOOST_ASIO_MOVE_CAST (SharedHandlerPtr)(m_handler))
+                BOOST_ASIO_MOVE_CAST (beast::SharedHandlerPtr)(m_handler))
                     (ec);
         }
 
@@ -914,7 +919,7 @@ protected:
                         //
                         m_owner.m_state = stateReady;
                         m_owner.stream ().async_handshake (m_type,
-                            SharedHandlerPtr (this));
+                            beast::SharedHandlerPtr (this));
                     }
                     return;
 
@@ -941,7 +946,7 @@ protected:
                         }
 
                         m_proxy.async_detect (m_stream,
-                            m_buffer, SharedHandlerPtr (this));
+                            m_buffer, beast::SharedHandlerPtr (this));
                     }
                     return;
 
@@ -968,7 +973,7 @@ protected:
                         }
 
                         m_ssl.async_detect (m_stream,
-                            m_buffer, SharedHandlerPtr (this));
+                            m_buffer, beast::SharedHandlerPtr (this));
                     }
                     return;
 
@@ -985,7 +990,7 @@ protected:
 
             // Call the original handler with the error code and end.
             m_owner.get_io_service ().wrap (
-                BOOST_ASIO_MOVE_CAST(SharedHandlerPtr)(m_handler))
+                BOOST_ASIO_MOVE_CAST(beast::SharedHandlerPtr)(m_handler))
                     (ec);
         }
 
@@ -995,5 +1000,7 @@ protected:
         }
     };
 };
+
+}
 
 #endif

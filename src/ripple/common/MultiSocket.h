@@ -17,12 +17,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_BASICS_MULTISOCKET_H_INCLUDED
-#define RIPPLE_NET_BASICS_MULTISOCKET_H_INCLUDED
+#ifndef RIPPLE_COMMON_MULTISOCKET_H_INCLUDED
+#define RIPPLE_COMMON_MULTISOCKET_H_INCLUDED
 
-/** A Socket that can handshake with multiple protocols.
-*/
-class MultiSocket : public Socket
+#include "../beast/modules/beast_asio/beast_asio.h"
+
+namespace ripple {
+
+/** A Socket that can handshake with multiple protocols. */
+class MultiSocket : public beast::Socket
 {
 public:
     // immutable flags
@@ -98,13 +101,13 @@ public:
         server_proxy = 8
     };
 
-    typedef HandshakeDetectLogicPROXY::ProxyInfo ProxyInfo;
+    typedef beast::HandshakeDetectLogicPROXY::ProxyInfo ProxyInfo;
 
     // Note that this returns the original flags
     virtual Flag getFlags () = 0;
 
-    virtual IP::Endpoint local_endpoint() = 0;
-    virtual IP::Endpoint remote_endpoint() = 0;
+    virtual beast::IP::Endpoint local_endpoint() = 0;
+    virtual beast::IP::Endpoint remote_endpoint() = 0;
     virtual ProxyInfo getProxyInfo () = 0;
 
     /** Returns a pointer to the SSL handle or nullptr if no SSL. */
@@ -122,5 +125,7 @@ public:
             boost::asio::ssl::context& ssl_context,
                 int flags = 0);
 };
+
+}
 
 #endif

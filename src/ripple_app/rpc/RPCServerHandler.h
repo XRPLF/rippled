@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RPCSERVERHANDLER_H_INCLUDED
 #define RIPPLE_RPCSERVERHANDLER_H_INCLUDED
 
+namespace ripple {
+
 class NetworkOPs;
 
 /** Handles RPC requests.
@@ -39,5 +41,7 @@ private:
     NetworkOPs& m_networkOPs;
     Resource::Manager& m_resourceManager;
 };
+
+}
 
 #endif
