@@ -138,9 +138,12 @@
     <ClInclude Include="..\..\beast\crypto\UnsignedInteger.h" />
     <ClInclude Include="..\..\beast\crypto\UnsignedIntegerCalc.h" />
     <ClInclude Include="..\..\beast\CStdInt.h" />
+    <ClInclude Include="..\..\beast\cxx14\algorithm.h" />
+    <ClInclude Include="..\..\beast\cxx14\config.h" />
+    <ClInclude Include="..\..\beast\cxx14\functional.h" />
+    <ClInclude Include="..\..\beast\cxx14\memory.h" />
+    <ClInclude Include="..\..\beast\cxx14\type_traits.h" />
     <ClInclude Include="..\..\beast\cyclic_iterator.h" />
-    <ClInclude Include="..\..\beast\equal.h" />
-    <ClInclude Include="..\..\beast\equal_to.h" />
     <ClInclude Include="..\..\beast\FixedArray.h" />
     <ClInclude Include="..\..\beast\HeapBlock.h" />
     <ClInclude Include="..\..\beast\HTTP.h" />
@@ -168,8 +171,6 @@
     <ClInclude Include="..\..\beast\Intrusive.h" />
     <ClInclude Include="..\..\beast\intrusive\List.h" />
     <ClInclude Include="..\..\beast\intrusive\LockFreeStack.h" />
-    <ClInclude Include="..\..\beast\is_constructible.h" />
-    <ClInclude Include="..\..\beast\make_unique.h" />
     <ClInclude Include="..\..\beast\Memory.h" />
     <ClInclude Include="..\..\beast\MPL.h" />
     <ClInclude Include="..\..\beast\mpl\IsCallPossible.h" />

@@ -19,7 +19,6 @@
 
 #include "../../../modules/beast_core/beast_core.h" // for UnitTest
 #include "../../chrono/manual_clock.h"
-#include "../../equal.h"
 #include "../aged_set.h"
 #include "../aged_map.h"
 #include "../aged_multiset.h"

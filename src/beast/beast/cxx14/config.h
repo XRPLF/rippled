@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,29 +17,28 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_CXX14_CONFIG_H_INCLUDED
+#define BEAST_CXX14_CONFIG_H_INCLUDED
 
-#include "ripple_resource.h"
+// Sets C++14 compatibility configuration macros based on build environment
 
-#include "../algorithm/api/DecayingSample.h"
-#include "../common/seconds_clock.h"
+// Disables beast c++14 compatibility additions when set to 1
+//
+#ifndef BEAST_NO_CXX14_COMPATIBILITY
+# ifdef _MSC_VER
+#  define BEAST_NO_CXX14_COMPATIBILITY 1
+# else
+#  define BEAST_NO_CXX14_COMPATIBILITY 0
+# endif
+#endif
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
-#include <boost/utility/base_from_member.hpp>
-#include <boost/unordered_map.hpp>
+// Disables beast's make_unique
+#ifndef BEAST_NO_CXX14_MAKE_UNIQUE
+# ifdef _MSC_VER
+#  define BEAST_NO_CXX14_MAKE_UNIQUE 1
+# else
+#  define BEAST_NO_CXX14_MAKE_UNIQUE 0
+# endif
+#endif
 
-#include "../beast/beast/Insight.h"
-#include "../beast/beast/cxx14/memory.h"
-
-#include "impl/Fees.cpp"
-#  include "impl/Kind.h"
-# include "impl/Key.h"
-#  include "impl/Tuning.h"
-# include "impl/Entry.h"
-# include "impl/Import.h"
-#include "impl/Charge.cpp"
-#  include "impl/Logic.h"
-#include "impl/Consumer.cpp"
-#include "impl/LegacyFees.cpp"
-#include "impl/Manager.cpp"
-#include "impl/Tests.cpp"
+#endif

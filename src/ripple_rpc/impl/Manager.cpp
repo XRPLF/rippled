@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "beast/beast/make_unique.h"
+#include "../beast/beast/cxx14/memory.h"
 
 #include "../api/Manager.h"
 

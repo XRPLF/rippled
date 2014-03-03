@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,29 +17,25 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_CXX14_MEMORY_H_INCLUDED
+#define BEAST_CXX14_MEMORY_H_INCLUDED
 
-#include "ripple_resource.h"
+#include "config.h"
 
-#include "../algorithm/api/DecayingSample.h"
-#include "../common/seconds_clock.h"
+#include <memory>
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
-#include <boost/utility/base_from_member.hpp>
-#include <boost/unordered_map.hpp>
+namespace std {
 
-#include "../beast/beast/Insight.h"
-#include "../beast/beast/cxx14/memory.h"
+#if ! BEAST_NO_CXX14_MAKE_UNIQUE
 
-#include "impl/Fees.cpp"
-#  include "impl/Kind.h"
-# include "impl/Key.h"
-#  include "impl/Tuning.h"
-# include "impl/Entry.h"
-# include "impl/Import.h"
-#include "impl/Charge.cpp"
-#  include "impl/Logic.h"
-#include "impl/Consumer.cpp"
-#include "impl/LegacyFees.cpp"
-#include "impl/Manager.cpp"
-#include "impl/Tests.cpp"
+template <class T, class... Args>
+std::unique_ptr <T> make_unique (Args&&... args)
+{
+    return std::unique_ptr <T> (new T (std::forward <Args> (args)...));
+}
+
+#endif
+
+}
+
+#endif

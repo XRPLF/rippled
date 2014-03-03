@@ -306,6 +306,9 @@
     <Filter Include="beast\intrusive">
       <UniqueIdentifier>{8832eb52-53f9-4850-8dc9-1d579a386a0e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\cxx14">
+      <UniqueIdentifier>{5745a887-7df8-4059-87ea-e0c7eea77a9b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1212,9 +1215,6 @@
     <ClInclude Include="..\..\beast\asio\io_latency_probe.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\make_unique.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\insight\Base.h">
       <Filter>beast\insight</Filter>
     </ClInclude>
@@ -1269,12 +1269,6 @@
     <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\equal_to.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\equal.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\type_traits\maybe_const.h">
       <Filter>beast\type_traits</Filter>
     </ClInclude>
@@ -1320,14 +1314,26 @@
     <ClInclude Include="..\..\beast\container\detail\aged_associative_container.h">
       <Filter>beast\container\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\is_constructible.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\container\aged_container_utility.h">
       <Filter>beast\container</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\container\aged_container.h">
       <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\cxx14\type_traits.h">
+      <Filter>beast\cxx14</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\cxx14\functional.h">
+      <Filter>beast\cxx14</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\cxx14\config.h">
+      <Filter>beast\cxx14</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\cxx14\algorithm.h">
+      <Filter>beast\cxx14</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\cxx14\memory.h">
+      <Filter>beast\cxx14</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
