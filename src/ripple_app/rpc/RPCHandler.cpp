@@ -338,7 +338,8 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
 
     if (!bOffline)
     {
-        SLE::pointer    sleAccountRoot  = mNetOps->getSLEi (lSnapshot, Ledger::getAccountRootIndex (raSrcAddressID.getAccountID ()));
+        SLE::pointer sleAccountRoot = mNetOps->getSLEi (lSnapshot, 
+            Ledger::getAccountRootIndex (raSrcAddressID.getAccountID ()));
 
         if (!sleAccountRoot)
         {
@@ -350,23 +351,29 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
     bool            bHaveAuthKey    = false;
     RippleAddress   naAuthorizedPublic;
 
-    RippleAddress   naSecret            = RippleAddress::createSeedGeneric (params["secret"].asString ());
-    RippleAddress   naMasterGenerator   = RippleAddress::createGeneratorPublic (naSecret);
+    RippleAddress   naSecret = RippleAddress::createSeedGeneric (
+        params["secret"].asString ());
+    RippleAddress   naMasterGenerator = RippleAddress::createGeneratorPublic (
+        naSecret);
 
-    // Find the index of Account from the master generator, so we can generate the public and private keys.
-    RippleAddress       naMasterAccountPublic;
-    unsigned int        iIndex  = 0;
-    bool                bFound  = false;
+    // Find the index of Account from the master generator, so we can generate
+    // the public and private keys.
+    RippleAddress naMasterAccountPublic;
+    unsigned int iIndex  = 0;
+    bool bFound  = false;
 
-    // Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
-    // related.
+    // Don't look at ledger entries to determine if the account exists.
+    // Don't want to leak to thin server that these accounts are related.
     while (!bFound && iIndex != getConfig ().ACCOUNT_PROBE_MAX)
     {
         naMasterAccountPublic.setAccountPublic (naMasterGenerator, iIndex);
 
-        WriteLog (lsWARNING, RPCHandler) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID () << " : " << raSrcAddressID.humanAccountID ();
+        WriteLog (lsWARNING, RPCHandler) <<
+            "authorize: " << iIndex <<
+            " : " << naMasterAccountPublic.humanAccountID () <<
+            " : " << raSrcAddressID.humanAccountID ();
 
-        bFound  = raSrcAddressID.getAccountID () == naMasterAccountPublic.getAccountID ();
+        bFound = raSrcAddressID.getAccountID () == naMasterAccountPublic.getAccountID ();
 
         if (!bFound)
             ++iIndex;
@@ -378,9 +385,12 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
     }
 
     // Use the generator to determine the associated public and private keys.
-    RippleAddress   naGenerator         = RippleAddress::createGeneratorPublic (naSecret);
-    RippleAddress   naAccountPublic     = RippleAddress::createAccountPublic (naGenerator, iIndex);
-    RippleAddress   naAccountPrivate    = RippleAddress::createAccountPrivate (naGenerator, naSecret, iIndex);
+    RippleAddress naGenerator = RippleAddress::createGeneratorPublic (
+        naSecret);
+    RippleAddress naAccountPublic = RippleAddress::createAccountPublic (
+        naGenerator, iIndex);
+    RippleAddress naAccountPrivate = RippleAddress::createAccountPrivate (
+        naGenerator, naSecret, iIndex);
 
     if (bHaveAuthKey
             // The generated pair must match authorized...
@@ -395,7 +405,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
         return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    std::unique_ptr<STObject>    sopTrans;
+    std::unique_ptr<STObject> sopTrans;
 
     {
         STParsedJSON parsed ("tx_json", tx_json);
@@ -424,30 +434,27 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "invalidTransaction";
-        jvResult["error_exception"] = e.what ();
-
-        return jvResult;
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction");
     }
 
-    if (!stpTrans->isMemoOkay ())
+    if (!isMemoOkay (*stpTrans))
     {
-        jvResult["error"]           = "invalidTransaction";
-        jvResult["error_exception"] = "overlong memos";
-
-        return jvResult;
+        return RPC::make_error (rpcINVALID_PARAMS,
+            "The memo exceeds the maximum allowed size.");
     }
 
     if (params.isMember ("debug_signing"))
     {
-        jvResult["tx_unsigned"]     = strHex (stpTrans->getSerializer ().peekData ());
+        jvResult["tx_unsigned"] = strHex (
+            stpTrans->getSerializer ().peekData ());
         jvResult["tx_signing_hash"] = stpTrans->getSigningHash ().ToString ();
     }
 
     // FIXME: For performance, transactions should not be signed in this code path.
     stpTrans->sign (naAccountPrivate);
 
-    Transaction::pointer            tpTrans;
+    Transaction::pointer tpTrans;
 
     try
     {
@@ -455,37 +462,33 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "internalTransaction";
-        jvResult["error_exception"] = e.what ();
-
-        return jvResult;
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction");
     }
 
     try
     {
         // FIXME: For performance, should use asynch interface
-        tpTrans = mNetOps->submitTransactionSync (tpTrans, mRole == Config::ADMIN, bFailHard, bSubmit);
+        tpTrans = mNetOps->submitTransactionSync (tpTrans, 
+            mRole == Config::ADMIN, bFailHard, bSubmit);
 
         if (!tpTrans)
         {
-            jvResult["error"]           = "invalidTransaction";
-            jvResult["error_exception"] = "Unable to sterilize transaction.";
-
-            return jvResult;
+            return RPC::make_error (rpcINTERNAL,
+                "Unable to sterilize transaction.");
         }
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "internalSubmit";
-        jvResult["error_exception"] = e.what ();
-
-        return jvResult;
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction submission.");
     }
 
     try
     {
-        jvResult["tx_json"]     = tpTrans->getJson (0);
-        jvResult["tx_blob"]     = strHex (tpTrans->getSTransaction ()->getSerializer ().peekData ());
+        jvResult["tx_json"] = tpTrans->getJson (0);
+        jvResult["tx_blob"] = strHex (
+            tpTrans->getSTransaction ()->getSerializer ().peekData ());
 
         if (temUNCERTAIN != tpTrans->getResult ())
         {
@@ -503,10 +506,8 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "internalJson";
-        jvResult["error_exception"] = e.what ();
-
-        return jvResult;
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during JSON handling.");
     }
 }
 
@@ -535,7 +536,7 @@ Json::Value RPCHandler::getMasterGenerator (Ledger::ref lrLedger, const RippleAd
 
     if (vucMasterGenerator.empty ())
     {
-        return rpcError (rpcFAIL_GEN_DECRPYT);
+        return rpcError (rpcFAIL_GEN_DECRYPT);
     }
 
     naMasterGenerator.setGenerator (vucMasterGenerator);
@@ -693,7 +694,7 @@ Json::Value RPCHandler::accountFromString (Ledger::ref lrLedger, RippleAddress& 
 
             if (vucMasterGenerator.empty ())
             {
-                rpcError (rpcNO_GEN_DECRPYT);
+                rpcError (rpcNO_GEN_DECRYPT);
             }
 
             naGenerator.setGenerator (vucMasterGenerator);

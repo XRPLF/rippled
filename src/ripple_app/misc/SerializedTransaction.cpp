@@ -307,17 +307,19 @@ std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, uint32 inLedge
                 % getSequence () % inLedger % status % rTxn % escapedMetaData);
 }
 
-bool SerializedTransaction::isMemoOkay ()
+//------------------------------------------------------------------------------
+bool isMemoOkay (STObject const& st)
 {
-    bool ret = true;
-    if (isFieldPresent (sfMemos))
-    {
-        Serializer s (2048); // Try to avoid allocate/copy/free's
-        getFieldArray (sfMemos).add (s);
-        if (s.getDataLength () > 1024)
-            ret = false;
-    }
-    return ret;
+    if (!st.isFieldPresent (sfMemos))
+        return true;
+    // The number 2048 is a preallocation hint, not a hard limit
+    // to avoid allocate/copy/free's
+    Serializer s (2048);
+    st.getFieldArray (sfMemos).add (s);
+    // FIXME move the memo limit into a config tunable
+    if (s.getDataLength () > 1024)
+        return false;
+    return true;
 }
 
 //------------------------------------------------------------------------------

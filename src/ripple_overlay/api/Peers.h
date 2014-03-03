@@ -175,18 +175,18 @@ struct send_if_pred
 {
     typedef void return_type;
 
-	PackedMessage::pointer const& msg; 
-	Predicate const& predicate;
+    PackedMessage::pointer const& msg;
+    Predicate const& predicate;
 
-	send_if_pred(PackedMessage::pointer const& m, Predicate const& p)
-		: msg(m), predicate(p)
-	{ }
+    send_if_pred(PackedMessage::pointer const& m, Predicate const& p)
+    : msg(m), predicate(p)
+    { }
 
     void operator()(Peer::ref peer) const
-	{
+    {
         if (predicate (peer))
             peer->sendPacket (msg, false);
-	}
+    }
 };
 
 /** Helper function to aid in type deduction */
@@ -206,7 +206,7 @@ struct send_if_not_pred
 {
     typedef void return_type;
 
-    PackedMessage::pointer const& msg; 
+    PackedMessage::pointer const& msg;
     Predicate const& predicate;
 
     send_if_not_pred(PackedMessage::pointer const& m, Predicate const& p)

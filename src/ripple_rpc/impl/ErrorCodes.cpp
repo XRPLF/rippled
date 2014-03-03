@@ -65,7 +65,7 @@ public:
         add (rpcDST_AMT_MALFORMED,     "dstAmtMalformed",   "Destination amount/currency/issuer is malformed.");
         add (rpcDST_ISR_MALFORMED,     "dstIsrMalformed",   "Destination issuer is malformed.");
         add (rpcFORBIDDEN,             "forbidden",         "Bad credentials.");
-        add (rpcFAIL_GEN_DECRPYT,      "failGenDecrypt",    "Failed to decrypt generator.");
+        add (rpcFAIL_GEN_DECRYPT,      "failGenDecrypt",    "Failed to decrypt generator.");
         add (rpcGETS_ACT_MALFORMED,    "getsActMalformed",  "Gets account malformed.");
         add (rpcGETS_AMT_MALFORMED,    "getsAmtMalformed",  "Gets amount malformed.");
         add (rpcHOST_IP_MALFORMED,     "hostIpMalformed",   "Host IP is malformed.");
@@ -84,7 +84,7 @@ public:
         add (rpcNO_CLOSED,             "noClosed",          "Closed ledger is unavailable.");
         add (rpcNO_CURRENT,            "noCurrent",         "Current ledger is unavailable.");
         add (rpcNO_EVENTS,             "noEvents",          "Current transport does not support events.");
-        add (rpcNO_GEN_DECRPYT,        "noGenDectypt",      "Password failed to decrypt master public generator.");
+        add (rpcNO_GEN_DECRYPT,        "noGenDecrypt",      "Password failed to decrypt master public generator.");
         add (rpcNO_NETWORK,            "noNetwork",         "Network not available.");
         add (rpcNO_PATH,               "noPath",            "Unable to find a ripple path.");
         add (rpcNO_PERMISSION,         "noPermission",      "You don't have permission for this command.");

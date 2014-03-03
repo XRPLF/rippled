@@ -124,8 +124,6 @@ public:
         mSigBad = true;
     }
 
-    bool isMemoOkay ();
-
     // SQL Functions
     static std::string getSQLValueHeader ();
     static std::string getSQLInsertHeader ();
@@ -152,6 +150,8 @@ private:
     mutable bool mSigGood;
     mutable bool mSigBad;
 };
+
+bool isMemoOkay (STObject const& st);
 
 #endif
 // vim:ts=4

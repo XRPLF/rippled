@@ -24,22 +24,26 @@ class Features;
 class FeeVote : public IFeeVote
 {
 private:
-    // VFALCO TODO rename template parameter (wtf, looks like a macro)
-    template <typename INT>
+    
+    template <typename Integer>
     class VotableInteger
     {
     public:
-        VotableInteger (INT current, INT target) : mCurrent (current), mTarget (target)
+        VotableInteger (Integer current, Integer target) 
+            : mCurrent (current)
+            , mTarget (target)
         {
-            ++mVoteMap[mTarget];                // Add our vote
+            // Add our vote
+            ++mVoteMap[mTarget];
         }
 
-        bool mayVote ()
+        bool mayVote () const
         {
-            return mCurrent != mTarget;         // If we love the current setting, we will not vote
+            // If we love the current setting, we will not vote
+            return mCurrent != mTarget;
         }
 
-        void addVote (INT vote)
+        void addVote (Integer vote)
         {
             ++mVoteMap[vote];
         }
@@ -49,12 +53,12 @@ private:
             addVote (mCurrent);
         }
 
-        INT getVotes ()
+        Integer getVotes ()
         {
-            INT ourVote = mCurrent;
+            Integer ourVote = mCurrent;
             int weight = 0;
 
-            typedef typename std::map<INT, int>::value_type mapVType;
+            typedef typename std::map<Integer, int>::value_type mapVType;
             BOOST_FOREACH (const mapVType & value, mVoteMap)
             {
                 // Take most voted value between current and target, inclusive
@@ -71,10 +75,11 @@ private:
         }
 
     private:
-        INT                     mCurrent;       // The current setting
-        INT                     mTarget;        // The setting we want
-        std::map<INT, int>      mVoteMap;
+        Integer mCurrent;       // The current setting
+        Integer mTarget;        // The setting we want
+        std::map<Integer, int> mVoteMap;
     };
+
 public:
     FeeVote (uint64 targetBaseFee, uint32 targetReserveBase, uint32 targetReserveIncrement)
         : mTargetBaseFee (targetBaseFee)

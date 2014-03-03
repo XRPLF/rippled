@@ -108,10 +108,10 @@ enum error_code_i
 
     // Internal error (should never happen)
     rpcINTERNAL,        // Generic internal error.
-    rpcFAIL_GEN_DECRPYT,
+    rpcFAIL_GEN_DECRYPT,
     rpcNOT_IMPL,
     rpcNOT_SUPPORTED,
-    rpcNO_GEN_DECRPYT,
+    rpcNO_GEN_DECRYPT,
 };
 
 //------------------------------------------------------------------------------
