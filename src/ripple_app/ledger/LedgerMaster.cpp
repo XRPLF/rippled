@@ -1234,7 +1234,7 @@ public:
             return ret;
 
         clearLedger (index);
-        return ret;
+        return Ledger::pointer();
     }
 
     Ledger::pointer getLedgerByHash (uint256 const& hash)
