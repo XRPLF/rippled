@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#ifndef BEAST_EQUAL_H_INCLUDED
-#define BEAST_EQUAL_H_INCLUDED
+#ifndef BEAST_CXX14_ALGORITHM_H_INCLUDED
+#define BEAST_CXX14_ALGORITHM_H_INCLUDED
 
-#include "equal_to.h"
+#include "config.h"
+#include "functional.h"
 
-#include <functional>
-#include <type_traits>
+#include <algorithm>
 
 namespace std {
 

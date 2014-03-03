@@ -26,19 +26,17 @@
 #include "../aged_container.h"
 
 #include "../../chrono/abstract_clock.h"
-#include "../../equal.h"
-#include "../../equal_to.h"
-#include "../../is_constructible.h"
 #include "../../utility/empty_base_optimization.h"
 
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/unordered_set.hpp>
 
+#include "../../cxx14/algorithm.h"
+#include "../../cxx14/type_traits.h"
 #include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <memory>
-#include <type_traits>
 #include <utility>
 
 /*

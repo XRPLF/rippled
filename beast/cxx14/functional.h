@@ -17,19 +17,21 @@
 */
 //==============================================================================
 
-#ifndef BEAST_EQUAL_TO_H_INCLUDED
-#define BEAST_EQUAL_TO_H_INCLUDED
+#ifndef BEAST_CXX14_FUNCTIONAL_H_INCLUDED
+#define BEAST_CXX14_FUNCTIONAL_H_INCLUDED
+
+#include "config.h"
 
 #include <functional>
 #include <type_traits>
+#include <utility>
+
+#if ! BEAST_NO_CXX14_COMPATIBILITY
 
 namespace std {
 
-#ifndef _MSC_VER
-
-/** C++14 implementation of std::equal_to <void> specialization.
-    This supports heterogeneous comparisons.
-*/
+// C++14 implementation of std::equal_to <void> specialization.
+// This supports heterogeneous comparisons.
 template <>
 struct equal_to <void>
 {
@@ -44,8 +46,8 @@ struct equal_to <void>
     }
 };
 
-#endif
-
 }
+
+#endif
 
 #endif
