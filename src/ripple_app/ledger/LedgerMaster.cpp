@@ -424,11 +424,16 @@ public:
         return true;
     }
 
+    // Get the earliest ledger we will let peers fetch
     uint32 getEarliestFetch ()
     {
+        // The earliest ledger we will let people fetch is ledger zero,
+        // unless that creates a larger range than allowed
         uint32 e = getClosedLedger()->getLedgerSeq();
         if (e > getConfig().FETCH_DEPTH)
             e -= getConfig().FETCH_DEPTH;
+        else
+            e = 0;
         return e;
     }
 
