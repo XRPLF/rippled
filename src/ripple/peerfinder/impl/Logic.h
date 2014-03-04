@@ -1003,18 +1003,6 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    // Returns a suitable Endpoint representing us.
-    Endpoint thisEndpoint (SharedState::Access& state)
-    {
-        // Why would someone call this if we don't want incoming?
-        consistency_check (state->config.wantIncoming);
-        Endpoint ep;
-        ep.hops = 0;
-        ep.address = IP::Endpoint (
-            IP::AddressV4 ()).at_port (state->config.listeningPort);
-        return ep;
-    }
-
     // Returns true if the IP::Endpoint contains no invalid data.
     bool is_valid_address (IP::Endpoint const& address)
     {
@@ -1079,6 +1067,30 @@ public:
                 {
                     targets.emplace_back (slot);
                 });
+        }
+        
+        /* VFALCO NOTE
+            This is a temporary measure. Once we know our own IP
+            address, the correct solution is to put it into the Livecache
+            at hops 0, and go through the regular handout path. This way
+            we avoid handing our address out too frequenty, which this code
+            suffers from.
+        */
+        // Add an entry for ourselves if:
+        // 1. We want incoming
+        // 2. We have slots
+        // 3. We haven't failed the firewalled test
+        //
+        if (state->config.wantIncoming &&
+            state->counts.inboundSlots() > 0)
+        {
+            Endpoint ep;
+            ep.hops = 0;
+            ep.address = IP::Endpoint (
+                IP::AddressV4 ()).at_port (
+                    state->config.listeningPort);
+            for (auto& t : targets)
+                t.insert (ep);
         }
 
         // build sequence of endpoints by hops

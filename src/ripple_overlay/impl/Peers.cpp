@@ -411,9 +411,16 @@ public:
 
         m_peerFinder->setConfig (config);
 
-        if (!getConfig ().IPS.empty ())
+        auto bootstrapIps (getConfig ().IPS);
+
+        // If no IPs are specified, use the Ripple Labs round robin
+        // pool to get some servers to insert into the boot cache. 
+        if (bootstrapIps.empty ())
+            bootstrapIps.push_back ("r.ripple.com 51235");
+
+        if (!bootstrapIps.empty ())
         {
-            m_resolver.resolve (getConfig ().IPS,
+            m_resolver.resolve (bootstrapIps,
                 [this](
                     std::string const& name, 
                     std::vector <IP::Endpoint> const& addresses)

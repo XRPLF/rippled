@@ -507,10 +507,12 @@ std::string
 Livecache <Allocator>::hops_t::histogram() const
 {
     std::stringstream ss;
-    for (auto i : m_hist)
-        ss <<
-            i <<
+    for (typename decltype(m_hist)::size_type i (0);
+        i < m_hist.size(); ++i)
+    {
+        ss << m_hist[i] <<
             ((i < Tuning::maxHops + 1) ? ", " : "");
+    }
     return ss.str();
 }
 

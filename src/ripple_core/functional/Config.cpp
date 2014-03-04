@@ -242,9 +242,12 @@ void Config::setup (const std::string& strConf, bool bQuiet)
 
     // Create the new unified database
     m_moduleDbPath = getDatabaseDir();
-    
-    if (m_moduleDbPath.isDirectory ())
-        m_moduleDbPath = m_moduleDbPath.getChildFile("rippled.sqlite");
+ 
+    // This code is temporarily disabled, and modules will fall back to using
+    // per-module databases (e.g. "peerfinder.sqlite") under the module db path
+    //    
+    //if (m_moduleDbPath.isDirectory ())
+    //    m_moduleDbPath = m_moduleDbPath.getChildFile("rippled.sqlite");
 }
 
 void Config::load ()
