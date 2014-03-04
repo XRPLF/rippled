@@ -99,19 +99,18 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
 
 #endif
 
+    uint256 txID = txn.getTransactionID ();
+
+    if (!txID)
+    {
+        WriteLog (lsWARNING, TransactionEngine) << "applyTransaction: invalid transaction id";
+        return temINVALID;
+    }
+
     std::unique_ptr<Transactor> transactor = Transactor::makeTransactor (txn, params, this);
 
     if (transactor.get () != NULL)
     {
-        uint256 txID        = txn.getTransactionID ();
-
-        if (!txID)
-        {
-            WriteLog (lsWARNING, TransactionEngine) << "applyTransaction: invalid transaction id";
-
-            return temINVALID;
-        }
-
         TER terResult = transactor->apply ();
         std::string strToken;
         std::string strHuman;
