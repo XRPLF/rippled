@@ -182,7 +182,6 @@ namespace beast
 #include "text/StringArray.cpp"
 #include "text/StringPairArray.cpp"
 #include "text/StringPool.cpp"
-#include "text/TextDiff.cpp"
 
 #include "thread/impl/TrackedMutex.cpp"
 #include "thread/DeadlineTimer.cpp"
