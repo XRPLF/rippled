@@ -94,9 +94,10 @@ void TestPeerLogicSyncClient::on_connect ()
     {
         if (failure (socket ().shutdown (error ()), true))
             return;
+        error () = error_code ();
     }
 
-    if (failure (socket ().shutdown (Socket::shutdown_both, error ())))
+    if (failure (socket ().shutdown (Socket::shutdown_send, error ())))
         return;
 
     if (failure (socket ().close (error ())))
