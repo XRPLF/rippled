@@ -90,7 +90,7 @@ void TestPeerLogicAsyncServer::on_write (error_code const& ec, std::size_t bytes
         // on_shutdown will call finished ()
         // we need another instance of ec so we can call on_shutdown()
         error_code ec;
-        on_shutdown (socket ().shutdown (Socket::shutdown_both, ec));
+        on_shutdown (socket ().shutdown (Socket::shutdown_receive, ec));
     }
 }
 
@@ -102,7 +102,7 @@ void TestPeerLogicAsyncServer::on_shutdown (error_code const& ec)
         {
             if (socket ().needs_handshake ())
             {
-                socket ().shutdown (Socket::shutdown_both, error ());
+                socket ().shutdown (Socket::shutdown_receive, error ());
             }
 
             if (success (socket ().close (error ())))

@@ -72,7 +72,7 @@ void TestPeerLogicSyncServer::on_connect ()
             return;
     }
 
-    if (failure (socket ().shutdown (Socket::shutdown_both, error ())))
+    if (failure (socket ().shutdown (Socket::shutdown_send, error ())))
         return;
 
     if (failure (socket ().close (error ())))

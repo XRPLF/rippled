@@ -108,7 +108,7 @@ void TestPeerLogicAsyncClient::on_read_final (error_code const& ec, std::size_t)
         {
             // on_shutdown will call finished ()
             error_code ec;
-            on_shutdown (socket ().shutdown (Socket::shutdown_both, ec));
+            on_shutdown (socket ().shutdown (Socket::shutdown_send, ec));
         }
     }
     else
@@ -137,7 +137,7 @@ void TestPeerLogicAsyncClient::on_shutdown (error_code const& ec)
         {
             if (socket ().needs_handshake ())
             {
-                socket ().shutdown (Socket::shutdown_both, error ());
+                socket ().shutdown (Socket::shutdown_send, error ());
             }
 
             if (! error ())
