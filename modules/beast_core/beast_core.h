@@ -194,7 +194,6 @@ class FileOutputStream;
 #include "text/LocalisedStrings.h"
 #include "diagnostic/SemanticVersion.h"
 #include "text/StringPool.h"
-#include "text/TextDiff.h"
 #include "threads/ChildProcess.h"
 #include "threads/DynamicLibrary.h"
 #include "threads/HighResolutionTimer.h"

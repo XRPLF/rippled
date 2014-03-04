@@ -271,7 +271,6 @@
     <ClInclude Include="..\..\modules\beast_asio\sockets\Socket.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\SocketBase.h" />
     <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapper.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapperStrand.h" />
     <ClInclude Include="..\..\modules\beast_asio\system\BoostIncludes.h" />
     <ClInclude Include="..\..\modules\beast_asio\system\OpenSSLIncludes.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\TestPeer.h" />
@@ -359,7 +358,6 @@
     <ClInclude Include="..\..\modules\beast_core\text\StringArray.h" />
     <ClInclude Include="..\..\modules\beast_core\text\StringPairArray.h" />
     <ClInclude Include="..\..\modules\beast_core\text\StringPool.h" />
-    <ClInclude Include="..\..\modules\beast_core\text\TextDiff.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\ChildProcess.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\CriticalSection.h" />
     <ClInclude Include="..\..\modules\beast_core\threads\DynamicLibrary.h" />
@@ -1263,12 +1261,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\text\StringPool.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\TextDiff.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

@@ -464,9 +464,6 @@
     <ClInclude Include="..\..\modules\beast_core\text\StringPool.h">
       <Filter>beast_core\text</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\text\TextDiff.h">
-      <Filter>beast_core\text</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\ChildProcess.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
@@ -682,9 +679,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\maths\Math.h">
       <Filter>beast_core\maths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapperStrand.h">
-      <Filter>beast_asio\sockets</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\basics\SSLContext.h">
       <Filter>beast_asio\basics</Filter>
@@ -1479,9 +1473,6 @@
       <Filter>beast_core\text</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\text\StringPool.cpp">
-      <Filter>beast_core\text</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\TextDiff.cpp">
       <Filter>beast_core\text</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\threads\ChildProcess.cpp">
