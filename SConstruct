@@ -207,6 +207,7 @@ COMPILED_FILES.extend([
     'src/ripple_app/ripple_app_pt6.cpp',
     'src/ripple_app/ripple_app_pt7.cpp',
     'src/ripple_app/ripple_app_pt8.cpp',
+    'src/ripple_app/ripple_app_pt9.cpp',
     'src/ripple_basics/ripple_basics.cpp',
     'src/ripple_core/ripple_core.cpp',
     'src/ripple_data/ripple_data.cpp',

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (OfferCreateTransactor)
 
 // Make sure an offer is still valid. If not, mark it unfunded.
@@ -749,4 +751,5 @@ TER OfferCreateTransactor::doApply ()
     return terResult;
 }
 
-// vim:ts=4
+}
+

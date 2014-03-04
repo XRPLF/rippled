@@ -17,36 +17,57 @@
 */
 //==============================================================================
 
-SETUP_LOG (Transactor)
+#include "Transactor.h"
+#include "ChangeTransactor.h"
+#include "OfferCancelTransactor.h"
+#include "OfferCreateTransactor.h"
+#include "PaymentTransactor.h"
+#include "RegularKeySetTransactor.h"
+#include "AccountSetTransactor.h"
+#include "TrustSetTransactor.h"
+#include "WalletAddTransactor.h"
 
-std::unique_ptr<Transactor> Transactor::makeTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine)
+namespace ripple {
+
+std::unique_ptr<Transactor> Transactor::makeTransactor (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
 {
     switch (txn.getTxnType ())
     {
     case ttPAYMENT:
-        return std::unique_ptr<Transactor> (new PaymentTransactor (txn, params, engine));
+        return std::unique_ptr<Transactor> (
+            new PaymentTransactor (txn, params, engine));
 
     case ttACCOUNT_SET:
-        return std::unique_ptr<Transactor> (new AccountSetTransactor (txn, params, engine));
+        return std::unique_ptr<Transactor> (
+            new AccountSetTransactor (txn, params, engine));
 
     case ttREGULAR_KEY_SET:
-        return std::unique_ptr<Transactor> (new RegularKeySetTransactor (txn, params, engine));
+        return std::unique_ptr<Transactor> (
+            new RegularKeySetTransactor (txn, params, engine));
 
     case ttTRUST_SET:
-        return std::unique_ptr<Transactor> (new TrustSetTransactor (txn, params, engine));
+        return std::unique_ptr<Transactor> (
+            new TrustSetTransactor (txn, params, engine));
 
     case ttOFFER_CREATE:
-        return std::unique_ptr<Transactor> (new OfferCreateTransactor (txn, params, engine));
+        return std::unique_ptr<Transactor> (
+            new OfferCreateTransactor (txn, params, engine));
 
     case ttOFFER_CANCEL:
-        return std::unique_ptr<Transactor> (new OfferCancelTransactor (txn, params, engine));
+        return std::unique_ptr<Transactor> (
+            new OfferCancelTransactor (txn, params, engine));
 
     case ttWALLET_ADD:
-        return std::unique_ptr<Transactor> (new WalletAddTransactor (txn, params, engine));
+        return std::unique_ptr<Transactor> (
+            new WalletAddTransactor (txn, params, engine));
 
     case ttFEATURE:
     case ttFEE:
-        return std::unique_ptr<Transactor> (new ChangeTransactor (txn, params, engine));
+        return std::unique_ptr<Transactor> (
+            new ChangeTransactor (txn, params, engine));
 
     default:
         return std::unique_ptr<Transactor> ();
@@ -54,15 +75,24 @@ std::unique_ptr<Transactor> Transactor::makeTransactor (const SerializedTransact
 }
 
 
-Transactor::Transactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : mTxn (txn), mEngine (engine), mParams (params)
+Transactor::Transactor (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine,
+    Journal journal) 
+    : mTxn (txn)
+    , mEngine (engine)
+    , mParams (params)
+    , mHasAuthKey (false)
+    , mSigMaster (false)
+    , m_journal (journal)
 {
-    mHasAuthKey = false;
-    mSigMaster = false;
 }
 
 void Transactor::calculateFee ()
 {
-    mFeeDue = STAmount (mEngine->getLedger ()->scaleFeeLoad (calculateBaseFee (), isSetBit (mParams, tapADMIN)));
+    mFeeDue = STAmount (mEngine->getLedger ()->scaleFeeLoad (
+        calculateBaseFee (), isSetBit (mParams, tapADMIN)));
 }
 
 uint64 Transactor::calculateBaseFee ()
@@ -80,9 +110,8 @@ TER Transactor::payFee ()
     // Only check fee is sufficient when the ledger is open.
     if (isSetBit (mParams, tapOPEN_LEDGER) && saPaid < mFeeDue)
     {
-        WriteLog (lsINFO, Transactor) << boost::str (boost::format ("applyTransaction: Insufficient fee paid: %s/%s")
-                                      % saPaid.getText ()
-                                      % mFeeDue.getText ());
+        m_journal.info << "Insufficient fee paid: " << 
+            saPaid.getText () << "/" << mFeeDue.getText ();
 
         return telINSUF_FEE_P;
     }
@@ -96,10 +125,9 @@ TER Transactor::payFee ()
     // Will only write the account back, if the transaction succeeds.
     if (mSourceBalance < saPaid)
     {
-        WriteLog (lsINFO, Transactor)
-                << boost::str (boost::format ("applyTransaction: Delay: insufficient balance: balance=%s paid=%s")
-                               % mSourceBalance.getText ()
-                               % saPaid.getText ());
+        m_journal.info << "Insufficient balance:" <<
+            " balance=" << mSourceBalance.getText () <<
+            " paid=" << saPaid.getText ();
 
         return terINSUF_FEE_B;
     }
@@ -128,13 +156,12 @@ TER Transactor::checkSig ()
     }
     else if (mHasAuthKey)
     {
-        WriteLog (lsINFO, Transactor) << "applyTransaction: Delay: Not authorized to use account.";
-
+        m_journal.info << "applyTransaction: Delay: Not authorized to use account.";
         return tefBAD_AUTH;
     }
     else
     {
-        WriteLog (lsINFO, Transactor) << "applyTransaction: Invalid: Not authorized to use account.";
+        m_journal.info << "applyTransaction: Invalid: Not authorized to use account.";
 
         return temBAD_AUTH_MASTER;
     }
@@ -147,13 +174,13 @@ TER Transactor::checkSeq ()
     uint32 t_seq = mTxn.getSequence ();
     uint32 a_seq = mTxnAccount->getFieldU32 (sfSequence);
 
-    WriteLog (lsTRACE, Transactor) << "Aseq=" << a_seq << ", Tseq=" << t_seq;
+    m_journal.trace << "Aseq=" << a_seq << ", Tseq=" << t_seq;
 
     if (t_seq != a_seq)
     {
         if (a_seq < t_seq)
         {
-            WriteLog (lsINFO, Transactor) << "applyTransaction: future sequence number";
+            m_journal.info << "apply: transaction has future sequence number";
 
             return terPRE_SEQ;
         }
@@ -165,7 +192,7 @@ TER Transactor::checkSeq ()
                 return tefALREADY;
         }
 
-        WriteLog (lsWARNING, Transactor) << "applyTransaction: past sequence number";
+        m_journal.warning << "apply: transaction has past sequence number";
 
         return tefPAST_SEQ;
     }
@@ -198,8 +225,7 @@ TER Transactor::preCheck ()
 
     if (!mTxnAccountID)
     {
-        WriteLog (lsWARNING, Transactor) << "applyTransaction: bad source id";
-
+        m_journal.warning << "apply: bad transaction source id";
         return temBAD_SRC_ACCOUNT;
     }
 
@@ -216,7 +242,7 @@ TER Transactor::preCheck ()
         if (mTxn.isKnownBad () || (!isSetBit (mParams, tapNO_CHECK_SIGN) && !mTxn.checkSign (mSigningPubKey)))
         {
             mTxn.setBad ();
-            WriteLog (lsWARNING, Transactor) << "applyTransaction: Invalid transaction: bad signature";
+            m_journal.warning << "apply: Invalid transaction (bad signature)";
             return temINVALID;
         }
 
@@ -228,26 +254,29 @@ TER Transactor::preCheck ()
 
 TER Transactor::apply ()
 {
-    TER     terResult   = tesSUCCESS;
-    terResult = preCheck ();
+    TER terResult (preCheck ());
 
-    if (terResult != tesSUCCESS) return (terResult);
+    if (terResult != tesSUCCESS)
+        return (terResult);
 
+    // Restructure this to avoid the dependency on LedgerBase::mLock
     Ledger::ScopedLockType sl (mEngine->getLedger ()->mLock, __FILE__, __LINE__);
 
-    mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (mTxnAccountID));
+    mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT, 
+        Ledger::getAccountRootIndex (mTxnAccountID));
     calculateFee ();
 
     // Find source account
-    // If are only forwarding, due to resource limitations, we might verifying only some transactions, this would be probabilistic.
+    // If are only forwarding, due to resource limitations, we might verifying
+    // only some transactions, this would be probabilistic.
 
     if (!mTxnAccount)
     {
         if (mustHaveValidAccount ())
         {
-            WriteLog (lsTRACE, Transactor) << boost::str (boost::format ("applyTransaction: Delay transaction: source account does not exist: %s") %
-                                           mTxn.getSourceAccount ().humanAccountID ());
-
+            m_journal.trace << 
+                "apply: delay transaction: source account does not exist " <<
+                mTxn.getSourceAccount ().humanAccountID ();
             return terNO_ACCOUNT;
         }
     }
@@ -276,4 +305,4 @@ TER Transactor::apply ()
     return doApply ();
 }
 
-// vim:ts=4
+}

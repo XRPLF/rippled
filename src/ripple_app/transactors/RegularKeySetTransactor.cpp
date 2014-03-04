@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (RegularKeySetTransactor)
 
 uint64 RegularKeySetTransactor::calculateBaseFee ()
@@ -68,4 +70,4 @@ TER RegularKeySetTransactor::doApply ()
     return tesSUCCESS;
 }
 
-// vim:ts=4
+}

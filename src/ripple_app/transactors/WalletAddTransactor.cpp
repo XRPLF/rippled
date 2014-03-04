@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (WalletAddTransactor)
 
 TER WalletAddTransactor::doApply ()
@@ -90,4 +92,4 @@ TER WalletAddTransactor::doApply ()
     return tesSUCCESS;
 }
 
-// vim:ts=4
+}

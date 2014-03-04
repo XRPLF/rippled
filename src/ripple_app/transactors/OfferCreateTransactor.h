@@ -20,6 +20,8 @@
 #ifndef __OFFERCREATETRANSACTOR__
 #define __OFFERCREATETRANSACTOR__
 
+namespace ripple {
+
 class OfferCreateTransactor : public Transactor
 {
 public:
@@ -57,6 +59,6 @@ private:
     std::set<missingOffer_t> usMissingOffers;
 };
 
-#endif
+}
 
-// vim:ts=4
+#endif

@@ -20,17 +20,20 @@
 #ifndef __TRANSACTOR__
 #define __TRANSACTOR__
 
+namespace ripple {
+
 class Transactor
 {
 public:
-    typedef boost::shared_ptr<Transactor> pointer;
-
-    static std::unique_ptr<Transactor> makeTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine);
+    static std::unique_ptr<Transactor> makeTransactor (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine);
 
     TER apply ();
 
 protected:
-    const SerializedTransaction&    mTxn;
+    SerializedTransaction const&    mTxn;
     TransactionEngine*              mEngine;
     TransactionEngineParams         mParams;
 
@@ -43,6 +46,8 @@ protected:
     bool                            mSigMaster;
     RippleAddress                   mSigningPubKey;
 
+    Journal m_journal;
+    
     virtual TER preCheck ();
     virtual TER checkSeq ();
     virtual TER payFee ();
@@ -55,7 +60,11 @@ protected:
     virtual TER checkSig ();
     virtual TER doApply () = 0;
 
-    Transactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine);
+    Transactor (
+        const SerializedTransaction& txn, 
+        TransactionEngineParams params,
+        TransactionEngine* engine,
+        Journal journal = Journal ());
 
     virtual bool mustHaveValidAccount ()
     {
@@ -63,6 +72,6 @@ protected:
     }
 };
 
-#endif
+}
 
-// vim:ts=4
+#endif

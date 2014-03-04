@@ -17,16 +17,19 @@
 */
 //==============================================================================
 
-#ifndef ACCOUNTSETTRANSACTOR_H
-#define ACCOUNTSETTRANSACTOR_H
+#ifndef __PAYMENTTRANSACTOR__
+#define __PAYMENTTRANSACTOR__
 
-class AccountSetTransactor : public Transactor
+namespace ripple {
+
+class PaymentTransactor : public Transactor
 {
 public:
-    AccountSetTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+    PaymentTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
 
     TER doApply ();
 };
-#endif
 
-// vim:ts=4
+}
+
+#endif

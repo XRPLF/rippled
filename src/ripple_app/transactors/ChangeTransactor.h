@@ -17,16 +17,32 @@
 */
 //==============================================================================
 
-#ifndef WALLETADDTRANSACTOR_H
-#define WALLETADDTRANSACTOR_H
+namespace ripple {
 
-class WalletAddTransactor : public Transactor
+class ChangeTransactor : public Transactor
 {
 public:
-    WalletAddTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+    ChangeTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine)
+        : Transactor (txn, params, engine)
+    {
+        ;
+    }
 
     TER doApply ();
-};
-#endif
+    TER checkSig ();
+    TER checkSeq ();
+    TER payFee ();
+    TER preCheck ();
 
-// vim:ts=4
+private:
+    TER applyFeature ();
+    TER applyFee ();
+
+    // VFALCO TODO Can this be removed?
+    bool mustHaveValidAccount ()
+    {
+        return false;
+    }
+};
+
+}

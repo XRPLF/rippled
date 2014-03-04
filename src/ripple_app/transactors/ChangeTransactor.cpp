@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (ChangeTransactor)
 
 TER ChangeTransactor::doApply ()
@@ -135,4 +137,6 @@ TER ChangeTransactor::applyFee ()
     WriteLog (lsINFO, ChangeTransactor) << "New fee object: " << feeObject->getJson (0);
     WriteLog (lsWARNING, ChangeTransactor) << "Fees have been changed";
     return tesSUCCESS;
+}
+
 }

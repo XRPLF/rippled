@@ -17,27 +17,19 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
-
-#include "ripple_app.h"
-#include "../ripple_net/ripple_net.h"
-
-#include "../ripple/common/seconds_clock.h"
-#include "../ripple/peerfinder/ripple_peerfinder.h"
-#include "../ripple/resource/ripple_resource.h"
-#include "../ripple/validators/ripple_validators.h"
-
-#include "../ripple/common/ResolverAsio.h"
-
-#include <deque>
-
-#include "misc/ProofOfWork.h"
+#ifndef TRUSTSETTRANSACTOR_H
+#define TRUSTSETTRANSACTOR_H
 
 namespace ripple {
 
-#include "ledger/LedgerTiming.cpp"
-#include "ledger/AcceptedLedgerTx.cpp"
-#include "main/LocalCredentials.cpp"
-#include "misc/Validations.cpp"
-#include "misc/FeeVote.cpp"
+class TrustSetTransactor : public Transactor
+{
+public:
+    TrustSetTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+
+    TER doApply ();
+};
+
 }
+
+#endif

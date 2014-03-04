@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (OfferCancelTransactor)
 
 TER OfferCancelTransactor::doApply ()
@@ -67,4 +69,4 @@ TER OfferCancelTransactor::doApply ()
     return terResult;
 }
 
-// vim:ts=4
+}

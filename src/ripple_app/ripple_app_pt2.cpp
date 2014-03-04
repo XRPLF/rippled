@@ -31,12 +31,10 @@ namespace ripple {
 #include "shamap/SHAMapMissingNode.cpp"
 
 #include "misc/AccountItem.cpp"
-#include "tx/AccountSetTransactor.cpp"
 #include "misc/CanonicalTXSet.cpp"
 #include "ledger/LedgerProposal.cpp"
 #include "main/LoadManager.cpp"
 #include "misc/NicknameState.cpp"
-#include "tx/OfferCancelTransactor.cpp"
 #include "ledger/OrderBookDB.cpp"
 
 #include "data/Database.cpp"

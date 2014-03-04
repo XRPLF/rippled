@@ -316,6 +316,9 @@
     <Filter Include="[2] Old Ripple\ripple_overlay\impl">
       <UniqueIdentifier>{0ff855ac-5038-4b16-a324-ba85d782c0e2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[2] Old Ripple\ripple_app\transactors">
+      <UniqueIdentifier>{dcb7c75c-4f1d-486c-8079-52dc43644ae6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -747,51 +750,6 @@
     <ClCompile Include="..\..\src\ripple_app\consensus\DisputedTx.cpp">
       <Filter>[2] Old Ripple\ripple_app\consensus</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\AccountSetTransactor.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\ChangeTransactor.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\OfferCancelTransactor.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\OfferCreateTransactor.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\PaymentTransactor.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\RegularKeySetTransactor.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TransactionAcquire.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\Transaction.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TransactionCheck.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TransactionEngine.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TransactionMaster.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TransactionMeta.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\Transactor.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TrustSetTransactor.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\WalletAddTransactor.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\main\RippleMain.cpp">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
@@ -848,12 +806,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\misc\ProofOfWork.cpp">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TxQueue.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TxQueueEntry.cpp">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\protobuf_core.cpp">
       <Filter>[0] Libraries\protobuf</Filter>
@@ -1488,6 +1440,60 @@
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotImp.cpp">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt9.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\Transaction.cpp">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\TransactionAcquire.cpp">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\TransactionCheck.cpp">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\TransactionEngine.cpp">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\TransactionMaster.cpp">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\TransactionMeta.cpp">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\TxQueue.cpp">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\TxQueueEntry.cpp">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\AccountSetTransactor.cpp">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\ChangeTransactor.cpp">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\OfferCancelTransactor.cpp">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\OfferCreateTransactor.cpp">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\PaymentTransactor.cpp">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\RegularKeySetTransactor.cpp">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\Transactor.cpp">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\TrustSetTransactor.cpp">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\WalletAddTransactor.cpp">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">
@@ -1973,48 +1979,6 @@
     <ClInclude Include="..\..\src\ripple_app\consensus\LedgerConsensus.h">
       <Filter>[2] Old Ripple\ripple_app\consensus</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\AccountSetTransactor.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\ChangeTransactor.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\OfferCancelTransactor.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\OfferCreateTransactor.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\PaymentTransactor.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\RegularKeySetTransactor.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\TransactionAcquire.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\Transaction.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\TransactionEngine.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\TransactionMaster.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\TransactionMeta.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\Transactor.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\TrustSetTransactor.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\WalletAddTransactor.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\RippleMain.h">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClInclude>
@@ -2063,16 +2027,10 @@
     <ClInclude Include="..\..\src\ripple_data\protocol\BuildInfo.h">
       <Filter>[1] Ripple\ripple_data\protocol</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_net\basics\RippleSSLContext.h">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\HTTPRequest.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\HTTPClient.h">
-      <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_net\basics\MultiSocket.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\RPCServer.h">
@@ -2080,9 +2038,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\SNTPClient.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_net\basics\impl\MultiSocketType.h">
-      <Filter>[1] Ripple\ripple_net\basics\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\RPCDoor.h">
       <Filter>[1] Ripple\ripple_net\basics</Filter>
@@ -2119,12 +2074,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\misc\ProofOfWorkFactory.h">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\TxQueue.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\tx\TxQueueEntry.h">
-      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\misc\Validations.h">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
@@ -3050,6 +2999,54 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\StoreSqdb.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\tx\Transaction.h">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\tx\TransactionAcquire.h">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\tx\TransactionEngine.h">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\tx\TransactionMaster.h">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\tx\TransactionMeta.h">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\tx\TxQueue.h">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\tx\TxQueueEntry.h">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\AccountSetTransactor.h">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\ChangeTransactor.h">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\OfferCancelTransactor.h">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\OfferCreateTransactor.h">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\PaymentTransactor.h">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\RegularKeySetTransactor.h">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\Transactor.h">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\TrustSetTransactor.h">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\WalletAddTransactor.h">
+      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

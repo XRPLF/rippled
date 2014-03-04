@@ -17,17 +17,19 @@
 */
 //==============================================================================
 
-#ifndef REGULARKEYSETTRANSACTOR_H
-#define REGULARKEYSETTRANSACTOR_H
+#ifndef OFFERCANCELTRANSACTOR_H
+#define OFFERCANCELTRANSACTOR_H
 
-class RegularKeySetTransactor : public Transactor
+namespace ripple {
+
+class OfferCancelTransactor : public Transactor
 {
-    uint64 calculateBaseFee ();
 public:
-    RegularKeySetTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
-    TER checkFee ();
+    OfferCancelTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+
     TER doApply ();
 };
-#endif
 
-// vim:ts=4
+}
+
+#endif

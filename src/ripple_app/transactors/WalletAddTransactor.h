@@ -17,16 +17,19 @@
 */
 //==============================================================================
 
-#ifndef TRUSTSETTRANSACTOR_H
-#define TRUSTSETTRANSACTOR_H
+#ifndef WALLETADDTRANSACTOR_H
+#define WALLETADDTRANSACTOR_H
 
-class TrustSetTransactor : public Transactor
+namespace ripple {
+
+class WalletAddTransactor : public Transactor
 {
 public:
-    TrustSetTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+    WalletAddTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
 
     TER doApply ();
 };
-#endif
 
-// vim:ts=4
+}
+
+#endif

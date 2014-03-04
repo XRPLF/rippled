@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (PaymentTransactor)
 
 #define RIPPLE_PATHS_MAX    6
@@ -262,4 +264,5 @@ TER PaymentTransactor::doApply ()
     return terResult;
 }
 
-// vim:ts=4
+}
+

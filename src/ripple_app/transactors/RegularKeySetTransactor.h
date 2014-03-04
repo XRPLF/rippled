@@ -17,16 +17,20 @@
 */
 //==============================================================================
 
-#ifndef __PAYMENTTRANSACTOR__
-#define __PAYMENTTRANSACTOR__
+#ifndef REGULARKEYSETTRANSACTOR_H
+#define REGULARKEYSETTRANSACTOR_H
 
-class PaymentTransactor : public Transactor
+namespace ripple {
+
+class RegularKeySetTransactor : public Transactor
 {
+    uint64 calculateBaseFee ();
 public:
-    PaymentTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
-
+    RegularKeySetTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+    TER checkFee ();
     TER doApply ();
 };
-#endif
 
-// vim:ts=4
+}
+
+#endif

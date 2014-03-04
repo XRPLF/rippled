@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#ifndef OFFERCANCELTRANSACTOR_H
-#define OFFERCANCELTRANSACTOR_H
+#include "BeastConfig.h"
 
-class OfferCancelTransactor : public Transactor
-{
-public:
-    OfferCancelTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+#include "ripple_app.h"
 
-    TER doApply ();
-};
-#endif
-
-// vim:ts=4
+#include "transactors/Transactor.cpp"
+#include "transactors/ChangeTransactor.cpp"
+#include "transactors/OfferCancelTransactor.cpp"
+#include "transactors/OfferCreateTransactor.cpp"
+#include "transactors/PaymentTransactor.cpp"
+#include "transactors/RegularKeySetTransactor.cpp"
+#include "transactors/AccountSetTransactor.cpp"
+#include "transactors/WalletAddTransactor.cpp"
+#include "transactors/TrustSetTransactor.cpp"

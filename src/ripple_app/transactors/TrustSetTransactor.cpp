@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (TrustSetTransactor)
 
 TER TrustSetTransactor::doApply ()
@@ -365,4 +367,4 @@ TER TrustSetTransactor::doApply ()
     return terResult;
 }
 
-// vim:ts=4
+}

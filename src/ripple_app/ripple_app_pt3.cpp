@@ -30,7 +30,6 @@ namespace ripple
 #include "shamap/SHAMapTreeNode.cpp"
 #include "misc/AccountItems.cpp"
 #include "misc/AccountState.cpp"
-#include "tx/ChangeTransactor.cpp"
 #include "contracts/Contract.cpp"
 #include "contracts/Operation.cpp"
 #include "contracts/ScriptData.cpp"

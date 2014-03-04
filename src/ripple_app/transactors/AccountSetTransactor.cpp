@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (AccountSetTransactor)
 
 TER AccountSetTransactor::doApply ()
@@ -310,4 +312,4 @@ TER AccountSetTransactor::doApply ()
     return tesSUCCESS;
 }
 
-// vim:ts=4
+}
