@@ -113,7 +113,7 @@ BOOST_LIBS = [
 # included the platform can be whitelisted.
 # if FreeBSD or Ubuntu or Archlinux:
 
-if not (USING_CLANG and Linux) and (FreeBSD or Ubuntu or Archlinux or OSX):
+if not (USING_CLANG and Linux) and (FreeBSD or Ubuntu or Archlinux or Debian or OSX):
     # non-mt libs do link with pthreads.
     env.Append(
         LIBS = BOOST_LIBS
@@ -290,7 +290,7 @@ UBUNTU_GCC_48_INSTALL_STEPS = '''
 https://ripple.com/wiki/Ubuntu_build_instructions#Ubuntu_versions_older_than_13.10_:_Install_gcc_4.8'''
 
 if not USING_CLANG:
-    if (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) < 7):
+    if (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) < 8):
         print "\nrippled, using c++11, requires g++ version >= 4.8 to compile"
 
         if Ubuntu:
