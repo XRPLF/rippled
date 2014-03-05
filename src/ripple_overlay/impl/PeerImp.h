@@ -2276,7 +2276,7 @@ private:
 
 	        // Figure out what ledger they want
 	        m_journal.trace << "Received request for ledger data "
-	                       << to_string (this);
+	                        << to_string (this);
 	        Ledger::pointer ledger;
 
 	        if (packet.has_ledgerhash ())
@@ -2295,8 +2295,8 @@ private:
 	            logMe += ledgerhash.GetHex ();
 	            ledger = getApp().getLedgerMaster ().getLedgerByHash (ledgerhash);
 
-	            if (m_journal.trace)
-	            	m_journal.trace << "Don't have ledger " << ledgerhash;
+	            if (!ledger && m_journal.trace)
+	                m_journal.trace << "Don't have ledger " << ledgerhash;
 
 	            if (!ledger && (packet.has_querytype () && !packet.has_requestcookie ()))
 	            {
@@ -2335,7 +2335,7 @@ private:
 	                return;
 	            }
 	            ledger = getApp().getLedgerMaster ().getLedgerBySeq (packet.ledgerseq ());
-	            if (m_journal.debug)
+	            if (!ledger && m_journal.debug)
 	            	m_journal.debug << "Don't have ledger " << packet.ledgerseq ();
 	        }
 	        else if (packet.has_ltype () && (packet.ltype () == protocol::ltCURRENT))
