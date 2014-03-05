@@ -1536,7 +1536,7 @@ private:
             if (getApp().getJobQueue().getJobCount(jtTRANSACTION) > 100)
                 m_journal.info << "Transaction queue is full";
             else if (getApp().getLedgerMaster().getValidatedLedgerAge() > 240)
-                m_journal.info << "No new transactions until synchronized";
+                m_journal.trace << "No new transactions until synchronized";
             else
                 getApp().getJobQueue ().addJob (jtTRANSACTION,
                     "recvTransaction->checkTransaction",
@@ -1929,7 +1929,7 @@ private:
 
         if (!getApp().getInboundLedgers ().gotLedgerData (hash, shared_from_this(), packet_ptr))
         {
-            WriteLog (lsINFO, Peer) << "Got data for unwanted ledger";
+            WriteLog (lsTRACE, Peer) << "Got data for unwanted ledger";
             charge (Resource::feeUnwantedData);
         }
     }
