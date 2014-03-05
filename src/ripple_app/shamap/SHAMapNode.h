@@ -92,6 +92,12 @@ public:
     {
         return n != mNodeID;
     }
+    void set (SHAMapNode const& from)
+    {
+        mNodeID = from.mNodeID;
+        mDepth = from.mDepth;
+        mHash = from.mHash;
+    }
 
     virtual std::string getString () const;
     void dump () const;

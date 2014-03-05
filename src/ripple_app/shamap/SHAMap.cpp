@@ -61,7 +61,7 @@ SHAMap::SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCach
     mTNByID.replace(*root, root);
 }
 
-TaggedCache< SHAMap::TNIndex, SHAMapTreeNode>
+TaggedCache <uint256, SHAMapTreeNode>
     SHAMap::treeNodeCache ("TreeNodeCache", 65536, 60,
         get_seconds_clock (),
             LogPartition::getJournal <TaggedCacheLog> ());
@@ -1263,15 +1263,29 @@ void SHAMap::dump (bool hash)
 
 SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash, SHAMapNode const& id)
 {
-    SHAMapTreeNode::pointer ret = treeNodeCache.fetch (TNIndex (hash, id));
+    SHAMapTreeNode::pointer ret = treeNodeCache.fetch (hash);
     assert (!ret || !ret->getSeq());
+
+    if (ret && (*ret != id))
+    {
+        // We have the data, but with a different node ID
+        WriteLog (lsTRACE, SHAMap) << "ID mismatch: " << id << " != " << *ret;
+        ret = boost::make_shared <SHAMapTreeNode> (*ret, 0);
+        ret->set(id);
+
+        // Future fetches are likely to use the "new" ID
+        treeNodeCache.canonicalize (hash, ret, true);
+        assert (*ret == id);
+        assert (ret->getNodeHash() == hash);
+    }
+
     return ret;
 }
 
 void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
 {
     assert (node->getSeq() == 0);
-    treeNodeCache.canonicalize (TNIndex (hash, *node), node);
+    treeNodeCache.canonicalize (hash, node);
 }
 
 //------------------------------------------------------------------------------

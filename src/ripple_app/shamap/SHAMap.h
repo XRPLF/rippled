@@ -270,10 +270,8 @@ public:
         treeNodeCache.setTargetAge (age);
     }
 
-    typedef std::pair<uint256, SHAMapNode> TNIndex;
-
 private:
-    static TaggedCache <TNIndex, SHAMapTreeNode> treeNodeCache;
+    static TaggedCache <uint256, SHAMapTreeNode> treeNodeCache;
 
     void dirtyUp (std::stack<SHAMapTreeNode::pointer>& stack, uint256 const & target, uint256 prevHash);
     std::stack<SHAMapTreeNode::pointer> getStack (uint256 const & id, bool include_nonmatching_leaf);
