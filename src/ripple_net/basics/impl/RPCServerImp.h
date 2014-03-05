@@ -219,8 +219,9 @@ public:
     {
         WriteLog (lsTRACE, RPCServer) << "handleRequest " << request;
     
-        return m_handler.processRequest (request, beast::IPAddressConversion::from_asio (
-           mSocket.PlainSocket ().remote_endpoint().address()));
+        return m_handler.processRequest (request, 
+            beast::IPAddressConversion::from_asio (
+                m_remote_endpoint.address()));
     }
 
     //--------------------------------------------------------------------------
@@ -237,15 +238,9 @@ public:
         return mSocket.PlainSocket ();
     }
 
-    //--------------------------------------------------------------------------
-
-    std::string getRemoteAddressText ()
+    boost::asio::ip::tcp::socket::endpoint_type& getRemoteEndpoint ()
     {
-        std::string address;
-
-        address = mSocket.PlainSocket ().remote_endpoint ().address ().to_string ();
-
-        return address;
+        return m_remote_endpoint;
     }
 
 private:
@@ -253,6 +248,7 @@ private:
 
     boost::asio::io_service::strand mStrand;
     AutoSocket mSocket;
+    AutoSocket::endpoint_type m_remote_endpoint;
 
     boost::asio::streambuf mLineBuffer;
     Blob mQueryVec;

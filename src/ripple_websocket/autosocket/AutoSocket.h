@@ -29,6 +29,7 @@ class AutoSocket
 {
 public:
     typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket>   ssl_socket;
+    typedef boost::asio::ip::tcp::socket::endpoint_type endpoint_type;
     typedef boost::shared_ptr<ssl_socket>           socket_ptr;
     typedef ssl_socket::next_layer_type             plain_socket;
     typedef ssl_socket::lowest_layer_type           lowest_layer_type;

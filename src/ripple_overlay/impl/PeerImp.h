@@ -168,6 +168,7 @@ public:
     /** New incoming peer from the specified socket */
     PeerImp (
         boost::shared_ptr <NativeSocketType> const& socket,
+        IP::Endpoint remoteAddress,
         Peers& peers,
         Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder,
@@ -177,6 +178,7 @@ public:
             : m_shared_socket (socket)
             , m_journal (LogPartition::getJournal <Peer> ())
             , m_shortId (0)
+            , m_remoteAddress (remoteAddress)
             , m_resourceManager (resourceManager)
             , m_peerFinder (peerFinder)
             , m_peers (peers)
@@ -202,6 +204,7 @@ public:
               from inside constructors.
     */
     PeerImp (
+        IP::Endpoint remoteAddress,
         boost::asio::io_service& io_service,
         Peers& peers,
         Resource::Manager& resourceManager,
@@ -211,6 +214,7 @@ public:
         MultiSocket::Flag flags)
             : m_journal (LogPartition::getJournal <Peer> ())
             , m_shortId (0)
+            , m_remoteAddress (remoteAddress)
             , m_resourceManager (resourceManager)
             , m_peerFinder (peerFinder)
             , m_peers (peers)
@@ -274,10 +278,8 @@ public:
               object and begins the process of connection establishment instead
               of requiring the caller to construct a Peer and call connect.
     */
-    void connect (IP::Endpoint const& address)
+    void connect ()
     {
-        m_remoteAddress = address;
-
         m_journal.info << "Connecting to " << m_remoteAddress;
 
         boost::system::error_code err;
@@ -295,7 +297,7 @@ public:
         }
 
         getNativeSocket ().async_connect (
-            IPAddressConversion::to_asio_endpoint (address),
+            IPAddressConversion::to_asio_endpoint (m_remoteAddress),
                 m_strand.wrap (boost::bind (&PeerImp::onConnect,
                     shared_from_this (), boost::asio::placeholders::error)));
     }
@@ -425,8 +427,6 @@ public:
     */
     void accept ()
     {
-        m_remoteAddress = m_socket->remote_endpoint();
-
         m_journal.info << "Accepted " << m_remoteAddress;
 
         m_socket->set_verify_mode (boost::asio::ssl::verify_none);
@@ -775,8 +775,6 @@ private:
             detach ("hs");
             return;
         }
-
-        m_remoteAddress = m_socket->remote_endpoint();
 
         if (m_inbound)
             m_usage = m_resourceManager.newInboundEndpoint (m_remoteAddress);

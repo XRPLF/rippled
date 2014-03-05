@@ -60,9 +60,10 @@ public:
 
         mAcceptor.set_option (boost::asio::ip::tcp::acceptor::reuse_address (true));
 
-        mAcceptor.async_accept (new_connection->getRawSocket (),
-                                boost::bind (&RPCDoorImp::handleConnect, this, new_connection,
-                                             boost::asio::placeholders::error));
+        mAcceptor.async_accept (new_connection->getRawSocket (), 
+            new_connection->getRemoteEndpoint (),
+            boost::bind (&RPCDoorImp::handleConnect, this, 
+                new_connection, boost::asio::placeholders::error));
     }
 
     //--------------------------------------------------------------------------
@@ -82,25 +83,19 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void handleConnect (RPCServerImp::pointer new_connection, boost::system::error_code const& error)
+    void handleConnect (RPCServerImp::pointer new_connection,
+        boost::system::error_code const& error)
     {
         bool delay = false;
 
         if (!error)
         {
             // Restrict callers by IP
-            // VFALCO NOTE Prevent exceptions from being thrown at all.
-            try
+            std::string client_ip (
+                new_connection->getRemoteEndpoint ().address ().to_string ());
+
+            if (! isClientAllowed (client_ip))
             {
-                if (! isClientAllowed (new_connection->getRemoteAddressText ()))
-                {
-                    startListening ();
-                    return;
-                }
-            }
-            catch (...)
-            {
-                // client may have disconnected
                 startListening ();
                 return;
             }

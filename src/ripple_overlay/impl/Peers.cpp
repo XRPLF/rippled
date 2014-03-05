@@ -206,7 +206,7 @@ public:
             flags = flags.with (MultiSocket::Flag::proxy);
 
         PeerImp::ptr const peer (boost::make_shared <PeerImp> (
-            socket, *this, m_resourceManager, *m_peerFinder,
+            socket, remote_endpoint, *this, m_resourceManager, *m_peerFinder,
                 slot, m_ssl_context, flags));
 
         {
@@ -244,8 +244,8 @@ public:
             MultiSocket::Flag::client_role | MultiSocket::Flag::ssl);
 
         PeerImp::ptr const peer (boost::make_shared <PeerImp> (
-            m_io_service, *this, m_resourceManager, *m_peerFinder,
-                slot, m_ssl_context, flags));
+            remote_endpoint, m_io_service, *this, m_resourceManager,
+                *m_peerFinder, slot, m_ssl_context, flags));
 
         {
             std::lock_guard <decltype(m_mutex)> lock (m_mutex);
@@ -258,7 +258,7 @@ public:
 
             // This has to happen while holding the lock,
             // otherwise the socket might not be canceled during a stop.
-            peer->connect (remote_endpoint);
+            peer->connect ();
         }
     }
 
