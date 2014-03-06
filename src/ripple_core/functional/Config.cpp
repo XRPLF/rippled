@@ -545,6 +545,8 @@ void Config::load ()
 
                 if (strTemp == "full")
                     LEDGER_HISTORY = 1000000000u;
+                else if (strTemp == "none")
+                    LEDGER_HISTORY = 0;
                 else
                     LEDGER_HISTORY = lexicalCastThrow <uint32> (strTemp);
             }
