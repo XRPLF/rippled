@@ -22,52 +22,66 @@
 
 /** Prefix for hashing functions.
 
-    These prefixes are inserted before the source material used to
-    generate various hashes. This is done to put each hash in its own
-    "space." This way, two different types of objects with the
-    same binary data will produce different hashes.
+    These prefixes are inserted before the source material used to generate
+    various hashes. This is done to put each hash in its own "space." This way,
+    two different types of objects with the same binary data will produce
+    different hashes.
 
-    Each prefix is a 4-byte value with the last byte set to zero
-    and the first three bytes formed from the ASCII equivalent of
-    some arbitrary string. For example "TXN".
+    Each prefix is a 4-byte value with the last byte set to zero and the first
+    three bytes formed from the ASCII equivalent of some arbitrary string. For
+    example "TXN".
 
     @note Hash prefixes are part of the Ripple protocol.
 
     @ingroup protocol
 */
-// VFALCO NOTE there are ledger entry prefixes too but they are only
-//             1 byte, find out why they are different. Maybe we should
-//             group them all together?
-//
-struct HashPrefix
+class HashPrefix
 {
-    // VFALCO TODO Make these Doxygen comments and expand the
-    //             description to complete, concise sentences.
+private:
+    uint32 m_prefix;
+
+public:
+    HashPrefix (char a, char b, char c)
+        : m_prefix (0)
+    {
+        m_prefix = a;
+        m_prefix = (m_prefix << 8) + b;
+        m_prefix = (m_prefix << 8) + c;
+        m_prefix = m_prefix << 8;
+    }
+
+    /** Returns the hash prefix associated with this object */
+    operator uint32 () const
+    {
+        return m_prefix;
+    }
+
+    // VFALCO TODO Expand the description to complete, concise sentences.
     //
 
-    // transaction plus signature to give transaction ID
-    static uint32 const transactionID       = 0x54584E00; // 'TXN'
+    /** transaction plus signature to give transaction ID */
+    static HashPrefix const transactionID;
 
-    // transaction plus metadata
-    static uint32 const txNode              = 0x534E4400; // 'TND'
+    /** transaction plus metadata */
+    static HashPrefix const txNode;
 
-    // account state
-    static uint32 const leafNode            = 0x4D4C4E00; // 'MLN'
+    /** account state */
+    static HashPrefix const leafNode;
 
-    // inner node in tree
-    static uint32 const innerNode           = 0x4D494E00; // 'MIN'
+    /** inner node in tree */
+    static HashPrefix const innerNode;
 
-    // ledger master data for signing
-    static uint32 const ledgerMaster        = 0x4C575200; // 'LGR'
+    /** ledger master data for signing */
+    static HashPrefix const ledgerMaster;
 
-    // inner transaction to sign
-    static uint32 const txSign              = 0x53545800; // 'STX'
+    /** inner transaction to sign */
+    static HashPrefix const txSign;
 
-    // validation for signing
-    static uint32 const validation          = 0x56414C00; // 'VAL'
+    /** validation for signing */
+    static HashPrefix const validation;
 
-    // proposal for signing
-    static uint32 const proposal            = 0x50525000; // 'PRP'
+    /** proposal for signing */
+    static HashPrefix const proposal;
 };
 
 #endif

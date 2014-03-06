@@ -72,6 +72,7 @@ namespace ripple
 
 #include "protocol/BuildInfo.cpp"
 #include "protocol/FieldNames.cpp"
+#include "protocol/HashPrefix.cpp"
 #include "protocol/LedgerFormats.cpp"
 #include "protocol/RippleAddress.cpp"
 #include "protocol/SerializedTypes.cpp"
