@@ -2266,6 +2266,102 @@ Json::Value RPCHandler::doLedgerCurrent (Json::Value, Resource::Charge& loadType
     return jvResult;
 }
 
+// Get state nodes from a ledger
+//   Inputs:
+//     limit:        integer, maximum number of entries
+//     marker:       opaque, resume point
+//     binary:       boolean, format
+//   Outputs:
+//     ledger_hash:  chosen ledger's hash
+//     ledger_index: chosen ledger's index
+//     state:        array of state nodes
+//     marker:       resume point, if any
+Json::Value RPCHandler::doLedgerData (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+{
+    masterLockHolder.unlock ();
+
+    int const BINARY_PAGE_LENGTH = 256;
+    int const JSON_PAGE_LENGTH = 2048;
+
+    Ledger::pointer lpLedger;
+
+    Json::Value jvResult = lookupLedger (params, lpLedger);
+    if (!lpLedger)
+        return jvResult;
+
+    uint256 resumePoint;
+    if (params.isMember ("marker"))
+    {
+        Json::Value const& jMarker = params["marker"];
+        if (!jMarker.isString ())
+            return RPC::expected_field_error ("marker", "valid");
+        if (!resumePoint.SetHex (jMarker.asString ()))
+            return RPC::expected_field_error ("marker", "valid");
+    }
+
+    bool isBinary = false;
+    if (params.isMember ("binary"))
+    {
+        Json::Value const& jBinary = params["binary"];
+        if (!jBinary.isBool ())
+            return RPC::expected_field_error ("binary", "bool");
+        isBinary = jBinary.asBool ();
+    }
+
+    int limit = -1;
+    int maxLimit = isBinary ? BINARY_PAGE_LENGTH : JSON_PAGE_LENGTH;
+
+    if (params.isMember ("limit"))
+    {
+        Json::Value const& jLimit = params["limit"];
+        if (!jLimit.isIntegral ())
+            return RPC::expected_field_error ("limit", "integer");
+
+        limit = jLimit.asInt ();
+    }
+
+    if ((limit < 0) || ((limit > maxLimit) && (mRole != Config::ADMIN)))
+        limit = maxLimit;
+
+    Json::Value jvReply = Json::objectValue;
+
+    jvReply["ledger_hash"] = lpLedger->getHash().GetHex ();
+    jvReply["ledger_index"] = lexicalCastThrow <std::string> (lpLedger->getLedgerSeq ());
+
+    Json::Value& nodes = (jvReply["state"] = Json::arrayValue);
+    SHAMap& map = *(lpLedger->peekAccountStateMap ());
+
+    for (;;)
+    {
+       SHAMapItem::pointer item = map.peekNextItem (resumePoint);
+       if (!item)
+           break;
+       resumePoint = item->getTag();
+
+       if (limit-- <= 0)
+       {
+           --resumePoint;
+           jvReply["marker"] = resumePoint.GetHex ();
+           break;
+       }
+
+       if (isBinary)
+       {
+           Json::Value& entry = nodes.append (Json::objectValue);
+           entry["data"] = strHex (item->peekData().begin(), item->peekData().size());
+           entry["index"] = item->getTag ().GetHex ();
+       }
+       else
+       {
+           SLE sle (item->peekSerializer(), item->getTag ());
+           Json::Value& entry = nodes.append (sle.getJson (0));
+           entry["index"] = item->getTag ().GetHex ();
+       }
+    }
+
+    return jvReply;
+}
+
 // ledger [id|index|current|closed] [full]
 // {
 //    ledger: 'current' | 'closed' | <uint256> | <number>,  // optional
@@ -4219,6 +4315,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, Resourc
         {   "ledger_cleaner",       &RPCHandler::doLedgerCleaner,       true,   optNetwork  },
         {   "ledger_closed",        &RPCHandler::doLedgerClosed,        false,  optClosed   },
         {   "ledger_current",       &RPCHandler::doLedgerCurrent,       false,  optCurrent  },
+        {   "ledger_data",          &RPCHandler::doLedgerData,          false,  optCurrent  },
         {   "ledger_entry",         &RPCHandler::doLedgerEntry,         false,  optCurrent  },
         {   "ledger_header",        &RPCHandler::doLedgerHeader,        false,  optCurrent  },
         {   "log_level",            &RPCHandler::doLogLevel,            true,   optNone     },

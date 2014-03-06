@@ -114,6 +114,7 @@ private:
     Json::Value doLedgerCleaner         (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerClosed          (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerCurrent         (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
+    Json::Value doLedgerData            (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerEntry           (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerHeader          (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLogLevel              (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
