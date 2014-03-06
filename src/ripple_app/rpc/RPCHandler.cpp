@@ -2302,8 +2302,16 @@ Json::Value RPCHandler::doLedger (Json::Value params, Resource::Charge& loadType
                               | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
                               | (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
-    if (bFull || bAccounts | bExpand)
+    if (bFull || bAccounts)
     {
+
+        if (mRole != Config::ADMIN)
+        {
+            // Until some sane way to get full ledgers has been implemented, disallow
+            // retrieving all state nodes
+            return rpcError (rpcNO_PERMISSION);
+        }
+
         if (getApp().getFeeTrack().isLoadedLocal() && (mRole != Config::ADMIN))
         {
             WriteLog (lsDEBUG, Peer) << "Too busy to give full ledger";
