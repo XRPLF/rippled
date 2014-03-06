@@ -60,64 +60,82 @@ std::string strprintf (const char* format, ...)
 
 int charUnHex (char cDigit)
 {
-    return cDigit >= '0' && cDigit <= '9'
-           ? cDigit - '0'
-           : cDigit >= 'A' && cDigit <= 'F'
-           ? cDigit - 'A' + 10
-           : cDigit >= 'a' && cDigit <= 'f'
-           ? cDigit - 'a' + 10
-           : -1;
+    struct HexTab
+    {
+        int hex[256];
+
+        HexTab ()
+        {
+            std::fill (std::begin (hex), std::end (hex), -1);
+            for (int i = 0; i < 10; ++i)
+                hex ['0'+i] = i;
+            for (int i = 0; i < 6; ++i)
+            {
+                hex ['A'+i] = 10 + i;
+                hex ['a'+i] = 10 + i;
+            }
+        }
+        int operator[] (int i) const
+        {
+           return hex[i];
+        }
+    };
+
+    static HexTab xtab;
+    
+    return xtab[cDigit];
 }
 
+// NIKB NOTE: This function is only used by strUnHex (const std::string& strSrc)
+// which results in a pointless copy from std::string into std::vector. Should
+// we just scrap this function altogether?
 int strUnHex (std::string& strDst, const std::string& strSrc)
 {
-    int iBytes  = (strSrc.size () + 1) / 2;
+    std::string tmp;
 
-    strDst.resize (iBytes);
+    tmp.reserve ((strSrc.size () + 1) / 2);
 
-    const char* pSrc    = &strSrc[0];
-    char*       pDst    = &strDst[0];
+    auto iter = strSrc.cbegin ();
 
     if (strSrc.size () & 1)
     {
-        int     c   = charUnHex (*pSrc++);
+        int c = charUnHex (*iter);
 
         if (c < 0)
-        {
-            iBytes  = -1;
-        }
-        else
-        {
-            *pDst++ = c;
-        }
+            return -1;
+
+        tmp.push_back(c);
+        ++iter;
     }
 
-    for (int i = 0; iBytes >= 0 && i != iBytes; i++)
+    while (iter != strSrc.cend ())
     {
-        int     cHigh   = charUnHex (*pSrc++);
-        int     cLow    = charUnHex (*pSrc++);
+        int cHigh = charUnHex (*iter);
+        ++iter;
 
-        if (cHigh < 0 || cLow < 0)
-        {
-            iBytes  = -1;
-        }
-        else
-        {
-            strDst[i]   = (cHigh << 4) | cLow;
-        }
+        if (cHigh < 0)
+            return -1;
+
+        int cLow = charUnHex (*iter);
+        ++iter;
+
+        if (cLow < 0)
+            return -1;
+
+        tmp.push_back (static_cast<char>((cHigh << 4) | cLow));
     }
 
-    if (iBytes < 0)
-        strDst.clear ();
+    strDst = std::move(tmp);
 
-    return iBytes;
+    return strDst.size ();
 }
 
 Blob strUnHex (const std::string& strSrc)
 {
     std::string strTmp;
 
-    strUnHex (strTmp, strSrc);
+    if (strUnHex (strTmp, strSrc) == -1)
+        return Blob ();
 
     return strCopy (strTmp);
 }
@@ -315,11 +333,47 @@ StringPairArray parseDelimitedKeyValueString (String parameters, beast_wchar del
 class StringUtilitiesTests : public UnitTest
 {
 public:
-    StringUtilitiesTests () : UnitTest ("StringUtilities", "ripple")
+    void testUnHexSuccess (std::string strIn, std::string strExpected)
     {
+        std::string strOut;
+
+        expect (strUnHex (strOut, strIn) == strExpected.length (),
+            "strUnHex: parsing correct input failed");
+
+        expect (strOut == strExpected,
+            "strUnHex: parsing doesn't produce expected result");
     }
 
-    void runTest ()
+    void testUnHexFailure (std::string strIn)
+    {
+        std::string strOut;
+
+        expect (strUnHex (strOut, strIn) == -1,
+            "strUnHex: parsing incorrect input succeeded");
+
+        expect (strOut.empty (),
+            "strUnHex: parsing incorrect input returned data");
+    }
+
+    void testUnHex ()
+    {
+        beginTestCase ("strUnHex");
+
+        testUnHexSuccess ("526970706c6544", "RippleD");
+        testUnHexSuccess ("A", "\n");
+        testUnHexSuccess ("0A", "\n");
+        testUnHexSuccess ("D0A", "\r\n");
+        testUnHexSuccess ("0D0A", "\r\n");
+        testUnHexSuccess ("200D0A", " \r\n");
+        testUnHexSuccess ("282A2B2C2D2E2F29", "(*+,-./)");
+
+        // Check for things which contain some or only invalid characters
+        testUnHexFailure ("123X");
+        testUnHexFailure ("V");
+        testUnHexFailure ("XRP");
+    }
+
+    void testParseUrl ()
     {
         beginTestCase ("parseUrl");
 
@@ -363,6 +417,17 @@ public:
 
         unexpected (strPath != "/path",
             "parseUrl: Mixed://domain/path path failed");
+    }
+
+    void runTest ()
+    {
+        testParseUrl ();
+
+        testUnHex ();
+    }
+
+    StringUtilitiesTests () : UnitTest ("StringUtilities", "ripple")
+    {
     }
 };
 
