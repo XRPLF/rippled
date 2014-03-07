@@ -2007,15 +2007,12 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
 
     Json::Value                 jvResult;
 
-    Blob    vucBlob (strUnHex (params["tx_blob"].asString ()));
+    std::pair<Blob, bool> ret(strUnHex (params["tx_blob"].asString ()));
 
-    if (!vucBlob.size ())
-    {
+    if (!ret.second || !ret.first.size ())
         return rpcError (rpcINVALID_PARAMS);
-    }
 
-
-    Serializer                  sTrans (vucBlob);
+    Serializer                  sTrans (ret.first);
     SerializerIterator          sitTrans (sTrans);
 
     SerializedTransaction::pointer stpTrans;

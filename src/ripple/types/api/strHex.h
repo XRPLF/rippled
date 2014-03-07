@@ -27,12 +27,24 @@
 
 namespace ripple {
 
+/** Converts an integer to the corresponding hex digit 
+    @param iDigit 0-15 inclusive
+    @return a character from '0'-'9' or 'A'-'F' on success; 0 on failure.
+*/
 char charHex (int iDigit);
 
+/** Converts a hex digit to the corresponding integer
+    @param cDigit one of '0'-'9', 'A'-'F' or 'a'-'f'
+    @return an integer from 0 to 15 on success; -1 on failure.
+*/
+int charUnHex (char cDigit);
+
+// NIKB TODO cleanup this function and reduce the need for the many overloads
+//           it has in various places.
 template<class Iterator>
 std::string strHex (Iterator first, int iSize)
 {
-    std::string     strDst;
+    std::string strDst;
 
     strDst.resize (iSize * 2);
 
@@ -41,7 +53,7 @@ std::string strHex (Iterator first, int iSize)
         unsigned char c = *first++;
 
         strDst[i * 2]     = charHex (c >> 4);
-        strDst[i * 2 + 1]   = charHex (c & 15);
+        strDst[i * 2 + 1] = charHex (c & 15);
     }
 
     return strDst;

@@ -58,34 +58,6 @@ std::string strprintf (const char* format, ...)
     return str;
 }
 
-int charUnHex (char cDigit)
-{
-    struct HexTab
-    {
-        int hex[256];
-
-        HexTab ()
-        {
-            std::fill (std::begin (hex), std::end (hex), -1);
-            for (int i = 0; i < 10; ++i)
-                hex ['0'+i] = i;
-            for (int i = 0; i < 6; ++i)
-            {
-                hex ['A'+i] = 10 + i;
-                hex ['a'+i] = 10 + i;
-            }
-        }
-        int operator[] (int i) const
-        {
-           return hex[i];
-        }
-    };
-
-    static HexTab xtab;
-    
-    return xtab[cDigit];
-}
-
 // NIKB NOTE: This function is only used by strUnHex (const std::string& strSrc)
 // which results in a pointless copy from std::string into std::vector. Should
 // we just scrap this function altogether?
@@ -130,22 +102,32 @@ int strUnHex (std::string& strDst, const std::string& strSrc)
     return strDst.size ();
 }
 
-Blob strUnHex (const std::string& strSrc)
+std::pair<Blob, bool> strUnHex (const std::string& strSrc)
 {
     std::string strTmp;
 
     if (strUnHex (strTmp, strSrc) == -1)
-        return Blob ();
+        return std::make_pair (Blob (), false);
 
-    return strCopy (strTmp);
+    return std::make_pair(strCopy (strTmp), true);
 }
 
 uint64_t uintFromHex (const std::string& strSrc)
 {
-    uint64_t    uValue = 0;
+    uint64_t uValue (0);
 
-    BOOST_FOREACH (char c, strSrc)
-    uValue = (uValue << 4) | charUnHex (c);
+    if (strSrc.size () > 16)
+        throw std::invalid_argument("overlong 64-bit value");
+
+    for (auto c : strSrc)
+    {
+        int ret = charUnHex (c);
+
+        if (ret == -1)
+            throw std::invalid_argument("invalid hex digit");
+
+        uValue = (uValue << 4) | ret;
+    }
 
     return uValue;
 }

@@ -383,8 +383,12 @@ bool STParsedJSON::parse (std::string const& json_name,
 
             try
             {
-                data.push_back (new STVariableLength (field,
-                    strUnHex (value.asString ())));
+                std::pair<Blob, bool> ret(strUnHex (value.asString ()));
+
+                if (!ret.second)
+                    throw std::invalid_argument ("invalid data");
+
+                data.push_back (new STVariableLength (field, ret.first));
             }
             catch (...)
             {
