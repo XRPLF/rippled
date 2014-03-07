@@ -37,6 +37,7 @@ TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
 {
     mMap = boost::make_shared<SHAMap> (smtTRANSACTION, hash,
         std::ref (getApp().getFullBelowCache ()));
+    mMap->setTXMap ();
 }
 
 TransactionAcquire::~TransactionAcquire ()

@@ -33,6 +33,7 @@ SHAMap::SHAMap (SHAMapType t, FullBelowCache& fullBelowCache, uint32 seq,
     , mLedgerSeq (0)
     , mState (smsModifying)
     , mType (t)
+    , mTXMap (false)
     , m_missing_node_handler (missing_node_handler)
 {
     assert (mSeq != 0);
@@ -51,6 +52,7 @@ SHAMap::SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCach
     , mLedgerSeq (0)
     , mState (smsSynching)
     , mType (t)
+    , mTXMap (false)
     , m_missing_node_handler (missing_node_handler)
 {
     if (t == smtSTATE)
@@ -933,7 +935,7 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
 
         if (!ptr)
         {
-            if (mType == smtTRANSACTION)
+            if (mTXMap)
             {
                 // We don't store proposed transaction nodes in the node store
                 return nullptr;

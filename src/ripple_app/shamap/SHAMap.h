@@ -270,6 +270,13 @@ public:
         treeNodeCache.setTargetAge (age);
     }
 
+    void setTXMap ()
+    {
+        mTXMap = true;
+    }
+
+    typedef std::pair<uint256, SHAMapNode> TNIndex;
+
 private:
     static TaggedCache <uint256, SHAMapTreeNode> treeNodeCache;
 
@@ -321,6 +328,7 @@ private:
     SHAMapTreeNode::pointer root;
     SHAMapState mState;
     SHAMapType mType;
+    bool mTXMap;       // Map of transactions without metadata
     MissingNodeHandler m_missing_node_handler;
 };
 
