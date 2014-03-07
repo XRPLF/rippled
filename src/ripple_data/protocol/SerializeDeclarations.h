@@ -161,6 +161,7 @@ FIELD (RemoveCode,           VL, 9)
 FIELD (ExpireCode,           VL, 10)
 FIELD (CreateCode,           VL, 11)
 FIELD (MemoType,             VL, 12)
+FIELD (MemoData,             VL, 13)
 
 // account
 FIELD (Account,              ACCOUNT, 1)
