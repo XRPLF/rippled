@@ -79,6 +79,11 @@ public:
     */
     virtual void waitReads () = 0;
 
+    /** Get the maximum number of async reads the node store prefers.
+        @return The number of async reads preferred.
+    */
+    virtual int getDesiredAsyncReadCount () = 0;
+
     /** Store the object.
 
         The caller's Blob parameter is overwritten.

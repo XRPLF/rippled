@@ -126,6 +126,12 @@ public:
 
     }
 
+    int getDesiredAsyncReadCount ()
+    {
+        // We prefer a client not fill our cache
+        return m_cache.getTargetSize() / 4;
+    }
+
     NodeObject::Ptr fetch (uint256 const& hash)
     {
         // See if the object already exists in the cache

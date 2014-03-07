@@ -132,14 +132,18 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
         return;
     }
 
+    int const maxDefer = getApp().getNodeStore().getDesiredAsyncReadCount ();
+
     // Track the missing hashes we have found so far
     std::set <uint256> missingHashes;
 
+
     while (1)
     {
+        std::vector <std::pair <SHAMapNode, uint256>> deferredReads;
+        deferredReads.reserve (maxDefer + 16);
 
         std::stack <GMNEntry> stack;
-        int deferCount = 0;
 
         // Traverse the map without blocking
 
@@ -179,7 +183,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
                             else
                             {
                                 // read is deferred
-                                ++deferCount;
+                                deferredReads.emplace_back (childID, childHash);
                             }
 
                             fullBelow = false; // This node is not known full below
@@ -220,13 +224,30 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
             }
 
         }
-        while (node != NULL);
+        while ((node != NULL) && (deferredReads.size () <= maxDefer));
 
         // If we didn't defer any reads, we're done
-        if (deferCount == 0)
+        if (deferredReads.empty ())
             break;
 
         getApp().getNodeStore().waitReads();
+
+        // Process all deferred reads
+        for (auto const& node : deferredReads)
+        {
+            auto const& nodeID = node.first;
+            auto const& nodeHash = node.second;
+            SHAMapNode *nodePtr = getNodePointerNT (nodeID, nodeHash, filter);
+            if (!nodePtr && missingHashes.insert (nodeHash).second)
+            {
+                nodeIDs.push_back (nodeID);
+                hashes.push_back (nodeHash);
+
+                if (--max <= 0)
+                    return;
+            }
+        }
+
     }
 
     if (nodeIDs.empty ())
