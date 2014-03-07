@@ -24,6 +24,9 @@
 #ifndef BEAST_MEMORYBLOCK_H_INCLUDED
 #define BEAST_MEMORYBLOCK_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A class to hold a resizable block of raw data.
@@ -263,6 +266,8 @@ private:
     HeapBlock <char> data;
     size_t size;
 };
+
+}  // namespace beast
 
 #endif
 

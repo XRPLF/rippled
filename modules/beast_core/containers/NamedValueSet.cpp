@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 NamedValueSet::NamedValue::NamedValue() noexcept
 {
 }
@@ -302,3 +305,5 @@ void NamedValueSet::copyToXmlAttributes (XmlElement& xml) const
         }
     }
 }
+
+}  // namespace beast

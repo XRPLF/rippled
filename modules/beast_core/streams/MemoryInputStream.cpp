@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 MemoryInputStream::MemoryInputStream (const void* const sourceData,
                                       const size_t sourceDataSize,
                                       const bool keepInternalCopy)
@@ -149,3 +152,5 @@ public:
 };
 
 static MemoryStreamTests memoryStreamTests;
+
+}  // namespace beast

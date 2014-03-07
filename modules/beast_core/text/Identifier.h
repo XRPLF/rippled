@@ -24,6 +24,9 @@
 #ifndef BEAST_IDENTIFIER_H_INCLUDED
 #define BEAST_IDENTIFIER_H_INCLUDED
 
+namespace beast
+{
+
 class StringPool;
 
 
@@ -102,5 +105,6 @@ private:
     static StringPool& getPool();
 };
 
+}  // namespace beast
 
 #endif   // BEAST_IDENTIFIER_H_INCLUDED

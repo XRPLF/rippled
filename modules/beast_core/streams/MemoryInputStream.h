@@ -24,6 +24,9 @@
 #ifndef BEAST_MEMORYINPUTSTREAM_H_INCLUDED
 #define BEAST_MEMORYINPUTSTREAM_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Allows a block of data to be accessed as a stream.
@@ -87,5 +90,7 @@ private:
 
     void createInternalCopy();
 };
+
+}  // namespace beast
 
 #endif   // BEAST_MEMORYINPUTSTREAM_H_INCLUDED

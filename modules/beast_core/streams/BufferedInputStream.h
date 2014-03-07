@@ -24,6 +24,9 @@
 #ifndef BEAST_BUFFEREDINPUTSTREAM_H_INCLUDED
 #define BEAST_BUFFEREDINPUTSTREAM_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /** Wraps another input stream, and reads from it using an intermediate buffer
 
@@ -82,5 +85,7 @@ private:
     HeapBlock <char> buffer;
     void ensureBuffered();
 };
+
+}  // namespace beast
 
 #endif   // BEAST_BUFFEREDINPUTSTREAM_H_INCLUDED

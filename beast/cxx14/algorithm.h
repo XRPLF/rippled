@@ -25,6 +25,8 @@
 
 #include <algorithm>
 
+#if ! BEAST_NO_CXX14_EQUAL
+
 namespace std {
 
 namespace detail {
@@ -86,5 +88,7 @@ bool equal (FwdIt1 first1, FwdIt1 last1,
 /** @} */
 
 }
+
+#endif
 
 #endif

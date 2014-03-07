@@ -20,6 +20,9 @@
 #ifndef BEAST_FPUFLAGS_H_INCLUDED
 #define BEAST_FPUFLAGS_H_INCLUDED
 
+namespace beast
+{
+
 /*============================================================================*/
 /**
     A set of IEEE FPU flags.
@@ -330,6 +333,8 @@ public:
 private:
     FPUFlags m_savedFlags;
 };
+
+}  // namespace beast
 
 #endif
 

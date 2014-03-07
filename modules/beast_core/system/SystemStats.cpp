@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 String SystemStats::getBeastVersion()
 {
     // Some basic tests, to keep an eye on things and make sure these types work ok
@@ -158,3 +161,5 @@ void SystemStats::setApplicationCrashHandler (CrashHandlerFunction handler)
     }
    #endif
 }
+
+}  // namespace beast

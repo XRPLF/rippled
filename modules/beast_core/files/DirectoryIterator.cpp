@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 static StringArray parseWildcards (const String& pattern)
 {
     StringArray s;
@@ -152,3 +155,5 @@ float DirectoryIterator::getEstimatedProgress() const
 
     return detailedIndex / totalNumFiles;
 }
+
+}  // namespace beast

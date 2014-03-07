@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 SemanticVersion::SemanticVersion ()
     : majorVersion (0)
     , minorVersion (0)
@@ -517,3 +520,5 @@ public:
 };
 
 static SemanticVersionTests semanticVersionTests;
+
+}  // namespace beast

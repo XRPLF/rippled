@@ -29,6 +29,9 @@
 #ifndef BEAST_GZIPCOMPRESSOROUTPUTSTREAM_H_INCLUDED
 #define BEAST_GZIPCOMPRESSOROUTPUTSTREAM_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A stream which uses zlib to compress the data written into it.
@@ -96,5 +99,7 @@ private:
     friend class ScopedPointer <GZIPCompressorHelper>;
     ScopedPointer <GZIPCompressorHelper> helper;
 };
+
+}  // namespace beast
 
 #endif   // BEAST_GZIPCOMPRESSOROUTPUTSTREAM_H_INCLUDED

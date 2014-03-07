@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 UnitTest::UnitTest (String const& className,
                     String const& packageName,
                     When when)
@@ -477,3 +480,5 @@ public:
 };
 
 static UnitTestsPrinter unitTestsPrinter;
+
+}  // namespace beast

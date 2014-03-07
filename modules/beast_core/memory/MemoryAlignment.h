@@ -20,6 +20,9 @@
 #ifndef BEAST_MEMORYALIGNMENT_H_INCLUDED
 #define BEAST_MEMORYALIGNMENT_H_INCLUDED
 
+namespace beast
+{
+
 namespace Memory
 {
 
@@ -62,6 +65,8 @@ inline P* pointerAdjustedForAlignment (P* const p)
                                   bytesNeededForAlignment (p));
 }
 
-}
+}  // namespace Memory
+
+}  // namespace beast
 
 #endif

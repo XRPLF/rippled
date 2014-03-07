@@ -24,6 +24,9 @@
 #ifndef BEAST_ELEMENTCOMPARATOR_H_INCLUDED
 #define BEAST_ELEMENTCOMPARATOR_H_INCLUDED
 
+namespace beast
+{
+
 #ifndef DOXYGEN
 
 /** This is an internal helper class which converts a beast ElementComparator style
@@ -184,6 +187,8 @@ public:
         return (first < second) ? -1 : ((second < first) ? 1 : 0);
     }
 };
+
+}  // namespace beast
 
 #endif
 

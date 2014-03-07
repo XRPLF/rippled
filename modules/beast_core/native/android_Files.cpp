@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 bool File::copyInternal (const File& dest) const
 {
     FileInputStream in (*this);
@@ -233,3 +236,5 @@ bool Process::openDocument (const String& fileName, const String& parameters)
 void File::revealToUser() const
 {
 }
+
+}  // namespace beast

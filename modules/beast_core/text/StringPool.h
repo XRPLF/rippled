@@ -24,6 +24,9 @@
 #ifndef BEAST_STRINGPOOL_H_INCLUDED
 #define BEAST_STRINGPOOL_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A StringPool holds a set of shared strings, which reduces storage overheads and improves
@@ -82,5 +85,6 @@ private:
     CriticalSection lock;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_STRINGPOOL_H_INCLUDED

@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 FileInputSource::FileInputSource (const File& f, bool useFileTimeInHash)
     : file (f), useFileTimeInHashGeneration (useFileTimeInHash)
 {
@@ -49,3 +52,5 @@ int64 FileInputSource::hashCode() const
 
     return h;
 }
+
+}  // namespace beast

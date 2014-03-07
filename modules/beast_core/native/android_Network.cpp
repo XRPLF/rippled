@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 //==============================================================================
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
  METHOD (constructor, "<init>", "()V") \
@@ -57,3 +60,5 @@ bool Process::openEmailWithAttachments (const String& targetEmailAddress,
     // TODO
     return false;
 }
+
+}  // namespace beast

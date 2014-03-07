@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 StringPairArray::StringPairArray (const bool ignoreCase_)
     : ignoreCase (ignoreCase_)
 {
@@ -142,3 +145,5 @@ void StringPairArray::minimiseStorageOverheads()
     keys.minimiseStorageOverheads();
     values.minimiseStorageOverheads();
 }
+
+}  // namespace beast

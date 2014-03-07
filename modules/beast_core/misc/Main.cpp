@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 Main* Main::s_instance;
 
 Main::Main ()
@@ -124,3 +127,5 @@ int Main::runFromMain (int argc, char const* const* argv)
 
     return exitCode;
 }
+
+}  // namespace beast

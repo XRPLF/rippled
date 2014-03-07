@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 PropertySet::PropertySet (const bool ignoreCaseOfKeyNames)
     : properties (ignoreCaseOfKeyNames),
       fallbackProperties (nullptr),
@@ -216,3 +219,5 @@ void PropertySet::restoreFromXml (const XmlElement& xml)
 void PropertySet::propertyChanged()
 {
 }
+
+}  // namespace beast

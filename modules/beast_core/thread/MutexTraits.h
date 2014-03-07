@@ -20,6 +20,9 @@
 #ifndef BEAST_CORE_THREAD_MUTEXTRAITS_H_INCLUDED
 #define BEAST_CORE_THREAD_MUTEXTRAITS_H_INCLUDED
 
+namespace beast
+{
+
 /** Adapt a Mutex type to meet the boost::Mutex concept requirements.
     The default implementation assumes adherance to the boost::Mutex concepts,
     with one important exception. We make the member functions const, for
@@ -71,5 +74,7 @@ struct MutexTraits <CriticalSection>
         return mutex.try_lock ();
     }
 };
+
+}  // namespace beast
 
 #endif

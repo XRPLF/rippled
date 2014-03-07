@@ -24,6 +24,9 @@
 #ifndef BEAST_DYNAMICOBJECT_H_INCLUDED
 #define BEAST_DYNAMICOBJECT_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Represents a dynamically implemented object.
@@ -112,6 +115,6 @@ private:
     NamedValueSet properties;
 };
 
-
+}  // namespace beast
 
 #endif   // BEAST_DYNAMICOBJECT_H_INCLUDED

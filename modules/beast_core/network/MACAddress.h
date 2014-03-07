@@ -24,6 +24,9 @@
 #ifndef BEAST_MACADDRESS_H_INCLUDED
 #define BEAST_MACADDRESS_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A wrapper for a streaming (TCP) socket.
@@ -77,5 +80,6 @@ private:
     uint8 address[6];
 };
 
+}  // namespace beast
 
 #endif   // BEAST_MACADDRESS_H_INCLUDED

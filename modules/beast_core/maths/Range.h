@@ -25,6 +25,9 @@
 #define BEAST_RANGE_H_INCLUDED
 
 
+namespace beast
+{
+
 //==============================================================================
 /** A general-purpose range object, that simply represents any linear range with
     a start and end point.
@@ -255,5 +258,6 @@ private:
     ValueType start, end;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_RANGE_H_INCLUDED

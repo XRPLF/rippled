@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 namespace TimeHelpers
 {
     static struct tm millisToLocal (const int64 millis) noexcept
@@ -439,3 +442,5 @@ bool operator<  (Time time1, Time time2)      { return time1.toMilliseconds() < 
 bool operator>  (Time time1, Time time2)      { return time1.toMilliseconds() >  time2.toMilliseconds(); }
 bool operator<= (Time time1, Time time2)      { return time1.toMilliseconds() <= time2.toMilliseconds(); }
 bool operator>= (Time time1, Time time2)      { return time1.toMilliseconds() >= time2.toMilliseconds(); }
+
+}  // namespace beast

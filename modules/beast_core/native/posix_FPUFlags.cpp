@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 //#pragma message(BEAST_FILEANDLINE_ "Missing platform-specific implementation")
 
 FPUFlags FPUFlags::getCurrent ()
@@ -27,3 +30,5 @@ FPUFlags FPUFlags::getCurrent ()
 void FPUFlags::setCurrent (const FPUFlags& flags)
 {
 }
+
+}  // namespace beast

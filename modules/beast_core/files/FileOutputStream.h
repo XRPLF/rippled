@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 #ifndef BEAST_FILEOUTPUTSTREAM_H_INCLUDED
 #define BEAST_FILEOUTPUTSTREAM_H_INCLUDED
 
@@ -106,5 +109,7 @@ private:
     int64 setPositionInternal (int64);
     ssize_t writeInternal (const void*, size_t);
 };
+
+}  // namespace beast
 
 #endif

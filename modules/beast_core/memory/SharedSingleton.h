@@ -20,6 +20,9 @@
 #ifndef BEAST_SHAREDSINGLETON_H_INCLUDED
 #define BEAST_SHAREDSINGLETON_H_INCLUDED
 
+namespace beast
+{
+
 /** Thread-safe singleton which comes into existence on first use. Use this
     instead of creating objects with static storage duration. These singletons
     are automatically reference counted, so if you hold a pointer to it in every
@@ -189,5 +192,7 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
+}  // namespace beast
 
 #endif

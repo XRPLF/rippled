@@ -29,6 +29,9 @@
 #ifndef BEAST_GZIPDECOMPRESSORINPUTSTREAM_H_INCLUDED
 #define BEAST_GZIPDECOMPRESSORINPUTSTREAM_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     This stream will decompress a source-stream using zlib.
@@ -93,5 +96,7 @@ private:
     friend class ScopedPointer <GZIPDecompressHelper>;
     ScopedPointer <GZIPDecompressHelper> helper;
 };
+
+}  // namespace beast
 
 #endif   // BEAST_GZIPDECOMPRESSORINPUTSTREAM_H_INCLUDED

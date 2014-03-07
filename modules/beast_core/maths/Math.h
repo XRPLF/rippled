@@ -20,6 +20,9 @@
 #ifndef BEAST_MATH_H_INCLUDED
 #define BEAST_MATH_H_INCLUDED
 
+namespace beast
+{
+
 //
 // Miscellaneous mathematical calculations
 //
@@ -80,5 +83,7 @@ inline T radiansToDegrees (U radians)
 
     return deg;
 }
+
+}  // namespace beast
 
 #endif

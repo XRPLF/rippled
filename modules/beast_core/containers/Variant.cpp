@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 enum VariantStreamMarkers
 {
     varMarker_Int       = 1,
@@ -702,3 +705,5 @@ var var::readFromStream (InputStream& input)
 
     return var::null;
 }
+
+}  // namespace beast

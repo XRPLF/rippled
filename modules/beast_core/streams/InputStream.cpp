@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 int64 InputStream::getNumBytesRemaining()
 {
     int64 len = getTotalLength();
@@ -320,3 +323,4 @@ float InputStream::readTypeBigEndian <float> () { return readFloatBigEndian (); 
 template <>
 double InputStream::readTypeBigEndian <double> () { return readDoubleBigEndian (); }
 
+}  // namespace beast

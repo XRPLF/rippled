@@ -24,6 +24,9 @@
 #ifndef BEAST_PROPERTYSET_H_INCLUDED
 #define BEAST_PROPERTYSET_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A set of named property values, which can be strings, integers, floating point, etc.
@@ -203,5 +206,6 @@ private:
     bool ignoreCaseOfKeys;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_PROPERTYSET_H_INCLUDED

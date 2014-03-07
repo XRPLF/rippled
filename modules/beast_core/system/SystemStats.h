@@ -24,6 +24,9 @@
 #ifndef BEAST_SYSTEMSTATS_H_INCLUDED
 #define BEAST_SYSTEMSTATS_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Contains methods for finding out about the current hardware and OS configuration.
@@ -177,5 +180,6 @@ private:
     SystemStats();
 };
 
+}  // namespace beast
 
 #endif   // BEAST_SYSTEMSTATS_H_INCLUDED

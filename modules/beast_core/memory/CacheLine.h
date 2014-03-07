@@ -25,6 +25,9 @@
 //
 #define GLOBAL_PADDING_ENABLED 1
 
+namespace beast
+{
+
 namespace CacheLine
 {
 
@@ -412,6 +415,8 @@ private:
     T m_t;
 };
 
-}
+}  // namespace CacheLine
+
+}  // namespace beast
 
 #endif

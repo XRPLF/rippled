@@ -24,6 +24,9 @@
 #ifndef BEAST_TEMPORARYFILE_H_INCLUDED
 #define BEAST_TEMPORARYFILE_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Manages a temporary file, which will be deleted when this object is deleted.
@@ -157,5 +160,7 @@ private:
     //==============================================================================
     const File temporaryFile, targetFile;
 };
+
+}  // namespace beast
 
 #endif   // BEAST_TEMPORARYFILE_H_INCLUDED

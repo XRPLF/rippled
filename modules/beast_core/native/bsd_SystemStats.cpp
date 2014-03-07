@@ -52,6 +52,9 @@
  *
  */
 
+namespace beast
+{
+
 #define SI_LOAD_SHIFT   16
 struct sysinfo {
   long uptime;                  /* Seconds since boot */
@@ -349,3 +352,5 @@ bool Time::setSystemTimeToThisTime() const
 
     return settimeofday (&t, 0) == 0;
 }
+
+}  // namespace beast

@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 Logger::Logger() {}
 
 Logger::~Logger()
@@ -56,3 +59,5 @@ void logAssertion (const char* const filename, const int lineNum) noexcept
    #endif
 }
 #endif
+
+}  // namespace beast

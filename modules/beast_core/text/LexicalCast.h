@@ -20,6 +20,9 @@
 #ifndef BEAST_LEXICALCAST_H_INCLUDED
 #define BEAST_LEXICALCAST_H_INCLUDED
 
+namespace beast
+{
+
 // Base class with utility functions
 struct LexicalCastUtilities
 {
@@ -299,5 +302,7 @@ Out lexicalCast (In in, Out defaultValue = Out ())
 
     return defaultValue;
 }
+
+}  // namespace beast
 
 #endif

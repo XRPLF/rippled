@@ -24,6 +24,9 @@
 #ifndef BEAST_SPARSESET_H_INCLUDED
 #define BEAST_SPARSESET_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Holds a set of primitive values, storing them as a set of ranges.
@@ -287,6 +290,6 @@ private:
     }
 };
 
-
+}  // namespace beast
 
 #endif   // BEAST_SPARSESET_H_INCLUDED

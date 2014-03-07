@@ -26,6 +26,9 @@
   ==============================================================================
 */
 
+namespace beast
+{
+
 class GZIPCompressorOutputStream::GZIPCompressorHelper : public Uncopyable
 {
 public:
@@ -206,3 +209,5 @@ public:
 };
 
 static GZIPTests gzipTests;
+
+}  // namespace beast

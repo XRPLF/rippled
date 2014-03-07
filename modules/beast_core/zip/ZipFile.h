@@ -29,6 +29,9 @@
 #ifndef BEAST_ZIPFILE_H_INCLUDED
 #define BEAST_ZIPFILE_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Decodes a ZIP file from a stream.
@@ -235,5 +238,7 @@ private:
 
     void init();
 };
+
+}  // namespace beast
 
 #endif   // BEAST_ZIPFILE_H_INCLUDED

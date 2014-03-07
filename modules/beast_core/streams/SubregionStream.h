@@ -24,6 +24,9 @@
 #ifndef BEAST_SUBREGIONSTREAM_H_INCLUDED
 #define BEAST_SUBREGIONSTREAM_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /** Wraps another input stream, and reads from a specific part of it.
 
@@ -79,5 +82,7 @@ private:
     OptionalScopedPointer<InputStream> source;
     const int64 startPositionInSourceStream, lengthOfSourceStream;
 };
+
+}  // namespace beast
 
 #endif   // BEAST_SUBREGIONSTREAM_H_INCLUDED

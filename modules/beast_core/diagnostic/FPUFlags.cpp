@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 void FPUFlags::clearUnsetFlagsFrom (FPUFlags const& flags)
 {
     if (!flags.getMaskNaNs ().is_set ())         m_maskNaNs.clear ();
@@ -38,3 +41,5 @@ void FPUFlags::clearUnsetFlagsFrom (FPUFlags const& flags)
 
     if (!flags.getPrecision ().is_set ())        m_precision.clear ();
 }
+
+}  // namespace beast

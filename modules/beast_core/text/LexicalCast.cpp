@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 unsigned char const LexicalCastUtilities::s_digitTable [256] = {
    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xFF - 0x07
    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0x08 - 0x0F
@@ -121,3 +124,5 @@ public:
 };
 
 static LexicalCastTests lexicalCastTests;
+
+}  // namespace beast

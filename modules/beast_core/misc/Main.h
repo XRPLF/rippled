@@ -20,6 +20,9 @@
 #ifndef BEAST_CORE_MAIN_H_INCLUDED
 #define BEAST_CORE_MAIN_H_INCLUDED
 
+namespace beast
+{
+
 /** Represents a command line program's entry point
     To use this, derive your class from @ref Main and implement the
     function run ();
@@ -74,6 +77,8 @@ private:
 private:
     static Main* s_instance;
 };
+
+}  // namespace beast
 
 #endif
 

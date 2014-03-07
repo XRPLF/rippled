@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 MemoryOutputStream::MemoryOutputStream (const size_t initialSize)
   : blockToUse (&internalBlock), externalData (nullptr),
     position (0), size (0), availableSize (0)
@@ -207,3 +210,5 @@ OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const MemoryOutpu
 
     return stream;
 }
+
+}  // namespace beast

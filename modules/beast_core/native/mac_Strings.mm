@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 String String::fromCFString (CFStringRef cfString)
 {
     if (cfString == 0)
@@ -89,3 +92,5 @@ String String::convertToPrecomposedUnicode() const
     return result;
    #endif
 }
+
+}  // namespace beast

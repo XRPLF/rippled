@@ -24,6 +24,9 @@
 #ifndef BEAST_UNITTEST_H_INCLUDED
 #define BEAST_UNITTEST_H_INCLUDED
 
+namespace beast
+{
+
 class UnitTests;
 
 /** This is a base class for classes that perform a unit test.
@@ -546,5 +549,7 @@ private:
     Random m_random;
     JournalSink m_sink;
 };
+
+}  // namespace beast
 
 #endif

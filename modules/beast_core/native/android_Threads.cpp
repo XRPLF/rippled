@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 /*
     Note that a lot of methods that you'd expect to find in this file actually
     live in beast_posix_SharedCode.h!
@@ -69,3 +72,5 @@ BEAST_API bool BEAST_CALLTYPE Process::isRunningUnderDebugger()
 
 void Process::raisePrivilege() {}
 void Process::lowerPrivilege() {}
+
+}  // namespace beast

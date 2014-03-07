@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 Workers::Workers (Callback& callback, String const& threadNames, int numberOfThreads)
     : m_callback (callback)
     , m_threadNames (threadNames)
@@ -299,3 +302,5 @@ public:
 };
 
 static WorkersTests workersTests;
+
+}  // namespace beast

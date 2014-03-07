@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 // We need to make a shared singleton or else there are
 // issues with the leak detector and order of detruction.
 //
@@ -1101,3 +1104,4 @@ public:
 
 static FileTests fileTests;
 
+}  // namespace beast

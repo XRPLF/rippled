@@ -20,6 +20,9 @@
 #ifndef BEAST_FUNCTIONAL_H_INCLUDED
 #define BEAST_FUNCTIONAL_H_INCLUDED
 
+namespace beast
+{
+
 //------------------------------------------------------------------------------
 
 /*  Brings functional support into our namespace, based on environment.
@@ -372,5 +375,7 @@ using namespace placeholders;
 #error Unknown bind source in Functional.h
 
 #endif
+
+}  // namespace beast
 
 #endif

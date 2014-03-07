@@ -20,6 +20,9 @@
 #ifndef BEAST_CORE_DIAGNOSTIC_MEASUREFUNCTIONCALLTIME_H_INCLUDED
 #define BEAST_CORE_DIAGNOSTIC_MEASUREFUNCTIONCALLTIME_H_INCLUDED
 
+namespace beast
+{
+
 /** Measures the speed of invoking a function. */
 /** @{ */
 template <typename Function>
@@ -76,5 +79,7 @@ double measureFunctionCallTime (Function f, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P
             Time::getHighResolutionTicks () - startTime);
 }
 #endif
+
+}  // namespace beast
 
 #endif

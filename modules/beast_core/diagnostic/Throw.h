@@ -20,6 +20,9 @@
 #ifndef BEAST_THROW_H_INCLUDED
 #define BEAST_THROW_H_INCLUDED
 
+namespace beast
+{
+
 /** Throw an exception, with a debugger hook.
 
     This provides an opportunity to utilize the debugger before
@@ -35,5 +38,7 @@ void Throw (Exception const& e, char const* = "", int = 0)
 {
     throw e;
 }
+
+}  // namespace beast
 
 #endif

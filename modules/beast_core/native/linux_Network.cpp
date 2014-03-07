@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 void MACAddress::findAllAddresses (Array<MACAddress>& result)
 {
     const int s = socket (AF_INET, SOCK_DGRAM, 0);
@@ -59,3 +62,5 @@ bool Process::openEmailWithAttachments (const String& /* targetEmailAddress */,
 
     return false;
 }
+
+}  // namespace beast

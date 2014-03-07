@@ -23,22 +23,32 @@
 // Sets C++14 compatibility configuration macros based on build environment
 
 // Disables beast c++14 compatibility additions when set to 1
+// Note, some compatibilty features are enabled or disabled individually.
 //
 #ifndef BEAST_NO_CXX14_COMPATIBILITY
 # ifdef _MSC_VER
+#  define BEAST_NO_CXX14_COMPATIBILITY 1
+# elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201305
 #  define BEAST_NO_CXX14_COMPATIBILITY 1
 # else
 #  define BEAST_NO_CXX14_COMPATIBILITY 0
 # endif
 #endif
 
-// Disables beast's make_unique
+// Disables beast's std::make_unique
 #ifndef BEAST_NO_CXX14_MAKE_UNIQUE
 # ifdef _MSC_VER
+#  define BEAST_NO_CXX14_MAKE_UNIQUE 1
+# elif defined(__clang__) && defined(_LIBCPP_VERSION) && __cplusplus >= 201305
 #  define BEAST_NO_CXX14_MAKE_UNIQUE 1
 # else
 #  define BEAST_NO_CXX14_MAKE_UNIQUE 0
 # endif
+#endif
+
+// Disables beast's std::equal safe iterator overloads
+#ifndef BEAST_NO_CXX14_EQUAL
+# define BEAST_NO_CXX14_EQUAL 0
 #endif
 
 #endif

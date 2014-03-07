@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 DynamicObject::DynamicObject()
 {
 }
@@ -72,3 +75,5 @@ void DynamicObject::clear()
 {
     properties.clear();
 }
+
+}  // namespace beast

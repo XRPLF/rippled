@@ -24,6 +24,9 @@
 #ifndef BEAST_FILEINPUTSOURCE_H_INCLUDED
 #define BEAST_FILEINPUTSOURCE_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A type of InputSource that represents a normal file.
@@ -57,5 +60,6 @@ private:
     bool useFileTimeInHashGeneration;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_FILEINPUTSOURCE_H_INCLUDED

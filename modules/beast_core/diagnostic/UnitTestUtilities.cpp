@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 namespace UnitTestUtilities
 {
 
@@ -197,3 +200,5 @@ public:
 };
 
 static UnitTestUtilitiesTests unitTestUtilitiesTests;
+
+}  // namespace beast

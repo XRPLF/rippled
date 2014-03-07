@@ -24,6 +24,9 @@
 #ifndef BEAST_RANDOM_H_INCLUDED
 #define BEAST_RANDOM_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A random number generator.
@@ -129,5 +132,6 @@ private:
     int64 seed;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_RANDOM_H_INCLUDED

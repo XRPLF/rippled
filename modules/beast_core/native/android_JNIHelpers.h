@@ -24,6 +24,9 @@
 #ifndef BEAST_ANDROID_JNIHELPERS_H_INCLUDED
 #define BEAST_ANDROID_JNIHELPERS_H_INCLUDED
 
+namespace beast
+{
+
 #if ! (defined (BEAST_ANDROID_ACTIVITY_CLASSNAME) && defined (BEAST_ANDROID_ACTIVITY_CLASSPATH))
  #error "The BEAST_ANDROID_ACTIVITY_CLASSNAME and BEAST_ANDROID_ACTIVITY_CLASSPATH macros must be set!"
 #endif
@@ -396,5 +399,7 @@ DECLARE_JNI_CLASS (Matrix, "android/graphics/Matrix");
 
 DECLARE_JNI_CLASS (RectClass, "android/graphics/Rect");
 #undef JNI_CLASS_MEMBERS
+
+}  // namespace beast
 
 #endif   // BEAST_ANDROID_JNIHELPERS_H_INCLUDED

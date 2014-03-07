@@ -24,6 +24,9 @@
 #ifndef BEAST_STRINGPAIRARRAY_H_INCLUDED
 #define BEAST_STRINGPAIRARRAY_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A container for holding a set of strings which are keyed by another string.
@@ -152,5 +155,6 @@ private:
     bool ignoreCase;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_STRINGPAIRARRAY_H_INCLUDED

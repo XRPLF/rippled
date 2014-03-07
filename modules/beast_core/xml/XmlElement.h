@@ -24,6 +24,9 @@
 #ifndef BEAST_XMLELEMENT_H_INCLUDED
 #define BEAST_XMLELEMENT_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /** A handy macro to make it easy to iterate all the child elements in an XmlElement.
 
@@ -722,5 +725,6 @@ private:
     void reorderChildElements (XmlElement**, int) noexcept;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_XMLELEMENT_H_INCLUDED

@@ -24,6 +24,9 @@
 #ifndef BEAST_SOCKET_H_INCLUDED
 #define BEAST_SOCKET_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A wrapper for a streaming (TCP) socket.
@@ -291,5 +294,6 @@ private:
     DatagramSocket (const String& hostname, int portNumber, int handle, int localPortNumber);
 };
 
+}  // namespace beast
 
 #endif   // BEAST_SOCKET_H_INCLUDED

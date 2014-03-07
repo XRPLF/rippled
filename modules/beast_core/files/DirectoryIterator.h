@@ -24,6 +24,9 @@
 #ifndef BEAST_DIRECTORYITERATOR_H_INCLUDED
 #define BEAST_DIRECTORYITERATOR_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Searches through a the files in a directory, returning each file that is found.
@@ -142,5 +145,7 @@ private:
     ScopedPointer <DirectoryIterator> subIterator;
     File currentFile;
 };
+
+}  // namespace beast
 
 #endif   // BEAST_DIRECTORYITERATOR_H_INCLUDED

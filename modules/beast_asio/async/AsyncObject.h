@@ -80,7 +80,7 @@ public:
 
 private:
     // The number of handlers pending.
-    Atomic <int> m_pending;
+    beast::Atomic <int> m_pending;
 };
 
 }

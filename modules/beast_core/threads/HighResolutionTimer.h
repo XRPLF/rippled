@@ -24,6 +24,9 @@
 #ifndef BEAST_HIGHRESOLUTIONTIMER_H_INCLUDED
 #define BEAST_HIGHRESOLUTIONTIMER_H_INCLUDED
 
+namespace beast
+{
+
 /**
     A high-resolution periodic timer.
 
@@ -98,5 +101,6 @@ private:
     ScopedPointer<Pimpl> pimpl;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_HIGHRESOLUTIONTIMER_H_INCLUDED

@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 int64 beast_fileSetPosition (void* handle, int64 pos);
 
 //==============================================================================
@@ -88,3 +91,5 @@ bool FileInputStream::setPosition (int64 pos)
 
     return true;
 }
+
+}  // namespace beast

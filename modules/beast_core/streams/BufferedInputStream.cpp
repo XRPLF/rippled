@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 namespace
 {
     int calcBufferStreamBufferSize (int requestedSize, InputStream* const source) noexcept
@@ -191,3 +194,5 @@ String BufferedInputStream::readString()
 
     return InputStream::readString();
 }
+
+}  // namespace beast

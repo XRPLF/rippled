@@ -24,6 +24,9 @@
 #ifndef BEAST_STRINGARRAY_H_INCLUDED
 #define BEAST_STRINGARRAY_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A special array for holding a list of strings.
@@ -404,5 +407,6 @@ private:
     Array <String> strings;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_STRINGARRAY_H_INCLUDED

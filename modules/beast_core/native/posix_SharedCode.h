@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 CriticalSection::CriticalSection() noexcept
 {
     pthread_mutexattr_t atts;
@@ -1207,3 +1210,5 @@ private:
        #endif
     }
 };
+
+}  // namespace beast

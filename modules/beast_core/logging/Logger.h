@@ -24,6 +24,9 @@
 #ifndef BEAST_LOGGER_H_INCLUDED
 #define BEAST_LOGGER_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Acts as an application-wide logging class.
@@ -87,5 +90,6 @@ private:
     static Logger* currentLogger;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_LOGGER_H_INCLUDED

@@ -24,6 +24,9 @@
 #ifndef BEAST_ARRAY_H_INCLUDED
 #define BEAST_ARRAY_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Holds a resizable array of primitive or copy-by-value objects.
@@ -1051,5 +1054,7 @@ private:
             data.shrinkToNoMoreThan (bmax (numUsed, bmax (minimumAllocatedSize, 64 / (int) sizeof (ElementType))));
     }
 };
+
+}  // namespace beast
 
 #endif   // BEAST_ARRAY_H_INCLUDED

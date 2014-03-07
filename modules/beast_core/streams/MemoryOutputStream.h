@@ -24,6 +24,9 @@
 #ifndef BEAST_MEMORYOUTPUTSTREAM_H_INCLUDED
 #define BEAST_MEMORYOUTPUTSTREAM_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Writes data to an internal memory buffer, which grows as required.
@@ -136,5 +139,7 @@ private:
 
 /** Copies all the data that has been written to a MemoryOutputStream into another stream. */
 OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const MemoryOutputStream& streamToRead);
+
+}  // namespace beast
 
 #endif

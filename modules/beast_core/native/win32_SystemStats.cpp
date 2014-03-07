@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 void Logger::outputDebugString (const String& text)
 {
     OutputDebugString ((text + "\n").toWideCharPointer());
@@ -416,3 +419,5 @@ String SystemStats::getDisplayLanguage()
 
     return "en";
 }
+
+}  // namespace beast

@@ -24,6 +24,9 @@
 #ifndef BEAST_FILEINPUTSTREAM_H_INCLUDED
 #define BEAST_FILEINPUTSTREAM_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     An input stream that reads from a local file.
@@ -86,5 +89,7 @@ private:
     void closeHandle();
     size_t readInternal (void* buffer, size_t numBytes);
 };
+
+}  // namespace beast
 
 #endif   // BEAST_FILEINPUTSTREAM_H_INCLUDED

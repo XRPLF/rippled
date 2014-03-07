@@ -20,6 +20,9 @@
 #ifndef BEAST_CORE_THREAD_IMPL_UNTRACKEDMUTEX_H_INCLUDED
 #define BEAST_CORE_THREAD_IMPL_UNTRACKEDMUTEX_H_INCLUDED
 
+namespace beast
+{
+
 /** A drop-in replacement for TrackedMutex without the tracking.
 */
 template <typename Mutex>
@@ -78,5 +81,7 @@ public:
 private:
     Mutex mutable m_mutex;
 };
+
+}  // namespace beast
 
 #endif

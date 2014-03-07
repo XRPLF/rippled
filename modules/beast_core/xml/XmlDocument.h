@@ -24,6 +24,9 @@
 #ifndef BEAST_XMLDOCUMENT_H_INCLUDED
 #define BEAST_XMLDOCUMENT_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Parses a text-based XML document and creates an XmlElement object from it.
@@ -169,5 +172,6 @@ private:
     ScopedPointer <InputSource> inputSource;
 };
 
-#endif
+}  // namespace beast
 
+#endif

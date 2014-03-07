@@ -20,6 +20,9 @@
 #ifndef BEAST_CORE_THREAD_IMPL_TRACKEDMUTEX_H_INCLUDED
 #define BEAST_CORE_THREAD_IMPL_TRACKEDMUTEX_H_INCLUDED
 
+namespace beast
+{
+
 /** Common types and member functions for a TrackedMutex */
 class TrackedMutex
     : public detail::TrackedMutexBasics::ThreadLockList::Node
@@ -164,5 +167,7 @@ private:
     int mutable m_count;
     SharedState mutable m_state;
 };
+
+}  // namespace beast
 
 #endif

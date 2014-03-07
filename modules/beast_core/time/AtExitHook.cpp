@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 // Manages the list of hooks, and calls
 // whoever is in the list at exit time.
 //
@@ -133,3 +136,5 @@ AtExitHook::~AtExitHook ()
 {
     Manager::get().erase (m_item);
 }
+
+}  // namespace beast

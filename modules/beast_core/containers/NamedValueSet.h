@@ -24,6 +24,9 @@
 #ifndef BEAST_NAMEDVALUESET_H_INCLUDED
 #define BEAST_NAMEDVALUESET_H_INCLUDED
 
+namespace beast
+{
+
 class XmlElement;
 #ifndef DOXYGEN
  class JSONFormatter;
@@ -157,5 +160,6 @@ private:
     friend class JSONFormatter;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_NAMEDVALUESET_H_INCLUDED
