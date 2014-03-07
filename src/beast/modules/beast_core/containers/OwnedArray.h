@@ -24,6 +24,9 @@
 #ifndef BEAST_OWNEDARRAY_H_INCLUDED
 #define BEAST_OWNEDARRAY_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /** An array designed for holding objects.
 
@@ -885,5 +888,6 @@ private:
     }
 };
 
+}  // namespace beast
 
 #endif

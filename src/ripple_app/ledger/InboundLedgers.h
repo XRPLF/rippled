@@ -27,21 +27,21 @@
 class InboundLedgers
 {
 public:
-    typedef abstract_clock <std::chrono::seconds> clock_type;
+    typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
     virtual ~InboundLedgers() = 0;
 
     // VFALCO TODO Make this a free function outside the class:
     //             std::unique_ptr <InboundLedger> make_InboundLedgers (...)
     //
-    static InboundLedgers* New (clock_type& clock, Stoppable& parent,
-                                insight::Collector::ptr const& collector);
+    static InboundLedgers* New (clock_type& clock, beast::Stoppable& parent,
+                                beast::insight::Collector::ptr const& collector);
 
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
     virtual InboundLedger::pointer findCreate (uint256 const& hash, 
-        uint32 seq, InboundLedger::fcReason) = 0;
+        beast::uint32 seq, InboundLedger::fcReason) = 0;
 
     virtual InboundLedger::pointer find (LedgerHash const& hash) = 0;
 

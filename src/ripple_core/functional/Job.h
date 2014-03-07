@@ -90,12 +90,12 @@ public:
 
     //Job (Job const& other);
 
-    Job (JobType type, uint64 index);
+    Job (JobType type, beast::uint64 index);
 
     // VFALCO TODO try to remove the dependency on LoadMonitor.
     Job (JobType type,
          std::string const& name,
-         uint64 index,
+         beast::uint64 index,
          LoadMonitor& lm,
          std::function <void (Job&)> const& job,
          CancelCallback cancelCallback);
@@ -126,7 +126,7 @@ public:
 private:
     CancelCallback m_cancelCallback;
     JobType                     mType;
-    uint64                      mJobIndex;
+    beast::uint64               mJobIndex;
     std::function <void (Job&)> mJob;
     LoadEvent::pointer          m_loadEvent;
     std::string                 mName;

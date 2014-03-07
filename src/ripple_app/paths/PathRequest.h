@@ -47,7 +47,7 @@ public:
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
     PathRequest (boost::shared_ptr <InfoSub> const& subscriber,
-        int id, PathRequests&, Journal journal);
+        int id, PathRequests&, beast::Journal journal);
     
     ~PathRequest ();
 
@@ -69,7 +69,7 @@ private:
     void resetLevel (int level);
     int parseJson (const Json::Value&, bool complete);
 
-    Journal m_journal;
+    beast::Journal m_journal;
 
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;

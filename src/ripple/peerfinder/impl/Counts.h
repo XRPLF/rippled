@@ -225,7 +225,7 @@ public:
     }
 
     /** Output statistics. */
-    void onWrite (PropertyStream::Map& map)
+    void onWrite (beast::PropertyStream::Map& map)
     {
         map ["accept"]  = acceptCount ();
         map ["connect"] = connectCount ();

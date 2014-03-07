@@ -22,7 +22,7 @@
 
 /** Holds the cryptographic credentials identifying this instance of the server.
 */
-class LocalCredentials : public Uncopyable
+class LocalCredentials : public beast::Uncopyable
 {
 public:
     LocalCredentials ();

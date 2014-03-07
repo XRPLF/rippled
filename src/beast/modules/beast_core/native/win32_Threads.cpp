@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 void* getUser32Function (const char* functionName)
 {
     HMODULE module = GetModuleHandleA ("user32.dll");
@@ -450,3 +453,5 @@ private:
                 timer->owner.hiResTimerCallback();
     }
 };
+
+}  // namespace beast

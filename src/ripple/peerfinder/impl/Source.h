@@ -31,14 +31,14 @@ namespace PeerFinder {
     be updated automatically. Another solution is to use a custom DNS server
     that hands out peer IP addresses when name lookups are performed.
 */
-class Source : public SharedObject
+class Source : public beast::SharedObject
 {
 public:
     /** The results of a fetch. */
     struct Results
     {
         // error_code on a failure
-        ErrorCode error;
+        beast::ErrorCode error;
 
         // list of fetched endpoints
         IPAddresses addresses;
@@ -47,7 +47,7 @@ public:
     virtual ~Source () { }
     virtual std::string const& name () = 0;
     virtual void cancel () { }
-    virtual void fetch (Results& results, Journal journal) = 0;
+    virtual void fetch (Results& results, beast::Journal journal) = 0;
 };
 
 }

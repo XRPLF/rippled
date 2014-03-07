@@ -20,7 +20,7 @@
 namespace ripple {
 namespace HTTP {
 
-Server::Server (Handler& handler, Journal journal)
+Server::Server (Handler& handler, beast::Journal journal)
     : m_impl (new ServerImpl (*this, handler, journal))
 {
 }
@@ -30,7 +30,7 @@ Server::~Server ()
     stop();
 }
 
-Journal const& Server::journal () const
+beast::Journal const& Server::journal () const
 {
     return m_impl->journal();
 }

@@ -33,8 +33,8 @@ Cleans up the ledger. Specifically, resolves these issues:
 
 class LedgerCleanerImp
     : public LedgerCleaner
-    , public Thread
-    , public LeakChecked <LedgerCleanerImp>
+    , public beast::Thread
+    , public beast::LeakChecked <LedgerCleanerImp>
 {
 public:
     struct State
@@ -55,16 +55,16 @@ public:
         int          failures;    // Number of errors encountered since last success
     };
 
-    typedef SharedData <State> SharedState;
+    typedef beast::SharedData <State> SharedState;
 
     SharedState m_state;
-    Journal m_journal;
+    beast::Journal m_journal;
 
     //--------------------------------------------------------------------------
 
     LedgerCleanerImp (
         Stoppable& stoppable,
-        Journal journal)
+        beast::Journal journal)
         : LedgerCleaner (stoppable)
         , Thread ("LedgerCleaner")
         , m_journal (journal)
@@ -104,7 +104,7 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onWrite (PropertyStream::Map& map)
+    void onWrite (beast::PropertyStream::Map& map)
     {
         SharedState::Access state (m_state);
 
@@ -428,7 +428,7 @@ public:
 
 LedgerCleaner::LedgerCleaner (Stoppable& parent)
     : Stoppable ("LedgerCleaner", parent)
-    , PropertyStream::Source ("ledgercleaner")
+    , beast::PropertyStream::Source ("ledgercleaner")
 {
 }
 
@@ -438,7 +438,7 @@ LedgerCleaner::~LedgerCleaner ()
 
 LedgerCleaner* LedgerCleaner::New (
     Stoppable& parent,
-    Journal journal)
+    beast::Journal journal)
 {
     return new LedgerCleanerImp (parent, journal);
 }

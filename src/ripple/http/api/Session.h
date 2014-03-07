@@ -23,7 +23,6 @@
 #include <ostream>
 
 namespace ripple {
-using namespace beast;
 
 namespace HTTP {
 
@@ -32,7 +31,7 @@ namespace HTTP {
     Some fields are input parameters, some are output parameters,
     and all only become defined during specific callbacks.
 */
-class Session : public Uncopyable
+class Session : public beast::Uncopyable
 {
 public:
     /** A user-definable pointer.
@@ -42,19 +41,19 @@ public:
     void* tag;
 
     /** Returns the Journal to use for logging. */
-    virtual Journal journal() = 0;
+    virtual beast::Journal journal() = 0;
 
     /** Returns the remote address of the connection. */
-    virtual IP::Endpoint remoteAddress() = 0;
+    virtual beast::IP::Endpoint remoteAddress() = 0;
 
     /** Returns `true` if the full HTTP headers have been received. */
     virtual bool headersComplete() = 0;
 
     /** Returns the currently known set of headers. */
-    virtual HTTPHeaders headers() = 0;
+    virtual beast::HTTPHeaders headers() = 0;
 
     /** Returns the complete HTTP request when it is known. */
-    virtual SharedPtr <beast::HTTPRequest> const& request() = 0;
+    virtual beast::SharedPtr <beast::HTTPRequest> const& request() = 0;
 
     /** Returns the entire Content-Body, if the request is complete. */
     virtual std::string content() = 0;
@@ -111,7 +110,7 @@ public:
     virtual void close() = 0;
 };
 
-}
-}
+}  // namespace HTTP
+}  // ripple
 
 #endif

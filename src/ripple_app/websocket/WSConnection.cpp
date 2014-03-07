@@ -23,7 +23,7 @@ SETUP_LOGN (WSConnection, "WSConnection")
 
 WSConnection::WSConnection (Resource::Manager& resourceManager,
     Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
-        IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service)
+        beast::IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service)
     : InfoSub (source, usage)
     , m_resourceManager (resourceManager)
     , m_isPublic (isPublic)

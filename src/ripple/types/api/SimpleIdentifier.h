@@ -38,7 +38,7 @@ public:
 
     /** Initialize from an input sequence. */
     static void construct (
-        uint8 const* begin, uint8 const* end,
+        beast::uint8 const* begin, beast::uint8 const* end,
             value_type& value)
     {
         std::copy (begin, end, value.begin());

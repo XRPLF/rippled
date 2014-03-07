@@ -28,8 +28,8 @@ namespace PeerFinder {
 
 /** Maintains a set of IP addresses used for getting into the network. */
 class Manager
-    : public Stoppable
-    , public PropertyStream::Source
+    : public beast::Stoppable
+    , public beast::PropertyStream::Source
 {
 protected:
     explicit Manager (Stoppable& parent);
@@ -39,10 +39,10 @@ public:
     static Manager* New (
         Stoppable& parent,
         SiteFiles::Manager& siteFiles,
-        File const& pathToDbFileOrDirectory,
+        beast::File const& pathToDbFileOrDirectory,
         Callback& callback,
         clock_type& clock,
-        Journal journal);
+        beast::Journal journal);
 
     /** Destroy the object.
         Any pending source fetch operations are aborted.
@@ -64,7 +64,7 @@ public:
         file, along with the set of corresponding IP addresses.
     */
     virtual void addFixedPeer (std::string const& name,
-        std::vector <IP::Endpoint> const& addresses) = 0;
+        std::vector <beast::IP::Endpoint> const& addresses) = 0;
 
     /** Add a set of strings as fallback IP::Endpoint sources.
         @param name A label used for diagnostics.
@@ -87,15 +87,15 @@ public:
         Usually this is because of a detected self-connection.
     */
     virtual Slot::ptr new_inbound_slot (
-        IP::Endpoint const& local_endpoint,
-            IP::Endpoint const& remote_endpoint) = 0;
+        beast::IP::Endpoint const& local_endpoint,
+            beast::IP::Endpoint const& remote_endpoint) = 0;
 
     /** Create a new outbound slot with the specified remote endpoint.
         If nullptr is returned, then the slot could not be assigned.
         Usually this is because of a duplicate connection.
     */
     virtual Slot::ptr new_outbound_slot (
-        IP::Endpoint const& remote_endpoint) = 0;
+        beast::IP::Endpoint const& remote_endpoint) = 0;
 
     /** Called when an outbound connection attempt succeeds.
         The local endpoint must be valid. If the caller receives an error
@@ -104,7 +104,7 @@ public:
         instead of on_connected.
     */
     virtual void on_connected (Slot::ptr const& slot,
-        IP::Endpoint const& local_endpoint) = 0;
+        beast::IP::Endpoint const& local_endpoint) = 0;
 
     /** Called when a handshake is completed. */
     virtual void on_handshake (Slot::ptr const& slot,

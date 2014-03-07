@@ -71,7 +71,7 @@ std::unique_ptr<SerializedType> STObject::makeDefaultObject (SerializedTypeID id
         return std::unique_ptr<SerializedType> (new STArray (name));
 
     default:
-        WriteLog (lsFATAL, STObject) << "Object type: " << lexicalCast <std::string> (id);
+        WriteLog (lsFATAL, STObject) << "Object type: " << beast::lexicalCast <std::string> (id);
         assert (false);
         throw std::runtime_error ("Unknown object type");
     }
@@ -224,7 +224,7 @@ bool STObject::isValidForType ()
 
 bool STObject::isFieldAllowed (SField::ref field)
 {
-    if (mType == NULL)
+    if (mType == nullptr)
         return true;
 
     return mType->getIndex (field) != -1;
@@ -362,9 +362,9 @@ void STObject::add (Serializer& s, bool withSigningFields) const
         field->addFieldID (s);
         field->add (s);
 
-        if (dynamic_cast<const STArray*> (field) != NULL)
+        if (dynamic_cast<const STArray*> (field) != nullptr)
             s.addFieldID (STI_ARRAY, 1);
-        else if (dynamic_cast<const STObject*> (field) != NULL)
+        else if (dynamic_cast<const STObject*> (field) != nullptr)
             s.addFieldID (STI_OBJECT, 1);
     }
 }
@@ -424,7 +424,7 @@ bool STObject::isEquivalent (const SerializedType& t) const
     return (it1 == end1) && (it2 == end2);
 }
 
-uint256 STObject::getHash (uint32 prefix) const
+uint256 STObject::getHash (beast::uint32 prefix) const
 {
     Serializer s;
     s.add32 (prefix);
@@ -432,7 +432,7 @@ uint256 STObject::getHash (uint32 prefix) const
     return s.getSHA512Half ();
 }
 
-uint256 STObject::getSigningHash (uint32 prefix) const
+uint256 STObject::getSigningHash (beast::uint32 prefix) const
 {
     Serializer s;
     s.add32 (prefix);
@@ -442,7 +442,7 @@ uint256 STObject::getSigningHash (uint32 prefix) const
 
 int STObject::getFieldIndex (SField::ref field) const
 {
-    if (mType != NULL)
+    if (mType != nullptr)
         return mType->getIndex (field);
 
     int i = 0;
@@ -486,7 +486,7 @@ const SerializedType* STObject::peekAtPField (SField::ref field) const
     int index = getFieldIndex (field);
 
     if (index == -1)
-        return NULL;
+        return nullptr;
 
     return peekAtPIndex (index);
 }
@@ -500,7 +500,7 @@ SerializedType* STObject::getPField (SField::ref field, bool createOkay)
         if (createOkay && isFree ())
             return getPIndex (giveObject (makeDefaultObject (field)));
 
-        return NULL;
+        return nullptr;
     }
 
     return getPIndex (index);
@@ -534,7 +534,7 @@ STObject& STObject::peekFieldObject (SField::ref field)
     return *cf;
 }
 
-bool STObject::setFlag (uint32 f)
+bool STObject::setFlag (beast::uint32 f)
 {
     STUInt32* t = dynamic_cast<STUInt32*> (getPField (sfFlags, true));
 
@@ -545,7 +545,7 @@ bool STObject::setFlag (uint32 f)
     return true;
 }
 
-bool STObject::clearFlag (uint32 f)
+bool STObject::clearFlag (beast::uint32 f)
 {
     STUInt32* t = dynamic_cast<STUInt32*> (getPField (sfFlags));
 
@@ -556,12 +556,12 @@ bool STObject::clearFlag (uint32 f)
     return true;
 }
 
-bool STObject::isFlag (uint32 f)
+bool STObject::isFlag (beast::uint32 f)
 {
     return (getFlags () & f) == f;
 }
 
-uint32 STObject::getFlags (void) const
+beast::uint32 STObject::getFlags (void) const
 {
     const STUInt32* t = dynamic_cast<const STUInt32*> (peekAtPField (sfFlags));
 
@@ -649,7 +649,7 @@ unsigned char STObject::getFieldU8 (SField::ref field) const
     return cf->getValue ();
 }
 
-uint16 STObject::getFieldU16 (SField::ref field) const
+beast::uint16 STObject::getFieldU16 (SField::ref field) const
 {
     const SerializedType* rf = peekAtPField (field);
 
@@ -666,7 +666,7 @@ uint16 STObject::getFieldU16 (SField::ref field) const
     return cf->getValue ();
 }
 
-uint32 STObject::getFieldU32 (SField::ref field) const
+beast::uint32 STObject::getFieldU32 (SField::ref field) const
 {
     const SerializedType* rf = peekAtPField (field);
 
@@ -683,7 +683,7 @@ uint32 STObject::getFieldU32 (SField::ref field) const
     return cf->getValue ();
 }
 
-uint64 STObject::getFieldU64 (SField::ref field) const
+beast::uint64 STObject::getFieldU64 (SField::ref field) const
 {
     const SerializedType* rf = peekAtPField (field);
 
@@ -902,7 +902,7 @@ void STObject::setFieldU8 (SField::ref field, unsigned char v)
     cf->setValue (v);
 }
 
-void STObject::setFieldU16 (SField::ref field, uint16 v)
+void STObject::setFieldU16 (SField::ref field, beast::uint16 v)
 {
     SerializedType* rf = getPField (field, true);
 
@@ -917,7 +917,7 @@ void STObject::setFieldU16 (SField::ref field, uint16 v)
     cf->setValue (v);
 }
 
-void STObject::setFieldU32 (SField::ref field, uint32 v)
+void STObject::setFieldU32 (SField::ref field, beast::uint32 v)
 {
     SerializedType* rf = getPField (field, true);
 
@@ -932,7 +932,7 @@ void STObject::setFieldU32 (SField::ref field, uint32 v)
     cf->setValue (v);
 }
 
-void STObject::setFieldU64 (SField::ref field, uint64 v)
+void STObject::setFieldU64 (SField::ref field, beast::uint64 v)
 {
     SerializedType* rf = getPField (field, true);
 
@@ -1076,7 +1076,7 @@ Json::Value STObject::getJson (int options) const
         if (it.getSType () != STI_NOTPRESENT)
         {
             if (!it.getFName ().hasName ())
-                ret[lexicalCast <std::string> (index)] = it.getJson (options);
+                ret[beast::lexicalCast <std::string> (index)] = it.getJson (options);
             else
                 ret[it.getName ()] = it.getJson (options);
         }
@@ -1185,7 +1185,7 @@ Json::Value STArray::getJson (int p) const
             Json::Value inner = Json::objectValue;
 
             if (!object.getFName ().hasName ())
-                inner[lexicalCast <std::string> (index)] = object.getJson (p);
+                inner[beast::lexicalCast <std::string> (index)] = object.getJson (p);
             else
                 inner[object.getName ()] = object.getJson (p);
 
@@ -1253,10 +1253,10 @@ void STArray::sort (bool (*compare) (const STObject&, const STObject&))
 
 //------------------------------------------------------------------------------
 
-class SerializedObjectTests : public UnitTest
+class SerializedObjectTests : public beast::UnitTest
 {
 public:
-    SerializedObjectTests () : UnitTest ("SerializedObject", "ripple")
+    SerializedObjectTests () : beast::UnitTest ("SerializedObject", "ripple")
     {
     }
 

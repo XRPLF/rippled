@@ -24,7 +24,7 @@
 // Provide abstract access to an account's state, such that access to the serialized format is hidden.
 //
 
-class AccountState : LeakChecked <AccountState>
+class AccountState : beast::LeakChecked <AccountState>
 {
 public:
     typedef boost::shared_ptr<AccountState> pointer;
@@ -51,7 +51,7 @@ public:
         return mLedgerEntry->getFieldAmount (sfBalance);
     }
 
-    uint32 getSeq () const
+    beast::uint32 getSeq () const
     {
         return mLedgerEntry->getFieldU32 (sfSequence);
     }

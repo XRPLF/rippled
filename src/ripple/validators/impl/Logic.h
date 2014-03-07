@@ -41,15 +41,15 @@ public:
         bool stopping;
 
         /** The source we are currently fetching. */
-        SharedPtr <Source> fetchSource;
+        beast::SharedPtr <Source> fetchSource;
     };
 
-    typedef SharedData <State> SharedState;
+    typedef beast::SharedData <State> SharedState;
 
     SharedState m_state;
 
     Store& m_store;
-    Journal m_journal;
+    beast::Journal m_journal;
 
     // A small integer assigned to each closed ledger
     //
@@ -88,7 +88,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    explicit Logic (Store& store, Journal journal = Journal ())
+    explicit Logic (Store& store, beast::Journal journal = beast::Journal ())
         : m_store (store)
         , m_journal (journal)
         , m_ledgerID (0)
@@ -122,7 +122,7 @@ public:
 
     // Returns `true` if a Source with the same unique ID already exists
     //
-    bool findSourceByID (String id)
+    bool findSourceByID (beast::String id)
     {
         for (SourceTable::const_iterator iter (m_sources.begin());
             iter != m_sources.end(); ++iter)
@@ -134,7 +134,7 @@ public:
     // Add a one-time static source.
     // Fetch is called right away, this call blocks.
     //
-    void addStatic (SharedPtr <Source> source)
+    void addStatic (beast::SharedPtr <Source> source)
     {
         if (findSourceByID (source->uniqueID()))
         {
@@ -164,7 +164,7 @@ public:
 
     // Add a live source to the list of sources.
     //
-    void add (SharedPtr <Source> source)
+    void add (beast::SharedPtr <Source> source)
     {
         if (findSourceByID (source->uniqueID()))
         {
@@ -258,7 +258,7 @@ public:
 
         m_journal.debug <<
             "Rebuilt chosen list with " <<
-            String::fromNumber (m_chosenList->size()) << " entries";
+            beast::String::fromNumber (m_chosenList->size()) << " entries";
     }
 
     /** Mark the Chosen List for a rebuild. */
@@ -294,7 +294,7 @@ public:
     /** Perform a fetch on the source. */
     void fetch (SourceDesc& desc)
     {
-        SharedPtr <Source> const& source (desc.source);
+        beast::SharedPtr <Source> const& source (desc.source);
         Source::Results results;
 
         {
@@ -316,8 +316,8 @@ public:
         }
 
         // Reset fetch timer for the source->
-        desc.whenToFetch = Time::getCurrentTime () +
-            RelativeTime (secondsBetweenFetches);
+        desc.whenToFetch = beast::Time::getCurrentTime () +
+            beast::RelativeTime (secondsBetweenFetches);
 
         if (results.success)
         {
@@ -394,7 +394,7 @@ public:
     std::size_t fetch_one ()
     {
         std::size_t n (0);
-        Time const currentTime (Time::getCurrentTime ());
+        beast::Time const currentTime (beast::Time::getCurrentTime ());
         
         for (SourceTable::iterator iter = m_sources.begin ();
             (n == 0) && iter != m_sources.end (); ++iter)

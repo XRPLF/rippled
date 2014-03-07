@@ -127,13 +127,13 @@ public:
     {
     public:
         Error () noexcept
-            : m_what (String::empty)
+            : m_what (beast::String::empty)
             , m_fileName ("")
             , m_lineNumber (0)
         {
         }
 
-        Error (String what, char const* fileName, int lineNumber)  noexcept
+        Error (beast::String what, char const* fileName, int lineNumber)  noexcept
             : m_what (what)
             , m_fileName (fileName)
             , m_lineNumber (lineNumber)
@@ -143,10 +143,10 @@ public:
         explicit
         operator bool() const noexcept
         {
-            return m_what != String::empty;
+            return m_what != beast::String::empty;
         }
 
-        String what () const noexcept
+        beast::String what () const noexcept
         {
             return m_what;
         }
@@ -162,7 +162,7 @@ public:
         }
 
     private:
-        String m_what;
+        beast::String m_what;
         char const* m_fileName;
         int m_lineNumber;
     };
@@ -182,10 +182,10 @@ public:
     // Settings related to the configuration file location and directories
 
     /** Returns the directory from which the configuration file was loaded. */
-    File getConfigDir () const;
+    beast::File getConfigDir () const;
 
     /** Returns the directory in which the current database files are located. */
-    File getDatabaseDir () const;
+    beast::File getDatabaseDir () const;
 
     // LEGACY FIELDS, REMOVE ASAP
     boost::filesystem::path CONFIG_FILE; // used by UniqueNodeList
@@ -200,10 +200,10 @@ public:
     // Settings related to validators
 
     /** Return the path to the separate, optional validators file. */
-    File getValidatorsFile () const;
+    beast::File getValidatorsFile () const;
 
     /** Returns the optional URL to a trusted network source of validators. */
-    URL getValidatorsURL () const;
+    beast::URL getValidatorsURL () const;
 
     // DEPRECATED
     boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
@@ -244,9 +244,9 @@ public:
 
     /** Convert the RPC/port combination to a readable string.
     */
-    String const getRpcAddress ()
+    beast::String const getRpcAddress ()
     {
-        String s;
+        beast::String s;
 
         s << m_rpcIP.c_str () << ":" << m_rpcPort;
 
@@ -262,7 +262,7 @@ public:
         ADMIN,
         FORBID
     };
-    Role getAdminRole (Json::Value const& params, IP::Endpoint const& remoteIp) const;
+    Role getAdminRole (Json::Value const& params, beast::IP::Endpoint const& remoteIp) const;
 
     /** Listening port number for peer connections. */
     int peerListeningPort;
@@ -286,7 +286,7 @@ private:
 
 private:
     /** The folder where new module databases should be located */
-    File m_moduleDbPath;
+    beast::File m_moduleDbPath;
 
 public:
     //--------------------------------------------------------------------------
@@ -296,12 +296,12 @@ public:
         stored in a file named after the module (e.g. "peerfinder.sqlite") that
         is inside that directory.
     */
-    File const& getModuleDatabasePath ();
+    beast::File const& getModuleDatabasePath ();
 
     //--------------------------------------------------------------------------
 
     /** Parameters for the insight collection module */
-    StringPairArray insightSettings;
+    beast::StringPairArray insightSettings;
 
     /** Parameters for the main NodeStore database.
 
@@ -310,7 +310,7 @@ public:
 
         @see Database
     */
-    StringPairArray nodeDatabase;
+    beast::StringPairArray nodeDatabase;
 
     /** Parameters for the ephemeral NodeStore database.
 
@@ -322,7 +322,7 @@ public:
 
         @see Database
     */
-    StringPairArray ephemeralNodeDatabase;
+    beast::StringPairArray ephemeralNodeDatabase;
 
     /** Parameters for importing an old database in to the current node database.
         If this is not empty, then it specifies the key/value parameters for
@@ -333,7 +333,7 @@ public:
         @see parseDelimitedKeyValueString
     */
     bool doImport;
-    StringPairArray importNodeDatabase;
+    beast::StringPairArray importNodeDatabase;
 
     //
     //
@@ -451,25 +451,25 @@ public:
     RippleAddress               NODE_SEED, NODE_PUB, NODE_PRIV;
 
     // Fee schedule (All below values are in fee units)
-    uint64                      FEE_DEFAULT;            // Default fee.
-    uint64                      FEE_ACCOUNT_RESERVE;    // Amount of units not allowed to send.
-    uint64                      FEE_OWNER_RESERVE;      // Amount of units not allowed to send per owner entry.
-    uint64                      FEE_NICKNAME_CREATE;    // Fee to create a nickname.
-    uint64                      FEE_OFFER;              // Rate per day.
+    beast::uint64                      FEE_DEFAULT;            // Default fee.
+    beast::uint64                      FEE_ACCOUNT_RESERVE;    // Amount of units not allowed to send.
+    beast::uint64                      FEE_OWNER_RESERVE;      // Amount of units not allowed to send per owner entry.
+    beast::uint64                      FEE_NICKNAME_CREATE;    // Fee to create a nickname.
+    beast::uint64                      FEE_OFFER;              // Rate per day.
     int                         FEE_CONTRACT_OPERATION; // fee for each contract operation
 
     // Node storage configuration
-    uint32                      LEDGER_HISTORY;
-    uint32                      FETCH_DEPTH;
+    beast::uint32                      LEDGER_HISTORY;
+    beast::uint32                      FETCH_DEPTH;
     int                         NODE_SIZE;
 
     // Client behavior
     int                         ACCOUNT_PROBE_MAX;      // How far to scan for accounts.
 
     // Signing signatures.
-    uint32                      SIGN_TRANSACTION;
-    uint32                      SIGN_VALIDATION;
-    uint32                      SIGN_PROPOSAL;
+    beast::uint32                      SIGN_TRANSACTION;
+    beast::uint32                      SIGN_VALIDATION;
+    beast::uint32                      SIGN_PROPOSAL;
 
     bool                        SSL_VERIFY;
     std::string                 SSL_VERIFY_FILE;

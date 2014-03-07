@@ -25,7 +25,7 @@
 
 // VFALCO TODO move inlined stuff from CKey into here
 
-class CKeyTests : public UnitTest
+class CKeyTests : public beast::UnitTest
 {
 public:
     CKeyTests () : UnitTest ("CKey", "ripple")

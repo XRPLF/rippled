@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 struct RegistryKeyWrapper : public Uncopyable
 {
     RegistryKeyWrapper (String name, const bool createForWriting, const DWORD wow64Flags)
@@ -212,3 +215,5 @@ bool WindowsRegistry::registerFileAssociation (const String& fileExtension,
               || setValue (key + "\\DefaultIcon\\",
                            targetExecutable.getFullPathName() + "," + String (-iconResourceNumber)));
 }
+
+}  // namespace beast

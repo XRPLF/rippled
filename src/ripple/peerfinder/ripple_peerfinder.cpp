@@ -44,10 +44,6 @@
 
 #include "impl/iosformat.h" // VFALCO NOTE move to beast
 
-namespace ripple {
-using namespace beast;
-}
-
 #ifndef NDEBUG
 # define consistency_check(cond) bassert(cond)
 #else

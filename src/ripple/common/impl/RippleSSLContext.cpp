@@ -168,7 +168,7 @@ public:
             {
                 for (;;)
                 {
-                    X509* const x = PEM_read_X509 (f, NULL, NULL, NULL);
+                    X509* const x = PEM_read_X509 (f, nullptr, nullptr, nullptr);
 
                     if (x == nullptr)
                         break;
@@ -295,25 +295,20 @@ RippleSSLContext::RippleSSLContext (ContextType& context)
 RippleSSLContext* RippleSSLContext::createBare ()
 {
     std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
-
     return context.release ();
 }
 
 RippleSSLContext* RippleSSLContext::createWebSocket ()
 {
     std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
-
     context->initCommon ();
-
     return context.release ();
 }
 
 RippleSSLContext* RippleSSLContext::createAnonymous (std::string const& cipherList)
 {
     std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
-
     context->initAnonymous (cipherList);
-
     return context.release ();
 }
 
@@ -321,9 +316,7 @@ RippleSSLContext* RippleSSLContext::createAuthenticated (
     std::string key_file, std::string cert_file, std::string chain_file)
 {
     std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
-
     context->initAuthenticated (key_file, cert_file, chain_file);
-
     return context.release ();
 }
 

@@ -83,12 +83,12 @@ struct get_peer_json
 class PeersImp
     : public Peers
     , public PeerFinder::Callback
-    , public LeakChecked <PeersImp>
+    , public beast::LeakChecked <PeersImp>
 {    
 public:
     typedef std::unordered_map <PeerFinder::Slot::ptr,
         boost::weak_ptr <PeerImp>> PeersBySlot;
-    typedef std::unordered_map <IP::Endpoint,
+    typedef std::unordered_map <beast::IP::Endpoint,
         boost::weak_ptr <PeerImp>> PeersByIP;
 
     typedef boost::unordered_map <
@@ -105,7 +105,7 @@ public:
     // Number of dependencies that must be destroyed before we can stop
     std::size_t m_child_count;
 
-    Journal m_journal;
+    beast::Journal m_journal;
     Resource::Manager& m_resourceManager;
 
     std::unique_ptr <PeerFinder::Manager> m_peerFinder;
@@ -132,7 +132,7 @@ public:
     Resolver& m_resolver;
 
     /** Monotically increasing identifiers for peers */
-    Atomic <Peer::ShortId> m_nextShortId;
+    beast::Atomic <Peer::ShortId> m_nextShortId;
 
     //--------------------------------------------------------------------------
     //
@@ -143,7 +143,7 @@ public:
     PeersImp (Stoppable& parent,
         Resource::Manager& resourceManager,
         SiteFiles::Manager& siteFiles,
-        File const& pathToDbFileOrDirectory,
+        beast::File const& pathToDbFileOrDirectory,
         Resolver& resolver,
         boost::asio::io_service& io_service,
         boost::asio::ssl::context& ssl_context)
@@ -189,9 +189,9 @@ public:
             return;
 
         auto const local_endpoint (
-            IPAddressConversion::from_asio (local_endpoint_native));
+            beast::IPAddressConversion::from_asio (local_endpoint_native));
         auto const remote_endpoint (
-            IPAddressConversion::from_asio (remote_endpoint_native));
+            beast::IPAddressConversion::from_asio (remote_endpoint_native));
 
         PeerFinder::Slot::ptr const slot (m_peerFinder->new_inbound_slot (
             local_endpoint, remote_endpoint));
@@ -224,7 +224,7 @@ public:
         }
     }
 
-    void connect (IP::Endpoint const& remote_endpoint)
+    void connect (beast::IP::Endpoint const& remote_endpoint)
     {
         if (isStopping())
         {
@@ -304,9 +304,9 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void connect (std::vector <IP::Endpoint> const& list)
+    void connect (std::vector <beast::IP::Endpoint> const& list)
     {
-        for (std::vector <IP::Endpoint>::const_iterator iter (list.begin());
+        for (std::vector <beast::IP::Endpoint>::const_iterator iter (list.begin());
             iter != list.end(); ++iter)
             connect (*iter);
     }
@@ -337,7 +337,7 @@ public:
             protocol::TMEndpoint& tme (*tm.add_endpoints());
             if (ep.address.is_v4())
                 tme.mutable_ipv4()->set_ipv4(
-                    toNetworkByteOrder (ep.address.to_v4().value));
+                    beast::toNetworkByteOrder (ep.address.to_v4().value));
             else
                 tme.mutable_ipv4()->set_ipv4(0);
             tme.mutable_ipv4()->set_ipv4port (ep.address.port());
@@ -423,7 +423,7 @@ public:
             m_resolver.resolve (bootstrapIps,
                 [this](
                     std::string const& name, 
-                    std::vector <IP::Endpoint> const& addresses)
+                    std::vector <beast::IP::Endpoint> const& addresses)
                 {
                     std::vector <std::string> ips;
 
@@ -443,7 +443,7 @@ public:
             m_resolver.resolve (getConfig ().IPS_FIXED,
                 [this](
                     std::string const& name, 
-                    std::vector <IP::Endpoint> const& addresses)
+                    std::vector <beast::IP::Endpoint> const& addresses)
                 {
                     if (!addresses.empty ())
                         m_peerFinder->addFixedPeer (name, addresses);
@@ -512,7 +512,7 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onWrite (PropertyStream::Map& stream)
+    void onWrite (beast::PropertyStream::Map& stream)
     {
     }
 
@@ -619,7 +619,7 @@ Peers* Peers::New (
     Stoppable& parent,
     Resource::Manager& resourceManager,
     SiteFiles::Manager& siteFiles,
-    File const& pathToDbFileOrDirectory, 
+    beast::File const& pathToDbFileOrDirectory, 
     Resolver& resolver,
     boost::asio::io_service& io_service,
     boost::asio::ssl::context& ssl_context)

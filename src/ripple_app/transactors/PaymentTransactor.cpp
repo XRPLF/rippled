@@ -26,7 +26,7 @@ SETUP_LOG (PaymentTransactor)
 TER PaymentTransactor::doApply ()
 {
     // Ripple if source or destination is non-native or if there are paths.
-    const uint32    uTxFlags        = mTxn.getFlags ();
+    const beast::uint32 uTxFlags        = mTxn.getFlags ();
     const bool      bPartialPayment = isSetBit (uTxFlags, tfPartialPayment);
     const bool      bLimitQuality   = isSetBit (uTxFlags, tfLimitQuality);
     const bool      bNoRippleDirect = isSetBit (uTxFlags, tfNoRippleDirect);
@@ -223,8 +223,8 @@ TER PaymentTransactor::doApply ()
     {
         // Direct XRP payment.
 
-        const uint32    uOwnerCount     = mTxnAccount->getFieldU32 (sfOwnerCount);
-        const uint64    uReserve        = mEngine->getLedger ()->getReserve (uOwnerCount);
+        const beast::uint32 uOwnerCount     = mTxnAccount->getFieldU32 (sfOwnerCount);
+        const beast::uint64 uReserve        = mEngine->getLedger ()->getReserve (uOwnerCount);
 
         // Make sure have enough reserve to send. Allow final spend to use reserve for fee.
         if (mPriorBalance < saDstAmount + std::max(uReserve, mTxn.getTransactionFee ().getNValue ()))

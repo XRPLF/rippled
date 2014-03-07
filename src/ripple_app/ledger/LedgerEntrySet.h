@@ -128,7 +128,8 @@ public:
         ++mSeq;
     }
 
-    void init (Ledger::ref ledger, uint256 const & transactionID, uint32 ledgerID, TransactionEngineParams params);
+    void init (Ledger::ref ledger, uint256 const & transactionID,
+               beast::uint32 ledgerID, TransactionEngineParams params);
 
     void clear ();
 
@@ -157,14 +158,14 @@ public:
 
     // Directory functions.
     TER dirAdd (
-        uint64 &                             uNodeDir,      // Node of entry.
+        beast::uint64 &                      uNodeDir,      // Node of entry.
         uint256 const &                      uRootIndex,
         uint256 const &                      uLedgerIndex,
         std::function<void (SLE::ref, bool)> fDescriber);
 
     TER dirDelete (
         const bool                      bKeepRoot,
-        const uint64 &                   uNodeDir,      // Node item is mentioned in.
+        const beast::uint64 &           uNodeDir,      // Node item is mentioned in.
         uint256 const &                  uRootIndex,
         uint256 const &                  uLedgerIndex,  // Item being deleted
         const bool                      bStable,
@@ -173,7 +174,7 @@ public:
     bool                dirFirst (uint256 const & uRootIndex, SLE::pointer & sleNode, unsigned int & uDirEntry, uint256 & uEntryIndex);
     bool                dirNext (uint256 const & uRootIndex, SLE::pointer & sleNode, unsigned int & uDirEntry, uint256 & uEntryIndex);
     bool                dirIsEmpty (uint256 const & uDirIndex);
-    TER                 dirCount (uint256 const & uDirIndex, uint32 & uCount);
+    TER                 dirCount (uint256 const & uDirIndex, beast::uint32 & uCount);
 
     uint256             getNextLedgerIndex (uint256 const & uHash);
     uint256             getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);
@@ -185,13 +186,13 @@ public:
     TER                 offerDelete (SLE::pointer sleOffer);
 
     // Balance functions.
-    uint32              rippleTransferRate (const uint160 & uIssuerID);
-    uint32              rippleTransferRate (const uint160 & uSenderID, const uint160 & uReceiverID, const uint160 & uIssuerID);
+    beast::uint32       rippleTransferRate (const uint160 & uIssuerID);
+    beast::uint32       rippleTransferRate (const uint160 & uSenderID, const uint160 & uReceiverID, const uint160 & uIssuerID);
     STAmount            rippleOwed (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID);
     STAmount            rippleLimit (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID);
-    uint32              rippleQualityIn (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID,
+    beast::uint32       rippleQualityIn (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID,
                                          SField::ref sfLow = sfLowQualityIn, SField::ref sfHigh = sfHighQualityIn);
-    uint32              rippleQualityOut (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID)
+    beast::uint32       rippleQualityOut (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID)
     {
         return rippleQualityIn (uToAccountID, uFromAccountID, uCurrencyID, sfLowQualityOut, sfHighQualityOut);
     }
@@ -215,12 +216,12 @@ public:
         const bool      bNoRipple,
         const STAmount & saSrcBalance,
         const STAmount & saSrcLimit,
-        const uint32    uSrcQualityIn = 0,
-        const uint32    uSrcQualityOut = 0);
+        const beast::uint32 uSrcQualityIn = 0,
+        const beast::uint32 uSrcQualityOut = 0);
     TER                 trustDelete (SLE::ref sleRippleState, const uint160 & uLowAccountID, const uint160 & uHighAccountID);
 
     Json::Value getJson (int) const;
-    void calcRawMeta (Serializer&, TER result, uint32 index);
+    void calcRawMeta (Serializer&, TER result, beast::uint32 index);
 
     // iterator functions
     typedef std::map<uint256, LedgerEntrySetEntry>::iterator                iterator;

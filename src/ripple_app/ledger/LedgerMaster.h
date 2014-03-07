@@ -28,7 +28,7 @@
 //        It sounds like this holds all the ledgers...
 //
 class LedgerMaster
-    : public Stoppable
+    : public beast::Stoppable
 {
 protected:
     explicit LedgerMaster (Stoppable& parent);
@@ -41,11 +41,11 @@ public:
     typedef LockType::ScopedLockType ScopedLockType;
     typedef LockType::ScopedUnlockType ScopedUnlockType;
 
-    static LedgerMaster* New (Stoppable& parent, Journal journal);
+    static LedgerMaster* New (Stoppable& parent, beast::Journal journal);
 
     virtual ~LedgerMaster () = 0;
 
-    virtual uint32 getCurrentLedgerIndex () = 0;
+    virtual beast::uint32 getCurrentLedgerIndex () = 0;
 
     virtual LockType& peekMutex () = 0;
 
@@ -73,7 +73,7 @@ public:
 
     virtual void setMinValidations (int v) = 0;
 
-    virtual uint32 getEarliestFetch () = 0;
+    virtual beast::uint32 getEarliestFetch () = 0;
 
     virtual void pushLedger (Ledger::pointer newLedger) = 0;
     virtual void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL) = 0;
@@ -84,7 +84,7 @@ public:
 
     virtual void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer newCurrent) = 0;
 
-    virtual void failedSave(uint32 seq, uint256 const& hash) = 0;
+    virtual void failedSave(beast::uint32 seq, uint256 const& hash) = 0;
 
     virtual std::string getCompleteLedgers () = 0;
 
@@ -92,31 +92,31 @@ public:
 
     /** Get a ledger's hash by sequence number using the cache
     */
-    virtual uint256 getHashBySeq (uint32 index) = 0;
+    virtual uint256 getHashBySeq (beast::uint32 index) = 0;
 
     /** Walk to a ledger's hash using the skip list
     */
-    virtual uint256 walkHashBySeq (uint32 index) = 0;
-    virtual uint256 walkHashBySeq (uint32 index, Ledger::ref referenceLedger) = 0;
+    virtual uint256 walkHashBySeq (beast::uint32 index) = 0;
+    virtual uint256 walkHashBySeq (beast::uint32 index, Ledger::ref referenceLedger) = 0;
 
-    virtual Ledger::pointer findAcquireLedger (uint32 index, uint256 const& hash) = 0;
+    virtual Ledger::pointer findAcquireLedger (beast::uint32 index, uint256 const& hash) = 0;
 
-    virtual Ledger::pointer getLedgerBySeq (uint32 index) = 0;
+    virtual Ledger::pointer getLedgerBySeq (beast::uint32 index) = 0;
 
     virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;
 
-    virtual void setLedgerRangePresent (uint32 minV, uint32 maxV) = 0;
+    virtual void setLedgerRangePresent (beast::uint32 minV, beast::uint32 maxV) = 0;
 
-    virtual uint256 getLedgerHash(uint32 desiredSeq, Ledger::ref knownGoodLedger) = 0;
+    virtual uint256 getLedgerHash(beast::uint32 desiredSeq, Ledger::ref knownGoodLedger) = 0;
 
     virtual void addHeldTransaction (Transaction::ref trans) = 0;
     virtual void fixMismatch (Ledger::ref ledger) = 0;
 
-    virtual bool haveLedgerRange (uint32 from, uint32 to) = 0;
-    virtual bool haveLedger (uint32 seq) = 0;
-    virtual void clearLedger (uint32 seq) = 0;
-    virtual bool getValidatedRange (uint32& minVal, uint32& maxVal) = 0;
-    virtual bool getFullValidatedRange (uint32& minVal, uint32& maxVal) = 0;
+    virtual bool haveLedgerRange (beast::uint32 from, beast::uint32 to) = 0;
+    virtual bool haveLedger (beast::uint32 seq) = 0;
+    virtual void clearLedger (beast::uint32 seq) = 0;
+    virtual bool getValidatedRange (beast::uint32& minVal, beast::uint32& maxVal) = 0;
+    virtual bool getFullValidatedRange (beast::uint32& minVal, beast::uint32& maxVal) = 0;
 
     virtual void tune (int size, int age) = 0;
     virtual void sweep () = 0;
@@ -124,7 +124,7 @@ public:
     virtual void addValidateCallback (callback& c) = 0;
 
     virtual void checkAccept (Ledger::ref ledger) = 0;
-    virtual void checkAccept (uint256 const& hash, uint32 seq) = 0;
+    virtual void checkAccept (uint256 const& hash, beast::uint32 seq) = 0;
 
     virtual void tryAdvance () = 0;
     virtual void newPathRequest () = 0;
@@ -134,9 +134,10 @@ public:
     virtual bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) = 0;
     virtual void doLedgerCleaner(const Json::Value& parameters) = 0;
 
-    virtual PropertyStream::Source& getPropertySource () = 0;
+    virtual beast::PropertyStream::Source& getPropertySource () = 0;
 
-    static bool shouldAcquire (uint32 currentLedgerID, uint32 ledgerHistory, uint32 targetLedger);
+    static bool shouldAcquire (beast::uint32 currentLedgerID,
+                               beast::uint32 ledgerHistory, beast::uint32 targetLedger);
 };
 
 #endif

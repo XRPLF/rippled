@@ -127,21 +127,21 @@ namespace Validators {
 
 class ManagerImp
     : public Manager
-    , public Stoppable
-    , public Thread
-    , public DeadlineTimer::Listener
-    , public LeakChecked <ManagerImp>
+    , public beast::Stoppable
+    , public beast::Thread
+    , public beast::DeadlineTimer::Listener
+    , public beast::LeakChecked <ManagerImp>
 {
 public:
-    Journal m_journal;
-    File m_databaseFile;
+    beast::Journal m_journal;
+    beast::File m_databaseFile;
     StoreSqdb m_store;
     Logic m_logic;
-    DeadlineTimer m_checkTimer;
-    ServiceQueue m_queue;
+    beast::DeadlineTimer m_checkTimer;
+    beast::ServiceQueue m_queue;
 
-    typedef ScopedWrapperContext <
-        RecursiveMutex, RecursiveMutex::ScopedLockType> Context;
+    typedef beast::ScopedWrapperContext <
+        beast::RecursiveMutex, beast::RecursiveMutex::ScopedLockType> Context;
 
     Context m_context;
 
@@ -152,8 +152,8 @@ public:
 
     ManagerImp (
         Stoppable& parent, 
-        File const& pathToDbFileOrDirectory, 
-        Journal journal)
+        beast::File const& pathToDbFileOrDirectory, 
+        beast::Journal journal)
         : Stoppable ("Validators::Manager", parent)
         , Thread ("Validators")
         , m_journal (journal)
@@ -187,16 +187,16 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void addStrings (String name, std::vector <std::string> const& strings)
+    void addStrings (beast::String name, std::vector <std::string> const& strings)
     {
-        StringArray stringArray;
+        beast::StringArray stringArray;
         stringArray.ensureStorageAllocated (strings.size());
         for (std::size_t i = 0; i < strings.size(); ++i)
             stringArray.add (strings [i]);
         addStrings (name, stringArray);
     }
 
-    void addStrings (String name, StringArray const& stringArray)
+    void addStrings (beast::String name, beast::StringArray const& stringArray)
     {
         if (stringArray.size() > 0)
         {
@@ -208,25 +208,25 @@ public:
         }
     }
 
-    void addFile (File const& file)
+    void addFile (beast::File const& file)
     {
         addStaticSource (SourceFile::New (file));
     }
 
     void addStaticSource (Validators::Source* source)
     {
-        m_queue.dispatch (m_context.wrap (bind (
+        m_queue.dispatch (m_context.wrap (std::bind (
             &Logic::addStatic, &m_logic, source)));
     }
 
-    void addURL (URL const& url)
+    void addURL (beast::URL const& url)
     {
         addSource (SourceURL::New (url));
     }
 
     void addSource (Validators::Source* source)
     {
-        m_queue.dispatch (m_context.wrap (bind (
+        m_queue.dispatch (m_context.wrap (std::bind (
             &Logic::add, &m_logic, source)));
     }
 
@@ -235,14 +235,14 @@ public:
     void receiveValidation (ReceivedValidation const& rv)
     {
         if (! isStopping())
-            m_queue.dispatch (m_context.wrap (bind (
+            m_queue.dispatch (m_context.wrap (std::bind (
                 &Logic::receiveValidation, &m_logic, rv)));
     }
 
     void ledgerClosed (RippleLedgerHash const& ledgerHash)
     {
         if (! isStopping())
-            m_queue.dispatch (m_context.wrap (bind (
+            m_queue.dispatch (m_context.wrap (std::bind (
                 &Logic::ledgerClosed, &m_logic, ledgerHash)));
     }
 
@@ -259,7 +259,7 @@ public:
     void onStart ()
     {
         // Do this late so the sources have a chance to be added.
-        m_queue.dispatch (m_context.wrap (bind (
+        m_queue.dispatch (m_context.wrap (std::bind (
             &ManagerImp::setCheckSources, this)));
 
         startThread();
@@ -269,7 +269,7 @@ public:
     {
         m_logic.stop ();
 
-        m_queue.dispatch (m_context.wrap (bind (
+        m_queue.dispatch (m_context.wrap (std::bind (
             &Thread::signalThreadShouldExit, this)));
     }
 
@@ -279,29 +279,29 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onWrite (PropertyStream::Map& map)
+    void onWrite (beast::PropertyStream::Map& map)
     {
         Context::Scope scope (m_context);
 
-        map ["trusted"] = uint32 (
+        map ["trusted"] = beast::uint32 (
             m_logic.m_chosenList ?
                 m_logic.m_chosenList->size() : 0);
 
         {
-            PropertyStream::Set items ("sources", map);
+            beast::PropertyStream::Set items ("sources", map);
             for (Logic::SourceTable::const_iterator iter (m_logic.m_sources.begin());
                 iter != m_logic.m_sources.end(); ++iter)
                 items.add (iter->source->to_string());
         }
 
         {
-            PropertyStream::Set items ("validators", map);
+            beast::PropertyStream::Set items ("validators", map);
             for (Logic::ValidatorTable::iterator iter (m_logic.m_validators.begin());
                 iter != m_logic.m_validators.end(); ++iter)
             {
                 RipplePublicKey const& publicKey (iter->first);
                 Validator const& validator (iter->second);
-                PropertyStream::Map item (items);
+                beast::PropertyStream::Map item (items);
                 item["public_key"] = publicKey.to_string();
                 validator.count().onWrite (item);
             }
@@ -316,7 +316,7 @@ public:
 
     void init ()
     {
-        Error error (m_store.open (m_databaseFile));
+        beast::Error error (m_store.open (m_databaseFile));
         
         if (! error)
         {
@@ -324,12 +324,12 @@ public:
         }
     }
 
-    void onDeadlineTimer (DeadlineTimer& timer)
+    void onDeadlineTimer (beast::DeadlineTimer& timer)
     {
         if (timer == m_checkTimer)
         {
             m_journal.trace << "Check timer expired";
-            m_queue.dispatch (m_context.wrap (bind (
+            m_queue.dispatch (m_context.wrap (std::bind (
                 &ManagerImp::setCheckSources, this)));
         }
     }
@@ -354,7 +354,7 @@ public:
                 m_checkSources = false;
 
                 m_journal.trace << "Next check timer expires in " <<
-                    RelativeTime::seconds (checkEverySeconds);
+                    beast::RelativeTime::seconds (checkEverySeconds);
 
                 m_checkTimer.setExpiration (checkEverySeconds);
             }
@@ -378,14 +378,14 @@ public:
 //------------------------------------------------------------------------------
 
 Manager::Manager ()
-    : PropertyStream::Source ("validators")
+    : beast::PropertyStream::Source ("validators")
 {
 }
 
 Validators::Manager* Validators::Manager::New (
-    Stoppable& parent, 
-    File const& pathToDbFileOrDirectory,
-    Journal journal)
+    beast::Stoppable& parent, 
+    beast::File const& pathToDbFileOrDirectory,
+    beast::Journal journal)
 {
     return new Validators::ManagerImp (parent, pathToDbFileOrDirectory, journal);
 }

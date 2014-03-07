@@ -24,6 +24,9 @@
 #ifndef BEAST_JSON_H_INCLUDED
 #define BEAST_JSON_H_INCLUDED
 
+namespace beast
+{
+
 class InputStream;
 class OutputStream;
 class File;
@@ -106,5 +109,6 @@ private:
     JSON(); // This class can't be instantiated - just use its static methods.
 };
 
+}  // namespace beast
 
 #endif   // BEAST_JSON_H_INCLUDED

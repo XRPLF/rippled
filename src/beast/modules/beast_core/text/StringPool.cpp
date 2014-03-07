@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 StringPool::StringPool() noexcept   {}
 StringPool::~StringPool()           {}
 
@@ -107,3 +110,5 @@ String::CharPointerType StringPool::operator[] (const int index) const noexcept
 {
     return strings [index].getCharPointer();
 }
+
+}  // namespace beast

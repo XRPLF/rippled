@@ -22,14 +22,14 @@ namespace Resource {
 
 class ManagerImp
     : public Manager
-    , public Thread
+    , public beast::Thread
 {
 public:
-    Journal m_journal;
+    beast::Journal m_journal;
     Logic m_logic;
 
-    ManagerImp (insight::Collector::ptr const& collector,
-        Journal journal)
+    ManagerImp (beast::insight::Collector::ptr const& collector,
+        beast::Journal journal)
         : Thread ("Resource::Manager")
         , m_journal (journal)
         , m_logic (collector, get_seconds_clock (), journal)
@@ -42,12 +42,12 @@ public:
         stopThread ();
     }
 
-    Consumer newInboundEndpoint (IP::Endpoint const& address)
+    Consumer newInboundEndpoint (beast::IP::Endpoint const& address)
     {
         return m_logic.newInboundEndpoint (address);
     }
 
-    Consumer newOutboundEndpoint (IP::Endpoint const& address)
+    Consumer newOutboundEndpoint (beast::IP::Endpoint const& address)
     {
         return m_logic.newOutboundEndpoint (address);
     }
@@ -81,7 +81,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void onWrite (PropertyStream::Map& map)
+    void onWrite (beast::PropertyStream::Map& map)
     {
         m_logic.onWrite (map);
     }
@@ -102,7 +102,7 @@ public:
 //------------------------------------------------------------------------------
 
 Manager::Manager ()
-    : PropertyStream::Source ("resource")
+    : beast::PropertyStream::Source ("resource")
 {
 }
 
@@ -113,8 +113,8 @@ Manager::~Manager ()
 //------------------------------------------------------------------------------
 
 std::unique_ptr <Manager> make_Manager (
-    insight::Collector::ptr const& collector,
-        Journal journal)
+    beast::insight::Collector::ptr const& collector,
+        beast::Journal journal)
 {
     return std::make_unique <ManagerImp> (collector, journal);
 }

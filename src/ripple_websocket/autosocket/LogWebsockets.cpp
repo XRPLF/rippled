@@ -25,9 +25,7 @@ namespace websocketpp
 namespace log
 {
 
-using namespace ripple;
-
-LogPartition websocketPartition ("WebSocket");
+ripple::LogPartition websocketPartition ("WebSocket");
 
 void websocketLog (websocketpp::log::alevel::value v, const std::string& entry)
 {

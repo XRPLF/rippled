@@ -26,11 +26,11 @@ namespace PeerFinder {
 /** Database persistence for PeerFinder using SQLite */
 class StoreSqdb
     : public Store
-    , public LeakChecked <StoreSqdb>
+    , public beast::LeakChecked <StoreSqdb>
 {
 private:
-    Journal m_journal;
-    sqdb::session m_session;
+    beast::Journal m_journal;
+    beast::sqdb::session m_session;
 
 public:
     enum
@@ -39,7 +39,7 @@ public:
         currentSchemaVersion = 4
     };
 
-    explicit StoreSqdb (Journal journal = Journal())
+    explicit StoreSqdb (beast::Journal journal = beast::Journal())
         : m_journal (journal)
     {
     }
@@ -48,9 +48,9 @@ public:
     {
     }
 
-    Error open (File const& file)
+    beast::Error open (beast::File const& file)
     {
-        Error error (m_session.open (file.getFullPathName ()));
+        beast::Error error (m_session.open (file.getFullPathName ()));
 
         m_journal.info << "Opening database at '" << file.getFullPathName() << "'";
 
@@ -68,24 +68,24 @@ public:
     std::size_t load (load_callback const& cb)
     {
         std::size_t n (0);
-        Error error;
+        beast::Error error;
         std::string s;
         int valence;
-        sqdb::statement st = (m_session.prepare <<
+        beast::sqdb::statement st = (m_session.prepare <<
             "SELECT "
             " address, "
             " valence "
             "FROM PeerFinder_BootstrapCache "
-            , sqdb::into (s)
-            , sqdb::into (valence)
+            , beast::sqdb::into (s)
+            , beast::sqdb::into (valence)
             );
 
         if (st.execute_and_fetch (error))
         {
             do
             {
-                IP::Endpoint const endpoint (
-                    IP::Endpoint::from_string (s));
+                beast::IP::Endpoint const endpoint (
+                    beast::IP::Endpoint::from_string (s));
 
                 if (! is_unspecified (endpoint))
                 {
@@ -111,8 +111,8 @@ public:
     //
     void save (std::vector <Entry> const& v)
     {
-        Error error;
-        sqdb::transaction tr (m_session);
+        beast::Error error;
+        beast::sqdb::transaction tr (m_session);
         m_session.once (error) <<
             "DELETE FROM PeerFinder_BootstrapCache";
         if (! error)
@@ -120,15 +120,15 @@ public:
             std::string s;
             int valence;
 
-            sqdb::statement st = (m_session.prepare <<
+            beast::sqdb::statement st = (m_session.prepare <<
                 "INSERT INTO PeerFinder_BootstrapCache ( "
                 "  address, "
                 "  valence "
                 ") VALUES ( "
                 "  ?, ? "
                 ");"
-                , sqdb::use (s)
-                , sqdb::use (valence)
+                , beast::sqdb::use (s)
+                , beast::sqdb::use (valence)
                 );
 
             for (auto const& e : v)
@@ -154,11 +154,11 @@ public:
     // Convert any existing entries from an older schema to the
     // current one, if appropriate.
     //
-    Error update ()
+    beast::Error update ()
     {
-        Error error;
+        beast::Error error;
 
-        sqdb::transaction tr (m_session);
+        beast::sqdb::transaction tr (m_session);
 
         // get version
         int version (0);
@@ -169,7 +169,7 @@ public:
                 "  version "
                 "FROM SchemaVersion WHERE "
                 "  name = 'PeerFinder'"
-                ,sqdb::into (version)
+                ,beast::sqdb::into (version)
                 ;
 
             if (! error)
@@ -219,7 +219,7 @@ public:
             if (! error)
                 m_session.once (error) <<
                     "SELECT COUNT(*) FROM PeerFinder_BootstrapCache "
-                    ,sqdb::into (count)
+                    ,beast::sqdb::into (count)
                     ;
 
             std::vector <Store::Entry> list;
@@ -229,13 +229,13 @@ public:
                 list.reserve (count);
                 std::string s;
                 int valence;
-                sqdb::statement st = (m_session.prepare <<
+                beast::sqdb::statement st = (m_session.prepare <<
                     "SELECT "
                     " address, "
                     " valence "
                     "FROM PeerFinder_BootstrapCache "
-                    , sqdb::into (s)
-                    , sqdb::into (valence)
+                    , beast::sqdb::into (s)
+                    , beast::sqdb::into (valence)
                     );
 
                 if (st.execute_and_fetch (error))
@@ -243,7 +243,7 @@ public:
                     do
                     {
                         Store::Entry entry;
-                        entry.endpoint = IP::Endpoint::from_string (s);
+                        entry.endpoint = beast::IP::Endpoint::from_string (s);
                         if (! is_unspecified (entry.endpoint))
                         {
                             entry.valence = valence;
@@ -263,15 +263,15 @@ public:
             {
                 std::string s;
                 int valence;
-                sqdb::statement st = (m_session.prepare <<
+                beast::sqdb::statement st = (m_session.prepare <<
                     "INSERT INTO PeerFinder_BootstrapCache_Next ( "
                     "  address, "
                     "  valence "
                     ") VALUES ( "
                     "  ?, ?"
                     ");"
-                    , sqdb::use (s)
-                    , sqdb::use (valence)
+                    , beast::sqdb::use (s)
+                    , beast::sqdb::use (valence)
                     );
 
                 for (auto iter (list.cbegin());
@@ -340,7 +340,7 @@ public:
                 ") VALUES ( "
                 "  'PeerFinder', ? "
                 ")"
-                ,sqdb::use(version);
+                ,beast::sqdb::use(version);
         }
 
         if (! error)
@@ -356,10 +356,10 @@ public:
     }
 
 private:
-    Error init ()
+    beast::Error init ()
     {
-        Error error;
-        sqdb::transaction tr (m_session);
+        beast::Error error;
+        beast::sqdb::transaction tr (m_session);
 
         if (! error)
             m_session.once (error) <<
@@ -403,13 +403,13 @@ private:
         return error;
     }
 
-    void report (Error const& error, char const* fileName, int lineNumber)
+    void report (beast::Error const& error, char const* fileName, int lineNumber)
     {
         if (error)
         {
             m_journal.error <<
                 "Failure: '"<< error.getReasonText() << "' " <<
-                " at " << Debug::getSourceLocation (fileName, lineNumber);
+                " at " << beast::Debug::getSourceLocation (fileName, lineNumber);
         }
     }
 };

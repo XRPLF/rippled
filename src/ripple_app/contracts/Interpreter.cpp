@@ -27,8 +27,8 @@ namespace Script
 
 Interpreter::Interpreter ()
 {
-    mContract = NULL;
-    mCode = NULL;
+    mContract = nullptr;
+    mCode = nullptr;
     mInstructionPointer = 0;
     mTotalFee = 0;
 

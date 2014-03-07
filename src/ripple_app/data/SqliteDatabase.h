@@ -22,8 +22,8 @@
 
 class SqliteDatabase
     : public Database
-    , private Thread
-    , private LeakChecked <SqliteDatabase>
+    , private beast::Thread
+    , private beast::LeakChecked <SqliteDatabase>
 {
 public:
     explicit SqliteDatabase (char const* host);
@@ -48,13 +48,13 @@ public:
 
     bool getNull (int colIndex);
     char* getStr (int colIndex, std::string& retStr);
-    int32 getInt (int colIndex);
+    beast::int32 getInt (int colIndex);
     float getFloat (int colIndex);
     bool getBool (int colIndex);
     // returns amount stored in buf
     int getBinary (int colIndex, unsigned char* buf, int maxSize);
     Blob getBinary (int colIndex);
-    uint64 getBigInt (int colIndex);
+    beast::uint64 getBigInt (int colIndex);
 
     sqlite3* peekConnection ()
     {
@@ -119,7 +119,7 @@ public:
     int bind (int position, const std::string& value);
     int bindStatic (int position, const std::string& value);
 
-    int bind (int position, uint32 value);
+    int bind (int position, beast::uint32 value);
     int bind (int position);
 
     // columns start at 0
@@ -130,8 +130,8 @@ public:
 
     std::string getString (int column);
     const char* peekString (int column);
-    uint32 getUInt32 (int column);
-    int64 getInt64 (int column);
+    beast::uint32 getUInt32 (int column);
+    beast::int64 getInt64 (int column);
 
     int step ();
     int reset ();

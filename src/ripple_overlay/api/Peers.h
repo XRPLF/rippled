@@ -48,8 +48,8 @@ class Manager;
 
 /** Manages the set of connected peers. */
 class Peers
-    : public Stoppable
-    , public PropertyStream::Source
+    : public beast::Stoppable
+    , public beast::PropertyStream::Source
 {
 protected:
     // VFALCO NOTE The requirement of this constructor is an
@@ -58,7 +58,7 @@ protected:
     //
     Peers (Stoppable& parent)
         : Stoppable ("Peers", parent)
-        , PropertyStream::Source ("peers")
+        , beast::PropertyStream::Source ("peers")
     {
 
     }
@@ -70,7 +70,7 @@ public:
         Stoppable& parent,
         Resource::Manager& resourceManager,
         SiteFiles::Manager& siteFiles,
-        File const& pathToDbFileOrDirectory,
+        beast::File const& pathToDbFileOrDirectory,
         Resolver& resolver,
         boost::asio::io_service& io_service,
         boost::asio::ssl::context& context);
@@ -85,7 +85,7 @@ public:
     virtual void accept (bool proxyHandshake,
         boost::shared_ptr <NativeSocketType> const& socket) = 0;
 
-    virtual void connect (IP::Endpoint const& address) = 0;
+    virtual void connect (beast::IP::Endpoint const& address) = 0;
 
     // Notification that a peer has connected.
     virtual void onPeerActivated (Peer::ref peer) = 0;

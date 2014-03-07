@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 namespace detail
 {
 
@@ -559,3 +562,4 @@ static TrackedMutexUnitTests trackedMutexUnitTests;
 
 } // namespace detail
 
+}  // namespace beast

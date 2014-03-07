@@ -24,6 +24,8 @@
 #ifndef BEAST_CHILDPROCESS_H_INCLUDED
 #define BEAST_CHILDPROCESS_H_INCLUDED
 
+namespace beast
+{
 
 //==============================================================================
 /**
@@ -94,5 +96,6 @@ private:
     ScopedPointer<ActiveProcess> activeProcess;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_CHILDPROCESS_H_INCLUDED

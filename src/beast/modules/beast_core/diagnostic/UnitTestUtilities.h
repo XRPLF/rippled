@@ -20,6 +20,9 @@
 #ifndef BEAST_UNITTESTUTILITIES_H_INCLUDED
 #define BEAST_UNITTESTUTILITIES_H_INCLUDED
 
+namespace beast
+{
+
 namespace UnitTestUtilities
 {
 
@@ -131,5 +134,7 @@ private:
 };
 
 }
+
+}  // namespace beast
 
 #endif

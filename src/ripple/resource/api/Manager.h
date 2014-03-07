@@ -26,7 +26,7 @@ namespace ripple {
 namespace Resource {
 
 /** Tracks load and resource consumption. */
-class Manager : public PropertyStream::Source
+class Manager : public beast::PropertyStream::Source
 {
 protected:
     Manager ();
@@ -35,10 +35,10 @@ public:
     virtual ~Manager() = 0;
 
     /** Create a new endpoint keyed by inbound IP address. */
-    virtual Consumer newInboundEndpoint (IP::Endpoint const& address) = 0;
+    virtual Consumer newInboundEndpoint (beast::IP::Endpoint const& address) = 0;
 
     /** Create a new endpoint keyed by outbound IP address and port. */
-    virtual Consumer newOutboundEndpoint (IP::Endpoint const& address) = 0;
+    virtual Consumer newOutboundEndpoint (beast::IP::Endpoint const& address) = 0;
 
     /** Create a new endpoint keyed by name. */
     virtual Consumer newAdminEndpoint (std::string const& name) = 0;
@@ -59,8 +59,8 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr <Manager> make_Manager (
-    insight::Collector::ptr const& collector,
-        Journal journal);
+    beast::insight::Collector::ptr const& collector,
+        beast::Journal journal);
 
 }
 }

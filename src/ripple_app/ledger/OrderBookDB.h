@@ -28,7 +28,7 @@ public:
 
     BookListeners ();
     void addSubscriber (InfoSub::ref sub);
-    void removeSubscriber (uint64 sub);
+    void removeSubscriber (beast::uint64 sub);
     void publish (Json::Value const& jvObj);
 
 private:
@@ -38,15 +38,15 @@ private:
 
     // VFALCO TODO Use a typedef for the uint64
     //             Use a typedef for the container
-    boost::unordered_map<uint64, InfoSub::wptr> mListeners;
+    boost::unordered_map<beast::uint64, InfoSub::wptr> mListeners;
 };
 
 //------------------------------------------------------------------------------
 
 // VFALCO TODO Add Javadoc comment explaining what this class does
 class OrderBookDB
-    : public Stoppable
-    , public LeakChecked <OrderBookDB>
+    : public beast::Stoppable
+    , public beast::LeakChecked <OrderBookDB>
 {
 public:
     explicit OrderBookDB (Stoppable& parent);
@@ -95,7 +95,7 @@ private:
 
     MapType mListeners;
 
-    uint32 mSeq;
+    beast::uint32 mSeq;
 
 };
 

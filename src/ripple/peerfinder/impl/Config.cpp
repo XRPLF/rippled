@@ -43,7 +43,7 @@ void Config::applyTuning ()
     outPeers = calcOutPeers ();
 }
 
-void Config::onWrite (PropertyStream::Map &map)
+void Config::onWrite (beast::PropertyStream::Map &map)
 {
     map ["max_peers"]       = maxPeers;
     map ["out_peers"]       = outPeers;

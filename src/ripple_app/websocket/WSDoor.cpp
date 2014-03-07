@@ -35,7 +35,10 @@ SETUP_LOG (WSDoor)
 // VFALCO NOTE NetworkOPs isn't used here...
 //
 
-class WSDoorImp : public WSDoor, protected Thread, LeakChecked <WSDoorImp>
+class WSDoorImp
+    : public WSDoor
+    , protected beast::Thread
+    , beast::LeakChecked <WSDoorImp>
 {
 public:
     WSDoorImp (Resource::Manager& resourceManager,
@@ -161,7 +164,7 @@ WSDoor* WSDoor::New (Resource::Manager& resourceManager,
     InfoSub::Source& source, std::string const& strIp,
         int iPort, bool bPublic, bool bProxy, boost::asio::ssl::context& ssl_context)
 {
-    ScopedPointer <WSDoor> door;
+    beast::ScopedPointer <WSDoor> door;
 
     try
     {

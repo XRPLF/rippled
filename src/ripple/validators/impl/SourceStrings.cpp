@@ -22,11 +22,11 @@ namespace Validators {
 
 class SourceStringsImp
     : public SourceStrings
-    , public LeakChecked <SourceStringsImp>
+    , public beast::LeakChecked <SourceStringsImp>
 {
 public:
     SourceStringsImp (
-        String name, StringArray const& strings)
+        beast::String name, beast::StringArray const& strings)
         : m_name (name)
         , m_strings (strings)
     {
@@ -41,18 +41,18 @@ public:
         return m_name.toStdString();
     }
 
-    String uniqueID () const
+    beast::String uniqueID () const
     {
         // VFALCO TODO This can't be right...?
-        return String::empty;
+        return beast::String::empty;
     }
 
-    String createParam ()
+    beast::String createParam ()
     {
-        return String::empty;
+        return beast::String::empty;
     }
 
-    void fetch (Results& results, Journal journal)
+    void fetch (Results& results, beast::Journal journal)
     {
         results.list.reserve (m_strings.size ());
 
@@ -63,18 +63,19 @@ public:
         }
 
         results.success = results.list.size () > 0;
-        results.expirationTime = Time::getCurrentTime () + RelativeTime::hours (24);
+        results.expirationTime = beast::Time::getCurrentTime () +
+                                 beast::RelativeTime::hours (24);
     }
 
 private:
-    String m_name;
-    StringArray m_strings;
+    beast::String m_name;
+    beast::StringArray m_strings;
 };
 
 //------------------------------------------------------------------------------
 
 SourceStrings* SourceStrings::New (
-    String name, StringArray const& strings)
+    beast::String name, beast::StringArray const& strings)
 {
     return new SourceStringsImp (name, strings);
 }

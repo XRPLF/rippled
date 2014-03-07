@@ -33,9 +33,9 @@ class ConnectHandouts
 public:
     // Keeps track of addresses we have made outgoing connections
     // to, for the purposes of not connecting to them too frequently.
-    typedef beast::aged_set <IP::Address> Squelches;
+    typedef beast::aged_set <beast::IP::Address> Squelches;
 
-    typedef std::vector <IP::Endpoint> list_type;
+    typedef std::vector <beast::IP::Endpoint> list_type;
 
 private:
     std::size_t m_needed;
@@ -70,7 +70,7 @@ public:
         return m_list;
     }
 
-    bool try_insert (IP::Endpoint const& endpoint);
+    bool try_insert (beast::IP::Endpoint const& endpoint);
 };
 
 }

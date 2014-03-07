@@ -24,6 +24,9 @@
 #ifndef BEAST_LOCALISEDSTRINGS_H_INCLUDED
 #define BEAST_LOCALISEDSTRINGS_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Used to convert strings to localised foreign-language versions.
@@ -215,5 +218,6 @@ String translate (CharPointer_UTF8 stringLiteral);
 */
 String translate (const String& stringLiteral, const String& resultIfNotFound);
 
+}  // namespace beast
 
 #endif   // BEAST_LOCALISEDSTRINGS_H_INCLUDED

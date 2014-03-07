@@ -177,7 +177,7 @@ bool ParameterInt::setValue (const Json::Value& value, Json::Value& error)
     {
         try
         {
-            mValue = lexicalCastThrow <int> (value.asString ());
+            mValue = beast::lexicalCastThrow <int> (value.asString ());
         }
         catch (...)
         {

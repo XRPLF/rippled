@@ -1494,6 +1494,9 @@
     <ClCompile Include="..\..\src\ripple\common\impl\RippleSSLContext.cpp">
       <Filter>[1] Ripple\common\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sslutil\impl\ECDSACanonical.cpp">
+      <Filter>[1] Ripple\sslutil\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">

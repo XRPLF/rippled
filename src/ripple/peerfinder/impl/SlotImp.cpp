@@ -22,8 +22,8 @@
 namespace ripple {
 namespace PeerFinder {
 
-SlotImp::SlotImp (IP::Endpoint const& local_endpoint,
-    IP::Endpoint const& remote_endpoint, bool fixed,
+SlotImp::SlotImp (beast::IP::Endpoint const& local_endpoint,
+    beast::IP::Endpoint const& remote_endpoint, bool fixed,
         clock_type& clock)
     : recent (clock)
     , m_inbound (true)
@@ -38,7 +38,7 @@ SlotImp::SlotImp (IP::Endpoint const& local_endpoint,
 {
 }
 
-SlotImp::SlotImp (IP::Endpoint const& remote_endpoint,
+SlotImp::SlotImp (beast::IP::Endpoint const& remote_endpoint,
     bool fixed, clock_type& clock)
     : recent (clock)
     , m_inbound (false)
@@ -97,7 +97,7 @@ SlotImp::recent_t::recent_t (clock_type& clock)
 }
 
 void
-SlotImp::recent_t::insert (IP::Endpoint const& ep, int hops)
+SlotImp::recent_t::insert (beast::IP::Endpoint const& ep, int hops)
 {
     auto const result (cache.emplace (ep, hops));
     if (! result.second)
@@ -112,7 +112,7 @@ SlotImp::recent_t::insert (IP::Endpoint const& ep, int hops)
 }
 
 bool
-SlotImp::recent_t::filter (IP::Endpoint const& ep, int hops)
+SlotImp::recent_t::filter (beast::IP::Endpoint const& ep, int hops)
 {
     auto const iter (cache.find (ep));
     if (iter == cache.end())

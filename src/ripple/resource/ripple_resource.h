@@ -22,10 +22,6 @@
 
 #include "../beast/modules/beast_core/beast_core.h"
 
-namespace ripple {
-using namespace beast;
-}
-
 #include "../json/ripple_json.h"
 
 # include "api/Types.h"

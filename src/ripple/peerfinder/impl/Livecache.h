@@ -139,7 +139,7 @@ public:
         }
 
     private:
-        explicit Hop (typename maybe_const <
+        explicit Hop (typename beast::maybe_const <
             IsConst, list_type>::type& list)
             : m_list (list)
         {
@@ -147,14 +147,14 @@ public:
 
         friend class LivecacheBase;
 
-        std::reference_wrapper <typename maybe_const <
+        std::reference_wrapper <typename beast::maybe_const <
             IsConst, list_type>::type> m_list;
     };
 
 protected:
     // Work-around to call Hop's private constructor from Livecache
     template <bool IsConst>
-    static Hop <IsConst> make_hop (typename maybe_const <
+    static Hop <IsConst> make_hop (typename beast::maybe_const <
         IsConst, list_type>::type& list)
     {
         return Hop <IsConst> (list);
@@ -181,15 +181,15 @@ template <class Allocator = std::allocator <char>>
 class Livecache : protected detail::LivecacheBase
 {
 private:
-    typedef aged_map <
-        IP::Endpoint,
+    typedef beast::aged_map <
+        beast::IP::Endpoint,
         Element,
         std::chrono::seconds,
-        std::less <IP::Endpoint>,
+        std::less <beast::IP::Endpoint>,
         Allocator
             > cache_type;
 
-    Journal m_journal;
+    beast::Journal m_journal;
     cache_type m_cache;
 
 public:
@@ -198,7 +198,7 @@ public:
     /** Create the cache. */
     Livecache (
         clock_type& clock,
-        Journal journal,
+        beast::Journal journal,
         Allocator alloc = Allocator());
 
     //
@@ -224,7 +224,7 @@ public:
             : public std::unary_function <
                 typename lists_type::value_type, Hop <IsConst>>
         {
-            Hop <IsConst> operator() (typename maybe_const <
+            Hop <IsConst> operator() (typename beast::maybe_const <
                 IsConst, typename lists_type::value_type>::type& list) const
             {
                 return make_hop <IsConst> (list);
@@ -355,10 +355,10 @@ public:
     void insert (Endpoint const& ep);
 
     /** Produce diagnostic output. */
-    void dump (Journal::ScopedStream& ss) const;
+    void dump (beast::Journal::ScopedStream& ss) const;
 
     /** Output statistics. */
-    void onWrite (PropertyStream::Map& map);
+    void onWrite (beast::PropertyStream::Map& map);
 };
 
 //------------------------------------------------------------------------------
@@ -366,7 +366,7 @@ public:
 template <class Allocator>
 Livecache <Allocator>::Livecache (
     clock_type& clock,
-    Journal journal,
+    beast::Journal journal,
     Allocator alloc)
     : m_journal (journal)
     , m_cache (clock, alloc)
@@ -391,7 +391,7 @@ Livecache <Allocator>::expire()
     }
     if (n > 0)
     {
-        if (m_journal.debug) m_journal.debug << leftw (18) <<
+        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
             "Livecache expired " << n <<
             ((n > 1) ? " entries" : " entry");
     }
@@ -413,7 +413,7 @@ void Livecache <Allocator>::insert (Endpoint const& ep)
     if (result.second)
     {
         hops.insert (e);
-        if (m_journal.debug) m_journal.debug << leftw (18) <<
+        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
             "Livecache insert " << ep.address <<
             " at hops " << ep.hops;
         return;
@@ -423,7 +423,7 @@ void Livecache <Allocator>::insert (Endpoint const& ep)
         // Drop duplicates at higher hops
         std::size_t const excess (
             ep.hops - e.endpoint.hops);
-        if (m_journal.trace) m_journal.trace << leftw(18) <<
+        if (m_journal.trace) m_journal.trace << beast::leftw(18) <<
             "Livecache drop " << ep.address <<
             " at hops +" << excess;
         return;
@@ -435,13 +435,13 @@ void Livecache <Allocator>::insert (Endpoint const& ep)
     if (ep.hops < e.endpoint.hops)
     {
         hops.reinsert (e, ep.hops);
-        if (m_journal.debug) m_journal.debug << leftw (18) <<
+        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
             "Livecache update " << ep.address <<
             " at hops " << ep.hops;
     }
     else
     {
-        if (m_journal.trace) m_journal.trace << leftw (18) <<
+        if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
             "Livecache refresh " << ep.address <<
             " at hops " << ep.hops;
     }
@@ -449,7 +449,7 @@ void Livecache <Allocator>::insert (Endpoint const& ep)
 
 template <class Allocator>
 void
-Livecache <Allocator>::dump (Journal::ScopedStream& ss) const
+Livecache <Allocator>::dump (beast::Journal::ScopedStream& ss) const
 {
     ss << std::endl << std::endl <<
         "Livecache (size " << m_cache.size() << ")";
@@ -464,17 +464,17 @@ Livecache <Allocator>::dump (Journal::ScopedStream& ss) const
 
 template <class Allocator>
 void
-Livecache <Allocator>::onWrite (PropertyStream::Map& map)
+Livecache <Allocator>::onWrite (beast::PropertyStream::Map& map)
 {
     typename cache_type::time_point const expired (
         m_cache.clock().now() - Tuning::liveCacheSecondsToLive);
     map ["size"] = size ();
     map ["hist"] = hops.histogram();
-    PropertyStream::Set set ("entries", map);
+    beast::PropertyStream::Set set ("entries", map);
     for (auto iter (m_cache.cbegin()); iter != m_cache.cend(); ++iter)
     {
         auto const& e (iter->second);
-        PropertyStream::Map item (set);
+        beast::PropertyStream::Map item (set);
         item ["hops"] = e.endpoint.hops;
         item ["address"] = e.endpoint.address.to_string ();
         std::stringstream ss;

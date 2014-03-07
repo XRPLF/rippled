@@ -20,8 +20,8 @@
 
 class InboundLedgersImp
     : public InboundLedgers
-    , public Stoppable
-    , public LeakChecked <InboundLedgers>
+    , public beast::Stoppable
+    , public beast::LeakChecked <InboundLedgers>
 {
 public:
     typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;    
@@ -29,7 +29,7 @@ public:
     static const int kReacquireIntervalSeconds = 300;
 
     InboundLedgersImp (clock_type& clock, Stoppable& parent,
-                       insight::Collector::ptr const& collector)
+                       beast::insight::Collector::ptr const& collector)
         : Stoppable ("InboundLedgers", parent)
         , m_clock (clock)
         , mLock (this, "InboundLedger", __FILE__, __LINE__)
@@ -41,7 +41,7 @@ public:
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
-    InboundLedger::pointer findCreate (uint256 const& hash, uint32 seq, InboundLedger::fcReason reason)
+    InboundLedger::pointer findCreate (uint256 const& hash, beast::uint32 seq, InboundLedger::fcReason reason)
     {
         assert (hash.isNonZero ());
         InboundLedger::pointer ret;
@@ -290,9 +290,9 @@ public:
 
         BOOST_FOREACH (const u256_acq_pair& it, acquires)
         {
-            uint32 seq = it.second->getSeq();
+            beast::uint32 seq = it.second->getSeq();
             if (seq > 1)
-                ret[lexicalCastThrow <std::string>(seq)] = it.second->getJson(0);
+                ret[beast::lexicalCastThrow <std::string>(seq)] = it.second->getJson(0);
             else
                 ret[it.first.GetHex()] = it.second->getJson(0);
         }
@@ -395,8 +395,8 @@ InboundLedgers::~InboundLedgers()
 {
 }
 
-InboundLedgers* InboundLedgers::New (clock_type& clock, Stoppable& parent,
-                                     insight::Collector::ptr const& collector)
+InboundLedgers* InboundLedgers::New (clock_type& clock, beast::Stoppable& parent,
+                                     beast::insight::Collector::ptr const& collector)
 {
     return new InboundLedgersImp (clock, parent, collector);
 }

@@ -20,6 +20,9 @@
 #ifndef BEAST_DEADLINETIMER_H_INCLUDED
 #define BEAST_DEADLINETIMER_H_INCLUDED
 
+namespace beast
+{
+
 /** Provides periodic or one time notifications at a specified time interval.
 */
 class DeadlineTimer
@@ -107,5 +110,7 @@ private:
     RelativeTime m_notificationTime;
     double m_secondsRecurring; // non zero if recurring
 };
+
+}  // namespace beast
 
 #endif

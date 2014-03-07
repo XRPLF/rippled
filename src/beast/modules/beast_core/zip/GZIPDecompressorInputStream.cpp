@@ -26,6 +26,9 @@
   ==============================================================================
 */
 
+namespace beast
+{
+
 #if BEAST_MSVC
  #pragma warning (push)
  #pragma warning (disable: 4309 4305 4365)
@@ -290,3 +293,5 @@ unsigned long beast_crc32 (unsigned long crc, const unsigned char* buf, unsigned
 {
     return zlibNamespace::crc32 (crc, buf, len);
 }
+
+}  // namespace beast

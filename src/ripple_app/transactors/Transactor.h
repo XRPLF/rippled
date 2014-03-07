@@ -46,7 +46,7 @@ protected:
     bool                            mSigMaster;
     RippleAddress                   mSigningPubKey;
 
-    Journal m_journal;
+    beast::Journal m_journal;
     
     virtual TER preCheck ();
     virtual TER checkSeq ();
@@ -55,7 +55,7 @@ protected:
     void calculateFee ();
 
     // Returns the fee, not scaled for load (Should be in fee units. FIXME)
-    virtual uint64 calculateBaseFee ();
+    virtual beast::uint64 calculateBaseFee ();
 
     virtual TER checkSig ();
     virtual TER doApply () = 0;
@@ -64,7 +64,7 @@ protected:
         const SerializedTransaction& txn, 
         TransactionEngineParams params,
         TransactionEngine* engine,
-        Journal journal = Journal ());
+        beast::Journal journal = beast::Journal ());
 
     virtual bool mustHaveValidAccount ()
     {

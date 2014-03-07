@@ -39,14 +39,14 @@
 */
 template <class OutputSequence, class InputIterator>
 void parseAddresses (OutputSequence& out, InputIterator first, InputIterator last,
-    Journal::Stream stream = Journal::Stream ())
+    beast::Journal::Stream stream = beast::Journal::Stream ())
 {
     while (first != last)
     {
         auto const str (*first);
         ++first;
         {
-            IP::Endpoint const addr (IP::Endpoint::from_string (str));
+            beast::IP::Endpoint const addr (beast::IP::Endpoint::from_string (str));
             if (! is_unspecified (addr))
             {
                 out.push_back (addr);
@@ -54,7 +54,7 @@ void parseAddresses (OutputSequence& out, InputIterator first, InputIterator las
             }
         }
         {
-            IP::Endpoint const addr (IP::Endpoint::from_string_altform (str));
+            beast::IP::Endpoint const addr (beast::IP::Endpoint::from_string_altform (str));
             if (! is_unspecified (addr))
             {
                 out.push_back (addr);
@@ -342,17 +342,17 @@ void Config::load ()
             (void) SectionSingleB (secConfig, SECTION_PEER_IP, PEER_IP);
 
             if (SectionSingleB (secConfig, SECTION_PEER_PRIVATE, strTemp))
-                PEER_PRIVATE        = lexicalCastThrow <bool> (strTemp);
+                PEER_PRIVATE        = beast::lexicalCastThrow <bool> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_PEERS_MAX, strTemp))
-                PEERS_MAX           = lexicalCastThrow <int> (strTemp);
+                PEERS_MAX           = beast::lexicalCastThrow <int> (strTemp);
 
             smtTmp = SectionEntries (secConfig, SECTION_RPC_ADMIN_ALLOW);
 
             if (smtTmp)
             {
-                std::vector<IP::Endpoint> parsedAddresses;
-                //parseAddresses<std::vector<IP::Endpoint>, std::vector<std::string>::const_iterator> 
+                std::vector<beast::IP::Endpoint> parsedAddresses;
+                //parseAddresses<std::vector<beast::IP::Endpoint>, std::vector<std::string>::const_iterator> 
                 //    (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
                 parseAddresses (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
                 RPC_ADMIN_ALLOW.insert (RPC_ADMIN_ALLOW.end(),
@@ -381,14 +381,14 @@ void Config::load ()
                 secConfig, ConfigSection::importNodeDatabase ());
 
             if (SectionSingleB (secConfig, SECTION_PEER_PORT, strTemp))
-                peerListeningPort = lexicalCastThrow <int> (strTemp);
+                peerListeningPort = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_PEER_PROXY_PORT, strTemp))
             {
-                peerPROXYListeningPort = lexicalCastThrow <int> (strTemp);
+                peerPROXYListeningPort = beast::lexicalCastThrow <int> (strTemp);
 
                 if (peerPROXYListeningPort != 0 && peerPROXYListeningPort == peerListeningPort)
-                    FatalError ("Peer and proxy listening ports can't be the same.",
+                    beast::FatalError ("Peer and proxy listening ports can't be the same.",
                         __FILE__, __LINE__);
             }
             else
@@ -402,13 +402,13 @@ void Config::load ()
             //---------------------------------------
 
             if (SectionSingleB (secConfig, SECTION_RPC_PORT, strTemp))
-                m_rpcPort = lexicalCastThrow <int> (strTemp);
+                m_rpcPort = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, "ledger_creator" , strTemp))
-                LEDGER_CREATOR = lexicalCastThrow <bool> (strTemp);
+                LEDGER_CREATOR = beast::lexicalCastThrow <bool> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
-                RPC_ALLOW_REMOTE    = lexicalCastThrow <bool> (strTemp);
+                RPC_ALLOW_REMOTE    = beast::lexicalCastThrow <bool> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_NODE_SIZE, strTemp))
             {
@@ -424,7 +424,7 @@ void Config::load ()
                     NODE_SIZE = 4;
                 else
                 {
-                    NODE_SIZE = lexicalCastThrow <int> (strTemp);
+                    NODE_SIZE = beast::lexicalCastThrow <int> (strTemp);
 
                     if (NODE_SIZE < 0)
                         NODE_SIZE = 0;
@@ -434,41 +434,41 @@ void Config::load ()
             }
 
             if (SectionSingleB (secConfig, SECTION_ELB_SUPPORT, strTemp))
-                ELB_SUPPORT         = lexicalCastThrow <bool> (strTemp);
+                ELB_SUPPORT         = beast::lexicalCastThrow <bool> (strTemp);
 
             (void) SectionSingleB (secConfig, SECTION_WEBSOCKET_IP, WEBSOCKET_IP);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PORT, strTemp))
-                WEBSOCKET_PORT      = lexicalCastThrow <int> (strTemp);
+                WEBSOCKET_PORT      = beast::lexicalCastThrow <int> (strTemp);
 
             (void) SectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_IP, WEBSOCKET_PUBLIC_IP);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_PORT, strTemp))
-                WEBSOCKET_PUBLIC_PORT   = lexicalCastThrow <int> (strTemp);
+                WEBSOCKET_PUBLIC_PORT   = beast::lexicalCastThrow <int> (strTemp);
 
             (void) SectionSingleB (secConfig, SECTION_WEBSOCKET_PROXY_IP, WEBSOCKET_PROXY_IP);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PROXY_PORT, strTemp))
-                WEBSOCKET_PROXY_PORT   = lexicalCastThrow <int> (strTemp);
+                WEBSOCKET_PROXY_PORT   = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_SECURE, strTemp))
-                WEBSOCKET_SECURE    = lexicalCastThrow <int> (strTemp);
+                WEBSOCKET_SECURE    = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PUBLIC_SECURE, strTemp))
-                WEBSOCKET_PUBLIC_SECURE = lexicalCastThrow <int> (strTemp);
+                WEBSOCKET_PUBLIC_SECURE = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PROXY_SECURE, strTemp))
-                WEBSOCKET_PROXY_SECURE = lexicalCastThrow <int> (strTemp);
+                WEBSOCKET_PROXY_SECURE = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_WEBSOCKET_PING_FREQ, strTemp))
-                WEBSOCKET_PING_FREQ = lexicalCastThrow <int> (strTemp);
+                WEBSOCKET_PING_FREQ = beast::lexicalCastThrow <int> (strTemp);
 
             SectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
             SectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
             SectionSingleB (secConfig, SECTION_WEBSOCKET_SSL_KEY, WEBSOCKET_SSL_KEY);
 
             if (SectionSingleB (secConfig, SECTION_RPC_SECURE, strTemp))
-                RPC_SECURE  = lexicalCastThrow <int> (strTemp);
+                RPC_SECURE  = beast::lexicalCastThrow <int> (strTemp);
 
             SectionSingleB (secConfig, SECTION_RPC_SSL_CERT, RPC_SSL_CERT);
             SectionSingleB (secConfig, SECTION_RPC_SSL_CHAIN, RPC_SSL_CHAIN);
@@ -479,7 +479,7 @@ void Config::load ()
             SectionSingleB (secConfig, SECTION_SSL_VERIFY_DIR, SSL_VERIFY_DIR);
 
             if (SectionSingleB (secConfig, SECTION_SSL_VERIFY, strTemp))
-                SSL_VERIFY          = lexicalCastThrow <bool> (strTemp);
+                SSL_VERIFY          = beast::lexicalCastThrow <bool> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_VALIDATION_SEED, strTemp))
             {
@@ -507,37 +507,37 @@ void Config::load ()
 
             if (SectionSingleB (secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))
                 // Minimum for min is 60 seconds.
-                PEER_SCAN_INTERVAL_MIN = std::max (60, lexicalCastThrow <int> (strTemp));
+                PEER_SCAN_INTERVAL_MIN = std::max (60, beast::lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_PEER_START_MAX, strTemp))
-                PEER_START_MAX      = std::max (1, lexicalCastThrow <int> (strTemp));
+                PEER_START_MAX      = std::max (1, beast::lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_PEER_CONNECT_LOW_WATER, strTemp))
-                PEER_CONNECT_LOW_WATER = std::max (1, lexicalCastThrow <int> (strTemp));
+                PEER_CONNECT_LOW_WATER = std::max (1, beast::lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_NETWORK_QUORUM, strTemp))
-                NETWORK_QUORUM      = std::max (0, lexicalCastThrow <int> (strTemp));
+                NETWORK_QUORUM      = std::max (0, beast::lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_VALIDATION_QUORUM, strTemp))
-                VALIDATION_QUORUM   = std::max (0, lexicalCastThrow <int> (strTemp));
+                VALIDATION_QUORUM   = std::max (0, beast::lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_FEE_ACCOUNT_RESERVE, strTemp))
-                FEE_ACCOUNT_RESERVE = lexicalCastThrow <uint64> (strTemp);
+                FEE_ACCOUNT_RESERVE = beast::lexicalCastThrow <beast::uint64> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_OWNER_RESERVE, strTemp))
-                FEE_OWNER_RESERVE   = lexicalCastThrow <uint64> (strTemp);
+                FEE_OWNER_RESERVE   = beast::lexicalCastThrow <beast::uint64> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_NICKNAME_CREATE, strTemp))
-                FEE_NICKNAME_CREATE = lexicalCastThrow <int> (strTemp);
+                FEE_NICKNAME_CREATE = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_OFFER, strTemp))
-                FEE_OFFER           = lexicalCastThrow <int> (strTemp);
+                FEE_OFFER           = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_DEFAULT, strTemp))
-                FEE_DEFAULT         = lexicalCastThrow <int> (strTemp);
+                FEE_DEFAULT         = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_OPERATION, strTemp))
-                FEE_CONTRACT_OPERATION  = lexicalCastThrow <int> (strTemp);
+                FEE_CONTRACT_OPERATION  = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_LEDGER_HISTORY, strTemp))
             {
@@ -548,7 +548,7 @@ void Config::load ()
                 else if (strTemp == "none")
                     LEDGER_HISTORY = 0;
                 else
-                    LEDGER_HISTORY = lexicalCastThrow <uint32> (strTemp);
+                    LEDGER_HISTORY = beast::lexicalCastThrow <beast::uint32> (strTemp);
             }
             if (SectionSingleB (secConfig, SECTION_FETCH_DEPTH, strTemp))
             {
@@ -559,23 +559,23 @@ void Config::load ()
                 else if (strTemp == "full")
                     FETCH_DEPTH = 1000000000u;
                 else
-                    FETCH_DEPTH = lexicalCastThrow <uint32> (strTemp);
+                    FETCH_DEPTH = beast::lexicalCastThrow <beast::uint32> (strTemp);
 
                 if (FETCH_DEPTH < 10)
                     FETCH_DEPTH = 10;
             }
 
             if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_OLD, strTemp))
-                PATH_SEARCH_OLD     = lexicalCastThrow <int> (strTemp);
+                PATH_SEARCH_OLD     = beast::lexicalCastThrow <int> (strTemp);
             if (SectionSingleB (secConfig, SECTION_PATH_SEARCH, strTemp))
-                PATH_SEARCH         = lexicalCastThrow <int> (strTemp);
+                PATH_SEARCH         = beast::lexicalCastThrow <int> (strTemp);
             if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_FAST, strTemp))
-                PATH_SEARCH_FAST    = lexicalCastThrow <int> (strTemp);
+                PATH_SEARCH_FAST    = beast::lexicalCastThrow <int> (strTemp);
             if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_MAX, strTemp))
-                PATH_SEARCH_MAX     = lexicalCastThrow <int> (strTemp);
+                PATH_SEARCH_MAX     = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_ACCOUNT_PROBE_MAX, strTemp))
-                ACCOUNT_PROBE_MAX   = lexicalCastThrow <int> (strTemp);
+                ACCOUNT_PROBE_MAX   = beast::lexicalCastThrow <int> (strTemp);
 
             (void) SectionSingleB (secConfig, SECTION_SMS_FROM, SMS_FROM);
             (void) SectionSingleB (secConfig, SECTION_SMS_KEY, SMS_KEY);
@@ -649,49 +649,49 @@ Config& getConfig ()
 
 //------------------------------------------------------------------------------
 
-File Config::getConfigDir () const
+beast::File Config::getConfigDir () const
 {
-    String const s (CONFIG_FILE.native().c_str ());
+    beast::String const s (CONFIG_FILE.native().c_str ());
     if (s.isNotEmpty ())
-        return File (s).getParentDirectory ();
-    return File::nonexistent ();
+        return beast::File (s).getParentDirectory ();
+    return beast::File::nonexistent ();
 }
 
-File Config::getDatabaseDir () const
+beast::File Config::getDatabaseDir () const
 {
-    String const s (DATA_DIR.native().c_str());
+    beast::String const s (DATA_DIR.native().c_str());
     if (s.isNotEmpty ())
-        return File (s);
-    return File::nonexistent ();
+        return beast::File (s);
+    return beast::File::nonexistent ();
 }
 
-File Config::getValidatorsFile () const
+beast::File Config::getValidatorsFile () const
 {
-    String const s (VALIDATORS_FILE.native().c_str());
-    if (s.isNotEmpty() && getConfigDir() != File::nonexistent())
+    beast::String const s (VALIDATORS_FILE.native().c_str());
+    if (s.isNotEmpty() && getConfigDir() != beast::File::nonexistent())
         return getConfigDir().getChildFile (s);
-    return File::nonexistent ();
+    return beast::File::nonexistent ();
 }
 
-URL Config::getValidatorsURL () const
+beast::URL Config::getValidatorsURL () const
 {
     //String s = "https://" + VALIDATORS_SITE + VALIDATORS_URI;
-    String s = VALIDATORS_SITE;
-    return ParsedURL (s).url ();
+    beast::String s = VALIDATORS_SITE;
+    return beast::ParsedURL (s).url ();
 }
 
 //------------------------------------------------------------------------------
 
 void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
 {
-    String const s (newAddress.c_str ());
+    beast::String const s (newAddress.c_str ());
     
     int const colonPosition = s.lastIndexOfChar (':');
 
     if (colonPosition != -1)
     {
-        String const ipPart = s.substring (0, colonPosition);
-        String const portPart = s.substring (colonPosition + 1, s.length ());
+        beast::String const ipPart = s.substring (0, colonPosition);
+        beast::String const portPart = s.substring (colonPosition + 1, s.length ());
 
         setRpcIP (ipPart.toRawUTF8 ());
         setRpcPort (portPart.getIntValue ());
@@ -743,7 +743,7 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IP::Endpoin
     }
 
     // Meets IP restriction for admin.
-    IP::Endpoint const remote_addr (remoteIp.at_port (0));
+    beast::IP::Endpoint const remote_addr (remoteIp.at_port (0));
     bool bAdminIP = false;
 
     for (auto const& allow_addr : RPC_ADMIN_ALLOW)
@@ -771,7 +771,7 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IP::Endpoin
 }
 
 //------------------------------------------------------------------------------
-File const& Config::getModuleDatabasePath ()
+beast::File const& Config::getModuleDatabasePath ()
 {
     return m_moduleDbPath;
 }

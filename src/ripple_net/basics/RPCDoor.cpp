@@ -23,7 +23,7 @@ namespace ripple {
 
 SETUP_LOG (RPCDoor)
 
-class RPCDoorImp : public RPCDoor, public LeakChecked <RPCDoorImp>
+class RPCDoorImp : public RPCDoor, public beast::LeakChecked <RPCDoorImp>
 {
 public:
     RPCDoorImp (boost::asio::io_service& io_service, RPCServer::Handler& handler)
@@ -130,14 +130,14 @@ private:
     RPCServer::Handler& m_rpcServerHandler;
     boost::asio::ip::tcp::acceptor      mAcceptor;
     boost::asio::deadline_timer         mDelayTimer;
-    ScopedPointer <RippleSSLContext>    m_sslContext;
+    beast::ScopedPointer <RippleSSLContext>    m_sslContext;
 };
 
 //------------------------------------------------------------------------------
 
 RPCDoor* RPCDoor::New (boost::asio::io_service& io_service, RPCServer::Handler& handler)
 {
-    ScopedPointer <RPCDoor> result (new RPCDoorImp (io_service, handler));
+    beast::ScopedPointer <RPCDoor> result (new RPCDoorImp (io_service, handler));
 
     return result.release ();
 }

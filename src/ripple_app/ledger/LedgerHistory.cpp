@@ -49,10 +49,10 @@ void LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
         mLedgersByIndex[ledger->getLedgerSeq()] = ledger->getHash();
 }
 
-uint256 LedgerHistory::getLedgerHash (uint32 index)
+uint256 LedgerHistory::getLedgerHash (beast::uint32 index)
 {
     LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
-    std::map<uint32, uint256>::iterator it (mLedgersByIndex.find (index));
+    std::map<beast::uint32, uint256>::iterator it (mLedgersByIndex.find (index));
 
     if (it != mLedgersByIndex.end ())
         return it->second;
@@ -60,11 +60,11 @@ uint256 LedgerHistory::getLedgerHash (uint32 index)
     return uint256 ();
 }
 
-Ledger::pointer LedgerHistory::getLedgerBySeq (uint32 index)
+Ledger::pointer LedgerHistory::getLedgerBySeq (beast::uint32 index)
 {
     {
         LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
-        std::map <uint32, uint256>::iterator it (mLedgersByIndex.find (index));
+        std::map <beast::uint32, uint256>::iterator it (mLedgersByIndex.find (index));
 
         if (it != mLedgersByIndex.end ())
         {
@@ -170,7 +170,7 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
 bool LedgerHistory::fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
     LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
-    std::map<uint32, uint256>::iterator it (mLedgersByIndex.find (ledgerIndex));
+    std::map<beast::uint32, uint256>::iterator it (mLedgersByIndex.find (ledgerIndex));
 
     if ((it != mLedgersByIndex.end ()) && (it->second != ledgerHash) )
     {

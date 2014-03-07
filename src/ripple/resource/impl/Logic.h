@@ -26,7 +26,7 @@ namespace Resource {
 class Logic
 {
 public:
-    typedef abstract_clock <std::chrono::seconds> clock_type;
+    typedef beast::abstract_clock <std::chrono::seconds> clock_type;
     typedef boost::unordered_map <std::string, Import> Imports;
     typedef boost::unordered_map <Key, Entry, Key::hasher, Key::key_equal> Table;
 
@@ -36,44 +36,44 @@ public:
         Table table;
 
         // List of all active inbound entries
-        List <Entry> inbound;
+        beast::List <Entry> inbound;
 
         // List of all active outbound entries
-        List <Entry> outbound;
+        beast::List <Entry> outbound;
 
         // List of all active admin entries
-        List <Entry> admin;
+        beast::List <Entry> admin;
 
         // List of all inactve entries
-        List <Entry> inactive;
+        beast::List <Entry> inactive;
 
         // All imported gossip data
         Imports import_table;
     };
 
-    typedef SharedData <State> SharedState;
+    typedef beast::SharedData <State> SharedState;
 
     struct Stats
     {
-        Stats (insight::Collector::ptr const& collector)
+        Stats (beast::insight::Collector::ptr const& collector)
         {
             warn = collector->make_meter ("warn");
             drop = collector->make_meter ("drop");
         }
 
-        insight::Meter warn;
-        insight::Meter drop;
+        beast::insight::Meter warn;
+        beast::insight::Meter drop;
     };
 
     SharedState m_state;
     Stats m_stats;
-    abstract_clock <std::chrono::seconds>& m_clock;
-    Journal m_journal;
+    beast::abstract_clock <std::chrono::seconds>& m_clock;
+    beast::Journal m_journal;
 
     //--------------------------------------------------------------------------
 
-    Logic (insight::Collector::ptr const& collector,
-        clock_type& clock, Journal journal)
+    Logic (beast::insight::Collector::ptr const& collector,
+        clock_type& clock, beast::Journal journal)
         : m_stats (collector)
         , m_clock (clock)
         , m_journal (journal)
@@ -92,7 +92,7 @@ public:
         state->table.clear();
     }
 
-    Consumer newInboundEndpoint (IP::Endpoint const& address)
+    Consumer newInboundEndpoint (beast::IP::Endpoint const& address)
     {
         if (isWhitelisted (address))
             return newAdminEndpoint (to_string (address));
@@ -125,7 +125,7 @@ public:
         return Consumer (*this, *entry);
     }
 
-    Consumer newOutboundEndpoint (IP::Endpoint const& address)
+    Consumer newOutboundEndpoint (beast::IP::Endpoint const& address)
     {
         if (isWhitelisted (address))
             return newAdminEndpoint (to_string (address));
@@ -232,7 +232,7 @@ public:
         Json::Value ret (Json::objectValue);
         SharedState::Access state (m_state);
 
-        for (List <Entry>::iterator iter (state->inbound.begin());
+        for (beast::List <Entry>::iterator iter (state->inbound.begin());
             iter != state->inbound.end(); ++iter)
         {
             int localBalance = iter->local_balance.value (now);
@@ -245,7 +245,7 @@ public:
             }
 
         }
-        for (List <Entry>::iterator iter (state->outbound.begin());
+        for (beast::List <Entry>::iterator iter (state->outbound.begin());
             iter != state->outbound.end(); ++iter)
         {
             int localBalance = iter->local_balance.value (now);
@@ -258,7 +258,7 @@ public:
             }
 
         }
-        for (List <Entry>::iterator iter (state->admin.begin());
+        for (beast::List <Entry>::iterator iter (state->admin.begin());
             iter != state->admin.end(); ++iter)
         {
             int localBalance = iter->local_balance.value (now);
@@ -284,7 +284,7 @@ public:
 
         gossip.items.reserve (state->inbound.size());
 
-        for (List <Entry>::iterator iter (state->inbound.begin());
+        for (beast::List <Entry>::iterator iter (state->inbound.begin());
             iter != state->inbound.end(); ++iter)
         {
             Gossip::Item item;
@@ -358,7 +358,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool isWhitelisted (IP::Endpoint const& address)
+    bool isWhitelisted (beast::IP::Endpoint const& address)
     {
         if (! is_public (address))
             return true;
@@ -374,7 +374,7 @@ public:
 
         clock_type::rep const now (m_clock.elapsed());
 
-        for (List <Entry>::iterator iter (
+        for (beast::List <Entry>::iterator iter (
             state->inactive.begin()); iter != state->inactive.end();)
         {
             if (iter->whenExpires <= now)
@@ -565,13 +565,13 @@ public:
 
     void writeList (
         clock_type::rep const now,
-            PropertyStream::Set& items,
-                List <Entry>& list)
+            beast::PropertyStream::Set& items,
+                beast::List <Entry>& list)
     {
-        for (List <Entry>::iterator iter (list.begin());
+        for (beast::List <Entry>::iterator iter (list.begin());
             iter != list.end(); ++iter)
         {
-            PropertyStream::Map item (items);
+            beast::PropertyStream::Map item (items);
             if (iter->refcount != 0)
                 item ["count"] = iter->refcount;
             item ["name"] = iter->to_string();
@@ -581,29 +581,29 @@ public:
         }
     }
 
-    void onWrite (PropertyStream::Map& map)
+    void onWrite (beast::PropertyStream::Map& map)
     {
         clock_type::rep const now (m_clock.elapsed());
 
         SharedState::Access state (m_state);
 
         {
-            PropertyStream::Set s ("inbound", map);
+            beast::PropertyStream::Set s ("inbound", map);
             writeList (now, s, state->inbound);
         }
         
         {
-            PropertyStream::Set s ("outbound", map);
+            beast::PropertyStream::Set s ("outbound", map);
             writeList (now, s, state->outbound);
         }
         
         {
-            PropertyStream::Set s ("admin", map);
+            beast::PropertyStream::Set s ("admin", map);
             writeList (now, s, state->admin);
         }
         
         {
-            PropertyStream::Set s ("inactive", map);
+            beast::PropertyStream::Set s ("inactive", map);
             writeList (now, s, state->inactive);
         }
     }

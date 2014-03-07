@@ -47,7 +47,7 @@ private:
         }
         else
         {
-            jvRequest["ledger_index"]   = lexicalCast <uint32> (strLedger);
+            jvRequest["ledger_index"]   = beast::lexicalCast <beast::uint32> (strLedger);
         }
 
         return true;
@@ -171,8 +171,8 @@ private:
         }
         else
         {
-            int64   uLedgerMin  = jvParams[1u].asInt ();
-            int64   uLedgerMax  = jvParams[2u].asInt ();
+            beast::int64   uLedgerMin  = jvParams[1u].asInt ();
+            beast::int64   uLedgerMax  = jvParams[2u].asInt ();
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
@@ -240,8 +240,8 @@ private:
         }
         else
         {
-            int64   uLedgerMin  = jvParams[1u].asInt ();
-            int64   uLedgerMax  = jvParams[2u].asInt ();
+            beast::int64   uLedgerMin  = jvParams[1u].asInt ();
+            beast::int64   uLedgerMax  = jvParams[2u].asInt ();
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
@@ -380,7 +380,7 @@ private:
             jvRequest["feature"]    = jvParams[0u].asString ();
 
         if (jvParams.size () > 1)
-            jvRequest["vote"]       = lexicalCastThrow <bool> (jvParams[1u].asString ());
+            jvRequest["vote"]       = beast::lexicalCastThrow <bool> (jvParams[1u].asString ());
 
         return jvRequest;
     }
@@ -451,7 +451,7 @@ private:
         }
         else
         {
-            jvRequest["ledger_index"]   = lexicalCast <uint32> (strLedger);
+            jvRequest["ledger_index"]   = beast::lexicalCast <beast::uint32> (strLedger);
         }
 
         return jvRequest;
@@ -529,7 +529,7 @@ private:
             strPeer = jvParams[iCursor].asString ();
 
         int             iIndex      = 0;
-        //  int             iIndex      = jvParams.size() >= 2 ? lexicalCast <int>(jvParams[1u].asString()) : 0;
+        //  int             iIndex      = jvParams.size() >= 2 ? beast::lexicalCast <int>(jvParams[1u].asString()) : 0;
 
         RippleAddress   raAddress;
 
@@ -1096,7 +1096,7 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
             jvOutput["status"]  = "error";
 
             nRet    = jvOutput.isMember ("error_code")
-                      ? lexicalCast <int> (jvOutput["error_code"].asString ())
+                      ? beast::lexicalCast <int> (jvOutput["error_code"].asString ())
                       : 1;
         }
 

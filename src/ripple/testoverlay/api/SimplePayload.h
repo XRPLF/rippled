@@ -31,7 +31,7 @@ public:
     {
     }
 
-    SimplePayload (int what, String data = String::empty, int hops = 0)
+    SimplePayload (int what, beast::String data = beast::String::empty, int hops = 0)
         : m_hops (hops)
         , m_what (what)
         , m_data (data)
@@ -68,7 +68,7 @@ public:
         return m_what;
     }
 
-    String data () const
+    beast::String data () const
     {
         return m_data;
     }
@@ -76,7 +76,7 @@ public:
 private:
     int m_hops;
     int m_what;
-    String m_data;
+    beast::String m_data;
 };
 
 }

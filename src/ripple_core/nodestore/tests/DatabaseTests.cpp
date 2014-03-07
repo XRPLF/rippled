@@ -34,14 +34,14 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void testImport (String destBackendType, String srcBackendType, int64 seedValue)
+    void testImport (beast::String destBackendType, beast::String srcBackendType, beast::int64 seedValue)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
 
         DummyScheduler scheduler;
 
-        File const node_db (File::createTempFile ("node_db"));
-        StringPairArray srcParams;
+        beast::File const node_db (beast::File::createTempFile ("node_db"));
+        beast::StringPairArray srcParams;
         srcParams.set ("type", srcBackendType);
         srcParams.set ("path", node_db.getFullPathName ());
 
@@ -49,7 +49,7 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
-        Journal j ((journal ()));
+        beast::Journal j ((journal ()));
 
         // Write to source db
         {
@@ -66,15 +66,15 @@ public:
                 "test", scheduler, j, 2, srcParams));
 
             // Set up the destination database
-            File const dest_db (File::createTempFile ("dest_db"));
-            StringPairArray destParams;
+            beast::File const dest_db (beast::File::createTempFile ("dest_db"));
+            beast::StringPairArray destParams;
             destParams.set ("type", destBackendType);
             destParams.set ("path", dest_db.getFullPathName ());
 
             std::unique_ptr <Database> dest (manager->make_Database (
                 "test", scheduler, j, 2, destParams));
 
-            beginTestCase (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
+            beginTestCase (beast::String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
 
             // Do the import
             dest->import (*src);
@@ -91,30 +91,30 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void testNodeStore (String type,
+    void testNodeStore (beast::String type,
                         bool const useEphemeralDatabase,
                         bool const testPersistence,
-                        int64 const seedValue,
+                        beast::int64 const seedValue,
                         int numObjectsToTest = 2000)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
 
         DummyScheduler scheduler;
 
-        String s;
-        s << String ("NodeStore backend '") + type + "'";
+        beast::String s;
+        s << beast::String ("NodeStore backend '") + type + "'";
         if (useEphemeralDatabase)
             s << " (with ephemeral database)";
 
         beginTestCase (s);
 
-        File const node_db (File::createTempFile ("node_db"));
-        StringPairArray nodeParams;
+        beast::File const node_db (beast::File::createTempFile ("node_db"));
+        beast::StringPairArray nodeParams;
         nodeParams.set ("type", type);
         nodeParams.set ("path", node_db.getFullPathName ());
 
-        File const temp_db  (File::createTempFile ("temp_db"));
-        StringPairArray tempParams;
+        beast::File const temp_db  (beast::File::createTempFile ("temp_db"));
+        beast::StringPairArray tempParams;
         if (useEphemeralDatabase)
         {
             tempParams.set ("type", type);
@@ -125,7 +125,7 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
-        Journal j ((journal ()));
+        beast::Journal j ((journal ()));
 
         {
             // Open the database
@@ -145,7 +145,7 @@ public:
             {
                 // Reorder and read the copy again
                 Batch copy;
-                UnitTestUtilities::repeatableShuffle (batch.size (), batch, seedValue);
+                beast::UnitTestUtilities::repeatableShuffle (batch.size (), batch, seedValue);
                 fetchCopyOfBatch (*db, &copy, batch);
                 expect (areBatchesEqual (batch, copy), "Should be equal");
             }
@@ -172,7 +172,7 @@ public:
             {
                 // Verify the ephemeral db
                 std::unique_ptr <Database> db (manager->make_Database ("test",
-                    scheduler, j, 2, tempParams, StringPairArray ()));
+                    scheduler, j, 2, tempParams, beast::StringPairArray ()));
 
                 // Read it back in
                 Batch copy;
@@ -188,7 +188,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void runBackendTests (bool useEphemeralDatabase, int64 const seedValue)
+    void runBackendTests (bool useEphemeralDatabase, beast::int64 const seedValue)
     {
         testNodeStore ("leveldb", useEphemeralDatabase, true, seedValue);
 
@@ -207,7 +207,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void runImportTests (int64 const seedValue)
+    void runImportTests (beast::int64 const seedValue)
     {
         testImport ("leveldb", "leveldb", seedValue);
 
@@ -228,7 +228,7 @@ public:
 
     void runTest ()
     {
-        int64 const seedValue = 50;
+        beast::int64 const seedValue = 50;
 
         testNodeStore ("memory", false, false, seedValue);
 

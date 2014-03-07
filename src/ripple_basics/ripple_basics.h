@@ -41,8 +41,6 @@
 
 namespace ripple {
 
-using namespace beast;
-
 #include "types/BasicTypes.h"
 
 #  include "log/LogSeverity.h"

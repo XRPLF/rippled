@@ -24,6 +24,9 @@
 #ifndef BEAST_FILELOGGER_H_INCLUDED
 #define BEAST_FILELOGGER_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A simple implementation of a Logger that writes to a file.
@@ -126,5 +129,6 @@ private:
     void trimFileSize (int64 maxFileSizeBytes) const;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_FILELOGGER_H_INCLUDED

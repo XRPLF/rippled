@@ -38,10 +38,6 @@
 #include "../algorithm/api/CycledSet.h"
 #include "../testoverlay/ripple_testoverlay.h" // for unit test
 
-namespace ripple {
-using namespace beast;
-}
-
 #  include "impl/Tuning.h"
 # include "impl/ChosenList.h"
 # include "impl/Count.h"

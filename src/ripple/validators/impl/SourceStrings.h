@@ -30,7 +30,7 @@ class SourceStrings : public Source
 {
 public:
     static SourceStrings* New (
-        String name, StringArray const& strings);
+        beast::String name, beast::StringArray const& strings);
 };
 
 }

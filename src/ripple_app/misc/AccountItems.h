@@ -22,7 +22,7 @@
 
 /** A set of AccountItem objects.
 */
-class AccountItems : LeakChecked <AccountItems>
+class AccountItems : beast::LeakChecked <AccountItems>
 {
 public:
     typedef boost::shared_ptr <AccountItems> pointer;

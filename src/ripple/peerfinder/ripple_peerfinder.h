@@ -24,10 +24,6 @@
 
 #include "../sitefiles/ripple_sitefiles.h"
 
-namespace ripple {
-using namespace beast;
-}
-
 #include "../types/api/RipplePublicKey.h"
 
 #include "api/Slot.h"

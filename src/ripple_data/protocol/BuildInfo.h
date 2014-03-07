@@ -29,7 +29,7 @@ struct BuildInfo
 
         http://semver.org/
     */
-    static String const& getVersionString ();
+    static beast::String const& getVersionString ();
 
     /** Full server version string.
 
@@ -53,7 +53,7 @@ struct BuildInfo
         //----
 
         /** The serialized format of the protocol version. */
-        typedef uint32 PackedFormat;
+        typedef beast::uint32 PackedFormat;
 
         Protocol ();
         Protocol (unsigned short vmajor, unsigned short vminor);

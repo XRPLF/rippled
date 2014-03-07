@@ -19,7 +19,7 @@
 
 class LoadManagerImp
     : public LoadManager
-    , public Thread
+    , public beast::Thread
 {
 public:
     /*  Entry mapping utilization to cost.
@@ -69,7 +69,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    Journal m_journal;
+    beast::Journal m_journal;
     typedef RippleMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
     LockType mLock;
@@ -82,7 +82,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    LoadManagerImp (Stoppable& parent, Journal journal)
+    LoadManagerImp (Stoppable& parent, beast::Journal journal)
         : LoadManager (parent)
         , Thread ("loadmgr")
         , m_journal (journal)
@@ -255,7 +255,7 @@ LoadManager::LoadManager (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-LoadManager* LoadManager::New (Stoppable& parent, Journal journal)
+LoadManager* LoadManager::New (Stoppable& parent, beast::Journal journal)
 {
     return new LoadManagerImp (parent, journal);
 }

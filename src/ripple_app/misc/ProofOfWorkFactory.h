@@ -41,7 +41,7 @@ public:
 
     virtual PowResult checkProof (const std::string& token, uint256 const& solution) = 0;
 
-    virtual uint64 getDifficulty () = 0;
+    virtual beast::uint64 getDifficulty () = 0;
 
     virtual void setDifficulty (int i) = 0;
 

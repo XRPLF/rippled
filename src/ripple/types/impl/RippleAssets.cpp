@@ -40,7 +40,7 @@
 
 namespace ripple {
 
-class RippleAssetTests : public UnitTest
+class RippleAssetTests : public beast::UnitTest
 {
 public:
     // Comparison, hash tests for uint60 (via base_uint)

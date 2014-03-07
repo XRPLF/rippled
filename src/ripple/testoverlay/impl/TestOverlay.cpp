@@ -19,7 +19,7 @@
 
 namespace TestOverlay {
 
-class Tests : public UnitTest
+class Tests : public beast::UnitTest
 {
 public:
     template <class Config>
@@ -115,6 +115,7 @@ public:
         Results result;
         for (int i = 0; result.received < 249 && i < 100; ++i)
         {
+            using beast::String;
             String s =
                 String ("step #") + String::fromNumber (
                 network.steps()) + " ";
@@ -125,7 +126,7 @@ public:
 
         int const seen (network.state().seen());
 
-        String s = "Seen = " + String::fromNumber (seen);
+        beast::String s = "Seen = " + beast::String::fromNumber (seen);
         logMessage (s);
         pass ();
     }
@@ -429,7 +430,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-class Tests2 : public UnitTest
+class Tests2 : public beast::UnitTest
 {
 public:
     class Message : public BasicMessage

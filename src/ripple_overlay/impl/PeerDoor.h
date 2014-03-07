@@ -23,7 +23,7 @@
 namespace ripple {
 
 /** Handles incoming connections from peers. */
-class PeerDoor : public Stoppable
+class PeerDoor : public beast::Stoppable
 {
 protected:
     explicit PeerDoor (Stoppable& parent);

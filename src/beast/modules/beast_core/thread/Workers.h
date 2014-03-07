@@ -20,6 +20,9 @@
 #ifndef BEAST_WORKERS_H_INCLUDED
 #define BEAST_WORKERS_H_INCLUDED
 
+namespace beast
+{
+
 /** A group of threads that process tasks.
 */
 class Workers
@@ -142,5 +145,7 @@ private:
     LockFreeStack <Worker> m_everyone;           // holds all created workers
     LockFreeStack <Worker, PausedTag> m_paused;  // holds just paused workers
 };
+
+}  // namespace beast
 
 #endif

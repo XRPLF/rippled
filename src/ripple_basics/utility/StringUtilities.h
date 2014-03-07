@@ -63,7 +63,7 @@ inline std::string strHex (Blob const& vucData)
     return strHex (vucData.begin (), vucData.size ());
 }
 
-inline std::string strHex (const uint64 uiHost)
+inline std::string strHex (const beast::uint64 uiHost)
 {
     uint64_t    uBig    = htobe64 (uiHost);
 
@@ -112,7 +112,7 @@ Blob strCopy (const std::string& strSrc);
 std::string strCopy (Blob const& vucSrc);
 
 bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort);
-bool parseQuality (const std::string& strSource, uint32& uQuality);
+bool parseQuality (const std::string& strSource, beast::uint32& uQuality);
 
 inline std::string strGetEnv (const std::string& strKey)
 {
@@ -129,6 +129,7 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
 
     <key>=<value>['|'<key>=<value>]
 */
-extern StringPairArray parseDelimitedKeyValueString (String s, beast_wchar delimiter='|');
+extern beast::StringPairArray
+parseDelimitedKeyValueString (beast::String s, beast::beast_wchar delimiter='|');
 
 #endif

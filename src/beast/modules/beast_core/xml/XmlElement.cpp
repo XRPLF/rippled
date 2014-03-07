@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 XmlElement::XmlAttributeNode::XmlAttributeNode (const XmlAttributeNode& other) noexcept
     : name (other.name),
       value (other.value)
@@ -819,3 +822,5 @@ void XmlElement::deleteAllTextElements() noexcept
         child = next;
     }
 }
+
+}  // namespace beast

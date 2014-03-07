@@ -22,32 +22,32 @@ namespace PeerFinder {
 
 class ManagerImp
     : public Manager
-    , public Thread
+    , public beast::Thread
     , public SiteFiles::Listener
-    , public DeadlineTimer::Listener
-    , public LeakChecked <ManagerImp>
+    , public beast::DeadlineTimer::Listener
+    , public beast::LeakChecked <ManagerImp>
 {
 public:
-    ServiceQueue m_queue;
+    beast::ServiceQueue m_queue;
     SiteFiles::Manager& m_siteFiles;
-    File m_databaseFile;
+    beast::File m_databaseFile;
     clock_type& m_clock;
-    Journal m_journal;
+    beast::Journal m_journal;
     StoreSqdb m_store;
     SerializedContext m_context;
     CheckerAdapter m_checker;
     Logic m_logic;
-    DeadlineTimer m_secondsTimer;
+    beast::DeadlineTimer m_secondsTimer;
     
     //--------------------------------------------------------------------------
 
     ManagerImp (
         Stoppable& stoppable,
         SiteFiles::Manager& siteFiles,
-        File const& pathToDbFileOrDirectory,
+        beast::File const& pathToDbFileOrDirectory,
         Callback& callback,
         clock_type& clock,
-        Journal journal)
+        beast::Journal journal)
         : Manager (stoppable)
         , Thread ("PeerFinder")
         , m_siteFiles (siteFiles)
@@ -78,12 +78,12 @@ public:
     {
         m_queue.dispatch (
             m_context.wrap (
-                bind (&Logic::setConfig, &m_logic,
+                std::bind (&Logic::setConfig, &m_logic,
                     config)));
     }
 
     void addFixedPeer (std::string const& name,
-        std::vector <IP::Endpoint> const& addresses)
+        std::vector <beast::IP::Endpoint> const& addresses)
     {
         m_queue.dispatch (
             m_context.wrap (
@@ -96,7 +96,7 @@ public:
     {
         m_queue.dispatch (
             m_context.wrap (
-                bind (&Logic::addStaticSource, &m_logic,
+                std::bind (&Logic::addStaticSource, &m_logic,
                     SourceStrings::New (name, strings))));
     }
 
@@ -108,19 +108,19 @@ public:
     //--------------------------------------------------------------------------
 
     Slot::ptr new_inbound_slot (
-        IP::Endpoint const& local_endpoint,
-            IP::Endpoint const& remote_endpoint)
+        beast::IP::Endpoint const& local_endpoint,
+            beast::IP::Endpoint const& remote_endpoint)
     {
         return m_logic.new_inbound_slot (local_endpoint, remote_endpoint);
     }
 
-    Slot::ptr new_outbound_slot (IP::Endpoint const& remote_endpoint)
+    Slot::ptr new_outbound_slot (beast::IP::Endpoint const& remote_endpoint)
     {
         return m_logic.new_outbound_slot (remote_endpoint);
     }
 
     void on_connected (Slot::ptr const& slot,
-        IP::Endpoint const& local_endpoint)
+        beast::IP::Endpoint const& local_endpoint)
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
         m_logic.on_connected (impl, local_endpoint);
@@ -170,9 +170,9 @@ public:
             section.data().begin()); iter != section.data().end(); ++iter)
         {
             std::string const& s (*iter);
-            IP::Endpoint addr (IP::Endpoint::from_string (s));
+            beast::IP::Endpoint addr (beast::IP::Endpoint::from_string (s));
             if (is_unspecified (addr))
-                addr = IP::Endpoint::from_string_altform(s);
+                addr = beast::IP::Endpoint::from_string_altform(s);
             if (! is_unspecified (addr))
             {
                 // add IP::Endpoint to bootstrap cache
@@ -191,9 +191,9 @@ public:
             section.data().begin()); iter != section.data().end(); ++iter)
         {
             std::string const& s (*iter);
-            IP::Endpoint addr (IP::Endpoint::from_string (s));
+            beast::IP::Endpoint addr (beast::IP::Endpoint::from_string (s));
             if (is_unspecified (addr))
-                addr = IP::Endpoint::from_string_altform(s);
+                addr = beast::IP::Endpoint::from_string_altform(s);
             if (! is_unspecified (addr))
             {
                 // add IP::Endpoint to fixed peers
@@ -233,7 +233,7 @@ public:
         m_secondsTimer.cancel();
         m_queue.dispatch (
             m_context.wrap (
-                bind (&Thread::signalThreadShouldExit, this)));
+                std::bind (&Thread::signalThreadShouldExit, this)));
     }
 
     //--------------------------------------------------------------------------
@@ -242,7 +242,7 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onWrite (PropertyStream::Map& map)
+    void onWrite (beast::PropertyStream::Map& map)
     {
         SerializedContext::Scope scope (m_context);
 
@@ -251,13 +251,13 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void onDeadlineTimer (DeadlineTimer& timer)
+    void onDeadlineTimer (beast::DeadlineTimer& timer)
     {
         if (timer == m_secondsTimer)
         {
             m_queue.dispatch (
                 m_context.wrap (
-                    bind (&Logic::periodicActivity, &m_logic)));
+                    std::bind (&Logic::periodicActivity, &m_logic)));
 
             m_secondsTimer.setExpiration (Tuning::secondsPerConnect);
         }
@@ -267,7 +267,7 @@ public:
     {
         m_journal.debug << "Initializing";
 
-        Error error (m_store.open (m_databaseFile));
+        beast::Error error (m_store.open (m_databaseFile));
 
         if (error)
         {
@@ -306,17 +306,17 @@ public:
 
 Manager::Manager (Stoppable& parent)
     : Stoppable ("PeerFinder", parent)
-    , PropertyStream::Source ("peerfinder")
+    , beast::PropertyStream::Source ("peerfinder")
 {
 }
 
 Manager* Manager::New (
     Stoppable& parent,
     SiteFiles::Manager& siteFiles,
-    File const& databaseFile,
+    beast::File const& databaseFile,
     Callback& callback,
     clock_type& clock,
-    Journal journal)
+    beast::Journal journal)
 {
     return new ManagerImp (parent, siteFiles, databaseFile, 
         callback, clock, journal);

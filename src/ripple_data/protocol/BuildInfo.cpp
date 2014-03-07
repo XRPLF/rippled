@@ -77,23 +77,23 @@ BuildInfo::Protocol const& BuildInfo::getMinimumProtocol ()
 //
 //------------------------------------------------------------------------------
 
-String const& BuildInfo::getVersionString ()
+beast::String const& BuildInfo::getVersionString ()
 {
     struct SanityChecker
     {
         SanityChecker ()
         {
-            SemanticVersion v;
+            beast::SemanticVersion v;
 
             char const* const rawText = getRawVersionString ();
 
             if (! v.parse (rawText) || v.print () != rawText)
-                FatalError ("Bad server version string", __FILE__, __LINE__);
+                beast::FatalError ("Bad server version string", __FILE__, __LINE__);
 
             versionString = rawText;
         }
 
-        String versionString;
+        beast::String versionString;
     };
 
     static SanityChecker value;
@@ -107,7 +107,7 @@ char const* BuildInfo::getFullVersionString ()
     {
         PrettyPrinter ()
         {
-            String s;
+            beast::String s;
             
             s << "Ripple-" << getVersionString ();
 
@@ -149,19 +149,19 @@ BuildInfo::Protocol::PackedFormat BuildInfo::Protocol::toPacked () const noexcep
 
 std::string BuildInfo::Protocol::toStdString () const noexcept
 {
-    String s;
+    beast::String s;
 
-    s << String (vmajor) << "." << String (vminor);
+    s << beast::String (vmajor) << "." << beast::String (vminor);
 
     return s.toStdString ();
 }
 
 //------------------------------------------------------------------------------
 
-class BuildInfoTests : public UnitTest
+class BuildInfoTests : public beast::UnitTest
 {
 public:
-    BuildInfoTests () : UnitTest ("BuildInfo", "ripple", runStartup)
+    BuildInfoTests () : beast::UnitTest ("BuildInfo", "ripple", runStartup)
     {
     }
 
@@ -169,7 +169,7 @@ public:
     {
         beginTestCase ("version");
 
-        SemanticVersion v;
+        beast::SemanticVersion v;
 
         expect (v.parse (BuildInfo::getRawVersionString ()));
     }

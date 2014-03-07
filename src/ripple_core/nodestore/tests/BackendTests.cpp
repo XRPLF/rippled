@@ -25,16 +25,17 @@ namespace NodeStore {
 class BackendTests : public TestBase
 {
 public:
-    void testBackend (String type, int64 const seedValue, int numObjectsToTest = 2000)
+    void testBackend (beast::String type, beast::int64 const seedValue,
+                      int numObjectsToTest = 2000)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
 
         DummyScheduler scheduler;
 
-        beginTestCase (String ("Backend type=") + type);
+        beginTestCase (beast::String ("Backend type=") + type);
 
-        StringPairArray params;
-        File const path (File::createTempFile ("node_db"));
+        beast::StringPairArray params;
+        beast::File const path (beast::File::createTempFile ("node_db"));
         params.set ("type", type);
         params.set ("path", path.getFullPathName ());
 
@@ -42,7 +43,7 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
-        Journal j ((journal ()));
+        beast::Journal j ((journal ()));
 
         {
             // Open the backend
@@ -62,7 +63,7 @@ public:
             {
                 // Reorder and read the copy again
                 Batch copy;
-                UnitTestUtilities::repeatableShuffle (batch.size (), batch, seedValue);
+                beast::UnitTestUtilities::repeatableShuffle (batch.size (), batch, seedValue);
                 fetchCopyOfBatch (*backend, &copy, batch);
                 expect (areBatchesEqual (batch, copy), "Should be equal");
             }

@@ -126,9 +126,6 @@
 #undef _aligned_msize
 #endif
 
-namespace beast
-{
-
 #include "containers/DynamicObject.cpp"
 #include "containers/NamedValueSet.cpp"
 #include "containers/PropertySet.cpp"
@@ -255,8 +252,6 @@ namespace beast
 #endif
 
 #include "threads/HighResolutionTimer.cpp"
-
-}
 
 // Has to be outside the beast namespace
 extern "C" {

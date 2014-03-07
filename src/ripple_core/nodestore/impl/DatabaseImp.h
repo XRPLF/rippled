@@ -28,10 +28,10 @@ namespace NodeStore {
 
 class DatabaseImp
     : public Database
-    , public LeakChecked <DatabaseImp>
+    , public beast::LeakChecked <DatabaseImp>
 {
 public:
-    Journal m_journal;
+    beast::Journal m_journal;
     Scheduler& m_scheduler;
     // Persistent key/value storage.
     std::unique_ptr <Backend> m_backend;
@@ -58,7 +58,7 @@ public:
                  int readThreads,
                  std::unique_ptr <Backend> backend,
                  std::unique_ptr <Backend> fastBackend,
-                 Journal journal)
+                 beast::Journal journal)
         : m_journal (journal)
         , m_scheduler (scheduler)
         , m_backend (std::move (backend))
@@ -87,7 +87,7 @@ public:
             th.join ();
     }
 
-    String getName () const
+    beast::String getName () const
     {
         return m_backend->getName ();
     }
@@ -118,7 +118,7 @@ public:
             std::unique_lock <std::mutex> lock (m_readLock);
 
             // Wake in two generations
-            uint64 const wakeGeneration = m_readGen + 2;
+            beast::uint64 const wakeGeneration = m_readGen + 2;
 
             while (!m_readShut && !m_readSet.empty () && (m_readGen < wakeGeneration))
                 m_readGenCondVar.wait (lock);
@@ -232,7 +232,7 @@ public:
     //------------------------------------------------------------------------------
 
     void store (NodeObjectType type,
-                uint32 index,
+                beast::uint32 index,
                 Blob& data,
                 uint256 const& hash)
     {
@@ -283,7 +283,7 @@ public:
     // Entry point for async read threads
     void threadEntry ()
     {
-        Thread::setCurrentThreadName ("prefetch");
+        beast::Thread::setCurrentThreadName ("prefetch");
         while (1)
         {
             uint256 hash;

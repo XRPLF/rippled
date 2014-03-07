@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 class JSONParser
 {
 public:
@@ -640,3 +643,5 @@ public:
 };
 
 static JSONTests jsonTests;
+
+}  // namespace beast

@@ -24,7 +24,7 @@
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
 typedef std::pair<int, uint160> currentValidationCount; // nodes validating and highest node ID validating
 
-class Validations : LeakChecked <Validations>
+class Validations : beast::LeakChecked <Validations>
 {
 public:
     static Validations* New ();
@@ -40,7 +40,7 @@ public:
 
     virtual int getTrustedValidationCount (uint256 const& ledger) = 0;
 
-    virtual int getFeeAverage(uint256 const& ledger, uint64 ref, uint64& fee) = 0;
+    virtual int getFeeAverage(uint256 const& ledger, beast::uint64 ref, beast::uint64& fee) = 0;
 
     virtual int getNodesAfter (uint256 const& ledger) = 0;
     virtual int getLoadRatio (bool overLoaded) = 0;

@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 void Logger::outputDebugString (const String& text)
 {
     std::cerr << text << std::endl;
@@ -174,3 +177,5 @@ bool Time::setSystemTimeToThisTime() const
 
     return settimeofday (&t, 0) == 0;
 }
+
+}  // namespace beast

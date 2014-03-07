@@ -28,8 +28,8 @@ namespace PeerFinder {
 // Ensures that all Logic member function entry points are
 // called while holding a lock on the recursive mutex.
 //
-typedef ScopedWrapperContext <
-    RecursiveMutex, RecursiveMutex::ScopedLockType> SerializedContext;
+typedef beast::ScopedWrapperContext <
+    beast::RecursiveMutex, beast::RecursiveMutex::ScopedLockType> SerializedContext;
 
 /** Adapts a ServiceQueue to dispatch Checker handler completions.
     This lets the Logic have its Checker handler get dispatched
@@ -40,19 +40,19 @@ class CheckerAdapter : public Checker
 {
 private:
     SerializedContext& m_context;
-    ServiceQueue& m_queue;
+    beast::ServiceQueue& m_queue;
     std::unique_ptr <Checker> m_checker;
 
     struct Handler
     {
         SerializedContext& m_context;
-        ServiceQueue& m_queue;
-        asio::shared_handler <void (Checker::Result)> m_handler;
+        beast::ServiceQueue& m_queue;
+        beast::asio::shared_handler <void (Checker::Result)> m_handler;
 
         Handler (
             SerializedContext& context,
-            ServiceQueue& queue,
-            asio::shared_handler <void (Checker::Result)> const& handler)
+            beast::ServiceQueue& queue,
+            beast::asio::shared_handler <void (Checker::Result)> const& handler)
             : m_context (context)
             , m_queue (queue)
             , m_handler (handler)
@@ -70,7 +70,7 @@ private:
     };
 
 public:
-    CheckerAdapter (SerializedContext& context, ServiceQueue& queue)
+    CheckerAdapter (SerializedContext& context, beast::ServiceQueue& queue)
         : m_context (context)
         , m_queue (queue)
         , m_checker (Checker::New())
@@ -88,8 +88,8 @@ public:
         m_checker->cancel();
     }
 
-    void async_test (IP::Endpoint const& endpoint,
-        asio::shared_handler <void (Checker::Result)> handler)
+    void async_test (beast::IP::Endpoint const& endpoint,
+        beast::asio::shared_handler <void (Checker::Result)> handler)
     {
         m_checker->async_test (endpoint, Handler (
             m_context, m_queue, handler));

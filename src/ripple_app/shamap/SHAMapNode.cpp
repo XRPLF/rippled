@@ -44,7 +44,7 @@ std::string SHAMapNode::getString () const
         return "NodeID(root)";
 
     return str (boost::format (NodeID)
-                % lexicalCastThrow <std::string> (mDepth)
+                % beast::lexicalCastThrow <std::string> (mDepth)
                 % mNodeID.GetHex ());
 }
 

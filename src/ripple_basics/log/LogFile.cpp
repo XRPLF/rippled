@@ -38,7 +38,7 @@ bool LogFile::open (boost::filesystem::path const& path)
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    ScopedPointer <std::ofstream> stream (
+    beast::ScopedPointer <std::ofstream> stream (
         new std::ofstream (path.c_str (), std::fstream::app));
 
     if (stream->good ())

@@ -40,8 +40,6 @@
 namespace ripple
 {
 
-using namespace beast;
-
 #  include "api/Results.h"
 #  include "api/SimplePayload.h"
 #  include "api/MessageType.h"

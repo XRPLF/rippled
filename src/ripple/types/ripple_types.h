@@ -41,10 +41,6 @@
 # include <sys/types.h>
 #endif
 
-namespace ripple {
-using namespace beast;
-}
-
 #include "api/AgedHistory.h"
 #  include "api/Blob.h"
 # include "api/Base58.h"

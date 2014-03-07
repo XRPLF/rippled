@@ -47,7 +47,7 @@ RandomNumbers::~RandomNumbers ()
 {
 }
 
-bool RandomNumbers::initialize (Journal::Stream stream)
+bool RandomNumbers::initialize (beast::Journal::Stream stream)
 {
     assert (!m_initialized);
 
@@ -99,19 +99,19 @@ RandomNumbers& RandomNumbers::getInstance ()
 #if BEAST_WIN32
 
 // Get entropy from the Windows crypto provider
-bool RandomNumbers::platformAddEntropy (Journal::Stream stream)
+bool RandomNumbers::platformAddEntropy (beast::Journal::Stream stream)
 {
     char name[512], rand[128];
     DWORD count = 500;
     HCRYPTPROV cryptoHandle;
 
-    if (!CryptGetDefaultProviderA (PROV_RSA_FULL, NULL, CRYPT_MACHINE_DEFAULT, name, &count))
+    if (!CryptGetDefaultProviderA (PROV_RSA_FULL, nullptr, CRYPT_MACHINE_DEFAULT, name, &count))
     {
         stream << "Unable to get default crypto provider";
         return false;
     }
 
-    if (!CryptAcquireContextA (&cryptoHandle, NULL, name, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
+    if (!CryptAcquireContextA (&cryptoHandle, nullptr, name, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
     {
         stream << "Unable to acquire crypto provider";
         return false;
@@ -132,7 +132,7 @@ bool RandomNumbers::platformAddEntropy (Journal::Stream stream)
 
 #else
 
-bool RandomNumbers::platformAddEntropy (Journal::Stream stream)
+bool RandomNumbers::platformAddEntropy (beast::Journal::Stream stream)
 {
     char rand[128];
     std::ifstream reader;
@@ -180,9 +180,9 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
     // VFALCO TODO Remove all this fancy stuff
     struct
     {
-        int64 operator () () const
+        beast::int64 operator () () const
         {
-            return time (NULL);
+            return time (nullptr);
         }
     } GetTime;
 
@@ -193,14 +193,14 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
             struct
             {
                 // VFALCO TODO clean this up
-                int64 operator () () const
+                beast::int64 operator () () const
                 {
-                    int64 nCounter = 0;
+                    beast::int64 nCounter = 0;
 #if BEAST_WIN32
                     QueryPerformanceCounter ((LARGE_INTEGER*)&nCounter);
 #else
                     timeval t;
-                    gettimeofday (&t, NULL);
+                    gettimeofday (&t, nullptr);
                     nCounter = t.tv_sec * 1000000 + t.tv_usec;
 #endif
                     return nCounter;
@@ -208,7 +208,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
             } GetPerformanceCounter;
 
             // Seed with CPU performance counter
-            int64 nCounter = GetPerformanceCounter ();
+            beast::int64 nCounter = GetPerformanceCounter ();
             RAND_add (&nCounter, sizeof (nCounter), 1.5);
             memset (&nCounter, 0, sizeof (nCounter));
         }
@@ -217,7 +217,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
     RandAddSeed ();
 
     // This can take up to 2 seconds, so only do it every 10 minutes
-    static int64 nLastPerfmon;
+    static beast::int64 nLastPerfmon;
 
     if (GetTime () < nLastPerfmon + 10 * 60)
         return;
@@ -230,7 +230,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
     unsigned char pdata[250000];
     memset (pdata, 0, sizeof (pdata));
     unsigned long nSize = sizeof (pdata);
-    long ret = RegQueryValueExA (HKEY_PERFORMANCE_DATA, "Global", NULL, NULL, pdata, &nSize);
+    long ret = RegQueryValueExA (HKEY_PERFORMANCE_DATA, "Global", nullptr, nullptr, pdata, &nSize);
     RegCloseKey (HKEY_PERFORMANCE_DATA);
 
     if (ret == ERROR_SUCCESS)

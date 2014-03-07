@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-class IoServicePool::ServiceThread : private Thread
+class IoServicePool::ServiceThread : private beast::Thread
 {
 public:
     explicit ServiceThread (
-        String const& name,
+        beast::String const& name,
         IoServicePool& owner,
         boost::asio::io_service& service)
         : Thread (name)
@@ -56,7 +56,8 @@ private:
 
 //------------------------------------------------------------------------------
 
-IoServicePool::IoServicePool (Stoppable& parent, String const& name, int numberOfThreads)
+IoServicePool::IoServicePool (Stoppable& parent, beast::String const& name,
+                              int numberOfThreads)
     : Stoppable (name.toStdString().c_str(), parent)
     , m_name (name)
     , m_service (numberOfThreads)

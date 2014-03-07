@@ -39,7 +39,7 @@ public:
 
         @return `true` if enough entropy could be retrieved.
     */
-    bool initialize (Journal::Stream stream = Journal::Stream());
+    bool initialize (beast::Journal::Stream stream = beast::Journal::Stream());
 
     /** Generate secure random numbers.
 
@@ -77,7 +77,7 @@ private:
 
     ~RandomNumbers ();
 
-    bool platformAddEntropy (Journal::Stream stream);
+    bool platformAddEntropy (beast::Journal::Stream stream);
 
     void platformAddPerformanceMonitorEntropy ();
 

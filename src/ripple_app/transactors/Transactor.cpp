@@ -79,7 +79,7 @@ Transactor::Transactor (
     SerializedTransaction const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine,
-    Journal journal) 
+    beast::Journal journal) 
     : mTxn (txn)
     , mEngine (engine)
     , mParams (params)
@@ -95,7 +95,7 @@ void Transactor::calculateFee ()
         calculateBaseFee (), isSetBit (mParams, tapADMIN)));
 }
 
-uint64 Transactor::calculateBaseFee ()
+beast::uint64 Transactor::calculateBaseFee ()
 {
     return getConfig ().FEE_DEFAULT;
 }
@@ -171,8 +171,8 @@ TER Transactor::checkSig ()
 
 TER Transactor::checkSeq ()
 {
-    uint32 t_seq = mTxn.getSequence ();
-    uint32 a_seq = mTxnAccount->getFieldU32 (sfSequence);
+    beast::uint32 t_seq = mTxn.getSequence ();
+    beast::uint32 a_seq = mTxnAccount->getFieldU32 (sfSequence);
 
     m_journal.trace << "Aseq=" << a_seq << ", Tseq=" << t_seq;
 

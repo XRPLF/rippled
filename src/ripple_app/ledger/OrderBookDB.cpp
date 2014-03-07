@@ -248,7 +248,7 @@ void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, 
             {
                 if (node.getFieldU16 (sfLedgerEntryType) == ltOFFER)
                 {
-                    SField* field = NULL;
+                    SField* field = nullptr;
 
                     // We need a field that contains the TakerGets and TakerPays parameters
                     if (node.getFName () == sfModifiedNode)
@@ -309,7 +309,7 @@ void BookListeners::addSubscriber (InfoSub::ref sub)
     mListeners[sub->getSeq ()] = sub;
 }
 
-void BookListeners::removeSubscriber (uint64 seq)
+void BookListeners::removeSubscriber (beast::uint64 seq)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
     mListeners.erase (seq);

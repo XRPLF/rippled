@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 MemoryBlock::MemoryBlock() noexcept
     : size (0)
 {
@@ -403,3 +406,5 @@ bool MemoryBlock::fromBase64Encoding (const String& s)
 
     return true;
 }
+
+}  // namespace beast

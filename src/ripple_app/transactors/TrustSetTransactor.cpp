@@ -33,8 +33,8 @@ TER TrustSetTransactor::doApply ()
     uint160             uDstAccountID   = saLimitAmount.getIssuer ();
     const bool          bHigh           = mTxnAccountID > uDstAccountID;        // true, iff current is high account.
 
-    uint32              uQualityIn      = bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0;
-    uint32              uQualityOut     = bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0;
+    beast::uint32       uQualityIn      = bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0;
+    beast::uint32       uQualityOut     = bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0;
 
     if (!saLimitAmount.isLegalNet ())
         return temBAD_AMOUNT;
@@ -45,7 +45,7 @@ TER TrustSetTransactor::doApply ()
     if (bQualityOut && QUALITY_ONE == uQualityOut)
         uQualityOut = 0;
 
-    const uint32        uTxFlags        = mTxn.getFlags ();
+    const beast::uint32  uTxFlags        = mTxn.getFlags ();
 
     if (uTxFlags & tfTrustSetMask)
     {
@@ -115,9 +115,9 @@ TER TrustSetTransactor::doApply ()
         return tecNO_DST;
     }
 
-    const uint32        uOwnerCount     = mTxnAccount->getFieldU32 (sfOwnerCount);
+    const beast::uint32 uOwnerCount     = mTxnAccount->getFieldU32 (sfOwnerCount);
     // The reserve required to create the line.
-    const uint64        uReserveCreate  = (uOwnerCount < 2) ? 0 : mEngine->getLedger ()->getReserve (uOwnerCount + 1);
+    const beast::uint64 uReserveCreate  = (uOwnerCount < 2) ? 0 : mEngine->getLedger ()->getReserve (uOwnerCount + 1);
 
     STAmount            saLimitAllow    = saLimitAmount;
     saLimitAllow.setIssuer (mTxnAccountID);
@@ -130,10 +130,10 @@ TER TrustSetTransactor::doApply ()
         STAmount        saLowLimit;
         STAmount        saHighBalance;
         STAmount        saHighLimit;
-        uint32          uLowQualityIn;
-        uint32          uLowQualityOut;
-        uint32          uHighQualityIn;
-        uint32          uHighQualityOut;
+        beast::uint32   uLowQualityIn;
+        beast::uint32   uLowQualityOut;
+        beast::uint32   uHighQualityIn;
+        beast::uint32   uHighQualityOut;
         const uint160&  uLowAccountID   = !bHigh ? mTxnAccountID : uDstAccountID;
         const uint160&  uHighAccountID  =  bHigh ? mTxnAccountID : uDstAccountID;
         SLE::ref        sleLowAccount   = !bHigh ? mTxnAccount : sleDst;
@@ -219,8 +219,8 @@ TER TrustSetTransactor::doApply ()
             uHighQualityOut =  bHigh ? 0 : sleRippleState->getFieldU32 (sfHighQualityOut);
         }
 
-        const uint32    uFlagsIn        = sleRippleState->getFieldU32 (sfFlags);
-        uint32          uFlagsOut       = uFlagsIn;
+        const beast::uint32 uFlagsIn        = sleRippleState->getFieldU32 (sfFlags);
+        beast::uint32       uFlagsOut       = uFlagsIn;
 
         if (bSetNoRipple && !bClearNoRipple && (bHigh ? saHighBalance : saLowBalance).isGEZero())
         {

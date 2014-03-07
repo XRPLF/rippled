@@ -77,7 +77,7 @@ struct Utilities::Helpers
 bool Utilities::parseInfoLine (
     Source::Item& item,
         std::string const& line,
-            Journal journal)
+            beast::Journal journal)
 {
     bool success (false);
 
@@ -122,7 +122,7 @@ bool Utilities::parseInfoLine (
 void Utilities::parseResultLine (
     Source::Results& results,
         std::string const& line,
-            Journal journal)
+            beast::Journal journal)
 {
     Source::Item item;
 
@@ -136,12 +136,12 @@ void Utilities::parseResultLine (
 
 //--------------------------------------------------------------------------
 
-String Utilities::itos (int i, int fieldSize)
+beast::String Utilities::itos (int i, int fieldSize)
 {
-    return String::fromNumber (i).paddedLeft (beast_wchar('0'), fieldSize);
+    return beast::String::fromNumber (i).paddedLeft (beast::beast_wchar('0'), fieldSize);
 }
 
-String Utilities::timeToString (Time const& t)
+beast::String Utilities::timeToString (beast::Time const& t)
 {
     if (t.isNotNull ())
     {
@@ -154,13 +154,14 @@ String Utilities::timeToString (Time const& t)
             itos (t.getSeconds(), 2);
     }
 
-    return String::empty;
+    return beast::String::empty;
 }
 
-int Utilities::stoi (String& s, int fieldSize, int minValue, int maxValue, beast_wchar delimiter)
+int Utilities::stoi (beast::String& s, int fieldSize, int minValue, int maxValue,
+                     beast::beast_wchar delimiter)
 {
     int const needed (fieldSize + ((delimiter != 0) ? 1 : 0));
-    String const v (s.substring (0, needed));
+    beast::String const v (s.substring (0, needed));
     s = s.substring (v.length ());
     if (s.length() == needed)
     {
@@ -175,7 +176,7 @@ int Utilities::stoi (String& s, int fieldSize, int minValue, int maxValue, beast
     return -1; // fail
 }
 
-Time Utilities::stringToTime (String s)
+beast::Time Utilities::stringToTime (beast::String s)
 {
     if (s.isNotEmpty ())
     {
@@ -193,11 +194,11 @@ Time Utilities::stringToTime (String s)
             sec  != -1)
         {
             // local time
-            return Time (year, mon, day, hour, min, sec, 0, true);
+            return beast::Time (year, mon, day, hour, min, sec, 0, true);
         }
     }
 
-    return Time (0);
+    return beast::Time (0);
 }
 
 //------------------------------------------------------------------------------

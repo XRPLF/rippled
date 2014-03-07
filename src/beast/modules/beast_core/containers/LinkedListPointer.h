@@ -24,6 +24,8 @@
 #ifndef BEAST_LINKEDLISTPOINTER_H_INCLUDED
 #define BEAST_LINKEDLISTPOINTER_H_INCLUDED
 
+namespace beast
+{
 
 //==============================================================================
 /**
@@ -358,5 +360,6 @@ private:
     ObjectType* item;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_LINKEDLISTPOINTER_H_INCLUDED

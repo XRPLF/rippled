@@ -60,9 +60,9 @@ public:
 
     // assemble functions
     int add8 (unsigned char byte);
-    int add16 (uint16);
-    int add32 (uint32);             // ledger indexes, account sequence, timestamps
-    int add64 (uint64);             // native currency amounts
+    int add16 (beast::uint16);
+    int add32 (beast::uint32);      // ledger indexes, account sequence, timestamps
+    int add64 (beast::uint64);      // native currency amounts
     int add128 (const uint128&);    // private key generators
     int add160 (const uint160&);    // account names, hankos
     int add256 (uint256 const& );       // transaction and ledger hashes
@@ -78,9 +78,9 @@ public:
     // disassemble functions
     bool get8 (int&, int offset) const;
     bool get8 (unsigned char&, int offset) const;
-    bool get16 (uint16&, int offset) const;
-    bool get32 (uint32&, int offset) const;
-    bool get64 (uint64&, int offset) const;
+    bool get16 (beast::uint16&, int offset) const;
+    bool get32 (beast::uint32&, int offset) const;
+    bool get64 (beast::uint64&, int offset) const;
     bool get128 (uint128&, int offset) const;
     bool get160 (uint160&, int offset) const;
     bool get256 (uint256&, int offset) const;
@@ -107,16 +107,16 @@ public:
     static uint256 getSHA512Half (const unsigned char* data, int len);
 
     // prefix hash functions
-    static uint256 getPrefixHash (uint32 prefix, const unsigned char* data, int len);
-    uint256 getPrefixHash (uint32 prefix) const
+    static uint256 getPrefixHash (beast::uint32 prefix, const unsigned char* data, int len);
+    uint256 getPrefixHash (beast::uint32 prefix) const
     {
         return getPrefixHash (prefix, & (mData.front ()), mData.size ());
     }
-    static uint256 getPrefixHash (uint32 prefix, Blob const& data)
+    static uint256 getPrefixHash (beast::uint32 prefix, Blob const& data)
     {
         return getPrefixHash (prefix, & (data.front ()), data.size ());
     }
-    static uint256 getPrefixHash (uint32 prefix, const std::string& strData)
+    static uint256 getPrefixHash (beast::uint32 prefix, const std::string& strData)
     {
         return getPrefixHash (prefix, reinterpret_cast<const unsigned char*> (strData.data ()), strData.size ());
     }
@@ -284,9 +284,9 @@ public:
 
     // get functions throw on error
     unsigned char get8 ();
-    uint16 get16 ();
-    uint32 get32 ();
-    uint64 get64 ();
+    beast::uint16 get16 ();
+    beast::uint32 get32 ();
+    beast::uint64 get64 ();
     uint128 get128 ();
     uint160 get160 ();
     uint256 get256 ();

@@ -671,7 +671,7 @@ BIGNUM* RippleAddress::getGeneratorBN () const
         throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
     }
 
-    BIGNUM* ret = BN_bin2bn (&vchData[0], vchData.size (), NULL);
+    BIGNUM* ret = BN_bin2bn (&vchData[0], vchData.size (), nullptr);
     assert (ret);
     return ret;
 }
@@ -892,7 +892,7 @@ RippleAddress RippleAddress::createSeedGeneric (const std::string& strText)
 
 //------------------------------------------------------------------------------
 
-class RippleAddressTests : public UnitTest
+class RippleAddressTests : public beast::UnitTest
 {
 public:
     RippleAddressTests () : UnitTest ("RippleAddress", "ripple")
@@ -970,7 +970,7 @@ static RippleAddressTests rippleAddressTests;
 
 //------------------------------------------------------------------------------
 
-class RippleIdentifierTests : public UnitTest
+class RippleIdentifierTests : public beast::UnitTest
 {
 public:
     void runTest ()
@@ -1032,7 +1032,7 @@ public:
                 privateKey.to_string());
     }
 
-    RippleIdentifierTests () : UnitTest ("RippleIdentifier", "ripple")
+    RippleIdentifierTests () : beast::UnitTest ("RippleIdentifier", "ripple")
     {
     }
 };

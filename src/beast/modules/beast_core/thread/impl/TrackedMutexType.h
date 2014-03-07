@@ -20,6 +20,9 @@
 #ifndef BEAST_CORE_THREAD_TRACKEDMUTEXTYPE_H_INCLUDED
 #define BEAST_CORE_THREAD_TRACKEDMUTEXTYPE_H_INCLUDED
 
+namespace beast
+{
+
 /** A template that gives a Mutex diagnostic tracking capabilities. */
 template <typename Mutex>
 class TrackedMutexType
@@ -91,5 +94,7 @@ public:
 private:
     Mutex const m_mutex;
 };
+
+}  // namespace beast
 
 #endif

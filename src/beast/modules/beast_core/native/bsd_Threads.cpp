@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 /*
     Note that a lot of methods that you'd expect to find in this file actually
     live in beast_posix_SharedCode.h!
@@ -67,3 +70,5 @@ static void swapUserAndEffectiveUser()
 
 void Process::raisePrivilege()  { if (geteuid() != 0 && getuid() == 0) swapUserAndEffectiveUser(); }
 void Process::lowerPrivilege()  { if (geteuid() == 0 && getuid() != 0) swapUserAndEffectiveUser(); }
+
+}  // namespace beast

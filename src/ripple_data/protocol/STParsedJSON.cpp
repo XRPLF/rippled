@@ -192,7 +192,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                                 findTypeByName (strValue));
 
                             data.push_back (new STUInt16 (field,
-                                static_cast <uint16> (txType)));
+                                static_cast <beast::uint16> (txType)));
 
                             if (*name == sfGeneric)
                                 name = &sfTransaction;
@@ -203,7 +203,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                                 findTypeByName (strValue));
 
                             data.push_back (new STUInt16 (field,
-                                static_cast <uint16> (type)));
+                                static_cast <beast::uint16> (type)));
 
                             if (*name == sfGeneric)
                                 name = &sfLedgerEntry;
@@ -217,19 +217,19 @@ bool STParsedJSON::parse (std::string const& json_name,
                     else
                     {
                         data.push_back (new STUInt16 (field,
-                            lexicalCastThrow <uint16> (strValue)));
+                            beast::lexicalCastThrow <beast::uint16> (strValue)));
                     }
                 }
                 else if (value.isInt ())
                 {
                     data.push_back (new STUInt16 (field,
-                        range_check_cast <uint16> (
+                        range_check_cast <beast::uint16> (
                             value.asInt (), 0, 65535)));
                 }
                 else if (value.isUInt ())
                 {
                     data.push_back (new STUInt16 (field,
-                        range_check_cast <uint16> (
+                        range_check_cast <beast::uint16> (
                             value.asUInt (), 0, 65535)));
                 }
                 else
@@ -252,17 +252,17 @@ bool STParsedJSON::parse (std::string const& json_name,
                 if (value.isString ())
                 {
                     data.push_back (new STUInt32 (field,
-                        lexicalCastThrow <uint32> (value.asString ())));
+                        beast::lexicalCastThrow <beast::uint32> (value.asString ())));
                 }
                 else if (value.isInt ())
                 {
                     data.push_back (new STUInt32 (field,
-                        range_check_cast <uint32> (value.asInt (), 0u, 4294967295u)));
+                        range_check_cast <beast::uint32> (value.asInt (), 0u, 4294967295u)));
                 }
                 else if (value.isUInt ())
                 {
                     data.push_back (new STUInt32 (field,
-                        static_cast <uint32> (value.asUInt ())));
+                        static_cast <beast::uint32> (value.asUInt ())));
                 }
                 else
                 {
@@ -289,13 +289,13 @@ bool STParsedJSON::parse (std::string const& json_name,
                 else if (value.isInt ())
                 {
                     data.push_back (new STUInt64 (field,
-                        range_check_cast<uint64> (
+                        range_check_cast<beast::uint64> (
                             value.asInt (), 0, 18446744073709551615ull)));
                 }
                 else if (value.isUInt ())
                 {
                     data.push_back (new STUInt64 (field,
-                        static_cast <uint64> (value.asUInt ())));
+                        static_cast <beast::uint64> (value.asUInt ())));
                 }
                 else
                 {
@@ -684,7 +684,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                     // first/only key in an object without copying all keys into
                     // a vector
                     std::string const objectName (value[i].getMemberNames()[0]);;
-                    SField::ref const nameField (SField::getField(objectName));
+                    SField::ref       nameField (SField::getField(objectName));
 
                     if (nameField == sfInvalid)
                     {

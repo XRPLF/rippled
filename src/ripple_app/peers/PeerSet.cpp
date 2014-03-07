@@ -27,7 +27,7 @@ class InboundLedger;
 //             function pure virtual?
 //
 PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData,
-    clock_type& clock, Journal journal)
+    clock_type& clock, beast::Journal journal)
     : m_journal (journal)
     , m_clock (clock)
     , mLock (this, "PeerSet", __FILE__, __LINE__)

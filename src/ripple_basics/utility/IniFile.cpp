@@ -141,9 +141,10 @@ bool SectionSingleB (Section& secSource, const std::string& strSection, std::str
     return bSingle;
 }
 
-StringPairArray parseKeyValueSection (Section& secSource, String const& strSection)
+beast::StringPairArray
+parseKeyValueSection (Section& secSource, beast::String const& strSection)
 {
-    StringPairArray result;
+    beast::StringPairArray result;
 
     // yuck.
     std::string const stdStrSection (strSection.toStdString ());
@@ -156,14 +157,14 @@ StringPairArray parseKeyValueSection (Section& secSource, String const& strSecti
     {
         for (Entries::const_iterator iter = entries->begin (); iter != entries->end (); ++iter)
         {
-            String const line (iter->c_str ());
+            beast::String const line (iter->c_str ());
 
             int const equalPos = line.indexOfChar ('=');
 
             if (equalPos != -1)
             {
-                String const key = line.substring (0, equalPos);
-                String const value = line.substring (equalPos + 1, line.length ());
+                beast::String const key = line.substring (0, equalPos);
+                beast::String const value = line.substring (equalPos + 1, line.length ());
 
                 result.set (key, value);
             }

@@ -21,7 +21,6 @@
 #define RIPPLE_HTTP_PORT_H_INCLUDED
 
 namespace ripple {
-using namespace beast;
 
 namespace HTTP {
 
@@ -38,11 +37,11 @@ struct Port
     Port ();
     Port (Port const& other);
     Port& operator= (Port const& other);
-    Port (uint16 port_, IP::Endpoint const& addr_,
+    Port (beast::uint16 port_, beast::IP::Endpoint const& addr_,
             Security security_, beast::asio::SSLContext* context_);
 
-    uint16 port;
-    IP::Endpoint addr;
+    beast::uint16 port;
+    beast::IP::Endpoint addr;
     Security security;
     beast::asio::SSLContext* context;
 };
@@ -57,7 +56,7 @@ bool operator>= (Port const& lhs, Port const& rhs);
 /** A set of listening ports settings. */
 typedef std::vector <Port> Ports;
 
-}
-}
+}  // namespace HTTP
+}  // namespace ripple
 
 #endif

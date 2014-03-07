@@ -24,6 +24,9 @@
 #ifndef BEAST_NAMEDPIPE_H_INCLUDED
 #define BEAST_NAMEDPIPE_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A cross-process pipe that can have data written to and read from it.
@@ -92,5 +95,6 @@ private:
     bool openInternal (const String& pipeName, const bool createPipe);
 };
 
+}  // namespace beast
 
 #endif   // BEAST_NAMEDPIPE_H_INCLUDED

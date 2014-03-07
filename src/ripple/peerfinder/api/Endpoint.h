@@ -28,15 +28,15 @@ struct Endpoint
 {
     Endpoint ();
 
-    Endpoint (IP::Endpoint const& ep, int hops_);
+    Endpoint (beast::IP::Endpoint const& ep, int hops_);
 
     int hops;
-    IP::Endpoint address;
+    beast::IP::Endpoint address;
 };
 
 bool operator< (Endpoint const& lhs, Endpoint const& rhs);
 
-}
-}
+}  // namespace PeerFinder
+}  // namespace ripple
 
 #endif

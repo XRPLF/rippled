@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 //
 // FatalError::Reporter
 //
@@ -130,3 +133,5 @@ public:
 };
 
 static FatalErrorTests fatalErrorTests;
+
+}  // namespace beast

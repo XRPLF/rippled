@@ -76,19 +76,19 @@ inline double cleanElapsed (double seconds) noexcept
 template <typename Object>
 double timedDestroy (Object& object)
 {
-    int64 const startTime (Time::getHighResolutionTicks ());
+    beast::int64 const startTime (beast::Time::getHighResolutionTicks ());
 
     detail::Destroyer <Object>::destroy (object);
 
-    return Time::highResolutionTicksToSeconds (
-            Time::getHighResolutionTicks () - startTime);
+    return beast::Time::highResolutionTicksToSeconds (
+            beast::Time::getHighResolutionTicks () - startTime);
 }
 
 /** Log the timed destruction of an object if the time exceeds a threshold.
 */
 template <typename PartitionKey, typename Object>
 void logTimedDestroy (
-    Object& object, String objectDescription, double thresholdSeconds = 1)
+    Object& object, beast::String objectDescription, double thresholdSeconds = 1)
 {
     double const seconds = timedDestroy (object);
 
@@ -98,7 +98,7 @@ void logTimedDestroy (
 
         Log (severity, LogPartition::get <PartitionKey> ()) <<
             objectDescription << " took "<<
-            String (detail::cleanElapsed (seconds)) <<
+            beast::String (detail::cleanElapsed (seconds)) <<
             " seconds to destroy";
     }
 }
@@ -107,21 +107,21 @@ void logTimedDestroy (
 
 /** Log a timed function call if the time exceeds a threshold. */
 template <typename Function>
-void logTimedCall (Journal::Stream stream,
-                   String description,
+void logTimedCall (beast::Journal::Stream stream,
+                   beast::String description,
                    char const* fileName,
                    int lineNumber,
     Function f, double thresholdSeconds = 1)
 {
-    double const seconds = measureFunctionCallTime (f);
+    double const seconds = beast::measureFunctionCallTime (f);
 
     if (seconds > thresholdSeconds)
     {
         stream <<
             description << " took "<<
-                String (detail::cleanElapsed (seconds)) <<
+                beast::String (detail::cleanElapsed (seconds)) <<
                 " seconds to execute at " <<
-                    Debug::getSourceLocation (fileName, lineNumber);
+                    beast::Debug::getSourceLocation (fileName, lineNumber);
     }
 }
 

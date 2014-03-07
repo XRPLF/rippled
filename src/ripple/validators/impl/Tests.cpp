@@ -20,7 +20,7 @@
 namespace ripple {
 namespace Validators {
 
-class Tests : public UnitTest
+class Tests : public beast::UnitTest
 {
 public:
    enum
@@ -97,7 +97,7 @@ public:
 
     struct TestSource : Source
     {
-        TestSource (String const& name, uint32 start, uint32 end)
+        TestSource (beast::String const& name, beast::uint32 start, beast::uint32 end)
             : m_name (name)
             , m_start (start)
             , m_end (end)
@@ -109,34 +109,35 @@ public:
             return uniqueID().toStdString();
         }
 
-        String uniqueID () const
+        beast::String uniqueID () const
         {
+            using beast::String;
             return String ("Test,") + m_name + "," +
                 String::fromNumber (m_start) + "," +
                 String::fromNumber (m_end);
         }
 
-        String createParam ()
+        beast::String createParam ()
         {
-            return String::empty;
+            return beast::String::empty;
         }
 
-        void fetch (Results& results, Journal)
+        void fetch (Results& results, beast::Journal)
         {
             results.success = true;
-            results.message = String::empty;
+            results.message = beast::String::empty;
             results.list.reserve (numberOfTestValidators);
 
-            for (uint32 i = m_start ; i < m_end; ++i)
+            for (beast::uint32 i = m_start ; i < m_end; ++i)
             {
                 Item item;;
                 item.publicKey = RipplePublicKey::createFromInteger (i);
-                item.label = String::fromNumber (i);
+                item.label = beast::String::fromNumber (i);
                 results.list.push_back (item);
             }
         }
 
-        String m_name;
+        beast::String m_name;
         std::size_t m_start;
         std::size_t m_end;
     };
@@ -173,9 +174,9 @@ public:
     {
         for (int i = 1; i <= numberofTestSources; ++i)
         {
-            String const name (String::fromNumber (i));
-            uint32 const start = random().nextInt (numberOfTestValidators);
-            uint32 const end   = start + random().nextInt (numberOfTestValidators);
+            beast::String const name (beast::String::fromNumber (i));
+            beast::uint32 const start = random().nextInt (numberOfTestValidators);
+            beast::uint32 const end   = start + random().nextInt (numberOfTestValidators);
             logic.add (new TestSource (name, start, end));
         }
     }
@@ -187,17 +188,17 @@ public:
         //TestStore store;
         StoreSqdb storage;
 
-        File const file (
-            File::getSpecialLocation (
-                File::userDocumentsDirectory).getChildFile (
+        beast::File const file (
+            beast::File::getSpecialLocation (
+                beast::File::userDocumentsDirectory).getChildFile (
                     "validators-test.sqlite"));
 
         // Can't call this 'error' because of ADL and Journal::error
-        Error err (storage.open (file));
+        beast::Error err (storage.open (file));
 
         unexpected (err, err.what());
 
-        Logic logic (storage, Journal ());
+        Logic logic (storage, beast::Journal ());
         logic.load ();
 
         addSources (logic);
@@ -214,7 +215,7 @@ public:
         // We need to use the same seed so we create the
         // same IDs for the set of TestSource objects.
         //
-        int64 const seedValue = 10;
+        beast::int64 const seedValue = 10;
         random().setSeed (seedValue);
 
         testLogic ();

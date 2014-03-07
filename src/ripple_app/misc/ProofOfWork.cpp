@@ -44,7 +44,7 @@ ProofOfWork::ProofOfWork (const std::string& token)
     mToken = token;
     mChallenge.SetHex (fields[0]);
     mTarget.SetHex (fields[1]);
-    mIterations = lexicalCast <int> (fields[2]);
+    mIterations = beast::lexicalCast <int> (fields[2]);
 }
 
 bool ProofOfWork::isValid () const
@@ -56,7 +56,7 @@ bool ProofOfWork::isValid () const
     return false;
 }
 
-uint64 ProofOfWork::getDifficulty (uint256 const& target, int iterations)
+beast::uint64 ProofOfWork::getDifficulty (uint256 const& target, int iterations)
 {
     // calculate the approximate number of hashes required to solve this proof of work
     if ((iterations > kMaxIterations) || (target < sMinTarget))
@@ -69,7 +69,7 @@ uint64 ProofOfWork::getDifficulty (uint256 const& target, int iterations)
     }
 
     // more iterations means more hashes per iteration but also a larger final hash
-    uint64 difficulty = iterations + (iterations / 8);
+    beast::uint64 difficulty = iterations + (iterations / 8);
 
     // Multiply the number of hashes needed by 256 for each leading zero byte in the difficulty
     const unsigned char* ptr = target.begin ();

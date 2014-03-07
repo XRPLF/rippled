@@ -26,28 +26,28 @@
 class RangeSet
 {
 public:
-    static const uint32 absent = static_cast <uint32> (-1);
+    static const beast::uint32 absent = static_cast <beast::uint32> (-1);
 
 public:
     RangeSet () { }
 
-    bool hasValue (uint32) const;
+    bool hasValue (beast::uint32) const;
 
-    uint32 getFirst () const;
-    uint32 getNext (uint32) const;
-    uint32 getLast () const;
-    uint32 getPrev (uint32) const;
+    beast::uint32 getFirst () const;
+    beast::uint32 getNext (beast::uint32) const;
+    beast::uint32 getLast () const;
+    beast::uint32 getPrev (beast::uint32) const;
 
     // largest number not in the set that is less than the given number
-    uint32 prevMissing (uint32) const;
+    beast::uint32 prevMissing (beast::uint32) const;
 
     // Add an item to the set
-    void setValue (uint32);
+    void setValue (beast::uint32);
 
     // Add the closed interval to the set
-    void setRange (uint32, uint32);
+    void setRange (beast::uint32, beast::uint32);
 
-    void clearValue (uint32);
+    void clearValue (beast::uint32);
 
     std::string toString () const;
 
@@ -61,14 +61,14 @@ private:
     void simplify ();
 
 private:
-    typedef std::map <uint32, uint32> Map;
+    typedef std::map <beast::uint32, beast::uint32> Map;
 
     typedef Map::const_iterator            const_iterator;
     typedef Map::const_reverse_iterator    const_reverse_iterator;
     typedef Map::value_type                value_type;
     typedef Map::iterator                  iterator;
 
-    static bool contains (value_type const& it, uint32 v)
+    static bool contains (value_type const& it, beast::uint32 v)
     {
         return (it.first <= v) && (it.second >= v);
     }

@@ -24,6 +24,8 @@
 #ifndef BEAST_MEMORYMAPPEDFILE_H_INCLUDED
 #define BEAST_MEMORYMAPPEDFILE_H_INCLUDED
 
+namespace beast
+{
 
 //==============================================================================
 /**
@@ -104,5 +106,6 @@ private:
     void openInternal (const File&, AccessMode);
 };
 
+}  // namespace beast
 
 #endif   // BEAST_MEMORYMAPPEDFILE_H_INCLUDED

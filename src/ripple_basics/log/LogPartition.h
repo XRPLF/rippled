@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_LOGPARTITION_H_INCLUDED
 #define RIPPLE_BASICS_LOGPARTITION_H_INCLUDED
 
-class LogPartition : public Journal::Sink
+class LogPartition : public beast::Journal::Sink
 {
 public:
     //--------------------------------------------------------------------------
@@ -29,7 +29,7 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void write (Journal::Severity level, std::string const& text);
+    void write (beast::Journal::Severity level, std::string const& text);
 
     //--------------------------------------------------------------------------
 
@@ -56,9 +56,9 @@ public:
 
     /** Returns a Journal using the specified LogPartition type key. */
     template <class Key>
-    static Journal getJournal ()
+    static beast::Journal getJournal ()
     {
-        return Journal (get <Key> ());
+        return beast::Journal (get <Key> ());
     }
 
     /** Returns a cleaned up source code file name. */
@@ -82,8 +82,8 @@ public:
 
     /** Convert the Journal::Severity to and from a LogSeverity. */
     /** @{ */
-    static LogSeverity convertSeverity (Journal::Severity level);
-    static Journal::Severity convertLogSeverity (LogSeverity level);
+    static LogSeverity convertSeverity (beast::Journal::Severity level);
+    static beast::Journal::Severity convertLogSeverity (LogSeverity level);
     /** @} */
 
     /** Retrieve the name for a log partition. */
@@ -115,7 +115,7 @@ struct LogPartitionType : LogPartition
 template <class Key>
 LogPartition& LogPartition::get ()
 {
-    return *SharedSingleton <
+    return *beast::SharedSingleton <
       detail::LogPartitionType <Key>>::getInstance();
 }
 

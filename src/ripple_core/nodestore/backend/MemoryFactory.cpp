@@ -24,13 +24,13 @@ class MemoryBackend : public Backend
 {
 public:
     typedef std::map <uint256 const, NodeObject::Ptr> Map;
-    Journal m_journal;
+    beast::Journal m_journal;
     size_t const m_keyBytes;
     Map m_map;
     Scheduler& m_scheduler;
 
     MemoryBackend (size_t keyBytes, Parameters const& keyValues,
-        Scheduler& scheduler, Journal journal)
+        Scheduler& scheduler, beast::Journal journal)
         : m_journal (journal)
         , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
@@ -99,14 +99,14 @@ public:
 class MemoryFactory : public Factory
 {
 public:
-    String getName () const
+    beast::String getName () const
     {
         return "Memory";
     }
 
     std::unique_ptr <Backend> createInstance (
         size_t keyBytes, Parameters const& keyValues,
-            Scheduler& scheduler, Journal journal)
+            Scheduler& scheduler, beast::Journal journal)
     {
         return std::make_unique <MemoryBackend> (
             keyBytes, keyValues, scheduler, journal);

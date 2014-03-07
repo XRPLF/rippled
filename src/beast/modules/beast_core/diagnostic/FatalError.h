@@ -20,6 +20,9 @@
 #ifndef BEAST_CORE_FATALERROR_H_INCLUDED
 #define BEAST_CORE_FATALERROR_H_INCLUDED
 
+namespace beast
+{
+
 /** Signal a fatal error.
 
     A fatal error indicates that the program has encountered an unexpected
@@ -145,5 +148,7 @@ public:
 private:
     static Reporter* s_reporter;
 };
+
+}  // namespace beast
 
 #endif

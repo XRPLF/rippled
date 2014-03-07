@@ -21,12 +21,10 @@
 
 namespace ripple {
 
-using namespace beast;
-
 class TrackedHandler
 {
 public:
-    explicit TrackedHandler (Journal journal)
+    explicit TrackedHandler (beast::Journal journal)
         : m_journal (journal)
     {
         m_journal.info << "Constructor";
@@ -62,7 +60,7 @@ public:
     }
 
 private:
-    Journal m_journal;
+    beast::Journal m_journal;
 };
 
 //------------------------------------------------------------------------------
@@ -121,14 +119,14 @@ HandlerWrapper <
 
 //------------------------------------------------------------------------------
 
-class CountedBindTests : public UnitTest
+class CountedBindTests : public beast::UnitTest
 {
 public:
     void runTest ()
     {
         beginTestCase ("Move");
 
-        Journal const j (journal());
+        beast::Journal const j (journal());
 
         {
             j.info << "w1";

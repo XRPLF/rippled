@@ -46,7 +46,8 @@ public:
             @param  request The RPC request string.
             @return         The server's response.
         */
-        virtual std::string processRequest (std::string const& request, IP::Endpoint const& remoteIPAddress) = 0;
+        virtual std::string processRequest (std::string const& request,
+                                            beast::IP::Endpoint const& remoteIPAddress) = 0;
     };
 
     virtual ~RPCServer () { }

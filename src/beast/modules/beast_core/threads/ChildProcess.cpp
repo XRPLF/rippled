@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 ChildProcess::ChildProcess() {}
 ChildProcess::~ChildProcess() {}
 
@@ -96,3 +99,5 @@ public:
 };
 
 static ChildProcessTests childProcessTests;
+
+}  // namespace beast

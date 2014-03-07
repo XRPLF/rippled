@@ -25,7 +25,7 @@ namespace PeerFinder {
 Bootcache::Bootcache (
     Store& store,
     clock_type& clock,
-    Journal journal)
+    beast::Journal journal)
     : m_store (store)
     , m_clock (clock)
     , m_journal (journal)
@@ -88,21 +88,21 @@ Bootcache::load ()
 {
     clear();
     auto const n (m_store.load (
-        [this](IP::Endpoint const& endpoint, int valence)
+        [this](beast::IP::Endpoint const& endpoint, int valence)
         {
             auto const result (this->m_map.insert (
                 value_type (endpoint, valence)));
             if (! result.second)
             {
                 if (this->m_journal.error)
-                    this->m_journal.error << leftw (18) <<
+                    this->m_journal.error << beast::leftw (18) <<
                     "Bootcache discard " << endpoint;
             }
         }));
 
     if (n > 0)
     {
-        if (m_journal.info) m_journal.info << leftw (18) <<
+        if (m_journal.info) m_journal.info << beast::leftw (18) <<
             "Bootcache loaded " << n <<
                 ((n > 1) ? " addresses" : " address");
         prune ();
@@ -110,13 +110,13 @@ Bootcache::load ()
 }
 
 bool
-Bootcache::insert (IP::Endpoint const& endpoint)
+Bootcache::insert (beast::IP::Endpoint const& endpoint)
 {
     auto const result (m_map.insert (
         value_type (endpoint, 0)));
     if (result.second)
     {
-        if (m_journal.trace) m_journal.trace << leftw (18) <<
+        if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
             "Bootcache insert " << endpoint;
         prune ();
         flagForUpdate();
@@ -125,7 +125,7 @@ Bootcache::insert (IP::Endpoint const& endpoint)
 }
 
 void
-Bootcache::on_success (IP::Endpoint const& endpoint)
+Bootcache::on_success (beast::IP::Endpoint const& endpoint)
 {
     auto result (m_map.insert (
         value_type (endpoint, 1)));
@@ -145,7 +145,7 @@ Bootcache::on_success (IP::Endpoint const& endpoint)
         assert (result.second);
     }
     Entry const& entry (result.first->right);
-    if (m_journal.info) m_journal.info << leftw (18) <<
+    if (m_journal.info) m_journal.info << beast::leftw (18) <<
         "Bootcache connect " << endpoint <<
         " with " << entry.valence() <<
         ((entry.valence() > 1) ? " successes" : " success");
@@ -153,7 +153,7 @@ Bootcache::on_success (IP::Endpoint const& endpoint)
 }
 
 void
-Bootcache::on_failure (IP::Endpoint const& endpoint)
+Bootcache::on_failure (beast::IP::Endpoint const& endpoint)
 {
     auto result (m_map.insert (
         value_type (endpoint, -1)));
@@ -174,7 +174,7 @@ Bootcache::on_failure (IP::Endpoint const& endpoint)
     }
     Entry const& entry (result.first->right);
     auto const n (std::abs (entry.valence()));
-    if (m_journal.debug) m_journal.debug << leftw (18) <<
+    if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
         "Bootcache failed " << endpoint <<
         " with " << n <<
         ((n > 1) ? " attempts" : " attempt");
@@ -190,9 +190,9 @@ Bootcache::periodicActivity ()
 //--------------------------------------------------------------------------
 
 void
-Bootcache::onWrite (PropertyStream::Map& map)
+Bootcache::onWrite (beast::PropertyStream::Map& map)
 {
-    map ["entries"] = uint32 (m_map.size());
+    map ["entries"] = beast::uint32 (m_map.size());
 }
 
     // Checks the cache size and prunes if its over the limit.
@@ -214,15 +214,15 @@ Bootcache::prune ()
         count-- > 0 && iter != m_map.right.begin(); ++pruned)
     {
         --iter;
-        IP::Endpoint const& endpoint (iter->get_left());
+        beast::IP::Endpoint const& endpoint (iter->get_left());
         Entry const& entry (iter->get_right());
-        if (m_journal.trace) m_journal.trace << leftw (18) <<
+        if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
             "Bootcache pruned" << endpoint <<
             " at valence " << entry.valence();
         iter = m_map.right.erase (iter);
     }
 
-    if (m_journal.debug) m_journal.debug << leftw (18) <<
+    if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
         "Bootcache pruned " << pruned << " entries total";
 }
 

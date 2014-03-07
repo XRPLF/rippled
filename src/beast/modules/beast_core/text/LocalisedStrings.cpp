@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 LocalisedStrings::LocalisedStrings (const String& fileContents, bool ignoreCase)
 {
     loadFromText (fileContents, ignoreCase);
@@ -166,3 +169,5 @@ String translate (const String& text, const String& resultIfNotFound)
 
     return resultIfNotFound;
 }
+
+}  // namespace beast

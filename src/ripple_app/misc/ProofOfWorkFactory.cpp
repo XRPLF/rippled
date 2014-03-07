@@ -19,7 +19,7 @@
 
 class ProofOfWorkFactoryImp
     : public ProofOfWorkFactory
-    , public LeakChecked <ProofOfWorkFactoryImp>
+    , public beast::LeakChecked <ProofOfWorkFactoryImp>
 {
 public:
     typedef boost::bimap< boost::bimaps::multiset_of<time_t>,
@@ -145,7 +145,7 @@ public:
         // challenge - target - iterations - time - validator
         static boost::format f ("%s-%s-%d-%d");
 
-        int now = static_cast<int> (time (NULL) / 4);
+        int now = static_cast<int> (time (nullptr) / 4);
 
         uint256 challenge;
         RandomNumbers::getInstance ().fillBytes (challenge.begin (), challenge.size ());
@@ -192,14 +192,14 @@ public:
         time_t t;
     #if 0
         // Broken with lexicalCast<> changes
-        t = lexicalCast <time_t> (fields[3]);
+        t = beast::lexicalCast <time_t> (fields[3]);
     #else
-        t = static_cast <time_t> (lexicalCast <uint64> (fields [3]));
+        t = static_cast <time_t> (beast::lexicalCast <beast::uint64> (fields [3]));
     #endif
 
-        time_t now = time (NULL);
+        time_t now = time (nullptr);
 
-        int iterations = lexicalCast <int> (fields[2]);
+        int iterations = beast::lexicalCast <int> (fields[2]);
 
         {
             ScopedLockType sl (mLock, __FILE__, __LINE__);
@@ -243,7 +243,7 @@ public:
 
     void sweep ()
     {
-        time_t expire = time (NULL) - mValidTime;
+        time_t expire = time (nullptr) - mValidTime;
 
         ScopedLockType sl (mLock, __FILE__, __LINE__);
 
@@ -266,7 +266,7 @@ public:
 
     void loadHigh ()
     {
-        time_t now = time (NULL);
+        time_t now = time (nullptr);
 
         ScopedLockType sl (mLock, __FILE__, __LINE__);
 
@@ -284,7 +284,7 @@ public:
 
     void loadLow ()
     {
-        time_t now = time (NULL);
+        time_t now = time (nullptr);
 
         ScopedLockType sl (mLock, __FILE__, __LINE__);
 
@@ -303,7 +303,7 @@ public:
     void setDifficulty (int i)
     {
         assert ((i >= 0) && (i <= kMaxDifficulty));
-        time_t now = time (NULL);
+        time_t now = time (nullptr);
 
         ScopedLockType sl (mLock, __FILE__, __LINE__);
         mPowEntry = i;
@@ -315,7 +315,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    uint64 getDifficulty ()
+    beast::uint64 getDifficulty ()
     {
         return ProofOfWork::getDifficulty (mTarget, mIterations);
     }
@@ -354,10 +354,10 @@ ProofOfWorkFactory* ProofOfWorkFactory::New ()
 
 //------------------------------------------------------------------------------
 
-class ProofOfWorkTests : public UnitTest
+class ProofOfWorkTests : public beast::UnitTest
 {
 public:
-    ProofOfWorkTests () : UnitTest ("ProofOfWork", "ripple", runManual)
+    ProofOfWorkTests () : beast::UnitTest ("ProofOfWork", "ripple", runManual)
     {
     }
 
@@ -368,9 +368,9 @@ public:
         ProofOfWorkFactoryImp gen;
         ProofOfWork pow = gen.getProof ();
 
-        String s;
+        beast::String s;
         
-        s << "solve difficulty " << String (pow.getDifficulty ());
+        s << "solve difficulty " << beast::String (pow.getDifficulty ());
         beginTestCase ("solve");
 
         uint256 solution = pow.solve (16777216);

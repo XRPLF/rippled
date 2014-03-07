@@ -38,12 +38,12 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
     m_ledgerIndex = LedgerIndex (-1);
     m_objectType = hotUNKNOWN;
     m_objectData = nullptr;
-    m_dataBytes = bmax (0, valueBytes - 9);
+    m_dataBytes = beast::bmax (0, valueBytes - 9);
 
     if (valueBytes > 4)
     {
         LedgerIndex const* index = static_cast <LedgerIndex const*> (value);
-        m_ledgerIndex = ByteOrder::swapIfLittleEndian (*index);
+        m_ledgerIndex = beast::ByteOrder::swapIfLittleEndian (*index);
     }
 
     // VFALCO NOTE What about bytes 4 through 7 inclusive?

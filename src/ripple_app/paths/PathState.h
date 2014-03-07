@@ -42,7 +42,7 @@ public:
         Json::Value                     getJson () const;
 
     public:
-        uint16                          uFlags;             // --> From path.
+        beast::uint16                   uFlags;             // --> From path.
 
         uint160                         uAccountID;         // --> Accounts: Recieving/sending account.
         uint160                         uCurrencyID;        // --> Accounts: Receive and send, Offers: send.
@@ -167,7 +167,7 @@ public:
     LedgerEntrySet              lesEntries;
 
     int                         mIndex;             // Index/rank amoung siblings.
-    uint64                      uQuality;           // 0 = no quality/liquity left.
+    beast::uint64               uQuality;           // 0 = no quality/liquity left.
     const STAmount&             saInReq;            // --> Max amount to spend by sender.
     STAmount                    saInAct;            // --> Amount spent by sender so far.
     STAmount                    saInPass;           // <-- Amount spent by sender.

@@ -24,7 +24,7 @@ SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql, bool aux)
     assert (db);
 
     sqlite3* conn = aux ? db->getAuxConnection () : db->peekConnection ();
-    int j = sqlite3_prepare_v2 (conn, sql, strlen (sql) + 1, &statement, NULL);
+    int j = sqlite3_prepare_v2 (conn, sql, strlen (sql) + 1, &statement, nullptr);
 
     if (j != SQLITE_OK)
         throw j;
@@ -35,7 +35,7 @@ SqliteStatement::SqliteStatement (SqliteDatabase* db, const std::string& sql, bo
     assert (db);
 
     sqlite3* conn = aux ? db->getAuxConnection () : db->peekConnection ();
-    int j = sqlite3_prepare_v2 (conn, sql.c_str (), sql.size () + 1, &statement, NULL);
+    int j = sqlite3_prepare_v2 (conn, sql.c_str (), sql.size () + 1, &statement, nullptr);
 
     if (j != SQLITE_OK)
         throw j;
@@ -52,14 +52,14 @@ SqliteDatabase::SqliteDatabase (const char* host)
     : Database (host)
     , Thread ("sqlitedb")
     , m_walMutex (this, "SqliteDB", __FILE__, __LINE__)
-    , mWalQ (NULL)
+    , mWalQ (nullptr)
     , walRunning (false)
 {
     startThread ();
 
-    mConnection     = NULL;
-    mAuxConnection  = NULL;
-    mCurrentStmt    = NULL;
+    mConnection     = nullptr;
+    mAuxConnection  = nullptr;
+    mCurrentStmt    = nullptr;
 }
 
 SqliteDatabase::~SqliteDatabase ()
@@ -71,7 +71,7 @@ SqliteDatabase::~SqliteDatabase ()
 void SqliteDatabase::connect ()
 {
     int rc = sqlite3_open_v2 (mHost.c_str (), &mConnection,
-                SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL);
+                SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nullptr);
 
     if (rc)
     {
@@ -85,20 +85,20 @@ sqlite3* SqliteDatabase::getAuxConnection ()
 {
     ScopedLockType sl (m_walMutex, __FILE__, __LINE__);
 
-    if (mAuxConnection == NULL)
+    if (mAuxConnection == nullptr)
     {
         int rc = sqlite3_open_v2 (mHost.c_str (), &mAuxConnection,
-                    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL);
+                    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, nullptr);
 
         if (rc)
         {
             WriteLog (lsFATAL, SqliteDatabase) << "Can't aux open " << mHost << " " << rc;
             assert ((rc != SQLITE_BUSY) && (rc != SQLITE_LOCKED));
 
-            if (mAuxConnection != NULL)
+            if (mAuxConnection != nullptr)
             {
                 sqlite3_close (mConnection);
-                mAuxConnection = NULL;
+                mAuxConnection = nullptr;
             }
         }
     }
@@ -111,7 +111,7 @@ void SqliteDatabase::disconnect ()
     sqlite3_finalize (mCurrentStmt);
     sqlite3_close (mConnection);
 
-    if (mAuxConnection != NULL)
+    if (mAuxConnection != nullptr)
         sqlite3_close (mAuxConnection);
 }
 
@@ -119,12 +119,12 @@ void SqliteDatabase::disconnect ()
 bool SqliteDatabase::executeSQL (const char* sql, bool fail_ok)
 {
 #ifdef DEBUG_HANGING_LOCKS
-    assert (fail_ok || (mCurrentStmt == NULL));
+    assert (fail_ok || (mCurrentStmt == nullptr));
 #endif
 
     sqlite3_finalize (mCurrentStmt);
 
-    int rc = sqlite3_prepare_v2 (mConnection, sql, -1, &mCurrentStmt, NULL);
+    int rc = sqlite3_prepare_v2 (mConnection, sql, -1, &mCurrentStmt, nullptr);
 
     if (SQLITE_OK != rc)
     {
@@ -198,7 +198,7 @@ bool SqliteDatabase::startIterRows (bool finalize)
 void SqliteDatabase::endIterRows ()
 {
     sqlite3_finalize (mCurrentStmt);
-    mCurrentStmt = NULL;
+    mCurrentStmt = nullptr;
 }
 
 // call this after you executeSQL
@@ -230,11 +230,11 @@ bool SqliteDatabase::getNull (int colIndex)
 char* SqliteDatabase::getStr (int colIndex, std::string& retStr)
 {
     const char* text = reinterpret_cast<const char*> (sqlite3_column_text (mCurrentStmt, colIndex));
-    retStr = (text == NULL) ? "" : text;
+    retStr = (text == nullptr) ? "" : text;
     return const_cast<char*> (retStr.c_str ());
 }
 
-int32 SqliteDatabase::getInt (int colIndex)
+beast::int32 SqliteDatabase::getInt (int colIndex)
 {
     return (sqlite3_column_int (mCurrentStmt, colIndex));
 }
@@ -272,7 +272,7 @@ Blob SqliteDatabase::getBinary (int colIndex)
     return vucResult;
 }
 
-uint64 SqliteDatabase::getBigInt (int colIndex)
+beast::uint64 SqliteDatabase::getBigInt (int colIndex)
 {
     return (sqlite3_column_int64 (mCurrentStmt, colIndex));
 }
@@ -344,7 +344,7 @@ void SqliteDatabase::run ()
 void SqliteDatabase::runWal ()
 {
     int log = 0, ckpt = 0;
-    int ret = sqlite3_wal_checkpoint_v2 (mConnection, NULL, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+    int ret = sqlite3_wal_checkpoint_v2 (mConnection, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 
     if (ret != SQLITE_OK)
     {
@@ -381,7 +381,7 @@ int SqliteStatement::bindStatic (int position, Blob const& value)
     return sqlite3_bind_blob (statement, position, &value.front (), value.size (), SQLITE_STATIC);
 }
 
-int SqliteStatement::bind (int position, uint32 value)
+int SqliteStatement::bind (int position, beast::uint32 value)
 {
     return sqlite3_bind_int64 (statement, position, static_cast<sqlite3_int64> (value));
 }
@@ -429,12 +429,12 @@ const char* SqliteStatement::peekString (int column)
     return reinterpret_cast<const char*> (sqlite3_column_text (statement, column));
 }
 
-uint32 SqliteStatement::getUInt32 (int column)
+beast::uint32 SqliteStatement::getUInt32 (int column)
 {
-    return static_cast<uint32> (sqlite3_column_int64 (statement, column));
+    return static_cast<beast::uint32> (sqlite3_column_int64 (statement, column));
 }
 
-int64 SqliteStatement::getInt64 (int column)
+beast::int64 SqliteStatement::getInt64 (int column)
 {
     return sqlite3_column_int64 (statement, column);
 }

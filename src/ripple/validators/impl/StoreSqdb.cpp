@@ -20,7 +20,7 @@
 namespace ripple {
 namespace Validators {
 
-StoreSqdb::StoreSqdb (Journal journal)
+StoreSqdb::StoreSqdb (beast::Journal journal)
     : m_journal (journal)
 {
 }
@@ -29,9 +29,9 @@ StoreSqdb::~StoreSqdb ()
 {
 }
 
-Error StoreSqdb::open (File const& file)
+beast::Error StoreSqdb::open (beast::File const& file)
 {
-    Error error (m_session.open (file.getFullPathName ()));
+    beast::Error error (m_session.open (file.getFullPathName ()));
 
     m_journal.info <<
         "Opening " << file.getFullPathName();
@@ -53,7 +53,7 @@ Error StoreSqdb::open (File const& file)
 
 void StoreSqdb::insert (SourceDesc& desc)
 {
-    sqdb::transaction tr (m_session);
+    beast::sqdb::transaction tr (m_session);
 
     bool const found (select (desc));
 
@@ -63,14 +63,14 @@ void StoreSqdb::insert (SourceDesc& desc)
     }
     else
     {
-        Error error;
+        beast::Error error;
 
-        String const sourceID (desc.source->uniqueID().toStdString());
-        String const createParam (desc.source->createParam().toStdString());
-        String const lastFetchTime (Utilities::timeToString (desc.lastFetchTime));
-        String const expirationTime (Utilities::timeToString (desc.expirationTime));
+        beast::String const sourceID (desc.source->uniqueID().toStdString());
+        beast::String const createParam (desc.source->createParam().toStdString());
+        beast::String const lastFetchTime (Utilities::timeToString (desc.lastFetchTime));
+        beast::String const expirationTime (Utilities::timeToString (desc.expirationTime));
 
-        sqdb::statement st = (m_session.prepare <<
+        beast::sqdb::statement st = (m_session.prepare <<
             "INSERT INTO Validators_Source ( "
             "  sourceID, "
             "  createParam, "
@@ -79,10 +79,10 @@ void StoreSqdb::insert (SourceDesc& desc)
             ") VALUES ( "
             "  ?, ?, ?, ? "
             "); "
-            ,sqdb::use (sourceID)
-            ,sqdb::use (createParam)
-            ,sqdb::use (lastFetchTime)
-            ,sqdb::use (expirationTime)
+            ,beast::sqdb::use (sourceID)
+            ,beast::sqdb::use (createParam)
+            ,beast::sqdb::use (lastFetchTime)
+            ,beast::sqdb::use (expirationTime)
             );
 
         st.execute_and_fetch (error);
@@ -104,13 +104,13 @@ void StoreSqdb::insert (SourceDesc& desc)
 
 void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
 {
-    Error error;
+    beast::Error error;
 
-    String const sourceID (desc.source->uniqueID());
-    String const lastFetchTime (Utilities::timeToString (desc.lastFetchTime));
-    String const expirationTime (Utilities::timeToString (desc.expirationTime));
+    beast::String const sourceID (desc.source->uniqueID());
+    beast::String const lastFetchTime (Utilities::timeToString (desc.lastFetchTime));
+    beast::String const expirationTime (Utilities::timeToString (desc.expirationTime));
 
-    sqdb::transaction tr (m_session);
+    beast::sqdb::transaction tr (m_session);
 
     m_session.once (error) <<
         "UPDATE Validators_Source SET "
@@ -118,9 +118,9 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
         "  expirationTime = ? "
         "WHERE "
         "  sourceID = ? "
-        ,sqdb::use (lastFetchTime)
-        ,sqdb::use (expirationTime)
-        ,sqdb::use (sourceID)
+        ,beast::sqdb::use (lastFetchTime)
+        ,beast::sqdb::use (expirationTime)
+        ,beast::sqdb::use (sourceID)
         ;
 
     if (! error && updateFetchResults)
@@ -129,16 +129,16 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
         m_session.once (error) <<
             "DELETE FROM Validators_SourceItem WHERE "
             "  sourceID = ?; "
-            ,sqdb::use (sourceID)
+            ,beast::sqdb::use (sourceID)
             ;
 
         // Insert the new data set
         if (! error)
         {
             std::string publicKeyString;
-            String label;
+            beast::String label;
 
-            sqdb::statement st = (m_session.prepare <<
+            beast::sqdb::statement st = (m_session.prepare <<
                 "INSERT INTO Validators_SourceItem ( "
                 "  sourceID, "
                 "  publicKey, "
@@ -146,9 +146,9 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
                 ") VALUES ( "
                 "  ?, ?, ? "
                 ");"
-                ,sqdb::use (sourceID)
-                ,sqdb::use (publicKeyString)
-                ,sqdb::use (label)
+                ,beast::sqdb::use (sourceID)
+                ,beast::sqdb::use (publicKeyString)
+                ,beast::sqdb::use (label)
                 );
 
             std::vector <Source::Item>& list (desc.results.list);
@@ -176,13 +176,13 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
 
 //--------------------------------------------------------------------------
 
-void StoreSqdb::report (Error const& error, char const* fileName, int lineNumber)
+void StoreSqdb::report (beast::Error const& error, char const* fileName, int lineNumber)
 {
     if (error)
     {
         m_journal.error <<
             "Failure: '"<< error.getReasonText() << "' " <<
-            " at " << Debug::getSourceLocation (fileName, lineNumber);
+            " at " << beast::Debug::getSourceLocation (fileName, lineNumber);
     }
 }
 
@@ -195,20 +195,20 @@ bool StoreSqdb::select (SourceDesc& desc)
 {
     bool found (false);
 
-    Error error;
+    beast::Error error;
 
-    String const sourceID (desc.source->uniqueID());
-    String lastFetchTime;
-    String expirationTime;
-    sqdb::statement st = (m_session.prepare <<
+    beast::String const sourceID (desc.source->uniqueID());
+    beast::String lastFetchTime;
+    beast::String expirationTime;
+    beast::sqdb::statement st = (m_session.prepare <<
         "SELECT "
         "  lastFetchTime, "
         "  expirationTime "
         "FROM Validators_Source WHERE "
         "  sourceID = ? "
-        ,sqdb::into (lastFetchTime)
-        ,sqdb::into (expirationTime)
-        ,sqdb::use (sourceID)
+        ,beast::sqdb::into (lastFetchTime)
+        ,beast::sqdb::into (expirationTime)
+        ,beast::sqdb::use (sourceID)
         );
 
     if (st.execute_and_fetch (error))
@@ -241,9 +241,9 @@ bool StoreSqdb::select (SourceDesc& desc)
 */
 void StoreSqdb::selectList (SourceDesc& desc)
 {
-    Error error;
+    beast::Error error;
        
-    String const sourceID (desc.source->uniqueID());
+    beast::String const sourceID (desc.source->uniqueID());
 
     // Get the count
     std::size_t count;
@@ -254,8 +254,8 @@ void StoreSqdb::selectList (SourceDesc& desc)
             "  COUNT(*) "
             "FROM Validators_SourceItem WHERE "
             "  sourceID = ? "
-            ,sqdb::into (count)
-            ,sqdb::use (sourceID)
+            ,beast::sqdb::into (count)
+            ,beast::sqdb::use (sourceID)
             ;
     }
 
@@ -275,15 +275,15 @@ void StoreSqdb::selectList (SourceDesc& desc)
     {
         std::string publicKeyString;
         std::string label;
-        sqdb::statement st = (m_session.prepare <<
+        beast::sqdb::statement st = (m_session.prepare <<
             "SELECT "
             "  publicKey, "
             "  label "
             "FROM Validators_SourceItem WHERE "
             "  sourceID = ? "
-            ,sqdb::into (publicKeyString)
-            ,sqdb::into (label)
-            ,sqdb::use (sourceID)
+            ,beast::sqdb::into (publicKeyString)
+            ,beast::sqdb::into (label)
+            ,beast::sqdb::use (sourceID)
             );
 
         // Add all the records to the list
@@ -328,11 +328,11 @@ void StoreSqdb::selectList (SourceDesc& desc)
 //--------------------------------------------------------------------------
 
 // Update the database for the current schema
-Error StoreSqdb::update ()
+beast::Error StoreSqdb::update ()
 {
-    Error error;
+    beast::Error error;
 
-    sqdb::transaction tr (m_session);
+    beast::sqdb::transaction tr (m_session);
 
     // Get the version from the database
     int version (0);
@@ -343,7 +343,7 @@ Error StoreSqdb::update ()
             "  version "
             "FROM SchemaVersion WHERE "
             "  name = 'Validators' "
-            ,sqdb::into (version)
+            ,beast::sqdb::into (version)
             ;
 
         if (! m_session.got_data ())
@@ -388,7 +388,7 @@ Error StoreSqdb::update ()
             ") VALUES ( "
             "  'Validators', ? "
             "); "
-            ,sqdb::use (version)
+            ,beast::sqdb::use (version)
             ;
     }
 
@@ -408,11 +408,11 @@ Error StoreSqdb::update ()
 
 //--------------------------------------------------------------------------
 
-Error StoreSqdb::init ()
+beast::Error StoreSqdb::init ()
 {
-    Error error;
+    beast::Error error;
 
-    sqdb::transaction tr (m_session);
+    beast::sqdb::transaction tr (m_session);
 
     if (! error)
     {

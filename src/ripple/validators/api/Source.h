@@ -24,7 +24,7 @@ namespace ripple {
 namespace Validators {
 
 /** A source of validator descriptors. */
-class Source : public SharedObject
+class Source : public beast::SharedObject
 {
 public:
     /** A Source's descriptor for a Validator. */
@@ -34,7 +34,7 @@ public:
         RipplePublicKey publicKey;
 
         /** Optional human readable comment describing the validator. */
-        String label;
+        beast::String label;
     };
 
     /** Destroy the Source.
@@ -50,10 +50,10 @@ public:
     /** An identifier that uniquely describes the source.
         This is used for identification in the database.
     */
-    virtual String uniqueID () const = 0;
+    virtual beast::String uniqueID () const = 0;
 
     /** A string that is used to recreate the source from the database entry. */
-    virtual String createParam () = 0;
+    virtual beast::String createParam () = 0;
 
     /** Cancel any pending fetch.
         The default implementation does nothing.
@@ -69,11 +69,11 @@ public:
         Results ();
 
         bool success;
-        String message;
-        Time expirationTime;
+        beast::String message;
+        beast::Time expirationTime;
         std::vector <Item> list;
     };
-    virtual void fetch (Results& results, Journal journal) = 0;
+    virtual void fetch (Results& results, beast::Journal journal) = 0;
     /** @} */
 };
 

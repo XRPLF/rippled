@@ -83,10 +83,10 @@ namespace ripple
 #include "protocol/TxFormats.cpp"
 
 // These are for STAmount
-static const uint64 tenTo14 = 100000000000000ull;
-static const uint64 tenTo14m1 = tenTo14 - 1;
-static const uint64 tenTo17 = tenTo14 * 1000;
-static const uint64 tenTo17m1 = tenTo17 - 1;
+static const beast::uint64 tenTo14 = 100000000000000ull;
+static const beast::uint64 tenTo14m1 = tenTo14 - 1;
+static const beast::uint64 tenTo17 = tenTo14 * 1000;
+static const beast::uint64 tenTo17m1 = tenTo17 - 1;
 #include "protocol/STAmount.cpp"
 #include "protocol/STAmountRound.cpp"
 

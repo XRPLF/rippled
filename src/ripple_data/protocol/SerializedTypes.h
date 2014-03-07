@@ -279,11 +279,11 @@ class STUInt16 : public SerializedType
 {
 public:
 
-    STUInt16 (uint16 v = 0) : value (v)
+    STUInt16 (beast::uint16 v = 0) : value (v)
     {
         ;
     }
-    STUInt16 (SField::ref n, uint16 v = 0) : SerializedType (n), value (v)
+    STUInt16 (SField::ref n, beast::uint16 v = 0) : SerializedType (n), value (v)
     {
         ;
     }
@@ -303,16 +303,16 @@ public:
         s.add16 (value);
     }
 
-    uint16 getValue () const
+    beast::uint16 getValue () const
     {
         return value;
     }
-    void setValue (uint16 v)
+    void setValue (beast::uint16 v)
     {
         value = v;
     }
 
-    operator uint16 () const
+    operator beast::uint16 () const
     {
         return value;
     }
@@ -323,7 +323,7 @@ public:
     }
 
 private:
-    uint16 value;
+    beast::uint16 value;
 
     STUInt16* duplicate () const
     {
@@ -338,11 +338,11 @@ class STUInt32 : public SerializedType
 {
 public:
 
-    STUInt32 (uint32 v = 0) : value (v)
+    STUInt32 (beast::uint32 v = 0) : value (v)
     {
         ;
     }
-    STUInt32 (SField::ref n, uint32 v = 0) : SerializedType (n), value (v)
+    STUInt32 (SField::ref n, beast::uint32 v = 0) : SerializedType (n), value (v)
     {
         ;
     }
@@ -362,16 +362,16 @@ public:
         s.add32 (value);
     }
 
-    uint32 getValue () const
+    beast::uint32 getValue () const
     {
         return value;
     }
-    void setValue (uint32 v)
+    void setValue (beast::uint32 v)
     {
         value = v;
     }
 
-    operator uint32 () const
+    operator beast::uint32 () const
     {
         return value;
     }
@@ -382,7 +382,7 @@ public:
     }
 
 private:
-    uint32 value;
+    beast::uint32 value;
 
     STUInt32* duplicate () const
     {
@@ -396,11 +396,11 @@ private:
 class STUInt64 : public SerializedType
 {
 public:
-    STUInt64 (uint64 v = 0) : value (v)
+    STUInt64 (beast::uint64 v = 0) : value (v)
     {
         ;
     }
-    STUInt64 (SField::ref n, uint64 v = 0) : SerializedType (n), value (v)
+    STUInt64 (SField::ref n, beast::uint64 v = 0) : SerializedType (n), value (v)
     {
         ;
     }
@@ -420,16 +420,16 @@ public:
         s.add64 (value);
     }
 
-    uint64 getValue () const
+    beast::uint64 getValue () const
     {
         return value;
     }
-    void setValue (uint64 v)
+    void setValue (beast::uint64 v)
     {
         value = v;
     }
 
-    operator uint64 () const
+    operator beast::uint64 () const
     {
         return value;
     }
@@ -440,7 +440,7 @@ public:
     }
 
 private:
-    uint64 value;
+    beast::uint64 value;
 
     STUInt64* duplicate () const
     {
@@ -464,60 +464,60 @@ private:
 class STAmount : public SerializedType
 {
 public:
-    static const int cMinOffset     = -96, cMaxOffset = 80;
-    static const uint64 cMinValue   = 1000000000000000ull, cMaxValue = 9999999999999999ull;
-    static const uint64 cMaxNative  = 9000000000000000000ull;
-    static const uint64 cMaxNativeN = 100000000000000000ull; // max native value on network
-    static const uint64 cNotNative  = 0x8000000000000000ull;
-    static const uint64 cPosNative  = 0x4000000000000000ull;
+    static const int cMinOffset            = -96, cMaxOffset = 80;
+    static const beast::uint64 cMinValue   = 1000000000000000ull, cMaxValue = 9999999999999999ull;
+    static const beast::uint64 cMaxNative  = 9000000000000000000ull;
+    static const beast::uint64 cMaxNativeN = 100000000000000000ull; // max native value on network
+    static const beast::uint64 cNotNative  = 0x8000000000000000ull;
+    static const beast::uint64 cPosNative  = 0x4000000000000000ull;
 
-    static uint64   uRateOne;
+    static beast::uint64   uRateOne;
 
-    STAmount (uint64 v = 0, bool isNeg = false) : mValue (v), mOffset (0), mIsNative (true), mIsNegative (isNeg)
+    STAmount (beast::uint64 v = 0, bool isNeg = false) : mValue (v), mOffset (0), mIsNative (true), mIsNegative (isNeg)
     {
         if (v == 0) mIsNegative = false;
     }
 
-    STAmount (SField::ref n, uint64 v = 0, bool isNeg = false)
+    STAmount (SField::ref n, beast::uint64 v = 0, bool isNeg = false)
         : SerializedType (n), mValue (v), mOffset (0), mIsNative (true), mIsNegative (isNeg)
     {
         ;
     }
 
-    STAmount (SField::ref n, int64 v) : SerializedType (n), mOffset (0), mIsNative (true)
+    STAmount (SField::ref n, beast::int64 v) : SerializedType (n), mOffset (0), mIsNative (true)
     {
         set (v);
     }
 
     STAmount (const uint160& uCurrencyID, const uint160& uIssuerID,
-              uint64 uV = 0, int iOff = 0, bool bNegative = false)
+              beast::uint64 uV = 0, int iOff = 0, bool bNegative = false)
         : mCurrency (uCurrencyID), mIssuer (uIssuerID), mValue (uV), mOffset (iOff), mIsNegative (bNegative)
     {
         canonicalize ();
     }
 
     STAmount (const uint160& uCurrencyID, const uint160& uIssuerID,
-              uint32 uV, int iOff = 0, bool bNegative = false)
+              beast::uint32 uV, int iOff = 0, bool bNegative = false)
         : mCurrency (uCurrencyID), mIssuer (uIssuerID), mValue (uV), mOffset (iOff), mIsNegative (bNegative)
     {
         canonicalize ();
     }
 
     STAmount (SField::ref n, const uint160& currency, const uint160& issuer,
-              uint64 v = 0, int off = 0, bool isNeg = false) :
+              beast::uint64 v = 0, int off = 0, bool isNeg = false) :
         SerializedType (n), mCurrency (currency), mIssuer (issuer), mValue (v), mOffset (off), mIsNegative (isNeg)
     {
         canonicalize ();
     }
 
-    STAmount (const uint160& uCurrencyID, const uint160& uIssuerID, int64 v, int iOff = 0)
+    STAmount (const uint160& uCurrencyID, const uint160& uIssuerID, beast::int64 v, int iOff = 0)
         : mCurrency (uCurrencyID), mIssuer (uIssuerID), mOffset (iOff)
     {
         set (v);
         canonicalize ();
     }
 
-    STAmount (SField::ref n, const uint160& currency, const uint160& issuer, int64 v, int off = 0)
+    STAmount (SField::ref n, const uint160& currency, const uint160& issuer, beast::int64 v, int off = 0)
         : SerializedType (n), mCurrency (currency), mIssuer (issuer), mOffset (off)
     {
         set (v);
@@ -540,7 +540,7 @@ public:
 
     STAmount (SField::ref, const Json::Value&);
 
-    static STAmount createFromInt64 (SField::ref n, int64 v);
+    static STAmount createFromInt64 (SField::ref n, beast::int64 v);
 
     static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
@@ -549,7 +549,7 @@ public:
 
     bool bSetJson (const Json::Value& jvSource);
 
-    static STAmount saFromRate (uint64 uRate = 0)
+    static STAmount saFromRate (beast::uint64 uRate = 0)
     {
         return STAmount (CURRENCY_ONE, ACCOUNT_ONE, uRate, -9, false);
     }
@@ -567,26 +567,26 @@ public:
     {
         return mOffset;
     }
-    uint64 getMantissa () const
+    beast::uint64 getMantissa () const
     {
         return mValue;
     }
 
     // When the currency is XRP, the value in raw units. S=signed
-    uint64 getNValue () const
+    beast::uint64 getNValue () const
     {
         if (!mIsNative) throw std::runtime_error ("not native");
 
         return mValue;
     }
-    void setNValue (uint64 v)
+    void setNValue (beast::uint64 v)
     {
         if (!mIsNative) throw std::runtime_error ("not native");
 
         mValue = v;
     }
-    int64 getSNValue () const;
-    void setSNValue (int64);
+    beast::int64 getSNValue () const;
+    void setSNValue (beast::int64);
 
     std::string getHumanCurrency () const;
 
@@ -692,19 +692,19 @@ public:
     void throwComparable (const STAmount&) const;
 
     // native currency only
-    bool operator< (uint64) const;
-    bool operator> (uint64) const;
-    bool operator<= (uint64) const;
-    bool operator>= (uint64) const;
-    STAmount operator+ (uint64) const;
-    STAmount operator- (uint64) const;
+    bool operator< (beast::uint64) const;
+    bool operator> (beast::uint64) const;
+    bool operator<= (beast::uint64) const;
+    bool operator>= (beast::uint64) const;
+    STAmount operator+ (beast::uint64) const;
+    STAmount operator- (beast::uint64) const;
     STAmount operator- (void) const;
 
     STAmount& operator+= (const STAmount&);
     STAmount& operator-= (const STAmount&);
-    STAmount& operator+= (uint64);
-    STAmount& operator-= (uint64);
-    STAmount& operator= (uint64);
+    STAmount& operator+= (beast::uint64);
+    STAmount& operator-= (beast::uint64);
+    STAmount& operator= (beast::uint64);
 
     operator double () const;
 
@@ -758,14 +758,14 @@ public:
 
     // Someone is offering X for Y, what is the rate?
     // Rate: smaller is better, the taker wants the most out: in/out
-    static uint64 getRate (const STAmount& offerOut, const STAmount& offerIn);
-    static STAmount setRate (uint64 rate);
+    static beast::uint64 getRate (const STAmount& offerOut, const STAmount& offerIn);
+    static STAmount setRate (beast::uint64 rate);
 
     // Someone is offering X for Y, I try to pay Z, how much do I get?
     // And what's left of the offer? And how much do I actually pay?
     static bool applyOffer (
         const bool bSell,
-        const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
+        const beast::uint32 uTakerPaysRate, const beast::uint32 uOfferPaysRate,
         const STAmount& saOfferRate,
         const STAmount& saOfferFunds, const STAmount& saTakerFunds,
         const STAmount& saOfferPays, const STAmount& saOfferGets,
@@ -793,7 +793,7 @@ public:
     STAmount getRound () const;
     void roundSelf ();
     
-    static void canonicalizeRound (bool isNative, uint64& value, int& offset, bool roundUp);
+    static void canonicalizeRound (bool isNative, beast::uint64& value, int& offset, bool roundUp);
 
 private:
     template <class Iterator>
@@ -809,10 +809,10 @@ private:
     uint160 mCurrency;      // Compared by ==. Always update mIsNative.
     uint160 mIssuer;        // Not compared by ==. 0 for XRP.
 
-    uint64  mValue;
-    int     mOffset;
-    bool    mIsNative;      // Always !mCurrency. Native is XRP.
-    bool    mIsNegative;
+    beast::uint64  mValue;
+    int            mOffset;
+    bool           mIsNative;      // Always !mCurrency. Native is XRP.
+    bool           mIsNegative;
 
     void canonicalize ();
     STAmount* duplicate () const
@@ -821,24 +821,25 @@ private:
     }
     static STAmount* construct (SerializerIterator&, SField::ref name);
 
-    STAmount (SField::ref name, const uint160& cur, const uint160& iss, uint64 val, int off, bool isNat, bool isNeg)
+    STAmount (SField::ref name, const uint160& cur, const uint160& iss,
+              beast::uint64 val, int off, bool isNat, bool isNeg)
         : SerializedType (name), mCurrency (cur), mIssuer (iss),  mValue (val), mOffset (off),
           mIsNative (isNat), mIsNegative (isNeg)
     {
         ;
     }
 
-    void set (int64 v)
+    void set (beast::int64 v)
     {
         if (v < 0)
         {
             mIsNegative = true;
-            mValue = static_cast<uint64> (-v);
+            mValue = static_cast<beast::uint64> (-v);
         }
         else
         {
             mIsNegative = false;
-            mValue = static_cast<uint64> (v);
+            mValue = static_cast<beast::uint64> (v);
         }
     }
 
@@ -847,12 +848,12 @@ private:
         if (v < 0)
         {
             mIsNegative = true;
-            mValue = static_cast<uint64> (-v);
+            mValue = static_cast<beast::uint64> (-v);
         }
         else
         {
             mIsNegative = false;
-            mValue = static_cast<uint64> (v);
+            mValue = static_cast<beast::uint64> (v);
         }
     }
 };

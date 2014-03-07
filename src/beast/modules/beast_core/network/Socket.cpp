@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 #if BEAST_MSVC
  #pragma warning (push)
  #pragma warning (disable : 4127 4389 4018)
@@ -583,3 +586,5 @@ bool DatagramSocket::isLocal() const noexcept
 #if BEAST_MSVC
  #pragma warning (pop)
 #endif
+
+}  // namespace beast

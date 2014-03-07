@@ -32,8 +32,8 @@ public:
     uint160& getIssuer ();
     uint160& getOwner ();
     STAmount& getRippleEscrow ();
-    uint32 getEscrow ();
-    uint32 getBond ();
+    beast::uint32 getEscrow ();
+    beast::uint32 getBond ();
 
     Script::Data getData (int index);
 

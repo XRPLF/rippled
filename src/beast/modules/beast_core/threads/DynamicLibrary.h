@@ -24,6 +24,9 @@
 #ifndef BEAST_DYNAMICLIBRARY_H_INCLUDED
 #define BEAST_DYNAMICLIBRARY_H_INCLUDED
 
+namespace beast
+{
+
 /**
     Handles the opening and closing of DLLs.
 
@@ -74,5 +77,6 @@ private:
     void* handle;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_DYNAMICLIBRARY_H_INCLUDED

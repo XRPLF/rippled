@@ -54,7 +54,7 @@ public:
         return *this;
     }
 
-    uint256 (uint64 b)
+    uint256 (beast::uint64 b)
     {
         *this = b;
     }
@@ -70,12 +70,12 @@ public:
         return uint256 (data, FromVoid ());
     }
 
-    uint256& operator= (uint64 uHost)
+    uint256& operator= (beast::uint64 uHost)
     {
         zero ();
 
         // Put in least significant bits.
-        ((uint64*) end ())[-1]   = htobe64 (uHost);
+        ((beast::uint64*) end ())[-1]   = htobe64 (uHost);
 
         return *this;
     }
@@ -97,12 +97,12 @@ public:
     }
 };
 
-inline bool operator== (uint256 const& a, uint64 b)
+inline bool operator== (uint256 const& a, beast::uint64 b)
 {
     return (base_uint256)a == b;
 }
 
-inline bool operator!= (uint256 const& a, uint64 b)
+inline bool operator!= (uint256 const& a, beast::uint64 b)
 {
     return (base_uint256)a != b;
 }
@@ -200,7 +200,7 @@ inline const uint256 operator| (uint256 const& a, uint256 const& b)
 
 inline int Testuint256AdHoc (std::vector<std::string> vArg)
 {
-    uint256 g (uint64 (0));
+    uint256 g (beast::uint64 (0));
 
     printf ("%s\n", g.ToString ().c_str ());
     --g;

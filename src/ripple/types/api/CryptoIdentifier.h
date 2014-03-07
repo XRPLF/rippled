@@ -41,7 +41,7 @@ namespace ripple {
                     representation includes an appended a four byte checksum on
                     the data including the Token.
 */
-template <std::size_t Size, uint8 Token, bool Checked>
+template <std::size_t Size, beast::uint8 Token, bool Checked>
 class CryptoIdentifier
 {
 public:
@@ -52,7 +52,7 @@ public:
     static size_type const      size = Size;
     // 4 checksum bytes (optional)
     static std::size_t const    post_size = (Checked ? 4 : 0);
-    static uint8 const          token = Token;
+    static beast::uint8 const   token = Token;
     static bool const           checked = Checked;
 
     // This is what the wrapper creates, it includes the padding.
@@ -64,7 +64,7 @@ public:
 
     /** Initialize from an input sequence. */
     static void construct (
-        uint8 const* begin, uint8 const* end,
+        beast::uint8 const* begin, beast::uint8 const* end,
             value_type& value)
     {
         value.storage()[0] = Token;
@@ -72,8 +72,8 @@ public:
         std::copy (begin, end, value.begin());
         if (Checked)
         {
-            Sha256::digest_type digest;
-            Sha256::hash (Sha256::hash (value.storage().cbegin(),
+            beast::Sha256::digest_type digest;
+            beast::Sha256::hash (beast::Sha256::hash (value.storage().cbegin(),
                 value.storage().cend() - post_size), digest);
             // We use the first 4 bytes as a checksum
             std::copy (digest.begin(), digest.begin() + 4,
@@ -89,9 +89,9 @@ public:
         static value_type createFromInteger (UnsignedIntegralType i)
         {
             static_bassert (size >= sizeof (UnsignedIntegralType));
-            FixedArray <uint8, size> data;
+            beast::FixedArray <beast::uint8, size> data;
             data.fill (0);
-            i = toNetworkByteOrder <UnsignedIntegralType> (i);
+            i = beast::toNetworkByteOrder <UnsignedIntegralType> (i);
             std::memcpy (data.end () - sizeof (i), &i, std::min (size, sizeof (i)));
             value_type value;
             construct (data.begin(), data.end(), value);
@@ -104,7 +104,7 @@ public:
     {
         typename value_type::storage_type const& storage (value.storage());
         // We will convert to little endian with an extra pad byte
-        FixedArray <uint8, value_type::storage_size + 1> le;
+        beast::FixedArray <beast::uint8, value_type::storage_size + 1> le;
         std::reverse_copy (storage.begin(), storage.end(), le.begin());
         // Set pad byte zero to make BIGNUM always positive
         le.back() = 0;
@@ -127,7 +127,7 @@ public:
     }
 };
 
-template <std::size_t Size, uint8 Token, bool Checked> 
+template <std::size_t Size, beast::uint8 Token, bool Checked> 
     typename CryptoIdentifier <Size, Token, Checked>::size_type
     const CryptoIdentifier <Size, Token, Checked>::size;
 }

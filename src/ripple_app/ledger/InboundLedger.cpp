@@ -32,7 +32,7 @@ enum
     ,ledgerBecomeAggressiveThreshold = 6
 };
 
-InboundLedger::InboundLedger (uint256 const& hash, uint32 seq, fcReason reason,
+InboundLedger::InboundLedger (uint256 const& hash, beast::uint32 seq, fcReason reason,
     clock_type& clock)
     : PeerSet (hash, ledgerAcquireTimeoutMillis, false, clock,
         LogPartition::getJournal <InboundLedger> ())
@@ -1242,7 +1242,7 @@ Json::Value InboundLedger::getJson (int)
         Json::Value hv (Json::arrayValue);
         // VFALCO Why 16?
         std::vector<uint256> v = mLedger->getNeededAccountStateHashes (
-            16, NULL);
+            16, nullptr);
         BOOST_FOREACH (uint256 const & h, v)
         {
             hv.append (h.GetHex ());
@@ -1255,7 +1255,7 @@ Json::Value InboundLedger::getJson (int)
         Json::Value hv (Json::arrayValue);
         // VFALCO Why 16?
         std::vector<uint256> v = mLedger->getNeededTransactionHashes (
-            16, NULL);
+            16, nullptr);
         BOOST_FOREACH (uint256 const & h, v)
         {
             hv.append (h.GetHex ());

@@ -25,15 +25,15 @@ namespace SiteFiles {
 
 /** Fetches and maintains a collection of ripple.txt files from domains. */
 class Manager
-    : public Stoppable
-    , public PropertyStream::Source
+    : public beast::Stoppable
+    , public beast::PropertyStream::Source
 {
 protected:
     explicit Manager (Stoppable& parent);
 
 public:
     /** Create a new Manager. */
-    static Manager* New (Stoppable& parent, Journal journal);
+    static Manager* New (beast::Stoppable& parent, beast::Journal journal);
 
     /** Destroy the object.
         Any pending fetch operations are aborted.

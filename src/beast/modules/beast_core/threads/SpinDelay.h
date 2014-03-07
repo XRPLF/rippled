@@ -20,6 +20,9 @@
 #ifndef BEAST_SPINDELAY_H_INCLUDED
 #define BEAST_SPINDELAY_H_INCLUDED
 
+namespace beast
+{
+
 /** A simple delay used to synchronize threads.
 */
 class BEAST_API SpinDelay
@@ -32,5 +35,7 @@ public:
 private:
     int m_count;
 };
+
+}  // namespace beast
 
 #endif

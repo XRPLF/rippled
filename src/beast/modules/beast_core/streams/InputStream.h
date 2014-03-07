@@ -24,6 +24,9 @@
 #ifndef BEAST_INPUTSTREAM_H_INCLUDED
 #define BEAST_INPUTSTREAM_H_INCLUDED
 
+namespace beast
+{
+
 class MemoryBlock;
 
 //==============================================================================
@@ -351,5 +354,7 @@ protected:
     //==============================================================================
     InputStream() noexcept {}
 };
+
+}  // namespace beast
 
 #endif

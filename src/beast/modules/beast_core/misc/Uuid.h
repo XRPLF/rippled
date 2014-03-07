@@ -24,6 +24,9 @@
 #ifndef BEAST_UUID_H_INCLUDED
 #define BEAST_UUID_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A universally unique 128-bit identifier.
@@ -100,5 +103,6 @@ private:
     uint8 uuid[16];
 };
 
+}  // namespace beast
 
 #endif   // BEAST_UUID_H_INCLUDED

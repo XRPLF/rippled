@@ -22,10 +22,10 @@ namespace Validators {
 
 class SourceFileImp
     : public SourceFile
-    , public LeakChecked <SourceFileImp>
+    , public beast::LeakChecked <SourceFileImp>
 {
 public:
-    SourceFileImp (File const& file)
+    SourceFileImp (beast::File const& file)
         : m_file (file)
     {
     }
@@ -42,29 +42,29 @@ public:
         return ss.str();
     }
 
-    String uniqueID () const
+    beast::String uniqueID () const
     {
         return "File," + m_file.getFullPathName ();
     }
 
-    String createParam ()
+    beast::String createParam ()
     {
         return m_file.getFullPathName ();
     }
     
-    void fetch (Results& results, Journal journal)
+    void fetch (Results& results, beast::Journal journal)
     {
-        int64 const fileSize (m_file.getSize ());
+        beast::int64 const fileSize (m_file.getSize ());
 
         if (fileSize != 0)
         {
-            if (fileSize < std::numeric_limits<int32>::max())
+            if (fileSize < std::numeric_limits<beast::int32>::max())
             {
-                MemoryBlock buffer (fileSize);
-                RandomAccessFile f;
-                RandomAccessFile::ByteCount amountRead;
+                beast::MemoryBlock buffer (fileSize);
+                beast::RandomAccessFile f;
+                beast::RandomAccessFile::ByteCount amountRead;
 
-                f.open (m_file, RandomAccessFile::readOnly);
+                f.open (m_file, beast::RandomAccessFile::readOnly);
                 f.read (buffer.begin(), fileSize, &amountRead);
 
                 if (amountRead == fileSize)
@@ -85,12 +85,12 @@ public:
     }
 
 private:
-    File m_file;
+    beast::File m_file;
 };
 
 //------------------------------------------------------------------------------
 
-SourceFile* SourceFile::New (File const& file)
+SourceFile* SourceFile::New (beast::File const& file)
 {
     return new SourceFileImp (file);
 }

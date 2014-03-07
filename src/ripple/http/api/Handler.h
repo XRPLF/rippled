@@ -21,7 +21,6 @@
 #define RIPPLE_HTTP_HANDLER_H_INCLUDED
 
 namespace ripple {
-using namespace beast;
 
 namespace HTTP {
 
@@ -55,7 +54,7 @@ struct Handler
     virtual void onStopped (Server& server) = 0;
 };
 
-}
-}
+}  // namespace HTTP
+}  // namespace ripple
 
 #endif

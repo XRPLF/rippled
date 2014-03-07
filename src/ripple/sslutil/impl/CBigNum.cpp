@@ -81,7 +81,7 @@ CBigNum::CBigNum (long n)
     if (n >= 0) setulong (n);
     else setint64 (n);
 }
-CBigNum::CBigNum (int64 n)
+CBigNum::CBigNum (beast::int64 n)
 {
     BN_init (this);
     setint64 (n);
@@ -101,7 +101,7 @@ CBigNum::CBigNum (unsigned int n)
     BN_init (this);
     setulong (n);
 }
-CBigNum::CBigNum (uint64 n)
+CBigNum::CBigNum (beast::uint64 n)
 {
     BN_init (this);
     setuint64 (n);
@@ -144,13 +144,13 @@ int CBigNum::getint () const
         return (n > INT_MAX ? INT_MIN : - (int)n);
 }
 
-void CBigNum::setint64 (int64 n)
+void CBigNum::setint64 (beast::int64 n)
 {
     unsigned char pch[sizeof (n) + 6];
     unsigned char* p = pch + 4;
     bool fNegative = false;
 
-    if (n < (int64)0)
+    if (n < (beast::int64)0)
     {
         n = -n;
         fNegative = true;
@@ -187,10 +187,10 @@ void CBigNum::setint64 (int64 n)
     BN_mpi2bn (pch, p - pch, this);
 }
 
-uint64 CBigNum::getuint64 () const
+beast::uint64 CBigNum::getuint64 () const
 {
 #if (ULONG_MAX > UINT_MAX)
-    return static_cast<uint64> (getulong ());
+    return static_cast<beast::uint64> (getulong ());
 #else
     int len = BN_num_bytes (this);
 
@@ -201,14 +201,14 @@ uint64 CBigNum::getuint64 () const
     memset (buf, 0, sizeof (buf));
     BN_bn2bin (this, buf + 8 - len);
     return
-        static_cast<uint64> (buf[0]) << 56 | static_cast<uint64> (buf[1]) << 48 |
-        static_cast<uint64> (buf[2]) << 40 | static_cast<uint64> (buf[3]) << 32 |
-        static_cast<uint64> (buf[4]) << 24 | static_cast<uint64> (buf[5]) << 16 |
-        static_cast<uint64> (buf[6]) << 8 | static_cast<uint64> (buf[7]);
+        static_cast<beast::uint64> (buf[0]) << 56 | static_cast<beast::uint64> (buf[1]) << 48 |
+        static_cast<beast::uint64> (buf[2]) << 40 | static_cast<beast::uint64> (buf[3]) << 32 |
+        static_cast<beast::uint64> (buf[4]) << 24 | static_cast<beast::uint64> (buf[5]) << 16 |
+        static_cast<beast::uint64> (buf[6]) << 8 | static_cast<beast::uint64> (buf[7]);
 #endif
 }
 
-void CBigNum::setuint64 (uint64 n)
+void CBigNum::setuint64 (beast::uint64 n)
 {
 #if (ULONG_MAX > UINT_MAX)
     setulong (static_cast<unsigned long> (n));
@@ -266,7 +266,7 @@ void CBigNum::setvch (Blob const& vch)
 
 Blob CBigNum::getvch () const
 {
-    unsigned int nSize = BN_bn2mpi (this, NULL);
+    unsigned int nSize = BN_bn2mpi (this, nullptr);
 
     if (nSize < 4)
         return Blob ();
@@ -296,7 +296,7 @@ CBigNum& CBigNum::SetCompact (unsigned int nCompact)
 
 unsigned int CBigNum::GetCompact () const
 {
-    unsigned int nSize = BN_bn2mpi (this, NULL);
+    unsigned int nSize = BN_bn2mpi (this, nullptr);
     Blob vch (nSize);
     nSize -= 4;
     BN_bn2mpi (this, &vch[0]);
@@ -553,7 +553,7 @@ const CBigNum operator/ (const CBigNum& a, const CBigNum& b)
     CAutoBN_CTX pctx;
     CBigNum r;
 
-    if (!BN_div (&r, NULL, &a, &b, pctx))
+    if (!BN_div (&r, nullptr, &a, &b, pctx))
         throw bignum_error ("CBigNum::operator/ : BN_div failed");
 
     return r;
@@ -619,52 +619,52 @@ bool operator>  (const CBigNum& a, const CBigNum& b)
 
 #if (ULONG_MAX > UINT_MAX)
 
-int BN_add_word64 (BIGNUM* bn, uint64 word)
+int BN_add_word64 (BIGNUM* bn, beast::uint64 word)
 {
     return BN_add_word (bn, word);
 }
 
-int BN_sub_word64 (BIGNUM* bn, uint64 word)
+int BN_sub_word64 (BIGNUM* bn, beast::uint64 word)
 {
     return BN_sub_word (bn, word);
 }
 
-int BN_mul_word64 (BIGNUM* bn, uint64 word)
+int BN_mul_word64 (BIGNUM* bn, beast::uint64 word)
 {
     return BN_mul_word (bn, word);
 }
 
-uint64 BN_div_word64 (BIGNUM* bn, uint64 word)
+beast::uint64 BN_div_word64 (BIGNUM* bn, beast::uint64 word)
 {
     return BN_div_word (bn, word);
 }
 
 #else
 
-int BN_add_word64 (BIGNUM* a, uint64 w)
+int BN_add_word64 (BIGNUM* a, beast::uint64 w)
 {
     CBigNum bn (w);
     return BN_add (a, &bn, a);
 }
 
-int BN_sub_word64 (BIGNUM* a, uint64 w)
+int BN_sub_word64 (BIGNUM* a, beast::uint64 w)
 {
     CBigNum bn (w);
     return BN_sub (a, &bn, a);
 }
 
-int BN_mul_word64 (BIGNUM* a, uint64 w)
+int BN_mul_word64 (BIGNUM* a, beast::uint64 w)
 {
     CBigNum bn (w);
     CAutoBN_CTX ctx;
     return BN_mul (a, &bn, a, ctx);
 }
 
-uint64 BN_div_word64 (BIGNUM* a, uint64 w)
+beast::uint64 BN_div_word64 (BIGNUM* a, beast::uint64 w)
 {
     CBigNum bn (w);
     CAutoBN_CTX ctx;
-    return (BN_div (a, NULL, a, &bn, ctx) == 1) ? 0 : ((uint64) - 1);
+    return (BN_div (a, nullptr, a, &bn, ctx) == 1) ? 0 : ((beast::uint64) - 1);
 }
 
 #endif

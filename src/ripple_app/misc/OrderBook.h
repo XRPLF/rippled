@@ -23,7 +23,7 @@
 
 /** Describes a serialized ledger entry for an order book.
 */
-class OrderBook : LeakChecked <OrderBook>
+class OrderBook : beast::LeakChecked <OrderBook>
 {
 public:
     typedef boost::shared_ptr <OrderBook> pointer;

@@ -24,6 +24,9 @@
 #ifndef BEAST_OPTIONALSCOPEDPOINTER_H_INCLUDED
 #define BEAST_OPTIONALSCOPEDPOINTER_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Holds a pointer to an object which can optionally be deleted when this pointer
@@ -176,5 +179,6 @@ private:
     bool shouldDelete;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_OPTIONALSCOPEDPOINTER_H_INCLUDED

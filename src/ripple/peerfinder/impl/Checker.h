@@ -56,7 +56,7 @@ public:
             { }
 
         /** The original address. */
-        IP::Endpoint address;
+        beast::IP::Endpoint address;
 
         /** The error code from the operation. */
         boost::system::error_code error;
@@ -70,8 +70,8 @@ public:
     /** Performs an async connection test on the specified endpoint.
         The port must be non-zero.
     */
-    virtual void async_test (IP::Endpoint const& endpoint,
-        asio::shared_handler <void (Result)> handler) = 0;
+    virtual void async_test (beast::IP::Endpoint const& endpoint,
+        beast::asio::shared_handler <void (Result)> handler) = 0;
 };
 
 }

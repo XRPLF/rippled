@@ -45,18 +45,18 @@ public:
 public:
     /** Abstracts the source of subscription data.
     */
-    class Source : public Stoppable
+    class Source : public beast::Stoppable
     {
     protected:
-        Source (char const* name, Stoppable& parent);
+        Source (char const* name, beast::Stoppable& parent);
 
     public:
         // VFALCO TODO Rename the 'rt' parameters to something meaningful.
         virtual void subAccount (ref ispListener,
             const boost::unordered_set<RippleAddress>& vnaAccountIDs,
-                uint32 uLedgerIndex, bool rt) = 0;
+                beast::uint32 uLedgerIndex, bool rt) = 0;
         
-        virtual void unsubAccount (uint64 uListener,
+        virtual void unsubAccount (beast::uint64 uListener,
             const boost::unordered_set<RippleAddress>& vnaAccountIDs,
                 bool rt) = 0;
 
@@ -64,28 +64,28 @@ public:
         virtual bool subLedger (ref ispListener,
             Json::Value& jvResult) = 0;
         
-        virtual bool unsubLedger (uint64 uListener) = 0;
+        virtual bool unsubLedger (beast::uint64 uListener) = 0;
 
         virtual bool subServer (ref ispListener,
             Json::Value& jvResult) = 0;
         
-        virtual bool unsubServer (uint64 uListener) = 0;
+        virtual bool unsubServer (beast::uint64 uListener) = 0;
 
         virtual bool subBook (ref ispListener,
             RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
                 RippleIssuer const& issuerPays, RippleIssuer const& issuerGets) = 0;
         
-        virtual bool unsubBook (uint64 uListener,
+        virtual bool unsubBook (beast::uint64 uListener,
             RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
                 RippleIssuer const& issuerPays, RippleIssuer const& issuerGets) = 0;
 
         virtual bool subTransactions (ref ispListener) = 0;
         
-        virtual bool unsubTransactions (uint64 uListener) = 0;
+        virtual bool unsubTransactions (beast::uint64 uListener) = 0;
 
         virtual bool subRTTransactions (ref ispListener) = 0;
         
-        virtual bool unsubRTTransactions (uint64 uListener) = 0;
+        virtual bool unsubRTTransactions (beast::uint64 uListener) = 0;
 
         // VFALCO TODO Remove
         //             This was added for one particular partner, it
@@ -108,11 +108,11 @@ public:
     // VFALCO NOTE Why is this virtual?
     virtual void send (const Json::Value & jvObj, const std::string & sObj, bool broadcast);
 
-    uint64 getSeq ();
+    beast::uint64 getSeq ();
 
     void onSendEmpty ();
 
-    void insertSubAccountInfo (RippleAddress addr, uint32 uLedgerIndex);
+    void insertSubAccountInfo (RippleAddress addr, beast::uint32 uLedgerIndex);
 
     void clearPathRequest ();
 
@@ -132,7 +132,7 @@ private:
     boost::unordered_set <RippleAddress>        mSubAccountTransaction;
     boost::shared_ptr <PathRequest>             mPathRequest;
 
-    uint64                                      mSeq;
+    beast::uint64                               mSeq;
 };
 
 #endif

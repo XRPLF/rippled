@@ -24,8 +24,8 @@ RippleLineCache::pointer PathRequests::getLineCache (Ledger::pointer& ledger, bo
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    uint32 lineSeq = mLineCache ? mLineCache->getLedger()->getLedgerSeq() : 0;
-    uint32 lgrSeq = ledger->getLedgerSeq();
+    beast::uint32 lineSeq = mLineCache ? mLineCache->getLedger()->getLedgerSeq() : 0;
+    beast::uint32 lgrSeq = ledger->getLedgerSeq();
 
     if ( (lineSeq == 0) ||                                 // no ledger
          (authoritative && (lgrSeq > lineSeq)) ||          // newer authoritative ledger

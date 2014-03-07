@@ -29,7 +29,7 @@ namespace ripple {
     done by seeding the hashing function with a random number generated
     at program startup.
 */
-class HashMaps : public Uncopyable
+class HashMaps : public beast::Uncopyable
 {
 public:
     /** Golden ratio constant used in hashing functions.

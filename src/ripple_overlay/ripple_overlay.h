@@ -24,10 +24,6 @@
 
 #include "../ripple_data/ripple_data.h"
 
-namespace ripple {
-using namespace beast;
-}
-
 #include "api/PackedMessage.h"
 #include "api/Peer.h"
 #include "api/Peers.h"

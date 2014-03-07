@@ -196,7 +196,7 @@ void hex_to_binary (FwdIter first, FwdIter last, Container& out)
     }
 }
 
-class ECDSACanonicalTests : public UnitTest
+class ECDSACanonicalTests : public beast::UnitTest
 {
 public:
     ECDSACanonicalTests () : UnitTest ("ECDSACanonical", "ripple")

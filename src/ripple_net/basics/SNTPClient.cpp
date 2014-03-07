@@ -55,8 +55,8 @@ static uint8_t SNTPQueryData[48] =
 
 class SNTPClientImp
     : public SNTPClient
-    , public Thread
-    , public LeakChecked <SNTPClientImp>
+    , public beast::Thread
+    , public beast::LeakChecked <SNTPClientImp>
 {
 public:
     class SNTPQuery
@@ -64,7 +64,7 @@ public:
     public:
         bool                mReceivedReply;
         time_t              mLocalTimeSent;
-        uint32              mQueryNonce;
+        beast::uint32              mQueryNonce;
 
         SNTPQuery (time_t j = (time_t) - 1)   : mReceivedReply (false), mLocalTimeSent (j)
         {
@@ -155,7 +155,7 @@ public:
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-        if ((mLastOffsetUpdate == (time_t) - 1) || ((mLastOffsetUpdate + NTP_TIMESTAMP_VALID) < time (NULL)))
+        if ((mLastOffsetUpdate == (time_t) - 1) || ((mLastOffsetUpdate + NTP_TIMESTAMP_VALID) < time (nullptr)))
             return false;
 
         offset = mOffset;
@@ -178,7 +178,7 @@ public:
             return false;
         }
 
-        time_t now = time (NULL);
+        time_t now = time (nullptr);
 
         if ((best->second != (time_t) - 1) && ((best->second + NTP_MIN_QUERY) >= now))
         {
@@ -213,7 +213,7 @@ public:
             {
                 ScopedLockType sl (mLock, __FILE__, __LINE__);
                 SNTPQuery& query = mQueries[*sel];
-                time_t now = time (NULL);
+                time_t now = time (nullptr);
 
                 if ((query.mLocalTimeSent == now) || ((query.mLocalTimeSent + 1) == now))
                 {
@@ -225,8 +225,8 @@ public:
                 query.mReceivedReply = false;
                 query.mLocalTimeSent = now;
                 RandomNumbers::getInstance ().fill (&query.mQueryNonce);
-                reinterpret_cast<uint32*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<uint32> (time (NULL)) + NTP_UNIX_OFFSET;
-                reinterpret_cast<uint32*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
+                reinterpret_cast<beast::uint32*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<beast::uint32> (time (nullptr)) + NTP_UNIX_OFFSET;
+                reinterpret_cast<beast::uint32*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
                 mSocket.async_send_to (boost::asio::buffer (SNTPQueryData, 48), *sel,
                                        boost::bind (&SNTPClientImp::sendComplete, this,
                                                     boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
@@ -252,12 +252,12 @@ public:
             {
                 query->second.mReceivedReply = true;
 
-                if (time (NULL) > (query->second.mLocalTimeSent + 1))
+                if (time (nullptr) > (query->second.mLocalTimeSent + 1))
                     WriteLog (lsWARNING, SNTPClient) << "SNTP: Late response from " << mReceiveEndpoint;
                 else if (bytes_xferd < 48)
                     WriteLog (lsWARNING, SNTPClient) << "SNTP: Short reply from " << mReceiveEndpoint
                                                      << " (" << bytes_xferd << ") " << mReceiveBuffer.size ();
-                else if (reinterpret_cast<uint32*> (&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryNonce)
+                else if (reinterpret_cast<beast::uint32*> (&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryNonce)
                     WriteLog (lsWARNING, SNTPClient) << "SNTP: Reply from " << mReceiveEndpoint << "had wrong nonce";
                 else
                     processReply ();
@@ -277,7 +277,7 @@ public:
     void processReply ()
     {
         assert (mReceiveBuffer.size () >= 48);
-        uint32* recvBuffer = reinterpret_cast<uint32*> (&mReceiveBuffer.front ());
+        beast::uint32* recvBuffer = reinterpret_cast<beast::uint32*> (&mReceiveBuffer.front ());
 
         unsigned info = ntohl (recvBuffer[NTP_OFF_INFO]);
         int64_t timev = ntohl (recvBuffer[NTP_OFF_RECVTS_INT]);
@@ -295,7 +295,7 @@ public:
             return;
         }
 
-        int64 now = static_cast<int> (time (NULL));
+        beast::int64 now = static_cast<int> (time (nullptr));
         timev -= now;
         timev -= NTP_UNIX_OFFSET;
 

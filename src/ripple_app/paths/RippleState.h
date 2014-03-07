@@ -90,14 +90,14 @@ public:
         return !mViewLowest ? mLowLimit : mHighLimit;
     }
 
-    uint32 getQualityIn () const
+    beast::uint32 getQualityIn () const
     {
-        return ((uint32) (mViewLowest ? mLowQualityIn : mHighQualityIn));
+        return ((beast::uint32) (mViewLowest ? mLowQualityIn : mHighQualityIn));
     }
     
-    uint32 getQualityOut () const
+    beast::uint32 getQualityOut () const
     {
-        return ((uint32) (mViewLowest ? mLowQualityOut : mHighQualityOut));
+        return ((beast::uint32) (mViewLowest ? mLowQualityOut : mHighQualityOut));
     }
 
     SerializedLedgerEntry::pointer getSLE ()
@@ -126,7 +126,7 @@ private:
     bool                            mValid;
     bool                            mViewLowest;
 
-    uint32                          mFlags;
+    beast::uint32                   mFlags;
 
     STAmount                        mLowLimit;
     STAmount                        mHighLimit;
@@ -134,10 +134,10 @@ private:
     uint160                         mLowID;
     uint160                         mHighID;
 
-    uint64                          mLowQualityIn;
-    uint64                          mLowQualityOut;
-    uint64                          mHighQualityIn;
-    uint64                          mHighQualityOut;
+    beast::uint64                   mLowQualityIn;
+    beast::uint64                   mLowQualityOut;
+    beast::uint64                   mHighQualityIn;
+    beast::uint64                   mHighQualityOut;
 
     STAmount                        mBalance;
 };

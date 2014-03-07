@@ -24,6 +24,9 @@
 #ifndef BEAST_OUTPUTSTREAM_H_INCLUDED
 #define BEAST_OUTPUTSTREAM_H_INCLUDED
 
+namespace beast
+{
+
 class InputStream;
 class MemoryBlock;
 class File;
@@ -295,5 +298,7 @@ BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const N
 
 /** Writes a string to an OutputStream as UTF8. */
 BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const String& stringToWrite);
+
+}  // namespace beast
 
 #endif

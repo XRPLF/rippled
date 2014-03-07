@@ -38,7 +38,7 @@
 class HashPrefix
 {
 private:
-    uint32 m_prefix;
+    beast::uint32 m_prefix;
 
 public:
     HashPrefix (char a, char b, char c)
@@ -51,7 +51,7 @@ public:
     }
 
     /** Returns the hash prefix associated with this object */
-    operator uint32 () const
+    operator beast::uint32 () const
     {
         return m_prefix;
     }

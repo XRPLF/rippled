@@ -22,7 +22,7 @@
 
 // VFALCO NOTE This looks like a pointless class. Figure out
 //         what purpose it is really trying to serve and do it better.
-class DatabaseCon : LeakChecked <DatabaseCon>
+class DatabaseCon : beast::LeakChecked <DatabaseCon>
 {
 public:
     DatabaseCon (const std::string& name, const char* initString[], int countInit);

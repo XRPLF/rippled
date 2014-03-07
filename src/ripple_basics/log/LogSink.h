@@ -72,7 +72,7 @@ public:
     static std::string replaceFirstSecretWithAsterisks (std::string s);
 
     /** Returns a pointer to the singleton. */
-    typedef SharedPtr <SharedSingleton <LogSink> > Ptr;
+    typedef beast::SharedPtr <beast::SharedSingleton <LogSink> > Ptr;
     static Ptr get ();
 
 private:

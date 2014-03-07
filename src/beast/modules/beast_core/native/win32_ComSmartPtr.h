@@ -24,6 +24,9 @@
 #ifndef BEAST_WIN32_COMSMARTPTR_H_INCLUDED
 #define BEAST_WIN32_COMSMARTPTR_H_INCLUDED
 
+namespace beast
+{
+
 #ifndef _MSC_VER
 template<typename Type> struct UUIDGetter { static CLSID get() { bassertfalse; return CLSID(); } };
 #define __uuidof(x)  UUIDGetter<x>::get()
@@ -161,5 +164,7 @@ public:
         return ComBaseClassHelperBase <ComClass>::QueryInterface (refId, result);
     }
 };
+
+}  // namespace beast
 
 #endif   // BEAST_WIN32_COMSMARTPTR_H_INCLUDED

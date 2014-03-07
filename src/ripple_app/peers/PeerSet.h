@@ -24,10 +24,10 @@
 
     A peer set is used to acquire a ledger or a transaction set.
 */
-class PeerSet : LeakChecked <PeerSet>
+class PeerSet : beast::LeakChecked <PeerSet>
 {
 public:
-    typedef abstract_clock <std::chrono::seconds> clock_type;
+    typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
     uint256 const& getHash () const
     {
@@ -108,7 +108,7 @@ protected:
     typedef LockType::ScopedLockType ScopedLockType;
 
     PeerSet (uint256 const& hash, int interval, bool txnData,
-        clock_type& clock, Journal journal);
+        clock_type& clock, beast::Journal journal);
     virtual ~PeerSet () = 0;
 
     virtual void newPeer (Peer::ref) = 0;
@@ -129,7 +129,7 @@ protected:
     void sendRequest (const protocol::TMGetLedger& message, Peer::ref peer);
 
 protected:
-    Journal m_journal;
+    beast::Journal m_journal;
     clock_type& m_clock;
 
     LockType mLock;

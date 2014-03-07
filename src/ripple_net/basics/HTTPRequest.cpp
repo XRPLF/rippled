@@ -111,7 +111,7 @@ HTTPRequest::Action HTTPRequest::consume (boost::asio::streambuf& buf)
             }
 
             if (headerName == "content-length")
-                iDataSize = lexicalCastThrow <int> (headerValue);
+                iDataSize = beast::lexicalCastThrow <int> (headerValue);
 
             if (headerName == "authorization")
                 sAuthorization = headerValue;

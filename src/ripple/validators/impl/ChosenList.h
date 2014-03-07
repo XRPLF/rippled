@@ -23,10 +23,10 @@
 namespace ripple {
 namespace Validators {
 
-class ChosenList : public SharedObject
+class ChosenList : public beast::SharedObject
 {
 public:
-    typedef SharedPtr <ChosenList> Ptr;
+    typedef beast::SharedPtr <ChosenList> Ptr;
 
     struct Info
     {

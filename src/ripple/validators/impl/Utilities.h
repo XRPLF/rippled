@@ -33,7 +33,7 @@ public:
     class ParseResultLine
     {
     public:
-        ParseResultLine (Source::Results& results, Journal journal)
+        ParseResultLine (Source::Results& results, beast::Journal journal)
             : m_result (&results)
             , m_journal (journal)
         { }
@@ -47,7 +47,7 @@ public:
 
     private:
         Source::Results* m_result;
-        Journal m_journal;
+        beast::Journal m_journal;
     };
 
     /** UnaryPredicate for breaking up lines.
@@ -119,15 +119,16 @@ public:
     static void parseResultLine (
         Source::Results& results,
         std::string const& line,
-        Journal journal = Journal());
+        beast::Journal journal = beast::Journal());
 
     // helpers
-    static String itos (int i, int fieldSize = 0);
-    static int stoi (String& s, int fieldSize, int minValue, int maxValue, beast_wchar delimiter);
+    static beast::String itos (int i, int fieldSize = 0);
+    static int stoi (beast::String& s, int fieldSize, int minValue, int maxValue,
+                     beast::beast_wchar delimiter);
 
     // conversion betwen Time and String
-    static String timeToString (Time const& t);
-    static Time stringToTime (String s);
+    static beast::String timeToString (beast::Time const& t);
+    static beast::Time stringToTime (beast::String s);
 
     struct Helpers;
 
@@ -135,7 +136,7 @@ public:
         @return `true` on success.
     */
     static bool parseInfoLine (
-        Source::Item& item, std::string const& line, Journal journal);
+        Source::Item& item, std::string const& line, beast::Journal journal);
 };
 
 }

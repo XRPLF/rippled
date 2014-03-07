@@ -26,7 +26,7 @@ namespace Validators {
 /** Database persistence for Validators using SQLite */
 class StoreSqdb
     : public Store
-    , public LeakChecked <StoreSqdb>
+    , public beast::LeakChecked <StoreSqdb>
 {
 public:
     enum
@@ -35,11 +35,11 @@ public:
         currentSchemaVersion = 2
     };
 
-    explicit StoreSqdb (Journal journal = Journal());
+    explicit StoreSqdb (beast::Journal journal = beast::Journal());
 
     ~StoreSqdb ();
 
-    Error open (File const& file);
+    beast::Error open (beast::File const& file);
 
     void insert (SourceDesc& desc);
 
@@ -48,16 +48,16 @@ public:
     void remove (RipplePublicKey const& publicKey);
 
 private:
-    void report (Error const& error, char const* fileName, int lineNumber);
+    void report (beast::Error const& error, char const* fileName, int lineNumber);
 
     bool select (SourceDesc& desc);
     void selectList (SourceDesc& desc);
 
-    Error update ();
-    Error init ();
+    beast::Error update ();
+    beast::Error init ();
 
-    Journal m_journal;
-    sqdb::session m_session;
+    beast::Journal m_journal;
+    beast::sqdb::session m_session;
 };
 
 }

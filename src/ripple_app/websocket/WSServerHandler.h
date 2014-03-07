@@ -30,7 +30,7 @@ class WSConnectionType;
 struct WSServerHandlerLog;
 
 // This tag helps with mutex tracking
-struct WSServerHandlerBase : public Uncopyable
+struct WSServerHandlerBase : public beast::Uncopyable
 {
 };
 
@@ -41,7 +41,7 @@ template <typename endpoint_type>
 class WSServerHandler
     : public WSServerHandlerBase
     , public endpoint_type::handler
-    , public LeakChecked <WSServerHandler <endpoint_type> >
+    , public beast::LeakChecked <WSServerHandler <endpoint_type> >
 {
 public:
     typedef typename endpoint_type::handler::connection_ptr     connection_ptr;

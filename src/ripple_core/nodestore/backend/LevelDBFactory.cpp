@@ -23,19 +23,19 @@ namespace NodeStore {
 class LevelDBBackend
     : public Backend
     , public BatchWriter::Callback
-    , public LeakChecked <LevelDBBackend>
+    , public beast::LeakChecked <LevelDBBackend>
 {
 public:
-    Journal m_journal;
+    beast::Journal m_journal;
     size_t const m_keyBytes;
     Scheduler& m_scheduler;
     BatchWriter m_batch;
-    StringPool m_stringPool;
+    beast::StringPool m_stringPool;
     std::string m_name;
     std::unique_ptr <leveldb::DB> m_db;
 
     LevelDBBackend (int keyBytes, Parameters const& keyValues,
-        Scheduler& scheduler, Journal journal)
+        Scheduler& scheduler, beast::Journal journal)
         : m_journal (journal)
         , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
@@ -43,7 +43,7 @@ public:
         , m_name (keyValues ["path"].toStdString ())
     {
         if (m_name.empty())
-            Throw (std::runtime_error ("Missing path in LevelDBFactory backend"));
+            beast::Throw (std::runtime_error ("Missing path in LevelDBFactory backend"));
 
         leveldb::Options options;
         options.create_if_missing = true;
@@ -75,7 +75,7 @@ public:
         leveldb::DB* db = nullptr;
         leveldb::Status status = leveldb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
-            Throw (std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString()));
+            beast::Throw (std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString()));
 
         m_db.reset (db);
     }
@@ -227,7 +227,7 @@ public:
         m_lruCache.reset (options.block_cache);
     }
 
-    String getName () const
+    beast::String getName () const
     {
         return "LevelDB";
     }
@@ -236,7 +236,7 @@ public:
         size_t keyBytes,
         Parameters const& keyValues,
         Scheduler& scheduler,
-        Journal journal)
+        beast::Journal journal)
     {
         return std::make_unique <LevelDBBackend> (
             keyBytes, keyValues, scheduler, journal);

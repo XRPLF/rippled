@@ -30,7 +30,7 @@
 
     @note None of the listed interfaces are thread-safe.
 */
-class LogFile : public Uncopyable
+class LogFile : public beast::Uncopyable
 {
 public:
     /** Construct with no associated system file.
@@ -99,7 +99,7 @@ public:
     inline void writeln (std::string const& str) { writeln (str.c_str ()); }
 
 private:
-    ScopedPointer <std::ofstream> m_stream;
+    beast::ScopedPointer <std::ofstream> m_stream;
     boost::filesystem::path m_path;
 };
 

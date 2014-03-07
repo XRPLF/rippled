@@ -24,6 +24,9 @@
 #ifndef BEAST_VARIANT_H_INCLUDED
 #define BEAST_VARIANT_H_INCLUDED
 
+namespace beast
+{
+
 #ifndef DOXYGEN
  class SharedObject;
  class DynamicObject;
@@ -293,5 +296,6 @@ bool operator!= (const var& v1, const String& v2);
 bool operator== (const var& v1, const char* v2);
 bool operator!= (const var& v1, const char* v2);
 
+}  // namespace beast
 
 #endif   // BEAST_VARIANT_H_INCLUDED

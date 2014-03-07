@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 #ifndef INVALID_FILE_ATTRIBUTES
  #define INVALID_FILE_ATTRIBUTES ((DWORD) -1)
 #endif
@@ -883,3 +886,5 @@ void File::revealToUser() const
         }
     }
 }
+
+} // beast

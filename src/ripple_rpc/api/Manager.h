@@ -55,7 +55,7 @@ public:
     virtual bool dispatch (Request& req) = 0;
 };
 
-std::unique_ptr <Manager> make_Manager (Journal journal);
+std::unique_ptr <Manager> make_Manager (beast::Journal journal);
 
 }
 }

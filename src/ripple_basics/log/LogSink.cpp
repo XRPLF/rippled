@@ -143,8 +143,8 @@ void LogSink::write (std::string const& line, bool toStdErr, ScopedLockType&)
 void LogSink::write_console (std::string const& text)
 {
 #if BEAST_MSVC
-    if (beast_isRunningUnderDebugger ())
-        Logger::outputDebugString (text.c_str());
+    if (beast::beast_isRunningUnderDebugger ())
+        beast::Logger::outputDebugString (text.c_str());
 #endif
 }
 
@@ -181,6 +181,6 @@ std::string LogSink::replaceFirstSecretWithAsterisks (std::string s)
 
 LogSink::Ptr LogSink::get ()
 {
-    return SharedSingleton <LogSink>::getInstance ();
+    return beast::SharedSingleton <LogSink>::getInstance ();
 }
 

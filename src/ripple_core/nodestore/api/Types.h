@@ -47,7 +47,7 @@ typedef std::vector <NodeObject::Ptr> Batch;
 
 /** A list of key/value parameter pairs passed to the backend. */
 // VFALCO TODO Use std::string, pair, vector
-typedef StringPairArray Parameters;
+typedef beast::StringPairArray Parameters;
 
 }
 }

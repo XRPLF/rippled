@@ -19,7 +19,7 @@
 
 namespace ripple {
 
-class FetchPackTests : public UnitTest
+class FetchPackTests : public beast::UnitTest
 {
 public:
     enum
@@ -32,7 +32,7 @@ public:
 
     struct TestFilter : SHAMapSyncFilter
     {
-        TestFilter (Map& map, Journal journal) : mMap (map), mJournal (journal)
+        TestFilter (Map& map, beast::Journal journal) : mMap (map), mJournal (journal)
         {
         }
 
@@ -56,7 +56,7 @@ public:
         }
 
         Map& mMap;
-        Journal mJournal;
+        beast::Journal mJournal;
     };
 
 
@@ -87,9 +87,9 @@ public:
         // turn t1 into t2
         Map map;
         t2->getFetchPack (t1.get(), true, 1000000, boost::bind (
-            &FetchPackTests::on_fetch, this, boost::ref (map), _1, _2));
+            &FetchPackTests::on_fetch, this, boost::ref (map), beast::_1, beast::_2));
         t1->getFetchPack (nullptr, true, 1000000, boost::bind (
-            &FetchPackTests::on_fetch, this, boost::ref (map), _1, _2));
+            &FetchPackTests::on_fetch, this, boost::ref (map), beast::_1, beast::_2));
 
         // try to rebuild t2 from the fetch pack
         boost::shared_ptr <Table> t3;

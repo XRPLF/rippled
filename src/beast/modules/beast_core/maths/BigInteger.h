@@ -24,6 +24,9 @@
 #ifndef BEAST_BIGINTEGER_H_INCLUDED
 #define BEAST_BIGINTEGER_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     An arbitrarily large integer class.
@@ -318,5 +321,6 @@ OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const BigInteger&
  typedef BigInteger BitArray;
 #endif
 
+}  // namespace beast
 
 #endif   // BEAST_BIGINTEGER_H_INCLUDED

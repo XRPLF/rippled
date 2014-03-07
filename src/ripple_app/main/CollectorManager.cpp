@@ -23,42 +23,42 @@ class CollectorManagerImp
     : public CollectorManager
 {
 public:
-    Journal m_journal;
-    insight::Collector::ptr m_collector;
-    std::unique_ptr <insight::Groups> m_groups;
+    beast::Journal m_journal;
+    beast::insight::Collector::ptr m_collector;
+    std::unique_ptr <beast::insight::Groups> m_groups;
 
-    CollectorManagerImp (StringPairArray const& params,
-        Journal journal)
+    CollectorManagerImp (beast::StringPairArray const& params,
+        beast::Journal journal)
         : m_journal (journal)
     {
         std::string const& server (params ["server"].toStdString());
 
         if (server == "statsd")
         {
-            IP::Endpoint const address (IP::Endpoint::from_string (
+            beast::IP::Endpoint const address (beast::IP::Endpoint::from_string (
                 params ["address"].toStdString ()));
             std::string const& prefix (params ["prefix"].toStdString ());
 
-            m_collector = insight::StatsDCollector::New (address, prefix, journal);
+            m_collector = beast::insight::StatsDCollector::New (address, prefix, journal);
         }
         else
         {
-            m_collector = insight::NullCollector::New ();
+            m_collector = beast::insight::NullCollector::New ();
         }
 
-        m_groups = insight::make_Groups (m_collector);
+        m_groups = beast::insight::make_Groups (m_collector);
     }
 
     ~CollectorManagerImp ()
     {
     }
 
-    insight::Collector::ptr const& collector ()
+    beast::insight::Collector::ptr const& collector ()
     {
         return m_collector;
     }
 
-    insight::Group::ptr const& group (std::string const& name)
+    beast::insight::Group::ptr const& group (std::string const& name)
     {
         return m_groups->get (name);
     }
@@ -70,8 +70,8 @@ CollectorManager::~CollectorManager ()
 {
 }
 
-CollectorManager* CollectorManager::New (StringPairArray const& params,
-    Journal journal)
+CollectorManager* CollectorManager::New (beast::StringPairArray const& params,
+    beast::Journal journal)
 {
     return new CollectorManagerImp (params, journal);
 }

@@ -212,7 +212,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
             }
 
             if (stack.empty ())
-                node = NULL; // Finished processing the last node, we are done
+                node = nullptr; // Finished processing the last node, we are done
             else
             { // Pick up where we left off (above this node)
                 GMNEntry& next = stack.top ();
@@ -224,7 +224,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint
             }
 
         }
-        while ((node != NULL) && (deferredReads.size () <= maxDefer));
+        while ((node != nullptr) && (deferredReads.size () <= maxDefer));
 
         // If we didn't defer any reads, we're done
         if (deferredReads.empty ())
@@ -304,7 +304,7 @@ bool SHAMap::getNodeFat (const SHAMapNode& wanted, std::vector<SHAMapNode>& node
         if ((!fatRoot && node->isRoot ()) || node->isLeaf ()) // don't get a fat root, can't get a fat leaf
             return true;
 
-        SHAMapTreeNode* nextNode = NULL;
+        SHAMapTreeNode* nextNode = nullptr;
 
         count = 0;
         for (int i = 0; i < 16; ++i)
@@ -731,10 +731,10 @@ std::list<Blob > SHAMap::getTrustedPath (uint256 const& index)
 //#define SMS_DEBUG
 #endif
 
-class SHAMapSyncTests : public UnitTest
+class SHAMapSyncTests : public beast::UnitTest
 {
 public:
-    SHAMapSyncTests () : UnitTest ("SHAMapSync", "ripple")
+    SHAMapSyncTests () : beast::UnitTest ("SHAMapSync", "ripple")
     {
     }
 
@@ -829,7 +829,7 @@ public:
 
         unexpected (gotNodes.size () < 1, "NodeSize");
 
-        unexpected (!destination.addRootNode (*gotNodes.begin (), snfWIRE, NULL).isGood(), "AddRootNode");
+        unexpected (!destination.addRootNode (*gotNodes.begin (), snfWIRE, nullptr).isGood(), "AddRootNode");
 
         nodeIDs.clear ();
         gotNodes.clear ();
@@ -844,7 +844,7 @@ public:
             hashes.clear ();
 
             // get the list of nodes we know we need
-            destination.getMissingNodes (nodeIDs, hashes, 2048, NULL);
+            destination.getMissingNodes (nodeIDs, hashes, 2048, nullptr);
 
             if (nodeIDs.empty ()) break;
 
@@ -883,7 +883,7 @@ public:
                 bytes += rawNodeIterator->size ();
 #endif
 
-                if (!destination.addKnownNode (*nodeIDIterator, *rawNodeIterator, NULL).isGood ())
+                if (!destination.addKnownNode (*nodeIDIterator, *rawNodeIterator, nullptr).isGood ())
                 {
                     WriteLog (lsTRACE, SHAMap) << "AddKnownNode fails";
                     fail ("AddKnownNode");

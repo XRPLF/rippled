@@ -20,21 +20,21 @@
 namespace ripple {
 namespace Resource {
 
-class Tests : public UnitTest
+class Tests : public beast::UnitTest
 {
 public:
     class TestLogic
-        : private boost::base_from_member <manual_clock <std::chrono::seconds>>
+        : private boost::base_from_member <beast::manual_clock <std::chrono::seconds>>
         , public Logic
 
     {
     private:
         typedef boost::base_from_member <
-            manual_clock <std::chrono::seconds>> clock_type;
+            beast::manual_clock <std::chrono::seconds>> clock_type;
 
     public:
-        explicit TestLogic (Journal journal)
-            : Logic (insight::NullCollector::New(), member, journal)
+        explicit TestLogic (beast::Journal journal)
+            : Logic (beast::insight::NullCollector::New(), member, journal)
         {
         }
 
@@ -43,7 +43,7 @@ public:
             ++member;
         }
 
-        manual_clock <std::chrono::seconds>& clock ()
+        beast::manual_clock <std::chrono::seconds>& clock ()
         {
             return member;
         }
@@ -60,8 +60,8 @@ public:
         {
             Gossip::Item item;
             item.balance = 100 + random().nextInt (500);
-            item.address = IP::Endpoint (
-                IP::AddressV4 (207, 127, 82, v + i));
+            item.address = beast::IP::Endpoint (
+                beast::IP::AddressV4 (207, 127, 82, v + i));
             gossip.items.push_back (item);
         }
     }
@@ -73,15 +73,15 @@ public:
         maxLoopCount = 10000
     };
 
-    void testDrop (Journal j)
+    void testDrop (beast::Journal j)
     {
         beginTestCase ("Warn/drop");
 
         Tests::TestLogic logic (j);
 
         Charge const fee (dropThreshold + 1);
-        IP::Endpoint const addr (
-            IP::Endpoint::from_string ("207.127.82.2"));
+        beast::IP::Endpoint const addr (
+            beast::IP::Endpoint::from_string ("207.127.82.2"));
         
         {
             Consumer c (logic.newInboundEndpoint (addr));
@@ -144,7 +144,7 @@ public:
         }
     }
 
-    void testImports (Journal j)
+    void testImports (beast::Journal j)
     {
         beginTestCase ("Imports");
 
@@ -156,12 +156,12 @@ public:
             createGossip (g[i]);
 
         for (int i = 0; i < 5; ++i)
-            logic.importConsumers (String::fromNumber (i).toStdString(), g[i]);
+            logic.importConsumers (beast::String::fromNumber (i).toStdString(), g[i]);
 
         pass();
     }
 
-    void testImport (Journal j)
+    void testImport (beast::Journal j)
     {
         beginTestCase ("Import");
 
@@ -170,8 +170,8 @@ public:
         Gossip g;
         Gossip::Item item;
         item.balance = 100;
-        item.address = IP::Endpoint (
-            IP::AddressV4 (207, 127, 82, 1));
+        item.address = beast::IP::Endpoint (
+            beast::IP::AddressV4 (207, 127, 82, 1));
         g.items.push_back (item);
 
         logic.importConsumers ("g", g);
@@ -179,14 +179,14 @@ public:
         pass();
     }
 
-    void testCharges (Journal j)
+    void testCharges (beast::Journal j)
     {
         beginTestCase ("Charge");
 
         TestLogic logic (j);
 
         {
-            IP::Endpoint address (IP::Endpoint::from_string ("207.127.82.1"));
+            beast::IP::Endpoint address (beast::IP::Endpoint::from_string ("207.127.82.1"));
             Consumer c (logic.newInboundEndpoint (address));
             Charge fee (1000);
             j.info <<
@@ -202,7 +202,7 @@ public:
         }
 
         {
-            IP::Endpoint address (IP::Endpoint::from_string ("207.127.82.2"));
+            beast::IP::Endpoint address (beast::IP::Endpoint::from_string ("207.127.82.2"));
             Consumer c (logic.newInboundEndpoint (address));
             Charge fee (1000);
             j.info <<
@@ -223,7 +223,7 @@ public:
     void runTest ()
     {
         //Journal j (journal());
-        Journal j;
+        beast::Journal j;
 
         testDrop (j);
         testCharges (j);

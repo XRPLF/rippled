@@ -32,7 +32,7 @@ class IdentifierStorage
 public:
     typedef std::size_t         size_type;
     typedef std::ptrdiff_t      difference_type;
-    typedef uint8               value_type;
+    typedef beast::uint8        value_type;
     typedef value_type*         iterator;
     typedef value_type const*   const_iterator;
     typedef value_type&         reference;
@@ -43,8 +43,8 @@ public:
     static size_type const      post_size = PostSize;
     static size_type const      storage_size = pre_size + size + post_size;
 
-    typedef FixedArray <
-        uint8, storage_size>    storage_type;
+    typedef beast::FixedArray <
+        beast::uint8, storage_size>    storage_type;
 
     /** Value hashing function.
         The seed prevents crafted inputs from causing degenarate parent containers.
@@ -52,7 +52,7 @@ public:
     class hasher
     {
     public:
-        explicit hasher (std::size_t seedToUse = Random::getSystemRandom ().nextInt ())
+        explicit hasher (std::size_t seedToUse = beast::Random::getSystemRandom ().nextInt ())
             : m_seed (seedToUse)
         {
         }
@@ -60,7 +60,7 @@ public:
         std::size_t operator() (IdentifierStorage const& storage) const
         {
             std::size_t hash;
-            Murmur::Hash (storage.cbegin (), storage.size, m_seed, &hash);
+            beast::Murmur::Hash (storage.cbegin (), storage.size, m_seed, &hash);
             return hash;
         }
 

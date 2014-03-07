@@ -176,7 +176,7 @@ bool Base58::decode (const char* psz, Blob& vchRet, Alphabet const& alphabet)
         //
         const char* p1 = strchr (alphabet.chars(), *p);
 
-        if (p1 == NULL)
+        if (p1 == nullptr)
         {
             while (isspace (*p))
                 p++;

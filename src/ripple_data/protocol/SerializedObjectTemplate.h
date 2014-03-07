@@ -40,7 +40,7 @@ enum SOE_Flags
 class SOElement
 {
 public:
-    SField::ref const e_field;
+    SField::ref       e_field;
     SOE_Flags const   flags;
 
     SOElement (SField::ref fieldName, SOE_Flags flags)

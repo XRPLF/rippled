@@ -19,7 +19,7 @@
 
 SETUP_LOG (STAmount)
 
-uint64  STAmount::uRateOne  = STAmount::getRate (STAmount (1), STAmount (1));
+beast::uint64  STAmount::uRateOne  = STAmount::getRate (STAmount (1), STAmount (1));
 
 bool STAmount::issuerFromString (uint160& uDstIssuer, const std::string& sIssuer)
 {
@@ -197,7 +197,7 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
     {
         if (mIsNative)
         {
-            int64 val = lexicalCastThrow <int64> (value.asString ());
+            beast::int64 val = beast::lexicalCastThrow <beast::int64> (value.asString ());
 
             if (val >= 0)
                 mValue = val;
@@ -295,13 +295,13 @@ bool STAmount::setValue (const std::string& sAmount)
 
         if (!smMatch[4].matched) // integer only
         {
-            mValue = lexicalCast <uint64> (std::string (smMatch[2]));
+            mValue = beast::lexicalCast <beast::uint64> (std::string (smMatch[2]));
             mOffset = 0;
         }
         else
         {
             // integer and fraction
-            mValue = lexicalCast <uint64> (smMatch[2] + smMatch[4]);
+            mValue = beast::lexicalCast <beast::uint64> (smMatch[2] + smMatch[4]);
             mOffset = - (smMatch[4].length ());
         }
 
@@ -309,9 +309,9 @@ bool STAmount::setValue (const std::string& sAmount)
         {
             // we have an exponent
             if (smMatch[6].matched && (smMatch[6] == "-"))
-                mOffset -= lexicalCast <int> (std::string (smMatch[7]));
+                mOffset -= beast::lexicalCast <int> (std::string (smMatch[7]));
             else
-                mOffset += lexicalCast <int> (std::string (smMatch[7]));
+                mOffset += beast::lexicalCast <int> (std::string (smMatch[7]));
         }
     }
     catch (...)
@@ -483,20 +483,20 @@ void STAmount::add (Serializer& s) const
         if (isZero ())
             s.add64 (cNotNative);
         else if (mIsNegative) // 512 = not native
-            s.add64 (mValue | (static_cast<uint64> (mOffset + 512 + 97) << (64 - 10)));
+            s.add64 (mValue | (static_cast<beast::uint64> (mOffset + 512 + 97) << (64 - 10)));
         else // 256 = positive
-            s.add64 (mValue | (static_cast<uint64> (mOffset + 512 + 256 + 97) << (64 - 10)));
+            s.add64 (mValue | (static_cast<beast::uint64> (mOffset + 512 + 256 + 97) << (64 - 10)));
 
         s.add160 (mCurrency);
         s.add160 (mIssuer);
     }
 }
 
-STAmount STAmount::createFromInt64 (SField::ref name, int64 value)
+STAmount STAmount::createFromInt64 (SField::ref name, beast::int64 value)
 {
     return value >= 0
-           ? STAmount (name, static_cast<uint64> (value), false)
-           : STAmount (name, static_cast<uint64> (-value), true);
+           ? STAmount (name, static_cast<beast::uint64> (value), false)
+           : STAmount (name, static_cast<beast::uint64> (-value), true);
 }
 
 void STAmount::setValue (const STAmount& a)
@@ -536,7 +536,7 @@ int STAmount::compare (const STAmount& a) const
 
 STAmount* STAmount::construct (SerializerIterator& sit, SField::ref name)
 {
-    uint64 value = sit.get64 ();
+    beast::uint64 value = sit.get64 ();
 
     if ((value & cNotNative) == 0)
     {
@@ -576,29 +576,29 @@ STAmount* STAmount::construct (SerializerIterator& sit, SField::ref name)
     return new STAmount (name, uCurrencyID, uIssuerID);
 }
 
-int64 STAmount::getSNValue () const
+beast::int64 STAmount::getSNValue () const
 {
     // signed native value
     if (!mIsNative) throw std::runtime_error ("not native");
 
-    if (mIsNegative) return - static_cast<int64> (mValue);
+    if (mIsNegative) return - static_cast<beast::int64> (mValue);
 
-    return static_cast<int64> (mValue);
+    return static_cast<beast::int64> (mValue);
 }
 
-void STAmount::setSNValue (int64 v)
+void STAmount::setSNValue (beast::int64 v)
 {
     if (!mIsNative) throw std::runtime_error ("not native");
 
     if (v > 0)
     {
         mIsNegative = false;
-        mValue = static_cast<uint64> (v);
+        mValue = static_cast<beast::uint64> (v);
     }
     else
     {
         mIsNegative = true;
-        mValue = static_cast<uint64> (-v);
+        mValue = static_cast<beast::uint64> (-v);
     }
 }
 
@@ -609,15 +609,15 @@ std::string STAmount::getRaw () const
 
     if (mIsNative)
     {
-        if (mIsNegative) return std::string ("-") + lexicalCast <std::string> (mValue);
-        else return lexicalCast <std::string> (mValue);
+        if (mIsNegative) return std::string ("-") + beast::lexicalCast <std::string> (mValue);
+        else return beast::lexicalCast <std::string> (mValue);
     }
 
     if (mIsNegative)
         return mCurrency.GetHex () + ": -" +
-               lexicalCast <std::string> (mValue) + "e" + lexicalCast <std::string> (mOffset);
+               beast::lexicalCast <std::string> (mValue) + "e" + beast::lexicalCast <std::string> (mOffset);
     else return mCurrency.GetHex () + ": " +
-                    lexicalCast <std::string> (mValue) + "e" + lexicalCast <std::string> (mOffset);
+                    beast::lexicalCast <std::string> (mValue) + "e" + beast::lexicalCast <std::string> (mOffset);
 }
 
 std::string STAmount::getText () const
@@ -628,21 +628,21 @@ std::string STAmount::getText () const
     if (mIsNative)
     {
         if (mIsNegative)
-            return std::string ("-") +  lexicalCast <std::string> (mValue);
-        else return lexicalCast <std::string> (mValue);
+            return std::string ("-") +  beast::lexicalCast <std::string> (mValue);
+        else return beast::lexicalCast <std::string> (mValue);
     }
 
     if ((mOffset != 0) && ((mOffset < -25) || (mOffset > -5)))
     {
         if (mIsNegative)
-            return std::string ("-") + lexicalCast <std::string> (mValue) +
-                   "e" + lexicalCast <std::string> (mOffset);
+            return std::string ("-") + beast::lexicalCast <std::string> (mValue) +
+                   "e" + beast::lexicalCast <std::string> (mOffset);
         else
-            return lexicalCast <std::string> (mValue) + "e" + lexicalCast <std::string> (mOffset);
+            return beast::lexicalCast <std::string> (mValue) + "e" + beast::lexicalCast <std::string> (mOffset);
     }
 
     std::string val = "000000000000000000000000000";
-    val += lexicalCast <std::string> (mValue);
+    val += beast::lexicalCast <std::string> (mValue);
     val += "00000000000000000000000";
 
     std::string pre = val.substr (0, mOffset + 43);
@@ -744,7 +744,7 @@ STAmount STAmount::operator- (void) const
     return STAmount (getFName (), mCurrency, mIssuer, mValue, mOffset, mIsNative, !mIsNegative);
 }
 
-STAmount& STAmount::operator= (uint64 v)
+STAmount& STAmount::operator= (beast::uint64 v)
 {
     // does not copy name, does not change currency type
     mOffset = 0;
@@ -756,52 +756,52 @@ STAmount& STAmount::operator= (uint64 v)
     return *this;
 }
 
-STAmount& STAmount::operator+= (uint64 v)
+STAmount& STAmount::operator+= (beast::uint64 v)
 {
     if (mIsNative)
-        setSNValue (getSNValue () + static_cast<int64> (v));
+        setSNValue (getSNValue () + static_cast<beast::int64> (v));
     else *this += STAmount (mCurrency, v);
 
     return *this;
 }
 
-STAmount& STAmount::operator-= (uint64 v)
+STAmount& STAmount::operator-= (beast::uint64 v)
 {
     if (mIsNative)
-        setSNValue (getSNValue () - static_cast<int64> (v));
+        setSNValue (getSNValue () - static_cast<beast::int64> (v));
     else *this -= STAmount (mCurrency, v);
 
     return *this;
 }
 
-bool STAmount::operator< (uint64 v) const
+bool STAmount::operator< (beast::uint64 v) const
 {
-    return getSNValue () < static_cast<int64> (v);
+    return getSNValue () < static_cast<beast::int64> (v);
 }
 
-bool STAmount::operator> (uint64 v) const
+bool STAmount::operator> (beast::uint64 v) const
 {
-    return getSNValue () > static_cast<int64> (v);
+    return getSNValue () > static_cast<beast::int64> (v);
 }
 
-bool STAmount::operator<= (uint64 v) const
+bool STAmount::operator<= (beast::uint64 v) const
 {
-    return getSNValue () <= static_cast<int64> (v);
+    return getSNValue () <= static_cast<beast::int64> (v);
 }
 
-bool STAmount::operator>= (uint64 v) const
+bool STAmount::operator>= (beast::uint64 v) const
 {
-    return getSNValue () >= static_cast<int64> (v);
+    return getSNValue () >= static_cast<beast::int64> (v);
 }
 
-STAmount STAmount::operator+ (uint64 v) const
+STAmount STAmount::operator+ (beast::uint64 v) const
 {
-    return STAmount (getFName (), getSNValue () + static_cast<int64> (v));
+    return STAmount (getFName (), getSNValue () + static_cast<beast::int64> (v));
 }
 
-STAmount STAmount::operator- (uint64 v) const
+STAmount STAmount::operator- (beast::uint64 v) const
 {
-    return STAmount (getFName (), getSNValue () - static_cast<int64> (v));
+    return STAmount (getFName (), getSNValue () - static_cast<beast::int64> (v));
 }
 
 STAmount::operator double () const
@@ -831,7 +831,7 @@ STAmount operator+ (const STAmount& v1, const STAmount& v2)
         return STAmount (v1.getFName (), v1.getSNValue () + v2.getSNValue ());
 
     int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    int64 vv1 = static_cast<int64> (v1.mValue), vv2 = static_cast<int64> (v2.mValue);
+    beast::int64 vv1 = static_cast<beast::int64> (v1.mValue), vv2 = static_cast<beast::int64> (v2.mValue);
 
     if (v1.mIsNegative) vv1 = -vv1;
 
@@ -849,9 +849,9 @@ STAmount operator+ (const STAmount& v1, const STAmount& v2)
         ++ov2;
     }
 
-    // this addition cannot overflow an int64, it can overflow an STAmount and the constructor will throw
+    // this addition cannot overflow an beast::int64, it can overflow an STAmount and the constructor will throw
 
-    int64 fv = vv1 + vv2;
+    beast::int64 fv = vv1 + vv2;
 
     if ((fv >= -10) && (fv <= 10))
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer);
@@ -874,7 +874,7 @@ STAmount operator- (const STAmount& v1, const STAmount& v2)
     }
 
     int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    int64 vv1 = static_cast<int64> (v1.mValue), vv2 = static_cast<int64> (v2.mValue);
+    beast::int64 vv1 = static_cast<beast::int64> (v1.mValue), vv2 = static_cast<beast::int64> (v2.mValue);
 
     if (v1.mIsNegative) vv1 = -vv1;
 
@@ -892,9 +892,9 @@ STAmount operator- (const STAmount& v1, const STAmount& v2)
         ++ov2;
     }
 
-    // this subtraction cannot overflow an int64, it can overflow an STAmount and the constructor will throw
+    // this subtraction cannot overflow an beast::int64, it can overflow an STAmount and the constructor will throw
 
-    int64 fv = vv1 - vv2;
+    beast::int64 fv = vv1 - vv2;
 
     if ((fv >= -10) && (fv <= 10))
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer);
@@ -912,7 +912,7 @@ STAmount STAmount::divide (const STAmount& num, const STAmount& den, const uint1
     if (num.isZero ())
         return STAmount (uCurrencyID, uIssuerID);
 
-    uint64 numVal = num.mValue, denVal = den.mValue;
+    beast::uint64 numVal = num.mValue, denVal = den.mValue;
     int numOffset = num.mOffset, denOffset = den.mOffset;
 
     if (num.mIsNative)
@@ -935,7 +935,7 @@ STAmount STAmount::divide (const STAmount& num, const STAmount& den, const uint1
 
     if ((BN_add_word64 (&v, numVal) != 1) ||
             (BN_mul_word64 (&v, tenTo17) != 1) ||
-            (BN_div_word64 (&v, denVal) == ((uint64) - 1)))
+            (BN_div_word64 (&v, denVal) == ((beast::uint64) - 1)))
     {
         throw std::runtime_error ("internal bn error");
     }
@@ -954,8 +954,8 @@ STAmount STAmount::multiply (const STAmount& v1, const STAmount& v2, const uint1
 
     if (v1.mIsNative && v2.mIsNative && uCurrencyID.isZero ())
     {
-        uint64 minV = (v1.getSNValue () < v2.getSNValue ()) ? v1.getSNValue () : v2.getSNValue ();
-        uint64 maxV = (v1.getSNValue () < v2.getSNValue ()) ? v2.getSNValue () : v1.getSNValue ();
+        beast::uint64 minV = (v1.getSNValue () < v2.getSNValue ()) ? v1.getSNValue () : v2.getSNValue ();
+        beast::uint64 maxV = (v1.getSNValue () < v2.getSNValue ()) ? v2.getSNValue () : v1.getSNValue ();
 
         if (minV > 3000000000ull) // sqrt(cMaxNative)
             throw std::runtime_error ("Native value overflow");
@@ -966,7 +966,7 @@ STAmount STAmount::multiply (const STAmount& v1, const STAmount& v2, const uint1
         return STAmount (v1.getFName (), minV * maxV);
     }
 
-    uint64 value1 = v1.mValue, value2 = v2.mValue;
+    beast::uint64 value1 = v1.mValue, value2 = v2.mValue;
     int offset1 = v1.mOffset, offset2 = v2.mOffset;
 
     if (v1.mIsNative)
@@ -993,7 +993,7 @@ STAmount STAmount::multiply (const STAmount& v1, const STAmount& v2, const uint1
 
     if ((BN_add_word64 (&v, value1) != 1) ||
             (BN_mul_word64 (&v, value2) != 1) ||
-            (BN_div_word64 (&v, tenTo14) == ((uint64) - 1)))
+            (BN_div_word64 (&v, tenTo14) == ((beast::uint64) - 1)))
     {
         throw std::runtime_error ("internal bn error");
     }
@@ -1014,7 +1014,7 @@ STAmount STAmount::multiply (const STAmount& v1, const STAmount& v2, const uint1
 //             A lower rate is better for the person taking the order.
 //             The taker gets more for less with a lower rate.
 // Zero is returned if the offer is worthless.
-uint64 STAmount::getRate (const STAmount& offerOut, const STAmount& offerIn)
+beast::uint64 STAmount::getRate (const STAmount& offerOut, const STAmount& offerIn)
 {
     if (offerOut.isZero ())
         return 0;
@@ -1028,7 +1028,7 @@ uint64 STAmount::getRate (const STAmount& offerOut, const STAmount& offerIn)
 
         assert ((r.getExponent () >= -100) && (r.getExponent () <= 155));
 
-        uint64 ret = r.getExponent () + 100;
+        beast::uint64 ret = r.getExponent () + 100;
 
         return (ret << (64 - 8)) | r.getMantissa ();
     }
@@ -1039,12 +1039,12 @@ uint64 STAmount::getRate (const STAmount& offerOut, const STAmount& offerIn)
     }
 }
 
-STAmount STAmount::setRate (uint64 rate)
+STAmount STAmount::setRate (beast::uint64 rate)
 {
     if (rate == 0)
         return STAmount (CURRENCY_ONE, ACCOUNT_ONE);
 
-    uint64 mantissa = rate & ~ (255ull << (64 - 8));
+    beast::uint64 mantissa = rate & ~ (255ull << (64 - 8));
     int exponent = static_cast<int> (rate >> (64 - 8)) - 100;
 
     return STAmount (CURRENCY_ONE, ACCOUNT_ONE, mantissa, exponent);
@@ -1078,7 +1078,7 @@ STAmount STAmount::setRate (uint64 rate)
 // <-- saOfferIssuerFee: Actual
 bool STAmount::applyOffer (
     const bool bSell,
-    const uint32 uTakerPaysRate, const uint32 uOfferPaysRate,
+    const beast::uint32 uTakerPaysRate, const beast::uint32 uOfferPaysRate,
     const STAmount& saOfferRate,
     const STAmount& saOfferFunds, const STAmount& saTakerFunds,
     const STAmount& saOfferPays, const STAmount& saOfferGets,
@@ -1258,7 +1258,7 @@ STAmount STAmount::getRound () const
     if (mIsNative)
         return *this;
 
-    uint64 valueDigits = mValue % 1000000000ull;
+    beast::uint64 valueDigits = mValue % 1000000000ull;
 
     if (valueDigits == 1)
         return STAmount (mCurrency, mIssuer, mValue - 1, mOffset, mIsNegative);
@@ -1273,7 +1273,7 @@ void STAmount::roundSelf ()
     if (mIsNative)
         return;
 
-    uint64 valueDigits = mValue % 1000000000ull;
+    beast::uint64 valueDigits = mValue % 1000000000ull;
 
     if (valueDigits == 1)
     {
@@ -1318,10 +1318,10 @@ Json::Value STAmount::getJson (int) const
 
 //------------------------------------------------------------------------------
 
-class STAmountTests : public UnitTest
+class STAmountTests : public beast::UnitTest
 {
 public:
-    STAmountTests () : UnitTest ("STAmount", "ripple")
+    STAmountTests () : beast::UnitTest ("STAmount", "ripple")
     {
     }
 
@@ -1382,7 +1382,7 @@ public:
 
         expect (! prod1.isNative ());
 
-        STAmount prod2 (CURRENCY_ONE, ACCOUNT_ONE, static_cast<uint64> (a) * static_cast<uint64> (b));
+        STAmount prod2 (CURRENCY_ONE, ACCOUNT_ONE, static_cast<beast::uint64> (a) * static_cast<beast::uint64> (b));
 
         if (prod1 != prod2)
         {
@@ -1782,7 +1782,7 @@ public:
 
         for (int i = 0; i < 16; ++i)
         {
-            uint64 r = rand ();
+            beast::uint64 r = rand ();
             r <<= 32;
             r |= rand ();
             b.setuint64 (r);
@@ -1855,22 +1855,22 @@ public:
 
         STAmount bigDsmall = STAmount::divide (smallValue, bigValue, CURRENCY_ONE, ACCOUNT_ONE);
 
-        expect (bigDsmall.isZero (), String ("small/big != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall.isZero (), beast::String ("small/big != 0: ") + bigDsmall.getText ());
 
         bigDsmall = STAmount::divide (smallValue, bigNative, CURRENCY_ONE, uint160 ());
 
-        expect (bigDsmall.isZero (), String ("small/bigNative != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall.isZero (), beast::String ("small/bigNative != 0: ") + bigDsmall.getText ());
 
         bigDsmall = STAmount::divide (smallValue, bigValue, uint160 (), uint160 ());
 
-        expect (bigDsmall.isZero (), String ("(small/big)->N != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall.isZero (), beast::String ("(small/big)->N != 0: ") + bigDsmall.getText ());
 
         bigDsmall = STAmount::divide (smallValue, bigNative, uint160 (), uint160 ());
 
-        expect (bigDsmall.isZero (), String ("(small/bigNative)->N != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall.isZero (), beast::String ("(small/bigNative)->N != 0: ") + bigDsmall.getText ());
 
         // very bad offer
-        uint64 r = STAmount::getRate (smallValue, bigValue);
+        beast::uint64 r = STAmount::getRate (smallValue, bigValue);
 
         expect (r == 0, "getRate(smallOut/bigIn) != 0");
 
@@ -1890,7 +1890,7 @@ public:
 #if 0
         beginTestCase ("rounding ");
 
-        uint64 value = 25000000000000000ull;
+        beast::uint64 value = 25000000000000000ull;
         int offset = -14;
         STAmount::canonicalizeRound (false, value, offset, true);
 

@@ -29,7 +29,7 @@ class SourceStrings : public Source
 public:
     typedef std::vector <std::string> Strings;
 
-    static SharedPtr <Source> New (std::string const& name, Strings const& strings);
+    static beast::SharedPtr <Source> New (std::string const& name, Strings const& strings);
 };
 
 }

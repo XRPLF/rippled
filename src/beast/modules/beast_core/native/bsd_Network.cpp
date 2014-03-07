@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 void MACAddress::findAllAddresses (Array<MACAddress>& result)
 {
     ifaddrs* addrs = nullptr;
@@ -57,3 +60,5 @@ bool Process::openEmailWithAttachments (const String& /* targetEmailAddress */,
 
     return false;
 }
+
+}  // namespace beast

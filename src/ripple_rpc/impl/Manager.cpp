@@ -31,10 +31,10 @@ class ManagerImp : public Manager
 public:
     typedef std::unordered_map <std::string, handler_type> Map;
 
-    Journal m_journal;
+    beast::Journal m_journal;
     Map m_map;
 
-    ManagerImp (Journal journal)
+    ManagerImp (beast::Journal journal)
         : m_journal (journal)
     {
     }
@@ -61,7 +61,7 @@ Manager::~Manager ()
 {
 }
 
-std::unique_ptr <Manager> make_Manager (Journal journal)
+std::unique_ptr <Manager> make_Manager (beast::Journal journal)
 {
     std::unique_ptr <Manager> m (std::make_unique <ManagerImp> (journal));
 

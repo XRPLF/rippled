@@ -95,7 +95,7 @@ private:
     @ingroup ripple_basics
 */
 template <class Object>
-class CountedObject : LeakChecked <CountedObject <Object> >
+class CountedObject : beast::LeakChecked <CountedObject <Object> >
 {
 public:
     CountedObject ()
@@ -130,7 +130,7 @@ private:
 private:
     static Counter& getCounter ()
     {
-        return StaticObject <Counter>::get();
+        return beast::StaticObject <Counter>::get();
     }
 };
 

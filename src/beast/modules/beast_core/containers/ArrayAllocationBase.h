@@ -24,6 +24,9 @@
 #ifndef BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
 #define BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Implements some basic array storage allocation functions.
@@ -125,5 +128,7 @@ public:
     HeapBlock <ElementType> elements;
     int numAllocated;
 };
+
+}  // namespace beast
 
 #endif   // BEAST_ARRAYALLOCATIONBASE_H_INCLUDED

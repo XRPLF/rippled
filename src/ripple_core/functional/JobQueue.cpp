@@ -31,16 +31,16 @@ namespace ripple {
 
 class JobQueueImp
     : public JobQueue
-    , private Workers::Callback
+    , private beast::Workers::Callback
 {
 public:
     typedef std::set <Job> JobSet;
     typedef std::map <JobType, JobTypeData> JobDataMap;
-    typedef CriticalSection::ScopedLockType ScopedLock;
+    typedef beast::CriticalSection::ScopedLockType ScopedLock;
 
-    Journal m_journal;
-    CriticalSection m_mutex;
-    uint64 m_lastJob;
+    beast::Journal m_journal;
+    beast::CriticalSection m_mutex;
+    beast::uint64 m_lastJob;
     JobSet m_jobSet;
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;
@@ -48,13 +48,13 @@ public:
     // The number of jobs currently in processTask()
     int m_processCount;
 
-    Workers m_workers;
+    beast::Workers m_workers;
     CancelCallback m_cancelCallback;
 
     // statistics tracking
-    insight::Collector::ptr m_collector;
-    insight::Gauge job_count;
-    insight::Hook hook;
+    beast::insight::Collector::ptr m_collector;
+    beast::insight::Gauge job_count;
+    beast::insight::Hook hook;
 
     //--------------------------------------------------------------------------
     static JobTypes const& getJobTypes ()
@@ -65,8 +65,8 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    JobQueueImp (insight::Collector::ptr const& collector,
-        Stoppable& parent, Journal journal)
+    JobQueueImp (beast::insight::Collector::ptr const& collector,
+        Stoppable& parent, beast::Journal journal)
         : JobQueue ("JobQueue", parent)
         , m_journal (journal)
         , m_lastJob (0)
@@ -99,7 +99,7 @@ public:
     ~JobQueueImp ()
     {
         // Must unhook before destroying
-        hook = insight::Hook ();
+        hook = beast::insight::Hook ();
     }
 
     void collect ()
@@ -220,7 +220,7 @@ public:
         }
         else if (c == 0)
         {
-            c = SystemStats::getNumCpus ();
+            c = beast::SystemStats::getNumCpus ();
 
             // VFALCO NOTE According to boost, hardware_concurrency cannot return
             //             negative numbers/
@@ -283,7 +283,7 @@ public:
         Json::Value ret (Json::objectValue);
 
         ret["threads"] = m_workers.getNumberOfThreads ();
-        ret["cpu"] = String::fromNumber <int> (m_workers.getUtilization() * 100) + "%";
+        ret["cpu"] = beast::String::fromNumber <int> (m_workers.getUtilization() * 100) + "%";
 
         Json::Value priorities = Json::arrayValue;
 
@@ -549,7 +549,7 @@ private:
         //
         if (!isStopping() || !data.info.skip ())
         {
-            Thread::setCurrentThreadName (data.name ());
+            beast::Thread::setCurrentThreadName (data.name ());
             m_journal.trace << "Doing " << data.name () << " job";
 
             Job::clock_type::time_point const start_time (
@@ -641,7 +641,7 @@ private:
 
             if (report)
             {
-                Journal::ScopedStream s (m_journal.debug);
+                beast::Journal::ScopedStream s (m_journal.debug);
 
                 for (JobDataMap::const_iterator iter (counts.begin());
                     iter != counts.end(); ++iter)
@@ -673,8 +673,8 @@ JobQueue::JobQueue (char const* name, Stoppable& parent)
 //------------------------------------------------------------------------------
 
 std::unique_ptr <JobQueue> make_JobQueue (
-    insight::Collector::ptr const& collector,
-        Stoppable& parent, Journal journal)
+    beast::insight::Collector::ptr const& collector,
+        beast::Stoppable& parent, beast::Journal journal)
 {
     return std::make_unique <JobQueueImp> (collector, parent, journal);
 }

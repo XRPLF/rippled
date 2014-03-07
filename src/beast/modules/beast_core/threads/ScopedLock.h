@@ -24,6 +24,9 @@
 #ifndef BEAST_SCOPEDLOCK_H_INCLUDED
 #define BEAST_SCOPEDLOCK_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Automatically locks and unlocks a mutex object.
@@ -239,6 +242,8 @@ private:
     const LockType& lock_;
     const bool lockWasSuccessful;
 };
+
+}  // namespace beast
 
 #endif
 

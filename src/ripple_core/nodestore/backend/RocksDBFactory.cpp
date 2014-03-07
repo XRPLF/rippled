@@ -55,7 +55,7 @@ public:
         std::size_t const id (++n);
         std::stringstream ss;
         ss << "rocksdb #" << id;
-        Thread::setCurrentThreadName (ss.str());
+        beast::Thread::setCurrentThreadName (ss.str());
 
         (*f)(a);
     }
@@ -72,10 +72,10 @@ public:
 class RocksDBBackend
     : public Backend
     , public BatchWriter::Callback
-    , public LeakChecked <RocksDBBackend>
+    , public beast::LeakChecked <RocksDBBackend>
 {
 public:
-    Journal m_journal;
+    beast::Journal m_journal;
     size_t const m_keyBytes;
     Scheduler& m_scheduler;
     BatchWriter m_batch;
@@ -83,7 +83,7 @@ public:
     std::unique_ptr <rocksdb::DB> m_db;
 
     RocksDBBackend (int keyBytes, Parameters const& keyValues,
-        Scheduler& scheduler, Journal journal, RocksDBEnv* env)
+        Scheduler& scheduler, beast::Journal journal, RocksDBEnv* env)
         : m_journal (journal)
         , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
@@ -91,7 +91,7 @@ public:
         , m_name (keyValues ["path"].toStdString ())
     {
         if (m_name.empty())
-            Throw (std::runtime_error ("Missing path in RocksDBFactory backend"));
+            beast::Throw (std::runtime_error ("Missing path in RocksDBFactory backend"));
 
         rocksdb::Options options;
         options.create_if_missing = true;
@@ -137,7 +137,7 @@ public:
         rocksdb::DB* db = nullptr;
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
-            Throw (std::runtime_error (std::string("Unable to open/create RocksDB: ") + status.ToString()));
+            beast::Throw (std::runtime_error (std::string("Unable to open/create RocksDB: ") + status.ToString()));
 
         m_db.reset (db);
     }
@@ -299,14 +299,14 @@ public:
     {
     }
 
-    String getName () const
+    beast::String getName () const
     {
         return "RocksDB";
     }
 
     std::unique_ptr <Backend> createInstance (
         size_t keyBytes, Parameters const& keyValues,
-            Scheduler& scheduler, Journal journal)
+            Scheduler& scheduler, beast::Journal journal)
     {
         return std::make_unique <RocksDBBackend> (
             keyBytes, keyValues, scheduler, journal, &m_env);

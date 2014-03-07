@@ -48,10 +48,10 @@ char* Database::getStr (const char* colName, std::string& retStr)
         return getStr (index, retStr);
     }
 
-    return NULL;
+    return nullptr;
 }
 
-int32 Database::getInt (const char* colName)
+beast::int32 Database::getInt (const char* colName)
 {
     int index;
 
@@ -117,7 +117,7 @@ std::string Database::getStrBinary (const std::string& strColName)
     return strCopy (getBinary (strColName.c_str ()));
 }
 
-uint64 Database::getBigInt (const char* colName)
+beast::uint64 Database::getBigInt (const char* colName)
 {
     int index;
 

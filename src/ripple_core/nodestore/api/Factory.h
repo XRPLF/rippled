@@ -30,7 +30,7 @@ public:
     virtual ~Factory () = 0;
 
     /** Retrieve the name of this factory. */
-    virtual String getName () const = 0;
+    virtual beast::String getName () const = 0;
 
     /** Create an instance of this factory's backend.
         @param keyBytes The fixed number of bytes per key.
@@ -40,7 +40,7 @@ public:
     */
     virtual std::unique_ptr <Backend> createInstance (size_t keyBytes,
         Parameters const& parameters, Scheduler& scheduler,
-            Journal journal) = 0;
+            beast::Journal journal) = 0;
 };
 
 }

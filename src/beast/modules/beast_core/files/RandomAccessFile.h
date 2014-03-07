@@ -20,6 +20,9 @@
 #ifndef BEAST_RANDOMACCESSFILE_H_INCLUDED
 #define BEAST_RANDOMACCESSFILE_H_INCLUDED
 
+namespace beast
+{
+
 /** Provides random access reading and writing to an operating system file.
 
     This class wraps the underlying native operating system routines for
@@ -190,6 +193,8 @@ private:
     void* fileHandle;
     FileOffset currentPosition;
 };
+
+}  // namespace beast
 
 #endif
 

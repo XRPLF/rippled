@@ -67,7 +67,7 @@ public:
     bool getNull (const char* colName);
     char* getStr (const char* colName, std::string& retStr);
     std::string getStrBinary (const std::string& strColName);
-    int32 getInt (const char* colName);
+    beast::int32 getInt (const char* colName);
     float getFloat (const char* colName);
     bool getBool (const char* colName);
 
@@ -75,15 +75,15 @@ public:
     int getBinary (const char* colName, unsigned char* buf, int maxSize);
     Blob getBinary (const std::string& strColName);
 
-    uint64 getBigInt (const char* colName);
+    beast::uint64 getBigInt (const char* colName);
 
     virtual bool getNull (int colIndex) = 0;
     virtual char* getStr (int colIndex, std::string& retStr) = 0;
-    virtual int32 getInt (int colIndex) = 0;
+    virtual beast::int32 getInt (int colIndex) = 0;
     virtual float getFloat (int colIndex) = 0;
     virtual bool getBool (int colIndex) = 0;
     virtual int getBinary (int colIndex, unsigned char* buf, int maxSize) = 0;
-    virtual uint64 getBigInt (int colIndex) = 0;
+    virtual beast::uint64 getBigInt (int colIndex) = 0;
     virtual Blob getBinary (int colIndex) = 0;
 
     // int getSingleDBValueInt(const char* sql);
@@ -97,7 +97,7 @@ public:
     }
     virtual SqliteDatabase* getSqliteDB ()
     {
-        return NULL;
+        return nullptr;
     }
     virtual int getKBUsedAll ()
     {

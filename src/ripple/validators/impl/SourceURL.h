@@ -27,7 +27,7 @@ namespace Validators {
 class SourceURL : public Source
 {
 public:
-    static SourceURL* New (URL const& url);
+    static SourceURL* New (beast::URL const& url);
 };
 
 }

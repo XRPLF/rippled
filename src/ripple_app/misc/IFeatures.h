@@ -24,11 +24,11 @@ class FeatureSet
 {
     // the status of all features requested in a given window
 public:
-    uint32  mCloseTime;
+    beast::uint32  mCloseTime;
     int     mTrustedValidations;                // number of trusted validations
     boost::unordered_map<uint256, int> mVotes;  // yes votes by feature
 
-    FeatureSet (uint32 ct, int tv) : mCloseTime (ct), mTrustedValidations (tv)
+    FeatureSet (beast::uint32 ct, int tv) : mCloseTime (ct), mTrustedValidations (tv)
     {
         ;
     }
@@ -46,8 +46,8 @@ public:
     bool        mSupported;
     bool        mDefault;           // Include in genesis ledger
 
-    uint32      mFirstMajority;     // First time we saw a majority (close time)
-    uint32      mLastMajority;      // Most recent time we saw a majority (close time)
+    beast::uint32      mFirstMajority;     // First time we saw a majority (close time)
+    beast::uint32      mLastMajority;      // Most recent time we saw a majority (close time)
 
     std::string mFriendlyName;
 
@@ -101,7 +101,7 @@ public:
 class IFeatures
 {
 public:
-    static IFeatures* New (uint32 majorityTime, int majorityFraction);
+    static IFeatures* New (beast::uint32 majorityTime, int majorityFraction);
 
     virtual ~IFeatures () { }
 
@@ -126,7 +126,7 @@ public:
     /*
     featureList_t getVetoedFeatures() = 0;
     featureList_t getEnabledFeatures() = 0;
-    featureList_t getFeaturesToEnable(uint32 closeTime) = 0;    // gets features we would vote to enable
+    featureList_t getFeaturesToEnable(beast::uint32 closeTime) = 0;    // gets features we would vote to enable
     featureList_t getDesiredFeatures() = 0;                     // features we support, do not veto, are not enabled
     */
 

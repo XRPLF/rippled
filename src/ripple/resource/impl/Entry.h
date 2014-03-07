@@ -23,10 +23,10 @@
 namespace ripple {
 namespace Resource {
 
-typedef abstract_clock <std::chrono::seconds> clock_type;
+typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
 // An entry in the table
-struct Entry : public List <Entry>::Node
+struct Entry : public beast::List <Entry>::Node
 {
     // Dummy argument is necessary for zero-copy construction of elements
     Entry (int)

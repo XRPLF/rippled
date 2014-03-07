@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 SpinDelay::SpinDelay ()
     : m_count (0)
 {
@@ -27,3 +30,5 @@ void SpinDelay::pause ()
     if (++m_count > 20)
         Thread::yield ();
 }
+
+}  // namespace beast

@@ -24,6 +24,9 @@
 #ifndef BEAST_WINDOWSREGISTRY_H_INCLUDED
 #define BEAST_WINDOWSREGISTRY_H_INCLUDED
 
+namespace beast
+{
+
 #if BEAST_WINDOWS || DOXYGEN
 
 /**
@@ -115,4 +118,7 @@ private:
 };
 
 #endif
+
+}  // namespace beast
+
 #endif   // BEAST_WINDOWSREGISTRY_H_INCLUDED

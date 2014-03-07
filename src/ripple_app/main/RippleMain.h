@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RIPPLEMAIN_H_INCLUDED
 #define RIPPLE_RIPPLEMAIN_H_INCLUDED
 
-class RippleMain : public Main
+class RippleMain : public beast::Main
 {
 public:
     RippleMain ();

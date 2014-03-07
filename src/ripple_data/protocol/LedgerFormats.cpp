@@ -129,5 +129,5 @@ void LedgerFormats::addCommonFields (Item& item)
 
 LedgerFormats* LedgerFormats::getInstance ()
 {
-    return SharedSingleton <LedgerFormats>::getInstance ();
+    return beast::SharedSingleton <LedgerFormats>::getInstance ();
 }

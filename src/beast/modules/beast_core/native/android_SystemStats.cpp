@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 JNIClassBase::JNIClassBase (const char* classPath_)
     : classPath (classPath_), classRef (0)
 {
@@ -299,3 +302,5 @@ bool Time::setSystemTimeToThisTime() const
     bassertfalse;
     return false;
 }
+
+}  // namespace beast

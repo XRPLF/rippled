@@ -19,14 +19,14 @@
 
 SETUP_LOG (SHAMap)
 
-void SHAMap::DefaultMissingNodeHandler::operator() (uint32 refNUm)
+void SHAMap::DefaultMissingNodeHandler::operator() (beast::uint32 refNUm)
 {
     getApp().getOPs ().missingNodeInLedger (refNUm);
 };
 
 //------------------------------------------------------------------------------
 
-SHAMap::SHAMap (SHAMapType t, FullBelowCache& fullBelowCache, uint32 seq,
+SHAMap::SHAMap (SHAMapType t, FullBelowCache& fullBelowCache, beast::uint32 seq,
     MissingNodeHandler missing_node_handler)
     : m_fullBelowCache (fullBelowCache)
     , mSeq (seq)
@@ -73,20 +73,20 @@ SHAMap::~SHAMap ()
     mState = smsInvalid;
 
     logTimedDestroy <SHAMap> (mTNByID,
-        String ("mTNByID with ") +
-            String::fromNumber (mTNByID.size ()) + " items");
+        beast::String ("mTNByID with ") +
+            beast::String::fromNumber (mTNByID.size ()) + " items");
 
     if (mDirtyNodes)
     {
         logTimedDestroy <SHAMap> (mDirtyNodes,
-            String ("mDirtyNodes with ") +
-                String::fromNumber (mDirtyNodes->size ()) + " items");
+            beast::String ("mDirtyNodes with ") +
+                beast::String::fromNumber (mDirtyNodes->size ()) + " items");
     }
 
     if (root)
     {
         logTimedDestroy <SHAMap> (root,
-            String ("root node"));
+            beast::String ("root node"));
     }
 }
 
@@ -265,13 +265,13 @@ SHAMapTreeNode* SHAMap::walkToPointer (uint256 const& id)
         int branch = inNode->selectBranch (id);
 
         if (inNode->isEmptyBranch (branch))
-            return NULL;
+            return nullptr;
 
         inNode = getNodePointer (inNode->getChildNodeID (branch), inNode->getChildHash (branch));
         assert (inNode);
     }
 
-    return (inNode->getTag () == id) ? inNode : NULL;
+    return (inNode->getTag () == id) ? inNode : nullptr;
 }
 
 SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& id, uint256 const& hash, bool modify)
@@ -289,7 +289,7 @@ SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& id, uint256 const& ha
             WriteLog (lsFATAL, SHAMap) << "ID: " << id;
             WriteLog (lsFATAL, SHAMap) << "TgtHash " << hash;
             WriteLog (lsFATAL, SHAMap) << "NodHash " << node->getNodeHash ();
-            Throw (std::runtime_error ("invalid node"));
+            beast::Throw (std::runtime_error ("invalid node"));
         }
 
 #endif
@@ -408,7 +408,7 @@ SHAMapTreeNode* SHAMap::firstBelow (SHAMapTreeNode* node)
             }
 
         if (!foundNode)
-            return NULL;
+            return nullptr;
     }
     while (true);
 }
@@ -432,7 +432,7 @@ SHAMapTreeNode* SHAMap::lastBelow (SHAMapTreeNode* node)
             }
 
         if (!foundNode)
-            return NULL;
+            return nullptr;
     }
     while (true);
 }
@@ -442,7 +442,7 @@ SHAMapItem::pointer SHAMap::onlyBelow (SHAMapTreeNode* node)
     // If there is only one item below this node, return it
     while (!node->isLeaf ())
     {
-        SHAMapTreeNode* nextNode = NULL;
+        SHAMapTreeNode* nextNode = nullptr;
 
         for (int i = 0; i < 16; ++i)
             if (!node->isEmptyBranch (i))
@@ -671,7 +671,7 @@ bool SHAMap::hasItem (uint256 const& id)
     ScopedReadLockType sl (mLock);
 
     SHAMapTreeNode* leaf = walkToPointer (id);
-    return (leaf != NULL);
+    return (leaf != nullptr);
 }
 
 bool SHAMap::delItem (uint256 const& id)
@@ -1096,7 +1096,7 @@ int SHAMap::armDirty ()
     return ++mSeq;
 }
 
-int SHAMap::flushDirty (NodeMap& map, int maxNodes, NodeObjectType t, uint32 seq)
+int SHAMap::flushDirty (NodeMap& map, int maxNodes, NodeObjectType t, beast::uint32 seq)
 {
     int flushed = 0;
     Serializer s;
@@ -1113,7 +1113,7 @@ int SHAMap::flushDirty (NodeMap& map, int maxNodes, NodeObjectType t, uint32 seq
         if (s.getSHA512Half () != it->second->getNodeHash ())
         {
             WriteLog (lsFATAL, SHAMap) << * (it->second);
-            WriteLog (lsFATAL, SHAMap) << lexicalCast <std::string> (s.getDataLength ());
+            WriteLog (lsFATAL, SHAMap) << beast::lexicalCast <std::string> (s.getDataLength ());
             WriteLog (lsFATAL, SHAMap) << s.getSHA512Half () << " != " << it->second->getNodeHash ();
             assert (false);
         }
@@ -1181,13 +1181,13 @@ SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& nodeID)
     while (nodeID != *node)
     {
         if (node->isLeaf ())
-            return NULL;
+            return nullptr;
 
         int branch = node->selectBranch (nodeID.getNodeID ());
         assert (branch >= 0);
 
         if ((branch < 0) || node->isEmptyBranch (branch))
-            return NULL;
+            return nullptr;
 
         node = getNodePointer (node->getChildNodeID (branch), node->getChildHash (branch));
         assert (node);
@@ -1292,7 +1292,7 @@ void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
 
 //------------------------------------------------------------------------------
 
-class SHAMapTests : public UnitTest
+class SHAMapTests : public beast::UnitTest
 {
 public:
     SHAMapTests () : UnitTest ("SHAMap", "ripple")

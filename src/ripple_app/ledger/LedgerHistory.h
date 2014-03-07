@@ -21,7 +21,7 @@
 #define RIPPLE_LEDGERHISTORY_H
 
 // VFALCO TODO Rename to OldLedgers ?
-class LedgerHistory : LeakChecked <LedgerHistory>
+class LedgerHistory : beast::LeakChecked <LedgerHistory>
 {
 public:
     LedgerHistory ();

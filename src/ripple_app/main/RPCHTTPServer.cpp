@@ -23,12 +23,12 @@ namespace ripple {
 
 class RPCHTTPServerImp
     : public RPCHTTPServer
-    , public LeakChecked <RPCHTTPServerImp>
+    , public beast::LeakChecked <RPCHTTPServerImp>
     , public HTTP::Handler
 {
 public:
     Resource::Manager& m_resourceManager;
-    Journal m_journal;
+    beast::Journal m_journal;
     JobQueue& m_jobQueue;
     NetworkOPs& m_networkOPs;
     RPCServerHandler m_deprecatedHandler;
@@ -36,7 +36,7 @@ public:
     std::unique_ptr <RippleSSLContext> m_context;
 
     RPCHTTPServerImp (Stoppable& parent,
-                      Journal journal,
+                      beast::Journal journal,
                       JobQueue& jobQueue,
                       NetworkOPs& networkOPs,
                       Resource::Manager& resourceManager)
@@ -66,12 +66,12 @@ public:
         m_server.stop();
     }
 
-    void setup (Journal journal)
+    void setup (beast::Journal journal)
     {
         if (! getConfig ().getRpcIP().empty () &&
               getConfig ().getRpcPort() != 0)
         {
-            IP::Endpoint ep (IP::Endpoint::from_string (getConfig().getRpcIP()));
+            beast::IP::Endpoint ep (beast::IP::Endpoint::from_string (getConfig().getRpcIP()));
             if (! is_unspecified (ep))
             {
                 HTTP::Port port;
@@ -116,7 +116,7 @@ public:
     {
         // Reject non-loopback connections if RPC_ALLOW_REMOTE is not set
         if (! getConfig().RPC_ALLOW_REMOTE &&
-            ! IP::is_loopback (session.remoteAddress()))
+            ! beast::IP::is_loopback (session.remoteAddress()))
         {
             session.close();
         }
@@ -176,7 +176,7 @@ public:
     }
 
     // Stolen directly from RPCServerHandler
-    std::string processRequest (std::string const& request, IP::Endpoint const& remoteIPAddress)
+    std::string processRequest (std::string const& request, beast::IP::Endpoint const& remoteIPAddress)
     {
         Json::Value jvRequest;
         {
@@ -283,7 +283,7 @@ RPCHTTPServer::RPCHTTPServer (Stoppable& parent)
 //------------------------------------------------------------------------------
 
 RPCHTTPServer* RPCHTTPServer::New (Stoppable& parent,
-                                   Journal journal,
+                                   beast::Journal journal,
                                    JobQueue& jobQueue,
                                    NetworkOPs& networkOPs,
                                    Resource::Manager& resourceManager)

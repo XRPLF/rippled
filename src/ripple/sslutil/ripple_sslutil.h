@@ -29,10 +29,6 @@
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
-namespace ripple {
-using namespace beast;
-}
-
 # include "api/bignum_error.h"
 #include "api/CAutoBN_CTX.h"
 #include "api/CBigNum.h"

@@ -77,7 +77,7 @@ void CKey::getECIESSecret (CKey& otherKey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HM
     else throw std::runtime_error ("no private key");
 
     unsigned char rawbuf[512];
-    int buflen = ECDH_compute_key (rawbuf, 512, EC_KEY_get0_public_key (pubkey), privkey, NULL);
+    int buflen = ECDH_compute_key (rawbuf, 512, EC_KEY_get0_public_key (pubkey), privkey, nullptr);
 
     if (buflen < ECIES_MIN_SEC)
         throw std::runtime_error ("ecdh key failed");
@@ -97,7 +97,7 @@ static ECIES_HMAC_TYPE makeHMAC (const ECIES_HMAC_KEY_TYPE& secret, Blob const& 
     HMAC_CTX ctx;
     HMAC_CTX_init (&ctx);
 
-    if (HMAC_Init_ex (&ctx, secret.begin (), ECIES_HMAC_KEY_SIZE, ECIES_HMAC_ALGO, NULL) != 1)
+    if (HMAC_Init_ex (&ctx, secret.begin (), ECIES_HMAC_KEY_SIZE, ECIES_HMAC_ALGO, nullptr) != 1)
     {
         HMAC_CTX_cleanup (&ctx);
         throw std::runtime_error ("init hmac");
@@ -140,7 +140,7 @@ Blob CKey::encryptECIES (CKey& otherKey, Blob const& plaintext)
     EVP_CIPHER_CTX ctx;
     EVP_CIPHER_CTX_init (&ctx);
 
-    if (EVP_EncryptInit_ex (&ctx, ECIES_ENC_ALGO, NULL, secret.begin (), iv.begin ()) != 1)
+    if (EVP_EncryptInit_ex (&ctx, ECIES_ENC_ALGO, nullptr, secret.begin (), iv.begin ()) != 1)
     {
         EVP_CIPHER_CTX_cleanup (&ctx);
         secret.zero ();
@@ -217,7 +217,7 @@ Blob CKey::decryptECIES (CKey& otherKey, Blob const& ciphertext)
     ECIES_HMAC_KEY_TYPE hmacKey;
     getECIESSecret (otherKey, secret, hmacKey);
 
-    if (EVP_DecryptInit_ex (&ctx, ECIES_ENC_ALGO, NULL, secret.begin (), iv.begin ()) != 1)
+    if (EVP_DecryptInit_ex (&ctx, ECIES_ENC_ALGO, nullptr, secret.begin (), iv.begin ()) != 1)
     {
         secret.zero ();
         hmacKey.zero ();

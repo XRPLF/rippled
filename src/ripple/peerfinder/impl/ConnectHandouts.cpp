@@ -31,14 +31,14 @@ ConnectHandouts::ConnectHandouts (
 }
 
 bool
-ConnectHandouts::try_insert (IP::Endpoint const& endpoint)
+ConnectHandouts::try_insert (beast::IP::Endpoint const& endpoint)
 {
     if (full ())
         return false;
 
     // Make sure the address isn't already in our list
     if (std::any_of (m_list.begin(), m_list.end(),
-        [&endpoint](IP::Endpoint const& other)
+        [&endpoint](beast::IP::Endpoint const& other)
         {
             // Ignore port for security reasons
             return other.address() ==

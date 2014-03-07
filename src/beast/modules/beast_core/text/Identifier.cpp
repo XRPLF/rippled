@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 StringPool& Identifier::getPool()
 {
     static StringPool pool;
@@ -67,3 +70,5 @@ bool Identifier::isValidIdentifier (const String& possibleIdentifier) noexcept
     return possibleIdentifier.isNotEmpty()
             && possibleIdentifier.containsOnly ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-:#@$%");
 }
+
+}  // namespace beast

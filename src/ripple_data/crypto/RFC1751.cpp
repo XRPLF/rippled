@@ -483,11 +483,11 @@ void RFC1751::getEnglishFromKey (std::string& strHuman, const std::string& strKe
     strHuman    = strFirst + " " + strSecond;
 }
 
-String RFC1751::getWordFromBlob (void const* data, size_t bytes)
+beast::String RFC1751::getWordFromBlob (void const* data, size_t bytes)
 {
-    uint32 hash;
+    beast::uint32 hash;
 
-    Murmur::Hash (data, bytes, 0, &hash);
+    beast::Murmur::Hash (data, bytes, 0, &hash);
 
     return s_dictionary [hash % (sizeof (s_dictionary) / sizeof (s_dictionary [0]))];
 }

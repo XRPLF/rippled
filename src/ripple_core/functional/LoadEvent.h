@@ -70,8 +70,8 @@ private:
     LoadMonitor& m_loadMonitor;
     bool m_isRunning;
     std::string m_name;
-    RelativeTime m_timeStopped;
-    RelativeTime m_timeStarted;
+    beast::RelativeTime m_timeStopped;
+    beast::RelativeTime m_timeStarted;
     double m_secondsWaiting;
     double m_secondsRunning;
 };

@@ -33,18 +33,18 @@ namespace PeerFinder {
 class SlotImp : public Slot
 {
 private:
-    typedef beast::aged_unordered_map <IP::Endpoint, int> recent_type;
+    typedef beast::aged_unordered_map <beast::IP::Endpoint, int> recent_type;
 
 public:
     typedef std::shared_ptr <SlotImp> ptr;
 
     // inbound
-    SlotImp (IP::Endpoint const& local_endpoint,
-        IP::Endpoint const& remote_endpoint, bool fixed,
+    SlotImp (beast::IP::Endpoint const& local_endpoint,
+        beast::IP::Endpoint const& remote_endpoint, bool fixed,
             clock_type& clock);
 
     // outbound
-    SlotImp (IP::Endpoint const& remote_endpoint,
+    SlotImp (beast::IP::Endpoint const& remote_endpoint,
         bool fixed, clock_type& clock);
 
     bool inbound () const
@@ -67,12 +67,12 @@ public:
         return m_state;
     }
 
-    IP::Endpoint const& remote_endpoint () const
+    beast::IP::Endpoint const& remote_endpoint () const
     {
         return m_remote_endpoint;
     }
 
-    boost::optional <IP::Endpoint> const& local_endpoint () const
+    boost::optional <beast::IP::Endpoint> const& local_endpoint () const
     {
         return m_local_endpoint;
     }
@@ -82,12 +82,12 @@ public:
         return m_public_key;
     }
 
-    void local_endpoint (IP::Endpoint const& endpoint)
+    void local_endpoint (beast::IP::Endpoint const& endpoint)
     {
         m_local_endpoint = endpoint;
     }
 
-    void remote_endpoint (IP::Endpoint const& endpoint)
+    void remote_endpoint (beast::IP::Endpoint const& endpoint)
     {
         m_remote_endpoint = endpoint;
     }
@@ -122,10 +122,10 @@ public:
             We also insert messages that we send to the slot to prevent
             sending a slot the same address too frequently.
         */
-        void insert (IP::Endpoint const& ep, int hops);
+        void insert (beast::IP::Endpoint const& ep, int hops);
 
         /** Returns `true` if we should not send endpoint to the slot. */
-        bool filter (IP::Endpoint const& ep, int hops);
+        bool filter (beast::IP::Endpoint const& ep, int hops);
 
     private:
         void expire ();
@@ -144,8 +144,8 @@ private:
     bool const m_fixed;
     bool m_cluster;
     State m_state;
-    IP::Endpoint m_remote_endpoint;
-    boost::optional <IP::Endpoint> m_local_endpoint;
+    beast::IP::Endpoint m_remote_endpoint;
+    boost::optional <beast::IP::Endpoint> m_local_endpoint;
     boost::optional <RipplePublicKey> m_public_key;
 
 public:

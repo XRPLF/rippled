@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 enum
 {
     U_ISOFS_SUPER_MAGIC = 5,
@@ -367,3 +370,5 @@ void File::revealToUser() const
     else if (getParentDirectory().exists())
         getParentDirectory().startAsProcess();
 }
+
+}  // namespace beast

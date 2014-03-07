@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 StringArray::StringArray() noexcept
 {
 }
@@ -508,3 +511,5 @@ void StringArray::minimiseStorageOverheads()
 {
     strings.minimiseStorageOverheads();
 }
+
+}  // namespace beast

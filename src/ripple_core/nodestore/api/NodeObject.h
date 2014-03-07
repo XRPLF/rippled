@@ -67,7 +67,7 @@ public:
 
         @note The key size can be retrieved with `Hash::sizeInBytes`
     */
-    typedef UnsignedInteger <32> Hash;
+    typedef beast::UnsignedInteger <32> Hash;
 
     // Please use this one. For a reference use Ptr const&
     typedef boost::shared_ptr <NodeObject> Ptr;

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_TXQUEUE_H_INCLUDED
 #define RIPPLE_TXQUEUE_H_INCLUDED
 
-class TxQueue : LeakChecked <TxQueue>
+class TxQueue : beast::LeakChecked <TxQueue>
 {
 public:
     static TxQueue* New ();

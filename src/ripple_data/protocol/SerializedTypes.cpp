@@ -111,7 +111,7 @@ std::string STUInt8::getText () const
             return human;
     }
 
-    return lexicalCastThrow <std::string> (value);
+    return beast::lexicalCastThrow <std::string> (value);
 }
 
 Json::Value STUInt8::getJson (int) const
@@ -160,7 +160,7 @@ std::string STUInt16::getText () const
             return item->getName ();
     }
 
-    return lexicalCastThrow <std::string> (value);
+    return beast::lexicalCastThrow <std::string> (value);
 }
 
 Json::Value STUInt16::getJson (int) const
@@ -199,7 +199,7 @@ STUInt32* STUInt32::construct (SerializerIterator& u, SField::ref name)
 
 std::string STUInt32::getText () const
 {
-    return lexicalCastThrow <std::string> (value);
+    return beast::lexicalCastThrow <std::string> (value);
 }
 
 Json::Value STUInt32::getJson (int) const
@@ -220,7 +220,7 @@ STUInt64* STUInt64::construct (SerializerIterator& u, SField::ref name)
 
 std::string STUInt64::getText () const
 {
-    return lexicalCastThrow <std::string> (value);
+    return beast::lexicalCastThrow <std::string> (value);
 }
 
 Json::Value STUInt64::getJson (int) const
@@ -351,7 +351,7 @@ STVector256* STVector256::construct (SerializerIterator& u, SField::ref name)
 
 void STVector256::add (Serializer& s) const
 {
-    s.addVL (mValue.empty () ? NULL : mValue[0].begin (), mValue.size () * (256 / 8));
+    s.addVL (mValue.empty () ? nullptr : mValue[0].begin (), mValue.size () * (256 / 8));
 }
 
 bool STVector256::isEquivalent (const SerializedType& t) const

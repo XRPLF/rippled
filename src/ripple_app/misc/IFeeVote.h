@@ -31,9 +31,9 @@ public:
         @param targetReserveBase
         @param targetReserveIncrement
     */
-    static IFeeVote* New (uint64 targetBaseFee,
-                          uint32 targetReserveBase,
-                          uint32 targetReserveIncrement);
+    static IFeeVote* New (beast::uint64 targetBaseFee,
+                          beast::uint32 targetReserveBase,
+                          beast::uint32 targetReserveIncrement);
 
     virtual ~IFeeVote () { }
 

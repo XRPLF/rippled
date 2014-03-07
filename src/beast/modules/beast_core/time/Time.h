@@ -24,6 +24,9 @@
 #ifndef BEAST_TIME_H_INCLUDED
 #define BEAST_TIME_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Holds an absolute date and time.
@@ -409,5 +412,6 @@ BEAST_API bool operator>  (Time time1, Time time2);
 /** Compares two Time objects. */
 BEAST_API bool operator>= (Time time1, Time time2);
 
+}  // namespace beast
 
 #endif   // BEAST_TIME_H_INCLUDED

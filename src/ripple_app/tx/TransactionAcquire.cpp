@@ -223,7 +223,7 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNode>& nodeID
             {
                 if (mHaveRoot)
                     WriteLog (lsDEBUG, TransactionAcquire) << "Got root TXS node, already have it";
-                else if (!mMap->addRootNode (getHash (), *nodeDatait, snfWIRE, NULL).isGood())
+                else if (!mMap->addRootNode (getHash (), *nodeDatait, snfWIRE, nullptr).isGood())
                 {
                     WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad root node";
                 }

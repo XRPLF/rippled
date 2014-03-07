@@ -22,17 +22,17 @@
 
 // Tracks all transactions in memory
 
-class TransactionMaster : LeakChecked <TransactionMaster>
+class TransactionMaster : beast::LeakChecked <TransactionMaster>
 {
 public:
     TransactionMaster ();
 
     Transaction::pointer            fetch (uint256 const& , bool checkDisk);
     SerializedTransaction::pointer  fetch (SHAMapItem::ref item, SHAMapTreeNode:: TNType type,
-                                           bool checkDisk, uint32 uCommitLedger);
+                                           bool checkDisk, beast::uint32 uCommitLedger);
 
     // return value: true = we had the transaction already
-    bool inLedger (uint256 const& hash, uint32 ledger);
+    bool inLedger (uint256 const& hash, beast::uint32 ledger);
     bool canonicalize (Transaction::pointer* pTransaction);
     void sweep (void);
 

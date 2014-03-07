@@ -29,7 +29,7 @@ namespace Validators {
 class SourceFile : public Source
 {
 public:
-    static SourceFile* New (File const& path);
+    static SourceFile* New (beast::File const& path);
 };
 
 }

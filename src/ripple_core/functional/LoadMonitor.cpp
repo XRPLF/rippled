@@ -138,7 +138,7 @@ std::string LoadMonitor::printElapsed (double seconds)
 void LoadMonitor::addLoadSample (LoadEvent const& sample)
 {
     std::string const& name (sample.name());
-    RelativeTime const latency (sample.getSecondsTotal());
+    beast::RelativeTime const latency (sample.getSecondsTotal());
 
     if (latency.inSeconds() > 0.5)
     {
@@ -167,13 +167,13 @@ void LoadMonitor::addLoadSample (LoadEvent const& sample)
         mLatencyMSPeak = latencyPeak;
 }
 
-void LoadMonitor::setTargetLatency (uint64 avg, uint64 pk)
+void LoadMonitor::setTargetLatency (beast::uint64 avg, beast::uint64 pk)
 {
     mTargetLatencyAvg  = avg;
     mTargetLatencyPk = pk;
 }
 
-bool LoadMonitor::isOverTarget (uint64 avg, uint64 peak)
+bool LoadMonitor::isOverTarget (beast::uint64 avg, beast::uint64 peak)
 {
     return (mTargetLatencyPk && (peak > mTargetLatencyPk)) ||
            (mTargetLatencyAvg && (avg > mTargetLatencyAvg));

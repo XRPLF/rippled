@@ -24,6 +24,8 @@
 #ifndef BEAST_SCOPEDVALUESETTER_H_INCLUDED
 #define BEAST_SCOPEDVALUESETTER_H_INCLUDED
 
+namespace beast
+{
 
 //==============================================================================
 /**
@@ -89,5 +91,6 @@ private:
     const ValueType originalValue;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_SCOPEDVALUESETTER_H_INCLUDED

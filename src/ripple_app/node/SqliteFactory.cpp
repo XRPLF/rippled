@@ -52,11 +52,11 @@ public:
         : m_name (path)
         , m_db (new DatabaseCon(path, s_nodeStoreDBInit, s_nodeStoreDBCount))
     {
-        String s;
+        beast::String s;
 
         // VFALCO TODO Remove this dependency on theConfig
         //
-        s << "PRAGMA cache_size=-" << String (getConfig ().getSize(siHashNodeDBCache) * 1024);
+        s << "PRAGMA cache_size=-" << beast::String (getConfig ().getSize(siHashNodeDBCache) * 1024);
         m_db->getDB()->executeSQL (s.toStdString ().c_str ());
     }
 
@@ -225,14 +225,14 @@ private:
 class SqliteFactory : public NodeStore::Factory
 {
 public:
-    String getName () const
+    beast::String getName () const
     {
         return "Sqlite";
     }
 
     std::unique_ptr <NodeStore::Backend> createInstance (
         size_t, NodeStore::Parameters const& keyValues,
-            NodeStore::Scheduler&, Journal)
+            NodeStore::Scheduler&, beast::Journal)
     {
         return std::make_unique <SqliteBackend> (keyValues ["path"].toStdString ());
     }

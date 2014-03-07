@@ -19,7 +19,7 @@
 
 class TxQueueImp
     : public TxQueue
-    , public LeakChecked <TxQueueImp>
+    , public beast::LeakChecked <TxQueueImp>
 {
 public:
     TxQueueImp ()

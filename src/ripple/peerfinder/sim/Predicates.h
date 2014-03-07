@@ -59,7 +59,7 @@ is_remote_node_pred <Node> is_remote_node (Node const* node)
 class is_remote_endpoint
 {
 public:
-    explicit is_remote_endpoint (IP::Endpoint const& address)
+    explicit is_remote_endpoint (beast::IP::Endpoint const& address)
         : m_endpoint (address)
         { }
     template <typename Link>
@@ -68,7 +68,7 @@ public:
         return link.remote_endpoint() == m_endpoint;
     }
 private:
-    IP::Endpoint const m_endpoint;
+    beast::IP::Endpoint const m_endpoint;
 };
 
 }

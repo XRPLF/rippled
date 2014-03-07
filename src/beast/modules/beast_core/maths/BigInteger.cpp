@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 namespace
 {
     inline size_t bitToIndex (const int bit) noexcept   { return (size_t) (bit >> 5); }
@@ -1014,3 +1017,5 @@ void BigInteger::loadFromMemoryBlock (const MemoryBlock& data)
     for (int i = (int) data.getSize(); --i >= 0;)
         this->setBitRangeAsInt (i << 3, 8, (uint32) data [i]);
 }
+
+}  // namespace beast

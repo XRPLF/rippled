@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-SHAMapTreeNode::SHAMapTreeNode (uint32 seq, const SHAMapNode& nodeID)
+SHAMapTreeNode::SHAMapTreeNode (beast::uint32 seq, const SHAMapNode& nodeID)
     : SHAMapNode (nodeID)
-    , mHash (uint64(0))
+    , mHash (beast::uint64(0))
     , mSeq (seq)
     , mAccessSeq (seq)
     , mType (tnERROR)
@@ -28,7 +28,7 @@ SHAMapTreeNode::SHAMapTreeNode (uint32 seq, const SHAMapNode& nodeID)
 {
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, uint32 seq) : SHAMapNode (node),
+SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, beast::uint32 seq) : SHAMapNode (node),
     mHash (node.mHash), mSeq (seq), mType (node.mType), mIsBranch (node.mIsBranch), mFullBelow (false)
 {
     if (node.mItem)
@@ -37,14 +37,15 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, uint32 seq) : SHAMap
         memcpy (mHashes, node.mHashes, sizeof (mHashes));
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& node, SHAMapItem::ref item, TNType type, uint32 seq) :
+SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& node, SHAMapItem::ref item,
+                                TNType type, beast::uint32 seq) :
     SHAMapNode (node), mItem (item), mSeq (seq), mType (type), mIsBranch (0), mFullBelow (false)
 {
     assert (item->peekData ().size () >= 12);
     updateHash ();
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, uint32 seq,
+SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, beast::uint32 seq,
                                 SHANodeFormat format, uint256 const& hash, bool hashValid) :
     SHAMapNode (id), mSeq (seq), mType (tnERROR), mIsBranch (0), mFullBelow (false)
 {
@@ -145,7 +146,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, uint3
             throw std::runtime_error ("invalid P node");
         }
 
-        uint32 prefix = rawNode[0];
+        beast::uint32 prefix = rawNode[0];
         prefix <<= 8;
         prefix |= rawNode[1];
         prefix <<= 8;
@@ -416,7 +417,7 @@ void SHAMapTreeNode::dump ()
 std::string SHAMapTreeNode::getString () const
 {
     std::string ret = "NodeID(";
-    ret += lexicalCastThrow <std::string> (getDepth ());
+    ret += beast::lexicalCastThrow <std::string> (getDepth ());
     ret += ",";
     ret += getNodeID ().GetHex ();
     ret += ")";
@@ -427,7 +428,7 @@ std::string SHAMapTreeNode::getString () const
             if (!isEmptyBranch (i))
             {
                 ret += "\nb";
-                ret += lexicalCastThrow <std::string> (i);
+                ret += beast::lexicalCastThrow <std::string> (i);
                 ret += " = ";
                 ret += mHashes[i].GetHex ();
             }
@@ -449,7 +450,7 @@ std::string SHAMapTreeNode::getString () const
         ret += "\n  Hash=";
         ret += mHash.GetHex ();
         ret += "/";
-        ret += lexicalCast <std::string> (mItem->peekSerializer ().getDataLength ());
+        ret += beast::lexicalCast <std::string> (mItem->peekSerializer ().getDataLength ());
     }
 
     return ret;

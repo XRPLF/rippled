@@ -25,13 +25,13 @@ namespace HTTP {
 
 /** A listening socket. */
 class Door
-    : public SharedObject
+    : public beast::SharedObject
     , public beast::asio::AsyncObject <Door>
-    , public List <Door>::Node
-    , public LeakChecked <Door>
+    , public beast::List <Door>::Node
+    , public beast::LeakChecked <Door>
 {
 public:
-    typedef SharedPtr <Door> Ptr;
+    typedef beast::SharedPtr <Door> Ptr;
 
     ServerImpl& m_impl;
     acceptor m_acceptor;

@@ -36,13 +36,13 @@ class ResolverAsioImpl
 public:
     typedef std::pair <std::string, std::string> HostAndPort;
 
-    Journal m_journal;
+    beast::Journal m_journal;
 
     boost::asio::io_service& m_io_service;
     boost::asio::io_service::strand m_strand;
     boost::asio::ip::tcp::resolver m_resolver;
 
-    WaitableEvent m_stop_complete;
+    beast::WaitableEvent m_stop_complete;
     std::atomic <bool> m_stop_called;
     std::atomic <bool> m_stopped;
 
@@ -66,7 +66,7 @@ public:
     std::deque <Work> m_work;
 
     ResolverAsioImpl (boost::asio::io_service& io_service,
-        Journal journal)
+        beast::Journal journal)
             : m_journal (journal)
             , m_io_service (io_service)
             , m_strand (io_service)
@@ -171,7 +171,7 @@ public:
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        std::vector <IP::Endpoint> addresses;
+        std::vector <beast::IP::Endpoint> addresses;
 
         // If we get an error message back, we don't return any
         // results that we may have gotten.
@@ -179,7 +179,7 @@ public:
         {
             while (iter != boost::asio::ip::tcp::resolver::iterator())
             {
-                addresses.push_back (IPAddressConversion::from_asio (*iter));
+                addresses.push_back (beast::IPAddressConversion::from_asio (*iter));
                 ++iter;
             }
         }

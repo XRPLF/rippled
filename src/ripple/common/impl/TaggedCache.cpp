@@ -31,17 +31,17 @@ then canonicalize a new object with the same key, make sure you get the
 original object.
 */
 
-class TaggedCacheTests : public UnitTest
+class TaggedCacheTests : public beast::UnitTest
 {
 public:
     void runTest ()
     {
         //Journal const j (journal());
-        Journal const j;
+        beast::Journal const j;
 
         beginTestCase ("Insert");
 
-        manual_clock <std::chrono::seconds> clock;
+        beast::manual_clock <std::chrono::seconds> clock;
         clock.set (0);
 
         typedef int Key;

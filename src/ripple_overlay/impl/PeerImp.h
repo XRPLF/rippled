@@ -76,7 +76,7 @@ private:
     static const boost::posix_time::seconds nodeVerifySeconds;
 
     /** The clock drift we allow a remote peer to have */
-    static const uint32 clockToleranceDeltaSeconds = 20;
+    static const beast::uint32 clockToleranceDeltaSeconds = 20;
 
     /** The length of the smallest valid finished message */
     static const size_t sslMinimumFinishedLength = 12;
@@ -128,7 +128,7 @@ private:
         }
 
         getNativeSocket ().async_connect (
-            IPAddressConversion::to_asio_endpoint (m_remoteAddress),
+            beast::IPAddressConversion::to_asio_endpoint (m_remoteAddress),
                 m_strand.wrap (boost::bind (&PeerImp::onConnect,
                     shared_from_this (), boost::asio::placeholders::error)));
     }
@@ -157,7 +157,7 @@ public:
 
     boost::shared_ptr <NativeSocketType> m_shared_socket;
 
-    Journal m_journal;
+    beast::Journal m_journal;
 
     // A unique identifier (up to a restart of rippled) for this particular
     // peer instance. A peer that disconnects will, upon reconnection, get a
@@ -167,7 +167,7 @@ public:
     // Updated at each stage of the connection process to reflect
     // the current conditions as closely as possible. This includes
     // the case where we learn the true IP via a PROXY handshake.
-    IP::Endpoint m_remoteAddress;
+    beast::IP::Endpoint m_remoteAddress;
 
     // These is up here to prevent warnings about order of initializations
     //
@@ -222,7 +222,7 @@ public:
     /** New incoming peer from the specified socket */
     PeerImp (
         boost::shared_ptr <NativeSocketType> const& socket,
-        IP::Endpoint remoteAddress,
+        beast::IP::Endpoint remoteAddress,
         Peers& peers,
         Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder,
@@ -258,7 +258,7 @@ public:
               from inside constructors.
     */
     PeerImp (
-        IP::Endpoint remoteAddress,
+        beast::IP::Endpoint remoteAddress,
         boost::asio::io_service& io_service,
         Peers& peers,
         Resource::Manager& resourceManager,
@@ -350,7 +350,7 @@ public:
 
             m_state = stateGracefulClose;
 
-            if (m_clusterNode && m_journal.active(Journal::Severity::kWarning))
+            if (m_clusterNode && m_journal.active(beast::Journal::Severity::kWarning))
                 m_journal.warning << "Cluster peer " << m_nodeName <<
                                      " detached: " << rsn;
 
@@ -423,7 +423,7 @@ public:
         m_state = stateConnected;
 
         m_peerFinder.on_connected (m_slot,
-            IPAddressConversion::from_asio (local_endpoint));
+            beast::IPAddressConversion::from_asio (local_endpoint));
 
         m_socket->set_verify_mode (boost::asio::ssl::verify_none);
         m_socket->async_handshake (
@@ -529,7 +529,7 @@ public:
             ret["protocol"] = BuildInfo::Protocol (mHello.protoversion ()).toStdString ();
         }
 
-        uint32 minSeq, maxSeq;
+        beast::uint32 minSeq, maxSeq;
         ledgerRange(minSeq, maxSeq);
 
         if ((minSeq != 0) || (maxSeq != 0))
@@ -582,7 +582,7 @@ public:
         return m_closedLedgerHash;
     }
 
-    bool hasLedger (uint256 const& hash, uint32 seq) const
+    bool hasLedger (uint256 const& hash, beast::uint32 seq) const
     {
         boost::mutex::scoped_lock sl(m_recentLock);
 
@@ -598,7 +598,7 @@ public:
         return false;
     }
 
-    void ledgerRange (uint32& minSeq, uint32& maxSeq) const
+    void ledgerRange (beast::uint32& minSeq, beast::uint32& maxSeq) const
     {
         boost::mutex::scoped_lock sl(m_recentLock);
 
@@ -645,12 +645,12 @@ public:
         return mHello.has_protoversion () && (mHello.protoversion () >= version);
     }
 
-    bool hasRange (uint32 uMin, uint32 uMax)
+    bool hasRange (beast::uint32 uMin, beast::uint32 uMax)
     {
         return (uMin >= m_minLedger) && (uMax <= m_maxLedger);
     }
 
-    IP::Endpoint getRemoteAddress() const
+    beast::IP::Endpoint getRemoteAddress() const
     {
         return m_remoteAddress;
     }
@@ -1352,14 +1352,14 @@ private:
 
         (void) m_timer.cancel ();
 
-        uint32 const ourTime (getApp().getOPs ().getNetworkTimeNC ());
-        uint32 const minTime (ourTime - clockToleranceDeltaSeconds);
-        uint32 const maxTime (ourTime + clockToleranceDeltaSeconds);
+        beast::uint32 const ourTime (getApp().getOPs ().getNetworkTimeNC ());
+        beast::uint32 const minTime (ourTime - clockToleranceDeltaSeconds);
+        beast::uint32 const maxTime (ourTime + clockToleranceDeltaSeconds);
 
     #ifdef BEAST_DEBUG
         if (packet.has_nettime ())
         {
-            int64 to = ourTime;
+            beast::int64 to = ourTime;
             to -= packet.nettime ();
             m_journal.debug << "Connect: time offset " << to;
         }
@@ -1409,7 +1409,7 @@ private:
             m_journal.info << "Hello: Connect: " << m_nodePublicKey.humanNodePublic ();
 
             if ((protocol != BuildInfo::getCurrentProtocol()) &&
-                m_journal.active(Journal::Severity::kInfo))
+                m_journal.active(beast::Journal::Severity::kInfo))
             {
                 m_journal.info << "Peer protocol: " << protocol.toStdString ();
             }
@@ -1491,9 +1491,9 @@ private:
             {
                 protocol::TMLoadSource const& node = packet.loadsources (i);
                 Resource::Gossip::Item item;
-                item.address = IP::Endpoint::from_string (node.name());
+                item.address = beast::IP::Endpoint::from_string (node.name());
                 item.balance = node.cost();
-                if (item.address != IP::Endpoint())
+                if (item.address != beast::IP::Endpoint())
                     gossip.items.push_back(item);
             }
             m_resourceManager.importConsumers (m_nodeName, gossip);
@@ -1559,7 +1559,7 @@ private:
 
     void recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet)
     {
-        uint32 closeTime = getApp().getOPs().getCloseTimeNC();
+        beast::uint32 closeTime = getApp().getOPs().getCloseTimeNC();
 
         if (packet->validation ().size () < 50)
         {
@@ -1646,7 +1646,7 @@ private:
     // TODO: filter out all the LAN peers
     void recvPeers (protocol::TMPeers& packet)
     {
-        std::vector <IP::Endpoint> list;
+        std::vector <beast::IP::Endpoint> list;
         list.reserve (packet.nodes().size());
         for (int i = 0; i < packet.nodes ().size (); ++i)
         {
@@ -1655,8 +1655,8 @@ private:
             addr.s_addr = packet.nodes (i).ipv4 ();
 
             {
-                IP::AddressV4 v4 (ntohl (addr.s_addr));
-                IP::Endpoint address (v4, packet.nodes (i).ipv4port ());
+                beast::IP::AddressV4 v4 (ntohl (addr.s_addr));
+                beast::IP::Endpoint address (v4, packet.nodes (i).ipv4port ());
                 list.push_back (address);
             }
         }
@@ -1684,8 +1684,8 @@ private:
             {
                 in_addr addr;
                 addr.s_addr = tm.ipv4().ipv4();
-                IP::AddressV4 v4 (ntohl (addr.s_addr));
-                endpoint.address = IP::Endpoint (v4, tm.ipv4().ipv4port ());
+                beast::IP::AddressV4 v4 (ntohl (addr.s_addr));
+                endpoint.address = beast::IP::Endpoint (v4, tm.ipv4().ipv4port ());
             }
             else
             {
@@ -1767,7 +1767,7 @@ private:
         else
         {
             // this is a reply
-            uint32 pLSeq = 0;
+            beast::uint32 pLSeq = 0;
             bool pLDo = true;
             bool progress = false;
 
@@ -1783,7 +1783,7 @@ private:
                         if (obj.ledgerseq () != pLSeq)
                         {
                             if ((pLDo && (pLSeq != 0)) &&
-                                m_journal.active(Journal::Severity::kDebug))
+                                m_journal.active(beast::Journal::Severity::kDebug))
                                 m_journal.debug << "Received full fetch pack for " << pLSeq;
 
                             pLSeq = obj.ledgerseq ();
@@ -1811,7 +1811,7 @@ private:
             }
 
             if ((pLDo && (pLSeq != 0)) &&
-                m_journal.active(Journal::Severity::kDebug))
+                m_journal.active(beast::Journal::Severity::kDebug))
                 m_journal.debug << "Received partial fetch pack for " << pLSeq;
 
             if (packet.type () == protocol::TMGetObjectByHash::otFETCH_PACK)
@@ -2292,7 +2292,7 @@ private:
 
 	            if (!ledger && (packet.has_querytype () && !packet.has_requestcookie ()))
 	            {
-	                uint32 seq = 0;
+	                beast::uint32 seq = 0;
 
 	                if (packet.has_ledgerseq ())
 	                    seq = packet.ledgerseq ();

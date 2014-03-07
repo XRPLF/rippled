@@ -25,10 +25,10 @@ namespace NodeStore {
 class HyperDBBackend
     : public Backend
     , public BatchWriter::Callback
-    , public LeakChecked <HyperDBBackend>
+    , public beast::LeakChecked <HyperDBBackend>
 {
 public:
-    Journal m_journal;
+    beast::Journal m_journal;
     size_t const m_keyBytes;
     Scheduler& m_scheduler;
     BatchWriter m_batch;
@@ -36,7 +36,7 @@ public:
     std::unique_ptr <hyperleveldb::DB> m_db;
 
     HyperDBBackend (size_t keyBytes, Parameters const& keyValues,
-        Scheduler& scheduler, Journal journal)
+        Scheduler& scheduler, beast::Journal journal)
         : m_journal (journal)
         , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
@@ -44,7 +44,7 @@ public:
         , m_name (keyValues ["path"].toStdString ())
     {
         if (m_name.empty ())
-            Throw (std::runtime_error ("Missing path in LevelDBFactory backend"));
+            beast::Throw (std::runtime_error ("Missing path in LevelDBFactory backend"));
 
         hyperleveldb::Options options;
         options.create_if_missing = true;
@@ -76,7 +76,7 @@ public:
         hyperleveldb::DB* db = nullptr;
         hyperleveldb::Status status = hyperleveldb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
-            Throw (std::runtime_error (std::string (
+            beast::Throw (std::runtime_error (std::string (
                 "Unable to open/create hyperleveldb: ") + status.ToString()));
 
         m_db.reset (db);
@@ -222,13 +222,13 @@ public:
 class HyperDBFactory : public NodeStore::Factory
 {
 public:
-    String getName () const
+    beast::String getName () const
     {
         return "HyperLevelDB";
     }
 
     std::unique_ptr <Backend> createInstance (size_t keyBytes,
-        Parameters const& keyValues, Scheduler& scheduler, Journal journal)
+        Parameters const& keyValues, Scheduler& scheduler, beast::Journal journal)
     {
         return std::make_unique <HyperDBBackend> (
             keyBytes, keyValues, scheduler, journal);

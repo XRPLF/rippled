@@ -42,34 +42,34 @@ public:
 
         void start ()
         {
-            m_startTime = Time::getHighResolutionTicks ();
+            m_startTime = beast::Time::getHighResolutionTicks ();
         }
 
         double getElapsed ()
         {
-            int64 const now = Time::getHighResolutionTicks();
+            beast::int64 const now = beast::Time::getHighResolutionTicks();
 
-            return Time::highResolutionTicksToSeconds (now - m_startTime);
+            return beast::Time::highResolutionTicksToSeconds (now - m_startTime);
         }
 
     private:
-        int64 m_startTime;
+        beast::int64 m_startTime;
     };
 
     //--------------------------------------------------------------------------
 
-    void testBackend (String type, int64 const seedValue)
+    void testBackend (beast::String type, beast::int64 const seedValue)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
 
         DummyScheduler scheduler;
 
-        String s;
+        beast::String s;
         s << "Testing backend '" << type << "' performance";
         beginTestCase (s);
 
-        StringPairArray params;
-        File const path (File::createTempFile ("node_db"));
+        beast::StringPairArray params;
+        beast::File const path (beast::File::createTempFile ("node_db"));
         params.set ("type", type);
         params.set ("path", path.getFullPathName ());
 
@@ -79,7 +79,7 @@ public:
         NodeStore::Batch batch2;
         createPredictableBatch (batch2, 0, numObjectsToTest, seedValue);
 
-        Journal j ((journal ()));
+        beast::Journal j ((journal ()));
 
         // Open the backend
         std::unique_ptr <Backend> backend (manager->make_Backend (
@@ -91,14 +91,14 @@ public:
         t.start ();
         storeBatch (*backend, batch1);
         s = "";
-        s << "  Single write: " << String (t.getElapsed (), 2) << " seconds";
+        s << "  Single write: " << beast::String (t.getElapsed (), 2) << " seconds";
         logMessage (s);
 
         // Bulk write batch test
         t.start ();
         backend->storeBatch (batch2);
         s = "";
-        s << "  Batch write:  " << String (t.getElapsed (), 2) << " seconds";
+        s << "  Batch write:  " << beast::String (t.getElapsed (), 2) << " seconds";
         logMessage (s);
 
         // Read test
@@ -107,7 +107,7 @@ public:
         fetchCopyOfBatch (*backend, &copy, batch1);
         fetchCopyOfBatch (*backend, &copy, batch2);
         s = "";
-        s << "  Batch read:   " << String (t.getElapsed (), 2) << " seconds";
+        s << "  Batch read:   " << beast::String (t.getElapsed (), 2) << " seconds";
         logMessage (s);
     }
 

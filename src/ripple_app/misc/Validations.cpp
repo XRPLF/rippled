@@ -76,8 +76,8 @@ private:
         if (val->isTrusted () || getApp().getUNL ().nodeInUNL (signer))
         {
             val->setTrusted ();
-            uint32 now = getApp().getOPs ().getCloseTimeNC ();
-            uint32 valClose = val->getSignTime ();
+            beast::uint32 now = getApp().getOPs ().getCloseTimeNC ();
+            beast::uint32 valClose = val->getSignTime ();
 
             if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
                 isCurrent = true;
@@ -157,14 +157,14 @@ private:
 
         if (set)
         {
-            uint32 now = getApp().getOPs ().getNetworkTimeNC ();
+            beast::uint32 now = getApp().getOPs ().getNetworkTimeNC ();
             BOOST_FOREACH (u160_val_pair & it, *set)
             {
                 bool isTrusted = it.second->isTrusted ();
 
                 if (isTrusted && currentOnly)
                 {
-                    uint32 closeTime = it.second->getSignTime ();
+                    beast::uint32 closeTime = it.second->getSignTime ();
 
                     if ((now < (closeTime - LEDGER_EARLY_INTERVAL)) || (now > (closeTime + LEDGER_VAL_INTERVAL)))
                         isTrusted = false;
@@ -226,7 +226,7 @@ private:
         return trusted;
     }
 
-    int getFeeAverage (uint256 const& ledger, uint64 ref, uint64& fee)
+    int getFeeAverage (uint256 const& ledger, beast::uint64 ref, beast::uint64& fee)
     {
         int trusted = 0;
         fee = 0;
@@ -292,7 +292,7 @@ private:
 
     std::list<SerializedValidation::pointer> getCurrentTrustedValidations ()
     {
-        uint32 cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        beast::uint32 cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
 
         std::list<SerializedValidation::pointer> ret;
 
@@ -327,7 +327,7 @@ private:
     boost::unordered_map<uint256, currentValidationCount>
     getCurrentValidations (uint256 currentLedger, uint256 priorLedger)
     {
-        uint32 cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        beast::uint32 cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
         bool valPriorLedger = priorLedger.isNonZero ();
 

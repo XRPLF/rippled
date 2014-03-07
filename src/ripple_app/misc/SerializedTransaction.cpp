@@ -110,7 +110,7 @@ std::vector<RippleAddress> SerializedTransaction::getMentionedAccounts () const
     {
         const STAccount* sa = dynamic_cast<const STAccount*> (&it);
 
-        if (sa != NULL)
+        if (sa != nullptr)
         {
             bool found = false;
             RippleAddress na = sa->getValueNCA ();
@@ -272,21 +272,22 @@ std::string SerializedTransaction::getMetaSQLInsertReplaceHeader ()
     return "INSERT OR REPLACE INTO Transactions " + getMetaSQLValueHeader () + " VALUES ";
 }
 
-std::string SerializedTransaction::getSQL (uint32 inLedger, char status) const
+std::string SerializedTransaction::getSQL (beast::uint32 inLedger, char status) const
 {
     Serializer s;
     add (s);
     return getSQL (s, inLedger, status);
 }
 
-std::string SerializedTransaction::getMetaSQL (uint32 inLedger, const std::string& escapedMetaData) const
+std::string SerializedTransaction::getMetaSQL (beast::uint32 inLedger,
+                                               const std::string& escapedMetaData) const
 {
     Serializer s;
     add (s);
     return getMetaSQL (s, inLedger, TXN_SQL_VALIDATED, escapedMetaData);
 }
 
-std::string SerializedTransaction::getSQL (Serializer rawTxn, uint32 inLedger, char status) const
+std::string SerializedTransaction::getSQL (Serializer rawTxn, beast::uint32 inLedger, char status) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s)");
     std::string rTxn    = sqlEscape (rawTxn.peekData ());
@@ -296,7 +297,7 @@ std::string SerializedTransaction::getSQL (Serializer rawTxn, uint32 inLedger, c
                 % getSequence () % inLedger % status % rTxn);
 }
 
-std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, uint32 inLedger, char status,
+std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, beast::uint32 inLedger, char status,
         const std::string& escapedMetaData) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
@@ -324,10 +325,10 @@ bool isMemoOkay (STObject const& st)
 
 //------------------------------------------------------------------------------
 
-class SerializedTransactionTests : public UnitTest
+class SerializedTransactionTests : public beast::UnitTest
 {
 public:
-    SerializedTransactionTests () : UnitTest ("SerializedTransaction", "ripple")
+    SerializedTransactionTests () : beast::UnitTest ("SerializedTransaction", "ripple")
     {
     }
 

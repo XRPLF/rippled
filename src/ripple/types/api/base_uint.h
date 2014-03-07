@@ -103,7 +103,8 @@ public:
     class hasher
     {
     public:
-        explicit hasher (std::size_t seedToUse = Random::getSystemRandom ().nextInt ())
+        explicit hasher (std::size_t seedToUse = 
+                                   beast::Random::getSystemRandom ().nextInt ())
             : m_seed (seedToUse)
         {
         }
@@ -111,7 +112,7 @@ public:
         std::size_t operator() (base_uint const& value) const
         {
             std::size_t hash;
-            Murmur::Hash (value.cbegin (), (BITS / 8), m_seed, &hash);
+            beast::Murmur::Hash (value.cbegin (), (BITS / 8), m_seed, &hash);
             return hash;
         }
 
@@ -176,12 +177,12 @@ public:
         return ret;
     }
 
-    base_uint& operator= (uint64 uHost)
+    base_uint& operator= (beast::uint64 uHost)
     {
         zero ();
 
         // Put in least significant bits.
-        ((uint64*) end ())[-1] = htobe64 (uHost);
+        ((beast::uint64*) end ())[-1] = htobe64 (uHost);
 
         return *this;
     }
@@ -237,7 +238,7 @@ public:
     {
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            uint32 prev = pn[i];
+            beast::uint32 prev = pn[i];
             pn[i] = htobe32 (be32toh (pn[i]) - 1);
 
             if (prev != 0)
@@ -258,11 +259,11 @@ public:
 
     base_uint& operator+= (const base_uint& b)
     {
-        uint64 carry = 0;
+        beast::uint64 carry = 0;
 
         for (int i = WIDTH; i--;)
         {
-            uint64 n = carry + be32toh (pn[i]) + be32toh (b.pn[i]);
+            beast::uint64 n = carry + be32toh (pn[i]) + be32toh (b.pn[i]);
 
             pn[i] = htobe32 (n & 0xffffffff);
             carry = n >> 32;

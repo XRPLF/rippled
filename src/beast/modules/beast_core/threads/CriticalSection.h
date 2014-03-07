@@ -24,6 +24,9 @@
 #ifndef BEAST_CRITICALSECTION_H_INCLUDED
 #define BEAST_CRITICALSECTION_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A re-entrant mutex.
@@ -252,5 +255,6 @@ typedef CriticalSection::ScopedUnlockType  ScopedUnlock;
 */
 typedef CriticalSection::ScopedTryLockType  ScopedTryLock;
 
+}  // namespace beast
 
 #endif   // BEAST_CRITICALSECTION_H_INCLUDED

@@ -67,7 +67,7 @@ struct Count
     }
 
     /** Output to PropertyStream. */
-    void onWrite (PropertyStream::Map& map)
+    void onWrite (beast::PropertyStream::Map& map)
     {
         map["received"] = received;
         map["expected"] = expected;

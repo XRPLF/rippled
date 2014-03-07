@@ -48,14 +48,14 @@ class KeyCache
 {
 public:
     typedef Key key_type;
-    typedef abstract_clock <std::chrono::seconds> clock_type;
+    typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
 private:
     struct Stats
     {
         template <class Handler>
         Stats (std::string const& prefix, Handler const& handler,
-            insight::Collector::ptr const& collector)
+            beast::insight::Collector::ptr const& collector)
             : hook (collector->make_hook (handler))
             , size (collector->make_gauge (prefix, "size"))
             , hit_rate (collector->make_gauge (prefix, "hit_rate"))
@@ -63,9 +63,9 @@ private:
             , misses (0)
             { }
 
-        insight::Hook hook;
-        insight::Gauge size;
-        insight::Gauge hit_rate;
+        beast::insight::Hook hook;
+        beast::insight::Gauge size;
+        beast::insight::Gauge hit_rate;
 
         std::size_t hits;
         std::size_t misses;
@@ -102,7 +102,7 @@ public:
         @param age  The initial expiration time.
     */
     KeyCache (std::string const& name, clock_type& clock,
-        insight::Collector::ptr const& collector, size_type target_size = 0,
+        beast::insight::Collector::ptr const& collector, size_type target_size = 0,
             clock_type::rep expiration_seconds = 120)
         : m_stats (name,
             std::bind (&KeyCache::collect_metrics, this),
@@ -120,7 +120,7 @@ public:
         size_type target_size = 0, clock_type::rep expiration_seconds = 120)
         : m_stats (name,
             std::bind (&KeyCache::collect_metrics, this),
-                insight::NullCollector::New ())
+                beast::insight::NullCollector::New ())
         , m_clock (clock)
         , m_name (name)
         , m_target_size (target_size)
@@ -289,7 +289,7 @@ private:
         m_stats.size.set (size ());
 
         {
-            insight::Gauge::value_type hit_rate (0);
+            beast::insight::Gauge::value_type hit_rate (0);
             {
                 lock_guard lock (m_mutex);
                 auto const total (m_stats.hits + m_stats.misses);

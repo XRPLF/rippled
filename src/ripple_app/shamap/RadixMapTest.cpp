@@ -20,7 +20,7 @@
 namespace ripple {
 namespace RadixMap {
 
-boost::shared_ptr <Item> make_random_item (Random& r)
+boost::shared_ptr <Item> make_random_item (beast::Random& r)
 {
     Serializer s;
     for (int d = 0; d < 3; ++d)
@@ -31,7 +31,7 @@ boost::shared_ptr <Item> make_random_item (Random& r)
 
 //------------------------------------------------------------------------------
 
-void add_random_items (std::size_t n, Table& t, Random& r)
+void add_random_items (std::size_t n, Table& t, beast::Random& r)
 {
     while (n--)
     {

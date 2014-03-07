@@ -21,7 +21,7 @@
 #define RIPPLE_SERIALIZEDVALIDATION_H
 
 // Validation flags
-const uint32 vfFullyCanonicalSig    = 0x80000000; // signature is fully canonical
+const beast::uint32 vfFullyCanonicalSig    = 0x80000000; // signature is fully canonical
 
 class SerializedValidation
     : public STObject
@@ -42,11 +42,12 @@ public:
     SerializedValidation (SerializerIterator & sit, bool checkSignature = true);
 
     // Does not sign the validation
-    SerializedValidation (uint256 const & ledgerHash, uint32 signTime, const RippleAddress & raPub, bool isFull);
+    SerializedValidation (uint256 const & ledgerHash, beast::uint32 signTime,
+                          const RippleAddress & raPub, bool isFull);
 
     uint256         getLedgerHash ()     const;
-    uint32          getSignTime ()       const;
-    uint32          getFlags ()          const;
+    beast::uint32   getSignTime ()       const;
+    beast::uint32   getFlags ()          const;
     RippleAddress   getSignerPublic ()   const;
     uint160         getNodeID ()         const
     {

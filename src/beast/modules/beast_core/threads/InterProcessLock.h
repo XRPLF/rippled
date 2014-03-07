@@ -24,6 +24,9 @@
 #ifndef BEAST_INTERPROCESSLOCK_H_INCLUDED
 #define BEAST_INTERPROCESSLOCK_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Acts as a critical section which processes can use to block each other.
@@ -114,5 +117,6 @@ private:
     String name;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_INTERPROCESSLOCK_H_INCLUDED

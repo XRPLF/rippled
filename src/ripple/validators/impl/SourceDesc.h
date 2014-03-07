@@ -33,9 +33,9 @@ struct SourceDesc
         statusFailed
     };
 
-    SharedPtr <Source> source;
+    beast::SharedPtr <Source> source;
     Status status;
-    Time whenToFetch;
+    beast::Time whenToFetch;
     int numberOfFailures;
 
     // The result of the last fetch
@@ -44,16 +44,16 @@ struct SourceDesc
     //------------------------------------------------------------------
 
     /** The time of the last successful fetch. */
-    Time lastFetchTime;
+    beast::Time lastFetchTime;
 
     /** When to expire this source's list of cached results (if any) */
-    Time expirationTime;
+    beast::Time expirationTime;
 
     //------------------------------------------------------------------
 
     SourceDesc () noexcept
         : status (statusNone)
-        , whenToFetch (Time::getCurrentTime ())
+        , whenToFetch (beast::Time::getCurrentTime ())
         , numberOfFailures (0)
     {
     }

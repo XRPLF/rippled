@@ -32,11 +32,11 @@ typedef beast::asio::SharedArg <std::string> SharedBuffer;
 
 /** Represents an active connection. */
 class Peer
-    : public SharedObject
+    : public beast::SharedObject
     , public beast::asio::AsyncObject <Peer>
     , public Session
-    , public List <Peer>::Node
-    , public LeakChecked <Peer>
+    , public beast::List <Peer>::Node
+    , public beast::LeakChecked <Peer>
 {
 public:
     enum
@@ -55,19 +55,19 @@ public:
 
     };
 
-    typedef SharedPtr <Peer> Ptr;
+    typedef beast::SharedPtr <Peer> Ptr;
 
     ServerImpl& m_impl;
     boost::asio::io_service::strand m_strand;
     boost::asio::deadline_timer m_data_timer;
     boost::asio::deadline_timer m_request_timer;
     std::unique_ptr <MultiSocket> m_socket;
-    MemoryBlock m_buffer;
-    HTTPRequestParser m_parser;
+    beast::MemoryBlock m_buffer;
+    beast::HTTPRequestParser m_parser;
     int m_writesPending;
     bool m_closed;
     bool m_callClose;
-    SharedPtr <Peer> m_detach_ref;
+    beast::SharedPtr <Peer> m_detach_ref;
     boost::optional <boost::asio::io_service::work> m_work;
     int m_errorCode;
     std::atomic <int> m_detached;
@@ -117,12 +117,12 @@ public:
     // Session
     //
 
-    Journal journal()
+    beast::Journal journal()
     {
         return m_impl.journal();
     }
 
-    IP::Endpoint remoteAddress()
+    beast::IP::Endpoint remoteAddress()
     {
         return from_asio (get_socket().remote_endpoint());
     }
@@ -132,12 +132,12 @@ public:
         return m_parser.headersComplete();
     }
 
-    HTTPHeaders headers()
+    beast::HTTPHeaders headers()
     {
-        return HTTPHeaders (m_parser.fields());
+        return beast::HTTPHeaders (m_parser.fields());
     }
 
-    SharedPtr <beast::HTTPRequest> const& request()
+    beast::SharedPtr <beast::HTTPRequest> const& request()
     {
         return m_parser.request();
     }
@@ -147,7 +147,7 @@ public:
     std::string content()
     {
         std::string s;
-        DynamicBuffer const& body (
+        beast::DynamicBuffer const& body (
             m_parser.request()->body ());
         s.resize (body.size ());
         boost::asio::buffer_copy (

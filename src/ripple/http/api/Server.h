@@ -24,7 +24,6 @@
 #include <ostream>
 
 namespace ripple {
-using namespace beast;
 
 namespace HTTP {
 
@@ -35,7 +34,7 @@ class Server
 {
 public:
     /** Create the server using the specified handler. */
-    Server (Handler& handler, Journal journal);
+    Server (Handler& handler, beast::Journal journal);
 
     /** Destroy the server.
         This blocks until the server stops.
@@ -43,7 +42,7 @@ public:
     virtual ~Server ();
 
     /** Returns the Journal associated with the server. */
-    Journal const& journal () const;
+    beast::Journal const& journal () const;
 
     /** Returns the listening ports settings.
         Thread safety:
@@ -78,7 +77,7 @@ private:
     std::unique_ptr <ServerImpl> m_impl;
 };
 
-}
-}
+}  // namespace HTTP
+}  // namespace ripple
 
 #endif

@@ -177,7 +177,7 @@ protected:
     virtual void addCommonFields (Item& item) = 0;
 
 private:
-    OwnedArray <Item> m_formats;
+    beast::OwnedArray <Item> m_formats;
     NameMap m_names;
     TypeMap m_types;
 };

@@ -24,16 +24,16 @@ namespace ripple {
 namespace PeerFinder {
 
 /** Wraps a Journal::Sink to prefix it's output. */
-class WrappedSink : public Journal::Sink
+class WrappedSink : public beast::Journal::Sink
 {
 public:
-    WrappedSink (std::string const& prefix, Journal::Sink& sink)
+    WrappedSink (std::string const& prefix, beast::Journal::Sink& sink)
         : m_prefix (prefix)
         , m_sink (sink)
     {
     }
 
-    bool active (Journal::Severity level) const
+    bool active (beast::Journal::Severity level) const
         { return m_sink.active (level); }
 
     bool console () const
@@ -42,14 +42,15 @@ public:
     void console (bool output)
         { m_sink.console (output); }
 
-    Journal::Severity severity() const
+    beast::Journal::Severity severity() const
         { return m_sink.severity(); }
 
-    void severity (Journal::Severity level)
+    void severity (beast::Journal::Severity level)
         { m_sink.severity (level); }
 
-    void write (Journal::Severity level, std::string const& text)
+    void write (beast::Journal::Severity level, std::string const& text)
     {
+        using beast::Journal;
         std::string s (m_prefix);
         switch (level)
         {
@@ -68,7 +69,7 @@ public:
 
 private:
     std::string const m_prefix;
-    Journal::Sink& m_sink;
+    beast::Journal::Sink& m_sink;
 };
 
 }

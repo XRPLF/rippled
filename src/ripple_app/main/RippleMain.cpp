@@ -142,7 +142,7 @@ void printHelp (const po::options_description& desc)
 
 // OUr custom unit test runner
 //
-class RippleUnitTests : public UnitTests
+class RippleUnitTests : public beast::UnitTests
 {
 public:
     explicit RippleUnitTests (bool shouldLog)
@@ -164,14 +164,14 @@ public:
         m_app = nullptr;
     }
 
-    void logMessage (String const& message)
+    void logMessage (beast::String const& message)
     {
         if (m_shouldLog)
         {
 #if BEAST_MSVC
-            if (beast_isRunningUnderDebugger ())
+            if (beast::beast_isRunningUnderDebugger ())
             {
-                Logger::outputDebugString (message);
+                beast::Logger::outputDebugString (message);
             }
             else
             {
@@ -189,8 +189,8 @@ private:
     void setupConfigForUnitTests (Config* config)
     {
         config->nodeDatabase = parseDelimitedKeyValueString ("type=memory");
-        config->ephemeralNodeDatabase = StringPairArray ();
-        config->importNodeDatabase = StringPairArray ();
+        config->ephemeralNodeDatabase = beast::StringPairArray ();
+        config->importNodeDatabase = beast::StringPairArray ();
     }
 
 private:
@@ -198,13 +198,13 @@ private:
     std::unique_ptr <Application> m_app;
 };
 
-static int runUnitTests (String const& match, String const& format)
+static int runUnitTests (beast::String const& match, beast::String const& format)
 {
     bool const shouldLog = format != "junit";
 
     if (format != "junit" && format != "text" && format != "")
     {
-        String s;
+        beast::String s;
         s << "Warning, unknown unittest-format='" << format << "'";
         Log::out () << s.toStdString ();
     }
@@ -215,23 +215,23 @@ static int runUnitTests (String const& match, String const& format)
 
     if (format == "junit")
     {
-        UnitTestUtilities::JUnitXMLFormatter f (tr);
+        beast::UnitTestUtilities::JUnitXMLFormatter f (tr);
 
-        String const s = f.createDocumentString ();
+        beast::String const s = f.createDocumentString ();
 
         std::cout << s.toStdString ();
     }
     else
     {
-        UnitTests::Results const& r (tr.getResults ());
+        beast::UnitTests::Results const& r (tr.getResults ());
 
-        String s;
+        beast::String s;
 
         s << "Summary: " <<
-            String (r.suites.size ()) << " suites, " <<
-            String (r.cases) << " cases, " <<
-            String (r.tests) << " tests, " <<
-            String (r.failures) << " failure" << ((r.failures != 1) ? "s" : "") << ".";
+            beast::String (r.suites.size ()) << " suites, " <<
+            beast::String (r.cases) << " cases, " <<
+            beast::String (r.tests) << " tests, " <<
+            beast::String (r.failures) << " failure" << ((r.failures != 1) ? "s" : "") << ".";
 
         tr.logMessage (s);
     }
@@ -251,7 +251,7 @@ int RippleMain::run (int argc, char const* const* argv)
     int iResult = 0;
     po::variables_map   vm;                                     // Map of options.
 
-    String importDescription;
+    beast::String importDescription;
     {
         importDescription <<
             "Import an existing node database (specified in the " <<
@@ -330,7 +330,7 @@ int RippleMain::run (int argc, char const* const* argv)
 
     if (vm.count ("version"))
     {
-        String const& s (BuildInfo::getVersionString ());
+        beast::String const& s (BuildInfo::getVersionString ());
         std::cout << "rippled version " << s.toStdString() << std::endl;
         return 0;
     }
@@ -368,7 +368,7 @@ int RippleMain::run (int argc, char const* const* argv)
     //
     if (vm.count ("unittest"))
     {
-        String format;
+        beast::String format;
 
         if (vm.count ("unittest-format"))
             format = vm ["unittest-format"].as <std::string> ();

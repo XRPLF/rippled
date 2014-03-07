@@ -23,7 +23,7 @@
 class LoadFeeTrackImp : public LoadFeeTrack
 {
 public:
-    explicit LoadFeeTrackImp (Journal journal = Journal())
+    explicit LoadFeeTrackImp (beast::Journal journal = beast::Journal())
         : m_journal (journal)
         , mLock (this, "LoadFeeTrackImp", __FILE__, __LINE__)
         , mLocalTxnLoadFee (lftNormalFee)
@@ -34,9 +34,9 @@ public:
     }
 
     // Scale using load as well as base rate
-    uint64 scaleFeeLoad (uint64 fee, uint64 baseFee, uint32 referenceFeeUnits, bool bAdmin)
+    beast::uint64 scaleFeeLoad (beast::uint64 fee, beast::uint64 baseFee, beast::uint32 referenceFeeUnits, bool bAdmin)
     {
-        static uint64 midrange (0x00000000FFFFFFFF);
+        static beast::uint64 midrange (0x00000000FFFFFFFF);
 
         bool big = (fee > midrange);
 
@@ -45,10 +45,10 @@ public:
         else                    // normal fee, multiply first for accuracy
             fee *= referenceFeeUnits;
 
-        uint32 feeFactor = std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee);
+        beast::uint32 feeFactor = std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee);
 
         // Let admins pay the normal fee until the local load exceeds four times the remote
-        uint32 uRemFee = std::max(mRemoteTxnLoadFee, mClusterTxnLoadFee);
+        beast::uint32 uRemFee = std::max(mRemoteTxnLoadFee, mClusterTxnLoadFee);
         if (bAdmin && (feeFactor > uRemFee) && (feeFactor < (4 * uRemFee)))
             feeFactor = uRemFee;
 
@@ -66,41 +66,41 @@ public:
     }
 
     // Scale from fee units to millionths of a ripple
-    uint64 scaleFeeBase (uint64 fee, uint64 baseFee, uint32 referenceFeeUnits)
+    beast::uint64 scaleFeeBase (beast::uint64 fee, beast::uint64 baseFee, beast::uint32 referenceFeeUnits)
     {
         return mulDiv (fee, referenceFeeUnits, baseFee);
     }
 
-    uint32 getRemoteFee ()
+    beast::uint32 getRemoteFee ()
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mRemoteTxnLoadFee;
     }
 
-    uint32 getLocalFee ()
+    beast::uint32 getLocalFee ()
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mLocalTxnLoadFee;
     }
 
-    uint32 getLoadBase ()
+    beast::uint32 getLoadBase ()
     {
         return lftNormalFee;
     }
 
-    uint32 getLoadFactor ()
+    beast::uint32 getLoadFactor ()
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
         return std::max(mClusterTxnLoadFee, std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee));
     }
 
-    void setClusterFee (uint32 fee)
+    void setClusterFee (beast::uint32 fee)
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
         mClusterTxnLoadFee = fee;
     }
 
-    uint32 getClusterFee ()
+    beast::uint32 getClusterFee ()
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
         return mClusterTxnLoadFee;
@@ -130,7 +130,7 @@ public:
         return (raiseCount != 0) || (mLocalTxnLoadFee != lftNormalFee) || (mClusterTxnLoadFee != lftNormalFee);
     }
 
-    void setRemoteFee (uint32 f)
+    void setRemoteFee (beast::uint32 f)
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
         mRemoteTxnLoadFee = f;
@@ -143,7 +143,7 @@ public:
         if (++raiseCount < 2)
             return false;
 
-        uint32 origFee = mLocalTxnLoadFee;
+        beast::uint32 origFee = mLocalTxnLoadFee;
 
         if (mLocalTxnLoadFee < mRemoteTxnLoadFee) // make sure this fee takes effect
             mLocalTxnLoadFee = mRemoteTxnLoadFee;
@@ -163,7 +163,7 @@ public:
     bool lowerLocalFee ()
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
-        uint32 origFee = mLocalTxnLoadFee;
+        beast::uint32 origFee = mLocalTxnLoadFee;
         raiseCount = 0;
 
         mLocalTxnLoadFee -= (mLocalTxnLoadFee / lftFeeDecFraction ); // reduce by 1/4
@@ -178,7 +178,7 @@ public:
         return true;
     }
 
-    Json::Value getJson (uint64 baseFee, uint32 referenceFeeUnits)
+    Json::Value getJson (beast::uint64 baseFee, beast::uint32 referenceFeeUnits)
     {
         Json::Value j (Json::objectValue);
 
@@ -199,11 +199,11 @@ public:
 private:
     // VFALCO TODO Move this function to some "math utilities" file
     // compute (value)*(mul)/(div) - avoid overflow but keep precision
-    uint64 mulDiv (uint64 value, uint32 mul, uint64 div)
+    beast::uint64 mulDiv (beast::uint64 value, beast::uint32 mul, beast::uint64 div)
     {
         // VFALCO TODO replace with beast::literal64bitUnsigned ()
         //
-        static uint64 boundary = (0x00000000FFFFFFFF);
+        static beast::uint64 boundary = (0x00000000FFFFFFFF);
 
         if (value > boundary)                           // Large value, avoid overflow
             return (value / div) * mul;
@@ -217,14 +217,14 @@ private:
     static const int lftFeeDecFraction = 4;     // decrease fee by 1/4
     static const int lftFeeMax = lftNormalFee * 1000000;
 
-    Journal m_journal;
+    beast::Journal m_journal;
     typedef RippleMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
     LockType mLock;
 
-    uint32 mLocalTxnLoadFee;        // Scale factor, lftNormalFee = normal fee
-    uint32 mRemoteTxnLoadFee;       // Scale factor, lftNormalFee = normal fee
-    uint32 mClusterTxnLoadFee;      // Scale factor, lftNormalFee = normal fee
+    beast::uint32 mLocalTxnLoadFee;        // Scale factor, lftNormalFee = normal fee
+    beast::uint32 mRemoteTxnLoadFee;       // Scale factor, lftNormalFee = normal fee
+    beast::uint32 mClusterTxnLoadFee;      // Scale factor, lftNormalFee = normal fee
     int raiseCount;
 };
 

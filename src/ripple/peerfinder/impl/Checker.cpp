@@ -25,18 +25,18 @@ namespace PeerFinder {
 
 class CheckerImp
     : public Checker
-    , private Thread
-    , private LeakChecked <CheckerImp>
+    , private beast::Thread
+    , private beast::LeakChecked <CheckerImp>
 {
 private:
     class Request;
 
     struct State
     {
-        List <Request> list;
+        beast::List <Request> list;
     };
 
-    typedef SharedData <State> SharedState;
+    typedef beast::SharedData <State> SharedState;
 
     SharedState m_state;
     boost::asio::io_service m_io_service;
@@ -45,12 +45,12 @@ private:
     //--------------------------------------------------------------------------
 
     class Request
-        : public SharedObject
-        , public List <Request>::Node
-        , private LeakChecked <Request>
+        : public beast::SharedObject
+        , public beast::List <Request>::Node
+        , private beast::LeakChecked <Request>
     {
     public:
-        typedef SharedPtr <Request>         Ptr;
+        typedef beast::SharedPtr <Request>         Ptr;
         typedef boost::asio::ip::tcp        Protocol;
         typedef boost::system::error_code   error_code;
         typedef Protocol::socket            socket_type;
@@ -58,14 +58,14 @@ private:
 
         CheckerImp& m_owner;
         boost::asio::io_service& m_io_service;
-        IP::Endpoint m_address;
-        asio::shared_handler <void (Result)> m_handler;
+        beast::IP::Endpoint m_address;
+        beast::asio::shared_handler <void (Result)> m_handler;
         socket_type m_socket;
         boost::system::error_code m_error;
         bool m_canAccept;
 
         Request (CheckerImp& owner, boost::asio::io_service& io_service,
-            IP::Endpoint const& address, asio::shared_handler <
+            beast::IP::Endpoint const& address, beast::asio::shared_handler <
                 void (Result)> const& handler)
             : m_owner (owner)
             , m_io_service (io_service)
@@ -76,10 +76,10 @@ private:
         {
             m_owner.add (*this);
 
-            m_socket.async_connect (IPAddressConversion::to_asio_endpoint (
-                m_address), asio::wrap_handler (std::bind (
+            m_socket.async_connect (beast::IPAddressConversion::to_asio_endpoint (
+                m_address), beast::asio::wrap_handler (std::bind (
                     &Request::handle_connect, Ptr(this),
-                        asio::placeholders::error), m_handler));
+                        beast::asio::placeholders::error), m_handler));
         }
 
         ~Request ()
@@ -149,13 +149,13 @@ public:
     void cancel ()
     {
         SharedState::Access state (m_state);
-        for (List <Request>::iterator iter (state->list.begin());
+        for (beast::List <Request>::iterator iter (state->list.begin());
             iter != state->list.end(); ++iter)
             iter->cancel();
     }
 
-    void async_test (IP::Endpoint const& endpoint,
-        asio::shared_handler <void (Result)> handler)
+    void async_test (beast::IP::Endpoint const& endpoint,
+        beast::asio::shared_handler <void (Result)> handler)
     {
         new Request (*this, m_io_service, endpoint, handler);
     }

@@ -63,12 +63,15 @@
 
 #include "system/StandardIncludes.h"
 
-namespace beast {
+namespace beast
+{
 
 class InputStream;
 class OutputStream;
 class FileInputStream;
 class FileOutputStream;
+
+}  // namespace beast
 
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
@@ -208,8 +211,6 @@ class FileOutputStream;
 #include "thread/DeadlineTimer.h"
 
 #include "thread/Workers.h"
-
-}
 
 #if BEAST_MSVC
 #pragma warning (pop)

@@ -41,14 +41,14 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
 {
     BN_CTX* ctx = BN_CTX_new ();
 
-    if (!ctx) return NULL;
+    if (!ctx) return nullptr;
 
     EC_KEY* pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
 
     if (!pkey)
     {
         BN_CTX_free (ctx);
-        return NULL;
+        return nullptr;
     }
 
     EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
@@ -59,7 +59,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
     {
         BN_CTX_free (ctx);
         EC_KEY_free (pkey);
-        return NULL;
+        return nullptr;
     }
 
     if (!EC_GROUP_get_order (EC_KEY_get0_group (pkey), order, ctx))
@@ -68,10 +68,10 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
         BN_free (order);
         EC_KEY_free (pkey);
         BN_CTX_free (ctx);
-        return NULL;
+        return nullptr;
     }
 
-    BIGNUM* privKey = NULL;
+    BIGNUM* privKey = nullptr;
     int seq = 0;
 
     do
@@ -84,7 +84,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
         s.secureErase ();
         privKey = BN_bin2bn ((const unsigned char*) &root, sizeof (root), privKey);
 
-        if (privKey == NULL)
+        if (privKey == nullptr)
         {
             EC_KEY_free (pkey);
             BN_free (order);
@@ -104,12 +104,12 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
         EC_KEY_free (pkey);
         BN_clear_free (privKey);
         BN_CTX_free (ctx);
-        return NULL;
+        return nullptr;
     }
 
     EC_POINT* pubKey = EC_POINT_new (EC_KEY_get0_group (pkey));
 
-    if (!EC_POINT_mul (EC_KEY_get0_group (pkey), pubKey, privKey, NULL, NULL, ctx))
+    if (!EC_POINT_mul (EC_KEY_get0_group (pkey), pubKey, privKey, nullptr, nullptr, ctx))
     {
         // compute the corresponding public key point
         assert (false);
@@ -117,7 +117,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
         EC_POINT_free (pubKey);
         EC_KEY_free (pkey);
         BN_CTX_free (ctx);
-        return NULL;
+        return nullptr;
     }
 
     BN_clear_free (privKey);
@@ -128,7 +128,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
         EC_POINT_free (pubKey);
         EC_KEY_free (pkey);
         BN_CTX_free (ctx);
-        return NULL;
+        return nullptr;
     }
 
     EC_POINT_free (pubKey);
@@ -146,10 +146,10 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
 // <-- root public generator in EC format
 EC_KEY* CKey::GenerateRootPubKey (BIGNUM* pubGenerator)
 {
-    if (pubGenerator == NULL)
+    if (pubGenerator == nullptr)
     {
         assert (false);
-        return NULL;
+        return nullptr;
     }
 
     EC_KEY* pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
@@ -157,19 +157,19 @@ EC_KEY* CKey::GenerateRootPubKey (BIGNUM* pubGenerator)
     if (!pkey)
     {
         BN_free (pubGenerator);
-        return NULL;
+        return nullptr;
     }
 
     EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
 
-    EC_POINT* pubPoint = EC_POINT_bn2point (EC_KEY_get0_group (pkey), pubGenerator, NULL, NULL);
+    EC_POINT* pubPoint = EC_POINT_bn2point (EC_KEY_get0_group (pkey), pubGenerator, nullptr, nullptr);
     BN_free (pubGenerator);
 
     if (!pubPoint)
     {
         assert (false);
         EC_KEY_free (pkey);
-        return NULL;
+        return nullptr;
     }
 
     if (!EC_KEY_set_public_key (pkey, pubPoint))
@@ -177,7 +177,7 @@ EC_KEY* CKey::GenerateRootPubKey (BIGNUM* pubGenerator)
         assert (false);
         EC_POINT_free (pubPoint);
         EC_KEY_free (pkey);
-        return NULL;
+        return nullptr;
     }
 
     EC_POINT_free (pubPoint);
@@ -189,7 +189,7 @@ EC_KEY* CKey::GenerateRootPubKey (BIGNUM* pubGenerator)
 static BIGNUM* makeHash (const RippleAddress& pubGen, int seq, BIGNUM* order)
 {
     int subSeq = 0;
-    BIGNUM* ret = NULL;
+    BIGNUM* ret = nullptr;
 
     do
     {
@@ -201,7 +201,7 @@ static BIGNUM* makeHash (const RippleAddress& pubGen, int seq, BIGNUM* order)
         s.secureErase ();
         ret = BN_bin2bn ((const unsigned char*) &root, sizeof (root), ret);
 
-        if (!ret) return NULL;
+        if (!ret) return nullptr;
     }
     while (BN_is_zero (ret) || (BN_cmp (ret, order) >= 0));
 
@@ -252,7 +252,7 @@ EC_KEY* CKey::GeneratePublicDeterministicKey (const RippleAddress& pubGen, int s
     if (success)
     {
         // Calculate the corresponding public key.
-        EC_POINT_mul (EC_KEY_get0_group (pkey), newPoint, hash, NULL, NULL, ctx);
+        EC_POINT_mul (EC_KEY_get0_group (pkey), newPoint, hash, nullptr, nullptr, ctx);
 
         // Add the master public key and set.
         EC_POINT_add (EC_KEY_get0_group (pkey), newPoint, newPoint, rootPubKey, ctx);
@@ -271,7 +271,7 @@ EC_KEY* CKey::GeneratePublicDeterministicKey (const RippleAddress& pubGen, int s
 
     if (pkey && !success)   EC_KEY_free (pkey);
 
-    return success ? pkey : NULL;
+    return success ? pkey : nullptr;
 }
 
 EC_KEY* CKey::GeneratePrivateDeterministicKey (const RippleAddress& pubGen, uint256 const& u, int seq)
@@ -286,25 +286,25 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey (const RippleAddress& pubGen, cons
     // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
     BN_CTX* ctx = BN_CTX_new ();
 
-    if (ctx == NULL) return NULL;
+    if (ctx == nullptr) return nullptr;
 
     EC_KEY* pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
 
-    if (pkey == NULL)
+    if (pkey == nullptr)
     {
         BN_CTX_free (ctx);
-        return NULL;
+        return nullptr;
     }
 
     EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
 
     BIGNUM* order = BN_new ();
 
-    if (order == NULL)
+    if (order == nullptr)
     {
         BN_CTX_free (ctx);
         EC_KEY_free (pkey);
-        return NULL;
+        return nullptr;
     }
 
     if (!EC_GROUP_get_order (EC_KEY_get0_group (pkey), order, ctx))
@@ -312,18 +312,18 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey (const RippleAddress& pubGen, cons
         BN_free (order);
         BN_CTX_free (ctx);
         EC_KEY_free (pkey);
-        return NULL;
+        return nullptr;
     }
 
     // calculate the private additional key
     BIGNUM* privKey = makeHash (pubGen, seq, order);
 
-    if (privKey == NULL)
+    if (privKey == nullptr)
     {
         BN_free (order);
         BN_CTX_free (ctx);
         EC_KEY_free (pkey);
-        return NULL;
+        return nullptr;
     }
 
     // calculate the final private key
@@ -339,16 +339,16 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey (const RippleAddress& pubGen, cons
         BN_clear_free (privKey);
         BN_CTX_free (ctx);
         EC_KEY_free (pkey);
-        return NULL;
+        return nullptr;
     }
 
-    if (EC_POINT_mul (EC_KEY_get0_group (pkey), pubKey, privKey, NULL, NULL, ctx) == 0)
+    if (EC_POINT_mul (EC_KEY_get0_group (pkey), pubKey, privKey, nullptr, nullptr, ctx) == 0)
     {
         BN_clear_free (privKey);
         EC_POINT_free (pubKey);
         EC_KEY_free (pkey);
         BN_CTX_free (ctx);
-        return NULL;
+        return nullptr;
     }
 
     BN_clear_free (privKey);

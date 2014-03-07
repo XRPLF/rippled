@@ -21,7 +21,7 @@ class Features;
 
 SETUP_LOG (Features)
 
-FeatureState* testFeature = NULL;
+FeatureState* testFeature = nullptr;
 
 // VFALCO TODO Rename this to Features
 class Features : public IFeatures
@@ -39,16 +39,16 @@ protected:
     featureMap_t    mFeatureMap;
     int             mMajorityTime;      // Seconds a feature must hold a majority
     int             mMajorityFraction;  // 256 = 100%
-    uint32          mFirstReport;       // close time of first majority report
-    uint32          mLastReport;        // close time of most recent majority report
+    beast::uint32   mFirstReport;       // close time of first majority report
+    beast::uint32   mLastReport;        // close time of most recent majority report
 
     FeatureState*   getCreateFeature (uint256 const& feature, bool create);
-    bool shouldEnable (uint32 closeTime, const FeatureState& fs);
+    bool shouldEnable (beast::uint32 closeTime, const FeatureState& fs);
     void setJson (Json::Value& v, const FeatureState&);
 
 public:
 
-    Features (uint32 majorityTime, int majorityFraction)
+    Features (beast::uint32 majorityTime, int majorityFraction)
         : mLock (this, "Features", __FILE__, __LINE__)
         , mMajorityTime (majorityTime), mMajorityFraction (majorityFraction), mFirstReport (0), mLastReport (0)
     {
@@ -73,7 +73,7 @@ public:
 
     featureList_t getVetoedFeatures ();
     featureList_t getEnabledFeatures ();
-    featureList_t getFeaturesToEnable (uint32 closeTime);   // gets features we would vote to enable
+    featureList_t getFeaturesToEnable (beast::uint32 closeTime);   // gets features we would vote to enable
     featureList_t getDesiredFeatures ();                    // features we support, do not veto, are not enabled
 
     void reportValidations (const FeatureSet&);
@@ -101,7 +101,7 @@ FeatureState* Features::getCreateFeature (uint256 const& featureHash, bool creat
     if (it == mFeatureMap.end ())
     {
         if (!create)
-            return NULL;
+            return nullptr;
 
         FeatureState* feature = & (mFeatureMap[featureHash]);
 
@@ -149,12 +149,12 @@ FeatureState* Features::addKnownFeature (const char* featureID, const char* frie
     if (hash.isZero ())
     {
         assert (false);
-        return NULL;
+        return nullptr;
     }
 
     FeatureState* f = getCreateFeature (hash, true);
 
-    if (friendlyName != NULL)
+    if (friendlyName != nullptr)
         f->setFriendlyName (friendlyName);
 
     f->mVetoed = veto;
@@ -249,7 +249,7 @@ Features::featureList_t Features::getEnabledFeatures ()
     return ret;
 }
 
-bool Features::shouldEnable (uint32 closeTime, const FeatureState& fs)
+bool Features::shouldEnable (beast::uint32 closeTime, const FeatureState& fs)
 {
     if (fs.mVetoed || fs.mEnabled || !fs.mSupported || (fs.mLastMajority != mLastReport))
         return false;
@@ -265,7 +265,7 @@ bool Features::shouldEnable (uint32 closeTime, const FeatureState& fs)
 
 }
 
-Features::featureList_t Features::getFeaturesToEnable (uint32 closeTime)
+Features::featureList_t Features::getFeaturesToEnable (beast::uint32 closeTime)
 {
     featureList_t ret;
     ScopedLockType sl (mLock, __FILE__, __LINE__);
@@ -498,7 +498,7 @@ Json::Value Features::getJson (uint256 const& feature)
     return ret;
 }
 
-IFeatures* IFeatures::New (uint32 majorityTime, int majorityFraction)
+IFeatures* IFeatures::New (beast::uint32 majorityTime, int majorityFraction)
 {
     return new Features (majorityTime, majorityFraction);
 }

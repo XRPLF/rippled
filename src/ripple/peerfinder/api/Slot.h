@@ -64,10 +64,10 @@ public:
     virtual State state () const = 0;
 
     /** The remote endpoint of socket. */
-    virtual IP::Endpoint const& remote_endpoint () const = 0;
+    virtual beast::IP::Endpoint const& remote_endpoint () const = 0;
 
     /** The local endpoint of the socket, when known. */
-    virtual boost::optional <IP::Endpoint> const& local_endpoint () const = 0;
+    virtual boost::optional <beast::IP::Endpoint> const& local_endpoint () const = 0;
 
     /** The peer's public key, when known.
         The public key is established when the handshake is complete.

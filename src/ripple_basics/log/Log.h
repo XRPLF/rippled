@@ -21,7 +21,7 @@
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
 /** RAII helper for writing to the LogSink. */
-class Log : public Uncopyable
+class Log : public beast::Uncopyable
 {
 public:
     explicit Log (LogSeverity s);

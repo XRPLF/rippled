@@ -27,7 +27,7 @@ Endpoint::Endpoint ()
 {
 }
 
-Endpoint::Endpoint (IP::Endpoint const& ep, int hops_)
+Endpoint::Endpoint (beast::IP::Endpoint const& ep, int hops_)
     : hops (hops_)
     , address (ep)
 {

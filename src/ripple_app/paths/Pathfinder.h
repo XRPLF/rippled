@@ -129,11 +129,11 @@ private:
     boost::unordered_map<uint160, AccountItems::pointer>    mRLMap;
     boost::unordered_map<std::pair<uint160, uint160>, int>  mPOMap;
 
-    static const uint32 afADD_ACCOUNTS = 0x001;  // Add ripple paths
-    static const uint32 afADD_BOOKS    = 0x002;  // Add order books
-    static const uint32 afOB_XRP       = 0x010;  // Add order book to XRP only
-    static const uint32 afOB_LAST      = 0x040;  // Must link to destination currency
-    static const uint32 afAC_LAST      = 0x080;  // Destination account only
+    static const beast::uint32 afADD_ACCOUNTS = 0x001;  // Add ripple paths
+    static const beast::uint32 afADD_BOOKS    = 0x002;  // Add order books
+    static const beast::uint32 afOB_XRP       = 0x010;  // Add order book to XRP only
+    static const beast::uint32 afOB_LAST      = 0x040;  // Must link to destination currency
+    static const beast::uint32 afAC_LAST      = 0x080;  // Destination account only
 };
 
 boost::unordered_set<uint160> usAccountDestCurrencies

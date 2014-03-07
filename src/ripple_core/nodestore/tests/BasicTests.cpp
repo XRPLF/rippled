@@ -30,7 +30,7 @@ public:
     }
 
     // Make sure predictable object generation works!
-    void testBatches (int64 const seedValue)
+    void testBatches (beast::int64 const seedValue)
     {
         beginTestCase ("batch");
 
@@ -49,7 +49,7 @@ public:
     }
 
     // Checks encoding/decoding blobs
-    void testBlobs (int64 const seedValue)
+    void testBlobs (beast::int64 const seedValue)
     {
         beginTestCase ("encoding");
 
@@ -76,7 +76,7 @@ public:
 
     void runTest ()
     {
-        int64 const seedValue = 50;
+        beast::int64 const seedValue = 50;
 
         testBatches (seedValue);
 

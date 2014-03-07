@@ -25,13 +25,13 @@ TER AccountSetTransactor::doApply ()
 {
     WriteLog (lsINFO, AccountSetTransactor) << "AccountSet>";
 
-    const uint32    uTxFlags    = mTxn.getFlags ();
+    const beast::uint32 uTxFlags    = mTxn.getFlags ();
 
-    const uint32    uFlagsIn    = mTxnAccount->getFieldU32 (sfFlags);
-    uint32          uFlagsOut   = uFlagsIn;
+    const beast::uint32 uFlagsIn    = mTxnAccount->getFieldU32 (sfFlags);
+    beast::uint32       uFlagsOut   = uFlagsIn;
 
-    const uint32    uSetFlag    = mTxn.getFieldU32 (sfSetFlag);
-    const uint32    uClearFlag  = mTxn.getFieldU32 (sfClearFlag);
+    const beast::uint32 uSetFlag    = mTxn.getFieldU32 (sfSetFlag);
+    const beast::uint32 uClearFlag  = mTxn.getFieldU32 (sfClearFlag);
 
     // legacy AccountSet flags
     bool      bSetRequireDest   = (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
@@ -282,7 +282,7 @@ TER AccountSetTransactor::doApply ()
 
     if (mTxn.isFieldPresent (sfTransferRate))
     {
-        uint32      uRate   = mTxn.getFieldU32 (sfTransferRate);
+        beast::uint32 uRate   = mTxn.getFieldU32 (sfTransferRate);
 
         if (!uRate || uRate == QUALITY_ONE)
         {

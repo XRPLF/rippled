@@ -28,9 +28,9 @@
 //
 struct ConfigSection
 {
-    static String nodeDatabase ()                 { return "node_db"; }
-    static String tempNodeDatabase ()             { return "temp_db"; }
-    static String importNodeDatabase ()           { return "import_db"; }
+    static beast::String nodeDatabase ()                 { return "node_db"; }
+    static beast::String tempNodeDatabase ()             { return "temp_db"; }
+    static beast::String importNodeDatabase ()           { return "import_db"; }
 };
 
 // VFALCO TODO Rename and replace these macros with variables.

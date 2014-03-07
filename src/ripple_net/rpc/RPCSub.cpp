@@ -22,7 +22,7 @@ SETUP_LOG (RPCSub)
 // Subscription object for JSON-RPC
 class RPCSubImp
     : public RPCSub
-    , public LeakChecked <RPCSub>
+    , public beast::LeakChecked <RPCSub>
 {
 public:
     RPCSubImp (InfoSub::Source& source, boost::asio::io_service& io_service,

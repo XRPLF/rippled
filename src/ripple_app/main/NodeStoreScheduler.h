@@ -23,7 +23,7 @@
 /** A NodeStore::Scheduler which uses the JobQueue and implements the Stoppable API. */
 class NodeStoreScheduler
     : public NodeStore::Scheduler
-    , public Stoppable
+    , public beast::Stoppable
 {
 public:
     NodeStoreScheduler (Stoppable& parent);

@@ -22,7 +22,7 @@
 
 namespace ripple {
 
-class JobQueue : public Stoppable
+class JobQueue : public beast::Stoppable
 {
 protected:
     JobQueue (char const* name, Stoppable& parent);
@@ -66,8 +66,8 @@ public:
     virtual Json::Value getJson (int c = 0) = 0;
 };
 
-std::unique_ptr <JobQueue> make_JobQueue (insight::Collector::ptr const& collector,
-    Stoppable& parent, Journal journal);
+std::unique_ptr <JobQueue> make_JobQueue (beast::insight::Collector::ptr const& collector,
+    beast::Stoppable& parent, beast::Journal journal);
 
 }
 

@@ -31,7 +31,7 @@ public:
     // Identifies messages and peers.
     // Always starts at 1 and increases incrementally.
     //
-    typedef uint64 UniqueID;
+    typedef beast::uint64 UniqueID;
 
     StateBase ()
         : m_random (Params::randomSeedValue)
@@ -40,7 +40,7 @@ public:
     {
     }
 
-    Random& random ()
+    beast::Random& random ()
     {
         return m_random;
     }
@@ -56,7 +56,7 @@ public:
     }
 
 private:
-    Random m_random;
+    beast::Random m_random;
     UniqueID m_peerID;
     UniqueID m_messageID;
 };

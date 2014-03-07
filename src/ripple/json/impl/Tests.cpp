@@ -18,9 +18,8 @@
 //==============================================================================
 
 namespace ripple {
-using namespace beast;
 
-class JsonCppTests : public UnitTest
+class JsonCppTests : public beast::UnitTest
 {
 public:
     void testBadJson ()
@@ -50,4 +49,4 @@ public:
 
 static JsonCppTests jsonCppTests;
 
-}
+}  // namespace ripple

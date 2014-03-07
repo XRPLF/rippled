@@ -27,7 +27,7 @@ namespace TestOverlay
 template <class Config>
 class PeerType
     : public Config
-    , public Uncopyable
+    , public beast::Uncopyable
 {
 public:
     typedef typename Config::Peer       Peer;

@@ -24,6 +24,9 @@
 #ifndef BEAST_INPUTSOURCE_H_INCLUDED
 #define BEAST_INPUTSOURCE_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     A lightweight object that can create a stream to read some kind of resource.
@@ -63,5 +66,6 @@ public:
     virtual int64 hashCode() const = 0;
 };
 
+}  // namespace beast
 
 #endif   // BEAST_INPUTSOURCE_H_INCLUDED

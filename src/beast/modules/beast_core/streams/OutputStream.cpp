@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 #if BEAST_DEBUG
 
 struct DanglingStreamChecker
@@ -431,3 +434,5 @@ BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const S
 
     return stream;
 }
+
+}  // namespace beast

@@ -24,6 +24,9 @@
 #ifndef BEAST_PROCESS_H_INCLUDED
 #define BEAST_PROCESS_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /** Represents the current executable's process.
 
@@ -137,5 +140,6 @@ private:
     Process();
 };
 
+}  // namespace beast
 
 #endif   // BEAST_PROCESS_H_INCLUDED

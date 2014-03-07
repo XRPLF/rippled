@@ -52,17 +52,17 @@ public:
         return *this;
     }
 
-    uint160 (uint64 b)
+    uint160 (beast::uint64 b)
     {
         *this = b;
     }
 
-    uint160& operator= (uint64 uHost)
+    uint160& operator= (beast::uint64 uHost)
     {
         zero ();
 
         // Put in least significant bits.
-        ((uint64*) end ())[-1]   = htobe64 (uHost);
+        ((beast::uint64*) end ())[-1]   = htobe64 (uHost);
 
         return *this;
     }
@@ -83,12 +83,12 @@ public:
     base_uint256 to256 () const;
 };
 
-inline bool operator== (const uint160& a, uint64 b)
+inline bool operator== (const uint160& a, beast::uint64 b)
 {
     return (base_uint160)a == b;
 }
 
-inline bool operator!= (const uint160& a, uint64 b)
+inline bool operator!= (const uint160& a, beast::uint64 b)
 {
     return (base_uint160)a != b;
 }

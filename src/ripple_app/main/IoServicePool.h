@@ -21,10 +21,10 @@
 #define RIPPLE_APP_IOSERVICEPOOL_H_INCLUDED
 
 /** An io_service with an associated group of threads. */
-class IoServicePool : public Stoppable
+class IoServicePool : public beast::Stoppable
 {
 public:
-    IoServicePool (Stoppable& parent, String const& name, int numberOfThreads);
+    IoServicePool (Stoppable& parent, beast::String const& name, int numberOfThreads);
     ~IoServicePool ();
 
     boost::asio::io_service& getService ();
@@ -39,12 +39,12 @@ private:
 
     void onThreadExit();
 
-    String m_name;
+    beast::String m_name;
     boost::asio::io_service m_service;
     boost::optional <boost::asio::io_service::work> m_work;
-    OwnedArray <ServiceThread> m_threads;
+    beast::OwnedArray <ServiceThread> m_threads;
     int m_threadsDesired;
-    Atomic <int> m_threadsRunning;
+    beast::Atomic <int> m_threadsRunning;
 };
 
 #endif

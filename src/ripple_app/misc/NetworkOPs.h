@@ -56,7 +56,7 @@ protected:
     explicit NetworkOPs (Stoppable& parent);
 
 public:
-    typedef abstract_clock <std::chrono::seconds> clock_type;
+    typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
     enum Fault
     {
@@ -77,13 +77,13 @@ public:
 
     // VFALCO TODO Fix OrderBookDB to not need this unrelated type.
     //
-    typedef boost::unordered_map <uint64, InfoSub::wptr> SubMapType;
+    typedef boost::unordered_map <beast::uint64, InfoSub::wptr> SubMapType;
 
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
     static NetworkOPs* New (clock_type& clock, LedgerMaster& ledgerMaster,
-        Stoppable& parent, Journal journal);
+        Stoppable& parent, beast::Journal journal);
 
     virtual ~NetworkOPs () = 0;
 
@@ -93,15 +93,15 @@ public:
     //
 
     // Our best estimate of wall time in seconds from 1/1/2000
-    virtual uint32 getNetworkTimeNC () = 0;
+    virtual beast::uint32 getNetworkTimeNC () = 0;
     // Our best estimate of current ledger close time
-    virtual uint32 getCloseTimeNC () = 0;
+    virtual beast::uint32 getCloseTimeNC () = 0;
     // Use *only* to timestamp our own validation
-    virtual uint32 getValidationTimeNC () = 0;
+    virtual beast::uint32 getValidationTimeNC () = 0;
     virtual void closeTimeOffset (int) = 0;
     virtual boost::posix_time::ptime getNetworkTimePT () = 0;
-    virtual uint32 getLedgerID (uint256 const& hash) = 0;
-    virtual uint32 getCurrentLedgerID () = 0;
+    virtual beast::uint32 getLedgerID (uint256 const& hash) = 0;
+    virtual beast::uint32 getCurrentLedgerID () = 0;
 
     virtual OperatingMode getOperatingMode () = 0;
     virtual std::string strOperatingMode () = 0;
@@ -110,20 +110,20 @@ public:
     virtual Ledger::pointer getPublishedLedger () = 0;
     virtual Ledger::pointer getCurrentLedger () = 0;
     virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;
-    virtual Ledger::pointer getLedgerBySeq (const uint32 seq) = 0;
-    virtual void            missingNodeInLedger (const uint32 seq) = 0;
+    virtual Ledger::pointer getLedgerBySeq (const beast::uint32 seq) = 0;
+    virtual void            missingNodeInLedger (const beast::uint32 seq) = 0;
 
     virtual uint256         getClosedLedgerHash () = 0;
 
     // Do we have this inclusive range of ledgers in our database
-    virtual bool haveLedgerRange (uint32 from, uint32 to) = 0;
-    virtual bool haveLedger (uint32 seq) = 0;
-    virtual uint32 getValidatedSeq () = 0;
-    virtual bool isValidated (uint32 seq) = 0;
-    virtual bool isValidated (uint32 seq, uint256 const& hash) = 0;
+    virtual bool haveLedgerRange (beast::uint32 from, beast::uint32 to) = 0;
+    virtual bool haveLedger (beast::uint32 seq) = 0;
+    virtual beast::uint32 getValidatedSeq () = 0;
+    virtual bool isValidated (beast::uint32 seq) = 0;
+    virtual bool isValidated (beast::uint32 seq, uint256 const& hash) = 0;
     virtual bool isValidated (Ledger::ref l) = 0;
-    virtual bool getValidatedRange (uint32& minVal, uint32& maxVal) = 0;
-    virtual bool getFullValidatedRange (uint32& minVal, uint32& maxVal) = 0;
+    virtual bool getValidatedRange (beast::uint32& minVal, beast::uint32& maxVal) = 0;
+    virtual bool getFullValidatedRange (beast::uint32& minVal, beast::uint32& maxVal) = 0;
 
     virtual SerializedValidation::ref getLastValidation () = 0;
     virtual void setLastValidation (SerializedValidation::ref v) = 0;
@@ -149,8 +149,8 @@ public:
         bool bAdmin, bool bLocal, bool bFailHard) = 0;
     virtual Transaction::pointer findTransactionByID (uint256 const& transactionID) = 0;
     virtual int findTransactionsByDestination (std::list<Transaction::pointer>&,
-        const RippleAddress& destinationAccount, uint32 startLedgerSeq,
-            uint32 endLedgerSeq, int maxTransactions) = 0;
+        const RippleAddress& destinationAccount, beast::uint32 startLedgerSeq,
+            beast::uint32 endLedgerSeq, int maxTransactions) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -168,7 +168,8 @@ public:
     //
 
     virtual STVector256 getDirNodeInfo (Ledger::ref lrLedger,
-        uint256 const& uRootIndex, uint64& uNodePrevious, uint64& uNodeNext) = 0;
+        uint256 const& uRootIndex, beast::uint64& uNodePrevious,
+                                   beast::uint64& uNodeNext) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -223,10 +224,10 @@ public:
     // Fetch packs
     virtual void makeFetchPack (Job&, boost::weak_ptr<Peer> peer,
         boost::shared_ptr<protocol::TMGetObjectByHash> request,
-        Ledger::pointer wantLedger, Ledger::pointer haveLedger, uint32 uUptime) = 0;
+        Ledger::pointer wantLedger, Ledger::pointer haveLedger, beast::uint32 uUptime) = 0;
 
-    virtual bool shouldFetchPack (uint32 seq) = 0;
-    virtual void gotFetchPack (bool progress, uint32 seq) = 0;
+    virtual bool shouldFetchPack (beast::uint32 seq) = 0;
+    virtual void gotFetchPack (bool progress, beast::uint32 seq) = 0;
     virtual void addFetchPack (uint256 const& hash, boost::shared_ptr< Blob >& data) = 0;
     virtual bool getFetchPack (uint256 const& hash, Blob& data) = 0;
     virtual int getFetchSize () = 0;
@@ -251,14 +252,14 @@ public:
     virtual void consensusViewChange () = 0;
     virtual int getPreviousProposers () = 0;
     virtual int getPreviousConvergeTime () = 0;
-    virtual uint32 getLastCloseTime () = 0;
-    virtual void setLastCloseTime (uint32 t) = 0;
+    virtual beast::uint32 getLastCloseTime () = 0;
+    virtual void setLastCloseTime (beast::uint32 t) = 0;
 
     virtual Json::Value getConsensusInfo () = 0;
     virtual Json::Value getServerInfo (bool human, bool admin) = 0;
     virtual void clearLedgerFetch () = 0;
     virtual Json::Value getLedgerFetchInfo () = 0;
-    virtual uint32 acceptLedger () = 0;
+    virtual beast::uint32 acceptLedger () = 0;
 
     typedef boost::unordered_map <uint160, std::list<LedgerProposal::pointer> > Proposals;
     virtual Proposals& peekStoredProposals () = 0;
@@ -272,32 +273,32 @@ public:
 
     //Helper function to generate SQL query to get transactions
     virtual std::string transactionsSQL (std::string selection,
-        const RippleAddress& account, int32 minLedger, int32 maxLedger,
-        bool descending, uint32 offset, int limit, bool binary,
+        const RippleAddress& account, beast::int32 minLedger, beast::int32 maxLedger,
+        bool descending, beast::uint32 offset, int limit, bool binary,
             bool count, bool bAdmin) = 0;
 
     // client information retrieval functions
     typedef std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > AccountTxs;
     virtual AccountTxs getAccountTxs (const RippleAddress& account,
-        int32 minLedger, int32 maxLedger,  bool descending, uint32 offset,
+        beast::int32 minLedger, beast::int32 maxLedger,  bool descending, beast::uint32 offset,
             int limit, bool bAdmin) = 0;
 
     typedef std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > TxsAccount;
     virtual TxsAccount getTxsAccount (const RippleAddress& account,
-        int32 minLedger, int32 maxLedger, bool forward, Json::Value& token,
+        beast::int32 minLedger, beast::int32 maxLedger, bool forward, Json::Value& token,
         int limit, bool bAdmin) = 0;
 
-    typedef boost::tuple<std::string, std::string, uint32> txnMetaLedgerType;
+    typedef boost::tuple<std::string, std::string, beast::uint32> txnMetaLedgerType;
     typedef std::vector<txnMetaLedgerType> MetaTxsList;
     virtual MetaTxsList getAccountTxsB (const RippleAddress& account,
-        int32 minLedger, int32 maxLedger,  bool descending,
-            uint32 offset, int limit, bool bAdmin) = 0;
+        beast::int32 minLedger, beast::int32 maxLedger,  bool descending,
+            beast::uint32 offset, int limit, bool bAdmin) = 0;
 
     virtual MetaTxsList getTxsAccountB (const RippleAddress& account,
-        int32 minLedger, int32 maxLedger,  bool forward,
+        beast::int32 minLedger, beast::int32 maxLedger,  bool forward,
         Json::Value& token, int limit, bool bAdmin) = 0;
 
-    virtual std::vector<RippleAddress> getLedgerAffectedAccounts (uint32 ledgerSeq) = 0;
+    virtual std::vector<RippleAddress> getLedgerAffectedAccounts (beast::uint32 ledgerSeq) = 0;
 
     //--------------------------------------------------------------------------
     //

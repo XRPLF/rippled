@@ -29,7 +29,7 @@ int Serializer::addZeros (size_t uBytes)
     return ret;
 }
 
-int Serializer::add16 (uint16 i)
+int Serializer::add16 (beast::uint16 i)
 {
     int ret = mData.size ();
     mData.push_back (static_cast<unsigned char> (i >> 8));
@@ -37,7 +37,7 @@ int Serializer::add16 (uint16 i)
     return ret;
 }
 
-int Serializer::add32 (uint32 i)
+int Serializer::add32 (beast::uint32 i)
 {
     int ret = mData.size ();
     mData.push_back (static_cast<unsigned char> (i >> 24));
@@ -47,7 +47,7 @@ int Serializer::add32 (uint32 i)
     return ret;
 }
 
-int Serializer::add64 (uint64 i)
+int Serializer::add64 (beast::uint64 i)
 {
     int ret = mData.size ();
     mData.push_back (static_cast<unsigned char> (i >> 56));
@@ -103,7 +103,7 @@ int Serializer::addRaw (const void* ptr, int len)
     return ret;
 }
 
-bool Serializer::get16 (uint16& o, int offset) const
+bool Serializer::get16 (beast::uint16& o, int offset) const
 {
     if ((offset + 2) > mData.size ()) return false;
 
@@ -114,7 +114,7 @@ bool Serializer::get16 (uint16& o, int offset) const
     return true;
 }
 
-bool Serializer::get32 (uint32& o, int offset) const
+bool Serializer::get32 (beast::uint32& o, int offset) const
 {
     if ((offset + 4) > mData.size ()) return false;
 
@@ -129,7 +129,7 @@ bool Serializer::get32 (uint32& o, int offset) const
     return true;
 }
 
-bool Serializer::get64 (uint64& o, int offset) const
+bool Serializer::get64 (beast::uint64& o, int offset) const
 {
     if ((offset + 8) > mData.size ()) return false;
 
@@ -362,7 +362,7 @@ uint256 Serializer::getSHA512Half (const unsigned char* data, int len)
     return j[0];
 }
 
-uint256 Serializer::getPrefixHash (uint32 prefix, const unsigned char* data, int len)
+uint256 Serializer::getPrefixHash (beast::uint32 prefix, const unsigned char* data, int len)
 {
     char be_prefix[4];
     be_prefix[0] = static_cast<unsigned char> (prefix >> 24);
@@ -603,9 +603,9 @@ unsigned char SerializerIterator::get8 ()
     return val;
 }
 
-uint16 SerializerIterator::get16 ()
+beast::uint16 SerializerIterator::get16 ()
 {
-    uint16 val;
+    beast::uint16 val;
 
     if (!mSerializer.get16 (val, mPos)) throw std::runtime_error ("invalid serializer get16");
 
@@ -613,9 +613,9 @@ uint16 SerializerIterator::get16 ()
     return val;
 }
 
-uint32 SerializerIterator::get32 ()
+beast::uint32 SerializerIterator::get32 ()
 {
-    uint32 val;
+    beast::uint32 val;
 
     if (!mSerializer.get32 (val, mPos)) throw std::runtime_error ("invalid serializer get32");
 
@@ -623,9 +623,9 @@ uint32 SerializerIterator::get32 ()
     return val;
 }
 
-uint64 SerializerIterator::get64 ()
+beast::uint64 SerializerIterator::get64 ()
 {
-    uint64 val;
+    beast::uint64 val;
 
     if (!mSerializer.get64 (val, mPos)) throw std::runtime_error ("invalid serializer get64");
 
@@ -684,10 +684,10 @@ Blob SerializerIterator::getRaw (int iLength)
 
 //------------------------------------------------------------------------------
 
-class SerializerTests : public UnitTest
+class SerializerTests : public beast::UnitTest
 {
 public:
-    SerializerTests () : UnitTest ("Serializer", "ripple")
+    SerializerTests () : beast::UnitTest ("Serializer", "ripple")
     {
     }
 

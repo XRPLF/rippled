@@ -29,10 +29,6 @@
 #include "../beast/beast/Threads.h"
 #include "../beast/beast/Utility.h"
 
-namespace ripple {
-using namespace beast;
-}
-
 #   include "api/Section.h"
 #  include "api/SiteFile.h"
 # include "api/Listener.h"

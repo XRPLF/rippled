@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-LoadFeeTrack* LoadFeeTrack::New (Journal journal)
+LoadFeeTrack* LoadFeeTrack::New (beast::Journal journal)
 {
     return new LoadFeeTrackImp (journal);
 }
 
 //------------------------------------------------------------------------------
 
-class LoadFeeTrackTests : public UnitTest
+class LoadFeeTrackTests : public beast::UnitTest
 {
 public:
     LoadFeeTrackTests () : UnitTest ("LoadFeeTrack", "ripple")

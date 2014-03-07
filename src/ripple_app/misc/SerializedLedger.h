@@ -81,7 +81,7 @@ public:
     {
         return mType;
     }
-    uint16 getVersion () const
+    beast::uint16 getVersion () const
     {
         return getFieldU16 (sfLedgerEntryType);
     }
@@ -98,8 +98,9 @@ public:
     RippleAddress getFirstOwner ();
     RippleAddress getSecondOwner ();
     uint256 getThreadedTransaction ();
-    uint32 getThreadedLedger ();
-    bool thread (uint256 const & txID, uint32 ledgerSeq, uint256 & prevTxID, uint32 & prevLedgerID);
+    beast::uint32 getThreadedLedger ();
+    bool thread (uint256 const & txID, beast::uint32 ledgerSeq, uint256 & prevTxID,
+                 beast::uint32 & prevLedgerID);
     std::vector<uint256> getOwners ();  // nodes notified if this node is deleted
 
 private:

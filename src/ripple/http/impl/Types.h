@@ -48,7 +48,7 @@ inline endpoint_t to_asio (Port const& port)
 {
     if (port.addr.is_v4())
     {
-        IP::AddressV4 v4 (port.addr.to_v4());
+        beast::IP::AddressV4 v4 (port.addr.to_v4());
         std::string const& s (to_string (v4));
         return endpoint_t (address().from_string (s), port.port);
     }
@@ -57,10 +57,10 @@ inline endpoint_t to_asio (Port const& port)
     return endpoint_t ();
 }
 
-inline IP::Endpoint from_asio (endpoint_t const& endpoint)
+inline beast::IP::Endpoint from_asio (endpoint_t const& endpoint)
 {
     std::stringstream ss (to_string (endpoint));
-    IP::Endpoint ep;
+    beast::IP::Endpoint ep;
     ss >> ep;
     return ep;
 }

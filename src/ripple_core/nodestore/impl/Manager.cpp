@@ -80,7 +80,7 @@ public:
     }
 
     std::unique_ptr <Backend> make_Backend (Parameters const& parameters,
-        Scheduler& scheduler, Journal journal)
+        Scheduler& scheduler, beast::Journal journal)
     {
         std::unique_ptr <Backend> backend;
 
@@ -109,7 +109,7 @@ public:
     }
 
     std::unique_ptr <Database> make_Database (std::string const& name,
-        Scheduler& scheduler, Journal journal, int readThreads,
+        Scheduler& scheduler, beast::Journal journal, int readThreads,
             Parameters const& backendParameters,
                 Parameters fastBackendParameters)
     {

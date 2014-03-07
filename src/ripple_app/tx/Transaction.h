@@ -60,9 +60,9 @@ public:
         TxType ttKind,
         const RippleAddress &    naPublicKey,       // To prove transaction is consistent and authorized.
         const RippleAddress &    naSourceAccount,   // To identify the paying account.
-        uint32                  uSeq,               // To order transactions.
+        beast::uint32            uSeq,               // To order transactions.
         const STAmount &         saFee,             // Transaction fee.
-        uint32                  uSourceTag);        // User call back value.
+        beast::uint32            uSourceTag);        // User call back value.
 
 
     bool sign (const RippleAddress & naAccountPrivate);
@@ -99,12 +99,12 @@ public:
         return mTransaction->getTransactionFee ();
     }
 
-    uint32 getFromAccountSeq () const
+    beast::uint32 getFromAccountSeq () const
     {
         return mTransaction->getSequence ();
     }
 
-    uint32 getSourceTag () const
+    beast::uint32 getSourceTag () const
     {
         return mTransaction->getFieldU32 (sfSourceTag);
     }
@@ -135,7 +135,7 @@ public:
         mResult = terResult;
     }
 
-    void setStatus (TransStatus status, uint32 ledgerSeq);
+    void setStatus (TransStatus status, beast::uint32 ledgerSeq);
 
     void setStatus (TransStatus status)
     {
@@ -159,9 +159,13 @@ public:
     static Transaction::pointer load (uint256 const & id);
 
     // conversion function
-    static bool convertToTransactions (uint32 ourLedgerSeq, uint32 otherLedgerSeq,
-                                       bool checkFirstTransactions, bool checkSecondTransactions, const SHAMap::Delta & inMap,
-                                       std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap);
+    static bool convertToTransactions (beast::uint32 ourLedgerSeq,
+                                       beast::uint32 otherLedgerSeq,
+                                       bool checkFirstTransactions,
+                                       bool checkSecondTransactions,
+                                       const SHAMap::Delta & inMap,
+                                       std::map<uint256, std::pair<Transaction::pointer,
+                                                                   Transaction::pointer> >& outMap);
 
     static bool isHexTxID (const std::string&);
 

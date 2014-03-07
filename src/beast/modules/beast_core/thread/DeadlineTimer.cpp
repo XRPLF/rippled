@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 class DeadlineTimer::Manager
     : public LeakChecked <Manager>
     , protected Thread
@@ -241,3 +244,5 @@ void DeadlineTimer::setRecurringExpiration (double secondsUntilDeadline)
 
     m_manager->activate (*this, secondsUntilDeadline, when);
 }
+
+}  // namespace beast

@@ -46,7 +46,7 @@ public:
     {
         value_type::storage_type const& storage (value.storage());
         // We will convert to little endian with an extra pad byte
-        FixedArray <uint8, value_type::storage_size + 1> le;
+        beast::FixedArray <beast::uint8, value_type::storage_size + 1> le;
         std::reverse_copy (storage.begin(), storage.end(), le.begin());
         // Set pad byte zero to make BIGNUM always positive
         le.back() = 0;

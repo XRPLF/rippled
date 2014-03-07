@@ -25,7 +25,7 @@ SerializedLedgerEntry::SerializedLedgerEntry (SerializerIterator& sit, uint256 c
     : STObject (sfLedgerEntry), mIndex (index), mMutable (true)
 {
     set (sit);
-    uint16 type = getFieldU16 (sfLedgerEntryType);
+    beast::uint16 type = getFieldU16 (sfLedgerEntryType);
     
     LedgerFormats::Item const* const item =
         LedgerFormats::getInstance()->findByType (static_cast <LedgerEntryType> (type));
@@ -45,7 +45,7 @@ SerializedLedgerEntry::SerializedLedgerEntry (const Serializer& s, uint256 const
     SerializerIterator sit (const_cast<Serializer&> (s)); // we know 's' isn't going away
     set (sit);
 
-    uint16 type = getFieldU16 (sfLedgerEntryType);
+    beast::uint16 type = getFieldU16 (sfLedgerEntryType);
 
     LedgerFormats::Item const* const item =
         LedgerFormats::getInstance()->findByType (static_cast <LedgerEntryType> (type));
@@ -73,7 +73,7 @@ SerializedLedgerEntry::SerializedLedgerEntry (LedgerEntryType type, uint256 cons
     {
         set (item->elements);
 
-        setFieldU16 (sfLedgerEntryType, static_cast <uint16> (item->getType ()));
+        setFieldU16 (sfLedgerEntryType, static_cast <beast::uint16> (item->getType ()));
     }
     else
     {
@@ -131,12 +131,13 @@ uint256 SerializedLedgerEntry::getThreadedTransaction ()
     return getFieldH256 (sfPreviousTxnID);
 }
 
-uint32 SerializedLedgerEntry::getThreadedLedger ()
+beast::uint32 SerializedLedgerEntry::getThreadedLedger ()
 {
     return getFieldU32 (sfPreviousTxnLgrSeq);
 }
 
-bool SerializedLedgerEntry::thread (uint256 const& txID, uint32 ledgerSeq, uint256& prevTxID, uint32& prevLedgerID)
+bool SerializedLedgerEntry::thread (uint256 const& txID, beast::uint32 ledgerSeq,
+                                    uint256& prevTxID, beast::uint32& prevLedgerID)
 {
     uint256 oldPrevTxID = getFieldH256 (sfPreviousTxnID);
     WriteLog (lsTRACE, SerializedLedgerLog) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
@@ -193,7 +194,7 @@ std::vector<uint256> SerializedLedgerEntry::getOwners ()
         {
             const STAccount* entry = dynamic_cast<const STAccount*> (peekAtPIndex (i));
 
-            if ((entry != NULL) && entry->getValueH160 (account))
+            if ((entry != nullptr) && entry->getValueH160 (account))
                 owners.push_back (Ledger::getAccountRootIndex (account));
         }
 
@@ -201,7 +202,7 @@ std::vector<uint256> SerializedLedgerEntry::getOwners ()
         {
             const STAmount* entry = dynamic_cast<const STAmount*> (peekAtPIndex (i));
 
-            if ((entry != NULL))
+            if ((entry != nullptr))
             {
                 uint160 issuer = entry->getIssuer ();
 

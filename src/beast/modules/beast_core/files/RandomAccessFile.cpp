@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 RandomAccessFile::RandomAccessFile () noexcept
     : fileHandle (nullptr)
     , currentPosition (0)
@@ -270,3 +273,5 @@ private:
 };
 
 static RandomAccessFileTests randomAccessFileTests;
+
+}  // namespace beast

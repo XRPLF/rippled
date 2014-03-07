@@ -34,7 +34,7 @@ int UptimeTimer::getElapsedSeconds () const
 
     if (m_isUpdatingManually)
     {
-        memoryBarrier();
+        beast::memoryBarrier();
         result = m_elapsedTime;
     }
     else

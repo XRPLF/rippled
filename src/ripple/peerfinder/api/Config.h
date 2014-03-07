@@ -51,7 +51,7 @@ struct Config
     bool autoConnect;
 
     /** The listening port number. */
-    uint16 listeningPort;
+    beast::uint16 listeningPort;
 
     /** The set of features we advertise. */
     std::string features;
@@ -68,7 +68,7 @@ struct Config
     void applyTuning ();
 
     /** Write the configuration into a property stream */
-    void onWrite (PropertyStream::Map& map);
+    void onWrite (beast::PropertyStream::Map& map);
 };
 
 }

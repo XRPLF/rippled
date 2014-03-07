@@ -22,6 +22,9 @@
 
 #include "../MutexTraits.h"
 
+namespace beast
+{
+
 namespace detail
 {
 
@@ -248,5 +251,7 @@ private:
 };
 
 } // namespace detail
+
+} // namespace beast
 
 #endif

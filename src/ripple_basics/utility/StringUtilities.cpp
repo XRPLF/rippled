@@ -46,7 +46,7 @@ std::string strprintf (const char* format, ...)
         limit *= 2;
         p = new char[limit];
 
-        if (p == NULL)
+        if (p == nullptr)
             throw std::bad_alloc ();
     }
 
@@ -217,7 +217,7 @@ bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort)
         if (bValid)
         {
             strIP   = addrIP.to_string ();
-            iPort   = strPortRaw.empty () ? -1 : lexicalCastThrow <int> (strPortRaw);
+            iPort   = strPortRaw.empty () ? -1 : beast::lexicalCastThrow <int> (strPortRaw);
         }
     }
 
@@ -243,7 +243,7 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
 
         boost::algorithm::to_lower (strScheme);
 
-        iPort   = strPort.empty () ? -1 : lexicalCast <int> (strPort);
+        iPort   = strPort.empty () ? -1 : beast::lexicalCast <int> (strPort);
         // Log::out() << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPort << "' : " << iPort << " : '" << strPath << "'";
     }
 
@@ -256,28 +256,29 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
 // Quality parsing
 // - integers as is.
 // - floats multiplied by a billion
-bool parseQuality (const std::string& strSource, uint32& uQuality)
+bool parseQuality (const std::string& strSource, beast::uint32& uQuality)
 {
-    uQuality    = lexicalCast <uint32> (strSource);
+    uQuality    = beast::lexicalCast <beast::uint32> (strSource);
 
     if (!uQuality)
     {
-        float   fQuality    = lexicalCast <float> (strSource);
+        float   fQuality    = beast::lexicalCast <float> (strSource);
 
         if (fQuality)
-            uQuality    = (uint32) (QUALITY_ONE * fQuality);
+            uQuality    = (beast::uint32) (QUALITY_ONE * fQuality);
     }
 
     return !!uQuality;
 }
 
-StringPairArray parseDelimitedKeyValueString (String parameters, beast_wchar delimiter)
+beast::StringPairArray parseDelimitedKeyValueString (beast::String parameters,
+                                                   beast::beast_wchar delimiter)
 {
-    StringPairArray keyValues;
+    beast::StringPairArray keyValues;
 
     while (parameters.isNotEmpty ())
     {
-        String pair;
+        beast::String pair;
 
         {
             int const delimiterPos = parameters.indexOfChar (delimiter);
@@ -292,7 +293,7 @@ StringPairArray parseDelimitedKeyValueString (String parameters, beast_wchar del
             {
                 pair = parameters;
 
-                parameters = String::empty;
+                parameters = beast::String::empty;
             }
         }
 
@@ -300,8 +301,8 @@ StringPairArray parseDelimitedKeyValueString (String parameters, beast_wchar del
 
         if (equalPos != -1)
         {
-            String const key = pair.substring (0, equalPos);
-            String const value = pair.substring (equalPos + 1, pair.length ());
+            beast::String const key = pair.substring (0, equalPos);
+            beast::String const value = pair.substring (equalPos + 1, pair.length ());
 
             keyValues.set (key, value);
         }
@@ -312,7 +313,7 @@ StringPairArray parseDelimitedKeyValueString (String parameters, beast_wchar del
 
 //------------------------------------------------------------------------------
 
-class StringUtilitiesTests : public UnitTest
+class StringUtilitiesTests : public beast::UnitTest
 {
 public:
     void testUnHexSuccess (std::string strIn, std::string strExpected)

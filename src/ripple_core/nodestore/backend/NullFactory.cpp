@@ -66,13 +66,13 @@ private:
 class NullFactory : public Factory
 {
 public:
-    String getName () const
+    beast::String getName () const
     {
         return "none";
     }
 
     std::unique_ptr <Backend> createInstance (
-        size_t, Parameters const&, Scheduler&, Journal)
+        size_t, Parameters const&, Scheduler&, beast::Journal)
     {
         return std::make_unique <NullBackend> ();
     }

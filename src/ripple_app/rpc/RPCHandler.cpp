@@ -139,10 +139,10 @@ static void autofill_fee (Json::Value& request,
     }
 
     // Administrative endpoints are exempt from local fees
-    uint64 fee = ledger->scaleFeeLoad (
+    beast::uint64 fee = ledger->scaleFeeLoad (
         getConfig().FEE_DEFAULT, admin);
 
-    uint64 const limit (mult * getConfig().FEE_DEFAULT);
+    beast::uint64 const limit (mult * getConfig().FEE_DEFAULT);
     if (fee > limit)
     {
         std::stringstream ss;
@@ -855,7 +855,7 @@ Json::Value RPCHandler::doConnect (Json::Value params,
     else
         iPort = SYSTEM_PEER_PORT;
 
-    IP::Endpoint ip (IP::Endpoint::from_string(params["ip"].asString ()));
+    beast::IP::Endpoint ip (beast::IP::Endpoint::from_string(params["ip"].asString ()));
 
     if (! is_unspecified (ip))
         getApp().getPeers ().connect (ip.at_port(iPort));
@@ -2327,7 +2327,7 @@ Json::Value RPCHandler::doLedgerData (Json::Value params, Resource::Charge& load
     Json::Value jvReply = Json::objectValue;
 
     jvReply["ledger_hash"] = lpLedger->getHash().GetHex ();
-    jvReply["ledger_index"] = lexicalCastThrow <std::string> (lpLedger->getLedgerSeq ());
+    jvReply["ledger_index"] = beast::lexicalCastThrow <std::string> (lpLedger->getLedgerSeq ());
 
     Json::Value& nodes = (jvReply["state"] = Json::arrayValue);
     SHAMap& map = *(lpLedger->peekAccountStateMap ());
@@ -2448,15 +2448,15 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
     masterLockHolder.unlock ();
 
     RippleAddress   raAccount;
-    uint32          offset      = params.isMember ("offset") ? params["offset"].asUInt () : 0;
+    beast::uint32   offset      = params.isMember ("offset") ? params["offset"].asUInt () : 0;
     int             limit       = params.isMember ("limit") ? params["limit"].asUInt () : -1;
     bool            bBinary     = params.isMember ("binary") && params["binary"].asBool ();
     bool            bDescending = params.isMember ("descending") && params["descending"].asBool ();
     bool            bCount      = params.isMember ("count") && params["count"].asBool ();
-    uint32          uLedgerMin;
-    uint32          uLedgerMax;
-    uint32          uValidatedMin;
-    uint32          uValidatedMax;
+    beast::uint32   uLedgerMin;
+    beast::uint32   uLedgerMax;
+    beast::uint32   uValidatedMin;
+    beast::uint32   uValidatedMax;
     bool            bValidated  = mNetOps->getValidatedRange (uValidatedMin, uValidatedMax);
 
     if (!params.isMember ("account"))
@@ -2486,8 +2486,8 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
 
     if (params.isMember ("ledger_index_min") || params.isMember ("ledger_index_max"))
     {
-        int64       iLedgerMin  = params.isMember ("ledger_index_min") ? params["ledger_index_min"].asInt () : -1;
-        int64       iLedgerMax  = params.isMember ("ledger_index_max") ? params["ledger_index_max"].asInt () : -1;
+        beast::int64 iLedgerMin  = params.isMember ("ledger_index_min") ? params["ledger_index_min"].asInt () : -1;
+        beast::int64 iLedgerMax  = params.isMember ("ledger_index_max") ? params["ledger_index_max"].asInt () : -1;
 
         if (!bValidated && (iLedgerMin == -1 || iLedgerMax == -1))
         {
@@ -2538,7 +2538,7 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
                 ++count;
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
-                uint32  uLedgerIndex    = it->get<2> ();
+                beast::uint32  uLedgerIndex = it->get<2> ();
                 jvObj["tx_blob"]        = it->get<0> ();
                 jvObj["meta"]           = it->get<1> ();
                 jvObj["ledger_index"]   = uLedgerIndex;
@@ -2560,7 +2560,7 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
 
                 if (it->second)
                 {
-                    uint32 uLedgerIndex = it->second->getLgrSeq ();
+                    beast::uint32 uLedgerIndex = it->second->getLgrSeq ();
 
                     jvObj["meta"]           = it->second->getJson (0);
                     jvObj["validated"]      = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
@@ -2612,10 +2612,10 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
     int             limit       = params.isMember ("limit") ? params["limit"].asUInt () : -1;
     bool            bBinary     = params.isMember ("binary") && params["binary"].asBool ();
     bool            bForward    = params.isMember ("forward") && params["forward"].asBool ();
-    uint32          uLedgerMin;
-    uint32          uLedgerMax;
-    uint32          uValidatedMin;
-    uint32          uValidatedMax;
+    beast::uint32   uLedgerMin;
+    beast::uint32   uLedgerMax;
+    beast::uint32   uValidatedMin;
+    beast::uint32   uValidatedMax;
     bool            bValidated  = mNetOps->getValidatedRange (uValidatedMin, uValidatedMax);
 
     if (!bValidated)
@@ -2634,8 +2634,8 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
 
     if (params.isMember ("ledger_index_min") || params.isMember ("ledger_index_max"))
     {
-        int64       iLedgerMin  = params.isMember ("ledger_index_min") ? params["ledger_index_min"].asInt () : -1;
-        int64       iLedgerMax  = params.isMember ("ledger_index_max") ? params["ledger_index_max"].asInt () : -1;
+        beast::int64 iLedgerMin  = params.isMember ("ledger_index_min") ? params["ledger_index_min"].asInt () : -1;
+        beast::int64 iLedgerMax  = params.isMember ("ledger_index_max") ? params["ledger_index_max"].asInt () : -1;
 
 
         uLedgerMin  = iLedgerMin == -1 ? uValidatedMin : iLedgerMin;
@@ -2684,7 +2684,7 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
             {
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
-                uint32  uLedgerIndex    = it->get<2> ();
+                beast::uint32 uLedgerIndex = it->get<2> ();
                 jvObj["tx_blob"]        = it->get<0> ();
                 jvObj["meta"]           = it->get<1> ();
                 jvObj["ledger_index"]   = uLedgerIndex;
@@ -2706,7 +2706,7 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
 
                 if (it->second)
                 {
-                    uint32 uLedgerIndex = it->second->getLgrSeq ();
+                    beast::uint32 uLedgerIndex = it->second->getLgrSeq ();
 
                     jvObj["meta"]           = it->second->getJson (0);
                     jvObj["validated"]      = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
@@ -2989,7 +2989,7 @@ static void textTime (std::string& text, int& seconds, const char* unitName, int
     if (!text.empty ())
         text += ", ";
 
-    text += lexicalCastThrow <std::string> (i);
+    text += beast::lexicalCastThrow <std::string> (i);
     text += " ";
     text += unitName;
 
@@ -3374,7 +3374,7 @@ Json::Value RPCHandler::lookupLedger (Json::Value const& params, Ledger::pointer
         return jvResult;
     }
 
-    int32 iLedgerIndex = LEDGER_CURRENT;
+    beast::int32 iLedgerIndex = LEDGER_CURRENT;
 
     // We only try to parse a ledger index if we have not already
     // determined that we have a ledger hash.
@@ -3525,7 +3525,7 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
         }
         else
         {
-            uint64  uSubIndex = params["directory"].isMember ("sub_index")
+            beast::uint64  uSubIndex = params["directory"].isMember ("sub_index")
                                 ? params["directory"]["sub_index"].asUInt ()
                                 : 0;
 
@@ -3604,7 +3604,7 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
         }
         else
         {
-            uint32      uSequence   = params["offer"]["seq"].asUInt ();
+            beast::uint32      uSequence   = params["offer"]["seq"].asUInt ();
 
             uNodeIndex  = Ledger::getOfferIndex (naAccountID.getAccountID (), uSequence);
         }
@@ -3735,7 +3735,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
-    uint32      uLedgerIndex = params.isMember ("ledger_index") && params["ledger_index"].isNumeric ()
+    beast::uint32 uLedgerIndex = params.isMember ("ledger_index") && params["ledger_index"].isNumeric ()
                                ? params["ledger_index"].asUInt ()
                                : 0;
 
@@ -4437,7 +4437,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, Resourc
     }
 }
 
-RPCInternalHandler* RPCInternalHandler::sHeadHandler = NULL;
+RPCInternalHandler* RPCInternalHandler::sHeadHandler = nullptr;
 
 RPCInternalHandler::RPCInternalHandler (const std::string& name, handler_t Handler) : mName (name), mHandler (Handler)
 {
@@ -4449,7 +4449,7 @@ Json::Value RPCInternalHandler::runHandler (const std::string& name, const Json:
 {
     RPCInternalHandler* h = sHeadHandler;
 
-    while (h != NULL)
+    while (h != nullptr)
     {
         if (name == h->mName)
         {
@@ -4467,7 +4467,7 @@ Json::Value RPCInternalHandler::runHandler (const std::string& name, const Json:
 
 //------------------------------------------------------------------------------
 
-class JSONRPCTests : public UnitTest
+class JSONRPCTests : public beast::UnitTest
 {
 public:
     void testAutoFillFees ()
@@ -4477,7 +4477,7 @@ public:
         RippleAddress rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
         RippleAddress rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
         RippleAddress rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
-        uint64 startAmount (100000);
+        beast::uint64 startAmount (100000);
         Ledger::pointer ledger (boost::make_shared <Ledger> (
             rootAddress, startAmount));
 

@@ -23,16 +23,16 @@ SETUP_LOG (RangeSet)
 //        NOTE Why isn't this written as a template?
 //        TODO Replace this with std calls.
 //
-inline uint32 min (uint32 x, uint32 y)
+inline beast::uint32 min (beast::uint32 x, beast::uint32 y)
 {
     return (x < y) ? x : y;
 }
-inline uint32 max (uint32 x, uint32 y)
+inline beast::uint32 max (beast::uint32 x, beast::uint32 y)
 {
     return (x > y) ? x : y;
 }
 
-bool RangeSet::hasValue (uint32 v) const
+bool RangeSet::hasValue (beast::uint32 v) const
 {
     BOOST_FOREACH (const value_type & it, mRanges)
     {
@@ -42,7 +42,7 @@ bool RangeSet::hasValue (uint32 v) const
     return false;
 }
 
-uint32 RangeSet::getFirst () const
+beast::uint32 RangeSet::getFirst () const
 {
     const_iterator it = mRanges.begin ();
 
@@ -52,7 +52,7 @@ uint32 RangeSet::getFirst () const
     return it->first;
 }
 
-uint32 RangeSet::getNext (uint32 v) const
+beast::uint32 RangeSet::getNext (beast::uint32 v) const
 {
     BOOST_FOREACH (const value_type & it, mRanges)
     {
@@ -65,7 +65,7 @@ uint32 RangeSet::getNext (uint32 v) const
     return absent;
 }
 
-uint32 RangeSet::getLast () const
+beast::uint32 RangeSet::getLast () const
 {
     const_reverse_iterator it = mRanges.rbegin ();
 
@@ -75,7 +75,7 @@ uint32 RangeSet::getLast () const
     return it->second;
 }
 
-uint32 RangeSet::getPrev (uint32 v) const
+beast::uint32 RangeSet::getPrev (beast::uint32 v) const
 {
     BOOST_REVERSE_FOREACH (const value_type & it, mRanges)
     {
@@ -90,9 +90,9 @@ uint32 RangeSet::getPrev (uint32 v) const
 
 // Return the largest number not in the set that is less than the given number
 //
-uint32 RangeSet::prevMissing (uint32 v) const
+beast::uint32 RangeSet::prevMissing (beast::uint32 v) const
 {
-    uint32 result = absent;
+    beast::uint32 result = absent;
 
     if (v != 0)
     {
@@ -118,7 +118,7 @@ uint32 RangeSet::prevMissing (uint32 v) const
     return result;
 }
 
-void RangeSet::setValue (uint32 v)
+void RangeSet::setValue (beast::uint32 v)
 {
     if (!hasValue (v))
     {
@@ -128,7 +128,7 @@ void RangeSet::setValue (uint32 v)
     }
 }
 
-void RangeSet::setRange (uint32 minV, uint32 maxV)
+void RangeSet::setRange (beast::uint32 minV, beast::uint32 maxV)
 {
     while (hasValue (minV))
     {
@@ -143,7 +143,7 @@ void RangeSet::setRange (uint32 minV, uint32 maxV)
     simplify ();
 }
 
-void RangeSet::clearValue (uint32 v)
+void RangeSet::clearValue (beast::uint32 v)
 {
     for (iterator it = mRanges.begin (); it != mRanges.end (); ++it)
     {
@@ -157,7 +157,7 @@ void RangeSet::clearValue (uint32 v)
                 }
                 else
                 {
-                    uint32 oldEnd = it->second;
+                    beast::uint32 oldEnd = it->second;
                     mRanges.erase(it);
                     mRanges[v + 1] = oldEnd;
                 }
@@ -168,7 +168,7 @@ void RangeSet::clearValue (uint32 v)
             }
             else
             {
-                uint32 oldEnd = it->second;
+                beast::uint32 oldEnd = it->second;
                 it->second = v - 1;
                 mRanges[v + 1] = oldEnd;
             }
@@ -188,10 +188,10 @@ std::string RangeSet::toString () const
             ret += ",";
 
         if (it.first == it.second)
-            ret += lexicalCastThrow <std::string> ((it.first));
+            ret += beast::lexicalCastThrow <std::string> ((it.first));
         else
-            ret += lexicalCastThrow <std::string> (it.first) + "-"
-                   + lexicalCastThrow <std::string> (it.second);
+            ret += beast::lexicalCastThrow <std::string> (it.first) + "-"
+                   + beast::lexicalCastThrow <std::string> (it.second);
     }
 
     if (ret.empty ())
@@ -257,7 +257,7 @@ void RangeSet::checkInternalConsistency () const noexcept
 
 //------------------------------------------------------------------------------
 
-class RangeSetTests : public UnitTest
+class RangeSetTests : public beast::UnitTest
 {
 public:
     RangeSetTests () : UnitTest ("RangeSet", "ripple")

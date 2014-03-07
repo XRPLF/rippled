@@ -49,7 +49,7 @@ public:
         This is used for diagnostics and may not reflect the actual path
         or paths used by the underlying backend.
     */
-    virtual String getName () const = 0;
+    virtual beast::String getName () const = 0;
 
     /** Fetch an object.
         If the object is known to be not in the database, isn't found in the
@@ -97,7 +97,7 @@ public:
         @return `true` if the object was stored?              
     */
     virtual void store (NodeObjectType type,
-                        uint32 ledgerIndex,
+                        beast::uint32 ledgerIndex,
                         Blob& data,
                         uint256 const& hash) = 0;
 

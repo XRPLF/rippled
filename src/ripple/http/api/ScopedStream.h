@@ -23,7 +23,6 @@
 #include <ostream>
 
 namespace ripple {
-using namespace beast;
 
 namespace HTTP {
 
@@ -64,7 +63,7 @@ private:
     std::ostringstream mutable m_ostream;
 };
 
-}
-}
+}  // namespace HTTP
+}  // namespace ripple
 
 #endif

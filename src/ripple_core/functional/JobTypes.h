@@ -198,7 +198,7 @@ public:
 
 private:
     void add(JobType jt, std::string name, int limit, 
-        bool skip, bool special, uint64 avgLatency, uint64 peakLatency)
+        bool skip, bool special, beast::uint64 avgLatency, beast::uint64 peakLatency)
     {
         assert (m_map.find (jt) == m_map.end ());
 

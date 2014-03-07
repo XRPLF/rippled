@@ -29,12 +29,12 @@ class STObject
 public:
     static char const* getCountedObjectName () { return "STObject"; }
 
-    STObject () : mType (NULL)
+    STObject () : mType (nullptr)
     {
         ;
     }
 
-    explicit STObject (SField::ref name) : SerializedType (name), mType (NULL)
+    explicit STObject (SField::ref name) : SerializedType (name), mType (nullptr)
     {
         ;
     }
@@ -50,7 +50,7 @@ public:
         setType (type);
     }
 
-    STObject (SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType (name), mType (NULL)
+    STObject (SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType (name), mType (nullptr)
     {
         mData.swap (data);
     }
@@ -69,7 +69,7 @@ public:
     bool isFieldAllowed (SField::ref);
     bool isFree () const
     {
-        return mType == NULL;
+        return mType == nullptr;
     }
 
     void set (const SOTemplate&);
@@ -150,13 +150,13 @@ public:
         return mData.size ();
     }
 
-    bool setFlag (uint32);
-    bool clearFlag (uint32);
-    bool isFlag(uint32);
-    uint32 getFlags () const;
+    bool setFlag (beast::uint32);
+    bool clearFlag (beast::uint32);
+    bool isFlag(beast::uint32);
+    beast::uint32 getFlags () const;
 
-    uint256 getHash (uint32 prefix) const;
-    uint256 getSigningHash (uint32 prefix) const;
+    uint256 getHash (beast::uint32 prefix) const;
+    uint256 getSigningHash (beast::uint32 prefix) const;
 
     const SerializedType& peekAtIndex (int offset) const
     {
@@ -187,9 +187,9 @@ public:
     // field is optional but not present
     std::string getFieldString (SField::ref field) const;
     unsigned char getFieldU8 (SField::ref field) const;
-    uint16 getFieldU16 (SField::ref field) const;
-    uint32 getFieldU32 (SField::ref field) const;
-    uint64 getFieldU64 (SField::ref field) const;
+    beast::uint16 getFieldU16 (SField::ref field) const;
+    beast::uint32 getFieldU32 (SField::ref field) const;
+    beast::uint64 getFieldU64 (SField::ref field) const;
     uint128 getFieldH128 (SField::ref field) const;
     uint160 getFieldH160 (SField::ref field) const;
     uint256 getFieldH256 (SField::ref field) const;
@@ -202,9 +202,9 @@ public:
     const STArray& getFieldArray (SField::ref field) const;
 
     void setFieldU8 (SField::ref field, unsigned char);
-    void setFieldU16 (SField::ref field, uint16);
-    void setFieldU32 (SField::ref field, uint32);
-    void setFieldU64 (SField::ref field, uint64);
+    void setFieldU16 (SField::ref field, beast::uint16);
+    void setFieldU32 (SField::ref field, beast::uint32);
+    void setFieldU64 (SField::ref field, beast::uint64);
     void setFieldH128 (SField::ref field, const uint128&);
     void setFieldH160 (SField::ref field, const uint160&);
     void setFieldH256 (SField::ref field, uint256 const& );

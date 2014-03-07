@@ -38,15 +38,15 @@ public:
         return m_name;
     }
 
-    void fetch (Results& results, Journal journal)
+    void fetch (Results& results, beast::Journal journal)
     {
         results.addresses.resize (0);
         results.addresses.reserve (m_strings.size());
         for (int i = 0; i < m_strings.size (); ++i)
         {
-            IP::Endpoint ep (IP::Endpoint::from_string (m_strings [i]));
+            beast::IP::Endpoint ep (beast::IP::Endpoint::from_string (m_strings [i]));
             if (is_unspecified (ep))
-                ep = IP::Endpoint::from_string_altform (m_strings [i]);
+                ep = beast::IP::Endpoint::from_string_altform (m_strings [i]);
             if (! is_unspecified (ep))
                 results.addresses.push_back (ep);
         }
@@ -59,7 +59,8 @@ private:
 
 //------------------------------------------------------------------------------
 
-SharedPtr <Source> SourceStrings::New (std::string const& name, Strings const& strings)
+beast::SharedPtr <Source>
+SourceStrings::New (std::string const& name, Strings const& strings)
 {
     return new SourceStringsImp (name, strings);
 }

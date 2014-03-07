@@ -25,7 +25,7 @@ namespace NodeStore {
 
 // Some common code for the unit tests
 //
-class TestBase : public UnitTest
+class TestBase : public beast::UnitTest
 {
 public:
     // Tunable parameters
@@ -40,14 +40,14 @@ public:
     class PredictableObjectFactory
     {
     public:
-        explicit PredictableObjectFactory (int64 seedValue)
+        explicit PredictableObjectFactory (beast::int64 seedValue)
             : m_seedValue (seedValue)
         {
         }
 
         NodeObject::Ptr createObject (int index)
         {
-            Random r (m_seedValue + index);
+            beast::Random r (m_seedValue + index);
 
             NodeObjectType type;
             switch (r.nextInt (4))
@@ -76,12 +76,13 @@ public:
         }
 
     private:
-        int64 const m_seedValue;
+        beast::int64 const m_seedValue;
     };
 
 public:
     // Create a predictable batch of objects
-    static void createPredictableBatch (Batch& batch, int startingIndex, int numObjects, int64 seedValue)
+    static void createPredictableBatch (Batch& batch, int startingIndex,
+                                        int numObjects, beast::int64 seedValue)
     {
         batch.reserve (numObjects);
 
@@ -181,8 +182,8 @@ public:
         }
     }
 
-    TestBase (String name, UnitTest::When when = UnitTest::runNormal)
-        : UnitTest (name, "ripple", when)
+    TestBase (beast::String name, beast::UnitTest::When when = beast::UnitTest::runNormal)
+        : beast::UnitTest (name, "ripple", when)
     {
     }
 };

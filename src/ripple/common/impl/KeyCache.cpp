@@ -21,14 +21,14 @@
 
 namespace ripple {
 
-class KeyCacheTests : public UnitTest
+class KeyCacheTests : public beast::UnitTest
 {
 public:
     void runTest ()
     {
         beginTestCase ("Insert");
 
-        manual_clock <std::chrono::seconds> clock;
+        beast::manual_clock <std::chrono::seconds> clock;
         clock.set (0);
 
         typedef std::string Key;

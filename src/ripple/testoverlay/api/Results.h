@@ -51,8 +51,9 @@ struct Results
         return *this;
     }
 
-    String toString () const
+    beast::String toString () const
     {
+        using beast::String;
         String s;
         s =   "steps(" + String::fromNumber (steps) + ")"
             + ", sent(" + String::fromNumber (sent) + ")"

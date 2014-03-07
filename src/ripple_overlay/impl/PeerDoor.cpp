@@ -25,7 +25,7 @@ SETUP_LOG (PeerDoor)
 
 class PeerDoorImp
     : public PeerDoor
-    , public LeakChecked <PeerDoorImp>
+    , public beast::LeakChecked <PeerDoorImp>
 {
 public:
     PeerDoorImp (Kind kind, Peers& peers,
@@ -40,7 +40,7 @@ public:
     {
         m_journal.info <<
             "Listening on " <<
-            IPAddressConversion::from_asio (
+            beast::IPAddressConversion::from_asio (
                 m_acceptor.local_endpoint()) <<
             ((m_kind == sslAndPROXYRequired) ? " (proxy)" : "");
 
@@ -134,7 +134,7 @@ public:
 
 private:
     Peers& m_peers;
-    Journal m_journal;
+    beast::Journal m_journal;
     Kind m_kind;
     boost::asio::ip::tcp::acceptor m_acceptor;
     boost::asio::deadline_timer m_acceptDelay;

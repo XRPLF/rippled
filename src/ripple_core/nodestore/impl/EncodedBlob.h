@@ -37,7 +37,7 @@ public:
 
 private:
     void const* m_key;
-    MemoryBlock m_data;
+    beast::MemoryBlock m_data;
     size_t m_size;
 };
 

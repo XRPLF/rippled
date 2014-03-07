@@ -109,7 +109,7 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
 
     std::unique_ptr<Transactor> transactor = Transactor::makeTransactor (txn, params, this);
 
-    if (transactor.get () == NULL)
+    if (transactor.get () == nullptr)
     {
         WriteLog (lsWARNING, TransactionEngine) << "applyTransaction: Invalid transaction: unknown transaction type";
         return temUNKNOWN;
@@ -137,8 +137,8 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
             terResult = terNO_ACCOUNT;
         else
         {
-            uint32 t_seq = txn.getSequence ();
-            uint32 a_seq = txnAcct->getFieldU32 (sfSequence);
+            beast::uint32 t_seq = txn.getSequence ();
+            beast::uint32 a_seq = txnAcct->getFieldU32 (sfSequence);
 
             if (a_seq < t_seq)
                 terResult = terPRE_SEQ;

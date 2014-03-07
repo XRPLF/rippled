@@ -21,7 +21,7 @@ LoadEvent::LoadEvent (LoadMonitor& monitor, const std::string& name, bool should
     : m_loadMonitor (monitor)
     , m_isRunning (false)
     , m_name (name)
-    , m_timeStopped (RelativeTime::fromStartup())
+    , m_timeStopped (beast::RelativeTime::fromStartup())
     , m_secondsWaiting (0)
     , m_secondsRunning (0)
 {
@@ -62,7 +62,7 @@ void LoadEvent::reName (const std::string& name)
 
 void LoadEvent::start ()
 {
-    RelativeTime const currentTime (RelativeTime::fromStartup());
+    beast::RelativeTime const currentTime (beast::RelativeTime::fromStartup());
 
     // If we already called start, this call will replace the previous one.
     if (m_isRunning)
@@ -82,7 +82,7 @@ void LoadEvent::stop ()
 {
     bassert (m_isRunning);
 
-    m_timeStopped = RelativeTime::fromStartup();
+    m_timeStopped = beast::RelativeTime::fromStartup();
     m_secondsRunning += (m_timeStopped - m_timeStarted).inSeconds();
 
     m_isRunning = false;

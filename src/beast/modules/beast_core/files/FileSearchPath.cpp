@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 FileSearchPath::FileSearchPath()
 {
 }
@@ -164,3 +167,5 @@ bool FileSearchPath::isFileInPath (const File& fileToCheck,
 
     return false;
 }
+
+}  // namespace beast

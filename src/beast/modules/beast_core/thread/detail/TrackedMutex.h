@@ -20,6 +20,9 @@
 #ifndef BEAST_CORE_THREAD_DETAIL_TRACKEDMUTEX_H_INCLUDED
 #define BEAST_CORE_THREAD_DETAIL_TRACKEDMUTEX_H_INCLUDED
 
+namespace beast
+{
+
 class TrackedMutex;
 
 namespace detail
@@ -92,5 +95,7 @@ struct TrackedMutexBasics
 };
 
 } // namespace detail
+
+} // namespace beast
 
 #endif

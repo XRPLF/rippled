@@ -57,7 +57,7 @@ SETUP_LOG (UniqueNodeList)
 // VFALCO TODO move all function definitions inlined into the class.
 class UniqueNodeListImp
     : public UniqueNodeList
-    , public DeadlineTimer::Listener
+    , public beast::DeadlineTimer::Listener
 {
 private:
     // VFALCO TODO Rename these structs? Are they objects with static storage?
@@ -152,7 +152,7 @@ public:
         fetchNext ();
     }
 
-    void onDeadlineTimer (DeadlineTimer& timer)
+    void onDeadlineTimer (beast::DeadlineTimer& timer)
     {
         if (timer == m_scoreTimer)
         {
@@ -377,11 +377,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    uint32 getClusterFee ()
+    beast::uint32 getClusterFee ()
     {
         int thresh = getApp().getOPs().getNetworkTimeNC() - 90;
 
-        std::vector<uint32> fees;
+        std::vector<beast::uint32> fees;
         {
             ScopedUNLLockType sl (mUNLLock, __FILE__, __LINE__);
             {
@@ -408,7 +408,7 @@ public:
         if (m_clusterNodes.size() > 1) // nodes other than us
         {
             int          now   = getApp().getOPs().getNetworkTimeNC();
-            uint32       ref   = getApp().getFeeTrack().getLoadBase();
+            beast::uint32 ref   = getApp().getFeeTrack().getLoadBase();
             Json::Value& nodes = (obj["cluster"] = Json::objectValue);
 
             for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
@@ -2019,12 +2019,12 @@ private:
 
     boost::posix_time::ptime        mtpScoreNext;       // When to start scoring.
     boost::posix_time::ptime        mtpScoreStart;      // Time currently started scoring.
-    DeadlineTimer m_scoreTimer;                         // Timer to start scoring.
+    beast::DeadlineTimer m_scoreTimer;                  // Timer to start scoring.
 
     int                             mFetchActive;       // Count of active fetches.
 
     boost::posix_time::ptime        mtpFetchNext;       // Time of to start next fetch.
-    DeadlineTimer m_fetchTimer;                         // Timer to start fetching.
+    beast::DeadlineTimer m_fetchTimer;                  // Timer to start fetching.
 
     std::map<RippleAddress, ClusterNodeStatus> m_clusterNodes;
 };

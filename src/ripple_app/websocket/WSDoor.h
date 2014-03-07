@@ -21,7 +21,7 @@
 #define RIPPLE_WSDOOR_H_INCLUDED
 
 /** Handles accepting incoming WebSocket connections. */
-class WSDoor : public Stoppable
+class WSDoor : public beast::Stoppable
 {
 protected:
     explicit WSDoor (Stoppable& parent);

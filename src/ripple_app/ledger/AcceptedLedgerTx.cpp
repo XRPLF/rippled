@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-AcceptedLedgerTx::AcceptedLedgerTx (uint32 seq, SerializerIterator& sit)
+AcceptedLedgerTx::AcceptedLedgerTx (beast::uint32 seq, SerializerIterator& sit)
 {
     Serializer          txnSer (sit.getVL ());
     SerializerIterator  txnIt (txnSer);

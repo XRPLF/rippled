@@ -24,10 +24,10 @@ namespace Validators {
 
 class SourceURLImp
     : public SourceURL
-    , public LeakChecked <SourceURLImp>
+    , public beast::LeakChecked <SourceURLImp>
 {
 public:
-    explicit SourceURLImp (URL const& url)
+    explicit SourceURLImp (beast::URL const& url)
         : m_url (url)
         , m_client (beast::asio::HTTPClientBase::New ())
     {
@@ -45,12 +45,12 @@ public:
         return ss.str();
     }
 
-    String uniqueID () const
+    beast::String uniqueID () const
     {
         return "URL," + m_url.toString();
     }
 
-    String createParam ()
+    beast::String createParam ()
     {
         return m_url.toString();
     }
@@ -60,7 +60,7 @@ public:
         m_client->cancel ();
     }
 
-    void fetch (Results& results, Journal journal)
+    void fetch (Results& results, beast::Journal journal)
     {
         auto httpResult (m_client->get (m_url));
 
@@ -79,14 +79,14 @@ public:
     }
 
 private:
-    URL m_url;
+    beast::URL m_url;
     std::unique_ptr <beast::asio::HTTPClientBase> m_client;
 };
 
 //------------------------------------------------------------------------------
 
 SourceURL* SourceURL::New (
-    URL const& url)
+    beast::URL const& url)
 {
     return new SourceURLImp (url);
 }

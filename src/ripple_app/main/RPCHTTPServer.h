@@ -22,19 +22,20 @@
 
 namespace ripple {
 
-class RPCHTTPServer : public Stoppable
+class RPCHTTPServer : public beast::Stoppable
 {
 protected:
     RPCHTTPServer (Stoppable& parent);
 
 public:
     static RPCHTTPServer* New (Stoppable& parent,
-        Journal journal, JobQueue& jobQueue, NetworkOPs& networkOPs, Resource::Manager& resourceManager);
+        beast::Journal journal, JobQueue& jobQueue, NetworkOPs& networkOPs,
+        Resource::Manager& resourceManager);
 
     virtual ~RPCHTTPServer () { }
 
     /** Opens listening ports based on the Config settings. */
-    virtual void setup (Journal journal) = 0;
+    virtual void setup (beast::Journal journal) = 0;
 };
 
 }

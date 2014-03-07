@@ -30,7 +30,7 @@ public:
     explicit ClusterNodeStatus(std::string const& name) : mNodeName(name), mLoadFee(0), mReportTime(0)
     { ; }
 
-    ClusterNodeStatus(const std::string& name, uint32 fee, uint32 rtime) :
+    ClusterNodeStatus(const std::string& name, beast::uint32 fee, beast::uint32 rtime) :
         mNodeName(name),
         mLoadFee(fee),
         mReportTime(rtime)
@@ -41,12 +41,12 @@ public:
         return mNodeName;
     }
 
-    uint32 getLoadFee()
+    beast::uint32 getLoadFee()
     {
         return mLoadFee;
     }
 
-    uint32 getReportTime()
+    beast::uint32 getReportTime()
     {
         return mReportTime;
     }
@@ -64,8 +64,8 @@ public:
 
 private:
     std::string       mNodeName;
-    uint32            mLoadFee;
-    uint32            mReportTime;
+    beast::uint32     mLoadFee;
+    beast::uint32     mReportTime;
 };
 
 #endif

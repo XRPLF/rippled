@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 namespace
 {
     int64 getRandomSeedFromMACAddresses()
@@ -107,3 +110,5 @@ Uuid& Uuid::operator= (const uint8* const rawData) noexcept
 
     return *this;
 }
+
+}  // namespace beast

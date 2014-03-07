@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 Random::Random (const int64 seedValue) noexcept
     : seed (seedValue)
 {
@@ -185,3 +188,5 @@ public:
 };
 
 static RandomTests randomTests;
+
+}  // namespace beast

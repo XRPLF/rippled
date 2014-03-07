@@ -21,7 +21,7 @@ SETUP_LOG (PathRequest)
 
 PathRequest::PathRequest (
 const boost::shared_ptr<InfoSub>& subscriber, int id, PathRequests& owner,
-    Journal journal)
+    beast::Journal journal)
     : m_journal (journal)
     , mLock (this, "PathRequest", __FILE__, __LINE__)
     , mOwner (owner)
@@ -40,7 +40,7 @@ const boost::shared_ptr<InfoSub>& subscriber, int id, PathRequests& owner,
 
 static std::string const get_milli_diff (boost::posix_time::ptime const& after, boost::posix_time::ptime const& before)
 {
-    return lexicalCastThrow <std::string> (static_cast <unsigned> ((after - before).total_milliseconds()));
+    return beast::lexicalCastThrow <std::string> (static_cast <unsigned> ((after - before).total_milliseconds()));
 }
 
 static std::string const get_milli_diff (boost::posix_time::ptime const& before)

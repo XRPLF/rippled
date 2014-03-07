@@ -26,7 +26,7 @@ namespace ripple {
 namespace PeerFinder {
 
 /** Represents a set of addresses. */
-typedef std::vector <IP::Endpoint> IPAddresses;
+typedef std::vector <beast::IP::Endpoint> IPAddresses;
 
 /** A set of Endpoint used for connecting. */
 typedef std::vector <Endpoint> Endpoints;

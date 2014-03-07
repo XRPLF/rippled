@@ -97,12 +97,12 @@ Application* ApplicationImpBase::s_instance;
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp
     : public ApplicationImpBase
-    , public RootStoppable
-    , public DeadlineTimer::Listener
-    , public LeakChecked <ApplicationImp>
+    , public beast::RootStoppable
+    , public beast::DeadlineTimer::Listener
+    , public beast::LeakChecked <ApplicationImp>
 {
 public:
-    Journal m_journal;
+    beast::Journal m_journal;
     Application::LockType m_masterMutex;
 
     // These are not Stoppable-derived
@@ -143,7 +143,7 @@ public:
     std::unique_ptr <Validations> mValidations;
     std::unique_ptr <ProofOfWorkFactory> mProofOfWorkFactory;
     std::unique_ptr <LoadManager> m_loadManager;
-    DeadlineTimer m_sweepTimer;
+    beast::DeadlineTimer m_sweepTimer;
     bool volatile mShutdown;
 
     std::unique_ptr <DatabaseCon> mRpcDB;
@@ -159,22 +159,22 @@ public:
     std::unique_ptr <WSDoor> m_wsPrivateDoor;
     std::unique_ptr <WSDoor> m_wsProxyDoor;
 
-    WaitableEvent m_stop;
+    beast::WaitableEvent m_stop;
 
     std::unique_ptr <ResolverAsio> m_resolver;
 
-    io_latency_probe <std::chrono::steady_clock> m_probe;
+    beast::io_latency_probe <std::chrono::steady_clock> m_probe;
 
     //--------------------------------------------------------------------------
 
     class sample_io_service_latency
     {
     public:
-        insight::Event latency;
-        Journal journal;
+        beast::insight::Event latency;
+        beast::Journal journal;
 
-        sample_io_service_latency (insight::Event latency_,
-            Journal journal_)
+        sample_io_service_latency (beast::insight::Event latency_,
+            beast::Journal journal_)
             : latency (latency_)
             , journal (journal_)
         {
@@ -310,7 +310,7 @@ public:
 
         , mShutdown (false)
 
-        , m_resolver (ResolverAsio::New (m_mainIoPool.getService (), Journal ()))
+        , m_resolver (ResolverAsio::New (m_mainIoPool.getService (), beast::Journal ()))
 
         , m_probe (std::chrono::milliseconds (100), m_mainIoPool.getService())
     {
@@ -490,7 +490,7 @@ public:
     // VFALCO TODO Move these to the .cpp
     bool running ()
     {
-        return mTxnDB != NULL;    // VFALCO TODO replace with nullptr when beast is available
+        return mTxnDB != nullptr;
     }
     bool getSystemTimeOffset (int& offset)
     {
@@ -573,13 +573,13 @@ public:
             struct sigaction sa;
             memset (&sa, 0, sizeof (sa));
             sa.sa_handler = &ApplicationImp::sigIntHandler;
-            sigaction (SIGINT, &sa, NULL);
+            sigaction (SIGINT, &sa, nullptr);
         }
 
     #endif
     #endif
 
-        assert (mTxnDB == NULL);
+        assert (mTxnDB == nullptr);
 
         if (!getConfig ().DEBUG_LOGFILE.empty ())
         {
@@ -714,7 +714,7 @@ public:
 
             if (m_wsPrivateDoor == nullptr)
             {
-                FatalError ("Could not open the WebSocket private interface.",
+                beast::FatalError ("Could not open the WebSocket private interface.",
                     __FILE__, __LINE__);
             }
         }
@@ -734,7 +734,7 @@ public:
 
             if (m_wsPublicDoor == nullptr)
             {
-                FatalError ("Could not open the WebSocket public interface.",
+                beast::FatalError ("Could not open the WebSocket public interface.",
                     __FILE__, __LINE__);
             }
         }
@@ -751,7 +751,7 @@ public:
 
             if (m_wsProxyDoor == nullptr)
             {
-                FatalError ("Could not open the WebSocket public interface.",
+                beast::FatalError ("Could not open the WebSocket public interface.",
                     __FILE__, __LINE__);
             }
         }
@@ -825,7 +825,7 @@ public:
 #endif
 
 #if 1
-        if (getConfig().getValidatorsFile() != File::nonexistent ())
+        if (getConfig().getValidatorsFile() != beast::File::nonexistent ())
         {
             m_validators->addFile (getConfig().getValidatorsFile());
         }
@@ -893,7 +893,7 @@ public:
     // PropertyStream
     //
 
-    void onWrite (PropertyStream::Map& stream)
+    void onWrite (beast::PropertyStream::Map& stream)
     {
     }
 
@@ -980,7 +980,7 @@ public:
         m_stop.signal();
     }
 
-    void onDeadlineTimer (DeadlineTimer& timer)
+    void onDeadlineTimer (beast::DeadlineTimer& timer)
     {
         if (timer == m_sweepTimer)
         {
@@ -1101,7 +1101,7 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
             loadLedger = Ledger::loadByHash (hash);
         }
         else // assume by sequence
-            loadLedger = Ledger::loadByIndex (lexicalCastThrow <uint32> (l));
+            loadLedger = Ledger::loadByIndex (beast::lexicalCastThrow <beast::uint32> (l));
 
         if (!loadLedger)
         {
@@ -1375,7 +1375,7 @@ void ApplicationImp::onAnnounceAddress ()
 //------------------------------------------------------------------------------
 
 Application::Application ()
-    : PropertyStream::Source ("app")
+    : beast::PropertyStream::Source ("app")
 {
 }
 

@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-class CAutoBN_CTX : public Uncopyable
+class CAutoBN_CTX : public beast::Uncopyable
 {
 protected:
     BN_CTX* pctx;

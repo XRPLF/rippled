@@ -24,6 +24,9 @@
 #ifndef BEAST_PERFORMANCECOUNTER_H_INCLUDED
 #define BEAST_PERFORMANCECOUNTER_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /** A timer for measuring performance of code and dumping the results to a file.
 
@@ -97,5 +100,7 @@ private:
     int64 started;
     File outputFile;
 };
+
+}  // namespace beast
 
 #endif   // BEAST_PERFORMANCECOUNTER_H_INCLUDED

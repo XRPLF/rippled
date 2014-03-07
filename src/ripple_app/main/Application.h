@@ -56,7 +56,7 @@ class DatabaseCon;
 typedef TaggedCache <uint256, Blob> NodeCache;
 typedef TaggedCache <uint256, SerializedLedgerEntry> SLECache;
 
-class Application : public PropertyStream::Source
+class Application : public beast::PropertyStream::Source
 {
 public:
     /* VFALCO NOTE

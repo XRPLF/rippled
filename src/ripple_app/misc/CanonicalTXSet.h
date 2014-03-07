@@ -28,13 +28,13 @@
 
 */
 // VFALCO TODO rename to SortedTxSet
-class CanonicalTXSet : LeakChecked <CanonicalTXSet>
+class CanonicalTXSet : beast::LeakChecked <CanonicalTXSet>
 {
 public:
     class Key
     {
     public:
-        Key (uint256 const& account, uint32 seq, uint256 const& id)
+        Key (uint256 const& account, beast::uint32 seq, uint256 const& id)
             : mAccount (account)
             , mTXid (id)
             , mSeq (seq)
@@ -63,7 +63,7 @@ public:
     private:
         uint256 mAccount;
         uint256 mTXid;
-        uint32 mSeq;
+        beast::uint32 mSeq;
     };
 
     typedef std::map <Key, SerializedTransaction::pointer>::iterator iterator;

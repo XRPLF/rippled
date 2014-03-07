@@ -24,6 +24,9 @@
 #ifndef BEAST_FILE_H_INCLUDED
 #define BEAST_FILE_H_INCLUDED
 
+namespace beast
+{
+
 //==============================================================================
 /**
     Represents a local file or directory.
@@ -947,6 +950,8 @@ private:
     void getFileTimesInternal (int64& m, int64& a, int64& c) const;
     bool setFileReadOnlyInternal (bool) const;
 };
+
+}  // namespace beast
 
 #endif
 

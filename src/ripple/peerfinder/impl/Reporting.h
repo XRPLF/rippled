@@ -45,23 +45,23 @@ struct Reporting
     //
 
     // Reports from Network (and children)
-    static Journal::Severity const network = Journal::kWarning;
+    static beast::Journal::Severity const network = beast::Journal::kWarning;
 
     // Reports from simulation Node (and children)
-    static Journal::Severity const node = Journal::kAll;
+    static beast::Journal::Severity const node = beast::Journal::kAll;
 
     //
     //
     //
 
     // Reports from Logic
-    static Journal::Severity const logic = Journal::kAll;
+    static beast::Journal::Severity const logic = beast::Journal::kAll;
 
     // Reports from Livecache
-    static Journal::Severity const livecache = Journal::kAll;
+    static beast::Journal::Severity const livecache = beast::Journal::kAll;
 
     // Reports from Bootcache
-    static Journal::Severity const bootcache = Journal::kAll;
+    static beast::Journal::Severity const bootcache = beast::Journal::kAll;
 };
 
 }

@@ -26,6 +26,9 @@
   ==============================================================================
 */
 
+namespace beast
+{
+
 class ZipFile::ZipEntryHolder
 {
 public:
@@ -593,3 +596,5 @@ bool ZipFile::Builder::writeToStream (OutputStream& target, double* const progre
 
     return true;
 }
+
+}  // namespace beast

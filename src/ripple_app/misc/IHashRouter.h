@@ -40,7 +40,7 @@ class IHashRouter
 {
 public:
     // The type here *MUST* match the type of Peer::ShortId
-    typedef uint32 PeerShortID;
+    typedef beast::uint32 PeerShortID;
 
     // VFALCO NOTE this preferred alternative to default parameters makes
     //         behavior clear.

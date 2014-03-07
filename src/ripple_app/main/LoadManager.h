@@ -33,7 +33,7 @@
 
     @see LoadSource, LoadType
 */
-class LoadManager : public Stoppable
+class LoadManager : public beast::Stoppable
 {
 protected:
     explicit LoadManager (Stoppable& parent);
@@ -44,7 +44,7 @@ public:
         @note The thresholds for warnings and punishments are in
               the ctor-initializer
     */
-    static LoadManager* New (Stoppable& parent, Journal journal);
+    static LoadManager* New (Stoppable& parent, beast::Journal journal);
 
     /** Destroy the manager.
 

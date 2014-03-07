@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 FPUFlags FPUFlags::getCurrent ()
 {
     unsigned int currentControl;
@@ -174,3 +177,5 @@ void FPUFlags::setCurrent (const FPUFlags& flags)
     if (result != 0)
         Throw (std::runtime_error ("error in _controlfp_s"));
 }
+
+}  // namespace beast

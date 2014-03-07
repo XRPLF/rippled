@@ -43,7 +43,7 @@ public:
 
     /** Create a backend. */
     virtual std::unique_ptr <Backend> make_Backend (Parameters const& parameters,
-        Scheduler& scheduler, Journal journal) = 0;
+        Scheduler& scheduler, beast::Journal journal) = 0;
 
     /** Construct a node store database.
 
@@ -70,7 +70,7 @@ public:
         @return The opened database.
     */
     virtual std::unique_ptr <Database> make_Database (std::string const& name,
-        Scheduler& scheduler, Journal journal, int readThreads,
+        Scheduler& scheduler, beast::Journal journal, int readThreads,
             Parameters const& backendParameters,
                 Parameters fastBackendParameters = Parameters ()) = 0;
 };

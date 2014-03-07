@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+namespace beast
+{
+
 struct GetAdaptersInfoHelper
 {
     bool callGetAdaptersInfo()
@@ -152,3 +155,5 @@ bool Process::openEmailWithAttachments (const String& targetEmailAddress,
 
     return mapiSendMail (0, 0, &message, MAPI_DIALOG | MAPI_LOGON_UI, 0) == SUCCESS_SUCCESS;
 }
+
+}  // namespace beast

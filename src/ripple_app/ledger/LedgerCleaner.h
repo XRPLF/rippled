@@ -22,8 +22,8 @@
 
 /** Check the ledger/transaction databases to make sure they have continuity */
 class LedgerCleaner
-    : public Stoppable
-    , public PropertyStream::Source
+    : public beast::Stoppable
+    , public beast::PropertyStream::Source
 {
 protected:
     explicit LedgerCleaner (Stoppable& parent);
@@ -34,7 +34,7 @@ public:
     */
     static LedgerCleaner* New (
         Stoppable& parent,
-        Journal journal);
+        beast::Journal journal);
 
     /** Destroy the object. */
     virtual ~LedgerCleaner () = 0;
