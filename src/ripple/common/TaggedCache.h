@@ -20,12 +20,12 @@
 #ifndef RIPPLE_TAGGEDCACHE_H_INCLUDED
 #define RIPPLE_TAGGEDCACHE_H_INCLUDED
 
-#include <mutex>
-#include <unordered_map>
+#include "../../beast/beast/Insight.h"
 
 #include <boost/smart_ptr.hpp>
 
-#include "beast/beast/Insight.h"
+#include <mutex>
+#include <unordered_map>
 
 namespace ripple {
 

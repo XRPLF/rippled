@@ -22,8 +22,8 @@
 #include "JobTypeInfo.h"
 #include "JobTypeData.h"
 
-#include "../beast/beast/cxx14/memory.h"
-#include "beast/beast/chrono/chrono_util.h"
+#include "../../beast/beast/cxx14/memory.h"
+#include "../../beast/beast/chrono/chrono_util.h"
 
 #include <chrono>
 

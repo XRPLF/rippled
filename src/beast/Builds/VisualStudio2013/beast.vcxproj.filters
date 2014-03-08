@@ -159,9 +159,6 @@
     <Filter Include="beast_asio">
       <UniqueIdentifier>{54bbe439-76c3-4781-becc-9c70a2be6d82}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_asio\sockets">
-      <UniqueIdentifier>{af535ad5-a06c-462f-8ac0-8207a708e032}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast_asio\system">
       <UniqueIdentifier>{c7a576bb-27b2-486e-aa14-3c51aa86c50f}</UniqueIdentifier>
     </Filter>
@@ -710,35 +707,11 @@
     <ClInclude Include="..\..\modules\beast_core\system\SystemStats.h">
       <Filter>beast_core\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h">
-      <Filter>beast_asio\async</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandler.h">
-      <Filter>beast_asio\async</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h">
-      <Filter>beast_asio\async</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerPtr.h">
-      <Filter>beast_asio\async</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerType.h">
-      <Filter>beast_asio\async</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h">
       <Filter>beast_asio\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\basics\PeerRole.h">
       <Filter>beast_asio\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\sockets\Socket.h">
-      <Filter>beast_asio\sockets</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\sockets\SocketBase.h">
-      <Filter>beast_asio\sockets</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapper.h">
-      <Filter>beast_asio\sockets</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\system\OpenSSLIncludes.h">
       <Filter>beast_asio\system</Filter>
@@ -824,9 +797,6 @@
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPParserImpl.h">
       <Filter>beast_asio\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\basics\BuffersType.h">
-      <Filter>beast_asio\basics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\memory\SharedSingleton.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
@@ -838,9 +808,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FatalError.h">
       <Filter>beast_core\diagnostic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\SharedFunction.h">
-      <Filter>beast_core\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Config.h">
       <Filter>beast</Filter>
@@ -985,12 +952,6 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\crypto\Sha256.h">
       <Filter>beast\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\async\WrapHandler.h">
-      <Filter>beast_asio\async</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_asio\async\AbstractHandler.h">
-      <Filter>beast_asio\async</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Chrono.h">
       <Filter>beast</Filter>
@@ -1338,6 +1299,30 @@
     <ClInclude Include="..\..\beast\cxx14\utility.h">
       <Filter>beast\cxx14</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\asio\abstract_socket.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\asio\bind_handler.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\asio\buffer_sequence.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\asio\placeholders.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\asio\shared_handler.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\asio\socket_wrapper.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\asio\wrap_handler.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\http\impl\http_parser.h">
+      <Filter>beast\http\impl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
@@ -1649,17 +1634,8 @@
     <ClCompile Include="..\..\modules\beast_core\system\SystemStats.cpp">
       <Filter>beast_core\system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\async\SharedHandler.cpp">
-      <Filter>beast_asio\async</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\basics\PeerRole.cpp">
       <Filter>beast_asio\basics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\sockets\Socket.cpp">
-      <Filter>beast_asio\sockets</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\sockets\SocketBase.cpp">
-      <Filter>beast_asio\sockets</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\system\BoostUnitTests.cpp">
       <Filter>beast_asio\system</Filter>
@@ -1930,6 +1906,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\cxx14\tests\integer_sequence.test.cpp">
       <Filter>beast\cxx14\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\abstract_socket.cpp">
+      <Filter>beast\asio</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

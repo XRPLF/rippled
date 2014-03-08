@@ -17,26 +17,25 @@
 */
 //==============================================================================
 
-boost::system::error_code SocketBase::pure_virtual_error ()
-{
-    return boost::system::errc::make_error_code (
-        boost::system::errc::function_not_supported);
+#ifndef BEAST_ASIO_PLACEHOLDERS_H_INCLUDED
+#define BEAST_ASIO_PLACEHOLDERS_H_INCLUDED
+
+#include <functional>
+
+namespace beast {
+namespace asio {
+
+namespace placeholders {
+// asio placeholders that work with std::bind
+namespace {
+static auto const error (std::placeholders::_1);
+static auto const bytes_transferred (std::placeholders::_2);
+static auto const iterator (std::placeholders::_2);
+static auto const signal_number (std::placeholders::_2);
+}
 }
 
-boost::system::error_code SocketBase::pure_virtual_error (error_code& ec,
-    char const* fileName, int lineNumber)
-{
-    pure_virtual_called (fileName, lineNumber);
-    return ec = pure_virtual_error ();
+}
 }
 
-void SocketBase::pure_virtual_called (char const* fileName, int lineNumber)
-{
-    Throw (std::runtime_error ("pure virtual called"), fileName, lineNumber);
-}
-
-void SocketBase::throw_error (error_code const& ec, char const* fileName, int lineNumber)
-{
-    if (ec)
-        Throw (boost::system::system_error (ec), fileName, lineNumber);
-}
+#endif

@@ -20,6 +20,12 @@
 #ifndef BEAST_ASIO_HANDSHAKE_PREFILLEDREADSTREAM_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_PREFILLEDREADSTREAM_H_INCLUDED
 
+#include "../../../beast/cxx14/type_traits.h" // <type_traits>
+#include <utility>
+
+namespace beast {
+namespace asio {
+
 /** Front-ends a stream with a provided block of data.
 
     When read operations are performed on this object, bytes will first be
@@ -29,25 +35,25 @@
 
     Write operations are all simply passed through.
 */
-template <typename Stream>
+template <class Stream>
 class PrefilledReadStream : public Uncopyable
 {
 protected:
     typedef boost::system::error_code error_code;
 
-    void throw_error (error_code const& ec, char const* fileName, int lineNumber)
+    static void throw_if (error_code const& ec)
     {
-        Throw (boost::system::system_error (ec), fileName, lineNumber);
+        throw boost::system::system_error (ec);
     }
 
 public:
-    typedef typename boost::remove_reference <Stream>::type next_layer_type;
+    typedef std::remove_reference_t <Stream> next_layer_type;
     typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
 
     /** Single argument constructor for when we are wrapped in something.
         arg is passed through to the next layer's constructor.
     */
-    template <typename Arg>
+    template <class Arg>
     explicit PrefilledReadStream (Arg& arg)
         : m_next_layer (arg)
     {
@@ -57,7 +63,7 @@ public:
         This creates a copy of the data. The argument is passed through
         to the constructor of Stream.
     */
-    template <typename Arg, typename ConstBufferSequence>
+    template <class Arg, class ConstBufferSequence>
     PrefilledReadStream (Arg& arg, ConstBufferSequence const& buffers)
         : m_next_layer (arg)
     {
@@ -69,15 +75,14 @@ public:
         is here is for the case when you can't pass the buffer through the
         constructor because there is another object wrapping this stream.
     */
-    template <typename ConstBufferSequence>
+    template <class ConstBufferSequence>
     void fill (ConstBufferSequence const& buffers)
     {
         // We don't assume the caller's buffers will
         // remain valid for the lifetime of this object.
         //
-        using namespace boost;
-        m_buffer.commit (asio::buffer_copy (
-            m_buffer.prepare (asio::buffer_size (buffers)),
+        m_buffer.commit (boost::asio::buffer_copy (
+            m_buffer.prepare (boost::asio::buffer_size (buffers)),
                 buffers));
     }
 
@@ -109,8 +114,8 @@ public:
     void close()
     {
         error_code ec;
-        if (close (ec))
-            throw_error (ec, __FILE__, __LINE__);
+        close (ec);
+        throw_if (ec);
     }
 
     error_code close (error_code& ec)
@@ -122,18 +127,18 @@ public:
         return lowest_layer ().close(ec);
     }
 
-    template <typename MutableBufferSequence>
+    template <class MutableBufferSequence>
     std::size_t read_some (MutableBufferSequence const& buffers)
     {
         error_code ec;
         std::size_t const amount = read_some (buffers, ec);
-        if (ec)
-            throw_error (ec, __FILE__, __LINE__);
+        throw_if (ec);
         return amount;
     }
 
-    template <typename MutableBufferSequence>
-    std::size_t read_some (MutableBufferSequence const& buffers, error_code& ec)
+    template <class MutableBufferSequence>
+    std::size_t read_some (MutableBufferSequence const& buffers,
+        error_code& ec)
     {
         if (m_buffer.size () > 0)
         {
@@ -146,51 +151,54 @@ public:
         return m_next_layer.read_some (buffers, ec);
     }
 
-    template <typename ConstBufferSequence>
+    template <class ConstBufferSequence>
     std::size_t write_some (ConstBufferSequence const& buffers)
     {
         error_code ec;
-        std::size_t const amount = write_some (buffers, ec);
-        if (ec)
-            throw_error (ec, __FILE__, __LINE__);
+        auto const amount (write_some (buffers, ec));
+        throw_if (ec);
         return amount;
     }
 
-    template <typename ConstBufferSequence>
-    std::size_t write_some (ConstBufferSequence const& buffers, error_code& ec)
+    template <class ConstBufferSequence>
+    std::size_t write_some (ConstBufferSequence const& buffers,
+        error_code& ec)
     {
         return m_next_layer.write_some (buffers, ec);
     }
 
-    template <typename MutableBufferSequence, typename ReadHandler>
+    template <class MutableBufferSequence, class ReadHandler>
     void async_read_some (MutableBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
+        ReadHandler&& handler)
     {
         if (m_buffer.size () > 0)
         {
-            std::size_t const bytes_transferred = boost::asio::buffer_copy (
-                buffers, m_buffer.data ());
+            auto const bytes_transferred (boost::asio::buffer_copy (
+                buffers, m_buffer.data ()));
             m_buffer.consume (bytes_transferred);
-            get_io_service ().wrap (
-                BOOST_ASIO_MOVE_CAST(ReadHandler)(handler)) (
-                    error_code (), bytes_transferred);
+            get_io_service ().post (bind_handler (
+                std::forward <ReadHandler> (handler),
+                    error_code (), bytes_transferred));
             return;
         }
         m_next_layer.async_read_some (buffers,
-            BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
+            std::forward <ReadHandler> (handler));
     }
 
-    template <typename ConstBufferSequence, typename WriteHandler>
+    template <class ConstBufferSequence, class WriteHandler>
     void async_write_some (ConstBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
+        WriteHandler&& handler)
     {
         m_next_layer.async_write_some (buffers,
-            BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
+            std::forward <WriteHandler> (handler));
     }
 
 private:
     Stream m_next_layer;
     boost::asio::streambuf m_buffer;
 };
+
+}
+}
 
 #endif

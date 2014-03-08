@@ -24,13 +24,13 @@
 namespace beast {
 
 #ifdef _MSC_VER
-#pragma warning (push)
-#pragma warning (disable: 4127) // conditional expression is constant
-#pragma warning (disable: 4244) // integer conversion, possible loss of data
+# pragma warning (push)
+# pragma warning (disable: 4127) // conditional expression is constant
+# pragma warning (disable: 4244) // integer conversion, possible loss of data
 #endif
 #include "http-parser/http_parser.c"
 #ifdef _MSC_VER
-#pragma warning (pop)
+# pragma warning (pop)
 #endif
 
 }

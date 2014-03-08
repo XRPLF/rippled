@@ -62,7 +62,7 @@ namespace is_call_possible_detail
 }
 
 #define BEAST_DEFINE_HAS_MEMBER_FUNCTION(trait_name, member_function_name)                                   \
-template<typename T, typename Signature> class trait_name;                                                   \
+template<typename T, typename IsCallPossibleSignature> class trait_name;                                     \
                                                                                                              \
 template<typename T, typename Result>                                                                        \
 class trait_name<T, Result(void)>                                                                            \
@@ -160,7 +160,7 @@ struct trait_name##_detail                                                      
 BEAST_DEFINE_HAS_MEMBER_FUNCTION(has_member, member_function_name);                                                     \
 };                                                                                                                      \
                                                                                                                         \
-template <typename T, typename Signature>                                                                               \
+template <typename T, typename IsCallPossibleSignature>                                                                 \
 struct trait_name                                                                                                       \
 {                                                                                                                       \
   private:                                                                                                              \
@@ -261,7 +261,8 @@ struct trait_name                                                               
    };                                                                                                                   \
                                                                                                                         \
   public:                                                                                                               \
-    static const bool value = impl<trait_name##_detail::has_member<T,Signature>::value, Signature>::value;              \
+    static const bool value = impl<trait_name##_detail::template has_member<T,IsCallPossibleSignature>::value,          \
+        IsCallPossibleSignature>::value;                                                                                \
 }
 
 }

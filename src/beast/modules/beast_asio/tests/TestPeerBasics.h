@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERBASICS_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERBASICS_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 /** Common declarations for TestPeer.
 
     @see TestPeer
@@ -102,5 +105,8 @@ public:
     /** Forces the variable to exist in the debugger. */
     static void breakpoint (char const* const message);
 };
+
+}
+}
 
 #endif

@@ -20,7 +20,6 @@
 #ifndef RIPPLE_TYPES_CYCLEDSET_H_INCLUDED
 #define RIPPLE_TYPES_CYCLEDSET_H_INCLUDED
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/unordered_set.hpp>
 
 namespace ripple {

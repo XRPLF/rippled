@@ -33,7 +33,7 @@ namespace ripple {
     sslv23, Transport Layer Security / General. This is primarily used for peer to peer servers that don't care
     about certificates or identity verification.
 */
-class RippleSSLContext : public beast::SSLContext
+class RippleSSLContext : public beast::asio::SSLContext
 {
 public:
     /** Retrieve raw DH parameters.

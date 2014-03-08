@@ -28,12 +28,12 @@ namespace ripple {
 namespace HTTP {
 
 // Holds the copy of buffers being sent
-typedef SharedArg <std::string> SharedBuffer;
+typedef beast::asio::SharedArg <std::string> SharedBuffer;
 
 /** Represents an active connection. */
 class Peer
     : public SharedObject
-    , public AsyncObject <Peer>
+    , public beast::asio::AsyncObject <Peer>
     , public Session
     , public List <Peer>::Node
     , public LeakChecked <Peer>
@@ -229,8 +229,8 @@ public:
 
         if (m_socket->needs_handshake ())
         {
-            m_socket->async_handshake (Socket::server, m_strand.wrap (
-                boost::bind (&Peer::handle_handshake, Ptr(this),
+            m_socket->async_handshake (beast::asio::abstract_socket::server,
+                m_strand.wrap (boost::bind (&Peer::handle_handshake, Ptr(this),
                     boost::asio::placeholders::error,
                         CompletionCounter (this))));
         }

@@ -20,20 +20,22 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERLOGIC_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERLOGIC_H_INCLUDED
 
-/** Interface for implementing the logic part of a peer test.
-*/
+namespace beast {
+namespace asio {
+
+/** Interface for implementing the logic part of a peer test. */
 class TestPeerLogic : public TestPeerBasics
 {
 public:
     typedef boost::system::error_code error_code;
 
-    explicit TestPeerLogic (Socket& socket);
+    explicit TestPeerLogic (abstract_socket& socket);
 
     error_code& error () noexcept;
     error_code const& error () const noexcept;
     error_code const& error (error_code const& ec) noexcept; // assigns to m_ec
 
-    Socket& socket () noexcept;
+    abstract_socket& socket () noexcept;
 
     virtual PeerRole get_role () const noexcept = 0;
     
@@ -51,7 +53,10 @@ public:
 
 private:
     error_code m_ec;
-    Socket* m_socket;
+    abstract_socket* m_socket;
 };
+
+}
+}
 
 #endif

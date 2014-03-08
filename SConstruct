@@ -149,11 +149,10 @@ else:
 #
 INCLUDE_PATHS = [
     '.',
-    'src',
+    'src/BeastConfig',
     'src/leveldb',
     'src/leveldb/port',
     'src/leveldb/include',
-    'src/beast',
     'build/proto'
     ]
 

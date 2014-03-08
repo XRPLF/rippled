@@ -19,7 +19,7 @@
 
 #include "BeastConfig.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/bimap.hpp>
 #include <boost/bimap/list_of.hpp>
 #include <boost/bimap/multiset_of.hpp>

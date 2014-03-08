@@ -48,7 +48,7 @@ MultiSocket* MultiSocket::New (
 class MultiSocketTests : public beast::UnitTest
 {
 public:
-    class MultiSocketDetails : public beast::TestPeerDetails
+    class MultiSocketDetails : public beast::asio::TestPeerDetails
     {
     public:
         typedef int arg_type;
@@ -145,29 +145,34 @@ public:
         {
         }
 
-        beast::Socket& get_socket ()
+        beast::asio::abstract_socket&
+        get_socket ()
         {
             return m_multiSocket;
         }
 
-        beast::Socket& get_acceptor ()
+        beast::asio::abstract_socket&
+        get_acceptor ()
         {
             return m_acceptor_wrapper;
         }
 
-        socket_type& get_native_socket ()
+        socket_type&
+        get_native_socket ()
         {
             return m_socket;
         }
 
-        acceptor_type& get_native_acceptor ()
+        acceptor_type&
+        get_native_acceptor ()
         {
             return m_acceptor;
         }
 
-        endpoint_type get_endpoint (beast::PeerRole role)
+        endpoint_type
+        get_endpoint (beast::asio::PeerRole role)
         {
-            if (role == beast::PeerRole::server)
+            if (role == beast::asio::PeerRole::server)
                 return endpoint_type (boost::asio::ip::tcp::v6 (), 1052);
             else
                 return endpoint_type (boost::asio::ip::address_v6 ().from_string ("::1"), 1052);
@@ -177,7 +182,7 @@ public:
         socket_type m_socket;
         acceptor_type m_acceptor;
         MultiSocketType <socket_type&> m_multiSocket;
-        beast::SocketWrapper <acceptor_type&> m_acceptor_wrapper;
+        beast::asio::socket_wrapper <acceptor_type&> m_acceptor_wrapper;
     };
 
     //--------------------------------------------------------------------------
@@ -185,11 +190,15 @@ public:
     template <typename Protocol, typename ClientArg, typename ServerArg>
     void runProxy (ClientArg const& clientArg, ServerArg const& serverArg)
     {
-        PeerTest::run <MultiSocketDetailsType <Protocol>,
-            TestPeerLogicProxyClient, TestPeerLogicSyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
+        beast::asio::PeerTest::run <MultiSocketDetailsType <Protocol>,
+            beast::asio::TestPeerLogicProxyClient,
+                beast::asio::TestPeerLogicSyncServer> (
+                    clientArg, serverArg, timeoutSeconds).report (*this);
 
-        PeerTest::run <MultiSocketDetailsType <Protocol>,
-            TestPeerLogicProxyClient, TestPeerLogicAsyncServer> (clientArg, serverArg, timeoutSeconds).report (*this);
+        beast::asio::PeerTest::run <MultiSocketDetailsType <Protocol>,
+            beast::asio::TestPeerLogicProxyClient,
+                beast::asio::TestPeerLogicAsyncServer> (
+                    clientArg, serverArg, timeoutSeconds).report (*this);
     }
 
     //--------------------------------------------------------------------------
@@ -197,21 +206,25 @@ public:
     template <typename Protocol, typename ClientArg, typename ServerArg>
     void run (ClientArg const& clientArg, ServerArg const& serverArg)
     {
-        PeerTest::run <MultiSocketDetailsType <Protocol>,
-            TestPeerLogicSyncClient, TestPeerLogicSyncServer>
-                (clientArg, serverArg, timeoutSeconds).report (*this);
+        beast::asio::PeerTest::run <MultiSocketDetailsType <Protocol>,
+            beast::asio::TestPeerLogicSyncClient,
+                beast::asio::TestPeerLogicSyncServer>
+                    (clientArg, serverArg, timeoutSeconds).report (*this);
 
-        PeerTest::run <MultiSocketDetailsType <Protocol>,
-            TestPeerLogicAsyncClient, TestPeerLogicSyncServer>
-                (clientArg, serverArg, timeoutSeconds).report (*this);
+        beast::asio::PeerTest::run <MultiSocketDetailsType <Protocol>,
+            beast::asio::TestPeerLogicAsyncClient,
+                beast::asio::TestPeerLogicSyncServer>
+                    (clientArg, serverArg, timeoutSeconds).report (*this);
 
-        PeerTest::run <MultiSocketDetailsType <Protocol>,
-            TestPeerLogicSyncClient, TestPeerLogicAsyncServer>
-                (clientArg, serverArg, timeoutSeconds).report (*this);
+        beast::asio::PeerTest::run <MultiSocketDetailsType <Protocol>,
+            beast::asio::TestPeerLogicSyncClient,
+                beast::asio::TestPeerLogicAsyncServer>
+                    (clientArg, serverArg, timeoutSeconds).report (*this);
 
-        PeerTest::run <MultiSocketDetailsType <Protocol>,
-            TestPeerLogicAsyncClient, TestPeerLogicAsyncServer>
-                (clientArg, serverArg, timeoutSeconds).report (*this);
+        beast::asio::PeerTest::run <MultiSocketDetailsType <Protocol>,
+            beast::asio::TestPeerLogicAsyncClient,
+                beast::asio::TestPeerLogicAsyncServer>
+                    (clientArg, serverArg, timeoutSeconds).report (*this);
     }
 
     //--------------------------------------------------------------------------

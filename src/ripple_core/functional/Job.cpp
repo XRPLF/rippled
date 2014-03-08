@@ -54,7 +54,7 @@ JobType Job::getType () const
 
 CancelCallback Job::getCancelCallback () const
 {
-    bassert (! m_cancelCallback.empty());
+    bassert (m_cancelCallback);
     return m_cancelCallback;
 }
 
@@ -65,7 +65,7 @@ Job::clock_type::time_point const& Job::queue_time () const
 
 bool Job::shouldCancel () const
 {
-    if (! m_cancelCallback.empty ())
+    if (m_cancelCallback)
         return m_cancelCallback ();
     return false;
 }

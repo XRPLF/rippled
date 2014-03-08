@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_SHAREDARG_H_INCLUDED
 #define BEAST_ASIO_SHAREDARG_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 /** A container that turns T into a SharedObject.
     We use this to manage the lifetime of objects passed to handlers.
 */
@@ -157,5 +160,8 @@ public:
 private:
     SharedPtr <Arg> m_arg;
 };
+
+}
+}
 
 #endif

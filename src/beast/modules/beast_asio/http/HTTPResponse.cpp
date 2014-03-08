@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace beast {
+
 HTTPResponse::HTTPResponse (
     HTTPVersion const& version_,
     StringPairArray& fields,
@@ -40,3 +42,4 @@ String HTTPResponse::toString () const
     return s;
 }
 
+}

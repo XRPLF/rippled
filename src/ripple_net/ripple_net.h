@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NET_H_INCLUDED
 #define RIPPLE_NET_H_INCLUDED
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/unordered_set.hpp> // For InfoSub
 
 #include <boost/asio.hpp>

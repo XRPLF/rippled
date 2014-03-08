@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_HTTPFIELD_H_INCLUDED
 #define BEAST_ASIO_HTTPFIELD_H_INCLUDED
 
+namespace beast {
+
 /** A single header.
     The header is a field/value pair.
     Time complexity of copies is constant.
@@ -38,5 +40,7 @@ private:
     String m_name;
     String m_value;
 };
+
+}
 
 #endif

@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast {
+namespace asio {
+
 PeerRole::PeerRole (role_t role)
     : m_role (role)
 {
@@ -35,10 +38,13 @@ bool PeerRole::operator== (role_t role) const noexcept
 }
 
 #if 0
-PeerRole::operator Socket::handshake_type () const noexcept
+PeerRole::operator abstract_socket::handshake_type () const noexcept
 {
     if (m_role == server)
-        return Socket::server;
-    return Socket::client;
+        return abstract_socket::server;
+    return abstract_socket::client;
 }
 #endif
+
+}
+}

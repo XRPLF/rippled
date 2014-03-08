@@ -83,8 +83,15 @@
   <ItemGroup>
     <ClInclude Include="..\..\beast\Arithmetic.h" />
     <ClInclude Include="..\..\beast\Asio.h" />
+    <ClInclude Include="..\..\beast\asio\abstract_socket.h" />
+    <ClInclude Include="..\..\beast\asio\bind_handler.h" />
+    <ClInclude Include="..\..\beast\asio\buffer_sequence.h" />
     <ClInclude Include="..\..\beast\asio\io_latency_probe.h" />
     <ClInclude Include="..\..\beast\asio\IPAddressConversion.h" />
+    <ClInclude Include="..\..\beast\asio\placeholders.h" />
+    <ClInclude Include="..\..\beast\asio\shared_handler.h" />
+    <ClInclude Include="..\..\beast\asio\socket_wrapper.h" />
+    <ClInclude Include="..\..\beast\asio\wrap_handler.h" />
     <ClInclude Include="..\..\beast\Atomic.h" />
     <ClInclude Include="..\..\beast\Boost.h" />
     <ClInclude Include="..\..\beast\boost\ErrorCode.h" />
@@ -150,6 +157,7 @@
     <ClInclude Include="..\..\beast\HeapBlock.h" />
     <ClInclude Include="..\..\beast\HTTP.h" />
     <ClInclude Include="..\..\beast\http\impl\http-parser\http_parser.h" />
+    <ClInclude Include="..\..\beast\http\impl\http_parser.h" />
     <ClInclude Include="..\..\beast\http\ParsedURL.h" />
     <ClInclude Include="..\..\beast\http\URL.h" />
     <ClInclude Include="..\..\beast\Insight.h" />
@@ -238,15 +246,7 @@
     <ClInclude Include="..\..\beast\utility\StaticObject.h" />
     <ClInclude Include="..\..\beast\Version.h" />
     <ClInclude Include="..\..\config\BeastConfig.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\AbstractHandler.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\AsyncObject.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\ComposedAsyncOperation.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\WrapHandler.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandler.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerAllocator.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerPtr.h" />
-    <ClInclude Include="..\..\modules\beast_asio\async\SharedHandlerType.h" />
-    <ClInclude Include="..\..\modules\beast_asio\basics\BuffersType.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\PeerRole.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\SharedArg.h" />
@@ -270,9 +270,6 @@
     <ClInclude Include="..\..\modules\beast_asio\protocol\HandshakeDetector.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\InputParser.h" />
     <ClInclude Include="..\..\modules\beast_asio\protocol\PrefilledReadStream.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\Socket.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\SocketBase.h" />
-    <ClInclude Include="..\..\modules\beast_asio\sockets\SocketWrapper.h" />
     <ClInclude Include="..\..\modules\beast_asio\system\BoostIncludes.h" />
     <ClInclude Include="..\..\modules\beast_asio\system\OpenSSLIncludes.h" />
     <ClInclude Include="..\..\modules\beast_asio\tests\TestPeer.h" />
@@ -325,7 +322,6 @@
     <ClInclude Include="..\..\modules\beast_core\memory\MemoryAlignment.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\MemoryBlock.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\OptionalScopedPointer.h" />
-    <ClInclude Include="..\..\modules\beast_core\memory\SharedFunction.h" />
     <ClInclude Include="..\..\modules\beast_core\memory\SharedSingleton.h" />
     <ClInclude Include="..\..\modules\beast_core\misc\Main.h" />
     <ClInclude Include="..\..\modules\beast_core\misc\Result.h" />
@@ -424,6 +420,12 @@
     <ClInclude Include="..\..\modules\beast_sqlite\sqlite\sqlite3ext.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\beast\asio\abstract_socket.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\beast\asio\Asio.cpp" />
     <ClCompile Include="..\..\beast\asio\impl\IPAddressConversion.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -743,12 +745,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\Utility.cpp" />
-    <ClCompile Include="..\..\modules\beast_asio\async\SharedHandler.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\basics\PeerRole.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -821,18 +817,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\protocol\HandshakeDetectLogicPROXY.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\sockets\Socket.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\sockets\SocketBase.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

@@ -17,31 +17,17 @@
 */
 //==============================================================================
 
-void SharedHandler::operator() ()
-{
-    pure_virtual_called (__FILE__, __LINE__);
+#ifndef BEAST_HTTP_HTTP_PARSER_H_INCLUDED
+#define BEAST_HTTP_HTTP_PARSER_H_INCLUDED
+
+#include "BeastConfig.h"
+
+// Wraps the C-language joyent http parser header in our namespace 
+
+namespace beast {
+
+#include "http-parser/http_parser.h"
+
 }
 
-void SharedHandler::operator() (error_code const&)
-{
-    pure_virtual_called (__FILE__, __LINE__);
-}
-
-void SharedHandler::operator() (error_code const&, std::size_t)
-{
-    pure_virtual_called (__FILE__, __LINE__);
-}
-
-void SharedHandler::pure_virtual_called (char const* fileName, int lineNumber)
-{
-    // These shouldn't be getting called. But since the object returned
-    // by most implementations of bind have operator() up to high arity
-    // levels, it is not generally possible to write a traits test that
-    // works in all scenarios for detecting a particular signature of a
-    // handler.
-    //
-    // We use Throw here so beast has a chance to dump the stack BEFORE
-    // the stack is unwound.
-    //
-    Throw (std::runtime_error ("pure virtual called"), fileName, lineNumber);
-}
+#endif

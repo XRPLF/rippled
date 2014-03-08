@@ -24,8 +24,9 @@
 
 namespace ripple {
 
-/** A Socket that can handshake with multiple protocols. */
-class MultiSocket : public beast::Socket
+/** An abstract_socket that can handshake with multiple protocols. */
+class MultiSocket
+    : public beast::asio::abstract_socket
 {
 public:
     // immutable flags
@@ -101,7 +102,7 @@ public:
         server_proxy = 8
     };
 
-    typedef beast::HandshakeDetectLogicPROXY::ProxyInfo ProxyInfo;
+    typedef beast::asio::HandshakeDetectLogicPROXY::ProxyInfo ProxyInfo;
 
     // Note that this returns the original flags
     virtual Flag getFlags () = 0;

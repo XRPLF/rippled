@@ -24,7 +24,7 @@
 #include "../algorithm/api/DecayingSample.h"
 #include "../common/seconds_clock.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/utility/base_from_member.hpp>
 #include <boost/unordered_map.hpp>
 

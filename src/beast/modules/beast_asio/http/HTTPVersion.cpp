@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace beast {
+
 HTTPVersion::HTTPVersion ()
     : m_major (0)
     , m_minor (0)
@@ -90,4 +92,6 @@ bool HTTPVersion::operator<= (HTTPVersion const& rhs) const
 {
     return (m_major < rhs.m_major) ||
            ((m_major == rhs.m_major) && (m_minor <= rhs.m_minor));
+}
+
 }

@@ -20,8 +20,12 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERDETAILSTCP_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERDETAILSTCP_H_INCLUDED
 
-/** Some predefined Detail classes for TestPeer
-*/
+#include "../../../beast/asio/socket_wrapper.h"
+
+namespace beast {
+namespace asio {
+
+/** Some predefined Detail classes for TestPeer */
 struct TcpDetails : public TestPeerDetails
 {
 protected:
@@ -59,12 +63,12 @@ public:
         return getArgName (m_protocol);
     }
 
-    Socket& get_socket ()
+    abstract_socket& get_socket ()
     {
         return m_socket_wrapper;
     }
 
-    Socket& get_acceptor ()
+    abstract_socket& get_acceptor ()
     {
         return m_acceptor_wrapper;
     }
@@ -101,8 +105,11 @@ protected:
     protocol_type m_protocol;
     socket_type m_socket;
     acceptor_type m_acceptor;
-    SocketWrapper <socket_type&> m_socket_wrapper;
-    SocketWrapper <acceptor_type&> m_acceptor_wrapper;
+    socket_wrapper <socket_type&> m_socket_wrapper;
+    socket_wrapper <acceptor_type&> m_acceptor_wrapper;
 };
+
+}
+}
 
 #endif

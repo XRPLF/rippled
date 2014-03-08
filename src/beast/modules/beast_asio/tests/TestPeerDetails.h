@@ -20,8 +20,12 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERDETAILS_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERDETAILS_H_INCLUDED
 
-/** Base class of all detail objects.
-*/
+#include "../../../beast/asio/abstract_socket.h"
+
+namespace beast {
+namespace asio {
+
+/** Base class of all detail objects. */
 class TestPeerDetails
 {
 public:
@@ -29,9 +33,9 @@ public:
 
     virtual String name () const = 0;
 
-    virtual Socket& get_socket () = 0;
+    virtual abstract_socket& get_socket () = 0;
 
-    virtual Socket& get_acceptor () = 0;
+    virtual abstract_socket& get_acceptor () = 0;
 
     boost::asio::io_service& get_io_service ()
     {
@@ -41,5 +45,8 @@ public:
 private:
     boost::asio::io_service m_io_service;
 };
+
+}
+}
 
 #endif

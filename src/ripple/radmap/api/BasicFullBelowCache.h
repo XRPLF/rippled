@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RADMAP_BASICFULLBELOWCACHE_H_INCLUDED
 #define RIPPLE_RADMAP_BASICFULLBELOWCACHE_H_INCLUDED
 
-#include "beast/beast/insight/Collector.h"
+#include "../../beast/beast/insight/Collector.h"
 
 #include "../../common/KeyCache.h"
 

@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include "../../../beast/beast/asio/wrap_handler.h"
+#include "../../../beast/beast/asio/placeholders.h"
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -56,13 +59,14 @@ private:
         CheckerImp& m_owner;
         boost::asio::io_service& m_io_service;
         IP::Endpoint m_address;
-        AbstractHandler <void (Result)> m_handler;
+        asio::shared_handler <void (Result)> m_handler;
         socket_type m_socket;
         boost::system::error_code m_error;
         bool m_canAccept;
 
         Request (CheckerImp& owner, boost::asio::io_service& io_service,
-            IP::Endpoint const& address, AbstractHandler <void (Result)> handler)
+            IP::Endpoint const& address, asio::shared_handler <
+                void (Result)> const& handler)
             : m_owner (owner)
             , m_io_service (io_service)
             , m_address (address)
@@ -73,9 +77,9 @@ private:
             m_owner.add (*this);
 
             m_socket.async_connect (IPAddressConversion::to_asio_endpoint (
-                m_address), wrapHandler (boost::bind (
+                m_address), asio::wrap_handler (std::bind (
                     &Request::handle_connect, Ptr(this),
-                        boost::asio::placeholders::error), m_handler));
+                        asio::placeholders::error), m_handler));
         }
 
         ~Request ()
@@ -151,7 +155,7 @@ public:
     }
 
     void async_test (IP::Endpoint const& endpoint,
-        AbstractHandler <void (Result)> handler)
+        asio::shared_handler <void (Result)> handler)
     {
         new Request (*this, m_io_service, endpoint, handler);
     }

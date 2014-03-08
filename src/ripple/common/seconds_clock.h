@@ -22,7 +22,7 @@
 
 #include <chrono>
 
-#include "beast/beast/chrono/basic_seconds_clock.h"
+#include "../../beast/beast/chrono/basic_seconds_clock.h"
 
 namespace ripple {
 

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_CHECKER_H_INCLUDED
 #define RIPPLE_PEERFINDER_CHECKER_H_INCLUDED
 
+#include "../../../beast/beast/asio/shared_handler.h"
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -67,20 +69,9 @@ public:
 
     /** Performs an async connection test on the specified endpoint.
         The port must be non-zero.
-        Handler will be called with this signature:
-            void (Result const& result);
     */
-    template <typename Handler>
-    void async_test (IP::Endpoint const& endpoint,
-        BEAST_MOVE_ARG(Handler) handler)
-    {
-        async_test (endpoint,
-            AbstractHandler <void (Result)> (
-                BEAST_MOVE_CAST(Handler)(handler)));
-    }
-
     virtual void async_test (IP::Endpoint const& endpoint,
-        AbstractHandler <void (Result)> handler) = 0;
+        asio::shared_handler <void (Result)> handler) = 0;
 };
 
 }

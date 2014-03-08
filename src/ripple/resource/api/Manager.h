@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 #define RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 
-#include "beast/beast/insight/Collector.h"
+#include "../../beast/beast/insight/Collector.h"
 
 namespace ripple {
 namespace Resource {

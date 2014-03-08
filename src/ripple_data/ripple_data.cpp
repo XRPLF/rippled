@@ -23,7 +23,7 @@
 
 //#include <cmath>
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>

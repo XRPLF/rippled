@@ -21,7 +21,7 @@
 
 #include "ripple_basics.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/asio.hpp> // For StringUtilities.cpp
 
 #include <fstream> // for Log files

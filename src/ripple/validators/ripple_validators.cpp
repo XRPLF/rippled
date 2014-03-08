@@ -21,7 +21,7 @@
 
 #include "ripple_validators.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/regex.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
@@ -31,9 +31,9 @@
 
 #include <set>
 
-#include "beast/beast/threads/ScopedWrapperContext.h"
-#include "beast/modules/beast_asio/beast_asio.h"
-#include "beast/modules/beast_sqdb/beast_sqdb.h"
+#include "../beast/beast/threads/ScopedWrapperContext.h"
+#include "../beast/modules/beast_asio/beast_asio.h"
+#include "../beast/modules/beast_sqdb/beast_sqdb.h"
 
 #include "../algorithm/api/CycledSet.h"
 #include "../testoverlay/ripple_testoverlay.h" // for unit test

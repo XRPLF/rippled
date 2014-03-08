@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
-/** UnitTest for the TestPeer family of objects.
-*/
+namespace beast {
+namespace asio {
+
+/** UnitTest for the TestPeer family of objects. */
 class TestPeerUnitTests : public UnitTest
 {
 public:
@@ -49,3 +51,6 @@ public:
 };
 
 static TestPeerUnitTests testPeerUnitTests;
+
+}
+}

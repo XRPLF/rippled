@@ -48,7 +48,7 @@ Port::Port (
     uint16 port_,
     IP::Endpoint const& addr_,
     Security security_,
-    SSLContext* context_)
+    beast::asio::SSLContext* context_)
     : port (port_)
     , addr (addr_)
     , security (security_)

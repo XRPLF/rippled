@@ -39,12 +39,12 @@ struct Port
     Port (Port const& other);
     Port& operator= (Port const& other);
     Port (uint16 port_, IP::Endpoint const& addr_,
-            Security security_, SSLContext* context_);
+            Security security_, beast::asio::SSLContext* context_);
 
     uint16 port;
     IP::Endpoint addr;
     Security security;
-    SSLContext* context;
+    beast::asio::SSLContext* context;
 };
 
 bool operator== (Port const& lhs, Port const& rhs);

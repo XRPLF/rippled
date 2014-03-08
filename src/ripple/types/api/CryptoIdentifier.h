@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TYPES_CRYPTOIDENTIFIER_H_INCLUDED
 #define RIPPLE_TYPES_CRYPTOIDENTIFIER_H_INCLUDED
 
-#include "beast/beast/FixedArray.h"
-#include "beast/beast/crypto/Sha256.h"
+#include "../../beast/beast/FixedArray.h"
+#include "../../beast/beast/crypto/Sha256.h"
 
 #include "Base58.h"
 

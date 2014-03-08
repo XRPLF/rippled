@@ -151,8 +151,8 @@ public:
     std::unique_ptr <DatabaseCon> mLedgerDB;
     std::unique_ptr <DatabaseCon> mWalletDB;
 
-    std::unique_ptr <SSLContext> m_peerSSLContext;
-    std::unique_ptr <SSLContext> m_wsSSLContext;
+    std::unique_ptr <beast::asio::SSLContext> m_peerSSLContext;
+    std::unique_ptr <beast::asio::SSLContext> m_wsSSLContext;
     std::unique_ptr <Peers> m_peers;
     std::unique_ptr <RPCDoor>  m_rpcDoor;
     std::unique_ptr <WSDoor> m_wsPublicDoor;

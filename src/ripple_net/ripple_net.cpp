@@ -25,7 +25,7 @@
 
 #include "BeastConfig.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/version.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl.hpp>

@@ -26,7 +26,7 @@ namespace HTTP {
 /** A listening socket. */
 class Door
     : public SharedObject
-    , public AsyncObject <Door>
+    , public beast::asio::AsyncObject <Door>
     , public List <Door>::Node
     , public LeakChecked <Door>
 {

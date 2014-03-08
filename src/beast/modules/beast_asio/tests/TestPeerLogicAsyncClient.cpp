@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
-TestPeerLogicAsyncClient::TestPeerLogicAsyncClient (Socket& socket)
+namespace beast {
+namespace asio {
+
+TestPeerLogicAsyncClient::TestPeerLogicAsyncClient (abstract_socket& socket)
     : TestPeerLogic (socket)
 {
 }
@@ -39,7 +42,7 @@ void TestPeerLogicAsyncClient::on_connect_async (error_code const& ec)
 
     if (socket ().needs_handshake ())
     {
-        socket ().async_handshake (Socket::client,
+        socket ().async_handshake (abstract_socket::client,
             boost::bind (&TestPeerLogicAsyncClient::on_handshake, this,
             boost::asio::placeholders::error));
     }
@@ -108,7 +111,7 @@ void TestPeerLogicAsyncClient::on_read_final (error_code const& ec, std::size_t)
         {
             // on_shutdown will call finished ()
             error_code ec;
-            on_shutdown (socket ().shutdown (Socket::shutdown_send, ec));
+            on_shutdown (socket ().shutdown (abstract_socket::shutdown_send, ec));
         }
     }
     else
@@ -137,7 +140,7 @@ void TestPeerLogicAsyncClient::on_shutdown (error_code const& ec)
         {
             if (socket ().needs_handshake ())
             {
-                socket ().shutdown (Socket::shutdown_send, error ());
+                socket ().shutdown (abstract_socket::shutdown_send, error ());
             }
 
             if (! error ())
@@ -152,4 +155,7 @@ void TestPeerLogicAsyncClient::on_shutdown (error_code const& ec)
     }
 
     finished ();
+}
+
+}
 }

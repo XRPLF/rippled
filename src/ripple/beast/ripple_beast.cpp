@@ -44,3 +44,5 @@
 #include "../beast/beast/strings/Strings.cpp"
 #include "../beast/beast/threads/Threads.cpp"
 #include "../beast/beast/utility/Utility.cpp"
+
+#include "../beast/beast/cxx14/cxx14.cpp"

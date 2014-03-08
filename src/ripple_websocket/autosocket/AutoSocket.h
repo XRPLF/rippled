@@ -20,6 +20,8 @@
 #ifndef __AUTOSOCKET_H_
 #define __AUTOSOCKET_H_
 
+#include "../../beast/beast/asio/bind_handler.h"
+
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.
 // To force a non-SSL connection, just don't call async_handshake.
@@ -141,8 +143,8 @@ public:
         {
             // must be plain
             mSecure = false;
-            //mSocket->get_io_service ().post (boost::bind (cbFunc, error_code ()));
-            mSocket->get_io_service ().wrap (cbFunc) (error_code());
+            mSocket->get_io_service ().post (
+                beast::asio::bind_handler (cbFunc, error_code()));
         }
         else
         {
@@ -169,8 +171,8 @@ public:
 			{
 				ec = e.code();
 			}
-            //mSocket->get_io_service ().post (boost::bind (handler, ec));
-            mSocket->get_io_service ().wrap (handler) (ec);
+            mSocket->get_io_service ().post (
+                beast::asio::bind_handler (handler, ec));
         }
     }
 

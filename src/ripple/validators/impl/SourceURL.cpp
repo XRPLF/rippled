@@ -29,7 +29,7 @@ class SourceURLImp
 public:
     explicit SourceURLImp (URL const& url)
         : m_url (url)
-        , m_client (HTTPClientBase::New ())
+        , m_client (beast::asio::HTTPClientBase::New ())
     {
     }
 
@@ -62,7 +62,7 @@ public:
 
     void fetch (Results& results, Journal journal)
     {
-        HTTPClientBase::result_type httpResult (m_client->get (m_url));
+        auto httpResult (m_client->get (m_url));
 
         if (httpResult.first == 0)
         {
@@ -80,7 +80,7 @@ public:
 
 private:
     URL m_url;
-    std::unique_ptr <HTTPClientBase> m_client;
+    std::unique_ptr <beast::asio::HTTPClientBase> m_client;
 };
 
 //------------------------------------------------------------------------------

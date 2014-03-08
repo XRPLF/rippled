@@ -23,8 +23,8 @@
 #include "../ripple_basics/ripple_basics.h"
 #include "../ripple_data/ripple_data.h"
 
-#include "beast/beast/http/URL.h" // for Config
-#include "beast/beast/Insight.h"
+#include "../beast/beast/http/URL.h" // for Config
+#include "../beast/beast/Insight.h"
 
 #include "../ripple/resource/api/LegacyFees.h"
 

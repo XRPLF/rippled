@@ -2228,6 +2228,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\BeastConfig\BeastConfig.h" />
     <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h" />
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h" />
     <ClInclude Include="..\..\src\ripple\common\byte_view.h" />
@@ -2663,7 +2664,6 @@
     <ClInclude Include="..\..\src\ripple_rpc\ripple_rpc.h" />
     <ClInclude Include="..\..\src\ripple_websocket\autosocket\AutoSocket.h" />
     <ClInclude Include="..\..\src\ripple_websocket\ripple_websocket.h" />
-    <ClInclude Include="..\..\src\BeastConfig.h" />
     <ClInclude Include="..\..\src\leveldb\db\builder.h" />
     <ClInclude Include="..\..\src\leveldb\db\dbformat.h" />
     <ClInclude Include="..\..\src\leveldb\db\db_impl.h" />

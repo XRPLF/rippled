@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast {
+namespace asio {
+
 PeerTest::Result::Result ()
     : m_ec (TestPeerBasics::make_error (TestPeerBasics::errc::skipped))
     , m_message (m_ec.message ())
@@ -97,4 +100,7 @@ bool PeerTest::Results::report (UnitTest& test, bool beginTestCase) const
     if (! server.report (test))
         success = false;
     return success;
+}
+
+}
 }

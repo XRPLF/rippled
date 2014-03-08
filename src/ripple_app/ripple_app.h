@@ -31,7 +31,7 @@
 //             purely abstract and move implementation into .cpp files.
 //
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/array.hpp>
 #include <boost/asio/read_until.hpp>
@@ -56,8 +56,8 @@
 
 #include "../ripple/common/ResolverAsio.h"
 
-//#include "beast/modules/beast_sqdb/beast_sqdb.h"
-#include "beast/modules/beast_sqlite/beast_sqlite.h"
+//#include "../beast/modules/beast_sqdb/beast_sqdb.h"
+#include "../beast/modules/beast_sqlite/beast_sqlite.h"
 
 // Order matters here. If you get compile errors,
 // reorder the include lines until the order is correct.

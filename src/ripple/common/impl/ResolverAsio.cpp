@@ -31,7 +31,7 @@ namespace ripple {
 
 class ResolverAsioImpl
     : public ResolverAsio
-    , public AsyncObject <ResolverAsioImpl>
+    , public beast::asio::AsyncObject <ResolverAsioImpl>
 {
 public:
     typedef std::pair <std::string, std::string> HostAndPort;
@@ -114,9 +114,9 @@ public:
     {
         if (m_stop_called.exchange (true) == false)
         {
-            m_io_service.dispatch ( m_strand.wrap ( boost::bind (
+            m_io_service.dispatch (m_strand.wrap (boost::bind (
                 &ResolverAsioImpl::do_stop,
-                this, CompletionCounter (this))));
+                    this, CompletionCounter (this))));
 
             m_journal.debug << "Queued a stop request";
         }
@@ -143,7 +143,7 @@ public:
         //           reducing cost.
         m_io_service.dispatch (m_strand.wrap (boost::bind (
             &ResolverAsioImpl::do_resolve, this,
-            names, handler, CompletionCounter (this))));
+                names, handler, CompletionCounter (this))));
     }
 
     //-------------------------------------------------------------------------
@@ -188,7 +188,7 @@ public:
 
         m_io_service.post (m_strand.wrap (boost::bind (
             &ResolverAsioImpl::do_work, this,
-            CompletionCounter (this))));
+                CompletionCounter (this))));
     }
 
     HostAndPort parseName(std::string const& str)
@@ -268,9 +268,9 @@ public:
 
         m_resolver.async_resolve (query, boost::bind (
             &ResolverAsioImpl::do_finish, this, name,
-            boost::asio::placeholders::error, handler,
-            boost::asio::placeholders::iterator,
-            CompletionCounter (this)));
+                boost::asio::placeholders::error, handler,
+                    boost::asio::placeholders::iterator,
+                        CompletionCounter (this)));
     }
 
     void do_resolve (std::vector <std::string> const& names,
@@ -280,7 +280,7 @@ public:
 
         if (m_stop_called == false)
         {
-            m_work.emplace_back(names, handler);
+            m_work.emplace_back (names, handler);
 
             m_journal.debug <<
                 "Queued new job with " << names.size() <<
@@ -290,7 +290,7 @@ public:
             {
                 m_io_service.post (m_strand.wrap (boost::bind (
                     &ResolverAsioImpl::do_work, this,
-                    CompletionCounter (this))));
+                        CompletionCounter (this))));
             }
         }
     }

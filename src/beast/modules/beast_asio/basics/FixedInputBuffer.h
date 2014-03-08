@@ -20,6 +20,11 @@
 #ifndef BEAST_ASIO_BASICS_FIXEDINPUTBUFFER_H_INCLUDED
 #define BEAST_ASIO_BASICS_FIXEDINPUTBUFFER_H_INCLUDED
 
+#include "../../../beast/asio/buffer_sequence.h"
+
+namespace beast {
+namespace asio {
+
 /** Represents a small, fixed size buffer.
     This provides a convenient interface for doing a bytewise
     verification/reject test on a handshake protocol.
@@ -164,7 +169,7 @@ protected:
         template <typename ConstBufferSequence, typename Storage>
         SizedCtorParams (ConstBufferSequence const& buffers, Storage& storage)
         {
-            MutableBuffer buffer (boost::asio::buffer (storage));
+            boost::asio::mutable_buffer buffer (boost::asio::buffer (storage));
             data = boost::asio::buffer_cast <uint8 const*> (buffer);
             bytes = boost::asio::buffer_copy (buffer, buffers);
         }
@@ -187,7 +192,10 @@ public:
 
 private:
     boost::array <uint8, Bytes> m_storage;
-    MutableBuffer m_buffer;
+    boost::asio::mutable_buffer m_buffer;
 };
+
+}
+}
 
 #endif

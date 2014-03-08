@@ -501,7 +501,7 @@ public:
     }
 
     void async_test (IP::Endpoint const& address,
-        AbstractHandler <void (Result)> handler)
+        asio::shared_handler <void (Result)> handler)
     {
         Node* const node (m_network.find (address));
         Checker::Result result;

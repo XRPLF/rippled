@@ -20,9 +20,12 @@
 #ifndef BEAST_ASIO_HTTPCLIENTTYPE_H_INCLUDED
 #define BEAST_ASIO_HTTPCLIENTTYPE_H_INCLUDED
 
+#include "../../../beast/asio/shared_handler.h"
+
 #include <utility>
 
 namespace beast {
+namespace asio {
 
 class HTTPClientBase
 {
@@ -49,17 +52,8 @@ public:
         Handler will be called with this signature:
             void (result_type)
     */
-    template <typename Handler>
-    void async_get (boost::asio::io_service& io_service,
-        URL const& url, BEAST_MOVE_ARG(Handler) handler)
-    {
-        async_get (io_service, url,
-            AbstractHandler <void (result_type)> (
-                BEAST_MOVE_CAST(Handler)(handler)));
-    }
-
     virtual void async_get (boost::asio::io_service& io_service,
-        URL const& url, AbstractHandler <void (result_type)> handler) = 0;
+        URL const& url, asio::shared_handler <void (result_type)> handler) = 0;
 
     /** Cancel all pending asynchronous operations. */
     virtual void cancel() = 0;
@@ -68,6 +62,7 @@ public:
     virtual void wait() = 0;
 };
 
+}
 }
 
 #endif

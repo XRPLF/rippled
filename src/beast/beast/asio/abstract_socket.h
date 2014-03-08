@@ -17,8 +17,28 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_SOCKETS_SOCKET_H_INCLUDED
-#define BEAST_ASIO_SOCKETS_SOCKET_H_INCLUDED
+#ifndef BEAST_ASIO_ABSTRACT_SOCKET_H_INCLUDED
+#define BEAST_ASIO_ABSTRACT_SOCKET_H_INCLUDED
+
+#include "buffer_sequence.h"
+#include "shared_handler.h"
+
+#include <boost/asio/socket_base.hpp>
+#include <boost/asio/ssl/stream_base.hpp>
+
+// Checking overrides replaces unimplemented stubs with pure virtuals
+#ifndef BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
+# define BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES 1
+#endif
+
+#if BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
+# define BEAST_SOCKET_VIRTUAL = 0
+#else
+# define BEAST_SOCKET_VIRTUAL
+#endif
+
+namespace beast {
+namespace asio {
 
 /** A high level socket abstraction.
 
@@ -29,18 +49,61 @@
     When member functions are called and the underlying implementation does
     not support the operation, a fatal error is generated.
 */
-class Socket
-    : public SocketBase
-    , public boost::asio::ssl::stream_base
+class abstract_socket
+    : public boost::asio::ssl::stream_base
     , public boost::asio::socket_base
 {
+protected:
+    typedef boost::system::error_code error_code;
+
+    typedef asio::shared_handler <void (void)> post_handler;
+
+    typedef asio::shared_handler <void (error_code)> error_handler;
+
+    typedef asio::shared_handler <
+        void (error_code, std::size_t)> transfer_handler;
+
+    static
+    void
+    pure_virtual_called()
+    {
+        throw std::runtime_error ("pure virtual called");
+    }
+
+    static
+    error_code
+    pure_virtual_error ()
+    {
+        pure_virtual_called();
+        return boost::system::errc::make_error_code (
+            boost::system::errc::function_not_supported);
+    }
+
+    static
+    error_code
+    pure_virtual_error (error_code& ec)
+    {
+        return ec = pure_virtual_error();
+    }
+
+    static
+    void
+    throw_if (error_code const& ec)
+    {
+        if (ec)
+            throw boost::system::system_error (ec);
+    }
+
 public:
-    virtual ~Socket ();
+    virtual ~abstract_socket ()
+    {
+    }
 
     //--------------------------------------------------------------------------
     //
-    // Socket
+    // abstract_socket
     //
+    //--------------------------------------------------------------------------
 
     /** Retrieve the underlying object.
 
@@ -48,32 +111,32 @@ public:
               exception is thrown if trying to acquire a reference.
     */
     /** @{ */
-    template <typename Object>
+    template <class Object>
     Object& this_layer ()
     {
         Object* object (this->this_layer_ptr <Object> ());
         if (object == nullptr)
-            Throw (std::bad_cast (), __FILE__, __LINE__);
+            throw std::bad_cast ();
         return *object;
     }
 
-    template <typename Object>
+    template <class Object>
     Object const& this_layer () const
     {
         Object const* object (this->this_layer_ptr <Object> ());
         if (object == nullptr)
-            Throw (std::bad_cast (), __FILE__, __LINE__);
+            throw std::bad_cast ();
         return *object;
     }
 
-    template <typename Object>
+    template <class Object>
     Object* this_layer_ptr ()
     {
         return static_cast <Object*> (
             this->this_layer_ptr (typeid (Object).name ()));
     }
 
-    template <typename Object>
+    template <class Object>
     Object const* this_layer_ptr () const
     {
         return static_cast <Object const*> (
@@ -88,6 +151,7 @@ public:
     //
     // native_handle
     //
+    //--------------------------------------------------------------------------
 
     /** Retrieve the native representation of the object.
 
@@ -101,7 +165,7 @@ public:
     void native_handle (Handle* dest)
     {
         if (! native_handle (typeid (Handle).name (), dest))
-            Throw (std::bad_cast (), __FILE__, __LINE__);
+            throw std::bad_cast ();
     }
 
     virtual bool native_handle (char const* type_name, void* dest)
@@ -111,6 +175,7 @@ public:
     //
     // basic_io_object
     //
+    //--------------------------------------------------------------------------
 
     virtual boost::asio::io_service& get_io_service ()
         BEAST_SOCKET_VIRTUAL;
@@ -119,6 +184,7 @@ public:
     //
     // basic_socket
     //
+    //--------------------------------------------------------------------------
 
     /** Retrieve the lowest layer object.
 
@@ -126,32 +192,32 @@ public:
               exception is thrown if trying to acquire a reference.
     */
     /** @{ */
-    template <typename Object>
+    template <class Object>
     Object& lowest_layer ()
     {
         Object* object (this->lowest_layer_ptr <Object> ());
         if (object == nullptr)
-            Throw (std::bad_cast (), __FILE__, __LINE__);
+            throw std::bad_cast ();
         return *object;
     }
 
-    template <typename Object>
+    template <class Object>
     Object const& lowest_layer () const
     {
         Object const* object (this->lowest_layer_ptr <Object> ());
         if (object == nullptr)
-            Throw (std::bad_cast (), __FILE__, __LINE__);
+            throw std::bad_cast ();
         return *object;
     }
 
-    template <typename Object>
+    template <class Object>
     Object* lowest_layer_ptr ()
     {
         return static_cast <Object*> (
             this->lowest_layer_ptr (typeid (Object).name ()));
     }
 
-    template <typename Object>
+    template <class Object>
     Object const* lowest_layer_ptr () const
     {
         return static_cast <Object const*> (
@@ -167,7 +233,8 @@ public:
     void cancel ()
     {
         error_code ec;
-        throw_error (cancel (ec), __FILE__, __LINE__);
+        cancel (ec);
+        throw_if (ec);
     }
 
     virtual error_code cancel (error_code& ec)
@@ -176,7 +243,8 @@ public:
     void shutdown (shutdown_type what)
     {
         error_code ec;
-        throw_error (shutdown (what, ec), __FILE__, __LINE__);
+        shutdown (what, ec);
+        throw_if (ec);
     }
 
     virtual error_code shutdown (shutdown_type what,
@@ -186,7 +254,8 @@ public:
     void close ()
     {
         error_code ec;
-        throw_error (close (ec), __FILE__, __LINE__);
+        close (ec);
+        throw_if (ec);
     }
 
     virtual error_code close (error_code& ec)
@@ -196,82 +265,39 @@ public:
     //
     // basic_socket_acceptor
     //
+    //--------------------------------------------------------------------------
 
-    virtual error_code accept (Socket& peer, error_code& ec)
+    virtual error_code accept (abstract_socket& peer, error_code& ec)
         BEAST_SOCKET_VIRTUAL;
 
-    template <typename AcceptHandler>
-    void async_accept (Socket& peer, BOOST_ASIO_MOVE_ARG(AcceptHandler) handler)
-    {
-        return async_accept (peer,
-            newAcceptHandler (BOOST_ASIO_MOVE_CAST(AcceptHandler)(handler)));
-    }
-
-    virtual void async_accept (Socket& peer, SharedHandlerPtr handler)
+    virtual void async_accept (abstract_socket& peer, error_handler handler)
         BEAST_SOCKET_VIRTUAL;
 
     //--------------------------------------------------------------------------
     //
     // basic_stream_socket
     //
+    //--------------------------------------------------------------------------
 
-    // SyncReadStream
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/SyncReadStream.html
-    //
-    template <typename MutableBufferSequence>
-    std::size_t read_some (MutableBufferSequence const& buffers,
-        error_code& ec)
-    {
-        return read_some (MutableBuffers (buffers), ec);
-    }
-
-    virtual std::size_t read_some (MutableBuffers const& buffers, error_code& ec)
+    virtual std::size_t read_some (mutable_buffers buffers, error_code& ec)
         BEAST_SOCKET_VIRTUAL;
 
-    // SyncWriteStream
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/SyncWriteStream.html
-    //
-    template <typename ConstBufferSequence>
-    std::size_t write_some (ConstBufferSequence const& buffers, error_code &ec)
-    {
-        return write_some (ConstBuffers (buffers), ec);
-    }
-
-    virtual std::size_t write_some (ConstBuffers const& buffers, error_code& ec)
+    virtual std::size_t write_some (const_buffers buffers, error_code& ec)
         BEAST_SOCKET_VIRTUAL;
 
-    // AsyncReadStream
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncReadStream.html
-    //
-    template <typename MutableBufferSequence, typename ReadHandler>
-    void async_read_some (MutableBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
-    {
-        return async_read_some (MutableBuffers (buffers),
-            newReadHandler (BOOST_ASIO_MOVE_CAST(ReadHandler)(handler)));
-    }
-
-    virtual void async_read_some (MutableBuffers const& buffers, SharedHandlerPtr handler)
+    virtual void async_read_some (mutable_buffers buffers,
+        transfer_handler handler)
         BEAST_SOCKET_VIRTUAL;
 
-    // AsyncWriteStream
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/AsyncWriteStream.html
-    //
-    template <typename ConstBufferSequence, typename WriteHandler>
-    void async_write_some (ConstBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
-    {
-        return async_write_some (ConstBuffers (buffers),
-            newWriteHandler (BOOST_ASIO_MOVE_CAST(WriteHandler)(handler)));
-    }
-
-    virtual void async_write_some (ConstBuffers const& buffers, SharedHandlerPtr handler)
+    virtual void async_write_some (const_buffers buffers,
+        transfer_handler handler)
         BEAST_SOCKET_VIRTUAL;
 
     //--------------------------------------------------------------------------
     //
     // ssl::stream
     //
+    //--------------------------------------------------------------------------
 
     /** Retrieve the next layer object.
 
@@ -279,32 +305,32 @@ public:
               exception is thrown if trying to acquire a reference.
     */
     /** @{ */
-    template <typename Object>
+    template <class Object>
     Object& next_layer ()
     {
         Object* object (this->next_layer_ptr <Object> ());
         if (object == nullptr)
-            Throw (std::bad_cast (), __FILE__, __LINE__);
+            throw std::bad_cast ();
         return *object;
     }
 
-    template <typename Object>
+    template <class Object>
     Object const& next_layer () const
     {
         Object const* object (this->next_layer_ptr <Object> ());
         if (object == nullptr)
-            Throw (std::bad_cast (), __FILE__, __LINE__);
+            throw std::bad_cast ();
         return *object;
     }
 
-    template <typename Object>
+    template <class Object>
     Object* next_layer_ptr ()
     {
         return static_cast <Object*> (
             this->next_layer_ptr (typeid (Object).name ()));
     }
 
-    template <typename Object>
+    template <class Object>
     Object const* next_layer_ptr () const
     {
         return static_cast <Object const*> (
@@ -330,107 +356,49 @@ public:
     virtual bool needs_handshake ()
         BEAST_SOCKET_VIRTUAL;
 
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__verify_mode.html
-    //
-    virtual void set_verify_mode (int verify_mode) = 0;
+    virtual void set_verify_mode (int verify_mode)
+        BEAST_SOCKET_VIRTUAL;
 
-    // ssl::stream::handshake (1 of 4)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload1.html
-    //
     void handshake (handshake_type type)
     {
         error_code ec;
-        throw_error (handshake (type, ec), __FILE__, __LINE__);
+        handshake (type, ec);
+        throw_if (ec);
     }
 
-    // ssl::stream::handshake (2 of 4)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload2.html
-    //
     virtual error_code handshake (handshake_type type, error_code& ec)
         BEAST_SOCKET_VIRTUAL;
 
-    // ssl::stream::async_handshake (1 of 2)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload1.html
-    //
-    template <typename HandshakeHandler>
-    void async_handshake (handshake_type type, BOOST_ASIO_MOVE_ARG(HandshakeHandler) handler)
-    {
-        return async_handshake (type,
-                newHandshakeHandler (BOOST_ASIO_MOVE_CAST(HandshakeHandler)(handler)));
-    }
-
-    virtual void async_handshake (handshake_type type, SharedHandlerPtr handler)
+    virtual void async_handshake (handshake_type type, error_handler handler)
         BEAST_SOCKET_VIRTUAL;
 
     //--------------------------------------------------------------------------
 
-#if BEAST_ASIO_HAS_BUFFEREDHANDSHAKE
-    // ssl::stream::handshake (3 of 4)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload3.html
-    //
-    template <typename ConstBufferSequence>
-    void handshake (handshake_type type, ConstBufferSequence const& buffers)
-    {
-        error_code ec;
-        throw_error (handshake (type, buffers, ec), __FILE__, __LINE__);
-    }
-
-    // ssl::stream::handshake (4 of 4)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/handshake/overload4.html
-    //
-    template <typename ConstBufferSequence>
-    error_code handshake (handshake_type type,
-        ConstBufferSequence const& buffers, error_code& ec)
-    {
-        return handshake (type, ConstBuffers (buffers), ec);
-    }
-
     virtual error_code handshake (handshake_type type,
-        ConstBuffers const& buffers, error_code& ec)
-            BEAST_SOCKET_VIRTUAL;
+        const_buffers buffers, error_code& ec)
+        BEAST_SOCKET_VIRTUAL;
 
-    // ssl::stream::async_handshake (2 of 2)
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_handshake/overload2.html
-    //
-    template <typename ConstBufferSequence, typename BufferedHandshakeHandler>
-    void async_handshake (handshake_type type, ConstBufferSequence const& buffers,
-        BOOST_ASIO_MOVE_ARG(BufferedHandshakeHandler) handler)
-    {
-        return async_handshake (type, ConstBuffers (buffers),
-            newBufferedHandshakeHandler (BOOST_ASIO_MOVE_CAST(BufferedHandshakeHandler)(handler)));
-    }
-
-    virtual void async_handshake (handshake_type type, ConstBuffers const& buffers,
-        SharedHandlerPtr handler)
-            BEAST_SOCKET_VIRTUAL;
-#endif
+    virtual void async_handshake (handshake_type type,
+        const_buffers buffers, transfer_handler handler)
+        BEAST_SOCKET_VIRTUAL;
 
     //--------------------------------------------------------------------------
 
-    // ssl::stream::shutdown
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/shutdown.html
-    //
     void shutdown ()
     {
         error_code ec;
-        throw_error (shutdown (ec), __FILE__, __LINE__);
+        shutdown (ec);
+        throw_if (ec);
     }
 
     virtual error_code shutdown (error_code& ec)
         BEAST_SOCKET_VIRTUAL;
 
-    // ssl::stream::async_shutdown
-    // http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/ssl__stream/async_shutdown.html
-    //
-    template <typename ShutdownHandler>
-    void async_shutdown (BOOST_ASIO_MOVE_ARG(ShutdownHandler) handler)
-    {
-        return async_shutdown (
-            newShutdownHandler (BOOST_ASIO_MOVE_CAST(ShutdownHandler)(handler)));
-    }
-
-    virtual void async_shutdown (SharedHandlerPtr handler)
+    virtual void async_shutdown (error_handler handler)
         BEAST_SOCKET_VIRTUAL;
 };
+
+}
+}
 
 #endif
