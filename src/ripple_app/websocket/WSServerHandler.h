@@ -386,8 +386,9 @@ public:
         {
             if (jvRequest.isMember ("command"))
             {
-                std::string cmd = jvRequest["command"].asString ();
-                job.rename (std::string ("WSClient::") + cmd);
+                Json::Value& jCmd = jvRequest["command"];
+                if (jCmd.isString())
+                    job.rename (std::string ("WSClient::") + jCmd.asString());
             }
 
             send (cpClient, conn->invokeCommand (jvRequest), false);
