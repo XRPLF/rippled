@@ -53,6 +53,9 @@
 #include <boost/asio/detail/handler_alloc_helpers.hpp>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
 
+// work-around for broken <boost/get_pointer.hpp>
+#include "../../../beast/boost/get_pointer.h"
+
 // Continuation hooks added in 1.54.0
 #ifndef BEAST_ASIO_HAS_CONTINUATION_HOOKS
 # if BOOST_VERSION >= 105400

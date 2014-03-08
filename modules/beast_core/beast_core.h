@@ -148,7 +148,6 @@ class FileOutputStream;
 #include "maths/Math.h"
 #include "logging/Logger.h"
 #include "diagnostic/FPUFlags.h"
-#include "memory/SharedFunction.h"
 #include "text/Identifier.h"
 #include "containers/Variant.h"
 #include "containers/LinkedListPointer.h"

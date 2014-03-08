@@ -20,14 +20,20 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERLOGICSYNCCLIENT_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERLOGICSYNCCLIENT_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 class TestPeerLogicSyncClient : public TestPeerLogic
 {
 public:
-    explicit TestPeerLogicSyncClient (Socket& socket);
+    explicit TestPeerLogicSyncClient (abstract_socket& socket);
     PeerRole get_role () const noexcept;
     Model get_model () const noexcept;
     void on_connect ();
     virtual void on_pre_handshake ();
 };
+
+}
+}
 
 #endif

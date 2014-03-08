@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_BASICS_PEERROLE_H_INCLUDED
 #define BEAST_ASIO_BASICS_PEERROLE_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 /** Identifies if the peer is a client or a server. */
 struct PeerRole
 {
@@ -36,5 +39,8 @@ struct PeerRole
 private:
     role_t m_role;
 };
+
+}
+}
 
 #endif

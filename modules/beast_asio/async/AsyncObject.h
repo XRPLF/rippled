@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_ASYNCOBJECT_H_INCLUDED
 #define BEAST_ASIO_ASYNCOBJECT_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 /** Mix-in to track when all pending I/O is complete.
     Derived classes must be callable with this signature:
         void asyncHandlersComplete()
@@ -79,5 +82,8 @@ private:
     // The number of handlers pending.
     Atomic <int> m_pending;
 };
+
+}
+}
 
 #endif

@@ -17,7 +17,42 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_H_INCLUDED
-#define BEAST_ASIO_H_INCLUDED
+#include "BeastConfig.h"
 
-#endif
+#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+
+#include "../bind_handler.h"
+
+#include <functional>
+
+namespace beast {
+namespace asio {
+
+class bind_handler_Tests : public UnitTest
+{
+public:
+    static void foo (int)
+    {
+    }
+
+    void runTest()
+    {
+        beginTestCase ("call");
+
+        auto f (bind_handler (std::bind (&foo, std::placeholders::_1),
+            42));
+
+        f();
+
+        pass();
+    }
+
+    bind_handler_Tests() : UnitTest ("bind_handler", "beast", runManual)
+    {
+    }
+};
+
+static bind_handler_Tests bind_handler_tests;
+
+}
+}

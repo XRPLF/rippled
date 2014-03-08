@@ -17,7 +17,30 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_H_INCLUDED
-#define BEAST_ASIO_H_INCLUDED
+#ifndef BEAST_BOOST_GET_POINTER_H_INCLUDED
+#define BEAST_BOOST_GET_POINTER_H_INCLUDED
+
+#include <boost/get_pointer.hpp>
+
+// Boost 1.55 incorrectly defines BOOST_NO_CXX11_SMART_PTR
+// when building with clang 3.4 and earlier. This workaround
+// gives beast its own overloads.
+
+#ifdef BOOST_NO_CXX11_SMART_PTR
+#include <memory>
+namespace beast {
+template <class T>
+T* get_pointer (std::unique_ptr<T> const& p)
+{
+    return p.get();
+}
+
+template <class T>
+T* get_pointer (std::shared_ptr<T> const& p)
+{
+    return p.get();
+}
+}
+#endif
 
 #endif

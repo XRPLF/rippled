@@ -20,12 +20,18 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERLOGICPROXYCLIENT_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERLOGICPROXYCLIENT_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 /** A synchronous client logic that sends a PROXY protocol pre-handshake. */
 class TestPeerLogicProxyClient : public TestPeerLogicSyncClient
 {
 public:
-    explicit TestPeerLogicProxyClient (Socket& socket);
+    explicit TestPeerLogicProxyClient (abstract_socket& socket);
     void on_pre_handshake ();
 };
+
+}
+}
 
 #endif

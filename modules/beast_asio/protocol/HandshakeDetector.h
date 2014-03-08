@@ -20,7 +20,16 @@
 #ifndef BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTOR_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTOR_H_INCLUDED
 
-//------------------------------------------------------------------------------
+#include "../../../beast/boost/get_pointer.h"
+#include "../../../beast/asio/bind_handler.h"
+#include "../../../beast/asio/wrap_handler.h"
+#include "../../../beast/asio/placeholders.h"
+#include "../../../beast/asio/shared_handler.h"
+
+#include <boost/asio/detail/handler_cont_helpers.hpp>
+
+namespace beast {
+namespace asio {
 
 /** A wrapper to decode the handshake data on a Stream.
 
@@ -99,42 +108,35 @@ public:
         DetectHandler must have this signature:
             void(error_code)
     */
-    template <typename DetectHandler, typename Allocator>
-    void async_detect (Stream& stream,
-        boost::asio::basic_streambuf <Allocator>& buffer,
-            BOOST_ASIO_MOVE_ARG(DetectHandler) handler)
-    {
-        async_detect <Allocator> (stream, buffer, SharedHandlerPtr (
-            new ErrorSharedHandlerType <DetectHandler> (
-                BOOST_ASIO_MOVE_CAST(DetectHandler)(handler))));
-    }
-
     template <typename Allocator>
     void async_detect (Stream& stream,
         boost::asio::basic_streambuf <Allocator>& buffer,
-            SharedHandlerPtr handler)
+            asio::shared_handler <void(error_code)> handler)
     {
-        typedef AsyncOp <Allocator> OpType;
-        OpType* const op = new AsyncOp <Allocator> (
-            m_logic, stream, buffer, handler);
-        stream.get_io_service ().wrap (SharedHandlerPtr (op))
-            (error_code (), 0);
+        typedef AsyncOp <Allocator> Op;
+        auto const op (std::make_shared <Op> (std::ref (m_logic),
+            std::ref (stream), std::ref (buffer), std::cref (handler)));
+        //op->start();
+        stream.get_io_service().post (asio::wrap_handler (std::bind (
+            &Op::start, op), handler));
     }
 
 private:
     template <typename Allocator>
-    struct AsyncOp : ComposedAsyncOperation
+    class AsyncOp
+        : public std::enable_shared_from_this <AsyncOp <Allocator>>
     {
+    public:
         typedef boost::asio::basic_streambuf <Allocator> BuffersType;
         
         AsyncOp (HandshakeDetectLogicType <Logic>& logic, Stream& stream,
-            BuffersType& buffer, SharedHandlerPtr const& handler)
-            : ComposedAsyncOperation (handler)
-            , m_logic (logic)
+            BuffersType& buffer, asio::shared_handler <
+                void(error_code)> const& handler)
+            : m_logic (logic)
             , m_stream (stream)
             , m_buffer (buffer)
             , m_handler (handler)
-            , m_running (false)
+            , m_continuation (false)
         {
         }
 
@@ -143,12 +145,19 @@ private:
         {
         }
 
-        void operator() (error_code const& ec_, size_t bytes_transferred)
+        void start()
         {
-            m_running = true;
+            async_read_some (error_code(), 0);
+        }
 
-            error_code ec (ec_);
+        void on_read (error_code ec, size_t bytes_transferred)
+        {
+            m_continuation = true;
+            async_read_some (ec, bytes_transferred);
+        }
 
+        void async_read_some (error_code ec, size_t bytes_transferred)
+        {
             if (! ec)
             {
                 m_buffer.commit (bytes_transferred);
@@ -163,10 +172,14 @@ private:
                     // If postcondition fails, loop will never end
                     if (meets_postcondition (available < needed))
                     {
-                         typename BuffersType::mutable_buffers_type buffers (
+                        typename BuffersType::mutable_buffers_type buffers (
                             m_buffer.prepare (needed - available));
 
-                        m_stream.async_read_some (buffers, SharedHandlerPtr (this));
+                        m_stream.async_read_some (buffers, asio::wrap_handler (
+                            std::bind (&AsyncOp <Allocator>::on_read,
+                                this->shared_from_this(), asio::placeholders::error,
+                                    asio::placeholders::bytes_transferred),
+                                        m_handler, m_continuation));
                     }
 
                     return;
@@ -177,30 +190,30 @@ private:
             }
 
             // Finalize with a call to the original handler.
-            m_stream.get_io_service ().wrap (
-                BOOST_ASIO_MOVE_CAST (SharedHandlerPtr)(m_handler))
-                    (ec);
-        }
-
-        bool is_continuation ()
-        {
-            return m_running
-#if BEAST_ASIO_HAS_CONTINUATION_HOOKS
-                ||  boost_asio_handler_cont_helpers::is_continuation (m_handler);
-#endif
-                ;
+            if (m_continuation)
+            {
+                m_handler (ec);
+                return;
+            }
+            // Post, otherwise we would call the
+            // handler from the initiating function.
+            m_stream.get_io_service ().post (asio::bind_handler (
+                m_handler, ec));
         }
 
     private:
         HandshakeDetectLogicType <Logic>& m_logic;
         Stream& m_stream;
         BuffersType& m_buffer;
-        SharedHandlerPtr m_handler;
-        bool m_running;
+        asio::shared_handler <void(error_code)> m_handler;
+        bool m_continuation;
     };
 
 private:
     HandshakeDetectLogicType <Logic> m_logic;
 };
+
+}
+}
 
 #endif

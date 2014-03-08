@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace beast {
+
 HTTPHeaders::HTTPHeaders ()
 {
 }
@@ -84,3 +86,4 @@ String HTTPHeaders::toString () const
     return s;
 }
 
+}

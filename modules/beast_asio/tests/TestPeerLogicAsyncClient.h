@@ -20,10 +20,13 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERLOGICASYNCCLIENT_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 class TestPeerLogicAsyncClient : public TestPeerLogic
 {
 public:
-    explicit TestPeerLogicAsyncClient (Socket& socket);
+    explicit TestPeerLogicAsyncClient (abstract_socket& socket);
     PeerRole get_role () const noexcept;
     Model get_model () const noexcept;
     void on_connect_async (error_code const& ec);
@@ -35,5 +38,8 @@ public:
 private:
     boost::asio::streambuf m_buf;
 };
+
+}
+}
 
 #endif

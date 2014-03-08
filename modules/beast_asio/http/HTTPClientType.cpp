@@ -17,6 +17,12 @@
 */
 //==============================================================================
 
+#include "../../../beast/asio/wrap_handler.h"
+#include "../../../beast/asio/placeholders.h"
+
+namespace beast {
+namespace asio {
+
 class HTTPClientType : public HTTPClientBase, public Uncopyable
 {
 public:
@@ -69,7 +75,7 @@ public:
     }
 
     void async_get (boost::asio::io_service& io_service, URL const& url,
-        AbstractHandler <void (result_type)> handler)
+        asio::shared_handler <void (result_type)> handler)
     {
         new Session (*this, io_service, url,
             handler, m_timeoutSeconds, m_messageLimitBytes, m_bufferSize);
@@ -150,7 +156,6 @@ public:
 
     class Session
         : public SharedObject
-        , public AsyncObject <Session>
         , public List <Session>::Node
     {
     public:
@@ -173,7 +178,7 @@ public:
         boost::asio::deadline_timer m_timer;
         resolver m_resolver;
         socket m_socket;
-        AbstractHandler <void (result_type)> m_handler;
+        asio::shared_handler <void (result_type)> m_handler;
 
         URL m_url;
         boost::asio::ssl::context m_context;
@@ -184,7 +189,7 @@ public:
 
         String m_get_string;
         WaitableEvent m_done;
-        ScopedPointer <Socket> m_stream;
+        ScopedPointer <abstract_socket> m_stream;
 
         struct State
         {
@@ -204,7 +209,7 @@ public:
         Session (HTTPClientType& owner,
                  boost::asio::io_service& io_service,
                  URL const& url,
-                 AbstractHandler <void (result_type)> const& handler,
+                 asio::shared_handler <void (result_type)> const& handler,
                  double timeoutSeconds,
                  std::size_t messageLimitBytes,
                  std::size_t bufferSize)
@@ -238,16 +243,14 @@ public:
                     boost::posix_time::milliseconds (
                         long (timeoutSeconds * 1000)));
 
-                m_timer.async_wait (m_strand.wrap (wrapHandler (
-                    boost::bind (&Session::handle_timer, Ptr(this),
-                        boost::asio::placeholders::error,
-                            CompletionCounter(this)), m_handler)));
+                m_timer.async_wait (m_strand.wrap (asio::wrap_handler (
+                    std::bind (&Session::handle_timer, Ptr(this),
+                        asio::placeholders::error), m_handler)));
             }
 
             // Start the operation on an io_service thread
-            io_service.dispatch (m_strand.wrap (wrapHandler (
-                boost::bind (&Session::handle_start, Ptr(this),
-                    CompletionCounter(this)), m_handler)));
+            io_service.dispatch (m_strand.wrap (asio::wrap_handler (
+                std::bind (&Session::handle_start, Ptr(this)), m_handler)));
         }
 
         ~Session ()
@@ -258,8 +261,8 @@ public:
                 result = *state;
             }
 
-            m_io_service.wrap (m_handler) (std::make_pair (
-                result.error, result.response));
+            m_io_service.post (bind_handler (m_handler,
+                std::make_pair (result.error, result.response)));
 
             m_owner.remove (*this);
         }
@@ -313,10 +316,9 @@ public:
                 m_buffer.getData (), m_buffer.getSize ());
 
             m_stream->async_read_some (buf, m_strand.wrap (
-                wrapHandler (boost::bind (&Session::handle_read,
-                    Ptr(this), boost::asio::placeholders::error,
-                        boost::asio::placeholders::bytes_transferred,
-                            CompletionCounter(this)), m_handler)));
+                asio::wrap_handler (std::bind (&Session::handle_read,
+                    Ptr(this), asio::placeholders::error,
+                        asio::placeholders::bytes_transferred), m_handler)));
         }
 
         //----------------------------------------------------------------------
@@ -324,25 +326,19 @@ public:
         // Completion handlers
         //
 
-        // Called when there are no more pending i/o completions
-        void asyncHandlersComplete()
-        {
-        }
-
         // Called when the operation starts
-        void handle_start (CompletionCounter)
+        void handle_start ()
         {
             query q (queryFromURL <query> (m_url));
 
             m_resolver.async_resolve (q, m_strand.wrap (
-                wrapHandler (boost::bind (&Session::handle_resolve,
-                    Ptr(this), boost::asio::placeholders::error,
-                        boost::asio::placeholders::iterator,
-                            CompletionCounter(this)), m_handler)));
+                asio::wrap_handler (std::bind (&Session::handle_resolve,
+                    Ptr(this), asio::placeholders::error,
+                        asio::placeholders::iterator), m_handler)));
         }
 
         // Called when the timer completes
-        void handle_timer (error_code ec, CompletionCounter)
+        void handle_timer (error_code ec)
         {
             if (ec == boost::asio::error::operation_aborted)
                 return;
@@ -358,7 +354,7 @@ public:
         }
 
         // Called when the resolver completes
-        void handle_resolve (error_code ec, iterator iter, CompletionCounter)
+        void handle_resolve (error_code ec, iterator iter)
         {
             if (ec == boost::asio::error::operation_aborted)
                 return;
@@ -371,13 +367,12 @@ public:
 
             resolver_entry const entry (*iter);
             m_socket.async_connect (entry.endpoint (), m_strand.wrap (
-                wrapHandler (boost::bind (&Session::handle_connect,
-                    Ptr(this), boost::asio::placeholders::error,
-                        CompletionCounter(this)), m_handler)));
+                asio::wrap_handler (std::bind (&Session::handle_connect,
+                    Ptr(this), asio::placeholders::error), m_handler)));
         }
 
         // Called when the connection attempt completes
-        void handle_connect (error_code ec, CompletionCounter)
+        void handle_connect (error_code ec)
         {
             if (ec == boost::asio::error::operation_aborted)
                 return;
@@ -391,25 +386,24 @@ public:
             if (m_url.scheme () == "https")
             {
                 typedef boost::asio::ssl::stream <socket&> ssl_stream;
-                m_stream = new SocketWrapper <ssl_stream> (m_socket, m_context);
+                m_stream = new socket_wrapper <ssl_stream> (m_socket, m_context);
                 /*
                 m_stream->set_verify_mode (
                     boost::asio::ssl::verify_peer |
                     boost::asio::ssl::verify_fail_if_no_peer_cert);
                 */
-                m_stream->async_handshake (Socket::client, m_strand.wrap (
-                    wrapHandler (boost::bind (&Session::handle_handshake,
-                        Ptr(this), boost::asio::placeholders::error,
-                            CompletionCounter(this)), m_handler)));
+                m_stream->async_handshake (abstract_socket::client, m_strand.wrap (
+                    asio::wrap_handler (std::bind (&Session::handle_handshake,
+                        Ptr(this), asio::placeholders::error), m_handler)));
                 return;
             }
 
-            m_stream = new SocketWrapper <socket&> (m_socket);
-            handle_handshake (ec, CompletionCounter(this));
+            m_stream = new socket_wrapper <socket&> (m_socket);
+            handle_handshake (ec);
         }
 
         // Called when the SSL handshake completes
-        void handle_handshake (error_code ec, CompletionCounter)
+        void handle_handshake (error_code ec)
         {
             if (ec == boost::asio::error::operation_aborted)
                 return;
@@ -427,17 +421,16 @@ public:
                 "Connection: close\r\n\r\n";
 
             boost::asio::async_write (*m_stream, stringBuffer (
-                m_get_string), m_strand.wrap (wrapHandler (
-                    boost::bind (&Session::handle_write, Ptr(this),
-                        boost::asio::placeholders::error,
-                            boost::asio::placeholders::bytes_transferred,
-                                CompletionCounter(this)), m_handler)));
+                m_get_string), m_strand.wrap (asio::wrap_handler (
+                    std::bind (&Session::handle_write, Ptr(this),
+                        asio::placeholders::error,
+                            asio::placeholders::bytes_transferred), m_handler)));
 
             async_read_some ();
         }
 
         // Called when the write operation completes
-        void handle_write (error_code ec, std::size_t, CompletionCounter)
+        void handle_write (error_code ec, std::size_t)
         {
             if (ec == boost::asio::error::operation_aborted)
                 return;
@@ -453,7 +446,7 @@ public:
         }
 
         void handle_read (error_code ec,
-            std::size_t bytes_transferred, CompletionCounter)
+            std::size_t bytes_transferred)
         {
             if (ec == boost::asio::error::operation_aborted)
                 return;
@@ -499,14 +492,13 @@ public:
             {
                 if (m_stream->needs_handshake ())
                 {
-                    m_stream->async_shutdown (m_strand.wrap (wrapHandler (
-                        boost::bind (&Session::handle_shutdown, Ptr(this),
-                            boost::asio::placeholders::error,
-                                CompletionCounter(this)), m_handler)));
+                    m_stream->async_shutdown (m_strand.wrap (asio::wrap_handler (
+                        std::bind (&Session::handle_shutdown,
+                            Ptr(this), asio::placeholders::error), m_handler)));
                 }
                 else
                 {
-                    handle_shutdown (error_code (), CompletionCounter(this));
+                    handle_shutdown (error_code ());
                 }
                 return;
             }
@@ -514,7 +506,7 @@ public:
             async_read_some ();
         }
 
-        void handle_shutdown (error_code ec, CompletionCounter)
+        void handle_shutdown (error_code ec)
         {
             if (ec == boost::asio::error::operation_aborted)
                 return;
@@ -692,4 +684,5 @@ public:
 
 static HTTPClientTests httpClientTests;
 
-
+}
+}

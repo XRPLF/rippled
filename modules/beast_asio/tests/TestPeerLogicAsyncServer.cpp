@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
-TestPeerLogicAsyncServer::TestPeerLogicAsyncServer (Socket& socket)
+namespace beast {
+namespace asio {
+
+TestPeerLogicAsyncServer::TestPeerLogicAsyncServer (abstract_socket& socket)
     : TestPeerLogic (socket)
 {
 }
@@ -39,7 +42,7 @@ void TestPeerLogicAsyncServer::on_connect_async (error_code const& ec)
 
     if (socket ().needs_handshake ())
     {
-        socket ().async_handshake (Socket::server,
+        socket ().async_handshake (abstract_socket::server,
             boost::bind (&TestPeerLogicAsyncServer::on_handshake, this,
             boost::asio::placeholders::error));
     }
@@ -90,7 +93,7 @@ void TestPeerLogicAsyncServer::on_write (error_code const& ec, std::size_t bytes
         // on_shutdown will call finished ()
         // we need another instance of ec so we can call on_shutdown()
         error_code ec;
-        on_shutdown (socket ().shutdown (Socket::shutdown_receive, ec));
+        on_shutdown (socket ().shutdown (abstract_socket::shutdown_receive, ec));
     }
 }
 
@@ -102,7 +105,7 @@ void TestPeerLogicAsyncServer::on_shutdown (error_code const& ec)
         {
             if (socket ().needs_handshake ())
             {
-                socket ().shutdown (Socket::shutdown_receive, error ());
+                socket ().shutdown (abstract_socket::shutdown_receive, error ());
             }
 
             if (success (socket ().close (error ())))
@@ -115,3 +118,7 @@ void TestPeerLogicAsyncServer::on_shutdown (error_code const& ec)
 
     finished ();
 }
+
+}
+}
+

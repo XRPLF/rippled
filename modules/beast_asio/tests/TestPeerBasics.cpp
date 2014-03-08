@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast {
+namespace asio {
+
 TestPeerBasics::Model::Model (model_t model)
     : m_model (model)
 {
@@ -152,4 +155,7 @@ void TestPeerBasics::breakpoint (boost::system::error_code const& ec)
 
 void TestPeerBasics::breakpoint (char const* const)
 {
+}
+
+}
 }

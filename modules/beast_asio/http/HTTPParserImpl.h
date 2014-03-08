@@ -20,6 +20,8 @@
 #ifndef BEAST_HTTPPARSERIMPL_H_INCLUDED
 #define BEAST_HTTPPARSERIMPL_H_INCLUDED
 
+namespace beast {
+
 class HTTPParserImpl
 {
 public:
@@ -265,5 +267,7 @@ private:
     bool m_headersComplete;
     DynamicBuffer m_body;
 };
+
+}
 
 #endif

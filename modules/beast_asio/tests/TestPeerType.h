@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERTYPE_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERTYPE_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 template <typename Logic, typename Details>
 class TestPeerType
     : public Details
@@ -391,5 +394,8 @@ private:
     // for sync peers
     int m_timeoutSeconds;
 };
+
+}
+}
 
 #endif

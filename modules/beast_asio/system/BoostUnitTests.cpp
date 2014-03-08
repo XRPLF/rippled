@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace beast {
+
 /** Test for showing information about the build of boost.
 */
 class BoostUnitTests : public UnitTest
@@ -80,3 +82,5 @@ public:
 };
 
 static BoostUnitTests boostUnitTests;
+
+}

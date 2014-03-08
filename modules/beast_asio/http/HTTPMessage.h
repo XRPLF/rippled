@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_HTTPMESSAGE_H_INCLUDED
 #define BEAST_ASIO_HTTPMESSAGE_H_INCLUDED
 
+namespace beast {
+
 /** A complete HTTP message.
 
     This provides the information common to all HTTP messages, including
@@ -59,5 +61,7 @@ private:
     HTTPHeaders m_headers;
     DynamicBuffer m_body;
 };
+
+}
 
 #endif

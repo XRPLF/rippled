@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_HTTPVERSION_H_INCLUDED
 #define BEAST_ASIO_HTTPVERSION_H_INCLUDED
 
+namespace beast {
+
 /** The HTTP version. This is the major.minor version number. */
 class HTTPVersion
 {
@@ -42,5 +44,7 @@ private:
     unsigned short m_major;
     unsigned short m_minor;
 };
+
+}
 
 #endif

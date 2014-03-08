@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_BASICS_SSLCONTEXT_H_INCLUDED
 #define BEAST_ASIO_BASICS_SSLCONTEXT_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 /** Simple base class for passing a context around.
     This lets derived classes hide their implementation from the headers.
 */
@@ -57,5 +60,8 @@ protected:
 
     ContextType& m_context;
 };
+
+}
+}
 
 #endif

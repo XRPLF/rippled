@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICSSL2_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICSSL2_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 // Handshake for SSL 2
 //
 // http://tools.ietf.org/html/rfc5246#appendix-E.2
@@ -104,5 +107,8 @@ public:
         conclude ();
     }
 };
+
+}
+}
 
 #endif

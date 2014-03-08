@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_HTTPHEADERS_H_INCLUDED
 #define BEAST_ASIO_HTTPHEADERS_H_INCLUDED
 
+namespace beast {
+
 /** A set of HTTP headers. */
 class HTTPHeaders
 {
@@ -67,5 +69,7 @@ public:
 private:
     StringPairArray m_fields;
 };
+
+}
 
 #endif
