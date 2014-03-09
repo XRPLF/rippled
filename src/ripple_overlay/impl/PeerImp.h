@@ -1502,13 +1502,13 @@ private:
 
     void recvTransaction (protocol::TMTransaction& packet)
     {
-        Transaction::pointer tx;
+
+        Serializer s (packet.rawtransaction ());
 
     #ifndef TRUST_NETWORK
         try
         {
     #endif
-            Serializer s (packet.rawtransaction ());
             SerializerIterator sit (s);
             SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction> (boost::ref (sit));
             uint256 txID = stx->getTransactionID();
@@ -1548,13 +1548,8 @@ private:
         }
         catch (...)
         {
-    #ifdef BEAST_DEBUG
-            Log::out() << "Transaction from peer fails validity tests";
-            Json::StyledStreamWriter w;
-            // VFALCO NOTE This bypasses the Log bottleneck
-            w.write (std::cerr, tx->getJson (0));
-    #endif
-            return;
+            m_journal.warning << "Transaction invalid: " <<
+               s.getHex();
         }
     #endif
     }

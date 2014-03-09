@@ -217,6 +217,15 @@ public:
         return v.mData != mData;
     }
 
+    std::string getHex () const
+    {
+        std::stringstream h;
+        h << std::hex << std::setfill ('0');
+        for (unsigned char const& element : mData)
+            h << std::setw (2) << element;
+        return h.str ();
+    }
+
     // low-level VL length encode/decode functions
     static Blob encodeVL (int length);
     static int lengthVL (int length)
