@@ -309,6 +309,9 @@
     <Filter Include="beast\container\tests">
       <UniqueIdentifier>{4b468051-9e97-4548-a5f0-469425c3b603}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\cxx14\tests">
+      <UniqueIdentifier>{1271ee71-5754-46ef-845b-84e53eed11c0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1332,6 +1335,9 @@
     <ClInclude Include="..\..\beast\container\buffer_view.h">
       <Filter>beast\container</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\cxx14\utility.h">
+      <Filter>beast\cxx14</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
@@ -1918,6 +1924,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\container\tests\buffer_view.test.cpp">
       <Filter>beast\container\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\cxx14\cxx14.cpp">
+      <Filter>beast\cxx14</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\cxx14\tests\integer_sequence.test.cpp">
+      <Filter>beast\cxx14\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
