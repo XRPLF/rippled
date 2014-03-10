@@ -144,6 +144,7 @@
     <ClInclude Include="..\..\beast\cxx14\functional.h" />
     <ClInclude Include="..\..\beast\cxx14\memory.h" />
     <ClInclude Include="..\..\beast\cxx14\type_traits.h" />
+    <ClInclude Include="..\..\beast\cxx14\utility.h" />
     <ClInclude Include="..\..\beast\cyclic_iterator.h" />
     <ClInclude Include="..\..\beast\FixedArray.h" />
     <ClInclude Include="..\..\beast\HeapBlock.h" />
@@ -513,6 +514,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\UnsignedInteger.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\cxx14\cxx14.cpp" />
+    <ClCompile Include="..\..\beast\cxx14\tests\integer_sequence.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
