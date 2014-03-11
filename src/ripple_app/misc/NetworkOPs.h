@@ -141,12 +141,12 @@ public:
     virtual void submitTransaction (Job&, SerializedTransaction::pointer,
         stCallback callback = stCallback ()) = 0;
     virtual Transaction::pointer submitTransactionSync (Transaction::ref tpTrans,
-        bool bAdmin, bool bFailHard, bool bSubmit) = 0;
+        bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit) = 0;
     virtual void runTransactionQueue () = 0;
     virtual Transaction::pointer processTransactionCb (Transaction::pointer,
-        bool bAdmin, bool bFailHard, stCallback) = 0;
+        bool bAdmin, bool bLocal, bool bFailHard, stCallback) = 0;
     virtual Transaction::pointer processTransaction (Transaction::pointer transaction,
-        bool bAdmin, bool bFailHard) = 0;
+        bool bAdmin, bool bLocal, bool bFailHard) = 0;
     virtual Transaction::pointer findTransactionByID (uint256 const& transactionID) = 0;
     virtual int findTransactionsByDestination (std::list<Transaction::pointer>&,
         const RippleAddress& destinationAccount, uint32 startLedgerSeq,

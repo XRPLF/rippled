@@ -2623,7 +2623,7 @@ private:
             else
                 getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
 
-            getApp().getOPs ().processTransaction (tx, isSetBit (flags, SF_TRUSTED), false);
+            getApp().getOPs ().processTransaction (tx, isSetBit (flags, SF_TRUSTED), false, false);
 
     #ifndef TRUST_NETWORK
         }

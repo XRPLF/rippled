@@ -470,7 +470,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
     {
         // FIXME: For performance, should use asynch interface
         tpTrans = mNetOps->submitTransactionSync (tpTrans, 
-            mRole == Config::ADMIN, bFailHard, bSubmit);
+            mRole == Config::ADMIN, true, bFailHard, bSubmit);
 
         if (!tpTrans)
         {
@@ -2046,7 +2046,7 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
 
     try
     {
-        (void) mNetOps->processTransaction (tpTrans, mRole == Config::ADMIN,
+        (void) mNetOps->processTransaction (tpTrans, mRole == Config::ADMIN, true,
             params.isMember ("fail_hard") && params["fail_hard"].asBool ());
     }
     catch (std::exception& e)

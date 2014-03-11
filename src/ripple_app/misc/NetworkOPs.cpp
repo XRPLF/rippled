@@ -148,20 +148,20 @@ public:
     //
     typedef std::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
     void submitTransaction (Job&, SerializedTransaction::pointer, stCallback callback = stCallback ());
-    Transaction::pointer submitTransactionSync (Transaction::ref tpTrans, bool bAdmin, bool bFailHard, bool bSubmit);
+    Transaction::pointer submitTransactionSync (Transaction::ref tpTrans, bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit);
 
     void runTransactionQueue ();
-    Transaction::pointer processTransactionCb (Transaction::pointer, bool bAdmin, bool bFailHard, stCallback);
-    Transaction::pointer processTransaction (Transaction::pointer transaction, bool bAdmin, bool bFailHard)
+    Transaction::pointer processTransactionCb (Transaction::pointer, bool bAdmin, bool bLocal, bool bFailHard, stCallback);
+    Transaction::pointer processTransaction (Transaction::pointer transaction, bool bAdmin, bool bLocal, bool bFailHard)
     {
-        return processTransactionCb (transaction, bAdmin, bFailHard, stCallback ());
+        return processTransactionCb (transaction, bAdmin, bLocal, bFailHard, stCallback ());
     }
 
     // VFALCO Workaround for MSVC std::function which doesn't swallow return types.
     //
-    void processTransactionCbVoid (Transaction::pointer p, bool bAdmin, bool bFailHard, stCallback cb)
+    void processTransactionCbVoid (Transaction::pointer p, bool bAdmin, bool bLocal, bool bFailHard, stCallback cb)
     {
-        processTransactionCb (p, bAdmin, bFailHard, cb);
+        processTransactionCb (p, bAdmin, bLocal, bFailHard, cb);
     }
 
     Transaction::pointer findTransactionByID (uint256 const& transactionID);
@@ -751,12 +751,12 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
 
     getApp().getJobQueue().addJob (jtTRANSACTION, "submitTxn",
         std::bind (&NetworkOPsImp::processTransactionCbVoid, this,
-            boost::make_shared<Transaction> (trans, false), false, false, callback));
+            boost::make_shared<Transaction> (trans, false), false, false, false, callback));
 }
 
 // Sterilize transaction through serialization.
 // This is fully synchronous and deprecated
-Transaction::pointer NetworkOPsImp::submitTransactionSync (Transaction::ref tpTrans, bool bAdmin, bool bFailHard, bool bSubmit)
+Transaction::pointer NetworkOPsImp::submitTransactionSync (Transaction::ref tpTrans, bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit)
 {
     Serializer s;
     tpTrans->getSTransaction ()->add (s);
@@ -771,7 +771,7 @@ Transaction::pointer NetworkOPsImp::submitTransactionSync (Transaction::ref tpTr
     else if (tpTransNew->getSTransaction ()->isEquivalent (*tpTrans->getSTransaction ()))
     {
         if (bSubmit)
-            (void) NetworkOPsImp::processTransaction (tpTransNew, bAdmin, bFailHard);
+            (void) NetworkOPsImp::processTransaction (tpTransNew, bAdmin, bLocal, bFailHard);
     }
     else
     {
@@ -875,7 +875,7 @@ void NetworkOPsImp::runTransactionQueue ()
 }
 
 Transaction::pointer NetworkOPsImp::processTransactionCb (
-    Transaction::pointer trans, bool bAdmin, bool bFailHard, stCallback callback)
+    Transaction::pointer trans, bool bAdmin, bool bLocal, bool bFailHard, stCallback callback)
 {
     LoadEvent::autoptr ev = getApp().getJobQueue ().getLoadEventAP (jtTXN_PROC, "ProcessTXN");
 
@@ -968,7 +968,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
             trans->setStatus (INVALID);
         }
 
-        if (didApply || ((mMode != omFULL) && !bFailHard))
+        if (didApply || ((mMode != omFULL) && !bFailHard && bLocal))
         {
             std::set<Peer::ShortId> peers;
 
