@@ -1446,7 +1446,8 @@ bool NetworkOPsImp::haveConsensusObject ()
         if (!ledgerChange)
         {
             m_journal.info << "Beginning consensus due to peer action";
-            if ( ((mMode == omCONNECTED) || (mMode == omTRACKING)) && (getPreviousProposers() >= m_ledgerMaster.getMinValidations()) )
+            if ( ((mMode == omTRACKING) || (mMode == omSYNCING)) &&
+                 (getPreviousProposers() >= m_ledgerMaster.getMinValidations()) )
                 setMode (omFULL);
             beginConsensus (networkClosed, m_ledgerMaster.getCurrentLedger ());
         }
