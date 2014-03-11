@@ -54,7 +54,7 @@ private:
     boost::unordered_set<uint256>   usOfferUnfundedFound;   // Offers found unfunded.
 
     typedef std::pair <uint256, uint256> missingOffer_t;
-    boost::unordered_set<missingOffer_t> usMissingOffers;
+    std::set<missingOffer_t> usMissingOffers;
 };
 
 #endif

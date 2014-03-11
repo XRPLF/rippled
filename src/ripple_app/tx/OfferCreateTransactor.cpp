@@ -360,10 +360,7 @@ TER OfferCreateTransactor::takeOffers (
         {
             WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: became unfunded: " << uOfferIndex.ToString ();
 
-            terResult   = lesActive.offerDelete (uOfferIndex);
-
-            if (tesSUCCESS != terResult)
-                break;
+            lesActive.offerDelete (uOfferIndex);
         }
     }
 
@@ -709,10 +706,8 @@ TER OfferCreateTransactor::doApply ()
 
             WriteLog (lsINFO, OfferCreateTransactor) << "takeOffers: found unfunded: " << uOfferIndex.ToString ();
 
-            terResult   = lesActive.offerDelete (uOfferIndex);
+            lesActive.offerDelete (uOfferIndex);
 
-            if (tesSUCCESS != terResult)
-                break;
         }
 
         // Go through the list of offers not found and remove them from the order book
