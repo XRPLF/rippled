@@ -433,12 +433,6 @@ TER OfferCreateTransactor::doApply ()
 
         terResult   = temBAD_EXPIRATION;
     }
-    else if (bHaveExpiration && mEngine->getLedger ()->getParentCloseTimeNC () >= uExpiration)
-    {
-        WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: Expired transaction: offer expired";
-
-        terResult   = tesSUCCESS;               // Only charged fee.
-    }
     else if (saTakerPays.isNative () && saTakerGets.isNative ())
     {
         WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: Malformed offer: XRP for XRP";
@@ -483,7 +477,7 @@ TER OfferCreateTransactor::doApply ()
     }
 
     // Cancel offer.
-    if (tesSUCCESS == terResult && bHaveCancel)
+    if ((tesSUCCESS == terResult) && bHaveCancel)
     {
         const uint256   uCancelIndex = Ledger::getOfferIndex (mTxnAccountID, uCancelSequence);
         SLE::pointer    sleCancel    = mEngine->entryCache (ltOFFER, uCancelIndex);
@@ -504,7 +498,8 @@ TER OfferCreateTransactor::doApply ()
     }
 
     // Make sure authorized to hold what taker will pay.
-    if (tesSUCCESS == terResult && !saTakerPays.isNative ())
+    bool bExpired = (bHaveExpiration && mEngine->getLedger ()->getParentCloseTimeNC () >= uExpiration);
+    if (tesSUCCESS == terResult && !saTakerPays.isNative () && !bExpired)
     {
         SLE::pointer        sleTakerPays    = mEngine->entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uPaysIssuerID));
 
@@ -512,19 +507,22 @@ TER OfferCreateTransactor::doApply ()
         {
             WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: delay: can't receive IOUs from non-existent issuer: " << RippleAddress::createHumanAccountID (uPaysIssuerID);
 
-            terResult   = terNO_ACCOUNT;
+            terResult   = isSetBit (mParams, tapRETRY) ? terNO_ACCOUNT : tecNO_ISSUER;
         }
         else if (isSetBit (sleTakerPays->getFieldU32 (sfFlags), lsfRequireAuth))
         {
             SLE::pointer    sleRippleState  = mEngine->entryCache (ltRIPPLE_STATE, Ledger::getRippleStateIndex (mTxnAccountID, uPaysIssuerID, uPaysCurrency));
             bool            bHigh           = mTxnAccountID > uPaysIssuerID;
 
-            if (!sleRippleState
-                    || !isSetBit (sleRippleState->getFieldU32 (sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth)))
+            if (!sleRippleState)
             {
-                WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: delay: can't receive IOUs from issuer without auth.";
+                terResult   = isSetBit (mParams, tapRETRY) ? terNO_LINE : tecNO_LINE;
+            }
+            else if (!isSetBit (sleRippleState->getFieldU32 (sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth)))
+            {
+                WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: delay: can't receive IOUs from issuer without auth.";
 
-                terResult   = terNO_AUTH;
+                terResult   = isSetBit (mParams, tapRETRY) ? terNO_AUTH : tecNO_AUTH;
             }
         }
     }
@@ -534,7 +532,7 @@ TER OfferCreateTransactor::doApply ()
     bool            bUnfunded   = false;
     const bool      bOpenLedger = isSetBit (mParams, tapOPEN_LEDGER);
 
-    if (tesSUCCESS == terResult)
+    if ((tesSUCCESS == terResult) && !bExpired)
     {
         const uint256   uTakeBookBase   = Ledger::getBookBase (uGetsCurrency, uGetsIssuerID, uPaysCurrency, uPaysIssuerID);
 
@@ -584,6 +582,11 @@ TER OfferCreateTransactor::doApply ()
     if (tesSUCCESS != terResult)
     {
         // Fail as is.
+        nothing ();
+    }
+    else if (bExpired)
+    {
+        // nothing to do
         nothing ();
     }
     else if (saTakerPays.isNegative () || saTakerGets.isNegative ())

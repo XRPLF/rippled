@@ -45,6 +45,9 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tecUNFUNDED_OFFER,      "tecUNFUNDED_OFFER",        "Insufficient balance to fund created offer."           },
         {   tecUNFUNDED_PAYMENT,    "tecUNFUNDED_PAYMENT",      "Insufficient XRP balance to send."                     },
         {   tecOWNERS,              "tecOWNERS",                "Non-zero owner count."                                 },
+        {   tecNO_ISSUER,           "tecNO_ISSUER",             "Issuer account does not exist."                        },
+        {   tecNO_AUTH,             "tecNO_AUTH",               "Not authorized to hold asset."                         },
+        {   tecNO_LINE,             "tecNO_LINE",               "No such line."                                         },
 
         {   tefFAILURE,             "tefFAILURE",               "Failed to apply."                                      },
         {   tefALREADY,             "tefALREADY",               "The exact transaction was already in this ledger."     },
