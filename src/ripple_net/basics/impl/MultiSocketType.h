@@ -115,8 +115,15 @@ protected:
             return IP::Endpoint();
         }
 
-        return IPAddressConversion::from_asio (
-            m_next_layer.remote_endpoint());
+        try 
+        {
+            return IPAddressConversion::from_asio (
+                m_next_layer.remote_endpoint());
+        }
+        catch (...)
+        {
+            return IP::Endpoint ();
+        }
     }
 
     ProxyInfo getProxyInfo ()
