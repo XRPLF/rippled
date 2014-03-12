@@ -1999,6 +1999,9 @@ private:
         assert (packet);
         protocol::TMProposeSet& set = *packet;
 
+        if ((set.closetime() + 180) < getApp().getOPs().getCloseTimeNC())
+            return;
+
         if ((set.currenttxhash ().size () != 32) || (set.nodepubkey ().size () < 28) ||
                 (set.signature ().size () < 56) || (set.nodepubkey ().size () > 128) || (set.signature ().size () > 128))
         {
