@@ -60,7 +60,8 @@ if USING_CLANG:
         env.Append(LINKFLAGS='-stdlib=libstdc++')
 
     if OSX:
-        env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libc++'])
+        env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libc++', 
+                               '-Wno-deprecated-register'])
         env.Append(LINKFLAGS='-stdlib=libc++')
         env['FRAMEWORKS'] = ['AppKit','Foundation']
 

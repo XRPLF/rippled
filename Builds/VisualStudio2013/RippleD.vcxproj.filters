@@ -3048,6 +3048,9 @@
     <ClInclude Include="..\..\src\ripple_app\transactors\WalletAddTransactor.h">
       <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\byte_view.h">
+      <Filter>[1] Ripple\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\ripple_data\protocol\ripple.proto">
