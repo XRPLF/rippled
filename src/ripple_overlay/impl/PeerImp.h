@@ -79,6 +79,58 @@ private:
     /** The length of the smallest valid finished message */
     static const size_t sslMinimumFinishedLength = 12;
 
+    //--------------------------------------------------------------------------
+    /** We have accepted an inbound connection.
+
+        The connection state transitions from `stateConnect` to `stateConnected`
+        as `stateConnect`.
+    */
+    void accept ()
+    {
+        m_journal.info << "Accepted " << m_remoteAddress;
+
+        m_socket->set_verify_mode (boost::asio::ssl::verify_none);
+        m_socket->async_handshake (
+            boost::asio::ssl::stream_base::server,
+            m_strand.wrap (boost::bind (
+                &PeerImp::handleStart,
+                boost::static_pointer_cast <PeerImp> (shared_from_this ()),
+                boost::asio::placeholders::error)));
+    }
+
+    /** Attempt an outbound connection.
+
+        The connection may fail (for a number of reasons) and we do not know
+        what will happen at this point.
+
+        The connection state does not transition with this function and remains
+        as `stateConnecting`.
+    */
+    void connect ()
+    {
+        m_journal.info << "Connecting to " << m_remoteAddress;
+
+        boost::system::error_code err;
+
+        m_timer.expires_from_now (nodeVerifySeconds, err);
+
+        m_timer.async_wait (m_strand.wrap (boost::bind (
+            &PeerImp::handleVerifyTimer,
+            shared_from_this (), boost::asio::placeholders::error)));
+
+        if (err)
+        {
+            m_journal.error << "Failed to set verify timer.";
+            detach ("c2");
+            return;
+        }
+
+        getNativeSocket ().async_connect (
+            IPAddressConversion::to_asio_endpoint (m_remoteAddress),
+                m_strand.wrap (boost::bind (&PeerImp::onConnect,
+                    shared_from_this (), boost::asio::placeholders::error)));
+    }
+
 public:
     /** Current state */
     enum State
@@ -164,7 +216,7 @@ public:
     // True if close was called
     bool m_was_canceled;
 
-    //---------------------------------------------------------------------------    
+    //--------------------------------------------------------------------------
     /** New incoming peer from the specified socket */
     PeerImp (
         boost::shared_ptr <NativeSocketType> const& socket,
@@ -263,45 +315,6 @@ public:
     }
 
     //--------------------------------------------------------------------------
-
-    /** Attempt an outbound connection.
-
-        The connection may fail (for a number of reasons) and we do not know
-        what will happen at this point.
-
-        The connection state does not transition with this function and remains
-        as `stateConnecting`.
-
-        @param address the IP:port to which we want to connect.
-
-        @note This should likely become a static member that creates the peer
-              object and begins the process of connection establishment instead
-              of requiring the caller to construct a Peer and call connect.
-    */
-    void connect ()
-    {
-        m_journal.info << "Connecting to " << m_remoteAddress;
-
-        boost::system::error_code err;
-
-        m_timer.expires_from_now (nodeVerifySeconds, err);
-
-        m_timer.async_wait (m_strand.wrap (boost::bind (&PeerImp::handleVerifyTimer,
-            shared_from_this (), boost::asio::placeholders::error)));
-
-        if (err)
-        {
-            m_journal.error << "Failed to set verify timer.";
-            detach ("c2");
-            return;
-        }
-
-        getNativeSocket ().async_connect (
-            IPAddressConversion::to_asio_endpoint (m_remoteAddress),
-                m_strand.wrap (boost::bind (&PeerImp::onConnect,
-                    shared_from_this (), boost::asio::placeholders::error)));
-    }
-
     /** Disconnect a peer
 
         The peer transitions from its current state into `stateGracefulClose`
@@ -418,26 +431,6 @@ public:
                     boost::asio::placeholders::error)));
     }
 
-    /** We have accepted an inbound connection.
-
-        The connection state transitions from `stateConnect` to `stateConnected`
-        as `stateConnect`.
-
-        @param address the IP:port to which we want to connect.
-    */
-    void accept ()
-    {
-        m_journal.info << "Accepted " << m_remoteAddress;
-
-        m_socket->set_verify_mode (boost::asio::ssl::verify_none);
-        m_socket->async_handshake (
-            boost::asio::ssl::stream_base::server,
-            m_strand.wrap (boost::bind (
-                &PeerImp::handleStart,
-                boost::static_pointer_cast <PeerImp> (shared_from_this ()),
-                boost::asio::placeholders::error)));
-    }
-
     /** Indicates that the peer must be activated.
         A peer is activated after the handshake is completed and if it is not
         a second connection from a peer that we already have. Once activated
@@ -448,6 +441,14 @@ public:
         bassert (m_state == stateHandshaked);
         m_state = stateActive;
         m_peers.onPeerActivated(shared_from_this ());
+    }
+
+    void start ()
+    {
+        if (m_inbound)
+            accept ();
+        else
+            connect ();
     }
 
     //--------------------------------------------------------------------------

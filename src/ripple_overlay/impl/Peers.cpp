@@ -220,7 +220,7 @@ public:
 
             // This has to happen while holding the lock,
             // otherwise the socket might not be canceled during a stop.
-            peer->accept ();
+            peer->start ();
         }
     }
 
@@ -258,7 +258,7 @@ public:
 
             // This has to happen while holding the lock,
             // otherwise the socket might not be canceled during a stop.
-            peer->connect ();
+            peer->start ();
         }
     }
 
