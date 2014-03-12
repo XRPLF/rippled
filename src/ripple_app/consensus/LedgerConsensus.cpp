@@ -406,13 +406,15 @@ public:
 
         typedef std::map<uint256, 
             currentValidationCount>::value_type u256_cvc_pair;
-        BOOST_FOREACH (u256_cvc_pair & it, vals)
 
-        if ((it.second.first > netLgrCount) ||
-            ((it.second.first == netLgrCount) && (it.first == mPrevLedgerHash)))
+        BOOST_FOREACH (u256_cvc_pair & it, vals)
         {
-            netLgr = it.first;
-            netLgrCount = it.second.first;
+            if ((it.second.first > netLgrCount) ||
+                ((it.second.first == netLgrCount) && (it.first == mPrevLedgerHash)))
+            {
+               netLgr = it.first;
+               netLgrCount = it.second.first;
+            }
         }
 
         if (netLgr != mPrevLedgerHash)
@@ -927,15 +929,6 @@ private:
                 << "Report: NewL  = " << newLCL->getHash () 
                 << ":" << newLCL->getLedgerSeq ();
             uint256 newLCLHash = newLCL->getHash ();
-
-            if (ShouldLog (lsTRACE, LedgerConsensus))
-            {
-                WriteLog (lsTRACE, LedgerConsensus) << "newLCL";
-                Json::Value p;
-                newLCL->addJson (p
-                    , LEDGER_JSON_DUMP_TXRP | LEDGER_JSON_DUMP_STATE);
-                WriteLog (lsTRACE, LedgerConsensus) << p;
-            }
 
             statusChange (protocol::neACCEPTED_LEDGER, *newLCL);
 
