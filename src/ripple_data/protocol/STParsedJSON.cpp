@@ -685,6 +685,13 @@ bool STParsedJSON::parse (std::string const& json_name,
                     // a vector
                     std::string const objectName (value[i].getMemberNames()[0]);;
                     SField::ref const nameField (SField::getField(objectName));
+
+                    if (nameField == sfInvalid)
+                    {
+                        error = unknown_field (json_name, objectName);
+                        return false;
+                    }
+
                     Json::Value const objectFields (value[i][objectName]);
 
                     std::unique_ptr <STObject> sub_object_;
