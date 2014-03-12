@@ -40,6 +40,7 @@ script:
     echo "set env MALLOC_CHECK_=3" > script.gdb 
     echo "run" >> script.gdb
     echo "backtrace full" >> script.gdb 
+    echo "set print thread-events off" >> script.gdb
     # gdb --help
   - cat script.gdb | gdb --return-child-result --args ./build/rippled --unittest 
   # Run integration tests
