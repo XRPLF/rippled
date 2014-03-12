@@ -249,9 +249,6 @@
     <Filter Include="beast\config\platform">
       <UniqueIdentifier>{38c81e1f-f831-4632-af45-6340683f3346}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\config\stdlib">
-      <UniqueIdentifier>{7243e5e5-ad7e-4d81-8444-d545919e850c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\smart_ptr">
       <UniqueIdentifier>{4e9c54da-1581-41d7-ac75-48140e4a13d4}</UniqueIdentifier>
     </Filter>
