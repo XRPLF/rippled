@@ -306,6 +306,9 @@
     <Filter Include="beast\cxx14">
       <UniqueIdentifier>{5745a887-7df8-4059-87ea-e0c7eea77a9b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\container\tests">
+      <UniqueIdentifier>{4b468051-9e97-4548-a5f0-469425c3b603}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1326,6 +1329,9 @@
     <ClInclude Include="..\..\beast\cxx14\memory.h">
       <Filter>beast\cxx14</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\container\buffer_view.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
@@ -1909,6 +1915,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\container\impl\aged_associative_container.cpp">
       <Filter>beast\container\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\container\tests\buffer_view.test.cpp">
+      <Filter>beast\container\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

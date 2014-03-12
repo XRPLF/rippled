@@ -20,3 +20,6 @@
 #include "BeastConfig.h"
 
 #include "impl/aged_associative_container.cpp"
+
+#include "tests/buffer_view.test.cpp"
+
