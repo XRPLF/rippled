@@ -42,10 +42,10 @@ namespace ripple {
 #include "basics/RPCDoor.h"
 #include "basics/SNTPClient.h"
 
-# include "rpc/RPCErr.h"
-# include "rpc/RPCUtil.h"
+#include "rpc/RPCErr.h"
+#include "rpc/RPCUtil.h"
 #include "rpc/RPCCall.h"
-# include "rpc/InfoSub.h"
+#include "rpc/InfoSub.h"
 #include "rpc/RPCSub.h"
 
 }
