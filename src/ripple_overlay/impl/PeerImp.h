@@ -2020,17 +2020,10 @@ private:
         if (set.has_previousledger ())
             memcpy (prevLedger.begin (), set.previousledger ().data (), 32);
 
-        Serializer s (512);
-        s.add256 (proposeHash);
-        s.add32 (set.proposeseq ());
-        s.add32 (set.closetime ());
-        s.addVL (set.nodepubkey ());
-        s.addVL (set.signature ());
-
-        if (set.has_previousledger ())
-            s.add256 (prevLedger);
-
-        uint256 suppression = s.getSHA512Half ();
+        uint256 suppression = LedgerProposal::computeSuppressionID (proposeHash, prevLedger,
+            set.proposeseq(), set.closetime (),
+            Blob(set.nodepubkey ().begin (), set.nodepubkey ().end ()),
+            Blob(set.signature ().begin (), set.signature ().end ()));
 
         if (! getApp().getHashRouter ().addSuppressionPeer (suppression, m_shortId))
         {
@@ -2695,12 +2688,14 @@ private:
             // relay untrusted proposal
             WriteLog(lsTRACE, Peer) << "relaying UNTRUSTED proposal";
             std::set<Peer::ShortId> peers;
-            getApp().getHashRouter ().swapSet (
-                proposal->getHashRouter (), peers, SF_RELAYED);
-            
-            pPeers->foreach (send_if_not (
-                boost::make_shared<PackedMessage> (set, protocol::mtPROPOSE_LEDGER),
-                peer_in_set(peers))); 
+
+            if (getApp().getHashRouter ().swapSet (
+                proposal->getSuppressionID (), peers, SF_RELAYED))
+            {
+                pPeers->foreach (send_if_not (
+                    boost::make_shared<PackedMessage> (set, protocol::mtPROPOSE_LEDGER),
+                    peer_in_set(peers)));
+	    }
         }
         else
         {

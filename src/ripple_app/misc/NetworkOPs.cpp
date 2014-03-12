@@ -1505,11 +1505,13 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
         if (relay)
         {
             std::set<Peer::ShortId> peers;
-            getApp().getHashRouter ().swapSet (
-                proposal->getHashRouter (), peers, SF_RELAYED);
-            getApp ().getPeers ().foreach (send_if_not (
-                boost::make_shared<PackedMessage> (*set, protocol::mtPROPOSE_LEDGER),
-                peer_in_set(peers)));
+            if (getApp().getHashRouter ().swapSet (
+                proposal->getSuppressionID (), peers, SF_RELAYED))
+	    {
+                getApp ().getPeers ().foreach (send_if_not (
+                    boost::make_shared<PackedMessage> (*set, protocol::mtPROPOSE_LEDGER),
+                    peer_in_set(peers)));
+	    }
         }
         else
         {

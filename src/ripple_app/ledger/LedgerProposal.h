@@ -65,7 +65,7 @@ public:
     {
         return mPreviousLedger;
     }
-    uint256 const& getHashRouter () const
+    uint256 const& getSuppressionID () const
     {
         return mSuppression;
     }
@@ -120,6 +120,14 @@ public:
     bool changePosition (uint256 const & newPosition, uint32 newCloseTime);
     void bowOut ();
     Json::Value getJson () const;
+
+    static uint256 computeSuppressionID (
+        uint256 const& proposeHash,
+        uint256 const& previousLedger,
+        uint32 proposeSeq,
+        uint32 closeTime,
+        Blob const& pubKey,
+        Blob const& signature);
 
 private:
     uint256 mPreviousLedger, mCurrentHash, mSuppression;
