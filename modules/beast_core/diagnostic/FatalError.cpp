@@ -61,7 +61,7 @@ String FatalError::Reporter::formatMessage (
 
 String FatalError::Reporter::formatFilePath (char const* filePath)
 {
-    return File::createFileWithoutCheckingPath (filePath).getFileName ();
+    return filePath;
 }
 
 //------------------------------------------------------------------------------
@@ -93,7 +93,7 @@ FatalError::FatalError (char const* message, char const* fileName, int lineNumbe
 
     char const* const szStackBacktrace = backtraceString.toRawUTF8 ();
 
-    String const fileNameString = File (fileName).getFileName ();
+    String const fileNameString = fileName;
 
     char const* const szFileName = fileNameString.toRawUTF8 ();
 
