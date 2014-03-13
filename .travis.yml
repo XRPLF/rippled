@@ -41,7 +41,7 @@ script:
     echo "run" >> script.gdb
     echo "backtrace full" >> script.gdb 
     # gdb --help
-  - cat script.gdb | gdb --return-child-result --args ./build/rippled --unittest 
+  - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args ./build/rippled --unittest 
   # Run integration tests
   - npm install
   - npm test
