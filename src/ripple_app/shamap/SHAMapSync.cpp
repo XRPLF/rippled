@@ -635,16 +635,13 @@ std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack (SHAMap* have, bool inc
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                            std::function<void (const uint256&, const Blob&)> func)
 {
-    ScopedReadLockType ul1 (mLock);
-
-    std::unique_ptr <ScopedReadLockType> ul2;
+    ScopedReadLockType ul1 (mLock), ul2;
 
     if (have)
     {
-        // VFALCO NOTE This looks like a mess. A dynamically allocated scoped lock?
-        ul2.reset (new ScopedReadLockType (have->mLock, boost::try_to_lock));
+        ul2 = std::move (ScopedReadLockType (have->mLock, boost::try_to_lock));
 
-        if (! ul2->owns_lock ())
+        if (! ul2.owns_lock ())
         {
             WriteLog (lsINFO, SHAMap) << "Unable to create pack due to lock";
             return;
