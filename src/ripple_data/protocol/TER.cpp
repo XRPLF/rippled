@@ -37,8 +37,8 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tecNO_LINE_REDUNDANT,   "tecNO_LINE_REDUNDANT",     "Can't set non-existant line to default."               },
         {   tecPATH_DRY,            "tecPATH_DRY",              "Path could not send partial amount."                   },
         {   tecPATH_PARTIAL,        "tecPATH_PARTIAL",          "Path could not send full amount."                      },
-        {   tecMASTER_DISABLED,     "tefMASTER_DISABLED",       "Master key is disabled."                               },
-        {   tecNO_REGULAR_KEY,      "tefNO_REGULAR_KEY",        "Regular key is not set."                               },
+        {   tecMASTER_DISABLED,     "tecMASTER_DISABLED",       "Master key is disabled."                               },
+        {   tecNO_REGULAR_KEY,      "tecNO_REGULAR_KEY",        "Regular key is not set."                               },
 
         {   tecUNFUNDED,            "tecUNFUNDED",              "One of _ADD, _OFFER, or _SEND. Deprecated."            },
         {   tecUNFUNDED_ADD,        "tecUNFUNDED_ADD",          "Insufficient XRP balance for WalletAdd."               },
