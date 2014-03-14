@@ -72,3 +72,6 @@ My Amplifier XE Results - RippleD
 
 # Compiler intermediate output
 /out.txt
+
+# Build Log
+rippled-build.log

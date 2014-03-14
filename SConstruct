@@ -9,6 +9,7 @@ import os
 import platform
 import re
 import sys
+import textwrap
 
 OSX = bool(platform.mac_ver()[0])
 FreeBSD = bool('FreeBSD' == platform.system())
@@ -23,7 +24,6 @@ USING_CLANG = OSX or os.environ.get('CC', None) == 'clang'
 # We expect this to be set
 #
 BOOST_HOME = os.environ.get("RIPPLED_BOOST_HOME", None)
-
 
 if OSX or Ubuntu or Debian or Archlinux:
     CTAGS = 'ctags'
@@ -40,9 +40,17 @@ HONOR_ENVS = ['CC', 'CXX', 'PATH']
 
 env = Environment(
     tools = ['default', 'protoc'],
-    #ENV = dict((k, os.environ[k]) for k in HONOR_ENVS)
     ENV = dict((k, os.environ[k]) for k in HONOR_ENVS if k in os.environ)
 )
+
+if os.environ.get('CC', None):
+    env.Replace(CC = os.environ['CC'])
+
+if os.environ.get('CXX', None):
+    env.Replace(CXX = os.environ['CXX'])
+
+if os.environ.get('PATH', None):
+    env.Replace(PATH = os.environ['PATH'])
 
 # Use a newer gcc on FreeBSD
 if FreeBSD:
@@ -135,6 +143,56 @@ else:
     )
 
 #-------------------------------------------------------------------------------
+# Change the way that information is printed so that we can get a nice
+# output
+#-------------------------------------------------------------------------------
+BuildLogFile = None
+
+def print_cmd_line_worker(item, fmt, cmd):
+    sys.stdout.write(fmt % ("    \033[94m" + item + "\033[0m"))
+
+    global BuildLogFile
+
+    if not BuildLogFile:
+        BuildLogFile = open('rippled-build.log', 'w')
+
+    if BuildLogFile:
+        wrapper = textwrap.TextWrapper()
+        wrapper.break_long_words = False
+        wrapper.break_on_hyphens = False
+        wrapper.width = 75
+
+        lines = wrapper.wrap(cmd)
+
+        for line in lines:
+            BuildLogFile.write("%s\n" % line)
+
+
+def print_cmd_line(s, target, src, env):
+    target = (''.join([str(x) for x in target]))
+    source = (''.join([str(x) for x in src]))
+
+    if ('build/rippled' == target):
+        print_cmd_line_worker(target, "%s\n", s)
+    elif ('tags' == target):
+        sys.stdout.write("    Generating tags")
+    else:
+        print_cmd_line_worker(source, "%s\n", s)
+
+
+# Originally, we wanted to suppress verbose display when running on Travis,
+# but we no longer want that functionality. Just use the following if to
+# get the suppression functionality again:
+#
+#if (os.environ.get('TRAVIS', '0') != 'true') and
+#   (os.environ.get('CI', '0') != 'true'):
+#
+#    env['PRINT_CMD_LINE_FUNC'] = print_cmd_line
+
+env['PRINT_CMD_LINE_FUNC'] = print_cmd_line
+
+
+#-------------------------------------------------------------------------------
 #
 # VFALCO NOTE Clean area.
 #
@@ -191,7 +249,7 @@ COMPILED_FILES.extend([
     'src/ripple/testoverlay/ripple_testoverlay.cpp',
     'src/ripple/types/ripple_types.cpp',
     'src/ripple/validators/ripple_validators.cpp',
-	'src/ripple/common/ripple_common.cpp',
+    'src/ripple/common/ripple_common.cpp',
     ])
 
 # ------------------------------
@@ -292,10 +350,12 @@ https://ripple.com/wiki/Ubuntu_build_instructions#Ubuntu_versions_older_than_13.
 
 if not USING_CLANG:
     if (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) < 8):
-        print "\nrippled, using c++11, requires g++ version >= 4.8 to compile"
+        print "\n\033[91mTo compile rippled using GCC you need version 4.8.1 or later.\033[0m\n"
 
         if Ubuntu:
+          print "For information how to update your GCC, please visit:"
           print UBUNTU_GCC_48_INSTALL_STEPS
+          print "\n"
 
         sys.exit(1)
     else:
@@ -308,6 +368,82 @@ if FreeBSD:
 if OSX:
     env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
     env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
+
+# Determine if this is a Travis continuous integration build:
+TravisBuild = (os.environ.get('TRAVIS', '0') == 'true') and \
+              (os.environ.get('CI', '0') == 'true')
+
+RippleRepository = False
+
+# Determine if we're building against the main ripple repo or a developer repo
+if TravisBuild:
+    Slug = os.environ.get('TRAVIS_REPO_SLUG', '')
+
+    if (Slug.find ("ripple/") == 0):
+        RippleRepository = True
+
+if TravisBuild:
+    env.Append(CFLAGS = ['-DTRAVIS_CI_BUILD'])
+    env.Append(CXXFLAGS = ['-DTRAVIS_CI_BUILD'])
+
+if RippleRepository:
+    env.Append(CFLAGS = ['DRIPPLE_MASTER_BUILD'])
+    env.Append(CXXFLAGS = ['DRIPPLE_MASTER_BUILD'])
+
+# Display build configuration information for debugging purposes
+def print_nv_pair(n, v):
+    name = ("%s" % n.rjust(10))
+    sys.stdout.write("%s \033[94m%s\033[0m\n" % (name, v))
+
+def print_build_config(var):
+    val = env.get(var, '')
+    
+    if val and val != '':
+        name = ("%s" % var.rjust(10))
+
+        wrapper = textwrap.TextWrapper()
+        wrapper.break_long_words = False
+        wrapper.break_on_hyphens = False
+        wrapper.width = 69
+
+        if type(val) is str:
+            lines = wrapper.wrap(val)
+        else:
+            lines = wrapper.wrap(" ".join(str(x) for x in val))
+
+        for line in lines:
+            print_nv_pair (name, line)
+            name = "          "
+
+config_vars = ['CC', 'CXX', 'CFLAGS', 'CPPFLAGS', 'CXXFLAGS', 'LINKFLAGS', 'LIBS']
+
+if TravisBuild:
+    Slug = os.environ.get('TRAVIS_REPO_SLUG', None)
+    Branch = os.environ.get('TRAVIS_BRANCH', None)
+    Commit = os.environ.get('TRAVIS_COMMIT', None)
+
+    sys.stdout.write("\nBuild Type:\n")
+
+    if (Slug.find ("ripple/") == 0):
+        print_nv_pair ("Build", "Travis - Ripple Master Repository")
+    else:
+        print_nv_pair ("Build", "Travis - Ripple Developer Fork")
+
+    if (Slug):
+        print_nv_pair ("Repo", Slug)
+        
+    if (Branch):
+        print_nv_pair ("Branch", Branch)
+
+    if (Commit):
+        print_nv_pair ("Commit", Commit)
+
+sys.stdout.write("\nConfiguration:\n")
+
+for var in config_vars:
+    print_build_config(var)
+
+sys.stdout.write("\nBuilding:\n")
 
 PROTO_SRCS = env.Protoc([], 'src/ripple_data/protocol/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
 env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
