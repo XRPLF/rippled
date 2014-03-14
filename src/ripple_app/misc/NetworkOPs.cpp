@@ -242,7 +242,7 @@ public:
     void mapComplete (uint256 const& hash, SHAMap::ref map);
     bool stillNeedTXSet (uint256 const& hash);
     void makeFetchPack (Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<protocol::TMGetObjectByHash> request,
-                        Ledger::pointer wantLedger, Ledger::pointer haveLedger, std::uint32_t uUptime);
+                        uint256 haveLedger, std::uint32_t uUptime);
     bool shouldFetchPack (std::uint32_t seq);
     void gotFetchPack (bool progress, std::uint32_t seq);
     void addFetchPack (uint256 const& hash, boost::shared_ptr< Blob >& data);
@@ -3188,8 +3188,7 @@ static void fpAppender (protocol::TMGetObjectByHash* reply, std::uint32_t ledger
 
 void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
                                 boost::shared_ptr<protocol::TMGetObjectByHash> request,
-                                Ledger::pointer wantLedger, Ledger::pointer haveLedger,
-                                std::uint32_t uUptime)
+                                uint256 haveLedgerHash, std::uint32_t uUptime)
 {
     if (UptimeTimer::getInstance ().getElapsedSeconds () > (uUptime + 1))
     {
@@ -3197,18 +3196,54 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
         return;
     }
 
-    if (getApp().getFeeTrack ().isLoadedLocal ())
+    if (getApp().getFeeTrack ().isLoadedLocal () ||
+        (m_ledgerMaster.getValidatedLedgerAge() > 40))
     {
         m_journal.info << "Too busy to make fetch pack";
         return;
     }
 
+    Peer::ptr peer = wPeer.lock ();
+
+    if (!peer)
+        return;
+
+    Ledger::pointer haveLedger = getLedgerByHash (haveLedgerHash);
+
+    if (!haveLedger)
+    {
+        m_journal.info << "Peer requests fetch pack for ledger we don't have: " << haveLedger;
+        peer->charge (Resource::feeRequestNoReply);
+        return;
+    }
+
+    if (!haveLedger->isClosed ())
+    {
+        m_journal.warning << "Peer requests fetch pack from open ledger: " << haveLedger;
+        peer->charge (Resource::feeInvalidRequest);
+        return;
+    }
+
+    if (haveLedger->getLedgerSeq() < m_ledgerMaster.getEarliestFetch())
+    {
+        m_journal.debug << "Peer requests fetch pack that is too early";
+        peer->charge (Resource::feeInvalidRequest);
+        return;
+    }
+
+    Ledger::pointer wantLedger = getLedgerByHash (haveLedger->getParentHash ());
+
+    if (!wantLedger)
+    {
+        m_journal.info
+            << "Peer requests fetch pack for ledger whose predecessor we don't have: "
+            << haveLedger;
+        peer->charge (Resource::feeRequestNoReply);
+        return;
+    }
+
     try
     {
-        Peer::ptr peer = wPeer.lock ();
-
-        if (!peer)
-            return;
 
         protocol::TMGetObjectByHash reply;
         reply.set_query (false);
@@ -3231,7 +3266,8 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
             newObj.set_data (s.getDataPtr (), s.getLength ());
             newObj.set_ledgerseq (lSeq);
 
-            wantLedger->peekAccountStateMap ()->getFetchPack (haveLedger->peekAccountStateMap ().get (), true, 1024,
+            wantLedger->peekAccountStateMap ()->getFetchPack
+                (haveLedger->peekAccountStateMap ().get (), true, 1024,
                     BIND_TYPE (fpAppender, &reply, lSeq, P_1, P_2));
 
             if (wantLedger->getTransHash ().isNonZero ())
@@ -3241,7 +3277,7 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
             if (reply.objects ().size () >= 256)
                 break;
 
-            // VFALCO NOTE Why use move?
+            // move may save a ref/unref
             haveLedger = std::move (wantLedger);
             wantLedger = getLedgerByHash (haveLedger->getParentHash ());
         }

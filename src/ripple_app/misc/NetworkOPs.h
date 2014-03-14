@@ -228,7 +228,7 @@ public:
     // Fetch packs
     virtual void makeFetchPack (Job&, boost::weak_ptr<Peer> peer,
         boost::shared_ptr<protocol::TMGetObjectByHash> request,
-        Ledger::pointer wantLedger, Ledger::pointer haveLedger, std::uint32_t uUptime) = 0;
+        uint256 wantLedger, std::uint32_t uUptime) = 0;
 
     virtual bool shouldFetchPack (std::uint32_t seq) = 0;
     virtual void gotFetchPack (bool progress, std::uint32_t seq) = 0;

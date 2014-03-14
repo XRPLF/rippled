@@ -2536,7 +2536,11 @@ private:
     void doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet)
     {
         // VFALCO TODO Invert this dependency using an observer and shared state object.
-        if (getApp().getFeeTrack ().isLoadedLocal ())
+        // Don't queue fetch pack jobs if we're under load or we already have
+        // some queued.
+        if (getApp().getFeeTrack ().isLoadedLocal () ||
+            (getApp().getLedgerMaster().getValidatedLedgerAge() > 40) ||
+            (getApp().getJobQueue().getJobCount(jtPACK) > 10))
         {
             m_journal.info << "Too busy to make fetch pack";
             return;
@@ -2552,41 +2556,10 @@ private:
         uint256 hash;
         memcpy (hash.begin (), packet->ledgerhash ().data (), 32);
 
-        Ledger::pointer haveLedger = getApp().getOPs ().getLedgerByHash (hash);
-
-        if (!haveLedger)
-        {
-            m_journal.info << "Peer requests fetch pack for ledger we don't have: " << hash;
-            charge (Resource::feeRequestNoReply);
-            return;
-        }
-
-        if (!haveLedger->isClosed ())
-        {
-            m_journal.warning << "Peer requests fetch pack from open ledger: " << hash;
-            charge (Resource::feeInvalidRequest);
-            return;
-        }
-
-        if (haveLedger->getLedgerSeq() < getApp().getLedgerMaster().getEarliestFetch())
-        {
-            m_journal.debug << "Peer requests fetch pack that is too early";
-            charge (Resource::feeInvalidRequest);
-            return;
-        }
-
-        Ledger::pointer wantLedger = getApp().getOPs ().getLedgerByHash (haveLedger->getParentHash ());
-
-        if (!wantLedger)
-        {
-            m_journal.info << "Peer requests fetch pack for ledger whose predecessor we don't have: " << hash;
-            charge (Resource::feeRequestNoReply);
-            return;
-        }
-
         getApp().getJobQueue ().addJob (jtPACK, "MakeFetchPack",
-                                       BIND_TYPE (&NetworkOPs::makeFetchPack, &getApp().getOPs (), P_1,
-                                               boost::weak_ptr<Peer> (shared_from_this ()), packet, wantLedger, haveLedger, UptimeTimer::getInstance ().getElapsedSeconds ()));
+            BIND_TYPE (&NetworkOPs::makeFetchPack, &getApp().getOPs (), P_1,
+                boost::weak_ptr<Peer> (shared_from_this ()), packet,
+                    hash, UptimeTimer::getInstance ().getElapsedSeconds ()));
     }
 
     void doProofOfWork (Job&, boost::weak_ptr <Peer> peer, ProofOfWork::pointer pow)
