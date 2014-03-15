@@ -1,7 +1,0 @@
-#!/bin/sh
-
-SITE=$1
-shift
-COMMAND=$@
-cd "/var/www/$SITE"
-newcoind $COMMAND 
