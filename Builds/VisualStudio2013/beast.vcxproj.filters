@@ -1207,6 +1207,9 @@
     <ClInclude Include="..\..\beast\utility\zero.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\utility\ci_char_traits.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\files\DirectoryIterator.cpp">

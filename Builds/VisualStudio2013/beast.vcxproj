@@ -241,6 +241,7 @@
     <ClInclude Include="..\..\beast\unit_test\suite.h" />
     <ClInclude Include="..\..\beast\unit_test\suite_info.h" />
     <ClInclude Include="..\..\beast\unit_test\suite_list.h" />
+    <ClInclude Include="..\..\beast\utility\ci_char_traits.h" />
     <ClInclude Include="..\..\beast\utility\Debug.h" />
     <ClInclude Include="..\..\beast\utility\empty_base_optimization.h" />
     <ClInclude Include="..\..\beast\utility\Error.h" />
