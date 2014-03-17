@@ -17,43 +17,80 @@
 */
 //==============================================================================
 
-#ifndef __OFFERCREATETRANSACTOR__
-#define __OFFERCREATETRANSACTOR__
+#ifndef RIPPLE_TX_OFFERCREATE_H_INCLUDED
+#define RIPPLE_TX_OFFERCREATE_H_INCLUDED
 
 namespace ripple {
 
-class OfferCreateTransactor : public Transactor
+class OfferCreateTransactorLog;
+
+template <>
+char const*
+LogPartition::getPartitionName <OfferCreateTransactorLog> ()
 {
+    return "Tx/OfferCreate";
+}
+
+class OfferCreateTransactor
+    : public Transactor
+{
+private:
+    template <class T>
+    static std::string
+    get_compare_sign (T const& lhs, T const& rhs)
+    {
+        if (lhs > rhs)
+            return ">";
+
+        if (rhs > lhs)
+            return "<";
+
+        // If neither is bigger than the other, they must be equal
+        return "=";
+    }
+
 public:
-    OfferCreateTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+    OfferCreateTransactor (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            LogPartition::getJournal <OfferCreateTransactorLog> ())
+    {
+
+    }
+
     TER doApply ();
 
 private:
-    bool bValidOffer (
+    bool isValidOffer (
         SLE::ref            sleOfferDir,
-        const uint160&      uOfferOwnerID,
-        const STAmount&     saOfferPays,
-        const STAmount&     saOfferGets,
-        const uint160&      uTakerAccountID,
+        uint160 const&      uOfferOwnerID,
+        STAmount const&     saOfferPays,
+        STAmount const&     saOfferGets,
+        uint160 const&      uTakerAccountID,
         boost::unordered_set<uint256>&  usOfferUnfundedFound,
         boost::unordered_set<uint256>&  usOfferUnfundedBecame,
         boost::unordered_set<uint160>&  usAccountTouched,
-        STAmount&           saOfferFunds);
+        STAmount&           saOfferFunds) const;
 
     TER takeOffers (
-        const bool          bOpenLedger,
-        const bool          bPassive,
-        const bool          bSell,
+        bool const bOpenLedger,
+        bool const bPassive,
+        bool const bSell,
         uint256 const&      uBookBase,
-        const uint160&      uTakerAccountID,
+        uint160 const&      uTakerAccountID,
         SLE::ref            sleTakerAccount,
-        const STAmount&     saTakerPays,
-        const STAmount&     saTakerGets,
+        STAmount const&     saTakerPays,
+        STAmount const&     saTakerGets,
         STAmount&           saTakerPaid,
         STAmount&           saTakerGot,
         bool&               bUnfunded);
 
-    boost::unordered_set<uint256>   usOfferUnfundedFound;   // Offers found unfunded.
+    boost::unordered_set<uint256> usOfferUnfundedFound; // Offers found unfunded.
 
     typedef std::pair <uint256, uint256> missingOffer_t;
     std::set<missingOffer_t> usMissingOffers;

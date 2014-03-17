@@ -295,7 +295,6 @@
     <ClInclude Include="..\..\modules\beast_core\containers\ScopedValueSetter.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FatalError.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\SemanticVersion.h" />
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\Throw.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\UnitTestUtilities.h" />
     <ClInclude Include="..\..\modules\beast_core\diagnostic\MeasureFunctionCallTime.h" />
     <ClInclude Include="..\..\modules\beast_core\files\DirectoryIterator.h" />

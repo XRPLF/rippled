@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-SETUP_LOG (ChangeTransactor)
-
 TER ChangeTransactor::doApply ()
 {
     if (mTxn.getTxnType () == ttFEATURE)
@@ -36,13 +34,13 @@ TER ChangeTransactor::checkSig ()
 {
     if (mTxn.getFieldAccount160 (sfAccount).isNonZero ())
     {
-        WriteLog (lsWARNING, ChangeTransactor) << "Change transaction had bad source account";
+        m_journal.warning << "Bad source account";
         return temBAD_SRC_ACCOUNT;
     }
 
     if (!mTxn.getSigningPubKey ().empty () || !mTxn.getSignature ().empty ())
     {
-        WriteLog (lsWARNING, ChangeTransactor) << "Change transaction had bad signature";
+        m_journal.warning << "Bad signature";
         return temBAD_SIGNATURE;
     }
 
@@ -53,7 +51,7 @@ TER ChangeTransactor::checkSeq ()
 {
     if ((mTxn.getSequence () != 0) || mTxn.isFieldPresent (sfPreviousTxnID))
     {
-        WriteLog (lsWARNING, ChangeTransactor) << "Change transaction had bad sequence";
+        m_journal.warning << "Bad sequence";
         return temBAD_SEQUENCE;
     }
 
@@ -64,7 +62,7 @@ TER ChangeTransactor::payFee ()
 {
     if (mTxn.getTransactionFee () != STAmount ())
     {
-        WriteLog (lsWARNING, ChangeTransactor) << "Change transaction with non-zero fee";
+        m_journal.warning << "Non-zero fee";
         return temBAD_FEE;
     }
 
@@ -77,14 +75,14 @@ TER ChangeTransactor::preCheck ()
 
     if (mTxnAccountID.isNonZero ())
     {
-        WriteLog (lsWARNING, ChangeTransactor) << "applyTransaction: bad source id";
+        m_journal.warning << "Bad source id";
 
         return temBAD_SRC_ACCOUNT;
     }
 
     if (isSetBit (mParams, tapOPEN_LEDGER))
     {
-        WriteLog (lsWARNING, ChangeTransactor) << "Change transaction against open ledger";
+        m_journal.warning << "Change transaction against open ledger";
         return temINVALID;
     }
 
@@ -93,14 +91,16 @@ TER ChangeTransactor::preCheck ()
 
 TER ChangeTransactor::applyFeature ()
 {
-    uint256 feature = mTxn.getFieldH256 (sfFeature);
+    uint256 feature (mTxn.getFieldH256 (sfFeature));
 
-    SLE::pointer featureObject = mEngine->entryCache (ltFEATURES, Ledger::getLedgerFeatureIndex ());
+    SLE::pointer featureObject (mEngine->entryCache (
+        ltFEATURES, Ledger::getLedgerFeatureIndex ()));
 
     if (!featureObject)
-        featureObject = mEngine->entryCreate (ltFEATURES, Ledger::getLedgerFeatureIndex ());
+        featureObject = mEngine->entryCreate (
+            ltFEATURES, Ledger::getLedgerFeatureIndex ());
 
-    STVector256 features = featureObject->getFieldV256 (sfFeatures);
+    STVector256 features (featureObject->getFieldV256 (sfFeatures));
 
     if (features.hasValue (feature))
         return tefALREADY;
@@ -120,22 +120,30 @@ TER ChangeTransactor::applyFeature ()
 TER ChangeTransactor::applyFee ()
 {
 
-    SLE::pointer feeObject = mEngine->entryCache (ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
+    SLE::pointer feeObject = mEngine->entryCache (
+        ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
 
     if (!feeObject)
-        feeObject = mEngine->entryCreate (ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
+        feeObject = mEngine->entryCreate (
+            ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
 
-    WriteLog (lsINFO, ChangeTransactor) << "Previous fee object: " << feeObject->getJson (0);
+    m_journal.info << 
+        "Previous fee object: " << feeObject->getJson (0);
 
-    feeObject->setFieldU64 (sfBaseFee, mTxn.getFieldU64 (sfBaseFee));
-    feeObject->setFieldU32 (sfReferenceFeeUnits, mTxn.getFieldU32 (sfReferenceFeeUnits));
-    feeObject->setFieldU32 (sfReserveBase, mTxn.getFieldU32 (sfReserveBase));
-    feeObject->setFieldU32 (sfReserveIncrement, mTxn.getFieldU32 (sfReserveIncrement));
+    feeObject->setFieldU64 (
+        sfBaseFee, mTxn.getFieldU64 (sfBaseFee));
+    feeObject->setFieldU32 (
+        sfReferenceFeeUnits, mTxn.getFieldU32 (sfReferenceFeeUnits));
+    feeObject->setFieldU32 (
+        sfReserveBase, mTxn.getFieldU32 (sfReserveBase));
+    feeObject->setFieldU32 (
+        sfReserveIncrement, mTxn.getFieldU32 (sfReserveIncrement));
 
     mEngine->entryModify (feeObject);
 
-    WriteLog (lsINFO, ChangeTransactor) << "New fee object: " << feeObject->getJson (0);
-    WriteLog (lsWARNING, ChangeTransactor) << "Fees have been changed";
+    m_journal.info << 
+        "New fee object: " << feeObject->getJson (0);
+    m_journal.warning << "Fees have been changed";
     return tesSUCCESS;
 }
 

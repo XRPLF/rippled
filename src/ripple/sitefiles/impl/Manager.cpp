@@ -129,8 +129,8 @@ public:
 //------------------------------------------------------------------------------
 
 Manager::Manager (Stoppable& parent)
-    : Stoppable ("PeerFinder", parent)
-    , beast::PropertyStream::Source ("peerfinder")
+    : Stoppable ("SiteFiles", parent)
+    , beast::PropertyStream::Source ("sitefiles")
 {
 }
 

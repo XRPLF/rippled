@@ -17,15 +17,35 @@
 */
 //==============================================================================
 
-#ifndef WALLETADDTRANSACTOR_H
-#define WALLETADDTRANSACTOR_H
+#ifndef RIPPLE_TX_WALLETADD_H_INCLUDED
+#define RIPPLE_TX_WALLETADD_H_INCLUDED
 
 namespace ripple {
 
-class WalletAddTransactor : public Transactor
+class WalletAddTransactorLog;
+
+template <>
+char const*
+LogPartition::getPartitionName <WalletAddTransactorLog> ()
+{
+    return "Tx/WalletAdd";
+}
+
+class WalletAddTransactor
+    : public Transactor
 {
 public:
-    WalletAddTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+    WalletAddTransactor (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine) 
+        : Transactor (
+            txn,
+            params,
+            engine,
+            LogPartition::getJournal <WalletAddTransactorLog> ())
+    {
+    }
 
     TER doApply ();
 };

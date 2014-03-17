@@ -19,115 +19,128 @@
 
 namespace ripple {
 
-SETUP_LOG (PaymentTransactor)
-
-#define RIPPLE_PATHS_MAX    6
-
 TER PaymentTransactor::doApply ()
 {
     // Ripple if source or destination is non-native or if there are paths.
-    const std::uint32_t uTxFlags        = mTxn.getFlags ();
-    const bool      bPartialPayment = isSetBit (uTxFlags, tfPartialPayment);
-    const bool      bLimitQuality   = isSetBit (uTxFlags, tfLimitQuality);
-    const bool      bNoRippleDirect = isSetBit (uTxFlags, tfNoRippleDirect);
-    const bool      bPaths          = mTxn.isFieldPresent (sfPaths);
-    const bool      bMax            = mTxn.isFieldPresent (sfSendMax);
-    const uint160   uDstAccountID   = mTxn.getFieldAccount160 (sfDestination);
-    const STAmount  saDstAmount     = mTxn.getFieldAmount (sfAmount);
-    const STAmount  saMaxAmount     = bMax
-                                      ? mTxn.getFieldAmount (sfSendMax)
-                                      : saDstAmount.isNative ()
-                                      ? saDstAmount
-                                      : STAmount (saDstAmount.getCurrency (), mTxnAccountID, saDstAmount.getMantissa (), saDstAmount.getExponent (), saDstAmount.isNegative ());
-    const uint160   uSrcCurrency    = saMaxAmount.getCurrency ();
-    const uint160   uDstCurrency    = saDstAmount.getCurrency ();
-    const bool      bXRPDirect      = uSrcCurrency.isZero () && uDstCurrency.isZero ();
+    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    bool const bPartialPayment = isSetBit (uTxFlags, tfPartialPayment);
+    bool const bLimitQuality = isSetBit (uTxFlags, tfLimitQuality);
+    bool const bNoRippleDirect = isSetBit (uTxFlags, tfNoRippleDirect);
+    bool const bPaths = mTxn.isFieldPresent (sfPaths);
+    bool const bMax = mTxn.isFieldPresent (sfSendMax);
+    uint160 const uDstAccountID = mTxn.getFieldAccount160 (sfDestination);
+    STAmount const saDstAmount = mTxn.getFieldAmount (sfAmount);
+    STAmount const saMaxAmount = bMax
+                                   ? mTxn.getFieldAmount (sfSendMax)
+                                   : saDstAmount.isNative ()
+                                   ? saDstAmount
+                                   : STAmount (saDstAmount.getCurrency (),
+                                        mTxnAccountID,
+                                        saDstAmount.getMantissa (),
+                                        saDstAmount.getExponent (),
+                                        saDstAmount.isNegative ());
+    uint160 const uSrcCurrency = saMaxAmount.getCurrency ();
+    uint160 const uDstCurrency = saDstAmount.getCurrency ();
+    bool const bXRPDirect = uSrcCurrency.isZero () && uDstCurrency.isZero ();
 
-    WriteLog (lsINFO, PaymentTransactor) << boost::str (boost::format ("Payment> saMaxAmount=%s saDstAmount=%s")
-                                         % saMaxAmount.getFullText ()
-                                         % saDstAmount.getFullText ());
+    m_journal.info << 
+        "saMaxAmount=" << saMaxAmount.getFullText () <<
+        " saDstAmount=" << saDstAmount.getFullText ();
 
     if (!saDstAmount.isLegalNet () || !saMaxAmount.isLegalNet ())
         return temBAD_AMOUNT;
 
     if (uTxFlags & tfPaymentMask)
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Invalid flags set.";
+        m_journal.info << 
+            "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
     }
     else if (!uDstAccountID)
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Payment destination account not specified.";
+        m_journal.info <<
+            "Malformed transaction: Payment destination account not specified.";
 
         return temDST_NEEDED;
     }
     else if (bMax && !saMaxAmount.isPositive ())
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: bad max amount: " << saMaxAmount.getFullText ();
+        m_journal.info <<
+            "Malformed transaction: bad max amount: " << saMaxAmount.getFullText ();
 
         return temBAD_AMOUNT;
     }
     else if (!saDstAmount.isPositive ())
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: bad dst amount: " << saDstAmount.getFullText ();
+        m_journal.info <<
+            "Malformed transaction: bad dst amount: " << saDstAmount.getFullText ();
 
         return temBAD_AMOUNT;
     }
     else if (CURRENCY_BAD == uSrcCurrency || CURRENCY_BAD == uDstCurrency)
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Bad currency.";
+        m_journal.info <<
+            "Malformed transaction: Bad currency.";
 
         return temBAD_CURRENCY;
     }
     else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
     {
-        WriteLog (lsINFO, PaymentTransactor) << boost::str (boost::format ("Payment: Malformed transaction: Redundant transaction: src=%s, dst=%s, src_cur=%s, dst_cur=%s")
-                                             % mTxnAccountID.ToString ()
-                                             % uDstAccountID.ToString ()
-                                             % uSrcCurrency.ToString ()
-                                             % uDstCurrency.ToString ());
+        m_journal.info << 
+            "Malformed transaction: Redundant transaction:" <<
+            " src=" << mTxnAccountID.ToString () <<
+            " dst=" << uDstAccountID.ToString () <<
+            " src_cur=" << uSrcCurrency.ToString () <<
+            " dst_cur=" << uDstCurrency.ToString ();
 
         return temREDUNDANT;
     }
     else if (bMax && saMaxAmount == saDstAmount && saMaxAmount.getCurrency () == saDstAmount.getCurrency ())
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Redundant SendMax.";
+        m_journal.info <<
+            "Malformed transaction: Redundant SendMax.";
 
         return temREDUNDANT_SEND_MAX;
     }
     else if (bXRPDirect && bMax)
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: SendMax specified for XRP to XRP.";
+        m_journal.info <<
+            "Malformed transaction: SendMax specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_MAX;
     }
     else if (bXRPDirect && bPaths)
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Paths specified for XRP to XRP.";
+        m_journal.info <<
+            "Malformed transaction: Paths specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_PATHS;
     }
     else if (bXRPDirect && bPartialPayment)
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Partial payment specified for XRP to XRP.";
+        m_journal.info <<
+            "Malformed transaction: Partial payment specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_PARTIAL;
     }
     else if (bXRPDirect && bLimitQuality)
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: Limit quality specified for XRP to XRP.";
+        m_journal.info <<
+            "Malformed transaction: Limit quality specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_LIMIT;
     }
     else if (bXRPDirect && bNoRippleDirect)
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: No ripple direct specified for XRP to XRP.";
+        m_journal.info <<
+            "Malformed transaction: No ripple direct specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_NO_DIRECT;
     }
 
-    SLE::pointer    sleDst  = mEngine->entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID));
+    SLE::pointer sleDst (mEngine->entryCache (
+        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID)));
 
     if (!sleDst)
     {
@@ -135,36 +148,46 @@ TER PaymentTransactor::doApply ()
 
         if (!saDstAmount.isNative ())
         {
-            WriteLog (lsINFO, PaymentTransactor) << "Payment: Delay transaction: Destination account does not exist.";
+            m_journal.info <<
+                "Delay transaction: Destination account does not exist.";
 
             // Another transaction could create the account and then this transaction would succeed.
             return tecNO_DST;
         }
         else if (isSetBit (mParams, tapOPEN_LEDGER) && bPartialPayment)
         {
-            WriteLog (lsINFO, PaymentTransactor) << "Payment: Delay transaction: Partial payment not allowed to create account.";
             // Make retry work smaller, by rejecting this.
+            m_journal.info <<
+                "Delay transaction: Partial payment not allowed to create account.";
+            
 
-            // Another transaction could create the account and then this transaction would succeed.
+            // Another transaction could create the account and then this
+            // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        else if (saDstAmount.getNValue () < mEngine->getLedger ()->getReserve (0)) // Reserve is not scaled by load.
+        // Note: Reserve is not scaled by load.
+        else if (saDstAmount.getNValue () < mEngine->getLedger ()->getReserve (0))
         {
-            WriteLog (lsINFO, PaymentTransactor) << "Payment: Delay transaction: Destination account does not exist. Insufficent payment to create account.";
+            m_journal.info <<
+                "Delay transaction: Destination account does not exist. " <<
+                "Insufficent payment to create account.";
 
-            // Another transaction could create the account and then this transaction would succeed.
+            // Another transaction could create the account and then this
+            // transaction would succeed.
             return tecNO_DST_INSUF_XRP;
         }
 
         // Create the account.
-        sleDst  = mEngine->entryCreate (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID));
+        sleDst = mEngine->entryCreate (
+            ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID));
 
         sleDst->setFieldAccount (sfAccount, uDstAccountID);
         sleDst->setFieldU32 (sfSequence, 1);
     }
     else if ((sleDst->getFlags () & lsfRequireDestTag) && !mTxn.isFieldPresent (sfDestinationTag))
     {
-        WriteLog (lsINFO, PaymentTransactor) << "Payment: Malformed transaction: DestinationTag required.";
+        m_journal.info <<
+            "Malformed transaction: DestinationTag required.";
 
         return tefDST_TAG_NEEDED;
     }
@@ -173,24 +196,27 @@ TER PaymentTransactor::doApply ()
         mEngine->entryModify (sleDst);
     }
 
-    TER         terResult;
+    TER terResult;
     // XXX Should bMax be sufficient to imply ripple?
-    const bool  bRipple = bPaths || bMax || !saDstAmount.isNative ();
+    bool const bRipple = bPaths || bMax || !saDstAmount.isNative ();
 
     if (bRipple)
     {
         // Ripple payment
 
-        STPathSet   spsPaths = mTxn.getFieldPathSet (sfPaths);
+        STPathSet spsPaths = mTxn.getFieldPathSet (sfPaths);
         std::vector<PathState::pointer> vpsExpanded;
-        STAmount    saMaxAmountAct;
-        STAmount    saDstAmountAct;
+        STAmount saMaxAmountAct;
+        STAmount saDstAmountAct;
 
         try
         {
-            terResult   = isSetBit (mParams, tapOPEN_LEDGER) && spsPaths.size () > RIPPLE_PATHS_MAX
-                          ? telBAD_PATH_COUNT         // Too many paths for proposed ledger.
-                          : RippleCalc::rippleCalc (
+            bool const openLedger = isSetBit (mParams, tapOPEN_LEDGER);
+            bool const tooManyPaths = spsPaths.size () > MaxPathSize;
+
+            terResult = openLedger && tooManyPaths
+                        ? telBAD_PATH_COUNT // Too many paths for proposed ledger.
+                        : RippleCalc::rippleCalc (
                               mEngine->getNodes (),
                               saMaxAmountAct,
                               saDstAmountAct,
@@ -202,8 +228,8 @@ TER PaymentTransactor::doApply ()
                               spsPaths,
                               bPartialPayment,
                               bLimitQuality,
-                              bNoRippleDirect,        // Always compute for finalizing ledger.
-                              false,                  // Not standalone, delete unfundeds.
+                              bNoRippleDirect, // Always compute for finalizing ledger.
+                              false, // Not standalone, delete unfundeds.
                               isSetBit (mParams, tapOPEN_LEDGER));
 
             if (isTerRetry(terResult))
@@ -212,9 +238,10 @@ TER PaymentTransactor::doApply ()
             if ((tesSUCCESS == terResult) && (saDstAmountAct != saDstAmount))
                 mEngine->getNodes().setDeliveredAmount (saDstAmountAct);
         }
-        catch (const std::exception& e)
+        catch (std::exception const& e)
         {
-            WriteLog (lsINFO, PaymentTransactor) << "Payment: Caught throw: " << e.what ();
+            m_journal.info <<
+                "Caught throw: " << e.what ();
 
             terResult   = tefEXCEPTION;
         }
@@ -223,16 +250,17 @@ TER PaymentTransactor::doApply ()
     {
         // Direct XRP payment.
 
-        const std::uint32_t uOwnerCount     = mTxnAccount->getFieldU32 (sfOwnerCount);
-        const std::uint64_t uReserve        = mEngine->getLedger ()->getReserve (uOwnerCount);
+        std::uint32_t const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
+        std::uint64_t const uReserve (mEngine->getLedger ()->getReserve (uOwnerCount));
 
         // Make sure have enough reserve to send. Allow final spend to use reserve for fee.
         if (mPriorBalance < saDstAmount + std::max(uReserve, mTxn.getTransactionFee ().getNValue ()))
         {
             // Vote no. However, transaction might succeed, if applied in a different order.
-            WriteLog (lsINFO, PaymentTransactor) << "";
-            WriteLog (lsINFO, PaymentTransactor) << boost::str (boost::format ("Payment: Delay transaction: Insufficient funds: %s / %s (%d)")
-                                                 % mPriorBalance.getText () % (saDstAmount + uReserve).getText () % uReserve);
+            m_journal.info << "Delay transaction: Insufficient funds: " <<
+                " " << mPriorBalance.getText () <<
+                " / " << (saDstAmount + uReserve).getText () <<
+                " (" << uReserve << ")";
 
             terResult   = tecUNFUNDED_PAYMENT;
         }
@@ -245,7 +273,7 @@ TER PaymentTransactor::doApply ()
             if ((sleDst->getFlags () & lsfPasswordSpent))
                 sleDst->clearFlag (lsfPasswordSpent);
 
-            terResult   = tesSUCCESS;
+            terResult = tesSUCCESS;
         }
     }
 
@@ -254,7 +282,8 @@ TER PaymentTransactor::doApply ()
 
     if (transResultInfo (terResult, strToken, strHuman))
     {
-        WriteLog (lsINFO, PaymentTransactor) << boost::str (boost::format ("Payment: %s: %s") % strToken % strHuman);
+        m_journal.info << 
+            strToken << ": " << strHuman;
     }
     else
     {

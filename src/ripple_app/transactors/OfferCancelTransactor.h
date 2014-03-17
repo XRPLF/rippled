@@ -17,17 +17,38 @@
 */
 //==============================================================================
 
-#ifndef OFFERCANCELTRANSACTOR_H
-#define OFFERCANCELTRANSACTOR_H
+#ifndef RIPPLE_TX_OFFERCANCEL_H_INCLUDED
+#define RIPPLE_TX_OFFERCANCEL_H_INCLUDED
 
 namespace ripple {
 
-class OfferCancelTransactor : public Transactor
+class OfferCancelTransactorLog;
+
+template <>
+char const*
+LogPartition::getPartitionName <OfferCancelTransactorLog> ()
+{
+    return "Tx/OfferCancel";
+}
+
+class OfferCancelTransactor
+    : public Transactor
 {
 public:
-    OfferCancelTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+    OfferCancelTransactor (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            LogPartition::getJournal <OfferCancelTransactorLog> ())
+    {
 
-    TER doApply ();
+    }
+
+    TER doApply () override;
 };
 
 }

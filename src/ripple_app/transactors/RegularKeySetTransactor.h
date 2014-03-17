@@ -17,19 +17,39 @@
 */
 //==============================================================================
 
-#ifndef REGULARKEYSETTRANSACTOR_H
-#define REGULARKEYSETTRANSACTOR_H
+#ifndef RIPPLE_TX_REGULARSETKEY_H_INCLUDED
+#define RIPPLE_TX_REGULARSETKEY_H_INCLUDED
 
 namespace ripple {
 
-class RegularKeySetTransactor : public Transactor
+class RegularKeySetTransactorLog;
+
+template <>
+char const*
+LogPartition::getPartitionName <RegularKeySetTransactorLog> ()
+{
+    return "Tx/RegularKeySet";
+}
+
+class RegularKeySetTransactor
+    : public Transactor
 {
     std::uint64_t calculateBaseFee ();
+
 public:
-    RegularKeySetTransactor (const SerializedTransaction& txn,
-                             TransactionEngineParams params,
-                             TransactionEngine* engine)
-        : Transactor (txn, params, engine) {}
+    RegularKeySetTransactor (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            LogPartition::getJournal <RegularKeySetTransactorLog> ())
+    {
+
+    }
+
     TER checkFee ();
     TER doApply ();
 };

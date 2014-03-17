@@ -19,60 +19,67 @@
 
 namespace ripple {
 
-SETUP_LOG (WalletAddTransactor)
-
 TER WalletAddTransactor::doApply ()
 {
-    Log::out() << "WalletAdd>";
-
-    Blob const vucPubKey    = mTxn.getFieldVL (sfPublicKey);
-    Blob const vucSignature = mTxn.getFieldVL (sfSignature);
-    const uint160                       uAuthKeyID      = mTxn.getFieldAccount160 (sfRegularKey);
-    const RippleAddress                 naMasterPubKey  = RippleAddress::createAccountPublic (vucPubKey);
-    const uint160                       uDstAccountID   = naMasterPubKey.getAccountID ();
-
-    const std::uint32_t                 uTxFlags        = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn.getFlags ();
 
     if (uTxFlags & tfUniversalMask)
     {
-        WriteLog (lsINFO, WalletAddTransactor) << "WalletAdd: Malformed transaction: Invalid flags set.";
+        m_journal.info <<
+            "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
     }
 
+    Blob const vucPubKey    = mTxn.getFieldVL (sfPublicKey);
+    Blob const vucSignature = mTxn.getFieldVL (sfSignature);
+
+    uint160 const uAuthKeyID (mTxn.getFieldAccount160 (sfRegularKey));
+    RippleAddress const naMasterPubKey (
+        RippleAddress::createAccountPublic (vucPubKey));
+    uint160 const uDstAccountID (naMasterPubKey.getAccountID ());
+
     // FIXME: This should be moved to the transaction's signature check logic and cached
     if (!naMasterPubKey.accountPublicVerify (
-        Serializer::getSHA512Half (uAuthKeyID.begin (), uAuthKeyID.size ()), vucSignature, ECDSA::not_strict))
+        Serializer::getSHA512Half (uAuthKeyID.begin (), uAuthKeyID.size ()), 
+        vucSignature, ECDSA::not_strict))
     {
-        Log::out() << "WalletAdd: unauthorized: bad signature ";
-
+        m_journal.info <<
+            "Unauthorized: bad signature ";
         return tefBAD_ADD_AUTH;
     }
 
-    SLE::pointer        sleDst  = mEngine->entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID));
+    SLE::pointer sleDst (mEngine->entryCache (
+        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID)));
 
     if (sleDst)
     {
-        Log::out() << "WalletAdd: account already created";
-
+        m_journal.info <<
+            "account already created";
         return tefCREATED;
     }
 
     // Direct XRP payment.
 
-    STAmount        saDstAmount     = mTxn.getFieldAmount (sfAmount);
-    const STAmount  saSrcBalance    = mTxnAccount->getFieldAmount (sfBalance);
-    const std::uint32_t uOwnerCount     = mTxnAccount->getFieldU32 (sfOwnerCount);
-    const std::uint64_t uReserve        = mEngine->getLedger ()->getReserve (uOwnerCount);
-    STAmount        saPaid          = mTxn.getTransactionFee ();
+    STAmount saDstAmount = mTxn.getFieldAmount (sfAmount);
+    STAmount saPaid = mTxn.getTransactionFee ();
+    STAmount const saSrcBalance = mTxnAccount->getFieldAmount (sfBalance);
+    std::uint32_t const uOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
+    std::uint64_t const uReserve = mEngine->getLedger ()->getReserve (uOwnerCount);
+    
 
-    // Make sure have enough reserve to send. Allow final spend to use reserve for fee.
-    if (saSrcBalance + saPaid < saDstAmount + uReserve)     // Reserve is not scaled by fee.
+    // Make sure have enough reserve to send. Allow final spend to use reserve
+    // for fee.
+    // Note: Reserve is not scaled by fee.
+    if (saSrcBalance + saPaid < saDstAmount + uReserve)
     {
-        // Vote no. However, transaction might succeed, if applied in a different order.
-        WriteLog (lsINFO, WalletAddTransactor) << boost::str (boost::format ("WalletAdd: Delay transaction: Insufficient funds: %s / %s (%d)")
-                                               % saSrcBalance.getText () % (saDstAmount + uReserve).getText () % uReserve);
-
+        // Vote no. However, transaction might succeed, if applied in a
+        // different order.
+        m_journal.info <<
+            "Delay transaction: Insufficient funds: %s / %s (%d)" <<
+            saSrcBalance.getText () << " / " <<
+            (saDstAmount + uReserve).getText () << " with reserve = " <<
+            uReserve;
         return tecUNFUNDED_ADD;
     }
 
@@ -80,14 +87,13 @@ TER WalletAddTransactor::doApply ()
     mTxnAccount->setFieldAmount (sfBalance, saSrcBalance - saDstAmount);
 
     // Create the account.
-    sleDst  = mEngine->entryCreate (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID));
+    sleDst  = mEngine->entryCreate (ltACCOUNT_ROOT,
+        Ledger::getAccountRootIndex (uDstAccountID));
 
     sleDst->setFieldAccount (sfAccount, uDstAccountID);
     sleDst->setFieldU32 (sfSequence, 1);
     sleDst->setFieldAmount (sfBalance, saDstAmount);
     sleDst->setFieldAccount (sfRegularKey, uAuthKeyID);
-
-    Log::out() << "WalletAdd<";
 
     return tesSUCCESS;
 }

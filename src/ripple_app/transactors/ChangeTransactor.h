@@ -17,32 +17,53 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_TX_CHANGE_H_INCLUDED
+#define RIPPLE_TX_CHANGE_H_INCLUDED
+
 namespace ripple {
 
-class ChangeTransactor : public Transactor
+class ChangeTransactorLog;
+
+template <>
+char const*
+LogPartition::getPartitionName <ChangeTransactorLog> ()
+{
+    return "Tx/Change";
+}
+
+class ChangeTransactor
+    : public Transactor
 {
 public:
-    ChangeTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine)
-        : Transactor (txn, params, engine)
+    ChangeTransactor (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            LogPartition::getJournal <ChangeTransactorLog> ())
     {
-        ;
     }
 
-    TER doApply ();
-    TER checkSig ();
-    TER checkSeq ();
-    TER payFee ();
-    TER preCheck ();
+    TER doApply () override;
+    TER checkSig () override;
+    TER checkSeq () override;
+    TER payFee () override;
+    TER preCheck () override;
 
 private:
     TER applyFeature ();
     TER applyFee ();
 
     // VFALCO TODO Can this be removed?
-    bool mustHaveValidAccount ()
+    bool mustHaveValidAccount () override
     {
         return false;
     }
 };
 
 }
+
+#endif

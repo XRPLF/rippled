@@ -17,17 +17,38 @@
 */
 //==============================================================================
 
-#ifndef ACCOUNTSETTRANSACTOR_H
-#define ACCOUNTSETTRANSACTOR_H
+#ifndef RIPPLE_TX_ACCOUNTSET_H_INCLUDED
+#define RIPPLE_TX_ACCOUNTSET_H_INCLUDED
 
 namespace ripple {
 
-class AccountSetTransactor : public Transactor
+class AccountSetTransactorLog;
+
+template <>
+char const*
+LogPartition::getPartitionName <AccountSetTransactorLog> ()
+{
+    return "Tx/AccountSet";
+}
+
+class AccountSetTransactor
+    : public Transactor
 {
 public:
-    AccountSetTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+    AccountSetTransactor (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            LogPartition::getJournal <AccountSetTransactorLog> ())
+    {
 
-    TER doApply ();
+    }
+
+    TER doApply () override;
 };
 
 }

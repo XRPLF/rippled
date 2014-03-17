@@ -17,16 +17,10 @@
 */
 //==============================================================================
 
-#include "../../ripple_basics/log/LogPartition.h"
-#include "../../ripple_basics/utility/PlatformMacros.h"
-#include "OfferCreateTransactor.h"
-
 namespace ripple {
 
-SETUP_LOG (OfferCreateTransactor)
-
 // Make sure an offer is still valid. If not, mark it unfunded.
-bool OfferCreateTransactor::bValidOffer (
+bool OfferCreateTransactor::isValidOffer (
     SLE::ref            sleOffer,
     const uint160&      uOfferOwnerID,
     const STAmount&     saOfferPays,
@@ -35,14 +29,14 @@ bool OfferCreateTransactor::bValidOffer (
     boost::unordered_set<uint256>&  usOfferUnfundedFound,
     boost::unordered_set<uint256>&  usOfferUnfundedBecame,
     boost::unordered_set<uint160>&  usAccountTouched,
-    STAmount&           saOfferFunds)                       // <--
+    STAmount&           saOfferFunds) const // <--
 {
     bool bValid = false;
 
     if (sleOffer->isFieldPresent (sfExpiration) && sleOffer->getFieldU32 (sfExpiration) <= mEngine->getLedger ()->getParentCloseTimeNC ())
     {
         // Offer is expired. Expired offers are considered unfunded. Delete it.
-        WriteLog (lsINFO, OfferCreateTransactor) << "bValidOffer: encountered expired offer";
+        m_journal.info << "isValidOffer: encountered expired offer";
 
         usOfferUnfundedFound.insert (sleOffer->getIndex());
 
@@ -51,7 +45,7 @@ bool OfferCreateTransactor::bValidOffer (
     else if (uOfferOwnerID == uTakerAccountID)
     {
         // Would take own offer. Consider old offer expired. Delete it.
-        WriteLog (lsINFO, OfferCreateTransactor) << "bValidOffer: encountered taker's own old offer";
+        m_journal.info << "isValidOffer: encountered taker's own old offer";
 
         usOfferUnfundedFound.insert (sleOffer->getIndex());
 
@@ -60,8 +54,9 @@ bool OfferCreateTransactor::bValidOffer (
     else if (!saOfferGets.isPositive () || !saOfferPays.isPositive ())
     {
         // Offer has bad amounts. Consider offer expired. Delete it.
-        WriteLog (lsWARNING, OfferCreateTransactor) << boost::str (boost::format ("bValidOffer: BAD OFFER: saOfferPays=%s saOfferGets=%s")
-                % saOfferPays % saOfferGets);
+        m_journal.warning << "isValidOffer: BAD OFFER:" <<
+            " saOfferPays=" << saOfferPays <<
+            " saOfferGets=" << saOfferGets;
 
         usOfferUnfundedFound.insert (sleOffer->getIndex());
 
@@ -69,14 +64,14 @@ bool OfferCreateTransactor::bValidOffer (
     }
     else
     {
-        WriteLog (lsTRACE, OfferCreateTransactor) << "bValidOffer: saOfferPays=" << saOfferPays.getFullText ();
+        m_journal.trace << "isValidOffer: saOfferPays=" << saOfferPays.getFullText ();
 
         saOfferFunds    = mEngine->getNodes ().accountFunds (uOfferOwnerID, saOfferPays);
 
         if (!saOfferFunds.isPositive ())
         {
             // Offer is unfunded, possibly due to previous balance action.
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "bValidOffer: offer unfunded: delete";
+            m_journal.debug << "isValidOffer: offer unfunded: delete";
 
             boost::unordered_set<uint160>::iterator account = usAccountTouched.find (uOfferOwnerID);
 
@@ -132,7 +127,7 @@ TER OfferCreateTransactor::takeOffers (
 
     assert (saTakerPays && saTakerGets);
 
-    WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: bSell: " << bSell << ": against book: " << uBookBase.ToString ();
+    m_journal.debug << "takeOffers: bSell: " << bSell << ": against book: " << uBookBase.ToString ();
 
     LedgerEntrySet&         lesActive           = mEngine->getNodes ();
     const std::uint64_t     uTakeQuality        = STAmount::getRate (saTakerGets, saTakerPays);
@@ -157,7 +152,7 @@ TER OfferCreateTransactor::takeOffers (
         STAmount        saTakerFunds    = lesActive.accountFunds (uTakerAccountID, saTakerPays);
         STAmount        saSubTakerPays  = saTakerPays - saTakerPaid; // How much more to spend.
         STAmount        saSubTakerGets  = saTakerGets - saTakerGot; // How much more is wanted.
-        std::uint64_t   uTipQuality     = bookIterator.getCurrentQuality();
+        std::uint64_t          uTipQuality     = bookIterator.getCurrentQuality();
 
         if (!saTakerFunds.isPositive ())
         {
@@ -176,22 +171,14 @@ TER OfferCreateTransactor::takeOffers (
             // Offer does not cross this offer
             STAmount    saTipRate           = STAmount::setRate (uTipQuality);
 
-            WriteLog (lsDEBUG, OfferCreateTransactor) << boost::str (boost::format ("takeOffers: done: uTakeQuality=%d %c uTipQuality=%d saTakerRate=%s %c saTipRate=%s bPassive=%d")
-                    % uTakeQuality
-                    % (uTakeQuality == uTipQuality
-                       ? '='
-                       : uTakeQuality < uTipQuality
-                       ? '<'
-                       : '>')
-                    % uTipQuality
-                    % saTakerRate
-                    % (saTakerRate == saTipRate
-                       ? '='
-                       : saTakerRate < saTipRate
-                       ? '<'
-                       : '>')
-                    % saTipRate
-                    % bPassive);
+            m_journal.debug << "takeOffers: done:" <<
+                " uTakeQuality=" << uTakeQuality <<
+                " " << get_compare_sign (uTakeQuality, uTipQuality) <<
+                " uTipQuality=" << uTipQuality <<
+                " saTakerRate=" << saTakerRate <<
+                " " << get_compare_sign (saTakerRate, saTipRate) <<
+                " saTipRate=" << saTakerRate <<
+                " bPassive=" << bPassive;
 
             terResult   = tesSUCCESS;
         }
@@ -204,13 +191,13 @@ TER OfferCreateTransactor::takeOffers (
             if (!sleOffer)
             { // offer is in directory but not in ledger
                 uint256 offerIndex = bookIterator.getCurrentIndex ();
-                WriteLog (lsWARNING, OfferCreateTransactor) << "takeOffers: offer not found : " << offerIndex;
+                m_journal.warning << "takeOffers: offer not found : " << offerIndex;
                 usMissingOffers.insert (missingOffer_t (
                     bookIterator.getCurrentIndex (), bookIterator.getCurrentDirectory ()));
             }
             else
             {
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: considering offer : " << sleOffer->getJson (0);
+                m_journal.debug << "takeOffers: considering offer : " << sleOffer->getJson (0);
 
                 const uint160&  uOfferOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
                 STAmount        saOfferPays     = sleOffer->getFieldAmount (sfTakerGets);
@@ -219,7 +206,7 @@ TER OfferCreateTransactor::takeOffers (
                 STAmount        saOfferFunds;   // Funds of offer owner to payout.
                 bool            bValid;
 
-                bValid  =  bValidOffer (
+                bValid  =  isValidOffer (
                                sleOffer, uOfferOwnerID, saOfferPays, saOfferGets,
                                uTakerAccountID,
                                usOfferUnfundedFound, usOfferUnfundedBecame, usAccountTouched,
@@ -233,17 +220,17 @@ TER OfferCreateTransactor::takeOffers (
                     STAmount    saOfferIssuerFee;
                     STAmount    saOfferRate = STAmount::setRate (uTipQuality);
 
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText ();
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText ();
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText ();
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText ();
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText ();
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText ();
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText ();
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText ();
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
-                    WriteLog (lsTRACE, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer:    saTakerPaid: " << saTakerPaid.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer:   saTakerFunds: " << saTakerFunds.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer:   saOfferFunds: " << saOfferFunds.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer:    saOfferPays: " << saOfferPays.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer:    saOfferGets: " << saOfferGets.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer:    saOfferRate: " << saOfferRate.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer: saSubTakerPays: " << saSubTakerPays.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer: saSubTakerGets: " << saSubTakerGets.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer:    saTakerPays: " << saTakerPays.getFullText ();
+                    m_journal.trace << "takeOffers: applyOffer:    saTakerGets: " << saTakerGets.getFullText ();
 
                     bool    bOfferDelete    = STAmount::applyOffer (
                                                   bSell,
@@ -261,8 +248,8 @@ TER OfferCreateTransactor::takeOffers (
                                                   saTakerIssuerFee,
                                                   saOfferIssuerFee);
 
-                    WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText ();
-                    WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText ();
+                    m_journal.debug << "takeOffers: applyOffer: saSubTakerPaid: " << saSubTakerPaid.getFullText ();
+                    m_journal.debug << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText ();
 
                     // Adjust offer
 
@@ -277,7 +264,7 @@ TER OfferCreateTransactor::takeOffers (
                     if (bOfferDelete)
                     {
                         // Offer now fully claimed or now unfunded.
-                        WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: Offer claimed: Delete.";
+                        m_journal.debug << "takeOffers: Offer claimed: Delete.";
 
                         usOfferUnfundedBecame.insert (sleOffer->getIndex()); // Delete unfunded offer on success.
 
@@ -286,11 +273,11 @@ TER OfferCreateTransactor::takeOffers (
                     }
                     else if (saSubTakerGot)
                     {
-                        WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: Offer partial claim.";
+                        m_journal.debug << "takeOffers: Offer partial claim.";
 
                         if (!saOfferPays.isPositive () || !saOfferGets.isPositive ())
                         {
-                            WriteLog (lsWARNING, OfferCreateTransactor) << "takeOffers: ILLEGAL OFFER RESULT.";
+                            m_journal.warning << "takeOffers: ILLEGAL OFFER RESULT.";
                             bUnfunded   = true;
                             terResult   = bOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
                         }
@@ -298,7 +285,7 @@ TER OfferCreateTransactor::takeOffers (
                     else
                     {
                         // Taker got nothing, probably due to rounding. Consider taker unfunded.
-                        WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: No claim.";
+                        m_journal.debug << "takeOffers: No claim.";
 
                         bUnfunded   = true;
                         terResult   = tesSUCCESS;                   // Done.
@@ -335,10 +322,10 @@ TER OfferCreateTransactor::takeOffers (
 
                             STAmount    saTakerUsed = STAmount::multiply (saSubTakerGot, saTakerRate, saTakerPays);
 
-                            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText ();
-                            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText ();
-                            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText ();
-                            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText ();
+                            m_journal.debug << "takeOffers: applyOffer:   saTakerCould: " << saTakerCould.getFullText ();
+                            m_journal.debug << "takeOffers: applyOffer:  saSubTakerGot: " << saSubTakerGot.getFullText ();
+                            m_journal.debug << "takeOffers: applyOffer:    saTakerRate: " << saTakerRate.getFullText ();
+                            m_journal.debug << "takeOffers: applyOffer:    saTakerUsed: " << saTakerUsed.getFullText ();
 
                             saSubTakerPaid  = std::min (saTakerCould, saTakerUsed);
                         }
@@ -357,28 +344,28 @@ TER OfferCreateTransactor::takeOffers (
     if (temUNCERTAIN == terResult)
         terResult = tesSUCCESS;
 
-    WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: " << transToken (terResult);
+    m_journal.debug << "takeOffers: " << transToken (terResult);
 
     if (tesSUCCESS == terResult)
     {
         // On success, delete offers that became unfunded.
         BOOST_FOREACH (uint256 const & uOfferIndex, usOfferUnfundedBecame)
         {
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: became unfunded: " << uOfferIndex.ToString ();
+            m_journal.debug << "takeOffers: became unfunded: " << uOfferIndex.ToString ();
 
             lesActive.offerDelete (uOfferIndex);
         }
     }
 
-    WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers< " << transToken (terResult);
+    m_journal.debug << "takeOffers< " << transToken (terResult);
 
     return terResult;
 }
 
 TER OfferCreateTransactor::doApply ()
 {
-    WriteLog (lsTRACE, OfferCreateTransactor) << "OfferCreate> " << mTxn.getJson (0);
-    const std::uint32_t       uTxFlags                = mTxn.getFlags ();
+    m_journal.trace << "OfferCreate> " << mTxn.getJson (0);
+    const std::uint32_t            uTxFlags                = mTxn.getFlags ();
     const bool                bPassive                = isSetBit (uTxFlags, tfPassive);
     const bool                bImmediateOrCancel        = isSetBit (uTxFlags, tfImmediateOrCancel);
     const bool                bFillOrKill                = isSetBit (uTxFlags, tfFillOrKill);
@@ -389,31 +376,31 @@ TER OfferCreateTransactor::doApply ()
     if (!saTakerPays.isLegalNet () || !saTakerGets.isLegalNet ())
         return temBAD_AMOUNT;
 
-    WriteLog (lsTRACE, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: saTakerPays=%s saTakerGets=%s")
-            % saTakerPays.getFullText ()
-            % saTakerGets.getFullText ());
+    m_journal.trace << 
+        "saTakerPays=" << saTakerPays.getFullText () <<
+        " saTakerGets=" << saTakerGets.getFullText ();
 
     const uint160            uPaysIssuerID            = saTakerPays.getIssuer ();
     const uint160            uGetsIssuerID            = saTakerGets.getIssuer ();
-    const std::uint32_t       uExpiration                = mTxn.getFieldU32 (sfExpiration);
+    const std::uint32_t            uExpiration                = mTxn.getFieldU32 (sfExpiration);
     const bool                bHaveExpiration            = mTxn.isFieldPresent (sfExpiration);
     const bool                bHaveCancel                = mTxn.isFieldPresent (sfOfferSequence);
-    const std::uint32_t     uCancelSequence            = mTxn.getFieldU32 (sfOfferSequence);
-    const std::uint32_t     uAccountSequenceNext    = mTxnAccount->getFieldU32 (sfSequence);
-    const std::uint32_t     uSequence                = mTxn.getSequence ();
+    const std::uint32_t            uCancelSequence            = mTxn.getFieldU32 (sfOfferSequence);
+    const std::uint32_t            uAccountSequenceNext    = mTxnAccount->getFieldU32 (sfSequence);
+    const std::uint32_t            uSequence                = mTxn.getSequence ();
 
     const uint256            uLedgerIndex            = Ledger::getOfferIndex (mTxnAccountID, uSequence);
 
-    WriteLog (lsTRACE, OfferCreateTransactor) << "OfferCreate: Creating offer node: " << uLedgerIndex.ToString () << " uSequence=" << uSequence;
+    m_journal.trace << "Creating offer node: " << uLedgerIndex.ToString () << " uSequence=" << uSequence;
 
     const uint160            uPaysCurrency            = saTakerPays.getCurrency ();
     const uint160            uGetsCurrency            = saTakerGets.getCurrency ();
-    const std::uint64_t      uRate                    = STAmount::getRate (saTakerGets, saTakerPays);
+    const std::uint64_t            uRate                    = STAmount::getRate (saTakerGets, saTakerPays);
 
     TER                        terResult                = tesSUCCESS;
     uint256                    uDirectory;        // Delete hints.
-    std::uint64_t              uOwnerNode;
-    std::uint64_t              uBookNode;
+    std::uint64_t                    uOwnerNode;
+    std::uint64_t                    uBookNode;
 
     LedgerEntrySet&            lesActive                = mEngine->getNodes ();
     LedgerEntrySet            lesCheckpoint            = lesActive;                            // Checkpoint with just fees paid.
@@ -423,61 +410,61 @@ TER OfferCreateTransactor::doApply ()
 
     if (uTxFlags & tfOfferCreateMask)
     {
-        WriteLog (lsINFO, OfferCreateTransactor) << "OfferCreate: Malformed transaction: Invalid flags set.";
+        m_journal.info << "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
     }
     else if (bImmediateOrCancel && bFillOrKill)
     {
-        WriteLog (lsINFO, OfferCreateTransactor) << "OfferCreate: Malformed transaction: both IoC and FoK set.";
+        m_journal.info << "Malformed transaction: both IoC and FoK set.";
 
         return temINVALID_FLAG;
     }
     else if (bHaveExpiration && !uExpiration)
     {
-        WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: Malformed offer: bad expiration";
+        m_journal.warning << "Malformed offer: bad expiration";
 
         terResult   = temBAD_EXPIRATION;
     }
     else if (saTakerPays.isNative () && saTakerGets.isNative ())
     {
-        WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: Malformed offer: XRP for XRP";
+        m_journal.warning << "Malformed offer: XRP for XRP";
 
         terResult   = temBAD_OFFER;
     }
     else if (!saTakerPays.isPositive () || !saTakerGets.isPositive ())
     {
-        WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: Malformed offer: bad amount";
+        m_journal.warning << "Malformed offer: bad amount";
 
         terResult   = temBAD_OFFER;
     }
     else if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
     {
-        WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: Malformed offer: redundant offer";
+        m_journal.warning << "Malformed offer: redundant offer";
 
         terResult   = temREDUNDANT;
     }
     else if (CURRENCY_BAD == uPaysCurrency || CURRENCY_BAD == uGetsCurrency)
     {
-        WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: Malformed offer: Bad currency.";
+        m_journal.warning << "Malformed offer: Bad currency.";
 
         terResult   = temBAD_CURRENCY;
     }
     else if (saTakerPays.isNative () != !uPaysIssuerID || saTakerGets.isNative () != !uGetsIssuerID)
     {
-        WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: Malformed offer: bad issuer";
+        m_journal.warning << "Malformed offer: bad issuer";
 
         terResult   = temBAD_ISSUER;
     }
     else if (!lesActive.accountFunds (mTxnAccountID, saTakerGets).isPositive ())
     {
-        WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: delay: Offers must be at least partially funded.";
+        m_journal.warning << "delay: Offers must be at least partially funded.";
 
         terResult   = tecUNFUNDED_OFFER;
     }
     else if (bHaveCancel && (!uCancelSequence || uAccountSequenceNext - 1 <= uCancelSequence))
     {
-        WriteLog (lsINFO, OfferCreateTransactor) << "OfferCreate: uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uCancelSequence;
+        m_journal.info << "uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uCancelSequence;
 
         terResult   = temBAD_SEQUENCE;
     }
@@ -490,13 +477,13 @@ TER OfferCreateTransactor::doApply ()
 
         if (sleCancel)
         {
-            WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: uCancelSequence=" << uCancelSequence;
+            m_journal.warning << "uCancelSequence=" << uCancelSequence;
 
             terResult   = mEngine->getNodes ().offerDelete (sleCancel);
         }
         else
         {
-            WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: offer not found: "
+            m_journal.warning << "offer not found: "
                     << RippleAddress::createHumanAccountID (mTxnAccountID)
                     << " : " << uCancelSequence
                     << " : " << uCancelIndex.ToString ();
@@ -511,7 +498,7 @@ TER OfferCreateTransactor::doApply ()
 
         if (!sleTakerPays)
         {
-            WriteLog (lsWARNING, OfferCreateTransactor) << "OfferCreate: delay: can't receive IOUs from non-existent issuer: " << RippleAddress::createHumanAccountID (uPaysIssuerID);
+            m_journal.warning << "delay: can't receive IOUs from non-existent issuer: " << RippleAddress::createHumanAccountID (uPaysIssuerID);
 
             terResult   = isSetBit (mParams, tapRETRY) ? terNO_ACCOUNT : tecNO_ISSUER;
         }
@@ -526,7 +513,7 @@ TER OfferCreateTransactor::doApply ()
             }
             else if (!isSetBit (sleRippleState->getFieldU32 (sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth)))
             {
-                WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: delay: can't receive IOUs from issuer without auth.";
+                m_journal.debug << "delay: can't receive IOUs from issuer without auth.";
 
                 terResult   = isSetBit (mParams, tapRETRY) ? terNO_AUTH : tecNO_AUTH;
             }
@@ -542,13 +529,14 @@ TER OfferCreateTransactor::doApply ()
     {
         const uint256   uTakeBookBase   = Ledger::getBookBase (uGetsCurrency, uGetsIssuerID, uPaysCurrency, uPaysIssuerID);
 
-        WriteLog (lsINFO, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: take against book: %s for %s -> %s")
-                % uTakeBookBase.ToString ()
-                % saTakerGets.getFullText ()
-                % saTakerPays.getFullText ());
+        m_journal.info <<
+            "take against book:" << uTakeBookBase.ToString () << 
+            " for " << saTakerGets.getFullText () << 
+            " -> " << saTakerPays.getFullText ();
 
         // Take using the parameters of the offer.
-        WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText ();
+        m_journal.debug << 
+            "takeOffers: BEFORE saTakerGets=" << saTakerGets.getFullText ();
 
         terResult   = takeOffers (
                           bOpenLedger,
@@ -563,27 +551,32 @@ TER OfferCreateTransactor::doApply ()
                           saGot,          // How much was got.
                           bUnfunded);
 
-        WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers=" << terResult;
-        WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers: saPaid=" << saPaid.getFullText ();
-        WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers:  saGot=" << saGot.getFullText ();
+        m_journal.debug << "takeOffers=" << terResult;
+        m_journal.debug << "takeOffers: saPaid=" << saPaid.getFullText ();
+        m_journal.debug << "takeOffers:  saGot=" << saGot.getFullText ();
 
         if (tesSUCCESS == terResult && !bUnfunded)
         {
             saTakerPays     -= saGot;               // Reduce pay in from takers by what offer just got.
             saTakerGets     -= saPaid;              // Reduce pay out to takers by what srcAccount just paid.
 
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers: AFTER saTakerPays=" << saTakerPays.getFullText ();
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers: AFTER saTakerGets=" << saTakerGets.getFullText ();
+            m_journal.debug <<
+                "takeOffers: AFTER saTakerPays=" << saTakerPays.getFullText ();
+            m_journal.debug <<
+                "takeOffers: AFTER saTakerGets=" << saTakerGets.getFullText ();
         }
     }
 
-    WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers: saTakerPays=" << saTakerPays.getFullText ();
-    WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers: saTakerGets=" << saTakerGets.getFullText ();
-    WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers: mTxnAccountID=" << RippleAddress::createHumanAccountID (mTxnAccountID);
-    WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers:         FUNDS=" << lesActive.accountFunds (mTxnAccountID, saTakerGets).getFullText ();
-
-    // WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers: uPaysIssuerID=" << RippleAddress::createHumanAccountID(uPaysIssuerID);
-    // WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: takeOffers: uGetsIssuerID=" << RippleAddress::createHumanAccountID(uGetsIssuerID);
+    m_journal.debug <<
+        "takeOffers: saTakerPays=" <<saTakerPays.getFullText ();
+    m_journal.debug <<
+        "takeOffers: saTakerGets=" << saTakerGets.getFullText ();
+    m_journal.debug <<
+        "takeOffers: mTxnAccountID=" <<
+        RippleAddress::createHumanAccountID (mTxnAccountID);
+    m_journal.debug <<
+        "takeOffers:         FUNDS=" <<
+        lesActive.accountFunds (mTxnAccountID, saTakerGets).getFullText ();
 
     if (tesSUCCESS != terResult)
     {
@@ -639,9 +632,9 @@ TER OfferCreateTransactor::doApply ()
     else
     {
         // We need to place the remainder of the offer into its order book.
-        WriteLog (lsINFO, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: offer not fully consumed: saTakerPays=%s saTakerGets=%s")
-                % saTakerPays.getFullText ()
-                % saTakerGets.getFullText ());
+        m_journal.info << "offer not fully consumed:"
+            " saTakerPays=" << saTakerPays.getFullText () <<
+            " saTakerGets=" << saTakerGets.getFullText ();
 
         // Add offer to owner's directory.
         terResult   = lesActive.dirAdd (uOwnerNode, Ledger::getOwnerDirIndex (mTxnAccountID), uLedgerIndex,
@@ -654,12 +647,12 @@ TER OfferCreateTransactor::doApply ()
 
             uint256 uBookBase   = Ledger::getBookBase (uPaysCurrency, uPaysIssuerID, uGetsCurrency, uGetsIssuerID);
 
-            WriteLog (lsINFO, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: adding to book: %s : %s/%s -> %s/%s")
-                    % uBookBase.ToString ()
-                    % saTakerPays.getHumanCurrency ()
-                    % RippleAddress::createHumanAccountID (saTakerPays.getIssuer ())
-                    % saTakerGets.getHumanCurrency ()
-                    % RippleAddress::createHumanAccountID (saTakerGets.getIssuer ()));
+            m_journal.info << 
+                "adding to book: " << uBookBase.ToString () <<
+                " : " << saTakerPays.getHumanCurrency () <<
+                "/" << RippleAddress::createHumanAccountID (saTakerPays.getIssuer ()) <<
+                " -> " << saTakerGets.getHumanCurrency () <<
+                "/" << RippleAddress::createHumanAccountID (saTakerGets.getIssuer ());
 
             uDirectory  = Ledger::getQualityIndex (uBookBase, uRate);   // Use original rate.
 
@@ -672,15 +665,22 @@ TER OfferCreateTransactor::doApply ()
 
         if (tesSUCCESS == terResult)
         {
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: sfAccount=" << RippleAddress::createHumanAccountID (mTxnAccountID);
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: uPaysIssuerID=" << RippleAddress::createHumanAccountID (uPaysIssuerID);
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: uGetsIssuerID=" << RippleAddress::createHumanAccountID (uGetsIssuerID);
-            WriteLog (lsTRACE, OfferCreateTransactor) << "OfferCreate: saTakerPays.isNative()=" << saTakerPays.isNative ();
-            WriteLog (lsTRACE, OfferCreateTransactor) << "OfferCreate: saTakerGets.isNative()=" << saTakerGets.isNative ();
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: uPaysCurrency=" << saTakerPays.getHumanCurrency ();
-            WriteLog (lsDEBUG, OfferCreateTransactor) << "OfferCreate: uGetsCurrency=" << saTakerGets.getHumanCurrency ();
+            m_journal.debug << 
+                "sfAccount=" << RippleAddress::createHumanAccountID (mTxnAccountID);
+            m_journal.debug <<
+                "uPaysIssuerID=" << RippleAddress::createHumanAccountID (uPaysIssuerID);
+            m_journal.debug <<
+                "uGetsIssuerID=" << RippleAddress::createHumanAccountID (uGetsIssuerID);
+            m_journal.trace <<
+                "saTakerPays.isNative()=" << saTakerPays.isNative ();
+            m_journal.trace <<
+                "saTakerGets.isNative()=" << saTakerGets.isNative ();
+            m_journal.debug <<
+                "uPaysCurrency=" << saTakerPays.getHumanCurrency ();
+            m_journal.debug <<
+                "uGetsCurrency=" << saTakerGets.getHumanCurrency ();
 
-            SLE::pointer            sleOffer        = mEngine->entryCreate (ltOFFER, uLedgerIndex);
+            SLE::pointer sleOffer (mEngine->entryCreate (ltOFFER, uLedgerIndex));
 
             sleOffer->setFieldAccount (sfAccount, mTxnAccountID);
             sleOffer->setFieldU32 (sfSequence, uSequence);
@@ -699,9 +699,9 @@ TER OfferCreateTransactor::doApply ()
             if (bSell)
                 sleOffer->setFlag (lsfSell);
 
-            WriteLog (lsTRACE, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: final terResult=%s sleOffer=%s")
-                    % transToken (terResult)
-                    % sleOffer->getJson (0));
+            m_journal.trace << 
+                "final terResult=" << transToken (terResult) <<
+                " sleOffer=" << sleOffer->getJson (0);
         }
     }
 
@@ -712,8 +712,8 @@ TER OfferCreateTransactor::doApply ()
         // Go through the list of unfunded offers and remove them
         BOOST_FOREACH (uint256 const & uOfferIndex, usOfferUnfundedFound)
         {
-
-            WriteLog (lsINFO, OfferCreateTransactor) << "takeOffers: found unfunded: " << uOfferIndex.ToString ();
+            m_journal.info << 
+                "takeOffers: found unfunded: " << uOfferIndex.ToString ();
 
             lesActive.offerDelete (uOfferIndex);
 
@@ -733,24 +733,25 @@ TER OfferCreateTransactor::doApply ()
                     vuiIndexes.erase (it);
                     sleDirectory->setFieldV256 (sfIndexes, svIndexes);
                     lesActive.entryModify (sleDirectory);
-                    WriteLog (lsWARNING, OfferCreateTransactor) << "takeOffers: offer " << indexes.first <<
+                    m_journal.warning << "takeOffers: offer " << indexes.first <<
                         " removed from directory " << indexes.second;
                 }
                 else
                 {
-                    WriteLog (lsINFO, OfferCreateTransactor) << "takeOffers: offer " << indexes.first <<
+                    m_journal.info << "takeOffers: offer " << indexes.first <<
                         " not found in directory " << indexes.second;
                 }
             }
             else
             {
-                WriteLog (lsWARNING, OfferCreateTransactor) << "takeOffers: directory " << indexes.second <<
+                m_journal.warning << "takeOffers: directory " << indexes.second <<
                     " not found for offer " << indexes.first;
             }
         }
     }
 
-    CondLog (tesSUCCESS != terResult, lsINFO, OfferCreateTransactor) << boost::str (boost::format ("OfferCreate: final terResult=%s") % transToken (terResult));
+    if (tesSUCCESS != terResult) m_journal.info << 
+        "final terResult=" << transToken (terResult);
 
     return terResult;
 }

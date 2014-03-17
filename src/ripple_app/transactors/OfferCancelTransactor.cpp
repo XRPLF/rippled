@@ -19,54 +19,54 @@
 
 namespace ripple {
 
-SETUP_LOG (OfferCancelTransactor)
 
 TER OfferCancelTransactor::doApply ()
 {
-    TER             terResult;
-    const std::uint32_t    uOfferSequence       = mTxn.getFieldU32 (sfOfferSequence);
-    const std::uint32_t    uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
+    std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
+    std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
 
-    WriteLog (lsDEBUG, OfferCancelTransactor) << "OfferCancel: uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uOfferSequence;
+    m_journal.debug <<
+        "uAccountSequenceNext=" << uAccountSequenceNext << 
+        " uOfferSequence=" << uOfferSequence;
 
-    const std::uint32_t    uTxFlags             = mTxn.getFlags ();
+    std::uint32_t const uTxFlags (mTxn.getFlags ());
 
     if (uTxFlags & tfUniversalMask)
     {
-        WriteLog (lsINFO, OfferCancelTransactor) << "OfferCancel: Malformed transaction: Invalid flags set.";
-
+        m_journal.info <<
+            "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
 
     if (!uOfferSequence || uAccountSequenceNext - 1 <= uOfferSequence)
     {
-        WriteLog (lsINFO, OfferCancelTransactor) << "OfferCancel: uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uOfferSequence;
-
-        terResult   = temBAD_SEQUENCE;
+        m_journal.info <<
+            "uAccountSequenceNext=" << uAccountSequenceNext << 
+            " uOfferSequence=" << uOfferSequence;
+        return temBAD_SEQUENCE;
     }
-    else
+
+    uint256 const uOfferIndex (
+        Ledger::getOfferIndex (mTxnAccountID, uOfferSequence));
+    
+    SLE::pointer sleOffer (
+        mEngine->entryCache (ltOFFER, uOfferIndex));
+
+    if (sleOffer)
     {
-        const uint256   uOfferIndex = Ledger::getOfferIndex (mTxnAccountID, uOfferSequence);
-        SLE::pointer    sleOffer    = mEngine->entryCache (ltOFFER, uOfferIndex);
+        m_journal.debug <<
+            "OfferCancel: uOfferSequence=" << uOfferSequence;
 
-        if (sleOffer)
-        {
-            WriteLog (lsDEBUG, OfferCancelTransactor) << "OfferCancel: uOfferSequence=" << uOfferSequence;
-
-            terResult   = mEngine->getNodes ().offerDelete (sleOffer);
-        }
-        else
-        {
-            WriteLog (lsWARNING, OfferCancelTransactor) << "OfferCancel: offer not found: "
-                    << RippleAddress::createHumanAccountID (mTxnAccountID)
-                    << " : " << uOfferSequence
-                    << " : " << uOfferIndex.ToString ();
-
-            terResult   = tesSUCCESS;
-        }
+        return mEngine->getNodes ().offerDelete (sleOffer);
     }
 
-    return terResult;
+    m_journal.warning <<
+        "OfferCancel: offer not found: " <<
+        RippleAddress::createHumanAccountID (mTxnAccountID) << 
+        " : " << uOfferSequence <<
+        " : " << uOfferIndex.ToString ();
+
+    return tesSUCCESS;
 }
 
 }

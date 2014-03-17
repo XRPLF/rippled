@@ -17,15 +17,39 @@
 */
 //==============================================================================
 
-#ifndef __PAYMENTTRANSACTOR__
-#define __PAYMENTTRANSACTOR__
+#ifndef RIPPLE_TX_PAYMENT_H_INCLUDED
+#define RIPPLE_TX_PAYMENT_H_INCLUDED
 
 namespace ripple {
 
-class PaymentTransactor : public Transactor
+class PaymentTransactorLog;
+
+template <>
+char const*
+LogPartition::getPartitionName <PaymentTransactorLog> ()
 {
+    return "Tx/Payment";
+}
+
+class PaymentTransactor 
+    : public Transactor
+{
+    /* The largest number of paths we allow */
+    static std::size_t const MaxPathSize = 6;
+
 public:
-    PaymentTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+    PaymentTransactor (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            LogPartition::getJournal <PaymentTransactorLog> ())
+    {
+
+    }
 
     TER doApply ();
 };

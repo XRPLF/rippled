@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-SETUP_LOG (RegularKeySetTransactor)
-
 std::uint64_t RegularKeySetTransactor::calculateBaseFee ()
 {
     if ( mTxnAccount
@@ -37,13 +35,12 @@ std::uint64_t RegularKeySetTransactor::calculateBaseFee ()
 
 TER RegularKeySetTransactor::doApply ()
 {
-    Log::out() << "RegularKeySet>";
-
-    const std::uint32_t   uTxFlags        = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn.getFlags ();
 
     if (uTxFlags & tfUniversalMask)
     {
-        WriteLog (lsINFO, RegularKeySetTransactor) << "RegularKeySet: Malformed transaction: Invalid flags set.";
+        m_journal.info <<
+            "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
     }
@@ -55,17 +52,15 @@ TER RegularKeySetTransactor::doApply ()
 
     if (mTxn.isFieldPresent (sfRegularKey))
     {
-	uint160 uAuthKeyID = mTxn.getFieldAccount160 (sfRegularKey);
+        uint160 uAuthKeyID = mTxn.getFieldAccount160 (sfRegularKey);
         mTxnAccount->setFieldAccount (sfRegularKey, uAuthKeyID);
     }
     else
     {
         if (mTxnAccount->isFlag (lsfDisableMaster))
-	    return tecMASTER_DISABLED;
+            return tecMASTER_DISABLED;
         mTxnAccount->makeFieldAbsent (sfRegularKey);
     }
-
-    Log::out() << "RegularKeySet<";
 
     return tesSUCCESS;
 }

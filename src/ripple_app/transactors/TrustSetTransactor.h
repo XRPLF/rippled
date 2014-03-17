@@ -17,15 +17,35 @@
 */
 //==============================================================================
 
-#ifndef TRUSTSETTRANSACTOR_H
-#define TRUSTSETTRANSACTOR_H
+#ifndef RIPPLE_TX_TRUSTSET_H_INCLUDED
+#define RIPPLE_TX_TRUSTSET_H_INCLUDED
 
 namespace ripple {
 
-class TrustSetTransactor : public Transactor
+class TrustSetTransactorLog;
+
+template <>
+char const*
+LogPartition::getPartitionName <TrustSetTransactorLog> ()
+{
+    return "Tx/TrustSet";
+}
+
+class TrustSetTransactor
+    : public Transactor
 {
 public:
-    TrustSetTransactor (const SerializedTransaction& txn, TransactionEngineParams params, TransactionEngine* engine) : Transactor (txn, params, engine) {}
+    TrustSetTransactor (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            LogPartition::getJournal <TrustSetTransactorLog> ())
+    {
+    }
 
     TER doApply ();
 };

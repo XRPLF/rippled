@@ -19,110 +19,121 @@
 
 namespace ripple {
 
-SETUP_LOG (TrustSetTransactor)
-
 TER TrustSetTransactor::doApply ()
 {
-    TER         terResult       = tesSUCCESS;
-    WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet>";
+    TER terResult = tesSUCCESS;
 
-    const STAmount      saLimitAmount   = mTxn.getFieldAmount (sfLimitAmount);
-    const bool          bQualityIn      = mTxn.isFieldPresent (sfQualityIn);
-    const bool          bQualityOut     = mTxn.isFieldPresent (sfQualityOut);
-    const uint160       uCurrencyID     = saLimitAmount.getCurrency ();
-    uint160             uDstAccountID   = saLimitAmount.getIssuer ();
-    const bool          bHigh           = mTxnAccountID > uDstAccountID;        // true, iff current is high account.
+    STAmount const saLimitAmount (mTxn.getFieldAmount (sfLimitAmount));
+    bool const bQualityIn (mTxn.isFieldPresent (sfQualityIn));
+    bool const bQualityOut (mTxn.isFieldPresent (sfQualityOut));
+    
+    uint160 const uCurrencyID (saLimitAmount.getCurrency ());
+    uint160 uDstAccountID (saLimitAmount.getIssuer ());
 
-    std::uint32_t       uQualityIn      = bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0;
-    std::uint32_t       uQualityOut     = bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0;
+    // true, iff current is high account.
+    bool const bHigh = mTxnAccountID > uDstAccountID;
+
+    std::uint32_t uQualityIn (bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0);
+    std::uint32_t uQualityOut (bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0);
 
     if (!saLimitAmount.isLegalNet ())
         return temBAD_AMOUNT;
 
     if (bQualityIn && QUALITY_ONE == uQualityIn)
-        uQualityIn  = 0;
+        uQualityIn = 0;
 
     if (bQualityOut && QUALITY_ONE == uQualityOut)
         uQualityOut = 0;
 
-    const std::uint32_t  uTxFlags        = mTxn.getFlags ();
+    std::uint32_t const uTxFlags = mTxn.getFlags ();
 
     if (uTxFlags & tfTrustSetMask)
     {
-        WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Malformed transaction: Invalid flags set.";
-
+        m_journal.info <<
+            "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
 
-    const bool          bSetAuth        = isSetBit (uTxFlags, tfSetfAuth);
-    const bool          bSetNoRipple    = isSetBit (uTxFlags, tfSetNoRipple);
-    const bool          bClearNoRipple  = isSetBit (uTxFlags, tfClearNoRipple);
+    bool const bSetAuth = isSetBit (uTxFlags, tfSetfAuth);
+    bool const bSetNoRipple = isSetBit (uTxFlags, tfSetNoRipple);
+    bool const bClearNoRipple  = isSetBit (uTxFlags, tfClearNoRipple);
 
     if (bSetAuth && !isSetBit (mTxnAccount->getFieldU32 (sfFlags), lsfRequireAuth))
     {
-        WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Retry: Auth not required.";
-
+        m_journal.info << 
+            "Retry: Auth not required.";
         return tefNO_AUTH_REQUIRED;
     }
 
     if (saLimitAmount.isNative ())
     {
-        WriteLog (lsINFO, TrustSetTransactor) << boost::str (boost::format ("doTrustSet: Malformed transaction: Native credit limit: %s")
-                                              % saLimitAmount.getFullText ());
-
+        m_journal.info <<
+            "Malformed transaction: Native credit limit: " <<
+            saLimitAmount.getFullText ();
         return temBAD_LIMIT;
     }
 
     if (saLimitAmount.isNegative ())
     {
-        WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Malformed transaction: Negative credit limit.";
-
+        m_journal.info << 
+            "Malformed transaction: Negative credit limit.";
         return temBAD_LIMIT;
     }
 
     // Check if destination makes sense.
     if (!uDstAccountID || uDstAccountID == ACCOUNT_ONE)
     {
-        WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Malformed transaction: Destination account not specified.";
+        m_journal.info << 
+            "Malformed transaction: Destination account not specified.";
 
         return temDST_NEEDED;
     }
 
     if (mTxnAccountID == uDstAccountID)
     {
-        SLE::pointer        selDelete   = mEngine->entryCache (ltRIPPLE_STATE, Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID));
-
+        SLE::pointer selDelete (
+            mEngine->entryCache (ltRIPPLE_STATE, 
+                Ledger::getRippleStateIndex (
+                    mTxnAccountID, uDstAccountID, uCurrencyID)));
+        
         if (selDelete)
         {
-            WriteLog (lsWARNING, TrustSetTransactor) << "doTrustSet: Clearing redundant line.";
+            m_journal.warning << 
+                "Clearing redundant line.";
 
-            return mEngine->getNodes ().trustDelete (selDelete, mTxnAccountID, uDstAccountID);
+            return mEngine->getNodes ().trustDelete (
+                selDelete, mTxnAccountID, uDstAccountID);
         }
         else
         {
-            WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Malformed transaction: Can not extend credit to self.";
-
+            m_journal.info <<
+                "Malformed transaction: Can not extend credit to self.";
             return temDST_IS_SRC;
         }
     }
 
-    SLE::pointer        sleDst          = mEngine->entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID));
+    SLE::pointer sleDst (mEngine->entryCache (
+        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID)));
 
     if (!sleDst)
     {
-        WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Delay transaction: Destination account does not exist.";
-
+        m_journal.info << 
+            "Delay transaction: Destination account does not exist.";
         return tecNO_DST;
     }
 
-    const std::uint32_t uOwnerCount     = mTxnAccount->getFieldU32 (sfOwnerCount);
+    std::uint32_t const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
     // The reserve required to create the line.
-    const std::uint64_t uReserveCreate  = (uOwnerCount < 2) ? 0 : mEngine->getLedger ()->getReserve (uOwnerCount + 1);
+    std::uint64_t const uReserveCreate = 
+        (uOwnerCount < 2) 
+            ? 0 
+            : mEngine->getLedger ()->getReserve (uOwnerCount + 1);
 
-    STAmount            saLimitAllow    = saLimitAmount;
+    STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.setIssuer (mTxnAccountID);
 
-    SLE::pointer        sleRippleState  = mEngine->entryCache (ltRIPPLE_STATE, Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID));
+    SLE::pointer sleRippleState (mEngine->entryCache (ltRIPPLE_STATE,
+        Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID)));
 
     if (sleRippleState)
     {
@@ -219,8 +230,8 @@ TER TrustSetTransactor::doApply ()
             uHighQualityOut =  bHigh ? 0 : sleRippleState->getFieldU32 (sfHighQualityOut);
         }
 
-        const std::uint32_t uFlagsIn        = sleRippleState->getFieldU32 (sfFlags);
-        std::uint32_t       uFlagsOut       = uFlagsIn;
+        std::uint32_t const uFlagsIn (sleRippleState->getFieldU32 (sfFlags));
+        std::uint32_t uFlagsOut (uFlagsIn);
 
         if (bSetNoRipple && !bClearNoRipple && (bHigh ? saHighBalance : saLowBalance).isGEZero())
         {
@@ -236,20 +247,20 @@ TER TrustSetTransactor::doApply ()
         if (QUALITY_ONE == uHighQualityOut) uHighQualityOut = 0;
 
 
-        const bool  bLowReserveSet      = uLowQualityIn || uLowQualityOut ||
+        bool const  bLowReserveSet      = uLowQualityIn || uLowQualityOut ||
                                           isSetBit (uFlagsOut, lsfLowNoRipple) ||
                                           !!saLowLimit || saLowBalance.isPositive ();
-        const bool  bLowReserveClear    = !bLowReserveSet;
+        bool const  bLowReserveClear    = !bLowReserveSet;
 
-        const bool  bHighReserveSet     = uHighQualityIn || uHighQualityOut ||
+        bool const  bHighReserveSet     = uHighQualityIn || uHighQualityOut ||
                                           isSetBit (uFlagsOut, lsfHighNoRipple) ||
                                           !!saHighLimit || saHighBalance.isPositive ();
-        const bool  bHighReserveClear   = !bHighReserveSet;
+        bool const  bHighReserveClear   = !bHighReserveSet;
 
-        const bool  bDefault            = bLowReserveClear && bHighReserveClear;
+        bool const  bDefault            = bLowReserveClear && bHighReserveClear;
 
-        const bool  bLowReserved        = isSetBit (uFlagsIn, lsfLowReserve);
-        const bool  bHighReserved       = isSetBit (uFlagsIn, lsfHighReserve);
+        bool const  bLowReserved        = isSetBit (uFlagsIn, lsfLowReserve);
+        bool const  bHighReserved       = isSetBit (uFlagsIn, lsfHighReserve);
 
         bool        bReserveIncrease    = false;
 
@@ -308,16 +319,19 @@ TER TrustSetTransactor::doApply ()
         else if (bReserveIncrease
                  && mPriorBalance.getNValue () < uReserveCreate) // Reserve is not scaled by load.
         {
-            WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Delay transaction: Insufficent reserve to add trust line.";
-
-            // Another transaction could provide XRP to the account and then this transaction would succeed.
+            m_journal.info <<
+                "Delay transaction: Insufficent reserve to add trust line.";
+            
+            // Another transaction could provide XRP to the account and then
+            // this transaction would succeed.
             terResult   = tecINSUF_RESERVE_LINE;
         }
         else
         {
             mEngine->entryModify (sleRippleState);
 
-            WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Modify ripple line";
+            m_journal.info <<
+                "Modify ripple line";
         }
     }
     // Line does not exist.
@@ -325,16 +339,17 @@ TER TrustSetTransactor::doApply ()
              && (!bQualityIn || !uQualityIn)                         // Not setting quality in or setting default quality in.
              && (!bQualityOut || !uQualityOut))                      // Not setting quality out or setting default quality out.
     {
-        WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Redundant: Setting non-existent ripple line to defaults.";
-
+        m_journal.info << 
+            "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
     else if (mPriorBalance.getNValue () < uReserveCreate)       // Reserve is not scaled by load.
     {
-        WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Delay transaction: Line does not exist. Insufficent reserve to create line.";
+        m_journal.info << 
+            "Delay transaction: Line does not exist. Insufficent reserve to create line.";
 
         // Another transaction could create the account and then this transaction would succeed.
-        terResult   = tecNO_LINE_INSUF_RESERVE;
+        terResult = tecNO_LINE_INSUF_RESERVE;
     }
     else if (CURRENCY_BAD == uCurrencyID)
     {
@@ -342,13 +357,16 @@ TER TrustSetTransactor::doApply ()
     }
     else
     {
-        STAmount    saBalance   = STAmount (uCurrencyID, ACCOUNT_ONE);  // Zero balance in currency.
+        // Zero balance in currency.
+        STAmount saBalance (STAmount (uCurrencyID, ACCOUNT_ONE));  
 
-        WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet: Creating ripple line: "
-                                              << Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID).ToString ();
+
+        m_journal.info << 
+            "doTrustSet: Creating ripple line: " <<
+            Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID).ToString ();
 
         // Create a new ripple line.
-        terResult   = mEngine->getNodes ().trustCreate (
+        terResult = mEngine->getNodes ().trustCreate (
                           bHigh,
                           mTxnAccountID,
                           uDstAccountID,
@@ -361,8 +379,6 @@ TER TrustSetTransactor::doApply ()
                           uQualityIn,
                           uQualityOut);
     }
-
-    WriteLog (lsINFO, TrustSetTransactor) << "doTrustSet<";
 
     return terResult;
 }
