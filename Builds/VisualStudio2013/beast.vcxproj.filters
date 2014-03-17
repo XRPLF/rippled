@@ -404,9 +404,6 @@
     <ClInclude Include="..\..\modules\beast_core\time\Time.h">
       <Filter>beast_core\time</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\Throw.h">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\files\RandomAccessFile.h">
       <Filter>beast_core\files</Filter>
     </ClInclude>
