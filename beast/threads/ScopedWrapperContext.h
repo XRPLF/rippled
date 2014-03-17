@@ -30,19 +30,20 @@ template <typename ScopedType, typename Context, typename Handler>
 class ScopedWrapper
 {
 public:
-    ScopedWrapper (Context const& context, Handler const& handler)
+    ScopedWrapper (Context& context, Handler const& handler)
         : m_context (context)
         , m_handler (handler)
-        { }
+    {
+    }
 
     void operator() ()
     {
-        ScopedType const scope (m_context);
+        ScopedType scope (m_context);
         m_handler();
     }
 
 private:
-    Context const& m_context;
+    Context& m_context;
     Handler m_handler;
 };
 
@@ -55,17 +56,19 @@ template <typename Context, typename ScopedType>
 class ScopedWrapperContext
 {
 public:
-    typedef Context             context_type;
-    typedef ScopedType          scoped_type;
+    typedef Context context_type;
+    typedef ScopedType scoped_type;
 
     class Scope
     {
     public:
         explicit Scope (ScopedWrapperContext const& owner)
             : m_scope (owner.m_context)
-            { }
+        {
+        }
+
     private:
-        scoped_type m_scope;
+        scoped_type mutable m_scope;
     };
 
     ScopedWrapperContext ()
@@ -74,7 +77,8 @@ public:
     template <typename Arg>
     explicit ScopedWrapperContext (Arg& arg)
         : m_context (arg)
-        { }
+    {
+    }
 
     template <typename Handler>
     detail::ScopedWrapper <ScopedType, Context, Handler> wrap (
@@ -85,7 +89,7 @@ public:
     }
 
 private:
-    Context m_context;
+    Context mutable m_context;
 };
 
 }

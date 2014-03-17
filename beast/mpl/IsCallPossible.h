@@ -20,6 +20,8 @@
 #ifndef BEAST_MPL_ISCALLPOSSIBLE_H_INCLUDED
 #define BEAST_MPL_ISCALLPOSSIBLE_H_INCLUDED
 
+#include "../cxx14/type_traits.h" // <type_traits>
+
 namespace beast {
 namespace mpl {
 
@@ -160,10 +162,11 @@ struct trait_name##_detail                                                      
 BEAST_DEFINE_HAS_MEMBER_FUNCTION(has_member, member_function_name);                                                     \
 };                                                                                                                      \
                                                                                                                         \
-template <typename T, typename IsCallPossibleSignature>                                                                 \
+template <typename DT, typename IsCallPossibleSignature>                                                                \
 struct trait_name                                                                                                       \
 {                                                                                                                       \
-  private:                                                                                                              \
+private:                                                                                                                \
+   typedef std::remove_reference_t <DT> T;                                                                              \
    class yes {};                                                                                                        \
    class no { yes m[2]; };                                                                                              \
    struct derived : public T                                                                                            \
@@ -195,6 +198,18 @@ struct trait_name                                                               
    struct impl                                                                                                          \
    {                                                                                                                    \
      static const bool value = false;                                                                                   \
+   };                                                                                                                   \
+                                                                                                                        \
+   template <typename Result>                                                                                           \
+   struct impl<true, Result(void)>                                                                                      \
+   {                                                                                                                    \
+     static typename beast::mpl::is_call_possible_detail::add_reference<derived_type>::type test_me;                    \
+                                                                                                                        \
+     static const bool value =                                                                                          \
+       sizeof(                                                                                                          \
+            return_value_check<T, Result>::deduce(                                                                      \
+             (test_me.member_function_name(), beast::mpl::is_call_possible_detail::void_exp_result<T>()))               \
+            ) == sizeof(yes);                                                                                           \
    };                                                                                                                   \
                                                                                                                         \
    template <typename Result, typename Arg>                                                                             \

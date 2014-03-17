@@ -163,7 +163,6 @@ namespace beast
 #include "misc/Uuid.cpp"
 
 #include "network/MACAddress.cpp"
-#include "network/NamedPipe.cpp"
 #include "network/Socket.cpp"
 
 #include "streams/BufferedInputStream.cpp"
@@ -188,7 +187,6 @@ namespace beast
 #include "thread/Workers.cpp"
 
 #include "threads/ChildProcess.cpp"
-#include "threads/ReadWriteLock.cpp"
 #include "threads/SpinDelay.cpp"
 
 #include "time/PerformanceCounter.cpp"
@@ -218,7 +216,6 @@ namespace beast
 
 #if ! BEAST_WINDOWS
 #include "native/posix_SharedCode.h"
-#include "native/posix_NamedPipe.cpp"
 #endif
 
 #if BEAST_MAC || BEAST_IOS

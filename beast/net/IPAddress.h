@@ -40,61 +40,159 @@ class Address
 {
 public:
     /** Create an unspecified IPv4 address. */
-    Address ();
+    Address ()
+        : m_type (ipv4)
+    {
+    }
 
     /** Create an IPv4 address. */
-    Address (AddressV4 const& addr);
+    Address (AddressV4 const& addr)
+        : m_type (ipv4)
+        , m_v4 (addr)
+    {
+    }
 
     /** Create an IPv6 address. */
-    Address (AddressV6 const& addr);
+    Address (AddressV6 const& addr)
+        : m_type (ipv6)
+        , m_v6 (addr)
+    {
+    }
 
     /** Assign a copy from another address in any format. */
     /** @{ */
-    Address& operator= (AddressV4 const& addr);
-    Address& operator= (AddressV6 const& addr);
+    Address&
+    operator= (AddressV4 const& addr)
+    {
+        m_type = ipv4;
+        m_v6 = AddressV6();
+        m_v4 = addr;
+        return *this;
+    }
+
+    Address&
+    operator= (AddressV6 const& addr)
+    {
+        m_type = ipv6;
+        m_v4 = AddressV4();
+        m_v6 = addr;
+        return *this;
+    }
     /** @} */
 
     /** Create an Address from a string.
         @return A pair with the address, and bool set to `true` on success.
     */
-    static std::pair <Address, bool> from_string (std::string const& s);
+    static
+    std::pair <Address, bool>
+    from_string (std::string const& s);
 
     /** Returns a string representing the address. */
-    std::string to_string () const;
+    std::string
+    to_string () const
+    {
+        return (is_v4 ())
+            ? IP::to_string (to_v4())
+            : IP::to_string (to_v6());
+    }
 
     /** Returns `true` if this address represents an IPv4 address. */
-    bool is_v4 () const
-        { return m_type == ipv4; }
+    bool
+    is_v4 () const
+    {
+        return m_type == ipv4;
+    }
 
     /** Returns `true` if this address represents an IPv6 address. */
-    bool is_v6 () const
-        { return m_type == ipv6; }
+    bool
+    is_v6() const
+    {
+        return m_type == ipv6;
+    }
 
     /** Returns the IPv4 address.
         Precondition:
-            is_v4() returns true
+            is_v4() == `true`
     */
-    AddressV4 const& to_v4 () const;
+    AddressV4 const&
+    to_v4 () const
+    {
+        if (m_type != ipv4)
+            throw std::bad_cast();
+        return m_v4;
+    }
+
 
     /** Returns the IPv6 address.
         Precondition:
-            is_v6() returns true
+            is_v6() == `true`
     */
-    AddressV6 const& to_v6 () const;
+    AddressV6 const&
+    to_v6 () const
+    {
+        if (m_type != ipv6)
+            throw std::bad_cast();
+        return m_v6;
+    }
 
     /** Arithmetic comparison. */
     /** @{ */
-    friend bool operator== (Address const& lhs, Address const& rhs);
-    friend bool operator<  (Address const& lhs, Address const& rhs);
+    friend
+    bool
+    operator== (Address const& lhs, Address const& rhs)
+    {
+        if (lhs.is_v4 ())
+        {
+            if (rhs.is_v4 ())
+                return lhs.to_v4() == rhs.to_v4();
+        }
+        else
+        {
+            if (rhs.is_v6 ())
+                return lhs.to_v6() == rhs.to_v6();
+        }
 
-    friend bool operator!= (Address const& lhs, Address const& rhs)
-        { return ! (lhs == rhs); }
-    friend bool operator>  (Address const& lhs, Address const& rhs)
-        { return rhs < lhs; }
-    friend bool operator<= (Address const& lhs, Address const& rhs)
-        { return ! (lhs > rhs); }
-    friend bool operator>= (Address const& lhs, Address const& rhs)
-        { return ! (rhs > lhs); }
+        return false;
+    }
+
+    friend
+    bool
+    operator< (Address const& lhs, Address const& rhs)
+    {
+        if (lhs.m_type < rhs.m_type)
+            return true;
+        if (lhs.is_v4 ())
+            return lhs.to_v4() < rhs.to_v4();
+        return lhs.to_v6() < rhs.to_v6();
+    }
+
+    friend
+    bool
+    operator!= (Address const& lhs, Address const& rhs)
+    {
+        return ! (lhs == rhs);
+    }
+    
+    friend
+    bool
+    operator>  (Address const& lhs, Address const& rhs)
+    {
+        return rhs < lhs;
+    }
+    
+    friend
+    bool
+    operator<= (Address const& lhs, Address const& rhs)
+    {
+        return ! (lhs > rhs);
+    }
+    
+    friend
+    bool
+    operator>= (Address const& lhs, Address const& rhs)
+    {
+        return ! (rhs > lhs);
+    }
     /** @} */
 
 private:
@@ -114,36 +212,104 @@ private:
 // Properties
 
 /** Returns `true` if this is a loopback address. */
-bool is_loopback (Address const& addr);
+inline
+bool
+is_loopback (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? is_loopback (addr.to_v4 ())
+        : is_loopback (addr.to_v6 ());
+}
 
 /** Returns `true` if the address is unspecified. */
-bool is_unspecified (Address const& addr);
+inline
+bool
+is_unspecified (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? is_unspecified (addr.to_v4 ())
+        : is_unspecified (addr.to_v6 ());
+}
 
 /** Returns `true` if the address is a multicast address. */
-bool is_multicast (Address const& addr);
+inline
+bool
+is_multicast (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? is_multicast (addr.to_v4 ())
+        : is_multicast (addr.to_v6 ());
+}
 
 /** Returns `true` if the address is a private unroutable address. */
-bool is_private (Address const& addr);
+inline
+bool
+is_private (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? is_private (addr.to_v4 ())
+        : is_private (addr.to_v6 ());
+}
 
 /** Returns `true` if the address is a public routable address. */
-bool is_public (Address const& addr);
+inline
+bool
+is_public (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? is_public (addr.to_v4 ())
+        : is_public (addr.to_v6 ());
+}
 
 //------------------------------------------------------------------------------
 
 /** boost::hash support. */
-std::size_t hash_value (Address const& addr);
+inline
+std::size_t
+hash_value (Address const& addr)
+{
+    return (addr.is_v4 ())
+        ? hash_value (addr.to_v4())
+        : hash_value (addr.to_v6());
+}
 
 /** Returns the address represented as a string. */
 inline std::string to_string (Address const& addr)
-    { return addr.to_string (); }
+{
+    return addr.to_string ();
+}
 
 /** Output stream conversion. */
 template <typename OutputStream>
-OutputStream& operator<< (OutputStream& os, Address const& addr)
-    { return os << to_string (addr); }
+OutputStream&
+operator<< (OutputStream& os, Address const& addr)
+{
+    return os << to_string (addr);
+}
 
 /** Input stream conversion. */
-std::istream& operator>> (std::istream& is, Address& addr);
+inline
+std::istream&
+operator>> (std::istream& is, Address& addr)
+{
+    // VFALCO TODO Support ipv6!
+    AddressV4 addrv4;
+    is >> addrv4;
+    addr = Address (addrv4);
+    return is;
+}
+
+inline
+std::pair <Address, bool>
+Address::from_string (std::string const& s)
+{
+    std::stringstream is (s);
+    Address addr;
+    is >> addr;
+    if (! is.fail() && is.rdbuf()->in_avail() == 0)
+        return std::make_pair (addr, true);
+    return std::make_pair (Address (), false);
+}
 
 }
 }
@@ -154,8 +320,11 @@ namespace std {
 template <>
 struct hash <beast::IP::Address>
 {
-    std::size_t operator() (beast::IP::Address const& addr) const
-        { return hash_value (addr); }
+    std::size_t
+    operator() (beast::IP::Address const& addr) const
+    {
+        return hash_value (addr);
+    }
 };
 }
 

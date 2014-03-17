@@ -130,7 +130,7 @@ void UnitTest::beginTestCase (String const& name)
     m_case = new Case (name, m_className);
 }
 
-bool UnitTest::expect (bool trueCondition, String const& failureMessage)
+bool UnitTest::expect_bool (bool trueCondition, String const& failureMessage)
 {
     if (trueCondition)
     {
@@ -144,7 +144,7 @@ bool UnitTest::expect (bool trueCondition, String const& failureMessage)
     return trueCondition;
 }
 
-bool UnitTest::unexpected (bool falseCondition, String const& failureMessage)
+bool UnitTest::unexpected_bool (bool falseCondition, String const& failureMessage)
 {
     return expect (! falseCondition, failureMessage);
 }

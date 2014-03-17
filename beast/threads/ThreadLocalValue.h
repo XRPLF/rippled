@@ -187,8 +187,8 @@ private:
         Type object;
     };
 
-    mutable Atomic<ObjectHolder*> first;
-    SpinLock lock;
+    Atomic<ObjectHolder*> mutable first;
+    SpinLock mutable lock;
    #endif
 };
 

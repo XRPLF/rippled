@@ -33,6 +33,10 @@ struct maybe_const
         typename std::remove_const <T>::type>::type type;
 };
 
+/** Alias for omitting `typename`. */
+template <bool IsConst, class T>
+using maybe_const_t = typename maybe_const <IsConst,T>::type;
+
 }
 
 #endif

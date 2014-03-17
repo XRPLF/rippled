@@ -32,7 +32,7 @@ public:
 
     /** A triplet identifying a mutex, a thread, and source code location.
     */
-    class Record : public SafeBool <Record>
+    class Record
     {
     public:
         Record () noexcept;
@@ -41,7 +41,7 @@ public:
 
         bool isNull () const noexcept;
         bool isNotNull () const noexcept;
-        bool asBoolean () const noexcept;
+        explicit operator bool() const noexcept;
 
         /** Returns the name of the mutex.
             Since the Mutex may not exist after the Record record is
@@ -76,7 +76,7 @@ public:
     //--------------------------------------------------------------------------
 
     /** Describes a thread that can acquire mutexes. */
-    class Agent : public SafeBool <Agent>
+    class Agent
     {
     public:
         Agent () noexcept;
@@ -85,7 +85,7 @@ public:
 
         bool isNull () const noexcept;
         bool isNotNull () const noexcept;
-        bool asBoolean () const noexcept;
+        explicit operator bool() const noexcept;
 
         /** Returns the name of the thread.
             The name is generated at the time the Agent record is created,

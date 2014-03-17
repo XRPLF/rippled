@@ -20,7 +20,6 @@
 #ifndef BEAST_NET_H_INCLUDED
 #define BEAST_NET_H_INCLUDED
 
-#include "net/BufferType.h"
 #include "net/DynamicBuffer.h"
 
 #include "net/IPEndpoint.h"

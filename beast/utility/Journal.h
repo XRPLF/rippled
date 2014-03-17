@@ -20,8 +20,6 @@
 #ifndef BEAST_UTILITY_JOURNAL_H_INCLUDED
 #define BEAST_UTILITY_JOURNAL_H_INCLUDED
 
-#include "../SafeBool.h"
-
 #include <sstream>
 
 namespace beast {
@@ -150,7 +148,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    class Stream : public SafeBool <Stream>
+    class Stream
     {
     public:
         /** Create a stream which produces no output. */
@@ -177,7 +175,12 @@ public:
         /** Returns `true` if sink logs anything at this stream's severity. */
         /** @{ */
         bool active() const;
-        bool asBoolean() const;
+        
+        explicit
+        operator bool() const
+        {
+            return ! m_disabled;
+        }
         /** @} */
 
         /** Output stream support. */

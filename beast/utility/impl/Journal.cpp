@@ -211,11 +211,6 @@ bool Journal::Stream::active () const
     return ! m_disabled && m_sink->active (m_level);
 }
 
-bool Journal::Stream::asBoolean () const
-{
-    return active();
-}
-
 Journal::Stream& Journal::Stream::operator= (Stream const& other)
 {
     m_sink = other.m_sink;

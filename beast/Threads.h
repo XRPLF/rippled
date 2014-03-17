@@ -20,7 +20,6 @@
 #ifndef BEAST_THREADS_H_INCLUDED
 #define BEAST_THREADS_H_INCLUDED
 
-#include "threads/LockGuard.h"
 #include "threads/UnlockGuard.h"
 #include "threads/TryLockGuard.h"
 #include "threads/SharedLockGuard.h"

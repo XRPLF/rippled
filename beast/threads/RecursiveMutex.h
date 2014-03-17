@@ -25,9 +25,10 @@
 #define BEAST_THREADS_RECURSIVEMUTEX_H_INCLUDED
 
 #include "../Config.h"
-#include "LockGuard.h"
 #include "UnlockGuard.h"
 #include "TryLockGuard.h"
+
+#include <mutex>
 
 #if ! BEAST_WINDOWS
 #include <pthread.h>
@@ -38,7 +39,7 @@ namespace beast {
 class RecursiveMutex
 {
 public:
-    typedef LockGuard <RecursiveMutex>      ScopedLockType;
+    typedef std::lock_guard <RecursiveMutex>      ScopedLockType;
     typedef UnlockGuard <RecursiveMutex>    ScopedUnlockType;
     typedef TryLockGuard <RecursiveMutex>   ScopedTryLockType;
 
