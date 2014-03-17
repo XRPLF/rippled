@@ -387,8 +387,8 @@ if TravisBuild:
     env.Append(CXXFLAGS = ['-DTRAVIS_CI_BUILD'])
 
 if RippleRepository:
-    env.Append(CFLAGS = ['DRIPPLE_MASTER_BUILD'])
-    env.Append(CXXFLAGS = ['DRIPPLE_MASTER_BUILD'])
+    env.Append(CFLAGS = ['-DRIPPLE_MASTER_BUILD'])
+    env.Append(CXXFLAGS = ['-DRIPPLE_MASTER_BUILD'])
 
 # Display build configuration information for debugging purposes
 def print_nv_pair(n, v):
