@@ -30,7 +30,7 @@ namespace InputParser {
     Or you can use stop() to decide if you should return.
     After a stop you can use failed () to determine if parsing failed.
 */
-struct State : SafeBool <State>
+struct State
 {
     enum State_t
     {
@@ -54,7 +54,7 @@ struct State : SafeBool <State>
     bool stop () const noexcept { return m_state != pass; }
     bool passed () const noexcept { return m_state == pass; }
     bool failed () const noexcept { return m_state == fail; }
-    bool asBoolean () const noexcept { return m_state == pass; } // for SafeBool<>
+    explicit operator bool() const noexcept { return m_state == pass; }
 
 private:
     State_t m_state;

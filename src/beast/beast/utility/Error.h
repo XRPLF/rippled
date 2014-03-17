@@ -22,7 +22,6 @@
 
 #include "../Config.h"
 
-#include "../SafeBool.h"
 #include "../strings/String.h"
 
 #include <stdexcept>
@@ -43,7 +42,6 @@ namespace beast {
 */
 class Error
     : public std::exception
-    , public SafeBool <Error>
 {
 public:
     /** Numeric code.
@@ -88,7 +86,10 @@ public:
     Code code () const;
     bool failed () const;
 
-    bool asBoolean () const;
+    explicit operator bool () const
+    {
+        return code () != success;
+    }
 
     String const getReasonText () const;
     String const getSourceFilename () const;

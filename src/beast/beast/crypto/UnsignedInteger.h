@@ -20,7 +20,6 @@
 #ifndef BEAST_CRYPTO_UNSIGNEDINTEGER_H_INCLUDED
 #define BEAST_CRYPTO_UNSIGNEDINTEGER_H_INCLUDED
 
-#include "../SafeBool.h"
 #include "UnsignedIntegerCalc.h"
 #include "MurmurHash.h"
 
@@ -38,7 +37,7 @@ namespace beast {
     may not be aligned.
 */
 template <std::size_t Bytes>
-class UnsignedInteger : public SafeBool <UnsignedInteger <Bytes> > 
+class UnsignedInteger
 {
 public:
     /** Constant for determining the number of bytes. */
@@ -201,9 +200,9 @@ public:
 
     /** Support conversion to `bool`.
         @return `true` if any bit is non-zero.
-        @see SafeBool
     */
-    bool asBoolean () const
+    explicit
+    operator bool() const
     {
         return isNotZero ();
     }

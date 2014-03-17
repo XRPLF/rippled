@@ -123,7 +123,7 @@ public:
         A value of `true` indicates an error occurred,
         while `false` indicates no error.
     */
-    class Error : public SafeBool <Error>
+    class Error
     {
     public:
         Error () noexcept
@@ -140,7 +140,8 @@ public:
         {
         }
 
-        bool asBoolean () const noexcept
+        explicit
+        operator bool() const noexcept
         {
             return m_what != String::empty;
         }

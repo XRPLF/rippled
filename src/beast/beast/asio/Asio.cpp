@@ -23,6 +23,7 @@
 
 #include "tests/wrap_handler_tests.cpp"
 #include "tests/bind_handler_tests.cpp"
+#include "tests/enable_wait_for_async.test.cpp"
 #include "tests/shared_handler_tests.cpp"
 
 #include "abstract_socket.cpp" // TEMPORARY!

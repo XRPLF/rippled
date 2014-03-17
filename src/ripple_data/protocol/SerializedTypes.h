@@ -622,7 +622,9 @@ public:
     {
         return !mIsNative || (mValue <= cMaxNativeN);
     }
-    operator bool () const
+    
+    explicit
+    operator bool () const noexcept
     {
         return !isZero ();
     }

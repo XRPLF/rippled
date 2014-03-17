@@ -58,8 +58,6 @@ BEAST TODO
 
 - Rename SharedData to SharedState or something?
 
-- Figure out what to do with ReadWriteLock, and NamedPipe which uses it?
-
 - Put BEAST_PUBLIC_FUNCTION in front of all loose functions
 
 - restructure the repo sources to look like this:

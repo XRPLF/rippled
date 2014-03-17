@@ -20,8 +20,9 @@
 #ifndef BEAST_THREADS_SHAREDMUTEXADAPTER_H_INCLUDED
 #define BEAST_THREADS_SHAREDMUTEXADAPTER_H_INCLUDED
 
-#include "LockGuard.h"
 #include "SharedLockGuard.h"
+
+#include <mutex>
 
 namespace beast {
    
@@ -35,7 +36,7 @@ class SharedMutexAdapter
 {
 public:
     typedef Mutex MutexType;
-    typedef LockGuard <SharedMutexAdapter> LockGuardType;
+    typedef std::lock_guard <SharedMutexAdapter> LockGuardType;
     typedef SharedLockGuard <SharedMutexAdapter> SharedLockGuardType;
     
     void lock() const

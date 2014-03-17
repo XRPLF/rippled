@@ -40,7 +40,6 @@
 #include "../beast/modules/beast_sqdb/beast_sqdb.h"
 #include "../beast/modules/beast_asio/beast_asio.h"
 
-#include "../beast/beast/cyclic_iterator.h"
 #include "../beast/beast/boost/ErrorCode.h"
 
 #include "impl/iosformat.h" // VFALCO NOTE move to beast

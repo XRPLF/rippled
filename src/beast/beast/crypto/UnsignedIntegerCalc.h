@@ -60,7 +60,7 @@ struct DoubleWidthUInt <std::uint32_t>
     which return results by value cannot be included in the interface.
 */
 template <typename UInt>
-class UnsignedIntegerCalc : public SafeBool <UnsignedIntegerCalc <UInt> >
+class UnsignedIntegerCalc
 {
 public:
     typedef typename detail::DoubleWidthUInt <UInt>::type UIntBig;
@@ -182,7 +182,8 @@ public:
     }
 
     /** Safe conversion to `bool`, `true` means a non-zero value. */
-    bool asBoolean () const
+    explicit
+    operator bool() const
     {
         return isNotZero ();
     }

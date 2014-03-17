@@ -266,17 +266,35 @@ public:
 
         If Suite is true, a pass is logged; if it's false, a failure is logged.
         If the failure message is specified, it will be written to the log if the test fails.
+
+        Requirements:
+            Condition must be explicitly convertible to bool
     */
-    bool expect (bool trueCondition, String const& failureMessage = String::empty);
+    template <class Condition>
+    bool expect (Condition trueCondition, String const& failureMessage = String::empty)
+    {
+        return expect_bool (!!trueCondition, failureMessage);
+    }
+
+    bool expect_bool (bool trueCondition, String const& failureMessage);
 
     /** Checks that the result of a test is false, and logs this result.
 
         This is basically the opposite of expect().
 
         @see expect
-    */
-    bool unexpected (bool falseCondition, String const& failureMessage = String::empty);
 
+        Requirements:
+            Condition must be explicitly convertible to bool
+    */
+    template <class Condition>
+    bool unexpected (Condition falseCondition, String const& failureMessage = String::empty)
+    {
+        return unexpected_bool (!!falseCondition, failureMessage);
+    }
+    
+    bool unexpected_bool (bool falseCondition, String const& failureMessage);
+    
     /** Compares two values, and if they don't match, prints out a message containing the
         expected and actual result values.
     */

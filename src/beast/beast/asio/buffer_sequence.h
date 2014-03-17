@@ -99,6 +99,21 @@ public:
     {
         return m_buffers.end ();
     }
+
+#if 0
+    template <class ConstBufferSequence>
+    void
+    assign (ConstBufferSequence const& buffers)
+    {
+        auto const n (std::distance (
+            std::begin (buffers), std::end (buffers)));
+
+        for (int i = 0, auto iter (std::begin (buffers));
+            iter != std::end (buffers); ++iter, ++i)
+            m_buffers[i] = Buffer (boost::asio::buffer_cast <void*> (
+                *iter), boost::asio::buffer_size (*iter));
+    }
+#endif
 };
 
 typedef buffer_sequence <boost::asio::const_buffer> const_buffers;

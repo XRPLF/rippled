@@ -112,7 +112,7 @@ bool TrackedMutex::Record::isNotNull () const noexcept
     return m_mutexName != "";
 }
 
-bool TrackedMutex::Record::asBoolean () const noexcept
+TrackedMutex::Record::operator bool() const noexcept
 {
     return isNotNull ();
 }
@@ -170,7 +170,7 @@ bool TrackedMutex::Agent::isNotNull () const noexcept
     return m_thread != nullptr;
 }
 
-bool TrackedMutex::Agent::asBoolean () const noexcept
+TrackedMutex::Agent::operator bool() const noexcept
 {
     return isNotNull ();
 }

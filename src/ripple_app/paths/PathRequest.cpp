@@ -197,7 +197,7 @@ Json::Value PathRequest::doCreate (Ledger::ref lrLedger, RippleLineCache::ref& c
     {
         if (bValid)
         {
-            m_journal.debug << iIdentifier << " valid: " << raSrcAccount.humanAccountID () <<
+            m_journal.debug << iIdentifier << " valid: " << raSrcAccount.humanAccountID ();
             m_journal.debug << iIdentifier << " Deliver: " << saDstAmount.getFullText ();
         }
         else

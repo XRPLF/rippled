@@ -76,6 +76,9 @@
     <None Include="..\..\scripts\compile.sh">
       <Filter>scripts</Filter>
     </None>
+    <None Include="..\..\beast\asio\README.md">
+      <Filter>beast\asio</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="beast_core">
@@ -309,6 +312,9 @@
     <Filter Include="beast\cxx14\tests">
       <UniqueIdentifier>{1271ee71-5754-46ef-845b-84e53eed11c0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\asio\tests">
+      <UniqueIdentifier>{f2594738-6447-447b-8f51-2d42fbe8a6ee}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -419,9 +425,6 @@
     <ClInclude Include="..\..\modules\beast_core\network\MACAddress.h">
       <Filter>beast_core\network</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\network\NamedPipe.h">
-      <Filter>beast_core\network</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\network\Socket.h">
       <Filter>beast_core\network</Filter>
     </ClInclude>
@@ -482,16 +485,7 @@
     <ClInclude Include="..\..\modules\beast_core\threads\Process.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\ReadWriteLock.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\ScopedLock.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\ScopedReadLock.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\ScopedWriteLock.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\time\PerformanceCounter.h">
@@ -956,9 +950,6 @@
     <ClInclude Include="..\..\beast\Chrono.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\SafeBool.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\config\BeastConfig.h" />
     <ClInclude Include="..\..\beast\utility\Error.h">
       <Filter>beast\utility</Filter>
@@ -1014,9 +1005,6 @@
     <ClInclude Include="..\..\beast\net\DynamicBuffer.h">
       <Filter>beast\net</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\net\BufferType.h">
-      <Filter>beast\net</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_asio\http\HTTPRequestParser.h">
       <Filter>beast_asio\http</Filter>
     </ClInclude>
@@ -1031,9 +1019,6 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\Threads.h">
       <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\threads\LockGuard.h">
-      <Filter>beast\threads</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\threads\RecursiveMutex.h">
       <Filter>beast\threads</Filter>
@@ -1148,9 +1133,6 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\insight\HookImpl.h">
       <Filter>beast\insight</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\cyclic_iterator.h">
-      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\threads\semaphore.h">
       <Filter>beast\threads</Filter>
@@ -1323,6 +1305,15 @@
     <ClInclude Include="..\..\beast\http\impl\http_parser.h">
       <Filter>beast\http\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\container\cyclic_iterator.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\asio\enable_wait_for_async.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\asio\memory_buffer.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
@@ -1406,9 +1397,6 @@
     <ClCompile Include="..\..\modules\beast_core\native\linux_Threads.cpp">
       <Filter>beast_core\native</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\posix_NamedPipe.cpp">
-      <Filter>beast_core\native</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\win32_Files.cpp">
       <Filter>beast_core\native</Filter>
     </ClCompile>
@@ -1425,9 +1413,6 @@
       <Filter>beast_core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\network\MACAddress.cpp">
-      <Filter>beast_core\network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\NamedPipe.cpp">
       <Filter>beast_core\network</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\network\Socket.cpp">
@@ -1473,9 +1458,6 @@
       <Filter>beast_core\threads</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\threads\HighResolutionTimer.cpp">
-      <Filter>beast_core\threads</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\ReadWriteLock.cpp">
       <Filter>beast_core\threads</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\time\PerformanceCounter.cpp">
@@ -1909,6 +1891,18 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\asio\abstract_socket.cpp">
       <Filter>beast\asio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\tests\bind_handler_tests.cpp">
+      <Filter>beast\asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\tests\shared_handler_tests.cpp">
+      <Filter>beast\asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\tests\wrap_handler_tests.cpp">
+      <Filter>beast\asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\tests\enable_wait_for_async.test.cpp">
+      <Filter>beast\asio\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

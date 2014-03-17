@@ -432,7 +432,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
     {
         stpTrans = boost::make_shared<SerializedTransaction> (*sopTrans);
     }
-    catch (std::exception& e)
+    catch (std::exception&)
     {
         return RPC::make_error (rpcINTERNAL,
             "Exception occurred during transaction");
@@ -460,7 +460,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
     {
         tpTrans     = boost::make_shared<Transaction> (stpTrans, false);
     }
-    catch (std::exception& e)
+    catch (std::exception&)
     {
         return RPC::make_error (rpcINTERNAL,
             "Exception occurred during transaction");
@@ -478,7 +478,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
                 "Unable to sterilize transaction.");
         }
     }
-    catch (std::exception& e)
+    catch (std::exception&)
     {
         return RPC::make_error (rpcINTERNAL,
             "Exception occurred during transaction submission.");
@@ -504,7 +504,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
 
         return jvResult;
     }
-    catch (std::exception& e)
+    catch (std::exception&)
     {
         return RPC::make_error (rpcINTERNAL,
             "Exception occurred during JSON handling.");

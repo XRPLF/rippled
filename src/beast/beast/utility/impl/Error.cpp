@@ -81,11 +81,6 @@ bool Error::failed () const
     return code () != success;
 }
 
-bool Error::asBoolean () const
-{
-    return code () != success;
-}
-
 String const Error::getReasonText () const
 {
     return m_reasonText;
