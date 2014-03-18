@@ -248,6 +248,7 @@
     <ClInclude Include="..\..\beast\utility\PropertyStream.h" />
     <ClInclude Include="..\..\beast\utility\StaticObject.h" />
     <ClInclude Include="..\..\beast\Version.h" />
+    <ClInclude Include="..\..\beast\workaround\noexcept.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\AsyncObject.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\PeerRole.h" />

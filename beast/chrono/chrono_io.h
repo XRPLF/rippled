@@ -29,6 +29,7 @@
 
 #include "../Config.h"
 
+#include "../workaround/noexcept.h"
 #include <ctime>
 #include <locale>
 

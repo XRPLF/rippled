@@ -3,6 +3,10 @@
     This file is part of Beast: https://github.com/vinniefalco/Beast
     Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
+    Portions of this file are from JUCE.
+    Copyright (c) 2013 - Raw Material Software Ltd.
+    Please visit http://www.juce.com
+
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
@@ -17,6 +21,17 @@
 */
 //==============================================================================
 
-// Microsoft Visual C++ compiler configuration
+#ifndef BEAST_WORKAROUND_NOEXCEPT_H_INCLUDED
+#define BEAST_WORKAROUND_NOEXCEPT_H_INCLUDED
 
-#include "../../workaround/noexcept.h"
+#ifdef _MSC_VER
+# ifdef noexcept
+#  undef noexcept
+# endif
+# define noexcept throw()
+# if _MSC_VER > 1600 && ! _ALLOW_KEYWORD_MACROS
+#  define _ALLOW_KEYWORD_MACROS 1 // (to stop VC2012 complaining)
+# endif
+#endif
+
+#endif

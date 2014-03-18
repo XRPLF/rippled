@@ -23,6 +23,8 @@
 #include "abstract_socket.h"
 #include "bind_handler.h"
 
+#include "../workaround/noexcept.h"
+
 namespace beast {
 namespace asio {
 

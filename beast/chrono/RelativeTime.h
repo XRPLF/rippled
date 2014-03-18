@@ -27,6 +27,7 @@
 #include "../Config.h"
 #include "../strings/String.h"
 
+#include "../workaround/noexcept.h"
 #include <string>
 #include <sstream>
 
