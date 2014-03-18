@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#include "../../BeastConfig.h"
 
 #include "ripple_sslutil.h"
 

@@ -20,8 +20,6 @@
 #ifndef BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
 #define BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
 
-#include "BeastConfig.h"
-
 #include "../basic_message.h"
 
 // TODO Use <system_error>

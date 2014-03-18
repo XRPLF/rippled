@@ -45,7 +45,6 @@ linux-g++:QMAKE_CXXFLAGS += \
     -pthread
 
 INCLUDEPATH += \
-    "../../src/BeastConfig/" \
     "../../src/leveldb/" \
     "../../src/leveldb/port" \
     "../../src/leveldb/include" \

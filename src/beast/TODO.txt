@@ -41,9 +41,6 @@ BEAST TODO
 
 - Think about doing away with BEAST_CALLTYPE and BEAST_API
 
-- Decide if headers should just include BeastConfig.h instead of making the
-  host program do it.
-
 - Rename malloc/calloc JUCE members that conflict with the debug CRT from MSVC
 
 - Reformat every Doxygen comment
@@ -63,7 +60,7 @@ BEAST TODO
 - restructure the repo sources to look like this:
   /Source/beast/beast_core/beast_core.h
   etc...
-- Put the BeastConfig.h at the root of the repo.
+
 - Make sure the template BeastConfig.h is included in the Doxyfile
 
 - Implement robust key/value database with bulk write

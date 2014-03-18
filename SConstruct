@@ -207,7 +207,6 @@ env['PRINT_CMD_LINE_FUNC'] = print_cmd_line
 #
 INCLUDE_PATHS = [
     '.',
-    'src/BeastConfig',
     'src/leveldb',
     'src/leveldb/port',
     'src/leveldb/include',

@@ -21,9 +21,9 @@
 */
 //==============================================================================
 
-// Your project must contain a BeastConfig.h file with your project-specific settings in it,
-// and your header search path must make it accessible to the module's files.
-#include "BeastConfig.h"
+#if BEAST_INCLUDE_BEASTCONFIG
+#include "../../BeastConfig.h"
+#endif
 
 //==============================================================================
 #include "native/BasicNativeHeaders.h"
@@ -278,24 +278,6 @@ void beast_reportFatalError (char const* message, char const* fileName, int line
 #pragma pop_macro("_aligned_offset_realloc")
 #pragma pop_macro("_aligned_offset_recalloc")
 #pragma pop_macro("_aligned_msize")
-#endif
-
-//------------------------------------------------------------------------------
-
-// When we compile the static library, which is really just for browsing the
-// sources in the Visual Studio IDE, we want to compile each individual unity
-// .cpp in order to make sure that it builds by itself. An application that
-// uses beast will typically include all of these .cpp files in one of its
-// own unity .cpp
-#if ! BEAST_COMPILING_STATIC_LIBARARY
-/*
-#include "../../beast/chrono/Chrono.cpp"
-#include "../../beast/crypto/Crypto.cpp"
-#include "../../beast/http/HTTP.cpp"
-#include "../../beast/net/Net.cpp"
-#include "../../beast/strings/Strings.cpp"
-#include "../../beast/utility/Utility.cpp"
-*/
 #endif
 
 // Must be outside the namespace

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#include "../../BeastConfig.h"
 
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS 1

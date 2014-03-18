@@ -23,7 +23,7 @@
 */
 
 // MUST come first!
-#include "BeastConfig.h"
+#include "../../BeastConfig.h"
 
 // Include this to get all the basic includes included, to prevent errors
 #include "../beast/modules/beast_core/beast_core.h"

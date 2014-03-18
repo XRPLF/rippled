@@ -17,6 +17,6 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#include "../../BeastConfig.h"
 
 #include "impl/BasicFullBelowCache.cpp"

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#include "../../BeastConfig.h"
 
 #include "../../beast/modules/beast_core/beast_core.h" // for UnitTest
 

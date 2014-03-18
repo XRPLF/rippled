@@ -3041,7 +3041,6 @@
     <ClInclude Include="..\..\src\ripple_app\transactors\WalletAddTransactor.h">
       <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\BeastConfig\BeastConfig.h" />
     <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketType.h">
       <Filter>[1] Ripple\common\impl</Filter>
     </ClInclude>
@@ -3054,6 +3053,7 @@
     <ClInclude Include="..\..\src\ripple\common\byte_view.h">
       <Filter>[1] Ripple\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\BeastConfig.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\ripple_data\protocol\ripple.proto">

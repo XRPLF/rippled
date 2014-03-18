@@ -23,7 +23,7 @@
     @ingroup ripple_net
 */
 
-#include "BeastConfig.h"
+#include "../../BeastConfig.h"
 
 #include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/version.hpp>

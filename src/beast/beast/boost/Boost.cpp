@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#if BEAST_INCLUDE_BEASTCONFIG
+#include "../../BeastConfig.h"
+#endif
 
 #include "ErrorCode.h"
 

@@ -25,9 +25,6 @@
     This external module provides the SQLite embedded database library.
 
     SQLite is public domain software, visit http://sqlite.org
-
-    @note To control the use of the native SQLite library on supported platforms,
-          see BeastConfig.h.
 */
 
 #include "../../beast/config/PlatformConfig.h"

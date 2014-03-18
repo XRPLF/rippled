@@ -24,7 +24,7 @@
     Note that these sources must be compiled using the C compiler.
 */
     
-#include "BeastConfig.h"
+#include "../../BeastConfig.h"
 
 #ifdef __cplusplus
 #error "Whoops! This file must be compiled with a C compiler!"
