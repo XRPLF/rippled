@@ -40,6 +40,7 @@ extern Charge const feeLightRPC;              // A normal RPC command
 extern Charge const feeLowBurdenRPC;          // A slightly burdensome RPC load
 extern Charge const feeMediumBurdenRPC;       // A somewhat burdensome RPC load
 extern Charge const feeHighBurdenRPC;         // A very burdensome RPC load
+extern Charge const feePathFindUpdate;        // An update to an existing PF request
 
 // Good things
 extern Charge const feeNewTrustedNote;        // A new transaction/validation/proposal we trust
