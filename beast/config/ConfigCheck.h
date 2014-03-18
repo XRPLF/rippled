@@ -20,25 +20,6 @@
 #ifndef BEAST_CONFIG_CONFIGCHECK_H_INCLUDED
 #define BEAST_CONFIG_CONFIGCHECK_H_INCLUDED
 
-// This file makes sure that BeastConfig.h was included.
-// It also sets defaults for all config options.
-
-/*  If you fail to make sure that all your compile units are building Beast with
-    the same set of option flags, then there's a risk that different compile
-    units will treat the classes as having different memory layouts, leading to
-    very nasty memory corruption errors when they all get linked together.
-    That's why it's best to always include the BeastConfig.h file before any
-    beast headers.
-*/
-#ifndef BEAST_BEASTCONFIG_H_INCLUDED
-# ifdef _MSC_VER
-#  pragma message ("Have you included your BeastConfig.h file before including the Beast headers?")
-# else
-#  warning "Have you included your BeastConfig.h file before including the Beast headers?"
-# endif
-# error "BeastConfig.h must be included before any Beast headers!"
-#endif
-
 //
 // Apply sensible defaults for the configuration settings
 //

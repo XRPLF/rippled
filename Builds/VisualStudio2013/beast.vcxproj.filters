@@ -950,7 +950,6 @@
     <ClInclude Include="..\..\beast\Chrono.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\config\BeastConfig.h" />
     <ClInclude Include="..\..\beast\utility\Error.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
@@ -1323,6 +1322,7 @@
     <ClInclude Include="..\..\beast\http\basic_message.h">
       <Filter>beast\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\BeastConfig.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">

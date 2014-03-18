@@ -23,7 +23,9 @@
     @ingroup beast_sqlite
 */
 
-#include "BeastConfig.h"
+#if BEAST_INCLUDE_BEASTCONFIG
+#include "../../BeastConfig.h"
+#endif
 
 // Prevents sqlite.h from being included, since it screws up the .c
 #define BEAST_SQLITE_CPP_INCLUDED

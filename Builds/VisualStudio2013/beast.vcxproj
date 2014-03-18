@@ -82,6 +82,7 @@
     <None Include="..\..\scripts\compile.sh" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\BeastConfig.h" />
     <ClInclude Include="..\..\beast\Arithmetic.h" />
     <ClInclude Include="..\..\beast\Asio.h" />
     <ClInclude Include="..\..\beast\asio\abstract_socket.h" />
@@ -247,7 +248,6 @@
     <ClInclude Include="..\..\beast\utility\PropertyStream.h" />
     <ClInclude Include="..\..\beast\utility\StaticObject.h" />
     <ClInclude Include="..\..\beast\Version.h" />
-    <ClInclude Include="..\..\config\BeastConfig.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\AsyncObject.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\PeerRole.h" />

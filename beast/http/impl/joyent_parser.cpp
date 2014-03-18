@@ -17,10 +17,6 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
-
-#include "../../Config.h"
-
 namespace beast {
 namespace joyent {
 
