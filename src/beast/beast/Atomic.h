@@ -28,6 +28,8 @@
 #include "CStdInt.h"
 #include "StaticAssert.h"
 
+#include "workaround/noexcept.h"
+
 namespace beast {
 
 //==============================================================================

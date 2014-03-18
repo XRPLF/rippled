@@ -315,6 +315,9 @@
     <Filter Include="beast\asio\tests">
       <UniqueIdentifier>{f2594738-6447-447b-8f51-2d42fbe8a6ee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\workaround">
+      <UniqueIdentifier>{84acd0d5-5531-470e-b9a7-42af9003aa64}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1323,6 +1326,12 @@
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\BeastConfig.h" />
+    <ClInclude Include="..\..\beast\container\cyclic_iterator.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\workaround\noexcept.h">
+      <Filter>beast\workaround</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">

@@ -278,35 +278,10 @@ extern void beast_reportFatalError (char const* message, char const* fileName, i
 # define BEAST_MOVE_CAST(type) type
 #endif
 
-//------------------------------------------------------------------------------
-
-// Declare some fake versions of nullptr and noexcept, for older compilers:
-#if ! (DOXYGEN || BEAST_COMPILER_SUPPORTS_NOEXCEPT)
-# ifdef noexcept
-#  undef noexcept
-# endif
-# define noexcept  throw()
-# if defined (_MSC_VER) && _MSC_VER > 1600
-#  define _ALLOW_KEYWORD_MACROS 1 // (to stop VC2012 complaining)
-# endif
-#endif
-
-#if ! (DOXYGEN || BEAST_COMPILER_SUPPORTS_NULLPTR)
-#ifdef nullptr
-#undef nullptr
-#endif
-#define nullptr (0)
-#endif
-
-#if ! (DOXYGEN || BEAST_COMPILER_SUPPORTS_OVERRIDE_AND_FINAL)
-#undef  override
-#define override
-#endif
-
 #ifdef __cplusplus
 namespace beast {
 bool beast_isRunningUnderDebugger();
-void logAssertion (char const* file, int line) noexcept;
+void logAssertion (char const* file, int line);
 }
 #endif
 

@@ -24,15 +24,15 @@
 
 #include "../mpl/IsCallPossible.h"
 
-#include <functional>
-#include <memory>
-#include "../cxx14/type_traits.h" // <type_traits>
-
 #include <boost/utility/base_from_member.hpp>
-
 #include <boost/asio/detail/handler_alloc_helpers.hpp>
 #include <boost/asio/detail/handler_cont_helpers.hpp>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
+
+#include "../workaround/noexcept.h"
+#include <functional>
+#include <memory>
+#include "../cxx14/type_traits.h" // <type_traits>
 
 #ifndef BEAST_ASIO_NO_ALLOCATE_SHARED
 #define BEAST_ASIO_NO_ALLOCATE_SHARED 0
