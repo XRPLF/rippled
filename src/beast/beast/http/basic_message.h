@@ -17,20 +17,70 @@
 */
 //==============================================================================
 
-#include "BeastConfig.h"
+#ifndef BEAST_ASIO_HTTP_BASIC_MESSAGE_H_INCLUDED
+#define BEAST_ASIO_HTTP_BASIC_MESSAGE_H_INCLUDED
 
-#include "../../Config.h"
+#include <memory>
 
 namespace beast {
+namespace http {
 
-#ifdef _MSC_VER
-# pragma warning (push)
-# pragma warning (disable: 4127) // conditional expression is constant
-# pragma warning (disable: 4244) // integer conversion, possible loss of data
-#endif
-#include "http-parser/http_parser.c"
-#ifdef _MSC_VER
-# pragma warning (pop)
-#endif
+namespace method {
+enum methodc_t
+{
+    http_delete,
+    http_get,
+    http_head,
+    http_post,
+    http_put,
+
+    // pathological
+    http_connect,
+    http_options,
+    http_trace,
+
+    // webdav
+    http_copy,
+    http_lock,
+    http_mkcol,
+    http_move,
+    http_propfind,
+    http_proppatch,
+    http_search,
+    http_unlock,
+
+    // subversion
+    http_report,
+    http_mkactivity,
+    http_checkout,
+    http_merge,
+
+    // upnp
+    http_msearch,
+    http_notify,
+    http_subscribe,
+    http_unsubscribe,
+
+    // RFC-5789
+    http_patch,
+    http_purge
+};
+} // method
+
+class basic_message
+{
+private:
+
+public:
+};
+
+class basic_request
+{
+public:
+
+};
 
 }
+}
+
+#endif

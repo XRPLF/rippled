@@ -159,9 +159,11 @@
     <ClInclude Include="..\..\beast\FixedArray.h" />
     <ClInclude Include="..\..\beast\HeapBlock.h" />
     <ClInclude Include="..\..\beast\HTTP.h" />
+    <ClInclude Include="..\..\beast\http\basic_message.h" />
     <ClInclude Include="..\..\beast\http\impl\http-parser\http_parser.h" />
-    <ClInclude Include="..\..\beast\http\impl\http_parser.h" />
+    <ClInclude Include="..\..\beast\http\impl\joyent_parser.h" />
     <ClInclude Include="..\..\beast\http\ParsedURL.h" />
+    <ClInclude Include="..\..\beast\http\raw_parser.h" />
     <ClInclude Include="..\..\beast\http\URL.h" />
     <ClInclude Include="..\..\beast\Insight.h" />
     <ClInclude Include="..\..\beast\insight\Base.h" />
@@ -549,7 +551,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\HTTP.cpp" />
-    <ClCompile Include="..\..\beast\http\impl\http_parser.cpp">
+    <ClCompile Include="..\..\beast\http\impl\raw_parser.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\impl\joyent_parser.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
