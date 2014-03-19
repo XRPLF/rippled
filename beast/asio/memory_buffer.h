@@ -25,6 +25,7 @@
 #include <boost/asio/buffer.hpp>
 
 #include <cstddef>
+#include <memory>
 #include <type_traits>
 
 namespace beast {
@@ -38,8 +39,9 @@ class memory_buffer
     : private empty_base_optimization <Alloc>
 {
 private:
-    static_assert (std::is_trivially_constructible <T>::value,
-        "T must be trivially constructible");
+    static_assert (std::is_same <char, T>::value ||
+                   std::is_same <unsigned char, T>::value,
+        "memory_buffer only works with char and unsigned char");
 
     typedef empty_base_optimization <Alloc> Base;
 

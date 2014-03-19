@@ -22,7 +22,7 @@ namespace beast {
 HTTPParser::HTTPParser (Type type)
     : m_type (type)
     , m_impl (new HTTPParserImpl (
-        (type == typeResponse) ? HTTP_RESPONSE : HTTP_REQUEST))
+        (type == typeResponse) ? joyent::HTTP_RESPONSE : joyent::HTTP_REQUEST))
 {
 }
 

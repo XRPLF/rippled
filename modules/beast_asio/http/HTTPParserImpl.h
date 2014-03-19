@@ -30,7 +30,7 @@ public:
         stringReservation = 256
     };
 
-    explicit HTTPParserImpl (enum http_parser_type type)
+    explicit HTTPParserImpl (enum joyent::http_parser_type type)
         : m_finished (false)
         , m_was_value (false)
         , m_headersComplete (false)
@@ -47,7 +47,7 @@ public:
         m_field.reserve (stringReservation);
         m_value.reserve (stringReservation);
 
-        http_parser_init (&m_parser, type);
+        joyent::http_parser_init (&m_parser, type);
         m_parser.data = this;
     }
 
@@ -62,19 +62,19 @@ public:
 
     String message () const
     {
-        return String (http_errno_name (static_cast <
-            enum http_errno> (m_parser.http_errno)));
+        return String (joyent::http_errno_name (static_cast <
+            enum joyent::http_errno> (m_parser.http_errno)));
     }
 
     std::size_t process (void const* buf, std::size_t bytes)
     {
-        return http_parser_execute (&m_parser,
+        return joyent::http_parser_execute (&m_parser,
             &m_settings, static_cast <char const*> (buf), bytes);
     }
 
     void process_eof ()
     {
-        http_parser_execute (&m_parser, &m_settings, nullptr, 0);
+        joyent::http_parser_execute (&m_parser, &m_settings, nullptr, 0);
     }
 
     bool finished () const
@@ -107,8 +107,8 @@ public:
 
     String http_errno_message () const
     {
-        return String (http_errno_name (
-            static_cast <enum http_errno> (
+        return String (joyent::http_errno_name (
+            static_cast <enum joyent::http_errno> (
                 m_parser.http_errno)));
     }
 
@@ -204,53 +204,53 @@ private:
     }
 
 private:
-    static int on_message_begin (http_parser* parser)
+    static int on_message_begin (joyent::http_parser* parser)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onMessageBegin ();
     }
 
-    static int on_url (http_parser* parser, const char *at, size_t length)
+    static int on_url (joyent::http_parser* parser, const char *at, size_t length)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onUrl (at, length);
     }
 
-    static int on_status (http_parser* parser,
+    static int on_status (joyent::http_parser* parser,
         char const* /*at*/, size_t /*length*/)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onStatus ();
     }
 
-    static int on_header_field (http_parser* parser,
+    static int on_header_field (joyent::http_parser* parser,
         const char *at, size_t length)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onHeaderField (at, length);
     }
 
-    static int on_header_value (http_parser* parser,
+    static int on_header_value (joyent::http_parser* parser,
         const char *at, size_t length)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onHeaderValue (at, length);
     }
 
-    static int on_headers_complete (http_parser* parser)
+    static int on_headers_complete (joyent::http_parser* parser)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onHeadersComplete ();
     }
 
-    static int on_body (http_parser* parser,
+    static int on_body (joyent::http_parser* parser,
         const char *at, size_t length)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onBody (at, length);
     }
 
-    static int on_message_complete (http_parser* parser)
+    static int on_message_complete (joyent::http_parser* parser)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onMessageComplete ();
@@ -258,8 +258,8 @@ private:
 
 private:
     bool m_finished;
-    http_parser_settings m_settings;
-    http_parser m_parser;
+    joyent::http_parser_settings m_settings;
+    joyent::http_parser m_parser;
     StringPairArray m_fields;
     bool m_was_value;
     std::string m_field;

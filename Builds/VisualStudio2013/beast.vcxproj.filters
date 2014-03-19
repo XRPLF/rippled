@@ -1302,9 +1302,6 @@
     <ClInclude Include="..\..\beast\asio\wrap_handler.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\http\impl\http_parser.h">
-      <Filter>beast\http\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\container\cyclic_iterator.h">
       <Filter>beast\container</Filter>
     </ClInclude>
@@ -1313,6 +1310,18 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\asio\memory_buffer.h">
       <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\cyclic_iterator.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\http\raw_parser.h">
+      <Filter>beast\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\http\impl\joyent_parser.h">
+      <Filter>beast\http\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\http\basic_message.h">
+      <Filter>beast\http</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1715,9 +1724,6 @@
     <ClCompile Include="..\..\beast\http\HTTP.cpp">
       <Filter>beast\http</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\http\impl\http_parser.cpp">
-      <Filter>beast\http\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\strings\impl\CharacterFunctions.cpp">
       <Filter>beast\strings\impl</Filter>
     </ClCompile>
@@ -1903,6 +1909,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\asio\tests\enable_wait_for_async.test.cpp">
       <Filter>beast\asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\impl\raw_parser.cpp">
+      <Filter>beast\http\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\impl\joyent_parser.cpp">
+      <Filter>beast\http\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

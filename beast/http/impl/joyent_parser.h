@@ -17,17 +17,30 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_HTTP_PARSER_H_INCLUDED
-#define BEAST_HTTP_HTTP_PARSER_H_INCLUDED
+#ifndef BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
+#define BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
 
 #include "BeastConfig.h"
 
-// Wraps the C-language joyent http parser header in our namespace 
+#include "../basic_message.h"
+
+// TODO Use <system_error>
+#include <boost/system/error_code.hpp>
+
+// Wraps the C-language joyent http parser header in a namespace 
 
 namespace beast {
+namespace joyent {
 
 #include "http-parser/http_parser.h"
 
+http::method::methodc_t
+convert_http_method (joyent::http_method m);
+
+boost::system::error_code
+convert_http_errno (joyent::http_errno err);
+
+}
 }
 
 #endif

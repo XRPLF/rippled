@@ -23,7 +23,7 @@
 
 #include "beast_asio.h"
 
-# include "../../beast/http/impl/http_parser.h"
+# include "../../beast/http/impl/joyent_parser.h"
 
 #include "basics/PeerRole.cpp"
 #include "basics/SSLContext.cpp"

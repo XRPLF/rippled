@@ -21,4 +21,5 @@
 
 #include "impl/URL.cpp"
 #include "impl/ParsedURL.cpp"
-#include "impl/http_parser.cpp"
+#include "impl/joyent_parser.cpp"
+#include "impl/raw_parser.cpp"
