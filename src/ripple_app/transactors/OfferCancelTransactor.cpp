@@ -33,14 +33,14 @@ TER OfferCancelTransactor::doApply ()
 
     if (uTxFlags & tfUniversalMask)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
 
     if (!uOfferSequence || uAccountSequenceNext - 1 <= uOfferSequence)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "uAccountSequenceNext=" << uAccountSequenceNext << 
             " uOfferSequence=" << uOfferSequence;
         return temBAD_SEQUENCE;

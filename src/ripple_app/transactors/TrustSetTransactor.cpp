@@ -49,7 +49,7 @@ TER TrustSetTransactor::doApply ()
 
     if (uTxFlags & tfTrustSetMask)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
@@ -60,14 +60,14 @@ TER TrustSetTransactor::doApply ()
 
     if (bSetAuth && !isSetBit (mTxnAccount->getFieldU32 (sfFlags), lsfRequireAuth))
     {
-        m_journal.info << 
+        m_journal.trace << 
             "Retry: Auth not required.";
         return tefNO_AUTH_REQUIRED;
     }
 
     if (saLimitAmount.isNative ())
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Native credit limit: " <<
             saLimitAmount.getFullText ();
         return temBAD_LIMIT;
@@ -75,7 +75,7 @@ TER TrustSetTransactor::doApply ()
 
     if (saLimitAmount.isNegative ())
     {
-        m_journal.info << 
+        m_journal.trace << 
             "Malformed transaction: Negative credit limit.";
         return temBAD_LIMIT;
     }
@@ -83,7 +83,7 @@ TER TrustSetTransactor::doApply ()
     // Check if destination makes sense.
     if (!uDstAccountID || uDstAccountID == ACCOUNT_ONE)
     {
-        m_journal.info << 
+        m_journal.trace << 
             "Malformed transaction: Destination account not specified.";
 
         return temDST_NEEDED;
@@ -106,7 +106,7 @@ TER TrustSetTransactor::doApply ()
         }
         else
         {
-            m_journal.info <<
+            m_journal.trace <<
                 "Malformed transaction: Can not extend credit to self.";
             return temDST_IS_SRC;
         }
@@ -117,7 +117,7 @@ TER TrustSetTransactor::doApply ()
 
     if (!sleDst)
     {
-        m_journal.info << 
+        m_journal.trace << 
             "Delay transaction: Destination account does not exist.";
         return tecNO_DST;
     }
@@ -319,7 +319,7 @@ TER TrustSetTransactor::doApply ()
         else if (bReserveIncrease
                  && mPriorBalance.getNValue () < uReserveCreate) // Reserve is not scaled by load.
         {
-            m_journal.info <<
+            m_journal.trace <<
                 "Delay transaction: Insufficent reserve to add trust line.";
             
             // Another transaction could provide XRP to the account and then
@@ -330,7 +330,7 @@ TER TrustSetTransactor::doApply ()
         {
             mEngine->entryModify (sleRippleState);
 
-            m_journal.info <<
+            m_journal.trace <<
                 "Modify ripple line";
         }
     }
@@ -339,13 +339,13 @@ TER TrustSetTransactor::doApply ()
              && (!bQualityIn || !uQualityIn)                         // Not setting quality in or setting default quality in.
              && (!bQualityOut || !uQualityOut))                      // Not setting quality out or setting default quality out.
     {
-        m_journal.info << 
+        m_journal.trace << 
             "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
     else if (mPriorBalance.getNValue () < uReserveCreate)       // Reserve is not scaled by load.
     {
-        m_journal.info << 
+        m_journal.trace << 
             "Delay transaction: Line does not exist. Insufficent reserve to create line.";
 
         // Another transaction could create the account and then this transaction would succeed.
@@ -361,7 +361,7 @@ TER TrustSetTransactor::doApply ()
         STAmount saBalance (STAmount (uCurrencyID, ACCOUNT_ONE));  
 
 
-        m_journal.info << 
+        m_journal.trace << 
             "doTrustSet: Creating ripple line: " <<
             Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID).ToString ();
 

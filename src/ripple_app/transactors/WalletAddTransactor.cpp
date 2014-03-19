@@ -25,7 +25,7 @@ TER WalletAddTransactor::doApply ()
 
     if (uTxFlags & tfUniversalMask)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
@@ -44,7 +44,7 @@ TER WalletAddTransactor::doApply ()
         Serializer::getSHA512Half (uAuthKeyID.begin (), uAuthKeyID.size ()), 
         vucSignature, ECDSA::not_strict))
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Unauthorized: bad signature ";
         return tefBAD_ADD_AUTH;
     }
@@ -54,7 +54,7 @@ TER WalletAddTransactor::doApply ()
 
     if (sleDst)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "account already created";
         return tefCREATED;
     }
@@ -75,7 +75,7 @@ TER WalletAddTransactor::doApply ()
     {
         // Vote no. However, transaction might succeed, if applied in a
         // different order.
-        m_journal.info <<
+        m_journal.trace <<
             "Delay transaction: Insufficient funds: %s / %s (%d)" <<
             saSrcBalance.getText () << " / " <<
             (saDstAmount + uReserve).getText () << " with reserve = " <<

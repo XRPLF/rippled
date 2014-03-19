@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TX_OFFERCREATE_H_INCLUDED
 #define RIPPLE_TX_OFFERCREATE_H_INCLUDED
 
+#include <unordered_set>
+
 namespace ripple {
 
 class OfferCreateTransactorLog;
@@ -72,10 +74,9 @@ private:
         STAmount const&     saOfferPays,
         STAmount const&     saOfferGets,
         uint160 const&      uTakerAccountID,
-        boost::unordered_set<uint256>&  usOfferUnfundedFound,
-        boost::unordered_set<uint256>&  usOfferUnfundedBecame,
-        boost::unordered_set<uint160>&  usAccountTouched,
-        STAmount&           saOfferFunds) const;
+        std::unordered_set<uint256>&  usOfferUnfundedBecame,
+        std::unordered_set<uint160>&  usAccountTouched,
+        STAmount&           saOfferFunds);
 
     TER takeOffers (
         bool const bOpenLedger,
@@ -90,7 +91,8 @@ private:
         STAmount&           saTakerGot,
         bool&               bUnfunded);
 
-    boost::unordered_set<uint256> usOfferUnfundedFound; // Offers found unfunded.
+    // Offers found unfunded.
+    std::unordered_set<uint256> usOfferUnfundedFound;
 
     typedef std::pair <uint256, uint256> missingOffer_t;
     std::set<missingOffer_t> usMissingOffers;

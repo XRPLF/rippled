@@ -127,7 +127,7 @@ TER ChangeTransactor::applyFee ()
         feeObject = mEngine->entryCreate (
             ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
 
-    m_journal.info << 
+    m_journal.trace << 
         "Previous fee object: " << feeObject->getJson (0);
 
     feeObject->setFieldU64 (
@@ -141,7 +141,7 @@ TER ChangeTransactor::applyFee ()
 
     mEngine->entryModify (feeObject);
 
-    m_journal.info << 
+    m_journal.trace << 
         "New fee object: " << feeObject->getJson (0);
     m_journal.warning << "Fees have been changed";
     return tesSUCCESS;

@@ -110,7 +110,7 @@ TER Transactor::payFee ()
     // Only check fee is sufficient when the ledger is open.
     if (isSetBit (mParams, tapOPEN_LEDGER) && saPaid < mFeeDue)
     {
-        m_journal.info << "Insufficient fee paid: " << 
+        m_journal.trace << "Insufficient fee paid: " << 
             saPaid.getText () << "/" << mFeeDue.getText ();
 
         return telINSUF_FEE_P;
@@ -125,7 +125,7 @@ TER Transactor::payFee ()
     // Will only write the account back, if the transaction succeeds.
     if (mSourceBalance < saPaid)
     {
-        m_journal.info << "Insufficient balance:" <<
+        m_journal.trace << "Insufficient balance:" <<
             " balance=" << mSourceBalance.getText () <<
             " paid=" << saPaid.getText ();
 
@@ -156,12 +156,12 @@ TER Transactor::checkSig ()
     }
     else if (mHasAuthKey)
     {
-        m_journal.info << "applyTransaction: Delay: Not authorized to use account.";
+        m_journal.trace << "applyTransaction: Delay: Not authorized to use account.";
         return tefBAD_AUTH;
     }
     else
     {
-        m_journal.info << "applyTransaction: Invalid: Not authorized to use account.";
+        m_journal.trace << "applyTransaction: Invalid: Not authorized to use account.";
 
         return temBAD_AUTH_MASTER;
     }
@@ -180,7 +180,7 @@ TER Transactor::checkSeq ()
     {
         if (a_seq < t_seq)
         {
-            m_journal.info << "apply: transaction has future sequence number";
+            m_journal.trace << "apply: transaction has future sequence number";
 
             return terPRE_SEQ;
         }

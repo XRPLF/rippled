@@ -39,7 +39,7 @@ TER AccountSetTransactor::doApply ()
 
     if (uTxFlags & tfAccountSetMask)
     {
-        m_journal.info << "Malformed transaction: Invalid flags set.";
+        m_journal.trace << "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
 
@@ -49,7 +49,7 @@ TER AccountSetTransactor::doApply ()
 
     if (bSetRequireAuth && bClearRequireAuth)
     {
-        m_journal.info << "Malformed transaction: Contradictory flags set.";
+        m_journal.trace << "Malformed transaction: Contradictory flags set.";
         return temINVALID_FLAG;
     }
 
@@ -57,18 +57,18 @@ TER AccountSetTransactor::doApply ()
     {
         if (!mEngine->getNodes ().dirIsEmpty (Ledger::getOwnerDirIndex (mTxnAccountID)))
         {
-            m_journal.info << "Retry: Owner directory not empty.";
+            m_journal.trace << "Retry: Owner directory not empty.";
 
             return isSetBit(mParams, tapRETRY) ? terOWNERS : tecOWNERS;
         }
 
-        m_journal.info << "Set RequireAuth.";
+        m_journal.trace << "Set RequireAuth.";
         uFlagsOut   |= lsfRequireAuth;
     }
 
     if (bClearRequireAuth && isSetBit (uFlagsIn, lsfRequireAuth))
     {
-        m_journal.info << "Clear RequireAuth.";
+        m_journal.trace << "Clear RequireAuth.";
         uFlagsOut   &= ~lsfRequireAuth;
     }
 
@@ -78,19 +78,19 @@ TER AccountSetTransactor::doApply ()
 
     if (bSetRequireDest && bClearRequireDest)
     {
-        m_journal.info << "Malformed transaction: Contradictory flags set.";
+        m_journal.trace << "Malformed transaction: Contradictory flags set.";
         return temINVALID_FLAG;
     }
 
     if (bSetRequireDest && !isSetBit (uFlagsIn, lsfRequireDestTag))
     {
-        m_journal.info << "Set lsfRequireDestTag.";
+        m_journal.trace << "Set lsfRequireDestTag.";
         uFlagsOut   |= lsfRequireDestTag;
     }
 
     if (bClearRequireDest && isSetBit (uFlagsIn, lsfRequireDestTag))
     {
-        m_journal.info << "Clear lsfRequireDestTag.";
+        m_journal.trace << "Clear lsfRequireDestTag.";
         uFlagsOut   &= ~lsfRequireDestTag;
     }
 
@@ -100,19 +100,19 @@ TER AccountSetTransactor::doApply ()
 
     if (bSetDisallowXRP && bClearDisallowXRP)
     {
-        m_journal.info << "Malformed transaction: Contradictory flags set.";
+        m_journal.trace << "Malformed transaction: Contradictory flags set.";
         return temINVALID_FLAG;
     }
 
     if (bSetDisallowXRP && !isSetBit (uFlagsIn, lsfDisallowXRP))
     {
-        m_journal.info << "Set lsfDisallowXRP.";
+        m_journal.trace << "Set lsfDisallowXRP.";
         uFlagsOut   |= lsfDisallowXRP;
     }
 
     if (bClearDisallowXRP && isSetBit (uFlagsIn, lsfDisallowXRP))
     {
-        m_journal.info << "Clear lsfDisallowXRP.";
+        m_journal.trace << "Clear lsfDisallowXRP.";
         uFlagsOut   &= ~lsfDisallowXRP;
     }
 
@@ -122,7 +122,7 @@ TER AccountSetTransactor::doApply ()
 
     if ((uSetFlag == asfDisableMaster) && (uClearFlag == asfDisableMaster))
     {
-        m_journal.info << "Malformed transaction: Contradictory flags set.";
+        m_journal.trace << "Malformed transaction: Contradictory flags set.";
         return temINVALID_FLAG;
     }
 
@@ -131,13 +131,13 @@ TER AccountSetTransactor::doApply ()
         if (!mTxnAccount->isFieldPresent (sfRegularKey))
             return tecNO_REGULAR_KEY;
 
-        m_journal.info << "Set lsfDisableMaster.";
+        m_journal.trace << "Set lsfDisableMaster.";
         uFlagsOut   |= lsfDisableMaster;
     }
 
     if ((uClearFlag == asfDisableMaster) && isSetBit (uFlagsIn, lsfDisableMaster))
     {
-        m_journal.info << "Clear lsfDisableMaster.";
+        m_journal.trace << "Clear lsfDisableMaster.";
         uFlagsOut   &= ~lsfDisableMaster;
     }
 
@@ -147,13 +147,13 @@ TER AccountSetTransactor::doApply ()
 
     if ((uSetFlag == asfAccountTxnID) && (uClearFlag != asfAccountTxnID) && !mTxnAccount->isFieldPresent (sfAccountTxnID))
     {
-        m_journal.info << "Set AccountTxnID";
+        m_journal.trace << "Set AccountTxnID";
         mTxnAccount->makeFieldPresent (sfAccountTxnID);
      }
 
     if ((uClearFlag == asfAccountTxnID) && (uSetFlag != asfAccountTxnID) && mTxnAccount->isFieldPresent (sfAccountTxnID))
     {
-        m_journal.info << "Clear AccountTxnID";
+        m_journal.trace << "Clear AccountTxnID";
         mTxnAccount->makeFieldAbsent (sfAccountTxnID);
     }
 
@@ -167,12 +167,12 @@ TER AccountSetTransactor::doApply ()
 
         if (!uHash)
         {
-            m_journal.info << "unset email hash";
+            m_journal.trace << "unset email hash";
             mTxnAccount->makeFieldAbsent (sfEmailHash);
         }
         else
         {
-            m_journal.info << "set email hash";
+            m_journal.trace << "set email hash";
             mTxnAccount->setFieldH128 (sfEmailHash, uHash);
         }
     }
@@ -187,12 +187,12 @@ TER AccountSetTransactor::doApply ()
 
         if (!uHash)
         {
-            m_journal.info << "unset wallet locator";
+            m_journal.trace << "unset wallet locator";
             mTxnAccount->makeFieldAbsent (sfEmailHash);
         }
         else
         {
-            m_journal.info << "set wallet locator";
+            m_journal.trace << "set wallet locator";
             mTxnAccount->setFieldH256 (sfWalletLocator, uHash);
         }
     }
@@ -213,7 +213,7 @@ TER AccountSetTransactor::doApply ()
         }
         if (vucPublic.size () > PUBLIC_BYTES_MAX)
         {
-            m_journal.info << "message key too long";
+            m_journal.trace << "message key too long";
 
             return telBAD_PUBLIC_KEY;
         }
@@ -235,19 +235,19 @@ TER AccountSetTransactor::doApply ()
 
         if (vucDomain.empty ())
         {
-            m_journal.info << "unset domain";
+            m_journal.trace << "unset domain";
 
             mTxnAccount->makeFieldAbsent (sfDomain);
         }
         else if (vucDomain.size () > DOMAIN_BYTES_MAX)
         {
-            m_journal.info << "domain too long";
+            m_journal.trace << "domain too long";
 
             return telBAD_DOMAIN;
         }
         else
         {
-            m_journal.info << "set domain";
+            m_journal.trace << "set domain";
 
             mTxnAccount->setFieldVL (sfDomain, vucDomain);
         }
@@ -263,17 +263,17 @@ TER AccountSetTransactor::doApply ()
 
         if (!uRate || uRate == QUALITY_ONE)
         {
-            m_journal.info << "unset transfer rate";
+            m_journal.trace << "unset transfer rate";
             mTxnAccount->makeFieldAbsent (sfTransferRate);
         }
         else if (uRate > QUALITY_ONE)
         {
-            m_journal.info << "set transfer rate";
+            m_journal.trace << "set transfer rate";
             mTxnAccount->setFieldU32 (sfTransferRate, uRate);
         }
         else
         {
-            m_journal.info << "bad transfer rate";
+            m_journal.trace << "bad transfer rate";
             return temBAD_TRANSFER_RATE;
         }
     }

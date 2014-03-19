@@ -43,7 +43,7 @@ TER PaymentTransactor::doApply ()
     uint160 const uDstCurrency = saDstAmount.getCurrency ();
     bool const bXRPDirect = uSrcCurrency.isZero () && uDstCurrency.isZero ();
 
-    m_journal.info << 
+    m_journal.trace << 
         "saMaxAmount=" << saMaxAmount.getFullText () <<
         " saDstAmount=" << saDstAmount.getFullText ();
 
@@ -52,42 +52,42 @@ TER PaymentTransactor::doApply ()
 
     if (uTxFlags & tfPaymentMask)
     {
-        m_journal.info << 
+        m_journal.trace << 
             "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
     }
     else if (!uDstAccountID)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Payment destination account not specified.";
 
         return temDST_NEEDED;
     }
     else if (bMax && !saMaxAmount.isPositive ())
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: bad max amount: " << saMaxAmount.getFullText ();
 
         return temBAD_AMOUNT;
     }
     else if (!saDstAmount.isPositive ())
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: bad dst amount: " << saDstAmount.getFullText ();
 
         return temBAD_AMOUNT;
     }
     else if (CURRENCY_BAD == uSrcCurrency || CURRENCY_BAD == uDstCurrency)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Bad currency.";
 
         return temBAD_CURRENCY;
     }
     else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
     {
-        m_journal.info << 
+        m_journal.trace << 
             "Malformed transaction: Redundant transaction:" <<
             " src=" << mTxnAccountID.ToString () <<
             " dst=" << uDstAccountID.ToString () <<
@@ -98,42 +98,42 @@ TER PaymentTransactor::doApply ()
     }
     else if (bMax && saMaxAmount == saDstAmount && saMaxAmount.getCurrency () == saDstAmount.getCurrency ())
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Redundant SendMax.";
 
         return temREDUNDANT_SEND_MAX;
     }
     else if (bXRPDirect && bMax)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: SendMax specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_MAX;
     }
     else if (bXRPDirect && bPaths)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Paths specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_PATHS;
     }
     else if (bXRPDirect && bPartialPayment)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Partial payment specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_PARTIAL;
     }
     else if (bXRPDirect && bLimitQuality)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Limit quality specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_LIMIT;
     }
     else if (bXRPDirect && bNoRippleDirect)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: No ripple direct specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_NO_DIRECT;
@@ -148,7 +148,7 @@ TER PaymentTransactor::doApply ()
 
         if (!saDstAmount.isNative ())
         {
-            m_journal.info <<
+            m_journal.trace <<
                 "Delay transaction: Destination account does not exist.";
 
             // Another transaction could create the account and then this transaction would succeed.
@@ -157,7 +157,7 @@ TER PaymentTransactor::doApply ()
         else if (isSetBit (mParams, tapOPEN_LEDGER) && bPartialPayment)
         {
             // Make retry work smaller, by rejecting this.
-            m_journal.info <<
+            m_journal.trace <<
                 "Delay transaction: Partial payment not allowed to create account.";
             
 
@@ -168,7 +168,7 @@ TER PaymentTransactor::doApply ()
         // Note: Reserve is not scaled by load.
         else if (saDstAmount.getNValue () < mEngine->getLedger ()->getReserve (0))
         {
-            m_journal.info <<
+            m_journal.trace <<
                 "Delay transaction: Destination account does not exist. " <<
                 "Insufficent payment to create account.";
 
@@ -186,7 +186,7 @@ TER PaymentTransactor::doApply ()
     }
     else if ((sleDst->getFlags () & lsfRequireDestTag) && !mTxn.isFieldPresent (sfDestinationTag))
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: DestinationTag required.";
 
         return tefDST_TAG_NEEDED;
@@ -240,7 +240,7 @@ TER PaymentTransactor::doApply ()
         }
         catch (std::exception const& e)
         {
-            m_journal.info <<
+            m_journal.trace <<
                 "Caught throw: " << e.what ();
 
             terResult   = tefEXCEPTION;
@@ -257,7 +257,7 @@ TER PaymentTransactor::doApply ()
         if (mPriorBalance < saDstAmount + std::max(uReserve, mTxn.getTransactionFee ().getNValue ()))
         {
             // Vote no. However, transaction might succeed, if applied in a different order.
-            m_journal.info << "Delay transaction: Insufficient funds: " <<
+            m_journal.trace << "Delay transaction: Insufficient funds: " <<
                 " " << mPriorBalance.getText () <<
                 " / " << (saDstAmount + uReserve).getText () <<
                 " (" << uReserve << ")";
@@ -282,7 +282,7 @@ TER PaymentTransactor::doApply ()
 
     if (transResultInfo (terResult, strToken, strHuman))
     {
-        m_journal.info << 
+        m_journal.trace << 
             strToken << ": " << strHuman;
     }
     else

@@ -39,7 +39,7 @@ TER RegularKeySetTransactor::doApply ()
 
     if (uTxFlags & tfUniversalMask)
     {
-        m_journal.info <<
+        m_journal.trace <<
             "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
