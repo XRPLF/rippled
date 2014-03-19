@@ -1,0 +1,10 @@
+[Unit]
+Description=Ripple Peer-to-Peer Network Daemon
+ 
+[Service]
+Type=simple
+User=nobody
+ExecStart=/usr/bin/rippled --conf=/etc/rippled/rippled.cfg
+ 
+[Install]
+WantedBy=multi-user.target
