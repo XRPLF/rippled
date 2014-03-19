@@ -17,18 +17,26 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
-#endif
+#include "../get.h"
 
-#include "impl/basic_url.cpp"
-#include "impl/get.cpp"
-#include "impl/joyent_parser.cpp"
-#include "impl/ParsedURL.cpp"
-#include "impl/raw_parser.cpp"
-#include "impl/URL.cpp"
+#include "../basic_url.h"
 
-#include "tests/basic_url.test.cpp"
-#include "tests/client_session.test.cpp"
-#include "tests/ParsedURL.cpp"
-#include "tests/urls_large_data.cpp"
+namespace beast {
+namespace http {
+
+std::pair <std::string, boost::system::error_code>
+get (std::string const& url_string)
+{
+    std::pair <std::string, boost::system::error_code> result;
+
+    url u;
+    u.parse (url_string, result.second);
+    if (result.second)
+        return result;
+
+    return result;
+}
+
+
+}
+}

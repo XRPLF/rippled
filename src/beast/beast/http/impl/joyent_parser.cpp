@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "joyent_parser.h"
+
 #include "../basic_message.h"
 
 #include <boost/system/error_code.hpp>

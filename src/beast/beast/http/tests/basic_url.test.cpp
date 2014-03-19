@@ -17,18 +17,40 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
-#endif
+#include "../basic_url.h"
 
-#include "impl/basic_url.cpp"
-#include "impl/get.cpp"
-#include "impl/joyent_parser.cpp"
-#include "impl/ParsedURL.cpp"
-#include "impl/raw_parser.cpp"
-#include "impl/URL.cpp"
+#include "../../unit_test/suite.h"
 
-#include "tests/basic_url.test.cpp"
-#include "tests/client_session.test.cpp"
-#include "tests/ParsedURL.cpp"
-#include "tests/urls_large_data.cpp"
+namespace beast {
+
+class basic_url_test : public unit_test::suite
+{
+public:
+    void
+    run ()
+    {
+        std::vector <char const*> const urls {
+            "http://www.example.com/#%c2%a9",
+            "http://127.0.0.1:443",
+            "http://192.168.0.1 hello.urltest.lookout.net/",
+            "http://\\uff10\\uff38\\uff43\\uff10\\uff0e\\uff10\\uff12\\uff15\\uff10\\uff0e\\uff10\\uff11.urltest.lookout.net/"
+        };
+        http::url url;
+        for (auto const& s : urls)
+        {
+            try
+            {
+                url.parse (s);
+                pass();
+            }
+            catch(...)
+            {
+                fail();
+            }
+        }
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_MANUAL(basic_url,http,beast);
+
+}

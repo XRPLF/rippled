@@ -17,69 +17,46 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_BASIC_MESSAGE_H_INCLUDED
-#define BEAST_HTTP_BASIC_MESSAGE_H_INCLUDED
+#ifndef BEAST_HTTP_HEADER_TRAITS_H_INCLUDED
+#define BEAST_HTTP_HEADER_TRAITS_H_INCLUDED
+
+#include "../../utility/ci_char_traits.h"
+
+#include <boost/utility/string_ref.hpp>
 
 #include <memory>
+#include <string>
 
 namespace beast {
 namespace http {
+namespace detail {
 
-namespace method {
-enum methodc_t
+// Utilities for dealing with HTTP headers
+
+template <class Allocator = std::allocator <char>>
+using basic_field_string =
+    std::basic_string <char, ci_char_traits, Allocator>;
+
+typedef basic_field_string <> field_string;
+
+typedef boost::basic_string_ref <char, ci_char_traits> field_string_ref;
+
+/** Returns `true` if two header fields are the same.
+    The comparison is case-insensitive.
+*/
+template <class Alloc1, class Alloc2>
+inline
+bool field_eq (
+    std::basic_string <char, std::char_traits <char>, Alloc1> const& s1,
+    std::basic_string <char, std::char_traits <char>, Alloc2> const& s2)
 {
-    http_delete,
-    http_get,
-    http_head,
-    http_post,
-    http_put,
+    return field_string_ref (s1.c_str(), s1.size()) ==
+           field_string_ref (s2.c_str(), s2.size());
+}
 
-    // pathological
-    http_connect,
-    http_options,
-    http_trace,
+/** Returns the string with leading and trailing LWS removed. */
 
-    // webdav
-    http_copy,
-    http_lock,
-    http_mkcol,
-    http_move,
-    http_propfind,
-    http_proppatch,
-    http_search,
-    http_unlock,
-
-    // subversion
-    http_report,
-    http_mkactivity,
-    http_checkout,
-    http_merge,
-
-    // upnp
-    http_msearch,
-    http_notify,
-    http_subscribe,
-    http_unsubscribe,
-
-    // RFC-5789
-    http_patch,
-    http_purge
-};
-} // method
-
-class basic_message
-{
-private:
-
-public:
-};
-
-class basic_request
-{
-public:
-
-};
-
+}
 }
 }
 

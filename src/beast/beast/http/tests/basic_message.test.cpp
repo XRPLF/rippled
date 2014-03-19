@@ -21,14 +21,25 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "impl/basic_url.cpp"
-#include "impl/get.cpp"
-#include "impl/joyent_parser.cpp"
-#include "impl/ParsedURL.cpp"
-#include "impl/raw_parser.cpp"
-#include "impl/URL.cpp"
+#include "../../unit_test/suite.h"
 
-#include "tests/basic_url.test.cpp"
-#include "tests/client_session.test.cpp"
-#include "tests/ParsedURL.cpp"
-#include "tests/urls_large_data.cpp"
+namespace beast {
+namespace http {
+
+class basic_message_tests : public unit_test::suite
+{
+public:
+    void testCreate()
+    {
+        pass();
+    }
+
+    void run()
+    {
+        testCreate();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(basic_message,http,beast);
+}
+}
