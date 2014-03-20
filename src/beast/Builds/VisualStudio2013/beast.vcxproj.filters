@@ -1164,6 +1164,12 @@
     <ClInclude Include="..\..\beast\container\const_container.h">
       <Filter>beast\container</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\streams\basic_std_ostream.h">
+      <Filter>beast\streams</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\streams\debug_ostream.h">
+      <Filter>beast\streams</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\files\DirectoryIterator.cpp">

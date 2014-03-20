@@ -66,26 +66,6 @@ public:
     }
     /** @} */
 
-    /** Returns a basic_scoped_ostream without appending anything.
-        This can be used if the caller wants to put the scoped stream
-        on the stack to build up output in a thread-safe fashion.
-    */
-#if 0
-    scoped_stream_type
-    scoped_stream ()
-    {
-#if 0
-        return scoped_stream_type (
-            [this](string_type const& s)
-            {
-                this->write (s);
-            });
-#else
-        return scoped_stream_type (*this);
-#endif
-    }
-#endif
-
     /** Called to output each string. */
     virtual
     void
