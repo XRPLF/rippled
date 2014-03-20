@@ -32,3 +32,4 @@
 #include "impl/LeakChecked.cpp"
 #include "impl/StaticObject.cpp"
 #include "impl/PropertyStream.cpp"
+#include "tests/empty_base_optimization.test.cpp"
