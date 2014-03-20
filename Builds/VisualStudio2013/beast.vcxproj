@@ -193,6 +193,8 @@
     <ClInclude Include="..\..\beast\streams\abstract_ostream.h" />
     <ClInclude Include="..\..\beast\streams\basic_abstract_ostream.h" />
     <ClInclude Include="..\..\beast\streams\basic_scoped_ostream.h" />
+    <ClInclude Include="..\..\beast\streams\debug_ostream.h" />
+    <ClInclude Include="..\..\beast\streams\basic_std_ostream.h" />
     <ClInclude Include="..\..\beast\Strings.h" />
     <ClInclude Include="..\..\beast\strings\CharacterFunctions.h" />
     <ClInclude Include="..\..\beast\strings\CharPointer_ASCII.h" />
