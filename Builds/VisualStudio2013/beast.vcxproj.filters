@@ -321,6 +321,9 @@
     <Filter Include="beast\streams">
       <UniqueIdentifier>{899ea9a6-1969-4cde-b26d-8ad60acebfa4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\utility\tests">
+      <UniqueIdentifier>{3c58ba5e-1855-4865-8a9f-c0afd5014e74}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1939,6 +1942,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\streams\streams.cpp">
       <Filter>beast\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\tests\empty_base_optimization.test.cpp">
+      <Filter>beast\utility\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

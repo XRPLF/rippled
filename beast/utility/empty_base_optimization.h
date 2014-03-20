@@ -24,19 +24,9 @@
 #include <type_traits>
 #include <utility>
 
-#ifndef BEAST_NO_EMPTY_BASE_OPTIMIZATION
-# if defined _MSC_VER
-#  define BEAST_NO_EMPTY_BASE_OPTIMIZATION 1
-# else
-#  define BEAST_NO_EMPTY_BASE_OPTIMIZATION 1
-# endif
-#endif
-
 namespace beast {
 
 namespace detail {
-
-#if ! BEAST_NO_EMPTY_BASE_OPTIMIZATION
 
 template <class T>
 struct empty_base_optimization_decide
@@ -48,16 +38,6 @@ struct empty_base_optimization_decide
     >
 {
 };
-
-#else
-
-template <class T>
-struct empty_base_optimization_decide
-    : std::false_type
-{
-};
-
-#endif
 
 }
 
@@ -72,43 +52,15 @@ template <
 class empty_base_optimization : private T
 {
 public:
-    template <
-        class... Args,
-        class = typename std::enable_if <
-            std::is_constructible <T, Args...>::value>::type
-    >
-    explicit /*constexpr*/ empty_base_optimization (
-        Args&&... args)
-            /*noexcept (std::is_nothrow_constructible <T, Args...>::value);*/
-            : T (std::forward <Args> (args)...)
-    {
-    }
+    empty_base_optimization() = default;
 
-#if 1
-    empty_base_optimization (T const& t)
+    empty_base_optimization(T const& t)
         : T (t)
-    {
-    }
+    {}
 
-    empty_base_optimization (T&& t)
+    empty_base_optimization(T&& t)
         : T (std::move (t))
-    {
-    }
-
-    empty_base_optimization& operator= (
-        empty_base_optimization const& other)
-    {
-        *this = other;
-        return *this;
-    }
-
-    empty_base_optimization& operator= (
-        empty_base_optimization&& other)
-    {
-        *this = std::move (other);
-        return *this;
-    }
-#endif
+    {}
 
     T& member() noexcept
     {
@@ -130,17 +82,15 @@ template <
 class empty_base_optimization <T, UniqueID, false>
 {
 public:
-    template <
-        class... Args,
-        class = typename std::enable_if <
-            std::is_constructible <T, Args...>::value>::type
-    >
-    explicit /*constexpr*/ empty_base_optimization (
-        Args&&... args)
-            /*noexcept (std::is_nothrow_constructible <T, Args...>::value);*/
-            : m_t (std::forward <Args> (args)...)
-    {
-    }
+    empty_base_optimization() = default;
+
+    empty_base_optimization(T const& t)
+        : m_t (t)
+    {}
+
+    empty_base_optimization(T&& t)
+        : m_t (std::move (t))
+    {}
 
     T& member() noexcept
     {
