@@ -1161,6 +1161,9 @@
     <ClInclude Include="..\..\beast\utility\noexcept.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\container\const_container.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\files\DirectoryIterator.cpp">
