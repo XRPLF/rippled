@@ -127,6 +127,7 @@
     <ClInclude Include="..\..\beast\container\aged_unordered_multimap.h" />
     <ClInclude Include="..\..\beast\container\aged_unordered_multiset.h" />
     <ClInclude Include="..\..\beast\container\aged_unordered_set.h" />
+    <ClInclude Include="..\..\beast\container\const_container.h" />
     <ClInclude Include="..\..\beast\container\cyclic_iterator.h" />
     <ClInclude Include="..\..\beast\container\detail\aged_associative_container.h" />
     <ClInclude Include="..\..\beast\container\detail\aged_ordered_container.h" />
