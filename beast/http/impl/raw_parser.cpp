@@ -129,8 +129,7 @@ raw_parser::do_headers_done ()
 {
     auto const p (reinterpret_cast <joyent::http_parser const*> (&m_state));
     bool const keep_alive (joyent::http_should_keep_alive (p) != 0);
-    error_code const ec (
-        m_cb.get().on_headers_done (keep_alive));
+    m_ec = m_cb.get().on_headers_done (keep_alive);
     return m_ec ? 1 : 0;
 }
 
@@ -149,7 +148,7 @@ raw_parser::do_message_complete ()
 {
     auto const p (reinterpret_cast <joyent::http_parser const*> (&m_state));
     bool const keep_alive (joyent::http_should_keep_alive (p) != 0);
-    error_code const ec (m_cb.get().on_message_complete (keep_alive));
+    m_ec = m_cb.get().on_message_complete (keep_alive);
     return m_ec ? 1 : 0;
 }
 
