@@ -10,7 +10,8 @@ license=('custom:ISC')
 depends=('protobuf' 'openssl' 'boost-libs')
 makedepends=('git' 'scons' 'boost')
 checkdepends=('nodejs')
-source=("git://github.com/ripple/rippled.git")
+backup=("etc/$pkgname/rippled.cfg")
+source=("git://github.com/ripple/rippled.git#branch=master")
 sha512sums=('SKIP')
 
 pkgver() {
