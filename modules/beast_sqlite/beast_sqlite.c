@@ -42,6 +42,7 @@
 #pragma warning (disable: 4244) /* conversion from 'int': possible loss of data */
 #pragma warning (disable: 4701) /* potentially uninitialized variable */
 #pragma warning (disable: 4706) /* assignment within conditional expression */
+#pragma warning (disable: 4996) /* 'GetVersionExA' was declared deprecated */
 #endif
 
 /* When compiled with SQLITE_THREADSAFE=1, SQLite operates in serialized mode.
