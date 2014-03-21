@@ -20,6 +20,8 @@
 #ifndef SCRIPT_DATA_H
 #define SCRIPT_DATA_H
 
+namespace ripple {
+
 namespace Script
 {
 class Data
@@ -179,6 +181,6 @@ public:
 
 }
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

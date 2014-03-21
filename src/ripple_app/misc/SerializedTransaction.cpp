@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 SETUP_LOG (SerializedTransaction)
 
 SerializedTransaction::SerializedTransaction (TxType type)
@@ -325,17 +329,11 @@ bool isMemoOkay (STObject const& st)
 
 //------------------------------------------------------------------------------
 
-class SerializedTransactionTests : public beast::UnitTest
+class SerializedTransaction_test : public beast::unit_test::suite
 {
 public:
-    SerializedTransactionTests () : beast::UnitTest ("SerializedTransaction", "ripple")
+    void run()
     {
-    }
-
-    void runTest ()
-    {
-        beginTestCase ("tx");
-
         RippleAddress seed;
         seed.setSeedRandom ();
         RippleAddress generator = RippleAddress::createGeneratorPublic (seed);
@@ -357,8 +355,8 @@ public:
 
         if (copy != j)
         {
-            Log (lsFATAL) << j.getJson (0);
-            Log (lsFATAL) << copy.getJson (0);
+            log << j.getJson (0);
+            log << copy.getJson (0);
             fail ("Transaction fails serialize/deserialize test");
         }
         else
@@ -374,8 +372,8 @@ public:
 
         if (STObject (j) != *new_obj)
         {
-            Log (lsINFO) << "ORIG: " << j.getJson (0);
-            Log (lsINFO) << "BUILT " << new_obj->getJson (0);
+            log << "ORIG: " << j.getJson (0);
+            log << "BUILT " << new_obj->getJson (0);
             fail ("Built a different transaction");
         }
         else
@@ -385,4 +383,6 @@ public:
     }
 };
 
-static SerializedTransactionTests serializedTransactionTests;
+BEAST_DEFINE_TESTSUITE(SerializedTransaction,ripple_app,ripple);
+
+} // ripple

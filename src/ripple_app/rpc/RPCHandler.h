@@ -20,6 +20,10 @@
 #ifndef __RPCHANDLER__
 #define __RPCHANDLER__
 
+namespace ripple {
+
+// VFALCO Why are these magic macros in here instead of some ledger header?
+// VFALCO TODO Replace with language constants.
 #define LEDGER_CURRENT      -1
 #define LEDGER_CLOSED       -2
 #define LEDGER_VALIDATED    -3
@@ -195,5 +199,7 @@ private:
     std::string                 mName;
     handler_t                   mHandler;
 };
+
+} // ripple
 
 #endif

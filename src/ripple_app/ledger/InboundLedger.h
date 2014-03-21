@@ -20,6 +20,8 @@
 #ifndef RIPPLE_INBOUNDLEDGER_H
 #define RIPPLE_INBOUNDLEDGER_H
 
+namespace ripple {
+
 // VFALCO TODO Rename to InboundLedger
 // A ledger we are trying to acquire
 class InboundLedger
@@ -148,5 +150,7 @@ private:
 
     std::vector <std::function <void (InboundLedger::pointer)> > mOnComplete;
 };
+
+} // ripple
 
 #endif

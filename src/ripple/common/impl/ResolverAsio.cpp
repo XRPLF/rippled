@@ -22,6 +22,7 @@
 
 #include <atomic>
 #include <deque>
+#include <locale>
 
 #include "boost/asio.hpp"
 
@@ -195,7 +196,7 @@ public:
     {
         // Attempt to find the first and last non-whitespace
         auto const find_whitespace = std::bind (
-            std::isspace <std::string::value_type>,
+            &std::isspace <std::string::value_type>,
             std::placeholders::_1, 
             std::locale ());
 

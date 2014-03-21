@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // TODO:
 // - Do automatic bridging via XRP.
 //
@@ -2723,4 +2725,4 @@ void TransactionEngine::calcNodeOffer (
 }
 #endif
 
-// vim:ts=4
+} // ripple

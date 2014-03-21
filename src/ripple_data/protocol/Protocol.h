@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_H
 #define RIPPLE_PROTOCOL_H
 
+namespace ripple {
+
 /** Protocol specific constants, types, and data.
 
     This information is part of the Ripple protocol. Specifically,
@@ -63,5 +65,7 @@ typedef beast::uint32 TxSeq; // VFALCO NOTE Should read TxIndex or TxNum
 */
 //typedef uint160 AccountHash;
 //typedef uint260 ValidatorID;
+
+} // ripple
 
 #endif

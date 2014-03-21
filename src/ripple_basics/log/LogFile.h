@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_LOGFILE_H_INCLUDED
 #define RIPPLE_BASICS_LOGFILE_H_INCLUDED
 
+namespace ripple {
+
 /** Manages a system file containing logged output.
 
     The system file remains open during program execution. Interfaces
@@ -102,5 +104,7 @@ private:
     beast::ScopedPointer <std::ofstream> m_stream;
     boost::filesystem::path m_path;
 };
+
+} // ripple
 
 #endif

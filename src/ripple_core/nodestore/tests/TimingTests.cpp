@@ -20,18 +20,13 @@
 namespace ripple {
 namespace NodeStore {
 
-class TimingTests : public TestBase
+class NodeStoreTiming_test : public TestBase
 {
 public:
     enum
     {
         numObjectsToTest     = 10000
     };
-
-    TimingTests ()
-        : TestBase ("NodeStoreTiming", UnitTest::runManual)
-    {
-    }
 
     class Stopwatch
     {
@@ -66,7 +61,7 @@ public:
 
         beast::String s;
         s << "Testing backend '" << type << "' performance";
-        beginTestCase (s);
+        testcase (s.toStdString());
 
         beast::StringPairArray params;
         beast::File const path (beast::File::createTempFile ("node_db"));
@@ -79,7 +74,7 @@ public:
         NodeStore::Batch batch2;
         createPredictableBatch (batch2, 0, numObjectsToTest, seedValue);
 
-        beast::Journal j ((journal ()));
+        beast::Journal j;
 
         // Open the backend
         std::unique_ptr <Backend> backend (manager->make_Backend (
@@ -92,14 +87,14 @@ public:
         storeBatch (*backend, batch1);
         s = "";
         s << "  Single write: " << beast::String (t.getElapsed (), 2) << " seconds";
-        logMessage (s);
+        log << s.toStdString();
 
         // Bulk write batch test
         t.start ();
         backend->storeBatch (batch2);
         s = "";
         s << "  Batch write:  " << beast::String (t.getElapsed (), 2) << " seconds";
-        logMessage (s);
+        log << s.toStdString();
 
         // Read test
         Batch copy;
@@ -108,12 +103,12 @@ public:
         fetchCopyOfBatch (*backend, &copy, batch2);
         s = "";
         s << "  Batch read:   " << beast::String (t.getElapsed (), 2) << " seconds";
-        logMessage (s);
+        log << s.toStdString();
     }
 
     //--------------------------------------------------------------------------
 
-    void runTest ()
+    void run ()
     {
         int const seedValue = 50;
 
@@ -133,7 +128,7 @@ public:
     }
 };
 
-static TimingTests timingTests;
+BEAST_DEFINE_TESTSUITE(NodeStoreTiming,ripple_core,ripple);
 
 }
 }

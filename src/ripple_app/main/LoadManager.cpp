@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 class LoadManagerImp
     : public LoadManager
     , public beast::Thread
@@ -259,3 +261,5 @@ LoadManager* LoadManager::New (Stoppable& parent, beast::Journal journal)
 {
     return new LoadManagerImp (parent, journal);
 }
+
+} // ripple

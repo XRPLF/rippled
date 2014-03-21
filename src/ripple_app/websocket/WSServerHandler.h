@@ -20,6 +20,8 @@
 #ifndef RIPPLE_WSSERVERHANDLER_H_INCLUDED
 #define RIPPLE_WSSERVERHANDLER_H_INCLUDED
 
+namespace ripple {
+
 extern bool serverOkay (std::string& reason);
 
 template <typename endpoint_type>
@@ -423,5 +425,7 @@ public:
         return true;
     }
 };
+
+} // ripple
 
 #endif

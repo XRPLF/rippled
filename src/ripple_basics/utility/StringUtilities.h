@@ -20,10 +20,9 @@
 #ifndef RIPPLE_STRINGUTILITIES_H
 #define RIPPLE_STRINGUTILITIES_H
 
-/** String utility functions.
-*/
+namespace ripple {
 
-//------------------------------------------------------------------------------
+// String utility functions.
 
 // Ripple specific constant used for parsing qualities and other things
 //
@@ -131,5 +130,7 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
 */
 extern beast::StringPairArray
 parseDelimitedKeyValueString (beast::String s, beast::beast_wchar delimiter='|');
+
+} // ripple
 
 #endif

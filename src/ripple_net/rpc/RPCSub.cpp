@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (RPCSub)
 
 // Subscription object for JSON-RPC
@@ -207,3 +209,5 @@ RPCSub::pointer RPCSub::New (InfoSub::Source& source,
         boost::ref (io_service), boost::ref (jobQueue),
             strUrl, strUsername, strPassword);
 }
+
+} // ripple

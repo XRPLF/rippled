@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TRANSACTION_H
 #define RIPPLE_TRANSACTION_H
 
+namespace ripple {
+
 //
 // Transactions should be constructed in JSON with. Use STObject::parseJson to obtain a binary version.
 //
@@ -185,5 +187,6 @@ private:
     SerializedTransaction::pointer mTransaction;
 };
 
+} // ripple
+
 #endif
-// vim:ts=4

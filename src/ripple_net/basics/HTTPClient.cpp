@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 //
 // Fetch a web page via http or https.
 //
@@ -610,4 +612,6 @@ void HTTPClient::sendSMS (boost::asio::io_service& io_service, const std::string
                             BIND_TYPE (&HTTPClientImp::onSMSResponse, P_1, P_2, P_3));
     }
 }
+
+} // ripple
 

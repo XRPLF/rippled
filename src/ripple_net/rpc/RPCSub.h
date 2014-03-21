@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
 #define RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
 
+namespace ripple {
+
 /** Subscription object for JSON RPC. */
 class RPCSub : public InfoSub
 {
@@ -38,5 +40,7 @@ public:
 protected:
     explicit RPCSub (InfoSub::Source& source);
 };
+
+} // ripple
 
 #endif

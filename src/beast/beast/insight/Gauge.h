@@ -20,10 +20,10 @@
 #ifndef BEAST_INSIGHT_GAUGE_H_INCLUDED
 #define BEAST_INSIGHT_GAUGE_H_INCLUDED
 
-#include <memory>
-
 #include "Base.h"
 #include "GaugeImpl.h"
+
+#include <memory>
 
 namespace beast {
 namespace insight {
@@ -40,7 +40,7 @@ namespace insight {
 class Gauge : public Base
 {
 public:
-    typedef GaugeImpl::value_type      value_type;
+    typedef GaugeImpl::value_type value_type;
     typedef GaugeImpl::difference_type difference_type;
 
     /** Create a null metric.
@@ -84,26 +84,51 @@ public:
             m_impl->increment (amount);
     }
 
-    Gauge const& operator+= (difference_type amount) const
-        { increment (amount); return *this; }
+    Gauge const&
+    operator+= (difference_type amount) const
+    {
+        increment (amount);
+        return *this;
+    }
 
-    Gauge const& operator-= (difference_type amount) const
-        { increment (-amount); return *this; }
+    Gauge const&
+    operator-= (difference_type amount) const
+    {
+        increment (-amount);
+        return *this;
+    }
 
-    Gauge const& operator++ () const
-        { increment (1); return *this; }
+    Gauge const&
+    operator++ () const
+    {
+        increment (1);
+        return *this;
+    }
 
-    Gauge const& operator++ (int) const
-        { increment (1); return *this; }
+    Gauge const&
+    operator++ (int) const
+    {
+        increment (1);
+        return *this;
+    }
 
-    Gauge const& operator-- () const
-        { increment (-1); return *this; }
+    Gauge const&
+    operator-- () const
+    {
+        increment (-1);
+        return *this;
+    }
 
-    Gauge const& operator-- (int) const
-        { increment (-1); return *this; }
+    Gauge const&
+    operator-- (int) const
+    {
+        increment (-1);
+        return *this;
+    }
     /** @} */
 
-    std::shared_ptr <GaugeImpl> const& impl () const
+    std::shared_ptr <GaugeImpl> const&
+    impl () const
     {
         return m_impl;
     }

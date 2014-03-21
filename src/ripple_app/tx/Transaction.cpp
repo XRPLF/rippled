@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 Transaction::Transaction (SerializedTransaction::ref sit, bool bValidate)
     : mInLedger (0), mStatus (INVALID), mResult (temUNCERTAIN), mTransaction (sit)
 {
@@ -364,3 +366,4 @@ bool Transaction::isHexTxID (const std::string& txid)
     return (ret == txid.end ());
 }
 
+} // ripple

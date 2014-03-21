@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERIALIZEDLEDGER_H
 #define RIPPLE_SERIALIZEDLEDGER_H
 
+namespace ripple {
+
 // VFALCO NOTE
 //
 //      This looks like a central class for Ripple. Almost everything that
@@ -118,5 +120,7 @@ private:
 
 typedef SerializedLedgerEntry SLE;
 
+} // ripple
+
 #endif
-// vim:ts=4
+

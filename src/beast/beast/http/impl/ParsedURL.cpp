@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include "../ParsedURL.h"
-
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include "../../strings/String.h"
 
 #include "joyent_parser.h"
+
+#include <cstdint>
 
 namespace beast {
 
@@ -145,36 +146,5 @@ URL ParsedURL::url () const
 {
     return m_url;
 }
-
-//------------------------------------------------------------------------------
-
-class ParsedURLTests : public UnitTest
-{
-public:
-    void checkURL (String const& url)
-    {
-        ParsedURL result (url);
-        expect (result.error () == 0);
-        expect (result.url ().toString () == url);
-    }
-
-    void testURL ()
-    {
-        beginTestCase ("parse URL");
-
-        checkURL ("http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference.html");
-    }
-
-    void runTest ()
-    {
-        testURL ();
-    }
-
-    ParsedURLTests () : UnitTest ("ParsedURL", "beast", runManual)
-    {
-    }
-};
-
-static ParsedURLTests parsedURLTests;
 
 }

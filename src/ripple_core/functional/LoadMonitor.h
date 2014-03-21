@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LOADMONITOR_H_INCLUDED
 #define RIPPLE_LOADMONITOR_H_INCLUDED
 
+namespace ripple {
+
 // Monitors load levels and response times
 
 // VFALCO TODO Rename this. Having both LoadManager and LoadMonitor is confusing.
@@ -71,5 +73,7 @@ private:
     beast::uint64 mTargetLatencyPk;
     int           mLastUpdate;
 };
+
+} // ripple
 
 #endif

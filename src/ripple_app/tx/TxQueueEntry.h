@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TXQUEUEENTRY_H_INCLUDED
 #define RIPPLE_TXQUEUEENTRY_H_INCLUDED
 
+namespace ripple {
+
 // Allow transactions to be signature checked out of sequence but retired in sequence
 class TxQueueEntry
 {
@@ -63,5 +65,7 @@ private:
     bool                    mSigChecked;
     std::list<stCallback>   mCallbacks;
 };
+
+} // ripple
 
 #endif

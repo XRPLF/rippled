@@ -29,6 +29,19 @@
 
 //------------------------------------------------------------------------------
 //
+// Unit Tests
+//
+//------------------------------------------------------------------------------
+
+/** Config: BEAST_NO_UNIT_TEST_INLINE
+    Prevents unit test definitions from being inserted into a global table.
+*/
+#ifndef BEAST_NO_UNIT_TEST_INLINE
+#define BEAST_NO_UNIT_TEST_INLINE 0
+#endif
+
+//------------------------------------------------------------------------------
+//
 // Diagnostics
 //
 //------------------------------------------------------------------------------

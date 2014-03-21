@@ -17,13 +17,15 @@
 */
 //==============================================================================
 
+#include "../../../beast/beast/unit_test/suite.h"
+
 namespace ripple {
 namespace Validators {
 
-class Tests : public beast::UnitTest
+class Logic_test : public beast::unit_test::suite
 {
 public:
-   enum
+    enum
     {
         numberOfTestValidators = 1000,
         numberofTestSources = 50
@@ -172,19 +174,18 @@ public:
 
     void addSources (Logic& logic)
     {
+        beast::Random r;
         for (int i = 1; i <= numberofTestSources; ++i)
         {
             beast::String const name (beast::String::fromNumber (i));
-            beast::uint32 const start = random().nextInt (numberOfTestValidators);
-            beast::uint32 const end   = start + random().nextInt (numberOfTestValidators);
+            beast::uint32 const start = r.nextInt (numberOfTestValidators);
+            beast::uint32 const end   = start + r.nextInt (numberOfTestValidators);
             logic.add (new TestSource (name, start, end));
         }
     }
 
     void testLogic ()
     {
-        beginTestCase ("logic");
-
         //TestStore store;
         StoreSqdb storage;
 
@@ -196,7 +197,7 @@ public:
         // Can't call this 'error' because of ADL and Journal::error
         beast::Error err (storage.open (file));
 
-        unexpected (err, err.what());
+        expect (! err, err.what());
 
         Logic logic (storage, beast::Journal ());
         logic.load ();
@@ -210,23 +211,14 @@ public:
         pass ();
     }
 
-    void runTest ()
+    void
+    run ()
     {
-        // We need to use the same seed so we create the
-        // same IDs for the set of TestSource objects.
-        //
-        beast::int64 const seedValue = 10;
-        random().setSeed (seedValue);
-
         testLogic ();
-    }
-
-    Tests () : UnitTest ("Validators", "ripple", runManual)
-    {
     }
 };
 
-static Tests tests;
+BEAST_DEFINE_TESTSUITE(Logic,validators,ripple);
 
 }
 }

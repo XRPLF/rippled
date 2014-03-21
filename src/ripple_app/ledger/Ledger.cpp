@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 SETUP_LOG (Ledger)
 
 LedgerBase::LedgerBase ()
@@ -2042,17 +2046,11 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (int max, SHAMapSyncFil
 
 //------------------------------------------------------------------------------
 
-class LedgerTests : public beast::UnitTest
+class Ledger_test : public beast::unit_test::suite
 {
 public:
-    LedgerTests () : UnitTest ("Ledger", "ripple")
+    void run ()
     {
-    }
-
-    void runTest ()
-    {
-        beginTestCase ("uint256");
-
         uint256 uBig ("D2DC44E5DC189318DB36EF87D2104CDF0A0FE3A4B698BEEE55038D7EA4C68000");
 
         // VFALCO NOTE This fails in the original version as well.
@@ -2060,7 +2058,9 @@ public:
     }
 };
 
-static LedgerTests ledgerTests;
+BEAST_DEFINE_TESTSUITE(Ledger,ripple_app,ripple);
 
 Ledger::StaticLockType Ledger::sPendingSaveLock ("LedgerStatic", __FILE__, __LINE__);
 std::set<beast::uint32> Ledger::sPendingSaves;
+
+} // ripple

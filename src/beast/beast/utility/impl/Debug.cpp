@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include "../Debug.h"
+#include "../../unit_test/suite.h"
+
 namespace beast {
 
 namespace Debug {
@@ -299,7 +302,7 @@ String commandLineToString (const String& commandLine)
 
 // A simple unit test to determine the diagnostic settings in a build.
 //
-class DebugTests : public UnitTest
+class Debug_test : public unit_test::suite
 {
 public:
     static int envDebug ()
@@ -329,25 +332,34 @@ public:
     #endif
     }
 
-    void runTest ()
+    void run ()
     {
-        beginTestCase ("diagnostics");
+        log <<
+            "operatingSystemName              = '" <<
+            SystemStats::getOperatingSystemName () << "'";
+        
+        log <<
+            "_DEBUG                           = " <<
+            String::fromNumber (envDebug ());
+        
+        log <<
+            "BEAST_DEBUG                      = " <<
+            String::fromNumber (beastDebug ());
 
-        logMessage ("operatingSystemName              = '" + SystemStats::getOperatingSystemName () + "'");
-        logMessage ("_DEBUG                           = " + String::fromNumber (envDebug ()));
-        logMessage ("BEAST_DEBUG                      = " + String::fromNumber (beastDebug ()));
-        logMessage ("BEAST_FORCE_DEBUG                = " + String::fromNumber (beastForceDebug ()));
-        logMessage ("sizeof(std::size_t)              = " + String::fromNumber (sizeof(std::size_t)));
+        log <<
+            "BEAST_FORCE_DEBUG                = " <<
+            String::fromNumber (beastForceDebug ());
+
+        log <<
+            "sizeof(std::size_t)              = " <<
+            String::fromNumber (sizeof(std::size_t));
+
         bassertfalse;
 
         fail ();
     }
-
-    DebugTests () : UnitTest ("Debug", "beast", runManual)
-    {
-    }
 };
 
-static DebugTests debugTests;
+BEAST_DEFINE_TESTSUITE_MANUAL(Debug,utility,beast);
 
 }

@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (STAmount)
 
-beast::uint64  STAmount::uRateOne  = STAmount::getRate (STAmount (1), STAmount (1));
+beast::uint64 STAmount::uRateOne  = STAmount::getRate (STAmount (1), STAmount (1));
 
 bool STAmount::issuerFromString (uint160& uDstIssuer, const std::string& sIssuer)
 {
@@ -1318,13 +1320,9 @@ Json::Value STAmount::getJson (int) const
 
 //------------------------------------------------------------------------------
 
-class STAmountTests : public beast::UnitTest
+class STAmount_test : public beast::unit_test::suite
 {
 public:
-    STAmountTests () : beast::UnitTest ("STAmount", "ripple")
-    {
-    }
-
     static STAmount serializeAndDeserialize (const STAmount& s)
     {
         Serializer ser;
@@ -1415,7 +1413,7 @@ public:
 
     void testSetValue ()
     {
-        beginTestCase ("set value");
+        testcase ("set value");
 
         STAmount    saTmp;
 
@@ -1440,7 +1438,7 @@ public:
 
     void testNativeCurrency ()
     {
-        beginTestCase ("native currency");
+        testcase ("native currency");
 
         STAmount zero, one (1), hundred (100);
 
@@ -1590,7 +1588,7 @@ public:
 
     void testCustomCurrency ()
     {
-        beginTestCase ("custom currency");
+        testcase ("custom currency");
 
         STAmount zero (CURRENCY_ONE, ACCOUNT_ONE), one (CURRENCY_ONE, ACCOUNT_ONE, 1), hundred (CURRENCY_ONE, ACCOUNT_ONE, 100);
 
@@ -1776,7 +1774,7 @@ public:
 
     void testArithmetic ()
     {
-        beginTestCase ("arithmetic");
+        testcase ("arithmetic");
 
         CBigNum b;
 
@@ -1838,9 +1836,23 @@ public:
 
     //--------------------------------------------------------------------------
 
+    template <class Cond>
+    bool
+    expect (Cond cond, beast::String const& s)
+    {
+        return suite::expect (cond, s.toStdString());
+    }
+
+    template <class Cond>
+    bool
+    expect (Cond cond)
+    {
+        return suite::expect (cond);
+    }
+
     void testUnderflow ()
     {
-        beginTestCase ("underflow");
+        testcase ("underflow");
 
         STAmount bigNative (STAmount::cMaxNative / 2);
         STAmount bigValue (CURRENCY_ONE, ACCOUNT_ONE,
@@ -1937,7 +1949,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void runTest ()
+    void run ()
     {
         testSetValue ();
         testNativeCurrency ();
@@ -1948,4 +1960,6 @@ public:
     }
 };
 
-static STAmountTests stAmountTests;
+BEAST_DEFINE_TESTSUITE(STAmount,ripple_data,ripple);
+
+} // ripple

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_RPC_RPCUTIL_H_INCLUDED
 #define RIPPLE_NET_RPC_RPCUTIL_H_INCLUDED
 
+namespace ripple {
+
 // VFALCO TODO Wrap these up into a class. It looks like they just do some
 //             convenience packaging of JSON data from the pieces. It looks
 //             Ripple client protocol-specific.
@@ -45,5 +47,7 @@ extern bool HTTPAuthorized (std::map <std::string, std::string> const& mapHeader
 extern int ReadHTTP (std::basic_istream<char>& stream,
                      std::map<std::string, std::string>& mapHeadersRet,
                      std::string& strMessageRet);
+
+} // ripple
 
 #endif

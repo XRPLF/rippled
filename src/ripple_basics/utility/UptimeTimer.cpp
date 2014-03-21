@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 UptimeTimer::UptimeTimer ()
     : m_elapsedTime (0)
     , m_startTime (::time (0))
@@ -72,3 +74,5 @@ UptimeTimer& UptimeTimer::getInstance ()
 
     return instance;
 }
+
+} // ripple

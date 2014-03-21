@@ -20,8 +20,9 @@
 #ifndef RIPPLE_IFEEVOTE_H
 #define RIPPLE_IFEEVOTE_H
 
-/** Manager to process fee votes.
-*/
+namespace ripple {
+
+/** Manager to process fee votes. */
 class IFeeVote
 {
 public:
@@ -53,5 +54,7 @@ public:
     virtual void doVoting (Ledger::ref lastClosedLedger,
                            SHAMap::ref initialPosition) = 0;
 };
+
+} // ripple
 
 #endif

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SOTemplate::SOTemplate ()
 {
 }
@@ -58,3 +60,5 @@ int SOTemplate::getIndex (SField::ref f) const
 
     return mIndex[f.getNum ()];
 }
+
+} // ripple

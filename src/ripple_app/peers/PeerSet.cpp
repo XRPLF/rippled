@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 class InboundLedger;
 
 // VFALCO NOTE The txnData constructor parameter is a code smell.
@@ -194,3 +196,4 @@ std::size_t PeerSet::getPeerCount () const
     return ret;
 }
 
+} // ripple

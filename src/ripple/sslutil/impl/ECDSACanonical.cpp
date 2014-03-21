@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../../beast/beast/unit_test/suite.h"
+
 namespace ripple {
 
 namespace detail {
@@ -196,13 +198,9 @@ void hex_to_binary (FwdIter first, FwdIter last, Container& out)
     }
 }
 
-class ECDSACanonicalTests : public beast::UnitTest
+class ECDSACanonical_test : public beast::unit_test::suite
 {
 public:
-    ECDSACanonicalTests () : UnitTest ("ECDSACanonical", "ripple")
-    {
-    }
-
     bool isCanonical (std::string const& hex)
     {
         Blob j;
@@ -210,10 +208,8 @@ public:
         return isCanonicalECDSASig (&j[0], j.size(), ECDSA::not_strict);
     }
 
-    void runTest ()
+    void run ()
     {
-        beginTestCase ("canonicalSignatures");
-
         expect (isCanonical("304402203932c892e2e550f3af8ee4ce9c215a87f9bb"
             "831dcac87b2838e2c2eaa891df0c022030b61dd36543125d56b9f9f3a1f"
             "53189e5af33cdda8d77a5209aec03978fa001"), "canonical signature");
@@ -294,6 +290,6 @@ public:
     }
 };
 
-static ECDSACanonicalTests ECDSACTests;
+BEAST_DEFINE_TESTSUITE(ECDSACanonical,sslutil,ripple);
 
 }

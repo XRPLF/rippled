@@ -20,6 +20,8 @@
 #ifndef RIPPLE_VALIDATIONS_H_INCLUDED
 #define RIPPLE_VALIDATIONS_H_INCLUDED
 
+namespace ripple {
+
 // VFALCO TODO rename and move these typedefs into the Validations interface
 typedef boost::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
 typedef std::pair<int, uint160> currentValidationCount; // nodes validating and highest node ID validating
@@ -57,5 +59,7 @@ public:
 
     virtual void sweep () = 0;
 };
+
+} // ripple
 
 #endif

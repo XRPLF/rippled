@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 AccountItem::pointer Offer::makeItem (const uint160& , SerializedLedgerEntry::ref ledgerEntry)
 {
     if (!ledgerEntry || ledgerEntry->getType () != ltOFFER) return (AccountItem::pointer ());
@@ -43,4 +45,4 @@ Json::Value Offer::getJson (int)
     return ret;
 }
 
-// vim:ts=4
+} // ripple

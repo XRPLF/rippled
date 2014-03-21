@@ -128,7 +128,6 @@
 
 #include "diagnostic/FatalError.cpp"
 #include "diagnostic/SemanticVersion.cpp"
-#include "diagnostic/UnitTest.cpp"
 #include "diagnostic/UnitTestUtilities.cpp"
 
 #include "files/DirectoryIterator.cpp"
@@ -145,7 +144,6 @@
 
 #include "memory/MemoryBlock.cpp"
 
-#include "misc/Main.cpp"
 #include "misc/Result.cpp"
 
 #include "streams/FileInputSource.cpp"

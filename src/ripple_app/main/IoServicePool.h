@@ -20,6 +20,8 @@
 #ifndef RIPPLE_APP_IOSERVICEPOOL_H_INCLUDED
 #define RIPPLE_APP_IOSERVICEPOOL_H_INCLUDED
 
+namespace ripple {
+
 /** An io_service with an associated group of threads. */
 class IoServicePool : public beast::Stoppable
 {
@@ -46,5 +48,7 @@ private:
     int m_threadsDesired;
     beast::Atomic <int> m_threadsRunning;
 };
+
+} // ripple
 
 #endif

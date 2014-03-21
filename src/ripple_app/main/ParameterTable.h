@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PARAMETERTABLE_H
 #define RIPPLE_PARAMETERTABLE_H
 
+namespace ripple {
+
 class Parameter : public boost::enable_shared_from_this<Parameter>
 {
     // abstract base class parameters are derived from
@@ -95,5 +97,7 @@ public:
 private:
     int             mValue;
 };
+
+} // ripple
 
 #endif

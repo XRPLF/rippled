@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (SerializedType)
 
 const STAmount saZero (CURRENCY_ONE, ACCOUNT_ONE, 0);
@@ -619,4 +621,5 @@ void STPathSet::add (Serializer& s) const
     }
     s.add8 (STPathElement::typeEnd);
 }
-// vim:ts=4
+
+} // ripple

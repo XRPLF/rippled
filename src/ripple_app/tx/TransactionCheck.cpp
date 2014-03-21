@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+namespace ripple {
 
 // VFALCO TODO move this into TransactionEngine.cpp
 
@@ -104,3 +105,5 @@ bool TransactionEngine::checkInvariants (TER result, const SerializedTransaction
 
     return true;
 }
+
+} // ripple

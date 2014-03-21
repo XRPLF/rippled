@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 LedgerFormats::LedgerFormats ()
 {
     add ("AccountRoot", ltACCOUNT_ROOT)
@@ -131,3 +133,5 @@ LedgerFormats* LedgerFormats::getInstance ()
 {
     return beast::SharedSingleton <LedgerFormats>::getInstance ();
 }
+
+} // ripple

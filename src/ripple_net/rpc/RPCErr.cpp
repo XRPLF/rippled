@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 struct RPCErr;
 
 SETUP_LOG (RPCErr)
@@ -45,4 +47,6 @@ Json::Value const& logRPCError (Json::Value const& json)
 
     return json;
 }
+
+} // ripple
 

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGERCLEANER_H_INCLUDED
 #define RIPPLE_LEDGERCLEANER_H_INCLUDED
 
+namespace ripple {
+
 /** Check the ledger/transaction databases to make sure they have continuity */
 class LedgerCleaner
     : public beast::Stoppable
@@ -51,5 +53,7 @@ public:
     */
     virtual void doClean (Json::Value const& parameters) = 0;
 };
+
+} // ripple
 
 #endif

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (SqliteDatabase)
 
 SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql, bool aux)
@@ -483,4 +485,4 @@ std::string SqliteStatement::getError (int j)
     return sqlite3_errstr (j);
 }
 
-// vim:ts=4
+} // ripple

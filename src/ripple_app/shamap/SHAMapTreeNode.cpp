@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SHAMapTreeNode::SHAMapTreeNode (beast::uint32 seq, const SHAMapNode& nodeID)
     : SHAMapNode (nodeID)
     , mHash (beast::uint64(0))
@@ -475,3 +477,4 @@ bool SHAMapTreeNode::setChildHash (int m, uint256 const& hash)
     return updateHash ();
 }
 
+} // ripple

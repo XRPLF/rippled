@@ -21,9 +21,6 @@
 
 #include "ripple_app.h"
 
-namespace ripple
-{
-
 #include "ledger/Ledger.cpp"
 #include "shamap/SHAMapDelta.cpp"
 #include "shamap/SHAMapNode.cpp"
@@ -34,5 +31,3 @@ namespace ripple
 #include "contracts/Operation.cpp"
 #include "contracts/ScriptData.cpp"
 #include "contracts/Interpreter.cpp"
-
-}

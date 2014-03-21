@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 NodeStoreScheduler::NodeStoreScheduler (Stoppable& parent)
     : Stoppable ("NodeStoreScheduler", parent)
     , m_jobQueue (nullptr)
@@ -55,3 +57,5 @@ void NodeStoreScheduler::doTask (NodeStore::Task& task, Job&)
     if ((--m_taskCount == 0) && isStopping())
         stopped();
 }
+
+} // ripple

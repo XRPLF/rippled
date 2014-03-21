@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_NICKNAMESTATE_H
 #define RIPPLE_NICKNAMESTATE_H
+
+namespace ripple {
 
 //
 // State of a nickname node.
@@ -58,5 +59,6 @@ private:
     SerializedLedgerEntry::pointer  mLedgerEntry;
 };
 
+} // ripple
+
 #endif
-// vim:ts=4

@@ -29,18 +29,11 @@
 
 #include "transactors/Transactor.h"
 
-namespace ripple {
-
 #include "paths/RippleState.cpp"
-
 #include "peers/UniqueNodeList.cpp"
-
 #include "ledger/InboundLedger.cpp"
-
 #include "tx/TransactionCheck.cpp"
 #include "tx/TransactionMaster.cpp"
 #include "tx/Transaction.cpp"
 #include "tx/TransactionEngine.cpp"
 #include "tx/TransactionMeta.cpp"
-
-}

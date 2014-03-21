@@ -20,6 +20,8 @@
 #ifndef RIPPLE_DISPUTEDTX_H
 #define RIPPLE_DISPUTEDTX_H
 
+namespace ripple {
+
 /** A transaction discovered to be in dispute during conensus.
 
     During consensus, a @ref DisputedTx is created when a transaction
@@ -84,5 +86,7 @@ typedef std::map<uint256, DisputedTx::pointer>::value_type u256_lct_pair;
 typedef std::map<uint160, LedgerProposal::pointer>::value_type u160_prop_pair;
 #define LEDGER_TOTAL_PASSES 8
 #define LEDGER_RETRY_PASSES 5
+
+} // ripple
 
 #endif

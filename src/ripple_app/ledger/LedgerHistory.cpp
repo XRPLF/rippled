@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // VFALCO TODO replace macros
 
 #ifndef CACHED_LEDGER_NUM
@@ -185,3 +187,5 @@ void LedgerHistory::tune (int size, int age)
     m_ledgers_by_hash.setTargetSize (size);
     m_ledgers_by_hash.setTargetAge (age);
 }
+
+} // ripple

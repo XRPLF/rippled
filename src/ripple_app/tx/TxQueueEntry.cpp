@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 void TxQueueEntry::addCallbacks (const TxQueueEntry& otherEntry)
 {
     BOOST_FOREACH (const stCallback & callback, otherEntry.mCallbacks)
@@ -29,3 +31,4 @@ void TxQueueEntry::doCallbacks (TER result)
     callback (mTxn, result);
 }
 
+} // ripple

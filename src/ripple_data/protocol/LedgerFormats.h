@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGERFORMATS_H_INCLUDED
 #define RIPPLE_LEDGERFORMATS_H_INCLUDED
 
+namespace ripple {
+
 /** Ledger entry types.
 
     These are stored in serialized data.
@@ -129,5 +131,6 @@ private:
     void addCommonFields (Item& item);
 };
 
-#endif
+} // ripple
 
+#endif

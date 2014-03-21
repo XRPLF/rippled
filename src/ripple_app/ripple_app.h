@@ -24,9 +24,6 @@
 #include <sys/resource.h>
 #endif
 
-
-//------------------------------------------------------------------------------
-
 // VFALCO TODO Reduce these boost dependencies. Make more interfaces
 //             purely abstract and move implementation into .cpp files.
 //
@@ -67,24 +64,17 @@
 
 #include "../../ripple_overlay/ripple_overlay.h"
 
-namespace ripple {
 #include "data/Database.h"
 #include "data/DatabaseCon.h"
 #include "data/SqliteDatabase.h"
 #include "data/DBInit.h"
 #include "shamap/SHAMapItem.h"
-}
-
-// VFALCO NOTE Have to step outside the ripple namespace to
-//             get the specialization for std::hash, et. al.
 #include "shamap/SHAMapNode.h"
 #include "shamap/SHAMapTreeNode.h"
 #include "shamap/SHAMapMissingNode.h"
 #include "shamap/SHAMapSyncFilter.h"
 #include "shamap/SHAMapAddNode.h"
 #include "shamap/SHAMap.h"
-
-namespace ripple {
 #include "misc/SerializedTransaction.h"
 #include "misc/SerializedLedger.h"
 #include "tx/TransactionMeta.h"
@@ -122,9 +112,7 @@ namespace ripple {
 #include "misc/NetworkOPs.h"
 #include "tx/TransactionMaster.h"
 #include "main/LocalCredentials.h"
-} // escape the namespace
 #include "main/Application.h"
-namespace ripple {
 #include "ledger/OrderBookDB.h"
 #include "tx/TransactionAcquire.h"
 #include "consensus/DisputedTx.h"
@@ -145,6 +133,5 @@ namespace ripple {
 #include "contracts/Contract.h"
 #include "contracts/Interpreter.h"
 #include "contracts/Operation.h"
-}
 
 #endif

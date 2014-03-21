@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 ConsensusTransSetSF::ConsensusTransSetSF (NodeCache& nodeCache)
     : m_nodeCache (nodeCache)
 {
@@ -124,3 +126,5 @@ bool TransactionStateSF::haveNode (SHAMapNode const& id,
 {
     return getApp().getOPs ().getFetchPack (nodeHash, nodeData);
 }
+
+} // ripple

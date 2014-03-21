@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 SETUP_LOG (SHAMap)
 
 void SHAMap::DefaultMissingNodeHandler::operator() (beast::uint32 refNUm)
@@ -1292,13 +1296,9 @@ void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
 
 //------------------------------------------------------------------------------
 
-class SHAMapTests : public beast::UnitTest
+class SHAMap_test : public beast::unit_test::suite
 {
 public:
-    SHAMapTests () : UnitTest ("SHAMap", "ripple")
-    {
-    }
-
     // VFALCO TODO Rename this to createFilledVector and pass an unsigned char, tidy up
     //
     static Blob IntToVUC (int v)
@@ -1311,9 +1311,9 @@ public:
         return vuc;
     }
 
-    void runTest ()
+    void run ()
     {
-        beginTestCase ("add/traverse");
+        testcase ("add/traverse");
 
         FullBelowCache fullBelowCache ("test.full_below",
             get_seconds_clock ());
@@ -1369,7 +1369,7 @@ public:
 
 
 
-        beginTestCase ("snapshot");
+        testcase ("snapshot");
 
         uint256 mapHash = sMap.getHash ();
         SHAMap::pointer map2 = sMap.snapShot (false);
@@ -1386,4 +1386,6 @@ public:
     }
 };
 
-static SHAMapTests shaMapTests;
+BEAST_DEFINE_TESTSUITE(SHAMap,ripple_app,ripple);
+
+} // ripple

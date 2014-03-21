@@ -20,6 +20,8 @@
 #ifndef RIPPLE_KNOWNFORMATS_H_INCLUDED
 #define RIPPLE_KNOWNFORMATS_H_INCLUDED
 
+namespace ripple {
+
 /** Manages a list of known formats.
 
     Each format has a name, an associated KeyType (typically an enumeration),
@@ -181,5 +183,7 @@ private:
     NameMap m_names;
     TypeMap m_types;
 };
+
+} // ripple
 
 #endif

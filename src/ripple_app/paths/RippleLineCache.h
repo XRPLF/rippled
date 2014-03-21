@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RIPPLELINECACHE_H
 #define RIPPLE_RIPPLELINECACHE_H
 
+namespace ripple {
+
 // Used by Pathfinder
 class RippleLineCache
 {
@@ -45,5 +47,7 @@ private:
     
     boost::unordered_map <uint160, AccountItems::pointer> mRLMap;
 };
+
+} // ripple
 
 #endif

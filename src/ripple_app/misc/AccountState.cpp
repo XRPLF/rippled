@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 AccountState::AccountState (RippleAddress const& naAccountID)
     : mAccountID (naAccountID)
     , mValid (false)
@@ -79,4 +81,4 @@ void AccountState::dump ()
     Log (lsINFO) << j;
 }
 
-// vim:ts=4
+} // ripple

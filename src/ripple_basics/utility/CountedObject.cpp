@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 CountedObjects& CountedObjects::getInstance ()
 {
     static CountedObjects instance;
@@ -90,3 +92,5 @@ CountedObjects::CounterBase::~CounterBase ()
     //             undefined behavior will result if the singleton's member
     //             functions are called.
 }
+
+} // ripple

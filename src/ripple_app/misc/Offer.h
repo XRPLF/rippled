@@ -20,6 +20,8 @@
 #ifndef RIPPLE_OFFER_H
 #define RIPPLE_OFFER_H
 
+namespace ripple {
+
 class Offer : public AccountItem
 {
 public:
@@ -63,6 +65,6 @@ private:
     int mSeq;
 };
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

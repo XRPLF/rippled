@@ -20,7 +20,7 @@
 #ifndef RIPPLE_ACCEPTEDLEDGERTX_H
 #define RIPPLE_ACCEPTEDLEDGERTX_H
 
-//------------------------------------------------------------------------------
+namespace ripple {
 
 /**
     A transaction that is in a closed ledger.
@@ -106,5 +106,7 @@ private:
 
     void buildJson ();
 };
+
+} // ripple
 
 #endif

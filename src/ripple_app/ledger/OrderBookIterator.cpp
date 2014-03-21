@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-/** Iterate through the directories in an order book
-*/
+namespace ripple {
+
+/** Iterate through the directories in an order book */
 BookDirIterator::BookDirIterator(uint160 const& uInCurrency, uint160 const& uInIssuer,
     uint160 const& uOutCurrency, uint160 const& uOutIssuer)
 {
@@ -223,4 +224,4 @@ bool OrderBookIterator::nextOfferInDir ()
     return mOfferIterator.nextEntry (mEntrySet);
 }
 
-// vim:ts=4
+} // ripple

@@ -20,12 +20,14 @@
 #ifndef RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
 #define RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
 
+#include "../../../beast/beast/unit_test/suite.h"
+
 namespace ripple {
 namespace NodeStore {
 
 // Some common code for the unit tests
 //
-class TestBase : public beast::UnitTest
+class TestBase : public beast::unit_test::suite
 {
 public:
     // Tunable parameters
@@ -180,11 +182,6 @@ public:
             if (object != nullptr)
                 pCopy->push_back (object);
         }
-    }
-
-    TestBase (beast::String name, beast::UnitTest::When when = beast::UnitTest::runNormal)
-        : beast::UnitTest (name, "ripple", when)
-    {
     }
 };
 

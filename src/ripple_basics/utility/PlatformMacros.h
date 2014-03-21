@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 #ifndef RIPPLE_PLATFORMMACROS_H
 #define RIPPLE_PLATFORMMACROS_H
 
@@ -31,5 +33,7 @@
 #define nothing()           do {} while (0)
 #define NUMBER(x)           (sizeof(x)/sizeof((x)[0]))
 #define isSetBit(x,y)       (!!((x) & (y)))
+
+} // ripple
 
 #endif

@@ -22,6 +22,8 @@
 
 #include "../ripple/sslutil/api/ECDSACanonical.h"
 
+namespace ripple {
+
 //
 // Used to hold addresses and parse and produce human formats.
 //
@@ -286,5 +288,7 @@ struct RippleAccountPrivateKeyTraits::assign <RippleAddress>
         construct (ui.begin(), ui.end(), value);
     }
 };
+
+} // ripple
 
 #endif

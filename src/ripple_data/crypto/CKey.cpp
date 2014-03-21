@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
@@ -25,17 +29,12 @@
 
 // VFALCO TODO move inlined stuff from CKey into here
 
-class CKeyTests : public beast::UnitTest
+class CKey_test : public beast::unit_test::suite
 {
 public:
-    CKeyTests () : UnitTest ("CKey", "ripple")
+    void
+    run ()
     {
-    }
-
-    void runTest ()
-    {
-        beginTestCase ("determinism");
-
         uint128 seed1, seed2;
         seed1.SetHex ("71ED064155FFADFA38782C5E0158CB26");
         seed2.SetHex ("CF0C3BE4485961858C4198515AE5B965");
@@ -62,4 +61,7 @@ public:
     }
 };
 
-static CKeyTests cKeyTests;
+BEAST_DEFINE_TESTSUITE(CKey,ripple_data,ripple);
+
+} // ripple
+

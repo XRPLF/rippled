@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // The prefix codes are part of the Ripple protocol and existing codes cannot be
 // arbitrarily changed.
 
@@ -29,3 +31,4 @@ HashPrefix const HashPrefix::txSign                      ('S', 'T', 'X');
 HashPrefix const HashPrefix::validation                  ('V', 'A', 'L');
 HashPrefix const HashPrefix::proposal                    ('P', 'R', 'P');
 
+} // ripple

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PATHFINDER_H
 #define RIPPLE_PATHFINDER_H
 
+namespace ripple {
+
 // VFALCO TODO Remove this unused stuff?
 #if 0
 //
@@ -145,5 +147,7 @@ boost::unordered_set<uint160> usAccountSourceCurrencies
         (const RippleAddress& raAccountID,
         RippleLineCache::ref lrLedger,
         bool includeXRP);
+
+} // ripple
 
 #endif

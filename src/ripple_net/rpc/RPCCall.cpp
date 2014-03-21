@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 class RPCParser;
 
 SETUP_LOG (RPCParser)
@@ -1169,3 +1171,5 @@ void RPCCall::fromNetwork (
         boost::posix_time::seconds (RPC_NOTIFY_SECONDS),
         BIND_TYPE (&RPCCallImp::onResponse, callbackFuncP, P_1, P_2, P_3));
 }
+
+} // ripple

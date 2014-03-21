@@ -20,8 +20,9 @@
 #ifndef RIPPLE_ORDERBOOKITERATOR_H_INCLUDED
 #define RIPPLE_ORDERBOOKITERATOR_H_INCLUDED
 
-/** An iterator that walks the directories in a book
-*/
+namespace ripple {
+
+/** An iterator that walks the directories in a book */
 class BookDirIterator
 {
 
@@ -198,6 +199,6 @@ private:
     DirectoryEntryIterator  mOfferIterator;
 };
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

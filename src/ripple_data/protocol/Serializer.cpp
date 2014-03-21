@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 SETUP_LOG (Serializer)
 
 int Serializer::addZeros (size_t uBytes)
@@ -684,17 +688,11 @@ Blob SerializerIterator::getRaw (int iLength)
 
 //------------------------------------------------------------------------------
 
-class SerializerTests : public beast::UnitTest
+class Serializer_test : public beast::unit_test::suite
 {
 public:
-    SerializerTests () : beast::UnitTest ("Serializer", "ripple")
+    void run ()
     {
-    }
-
-    void runTest ()
-    {
-        beginTestCase ("hash");
-
         Serializer s1;
         s1.add32 (3);
         s1.add256 (uint256 ());
@@ -707,6 +705,6 @@ public:
     }
 };
 
-static SerializerTests serializerTests;
+BEAST_DEFINE_TESTSUITE(Serializer,ripple_data,ripple);
 
-
+} // ripple

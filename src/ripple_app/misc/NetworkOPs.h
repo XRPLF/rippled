@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NETWORKOPS_H
 #define RIPPLE_NETWORKOPS_H
 
+namespace ripple {
+
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
 
@@ -308,5 +310,7 @@ public:
     virtual void pubProposedTransaction (Ledger::ref lpCurrent,
         SerializedTransaction::ref stTxn, TER terResult) = 0;
 };
+
+} // ripple
 
 #endif

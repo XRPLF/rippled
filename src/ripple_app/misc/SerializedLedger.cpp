@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 struct SerializedLedgerLog; // for Log
 
 SETUP_LOGN (SerializedLedgerLog,"SerializedLedger")
@@ -215,4 +217,4 @@ std::vector<uint256> SerializedLedgerEntry::getOwners ()
     return owners;
 }
 
-// vim:ts=4
+} // ripple

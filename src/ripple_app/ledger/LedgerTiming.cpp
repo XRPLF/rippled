@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // VFALCO Should rename ContinuousLedgerTiming to LedgerTiming
 
 struct LedgerTiming; // for Log
@@ -167,3 +169,5 @@ int ContinuousLedgerTiming::getNextLedgerTimeResolution (int previousResolution,
 
     return previousResolution;
 }
+
+} // ripple

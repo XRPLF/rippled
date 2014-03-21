@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2011 The Bitcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
@@ -145,4 +147,4 @@ std::size_t hash_value (const CBase58Data& b58)
     return seed;
 }
 
-// vim:ts=4
+} // ripple

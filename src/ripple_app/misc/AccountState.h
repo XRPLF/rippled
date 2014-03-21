@@ -20,6 +20,8 @@
 #ifndef RIPPLE_ACCOUNTSTATE_H
 #define RIPPLE_ACCOUNTSTATE_H
 
+namespace ripple {
+
 //
 // Provide abstract access to an account's state, such that access to the serialized format is hidden.
 //
@@ -86,5 +88,7 @@ private:
 
     bool                           mValid;
 };
+
+} // ripple
 
 #endif

@@ -23,8 +23,6 @@
 
 #include "../ripple/common/seconds_clock.h"
 
-namespace ripple {
-
 #include "ledger/LedgerEntrySet.cpp"
 #include "ledger/AcceptedLedger.cpp"
 #include "ledger/DirectoryEntryIterator.cpp"
@@ -34,5 +32,3 @@ namespace ripple {
 #include "misc/Offer.cpp"
 #include "paths/Pathfinder.cpp"
 #include "misc/Features.cpp"
-
-}

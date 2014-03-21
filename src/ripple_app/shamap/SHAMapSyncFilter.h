@@ -20,8 +20,7 @@
 #ifndef RIPPLE_SHAMAPSYNCFILTER_H
 #define RIPPLE_SHAMAPSYNCFILTER_H
 
-/** Callback for filtering SHAMap during sync.
-*/
+/** Callback for filtering SHAMap during sync. */
 namespace ripple {
 
 class SHAMapSyncFilter

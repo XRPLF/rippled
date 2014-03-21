@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 // VFALCO TODO tidy up this global
 
 static const uint256 uZero;
@@ -731,13 +735,9 @@ std::list<Blob > SHAMap::getTrustedPath (uint256 const& index)
 //#define SMS_DEBUG
 #endif
 
-class SHAMapSyncTests : public beast::UnitTest
+class SHAMapSync_test : public beast::unit_test::suite
 {
 public:
-    SHAMapSyncTests () : beast::UnitTest ("SHAMapSync", "ripple")
-    {
-    }
-
     static SHAMapItem::pointer makeRandomAS ()
     {
         Serializer s;
@@ -762,7 +762,7 @@ public:
 
             if (!map.addItem (*item, false, false))
             {
-                journal().fatal <<
+                log <<
                     "Unable to add item to map";
                 return false;
             }
@@ -772,7 +772,7 @@ public:
         {
             if (!map.delItem (*it))
             {
-                journal().fatal <<
+                log <<
                     "Unable to remove item from map";
                 return false;
             }
@@ -780,7 +780,7 @@ public:
 
         if (beforeHash != map.getHash ())
         {
-            journal().fatal <<
+            log <<
                 "Hashes do not match";
             return false;
         }
@@ -788,7 +788,7 @@ public:
         return true;
     }
 
-    void runTest ()
+    void run ()
     {
         unsigned int seed;
 
@@ -805,8 +805,6 @@ public:
         int items = 10000;
         for (int i = 0; i < items; ++i)
             source.addItem (*makeRandomAS (), false, false);
-
-        beginTestCase ("add/remove");
 
         unexpected (!confuseMap (source, 500), "ConfuseMap");
 
@@ -922,4 +920,6 @@ public:
     }
 };
 
-static SHAMapSyncTests shaMapSyncTests;
+BEAST_DEFINE_TESTSUITE(SHAMapSync,ripple_app,ripple);
+
+} // ripple

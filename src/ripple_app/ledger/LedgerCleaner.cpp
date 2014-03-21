@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 /*
 
 LedgerCleaner
@@ -442,3 +444,5 @@ LedgerCleaner* LedgerCleaner::New (
 {
     return new LedgerCleanerImp (parent, journal);
 }
+
+} // ripple

@@ -20,6 +20,10 @@
 #ifndef RIPPLE_THREADNAME_H
 #define RIPPLE_THREADNAME_H
 
+namespace ripple {
+
 extern void setCallingThreadName (char const*);
+
+} // ripple
 
 #endif

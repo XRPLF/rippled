@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // VFALCO TODO rename class to TransactionMeta
 
 SETUP_LOG (TransactionMetaSet)
@@ -233,4 +235,4 @@ void TransactionMetaSet::addRaw (Serializer& s, TER result, beast::uint32 index)
     getAsObject ().add (s);
 }
 
-// vim:ts=4
+} // ripple

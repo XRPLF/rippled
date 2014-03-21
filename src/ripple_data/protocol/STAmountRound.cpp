@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 void STAmount::canonicalizeRound (bool isNative, beast::uint64& value, int& offset, bool roundUp)
 {
     if (!roundUp) // canonicalize already rounds down
@@ -311,3 +313,4 @@ STAmount STAmount::divRound (const STAmount& num, const STAmount& den,
     return STAmount (uCurrencyID, uIssuerID, amount, offset, resultNegative);
 }
 
+} // ripple

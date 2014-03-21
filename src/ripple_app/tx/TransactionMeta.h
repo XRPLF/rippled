@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TRANSACTIONMETA_H
 #define RIPPLE_TRANSACTIONMETA_H
 
+namespace ripple {
+
 class TransactionMetaSet : beast::LeakChecked <TransactionMetaSet>
 {
 public:
@@ -121,6 +123,6 @@ private:
     STArray mNodes;
 };
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

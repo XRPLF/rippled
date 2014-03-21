@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LOADMANAGER_H_INCLUDED
 #define RIPPLE_LOADMANAGER_H_INCLUDED
 
+namespace ripple {
+
 /** Manages load sources.
 
     This object creates an associated thread to maintain a clock.
@@ -73,5 +75,7 @@ public:
     */
     virtual void resetDeadlockDetector () = 0;
 };
+
+} // ripple
 
 #endif

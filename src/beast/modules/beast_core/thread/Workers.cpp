@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-namespace beast
-{
+#include "../../../beast/unit_test/suite.h"
+
+namespace beast {
 
 Workers::Workers (Callback& callback, String const& threadNames, int numberOfThreads)
     : m_callback (callback)
@@ -222,12 +223,9 @@ void Workers::Worker::run ()
 
 //------------------------------------------------------------------------------
 
-class WorkersTests : public UnitTest
+class Workers_test : public unit_test::suite
 {
 public:
-    WorkersTests () : UnitTest ("Workers", "beast")
-    {
-    }
 
     struct TestCallback : Workers::Callback
     {
@@ -247,11 +245,19 @@ public:
         Atomic <int> count;
     };
 
+    template <class T1, class T2>
+    bool
+    expectEquals (T1 const& t1, T2 const& t2)
+    {
+        return expect (t1 == t2);
+    }
+
     void testThreads (int const threadCount)
     {
-        String s;
-        s << "threadCount = " << String (threadCount);
-        beginTestCase (s);
+        std::stringstream ss;
+        ss <<
+            "threadCount = " << threadCount;
+        testcase (ss.str());
 
         TestCallback cb (threadCount);
 
@@ -277,7 +283,7 @@ public:
         expectEquals (count, 0);
     }
 
-    void runTest ()
+    void run ()
     {
         testThreads (0);
         testThreads (1);
@@ -288,6 +294,6 @@ public:
     }
 };
 
-static WorkersTests workersTests;
+BEAST_DEFINE_TESTSUITE(Workers,beast_core,beast);
 
-}  // namespace beast
+} // beast

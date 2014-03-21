@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 RippleLineCache::RippleLineCache (Ledger::ref l)
     : mLock (this, "RippleLineCache", __FILE__, __LINE__)
     , mLedger (l)
@@ -35,3 +37,5 @@ AccountItems& RippleLineCache::getRippleLines (const uint160& accountID)
 
     return *it->second;
 }
+
+} // ripple

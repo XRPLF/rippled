@@ -79,6 +79,6 @@ private:
         SField::ref inName, int depth, std::unique_ptr <STObject>& sub_object);
 };
 
-}
+} // ripple
 
 #endif

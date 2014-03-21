@@ -20,8 +20,9 @@
 #ifndef RIPPLE_NET_BASICS_HTTPREQUEST_H_INCLUDED
 #define RIPPLE_NET_BASICS_HTTPREQUEST_H_INCLUDED
 
-/** An HTTP request we are handling from a client.
-*/
+namespace ripple {
+
+/** An HTTP request we are handling from a client. */
 class HTTPRequest
 {
 public:
@@ -99,5 +100,7 @@ private:
     int iDataSize;
     bool bShouldClose;
 };
+
+}
 
 #endif

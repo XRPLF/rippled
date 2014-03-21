@@ -22,7 +22,7 @@ namespace NodeStore {
 
 // Tests the Backend interface
 //
-class BackendTests : public TestBase
+class Backend_test : public TestBase
 {
 public:
     void testBackend (beast::String type, beast::int64 const seedValue,
@@ -32,7 +32,7 @@ public:
 
         DummyScheduler scheduler;
 
-        beginTestCase (beast::String ("Backend type=") + type);
+        testcase ((beast::String ("Backend type=") + type).toStdString());
 
         beast::StringPairArray params;
         beast::File const path (beast::File::createTempFile ("node_db"));
@@ -43,7 +43,7 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
-        beast::Journal j ((journal ()));
+        beast::Journal j;
 
         {
             // Open the backend
@@ -86,7 +86,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void runTest ()
+    void run ()
     {
         int const seedValue = 50;
 
@@ -104,13 +104,9 @@ public:
         testBackend ("rocksdb", seedValue);
     #endif
     }
-
-    BackendTests () : TestBase ("NodeStoreBackend")
-    {
-    }
 };
 
-static BackendTests backendTests;
+BEAST_DEFINE_TESTSUITE(Backend,ripple_core,ripple);
 
 }
 }

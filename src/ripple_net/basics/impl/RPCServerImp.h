@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (RPCServer)
 
 class RPCServerImp
@@ -256,3 +258,5 @@ private:
 
     HTTPRequest mHTTPRequest;
 };
+
+} // ripple

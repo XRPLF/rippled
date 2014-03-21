@@ -20,6 +20,8 @@
 #ifndef RIPPLE_UNIQUENODELIST_H_INCLUDED
 #define RIPPLE_UNIQUENODELIST_H_INCLUDED
 
+namespace ripple {
+
 class UniqueNodeList : public beast::Stoppable
 {
 protected:
@@ -75,6 +77,6 @@ public:
     virtual int iSourceScore (ValidatorSource vsWhy) = 0;
 };
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

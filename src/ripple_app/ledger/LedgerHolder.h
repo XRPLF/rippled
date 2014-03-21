@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGERHOLDER_H
 #define RIPPLE_LEDGERHOLDER_H
 
+namespace ripple {
+
 // Can std::atomic<std::shared_ptr>> make this lock free?
 
 /** Hold a ledger in a thread-safe way.
@@ -73,5 +75,7 @@ private:
     Ledger::pointer m_heldLedger;
 
 };
+
+} // ripple
 
 #endif

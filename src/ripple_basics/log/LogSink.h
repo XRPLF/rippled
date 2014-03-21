@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_LOGSINK_H_INCLUDED
 #define RIPPLE_BASICS_LOGSINK_H_INCLUDED
 
+namespace ripple {
+
 /** An endpoint for all logging messages. */
 class LogSink
 {
@@ -94,4 +96,7 @@ private:
     LogFile m_logFile;
     LogSeverity m_minSeverity;
 };
+
+} // ripple
+
 #endif

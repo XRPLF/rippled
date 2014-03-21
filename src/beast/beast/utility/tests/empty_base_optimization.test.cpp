@@ -23,12 +23,12 @@
 
 #include "../empty_base_optimization.h"
 
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include "../../unit_test/suite.h"
 
 namespace beast {
 
-class empty_base_optimization_Tests
-    : public UnitTest
+class empty_base_optimization_test
+    : public unit_test::suite
 {
 public:
     template <class T>
@@ -94,20 +94,14 @@ public:
     }
 
     void
-    runTest ()
+    run ()
     {
-        beginTestCase ("empty_base_optimization");
         expect (test_one());
         expect (test_two());
         pass ();
     }
-
-    empty_base_optimization_Tests()
-        : UnitTest ("empty_base_optimization", "beast")
-    {
-    }
 };
 
-static empty_base_optimization_Tests empty_base_optimization_tests;
+BEAST_DEFINE_TESTSUITE(empty_base_optimization,utility,beast);
 
-}  // beast
+} // beast

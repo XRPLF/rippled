@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 LocalCredentials::LocalCredentials ()
     : mLedger (0)
 {
@@ -166,4 +168,4 @@ bool LocalCredentials::dataStore (const std::string& strKey, const std::string& 
     return bSuccess;
 }
 
-// vim:ts=4
+} // ripple

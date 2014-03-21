@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGERMASTER_H_INCLUDED
 #define RIPPLE_LEDGERMASTER_H_INCLUDED
 
+namespace ripple {
+
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
 // Tracks held transactions
@@ -139,5 +141,7 @@ public:
     static bool shouldAcquire (beast::uint32 currentLedgerID,
                                beast::uint32 ledgerHistory, beast::uint32 targetLedger);
 };
+
+} // ripple
 
 #endif

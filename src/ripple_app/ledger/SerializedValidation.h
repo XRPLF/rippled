@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERIALIZEDVALIDATION_H
 #define RIPPLE_SERIALIZEDVALIDATION_H
 
+namespace ripple {
+
 // Validation flags
 const beast::uint32 vfFullyCanonicalSig    = 0x80000000; // signature is fully canonical
 
@@ -95,5 +97,6 @@ private:
     bool mTrusted;
 };
 
+} // ripple
+
 #endif
-// vim:ts=4

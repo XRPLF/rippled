@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
+#include "../../../beast/beast/unit_test/suite.h"
+
 namespace ripple {
 
-class JsonCppTests : public beast::UnitTest
+class JsonCpp_test : public beast::unit_test::suite
 {
 public:
     void testBadJson ()
     {
-        beginTestCase ("bad input");
-
         char const* s (
             "{\"method\":\"ledger\",\"params\":[{\"ledger_index\":1e300}]}"
             );
@@ -37,16 +37,12 @@ public:
         pass ();
     }
 
-    void runTest ()
+    void run ()
     {
         testBadJson ();
     }
-
-    JsonCppTests () : UnitTest ("JsonCpp", "ripple")
-    {
-    }
 };
 
-static JsonCppTests jsonCppTests;
+BEAST_DEFINE_TESTSUITE(JsonCpp,json,ripple);
 
-}  // namespace ripple
+} // ripple

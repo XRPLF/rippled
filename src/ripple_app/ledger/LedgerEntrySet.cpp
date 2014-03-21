@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (LedgerEntrySet)
 
 // #define META_DEBUG
@@ -1680,4 +1682,5 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
     return terResult;
 }
 
-// vim:ts=4
+} // ripple
+

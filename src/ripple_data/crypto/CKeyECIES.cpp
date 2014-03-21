@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // ECIES uses elliptic curve keys to send an encrypted message.
 
 // A shared secret is generated from one public key and one private key.
@@ -326,4 +328,4 @@ bool checkECIES (void)
     return true;
 }
 
-// vim:ts=4
+} // ripple

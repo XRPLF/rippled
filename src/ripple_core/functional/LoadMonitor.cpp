@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 /*
 
 TODO
@@ -216,3 +218,5 @@ LoadMonitor::Stats LoadMonitor::getStats ()
 
     return stats;
 }
+
+} // ripple

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 LogSink::LogSink ()
     : m_mutex ("Log", __FILE__, __LINE__)
     , m_minSeverity (lsINFO)
@@ -184,3 +186,4 @@ LogSink::Ptr LogSink::get ()
     return beast::SharedSingleton <LogSink>::getInstance ();
 }
 
+} // ripple

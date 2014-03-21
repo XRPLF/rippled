@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (STObject)
 
 std::unique_ptr<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
@@ -1253,14 +1255,10 @@ void STArray::sort (bool (*compare) (const STObject&, const STObject&))
 
 //------------------------------------------------------------------------------
 
-class SerializedObjectTests : public beast::UnitTest
+class SerializedObject_test : public beast::unit_test::suite
 {
 public:
-    SerializedObjectTests () : beast::UnitTest ("SerializedObject", "ripple")
-    {
-    }
-
-    void runTest ()
+    void run()
     {
         testSerialization();
         testParseJSONArray();
@@ -1277,7 +1275,7 @@ public:
 
     void testParseJSONArrayWithInvalidChildrenObjects ()
     {
-        beginTestCase ("parse json array invalid children");
+        testcase ("parse json array invalid children");
         try
         {
             /*
@@ -1315,7 +1313,7 @@ public:
 
     void testParseJSONArray ()
     {
-        beginTestCase ("parse json array");
+        testcase ("parse json array");
         std::string const json ("{\"Template\":[{\"ModifiedNode\":{\"Sequence\":1}}]}\n");
 
         Json::Value jsonObject;
@@ -1336,7 +1334,7 @@ public:
 
     void testSerialization ()
     {
-        beginTestCase ("serialization");
+        testcase ("serialization");
 
         unexpected (sfGeneric.isUseful (), "sfGeneric must not be useful");
 
@@ -1415,4 +1413,6 @@ public:
     }
 };
 
-static SerializedObjectTests serializedObjectTests;
+BEAST_DEFINE_TESTSUITE(SerializedObject,ripple_data,ripple);
+
+} // ripple

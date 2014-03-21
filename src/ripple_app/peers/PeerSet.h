@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERSET_H
 #define RIPPLE_PEERSET_H
 
+namespace ripple {
+
 /** A set of peers used to acquire data.
 
     A peer set is used to acquire a ledger or a transaction set.
@@ -155,5 +157,7 @@ protected:
 
     PeerSetMap mPeers;
 };
+
+} // ripple
 
 #endif

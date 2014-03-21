@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 #define SECTION_DEFAULT_NAME    ""
 
 struct ParseSectionLog; // for Log
@@ -174,3 +176,4 @@ parseKeyValueSection (Section& secSource, beast::String const& strSection)
     return result;
 }
 
+} // ripple

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_LOGPARTITION_H_INCLUDED
 #define RIPPLE_BASICS_LOGPARTITION_H_INCLUDED
 
+namespace ripple {
+
 class LogPartition : public beast::Journal::Sink
 {
 public:
@@ -133,4 +135,7 @@ LogPartition& LogPartition::get ()
     struct Class##Instantiator { Class##Instantiator () { LogPartition::get <Class> (); } }; \
     static Class##Instantiator Class##Instantiator_instance;
 
+} // ripple
+
 #endif
+

@@ -20,7 +20,9 @@
 #ifndef RIPPLE_SERIALIZEDTRANSACTION_H
 #define RIPPLE_SERIALIZEDTRANSACTION_H
 
-// VFALCO TODO eliminate these macros
+namespace ripple {
+
+// VFALCO TODO replace these macros with language constants
 
 #define TXN_SQL_NEW         'N'
 #define TXN_SQL_CONFLICT    'C'
@@ -153,5 +155,6 @@ private:
 
 bool isMemoOkay (STObject const& st);
 
+} // ripple
+
 #endif
-// vim:ts=4

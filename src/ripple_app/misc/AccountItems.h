@@ -20,8 +20,9 @@
 #ifndef RIPPLE_ACCOUNTITEMS_H
 #define RIPPLE_ACCOUNTITEMS_H
 
-/** A set of AccountItem objects.
-*/
+namespace ripple {
+
+/** A set of AccountItem objects. */
 class AccountItems : beast::LeakChecked <AccountItems>
 {
 public:
@@ -54,5 +55,7 @@ private:
 
     Container mItems;
 };
+
+} // ripple
 
 #endif

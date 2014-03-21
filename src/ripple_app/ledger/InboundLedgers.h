@@ -20,6 +20,8 @@
 #ifndef RIPPLE_INBOUNDLEDGERS_H
 #define RIPPLE_INBOUNDLEDGERS_H
 
+namespace ripple {
+
 /** Manages the lifetime of inbound ledgers.
 
     @see InboundLedger
@@ -76,5 +78,7 @@ public:
 
     virtual void onStop() = 0;
 };
+
+} // ripple
 
 #endif

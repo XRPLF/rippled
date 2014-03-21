@@ -20,6 +20,8 @@
 #ifndef __TRANSACTIONENGINE__
 #define __TRANSACTIONENGINE__
 
+namespace ripple {
+
 // A TransactionEngine applies serialized transactions to a ledger
 // It can also, verify signatures, verify fees, and give rejection reasons
 
@@ -113,5 +115,6 @@ inline TransactionEngineParams operator& (const TransactionEngineParams& l1, con
     return static_cast<TransactionEngineParams> (static_cast<int> (l1) & static_cast<int> (l2));
 }
 
+} // ripple
+
 #endif
-// vim:ts=4

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SerializedValidation::SerializedValidation (SerializerIterator& sit, bool checkSignature)
     : STObject (getFormat (), sit, sfValidation)
     , mTrusted (false)
@@ -157,4 +159,4 @@ SOTemplate const& SerializedValidation::getFormat ()
     return holder.format;
 }
 
-// vim:ts=4
+} // ripple

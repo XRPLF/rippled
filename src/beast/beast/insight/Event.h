@@ -20,13 +20,13 @@
 #ifndef BEAST_INSIGHT_EVENT_H_INCLUDED
 #define BEAST_INSIGHT_EVENT_H_INCLUDED
 
-#include <chrono>
-#include <memory>
-
 #include "Base.h"
 #include "EventImpl.h"
 
 #include "../chrono/chrono_util.h"
+
+#include <chrono>
+#include <memory>
 
 namespace beast {
 namespace insight {
@@ -62,7 +62,8 @@ public:
 
     /** Push an event notification. */
     template <class Rep, class Period>
-    void notify (std::chrono::duration <Rep, Period> const& value) const
+    void
+    notify (std::chrono::duration <Rep, Period> const& value) const
     {
         if (m_impl)
             m_impl->notify (ceil <value_type> (value));

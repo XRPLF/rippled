@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#if BEAST_INCLUDE_BEASTCONFIG
+#include "../../BeastConfig.h"
+#endif
+
 #include "../IPAddressV6.h"
 
 namespace beast {

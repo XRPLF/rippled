@@ -20,9 +20,7 @@
 #ifndef CONTRACT_H
 #define CONTRACT_H
 
-/*
-    Encapsulates the SLE for a Contract
-*/
+namespace ripple {
 
 class Contract
 {
@@ -43,6 +41,6 @@ public:
     void executeAccept ();
 };
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

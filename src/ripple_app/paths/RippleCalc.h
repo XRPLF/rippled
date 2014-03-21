@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RIPPLECALC_H
 #define RIPPLE_RIPPLECALC_H
 
+namespace ripple {
+
 /** Calculate the quality of a payment path.
 
     The quality is a synonym for price. Specifically, the amount of
@@ -97,5 +99,6 @@ protected:
     bool                            mOpenLedger;
 };
 
+} // ripple
+
 #endif
-// vim:ts=4

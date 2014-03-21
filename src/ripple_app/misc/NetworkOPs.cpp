@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 class NetworkOPsImp
     : public NetworkOPs
     , public beast::DeadlineTimer::Listener
@@ -3277,3 +3279,5 @@ NetworkOPs* NetworkOPs::New (clock_type& clock, LedgerMaster& ledgerMaster,
 {
     return new NetworkOPsImp (clock, ledgerMaster, parent, journal);
 }
+
+} // ripple

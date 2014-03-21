@@ -20,6 +20,8 @@
 #ifndef RIPPLE_ORDERBOOKDB_H_INCLUDED
 #define RIPPLE_ORDERBOOKDB_H_INCLUDED
 
+namespace ripple {
+
 // VFALCO TODO Add Javadoc comment explaining what this class does
 class BookListeners
 {
@@ -99,6 +101,6 @@ private:
 
 };
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

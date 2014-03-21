@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 //
 // TODO: Check permissions on config file before using it.
 //
@@ -779,3 +781,6 @@ beast::File const& Config::getModuleDatabasePath ()
 //
 //
 //------------------------------------------------------------------------------
+
+} // ripple
+

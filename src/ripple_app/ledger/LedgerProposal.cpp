@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 LedgerProposal::LedgerProposal (uint256 const& pLgr, beast::uint32 seq,
                                 uint256 const& tx, beast::uint32 closeTime,
                                 const RippleAddress& naPeerPublic, uint256 const& suppression) :
@@ -140,4 +142,4 @@ Json::Value LedgerProposal::getJson () const
     return ret;
 }
 
-// vim:ts=4
+} // ripple

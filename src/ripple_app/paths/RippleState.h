@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RIPPLESTATE_H
 #define RIPPLE_RIPPLESTATE_H
 
+namespace ripple {
+
 //
 // A ripple line's state.
 // - Isolate ledger entry format.
@@ -141,5 +143,7 @@ private:
 
     STAmount                        mBalance;
 };
+
+} // ripple
+
 #endif
-// vim:ts=4

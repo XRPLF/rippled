@@ -17,4 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOGN (WSServerHandlerLog,"WSServerHandler")
+
+} // ripple

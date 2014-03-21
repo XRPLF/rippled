@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 /** Get the current RippleLineCache, updating it if necessary.
     Get the correct ledger to use.
 */
@@ -196,6 +198,5 @@ Json::Value PathRequests::makePathRequest(
     }
     return result;
 }
-                        
 
-// vim:ts=4
+} // ripple

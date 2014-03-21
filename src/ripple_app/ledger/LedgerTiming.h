@@ -20,6 +20,8 @@
 #ifndef __LEDGERTIMING__
 #define __LEDGERTIMING__
 
+namespace ripple {
+
 // The number of seconds a ledger may remain idle before closing
 #   define LEDGER_IDLE_INTERVAL     15
 
@@ -96,5 +98,7 @@ public:
 
     static int getNextLedgerTimeResolution (int previousResolution, bool previousAgree, int ledgerSeq);
 };
+
+} // ripple
 
 #endif

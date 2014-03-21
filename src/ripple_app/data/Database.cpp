@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 Database::Database (const char* host)
     : mNumCol (0)
 {
@@ -203,4 +205,4 @@ char* Database::getSingleDBValueStr (const char* sql, std::string& retStr)
 }
 #endif
 
-// vim:ts=4
+} // ripple

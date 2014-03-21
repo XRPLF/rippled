@@ -750,9 +750,6 @@
     <ClCompile Include="..\..\src\ripple_app\consensus\DisputedTx.cpp">
       <Filter>[2] Old Ripple\ripple_app\consensus</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\RippleMain.cpp">
-      <Filter>[2] Old Ripple\ripple_app\main</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\websocket\WSConnection.cpp">
       <Filter>[2] Old Ripple\ripple_app\websocket</Filter>
     </ClCompile>
@@ -1356,9 +1353,6 @@
     <ClCompile Include="..\..\src\ripple\radmap\impl\BasicFullBelowCache.cpp">
       <Filter>[1] Ripple\radmap\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\counted_bind.cpp">
-      <Filter>[1] Ripple\common\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
       <Filter>[1] Ripple\common\impl</Filter>
     </ClCompile>
@@ -1496,6 +1490,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\sslutil\impl\ECDSACanonical.cpp">
       <Filter>[1] Ripple\sslutil\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_data\protocol\HashPrefix.cpp">
+      <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\main\Main.cpp">
+      <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1981,9 +1981,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\consensus\LedgerConsensus.h">
       <Filter>[2] Old Ripple\ripple_app\consensus</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\main\RippleMain.h">
-      <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\websocket\WSConnection.h">
       <Filter>[2] Old Ripple\ripple_app\websocket</Filter>
@@ -2833,9 +2830,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\radmap\api\Tuning.h">
       <Filter>[1] Ripple\radmap\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\counted_bind.h">
-      <Filter>[1] Ripple\common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
       <Filter>[1] Ripple\common</Filter>

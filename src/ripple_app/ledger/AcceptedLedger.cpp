@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // VFALCO TODO Remove this global and make it a member of the App
 //             Use a dependency injection to give AcceptedLedger access.
 //
@@ -62,3 +64,5 @@ AcceptedLedgerTx::pointer AcceptedLedger::getTxn (int i) const
 
     return it->second;
 }
+
+} // ripple

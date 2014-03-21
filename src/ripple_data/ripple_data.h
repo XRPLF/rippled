@@ -27,7 +27,6 @@
 struct bignum_st;
 typedef struct bignum_st BIGNUM;
 
-namespace ripple {
 #include "crypto/Base58Data.h"
 #include "crypto/RFC1751.h"
 #include "protocol/BuildInfo.h"
@@ -36,9 +35,7 @@ namespace ripple {
 #include "protocol/Protocol.h"
 #include "protocol/RippleAddress.h"
 #include "protocol/RippleSystem.h"
-}
 #include "protocol/Serializer.h" // needs CKey
-namespace ripple {
 #include "protocol/TER.h"
 #include "protocol/SerializedTypes.h" // needs Serializer, TER
 #include "protocol/SerializedObjectTemplate.h"
@@ -49,8 +46,6 @@ namespace ripple {
 #include "protocol/TxFlags.h"
 
 #include "utility/UptimeTimerAdapter.h"
-
-}
 
 #include "protocol/STParsedJSON.h"
 

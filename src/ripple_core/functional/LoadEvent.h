@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LOADEVENT_H
 #define RIPPLE_LOADEVENT_H
 
+namespace ripple {
+
 class LoadMonitor;
 
 // VFALCO NOTE What is the difference between a LoadEvent and a LoadMonitor?
@@ -75,5 +77,7 @@ private:
     double m_secondsWaiting;
     double m_secondsRunning;
 };
+
+} // ripple
 
 #endif

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOGN (WSConnection, "WSConnection")
 
 //------------------------------------------------------------------------------
@@ -200,3 +202,5 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
 
     return jvResult;
 }
+
+} // ripple

@@ -32,8 +32,6 @@
 
 #include "misc/ProofOfWorkFactory.h"
 
-namespace ripple {
-
 #include "peers/PeerSet.cpp"
 #include "misc/OrderBook.cpp"
 #include "misc/ProofOfWorkFactory.cpp"
@@ -47,5 +45,3 @@ namespace ripple {
 # include "ledger/LedgerCleaner.h"
 #include "ledger/LedgerCleaner.cpp"
 #include "ledger/LedgerMaster.cpp"
-
-}

@@ -17,18 +17,11 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
-#endif
-
 #include "../Config.h"
 
-#include "../../modules/beast_core/beast_core.h" // for UnitTest
-
 #include "impl/DynamicBuffer.cpp"
-#include "impl/IPAddress.cpp"
 #include "impl/IPAddressV4.cpp"
 #include "impl/IPAddressV6.cpp"
 #include "impl/IPEndpoint.cpp"
 
-
+#include "tests/IPEndpoint.test.cpp"

@@ -21,7 +21,7 @@
 #include "../../../BeastConfig.h"
 #endif
 
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include "../../unit_test/suite.h"
 
 #include "../bind_handler.h"
 #include "../enable_wait_for_async.h"
@@ -30,7 +30,7 @@
 
 namespace beast {
 
-class enable_wait_for_async_Tests : public UnitTest
+class enable_wait_for_async_test : public unit_test::suite
 {
 public:
     typedef boost::system::error_code error_code;
@@ -89,22 +89,17 @@ public:
             }
         };
 
-        beginTestCase ("wait_for_async");
         owner o;
         o();
         expect (o.notified);
     }
 
-    void runTest()
+    void run()
     {
         test();
     }
-
-    enable_wait_for_async_Tests() : UnitTest ("enable_wait_for_async", "beast")
-    {
-    }
 };
 
-static enable_wait_for_async_Tests enable_wait_for_async_tests;
+BEAST_DEFINE_TESTSUITE(enable_wait_for_async,asio,beast);
 
 }

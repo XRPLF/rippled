@@ -21,10 +21,12 @@
 #define RIPPLE_TAGGEDCACHE_H_INCLUDED
 
 #include "../../beast/beast/chrono/abstract_clock.h"
+#include "../../beast/beast/chrono/chrono_io.h"
 #include "../../beast/beast/Insight.h"
 
 #include <boost/smart_ptr.hpp>
 
+#include <functional>
 #include <mutex>
 #include <unordered_map>
 
@@ -390,7 +392,8 @@ public:
     */
     bool insert (key_type const& key, T const& value)
     {
-        mapped_ptr p (boost::make_shared <T> (boost::cref (value)));
+        mapped_ptr p (boost::make_shared <T> (
+            std::cref (value)));
         return canonicalize (key, p);
     }
 

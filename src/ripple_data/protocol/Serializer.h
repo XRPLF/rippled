@@ -298,7 +298,7 @@ public:
     Blob getVL ();
 };
 
-}
+} // ripple
 
 #endif
 

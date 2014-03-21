@@ -20,8 +20,9 @@
 #ifndef RIPPLE_DIRECTORYENTRYITERATOR_H_INCLUDED
 #define RIPPLE_DIRECTORYENTRYITERATOR_H_INCLUDED
 
-/** An iterator that walks the ledger entries in a single directory
-*/
+namespace ripple {
+
+/** An iterator that walks the ledger entries in a single directory */
 class DirectoryEntryIterator
 {
 
@@ -80,6 +81,6 @@ private:
     SLE::pointer mDirNode;      // SLE for the entry we are on
 };
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

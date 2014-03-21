@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-class Features;
+namespace ripple {
 
-//------------------------------------------------------------------------------
+class Features;
 
 class FeeVote : public IFeeVote
 {
@@ -210,4 +210,4 @@ IFeeVote* IFeeVote::New (beast::uint64 targetBaseFee,
     return new FeeVote (targetBaseFee, targetReserveBase, targetReserveIncrement);
 }
 
-// vim:ts=4
+} // ripple

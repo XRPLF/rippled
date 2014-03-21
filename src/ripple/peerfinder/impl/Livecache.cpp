@@ -17,12 +17,13 @@
 */
 //==============================================================================
 
-#include "../.././beast/beast/chrono/manual_clock.h"
+#include "../../../beast/beast/unit_test/suite.h"
+#include "../../../beast/beast/chrono/manual_clock.h"
 
 namespace ripple {
 namespace PeerFinder {
 
-class LivecacheTests : public beast::UnitTest
+class Livecache_test : public beast::unit_test::suite
 {
 public:
     beast::manual_clock <clock_type::duration> m_clock;
@@ -40,8 +41,6 @@ public:
 
     void testFetch ()
     {
-        beginTestCase ("fetch");
-
         Livecache <> c (m_clock, beast::Journal());
 
         add (1, 1, c);
@@ -60,17 +59,13 @@ public:
         pass();
     }
 
-    void runTest ()
+    void run ()
     {
         testFetch ();
     }
-
-    LivecacheTests () : UnitTest ("PeerFinder:Livecache", "ripple")
-    {
-    }
 };
 
-static LivecacheTests livecacheTests;
+BEAST_DEFINE_TESTSUITE(Livecache,peerfinder,ripple);
 
 }
 }

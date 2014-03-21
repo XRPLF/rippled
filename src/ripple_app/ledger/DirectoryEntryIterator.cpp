@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-/** Get the current ledger entry
-*/
+namespace ripple {
+
+/** Get the current ledger entry */
 SLE::pointer DirectoryEntryIterator::getEntry (LedgerEntrySet& les, LedgerEntryType type)
 {
     return les.entryCache (type, mEntryIndex);
@@ -107,4 +108,4 @@ bool DirectoryEntryIterator::setJson (Json::Value const& j, LedgerEntrySet& les)
     return true;
 }
 
-// vim:ts=4
+} // ripple

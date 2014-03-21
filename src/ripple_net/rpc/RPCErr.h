@@ -20,11 +20,15 @@
 #ifndef RIPPLE_NET_RPC_RPCERR_H_INCLUDED
 #define RIPPLE_NET_RPC_RPCERR_H_INCLUDED
 
+namespace ripple {
+
 Json::Value const& logRPCError (Json::Value const& json);
 
 // VFALCO NOTE these are deprecated
 bool isRpcError (Json::Value jvResult);
 Json::Value rpcError (int iError,
                       Json::Value jvResult = Json::Value (Json::objectValue));
+
+} // ripple
 
 #endif

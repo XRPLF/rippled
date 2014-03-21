@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_BASICS_SNTPCLIENT_H_INCLUDED
 #define RIPPLE_NET_BASICS_SNTPCLIENT_H_INCLUDED
 
+namespace ripple {
+
 class SNTPClient : public beast::Stoppable
 {
 protected:
@@ -33,5 +35,7 @@ public:
     virtual void queryAll () = 0;
     virtual bool getOffset (int& offset) = 0;
 };
+
+} // ripple
 
 #endif

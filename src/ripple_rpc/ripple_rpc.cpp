@@ -21,8 +21,6 @@
 
 #include "ripple_rpc.h"
 
-#include "../beast/modules/beast_core/beast_core.h" // for UnitTest
-
 // Unfortunate but necessary since RPC handlers can literally do anything
 #include "../ripple_app/ripple_app.h"
 

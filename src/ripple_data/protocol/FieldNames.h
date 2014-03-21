@@ -20,6 +20,8 @@
 #ifndef RIPPLE_FIELDNAMES_H
 #define RIPPLE_FIELDNAMES_H
 
+namespace ripple {
+
 // VFALCO TODO lose the macro.
 #define FIELD_CODE(type, index) ((static_cast<int>(type) << 16) | index)
 
@@ -228,5 +230,7 @@ extern SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction, sfValidation;
 #include "../protocol/SerializeDeclarations.h"
 #undef FIELD
 #undef TYPE
+
+} // ripple
 
 #endif

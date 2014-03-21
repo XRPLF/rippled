@@ -18,6 +18,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (Pathfinder)
 
 /*
@@ -926,4 +928,4 @@ void Pathfinder::initPathTable()
 
 }
 
-// vim:ts=4
+} // ripple

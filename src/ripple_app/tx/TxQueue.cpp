@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 class TxQueueImp
     : public TxQueue
     , public beast::LeakChecked <TxQueueImp>
@@ -141,3 +143,5 @@ TxQueue* TxQueue::New ()
 {
     return new TxQueueImp;
 }
+
+} // ripple

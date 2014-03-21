@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICTYPES_H
 #define RIPPLE_BASICTYPES_H
 
+namespace ripple {
+
 /** Synchronization primitives.
     This lets us switch between tracked and untracked mutexes.
 */
@@ -38,5 +40,7 @@ typedef DeprecatedRecursiveMutex::scoped_lock DeprecatedScopedLock;
 
 /** A callback used to check for canceling an operation. */
 typedef std::function <bool(void)> CancelCallback;
+
+} // ripple
 
 #endif

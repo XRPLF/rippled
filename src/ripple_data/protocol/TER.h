@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TER_H
 #define RIPPLE_TER_H
 
+namespace ripple {
+
 // VFALCO TODO do not use auto-incrementing. Explicitly assign each
 //              constant so there is no possibility of someone coming in
 //              and screwing it up.
@@ -184,5 +186,6 @@ extern bool transResultInfo (TER terCode, std::string& strToken, std::string& st
 extern std::string transToken (TER terCode);
 extern std::string transHuman (TER terCode);
 
+} // ripple
+
 #endif
-// vim:ts=4

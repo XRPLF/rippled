@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SUSTAIN_H
 #define RIPPLE_SUSTAIN_H
 
+namespace ripple {
+
 // "Sustain" is a system for a buddy process that monitors the main process
 // and relaunches it on a fault.
 //
@@ -29,5 +31,7 @@
 extern bool HaveSustain ();
 extern std::string StopSustain ();
 extern std::string DoSustain (std::string logFile);
+
+} // ripple
 
 #endif

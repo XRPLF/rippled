@@ -20,6 +20,8 @@
 #ifndef RIPPLE_UPTIMETIMER_H
 #define RIPPLE_UPTIMETIMER_H
 
+namespace ripple {
+
 /** Tracks program uptime.
 
     The timer can be switched to a manual system of updating, to reduce
@@ -50,5 +52,7 @@ private:
 
     bool m_isUpdatingManually;
 };
+
+} // ripple
 
 #endif

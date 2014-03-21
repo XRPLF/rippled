@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SERIALIZEDOBJECTTEMPLATE_H
 #define RIPPLE_SERIALIZEDOBJECTTEMPLATE_H
 
-//------------------------------------------------------------------------------
+namespace ripple {
 
 /** Flags for elements in a SerializedObjectTemplate.
 */
@@ -88,5 +88,7 @@ private:
 
     std::vector <int> mIndex;       // field num -> index
 };
+
+} // ripple
 
 #endif

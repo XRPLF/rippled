@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // VFALCO TODO Inline the function definitions
 class HashRouter : public IHashRouter
 {
@@ -240,3 +242,6 @@ IHashRouter* IHashRouter::New (int holdTime)
 {
     return new HashRouter (holdTime);
 }
+
+} // ripple
+

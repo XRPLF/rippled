@@ -43,8 +43,6 @@
 
 //------------------------------------------------------------------------------
 
-namespace ripple {
-
 #include "containers/RangeSet.cpp"
 
 #include "log/Log.cpp"
@@ -59,5 +57,3 @@ namespace ripple {
 #include "utility/ThreadName.cpp"
 #include "utility/Time.cpp"
 #include "utility/UptimeTimer.cpp"
-
-}

@@ -20,6 +20,8 @@
 #ifndef __TRANSACTIONMASTER__
 #define __TRANSACTIONMASTER__
 
+namespace ripple {
+
 // Tracks all transactions in memory
 
 class TransactionMaster : beast::LeakChecked <TransactionMaster>
@@ -40,5 +42,6 @@ private:
     TaggedCache <uint256, Transaction> mCache;
 };
 
+} // ripple
+
 #endif
-// vim:ts=4

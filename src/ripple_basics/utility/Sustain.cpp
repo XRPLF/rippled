@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 #ifdef __unix__
 
 static pid_t pManager = static_cast<pid_t> (0);
@@ -108,3 +110,5 @@ std::string StopSustain ()
 }
 
 #endif
+
+} // ripple

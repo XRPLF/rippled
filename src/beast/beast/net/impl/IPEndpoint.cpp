@@ -17,6 +17,11 @@
 */
 //==============================================================================
 
+#if BEAST_INCLUDE_BEASTCONFIG
+#include "../../BeastConfig.h"
+#endif
+
+#include "../IPEndpoint.h"
 #include "../detail/Parse.h"
 
 namespace beast {

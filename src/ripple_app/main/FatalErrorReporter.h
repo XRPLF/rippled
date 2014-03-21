@@ -20,6 +20,8 @@
 #ifndef RIPPLE_FATALERRORREPORTER_H_INCLUDED
 #define RIPPLE_FATALERRORREPORTER_H_INCLUDED
 
+namespace ripple {
+
 /** FatalError reporter.
 
     This writes the details to standard error and the log. The reporter is
@@ -42,5 +44,7 @@ public:
 private:
     beast::FatalError::Reporter* m_savedReporter;
 };
+
+} // ripple
 
 #endif

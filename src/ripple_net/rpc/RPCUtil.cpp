@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // Used for logging
 struct RPCLog;
 
@@ -292,4 +294,5 @@ void ErrorReply (std::ostream& stream, const Json::Value& objError, const Json::
     stream << HTTPReply (nStatus, strReply) << std::flush;
 }
 
-// vim:ts=4
+} // ripple
+

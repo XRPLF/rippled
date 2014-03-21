@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SHAMAPITEM_H
 #define RIPPLE_SHAMAPITEM_H
 
+namespace ripple {
+
 // an item stored in a SHAMap
 class SHAMapItem
     : public CountedObject <SHAMapItem>
@@ -121,5 +123,7 @@ private:
     uint256 mTag;
     Serializer mData;
 };
+
+} // ripple
 
 #endif

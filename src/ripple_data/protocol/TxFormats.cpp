@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 TxFormats::TxFormats ()
 {
     add ("AccountSet", ttACCOUNT_SET)
@@ -112,3 +114,5 @@ TxFormats* TxFormats::getInstance ()
     //return SharedSingleton <TxFormats>::getInstance ();
     return &instance;
 }
+
+} // ripple

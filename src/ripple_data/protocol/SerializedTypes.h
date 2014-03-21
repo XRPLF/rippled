@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERIALIZEDTYPES_H
 #define RIPPLE_SERIALIZEDTYPES_H
 
+namespace ripple {
+
 // VFALCO TODO fix this restriction on copy assignment.
 //
 // CAUTION: Do not create a vector (or similar container) of any object derived from
@@ -1655,5 +1657,7 @@ private:
     }
     static STVector256* construct (SerializerIterator&, SField::ref);
 };
+
+} // ripple
 
 #endif

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // #define TRUST_NETWORK
 
 // Track a peer's yes/no vote on a particular disputed transaction
@@ -147,4 +149,6 @@ Json::Value DisputedTx::getJson ()
 
     return ret;
 }
+
+} // ripple
 

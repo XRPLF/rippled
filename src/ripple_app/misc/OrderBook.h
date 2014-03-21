@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-
 #ifndef RIPPLE_ORDERBOOK_H
 #define RIPPLE_ORDERBOOK_H
 
-/** Describes a serialized ledger entry for an order book.
-*/
+namespace ripple {
+
+/** Describes a serialized ledger entry for an order book. */
 class OrderBook : beast::LeakChecked <OrderBook>
 {
 public:
@@ -40,8 +40,7 @@ public:
         @param issuerOut   The destination issuer.
     */
     // VFALCO NOTE what is the meaning of the index parameter?
-    // VFALCO TODO group the issuer and currency parameters together.
-    // VFALCO TODO give typedef names to uint256 / uint160 params
+    // VFALCO TODO Replace with RippleAsset
     OrderBook (uint256 const& index,
                uint160 const& currencyIn,
                uint160 const& currencyOut,
@@ -75,11 +74,14 @@ public:
 
 
 private:
+    // VFALCO TODO Replace these with RippleAsset
     uint256 const mBookBase;
     uint160 const mCurrencyIn;
     uint160 const mCurrencyOut;
     uint160 const mIssuerIn;
     uint160 const mIssuerOut;
 };
+
+} // ripple
 
 #endif

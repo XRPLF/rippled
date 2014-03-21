@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 class IoServicePool::ServiceThread : private beast::Thread
 {
 public:
@@ -126,3 +128,5 @@ void IoServicePool::onThreadExit()
         stopped ();
     }
 }
+
+} // ripple

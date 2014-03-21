@@ -20,6 +20,8 @@
 #ifndef __PROPOSELEDGER__
 #define __PROPOSELEDGER__
 
+namespace ripple {
+
 class LedgerProposal
     : public CountedObject <LedgerProposal>
 {
@@ -141,6 +143,6 @@ private:
     boost::posix_time::ptime    mTime;
 };
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

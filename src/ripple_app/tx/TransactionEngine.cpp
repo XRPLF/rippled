@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 //
 // XXX Make sure all fields are recognized in transactions.
 //
@@ -222,4 +224,4 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
     return terResult;
 }
 
-// vim:ts=4
+} // ripple

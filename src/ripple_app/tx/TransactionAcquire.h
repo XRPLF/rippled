@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TRANSACTIONACQUIRE_H
 #define RIPPLE_TRANSACTIONACQUIRE_H
 
+namespace ripple {
+
 // VFALCO TODO rename to PeerTxRequest
 // A transaction set we are trying to acquire
 class TransactionAcquire
@@ -58,5 +60,7 @@ private:
     void trigger (Peer::ref);
     boost::weak_ptr<PeerSet> pmDowncast ();
 };
+
+} // ripple
 
 #endif

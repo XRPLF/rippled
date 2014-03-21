@@ -20,6 +20,8 @@
 #ifndef RIPPLE_INIFILE_H_INCLUDED
 #define RIPPLE_INIFILE_H_INCLUDED
 
+namespace ripple {
+
 // VFALCO TODO Rename to IniFile and clean up
 typedef std::map <const std::string, std::vector<std::string> > Section;
 
@@ -40,5 +42,7 @@ Section::mapped_type* SectionEntries (Section& secSource, const std::string& str
 */
 beast::StringPairArray
 parseKeyValueSection (Section& secSource, beast::String const& strSection);
+
+} // ripple
 
 #endif

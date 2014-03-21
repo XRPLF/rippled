@@ -23,17 +23,6 @@
 #include "../ripple/radmap/ripple_radmap.h"
 #include "../main/FullBelowCache.h"
 
-enum SHAMapState
-{
-    smsModifying = 0,       // Objects can be added and removed (like an open ledger)
-    smsImmutable = 1,       // Map cannot be changed (like a closed ledger)
-    smsSynching = 2,        // Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
-    smsFloating = 3,        // Map is free to change hash (like a synching open ledger)
-    smsInvalid = 4,         // Map is known not to be valid (usually synching a corrupt ledger)
-};
-
-//------------------------------------------------------------------------------
-
 namespace std {
 
 template <>
@@ -61,6 +50,15 @@ struct hash <ripple::SHAMapNode> : std::hash <ripple::SHAMapNode>
 //------------------------------------------------------------------------------
 
 namespace ripple {
+
+enum SHAMapState
+{
+    smsModifying = 0,       // Objects can be added and removed (like an open ledger)
+    smsImmutable = 1,       // Map cannot be changed (like a closed ledger)
+    smsSynching = 2,        // Map's hash is locked in, valid nodes can be added (like a peer's closing ledger)
+    smsFloating = 3,        // Map is free to change hash (like a synching open ledger)
+    smsInvalid = 4,         // Map is known not to be valid (usually synching a corrupt ledger)
+};
 
 class SHAMap
     : public CountedObject <SHAMap>

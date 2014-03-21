@@ -17,11 +17,13 @@
 */
 //==============================================================================
 
+#include "../../../beast/unit_test/suite.h"
+
 namespace beast {
 namespace asio {
 
-/** UnitTest for the TestPeer family of objects. */
-class TestPeerUnitTests : public UnitTest
+/** Test suite for the TestPeer family of objects. */
+class TestPeer_test : public unit_test::suite
 {
 public:
 
@@ -31,7 +33,7 @@ public:
         PeerTest::report <Details> (*this, arg, timeoutSeconds);
     }
 
-    void runTest ()
+    void run ()
     {
         typedef boost::asio::ip::tcp protocol;
         testDetails <TcpDetails, TcpDetails::arg_type> (protocol::v4 ());
@@ -44,13 +46,9 @@ public:
     {
         timeoutSeconds = 10
     };
-
-    TestPeerUnitTests () : UnitTest ("TestPeer", "beast")
-    {
-    }
 };
 
-static TestPeerUnitTests testPeerUnitTests;
+BEAST_DEFINE_TESTSUITE(TestPeer,beast_asio,beast);
 
 }
 }

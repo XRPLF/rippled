@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 AccountItem::pointer RippleState::makeItem (const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry)
 {
     if (!ledgerEntry || ledgerEntry->getType () != ltRIPPLE_STATE)
@@ -70,4 +72,4 @@ Json::Value RippleState::getJson (int)
     return ret;
 }
 
-// vim:ts=4
+} // ripple

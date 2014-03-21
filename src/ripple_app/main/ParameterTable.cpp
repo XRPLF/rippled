@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 bool ParameterNode::setValue (const std::string& name, const Json::Value& value, Json::Value& error)
 {
     if (name.empty ()) // this node
@@ -189,3 +191,5 @@ bool ParameterInt::setValue (const Json::Value& value, Json::Value& error)
     error["value"] = value;
     return false;
 }
+
+} // ripple

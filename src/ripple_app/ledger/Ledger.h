@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGER_H
 #define RIPPLE_LEDGER_H
 
+namespace ripple {
+
 class Job;
 
 enum LedgerStateParms
@@ -523,5 +525,7 @@ inline LedgerStateParms operator& (const LedgerStateParms& l1, const LedgerState
 {
     return static_cast<LedgerStateParms> (static_cast<int> (l1) & static_cast<int> (l2));
 }
+
+} // ripple
 
 #endif

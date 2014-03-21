@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SHAMAPTREENODE_H
 #define RIPPLE_SHAMAPTREENODE_H
 
+namespace ripple {
+
 class SHAMap;
 
 enum SHANodeFormat
@@ -28,8 +30,6 @@ enum SHANodeFormat
     snfWIRE     = 2, // Compressed form used on the wire
     snfHASH     = 3, // just the hash
 };
-
-namespace ripple {
 
 class SHAMapTreeNode
     : public SHAMapNode
@@ -186,6 +186,6 @@ private:
     bool updateHash ();
 };
 
-}
+} // ripple
 
 #endif

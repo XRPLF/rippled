@@ -20,6 +20,8 @@
 #ifndef RIPPLE_HASHPREFIX_H
 #define RIPPLE_HASHPREFIX_H
 
+namespace ripple {
+
 /** Prefix for hashing functions.
 
     These prefixes are inserted before the source material used to generate
@@ -83,5 +85,7 @@ public:
     /** proposal for signing */
     static HashPrefix const proposal;
 };
+
+} // ripple
 
 #endif

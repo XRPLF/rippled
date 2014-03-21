@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 class Features;
 
 SETUP_LOG (Features)
@@ -503,4 +505,4 @@ IFeatures* IFeatures::New (beast::uint32 majorityTime, int majorityFraction)
     return new Features (majorityTime, majorityFraction);
 }
 
-// vim:ts=4
+} // ripple

@@ -23,8 +23,6 @@
 
 #include "../ripple/common/seconds_clock.h"
 
-namespace ripple {
-
 #include "shamap/SHAMap.cpp" // Uses theApp
 #include "shamap/SHAMapItem.cpp"
 #include "shamap/SHAMapSync.cpp"
@@ -41,8 +39,6 @@ namespace ripple {
 #include "data/DatabaseCon.cpp"
 #include "data/SqliteDatabase.cpp"
 #include "data/DBInit.cpp"
-
-}
 
 # include "shamap/RadixMapTest.h"
 #include "shamap/RadixMapTest.cpp"

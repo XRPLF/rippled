@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 class SHAMap;
 
 SHAMapItem::SHAMapItem (uint256 const& tag, Blob const& data)
@@ -30,3 +32,5 @@ SHAMapItem::SHAMapItem (uint256 const& tag, const Serializer& data)
     , mData (data.peekData ())
 {
 }
+
+} // ripple

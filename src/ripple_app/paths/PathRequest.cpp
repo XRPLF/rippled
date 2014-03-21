@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (PathRequest)
 
 PathRequest::PathRequest (
@@ -475,3 +477,4 @@ InfoSub::pointer PathRequest::getSubscriber ()
     return wpSubscriber.lock ();
 }
 
+} // ripple

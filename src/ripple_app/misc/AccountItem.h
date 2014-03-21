@@ -20,6 +20,8 @@
 #ifndef RIPPLE_ACCOUNTITEM_H
 #define RIPPLE_ACCOUNTITEM_H
 
+namespace ripple {
+
 //
 // Fetch ledger entries from an account's owner dir.
 //
@@ -83,5 +85,7 @@ protected:
     // VFALCO TODO Research making the object pointed to const
     SerializedLedgerEntry::pointer mLedgerEntry;
 };
+
+} // ripple
 
 #endif

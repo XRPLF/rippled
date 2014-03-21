@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGERCONSENSUS_H
 #define RIPPLE_LEDGERCONSENSUS_H
 
+namespace ripple {
+
 /** Manager for achieving consensus on the next ledger.
 
     This object is created when the consensus process starts, and
@@ -82,5 +84,6 @@ public:
     virtual void simulate () = 0;
 };
 
+} // ripple
 
 #endif

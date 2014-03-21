@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+namespace ripple {
 
 OrderBook::OrderBook (uint256 const& index,
                       uint160 const& currencyIn,
@@ -30,3 +31,5 @@ OrderBook::OrderBook (uint256 const& index,
     , mIssuerOut (issuerOut)
 {
 }
+
+} // ripple

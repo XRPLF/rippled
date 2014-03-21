@@ -17,8 +17,12 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 AccountItem::AccountItem (SerializedLedgerEntry::ref ledger)
     : mLedgerEntry (ledger)
 {
 
 }
+
+} // ripple

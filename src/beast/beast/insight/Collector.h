@@ -20,13 +20,13 @@
 #ifndef BEAST_INSIGHT_COLLECTOR_H_INCLUDED
 #define BEAST_INSIGHT_COLLECTOR_H_INCLUDED
 
-#include <string>
-
 #include "Counter.h"
 #include "Event.h"
 #include "Gauge.h"
 #include "Hook.h"
 #include "Meter.h"
+
+#include <string>
 
 namespace beast {
 namespace insight {

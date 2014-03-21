@@ -20,10 +20,9 @@
 #ifndef RIPPLE_COUNTEDOBJECT_H_INCLUDED
 #define RIPPLE_COUNTEDOBJECT_H_INCLUDED
 
-//------------------------------------------------------------------------------
+namespace ripple {
 
-/** Manages all counted object types.
-*/
+/** Manages all counted object types. */
 class CountedObjects
 {
 public:
@@ -133,5 +132,7 @@ private:
         return beast::StaticObject <Counter>::get();
     }
 };
+
+} // ripple
 
 #endif

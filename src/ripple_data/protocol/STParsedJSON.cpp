@@ -725,4 +725,4 @@ bool STParsedJSON::parse (std::string const& json_name,
     return true;
 }
 
-}
+} // ripple

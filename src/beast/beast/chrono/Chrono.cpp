@@ -22,10 +22,9 @@
 #endif
 
 #include "../Config.h"
-#include "../../modules/beast_core/beast_core.h" // for UnitTest
 
-#include "impl/abstract_clock.cpp"
 #include "impl/chrono_io.cpp"
-#include "impl/basic_seconds_clock.cpp"
-
 #include "impl/RelativeTime.cpp"
+
+#include "tests/abstract_clock.test.cpp"
+#include "tests/basic_seconds_clock.test.cpp"

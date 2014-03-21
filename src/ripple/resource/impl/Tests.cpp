@@ -17,12 +17,13 @@
 */
 //==============================================================================
 
-#include "../.././beast/beast/chrono/manual_clock.h"
+#include "../../../beast/beast/unit_test/suite.h"
+#include "../../../beast/beast/chrono/manual_clock.h"
 
 namespace ripple {
 namespace Resource {
 
-class Tests : public beast::UnitTest
+class Manager_test : public beast::unit_test::suite
 {
 public:
     class TestLogic
@@ -55,13 +56,14 @@ public:
 
     void createGossip (Gossip& gossip)
     {
-        int const v (10 + random().nextInt (10));
-        int const n (10 + random().nextInt (10));
+        beast::Random r;
+        int const v (10 + r.nextInt (10));
+        int const n (10 + r.nextInt (10));
         gossip.items.reserve (n);
         for (int i = 0; i < n; ++i)
         {
             Gossip::Item item;
-            item.balance = 100 + random().nextInt (500);
+            item.balance = 100 + r.nextInt (500);
             item.address = beast::IP::Endpoint (
                 beast::IP::AddressV4 (207, 127, 82, v + i));
             gossip.items.push_back (item);
@@ -77,9 +79,9 @@ public:
 
     void testDrop (beast::Journal j)
     {
-        beginTestCase ("Warn/drop");
+        testcase ("Warn/drop");
 
-        Tests::TestLogic logic (j);
+        TestLogic logic (j);
 
         Charge const fee (dropThreshold + 1);
         beast::IP::Endpoint const addr (
@@ -148,7 +150,7 @@ public:
 
     void testImports (beast::Journal j)
     {
-        beginTestCase ("Imports");
+        testcase ("Imports");
 
         TestLogic logic (j);
 
@@ -165,7 +167,7 @@ public:
 
     void testImport (beast::Journal j)
     {
-        beginTestCase ("Import");
+        testcase ("Import");
 
         TestLogic logic (j);
 
@@ -183,7 +185,7 @@ public:
 
     void testCharges (beast::Journal j)
     {
-        beginTestCase ("Charge");
+        testcase ("Charge");
 
         TestLogic logic (j);
 
@@ -222,9 +224,8 @@ public:
         pass();
     }
 
-    void runTest ()
+    void run()
     {
-        //Journal j (journal());
         beast::Journal j;
 
         testDrop (j);
@@ -232,13 +233,9 @@ public:
         testImports (j);
         testImport (j);
     }
-
-    Tests () : UnitTest ("ResourceManager", "ripple")
-    {
-    }
 };
 
-static Tests tests;
+BEAST_DEFINE_TESTSUITE(Manager,resource,ripple);
 
 }
 }

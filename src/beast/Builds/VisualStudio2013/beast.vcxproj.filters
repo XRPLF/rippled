@@ -264,9 +264,6 @@
     <Filter Include="beast\container">
       <UniqueIdentifier>{48c7ee12-704c-42cb-99ea-9a486bb4b57e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\container\impl">
-      <UniqueIdentifier>{e30eda19-95b4-4831-b86a-ee5fae88abd2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\container\detail">
       <UniqueIdentifier>{a4dca8cc-7d1f-4353-b7e1-15eab33e8bd4}</UniqueIdentifier>
     </Filter>
@@ -290,6 +287,27 @@
     </Filter>
     <Filter Include="beast\utility\tests">
       <UniqueIdentifier>{3c58ba5e-1855-4865-8a9f-c0afd5014e74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\unit_test">
+      <UniqueIdentifier>{09aa885d-9607-4f8c-80d2-43673e541fd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\chrono\tests">
+      <UniqueIdentifier>{afec071b-bc2c-4d32-a5e3-e99273a81a1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\crypto\tests">
+      <UniqueIdentifier>{3e1fc57f-e3c0-4889-a1d8-25145aa535a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\threads\tests">
+      <UniqueIdentifier>{1e86eefc-51b3-4270-b472-dd3f323e9875}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\http\tests">
+      <UniqueIdentifier>{a8c4a672-6264-45a5-8c22-e3ce2391300e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\net\tests">
+      <UniqueIdentifier>{94cc3672-688a-46e4-8df0-c3523a521c43}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\streams\tests">
+      <UniqueIdentifier>{63c495fa-b6b2-42ed-8ae3-9f3582e76bf5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -414,9 +432,6 @@
       <Filter>beast_core\xml</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\Throw.h">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\UnitTest.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\files\RandomAccessFile.h">
@@ -656,9 +671,6 @@
     <ClInclude Include="..\..\modules\beast_core\time\AtExitHook.h">
       <Filter>beast_core\time</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\misc\Main.h">
-      <Filter>beast_core\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\FatalError.h">
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
@@ -747,9 +759,6 @@
       <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Arithmetic.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\Memory.h">
       <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\ByteOrder.h">
@@ -1170,6 +1179,54 @@
     <ClInclude Include="..\..\beast\streams\debug_ostream.h">
       <Filter>beast\streams</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\global_suites.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\runner.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\suite.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\suite_info.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\suite_list.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\results.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\Memory.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\reporter.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\const_container.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\recorder.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\amount.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\print.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\match.h">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\chrono\abstract_clock_io.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\unit_test\define_print.cpp">
+      <Filter>beast\unit_test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\files\DirectoryIterator.cpp">
@@ -1274,9 +1331,6 @@
     <ClCompile Include="..\..\modules\beast_core\native\bsd_Threads.cpp">
       <Filter>beast_core\native</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\UnitTest.cpp">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\files\RandomAccessFile.cpp">
       <Filter>beast_core\files</Filter>
     </ClCompile>
@@ -1355,9 +1409,6 @@
     <ClCompile Include="..\..\modules\beast_asio\basics\PeerRole.cpp">
       <Filter>beast_asio\basics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\system\BoostUnitTests.cpp">
-      <Filter>beast_asio\system</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_asio\tests\PeerTest.cpp">
       <Filter>beast_asio\tests</Filter>
     </ClCompile>
@@ -1417,9 +1468,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\time\AtExitHook.cpp">
       <Filter>beast_core\time</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\misc\Main.cpp">
-      <Filter>beast_core\misc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\FatalError.cpp">
       <Filter>beast_core\diagnostic</Filter>
@@ -1499,15 +1547,6 @@
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPResponseParser.cpp">
       <Filter>beast_asio\http</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\chrono\impl\CPUMeter.cpp">
-      <Filter>beast\chrono\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\smart_ptr\SmartPtr.cpp">
-      <Filter>beast\smart_ptr</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\threads\impl\Atomic.cpp">
-      <Filter>beast\threads\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\threads\impl\RecursiveMutex.cpp">
       <Filter>beast\threads\impl</Filter>
     </ClCompile>
@@ -1565,15 +1604,6 @@
     <ClCompile Include="..\..\beast\insight\impl\Hook.cpp">
       <Filter>beast\insight\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\chrono\impl\abstract_clock.cpp">
-      <Filter>beast\chrono\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\chrono\impl\chrono_io.cpp">
-      <Filter>beast\chrono\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\crypto\impl\BinaryEncoding.cpp">
-      <Filter>beast\crypto\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\UnsignedInteger.cpp">
       <Filter>beast\crypto\impl</Filter>
     </ClCompile>
@@ -1582,9 +1612,6 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\insight\impl\Groups.cpp">
       <Filter>beast\insight\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\net\impl\IPAddress.cpp">
-      <Filter>beast\net\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\net\impl\IPAddressV4.cpp">
       <Filter>beast\net\impl</Filter>
@@ -1595,20 +1622,11 @@
     <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
       <Filter>beast\net\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\utility\impl\Assert.cpp">
-      <Filter>beast\utility\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\chrono\Chrono.cpp">
       <Filter>beast\chrono</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\chrono\impl\basic_seconds_clock.cpp">
-      <Filter>beast\chrono\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\container\Container.cpp">
       <Filter>beast\container</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\container\impl\aged_associative_container.cpp">
-      <Filter>beast\container\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\container\tests\buffer_view.test.cpp">
       <Filter>beast\container\tests</Filter>
@@ -1622,15 +1640,6 @@
     <ClCompile Include="..\..\beast\asio\abstract_socket.cpp">
       <Filter>beast\asio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\asio\tests\bind_handler_tests.cpp">
-      <Filter>beast\asio\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\asio\tests\shared_handler_tests.cpp">
-      <Filter>beast\asio\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\asio\tests\wrap_handler_tests.cpp">
-      <Filter>beast\asio\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\asio\tests\enable_wait_for_async.test.cpp">
       <Filter>beast\asio\tests</Filter>
     </ClCompile>
@@ -1640,11 +1649,56 @@
     <ClCompile Include="..\..\beast\http\impl\joyent_parser.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\beast\utility\tests\empty_base_optimization.test.cpp">
+      <Filter>beast\utility\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\container\tests\aged_associative_container.test.cpp">
+      <Filter>beast\container\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\tests\bind_handler.test.cpp">
+      <Filter>beast\asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\tests\shared_handler.test.cpp">
+      <Filter>beast\asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\tests\wrap_handler.test.cpp">
+      <Filter>beast\asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\tests\abstract_clock.test.cpp">
+      <Filter>beast\chrono\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\tests\UnsignedInteger.test.cpp">
+      <Filter>beast\crypto\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\tests\BinaryEncoding.test.cpp">
+      <Filter>beast\crypto\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\tests\bassert.test.cpp">
+      <Filter>beast\utility\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\tests\ServiceQueue.test.cpp">
+      <Filter>beast\threads\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\tests\basic_seconds_clock.test.cpp">
+      <Filter>beast\chrono\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\impl\chrono_io.cpp">
+      <Filter>beast\chrono\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\tests\ParsedURL.test.cpp">
+      <Filter>beast\http\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\tests\IPEndpoint.test.cpp">
+      <Filter>beast\net\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\streams\tests\basic_abstract_ostream.test.cpp">
+      <Filter>beast\streams\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\beast\streams\streams.cpp">
       <Filter>beast\streams</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\utility\tests\empty_base_optimization.test.cpp">
-      <Filter>beast\utility\tests</Filter>
+    <ClCompile Include="..\..\beast\threads\tests\Atomic.test.cpp">
+      <Filter>beast\threads\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 LoadEvent::LoadEvent (LoadMonitor& monitor, const std::string& name, bool shouldStart)
     : m_loadMonitor (monitor)
     , m_isRunning (false)
@@ -88,3 +90,5 @@ void LoadEvent::stop ()
     m_isRunning = false;
     m_loadMonitor.addLoadSample (*this);
 }
+
+} // ripple

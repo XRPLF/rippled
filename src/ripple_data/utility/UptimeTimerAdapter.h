@@ -20,8 +20,9 @@
 #ifndef RIPPLE_UPTIMETIMERADAPTER_H
 #define RIPPLE_UPTIMETIMERADAPTER_H
 
-/** Adapter providing uptime measurements for template classes.
-*/
+namespace ripple {
+
+/** Adapter providing uptime measurements for template classes. */
 struct UptimeTimerAdapter
 {
     inline static int getElapsedSeconds ()
@@ -29,5 +30,7 @@ struct UptimeTimerAdapter
         return UptimeTimer::getInstance ().getElapsedSeconds ();
     }
 };
+
+} // ripple
 
 #endif

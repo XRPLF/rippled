@@ -32,6 +32,8 @@
 #ifndef RIPPLE_BASE58DATA_H
 #define RIPPLE_BASE58DATA_H
 
+namespace ripple {
+
 class CBase58Data
 {
 protected:
@@ -64,5 +66,6 @@ public:
 
 extern std::size_t hash_value (const CBase58Data& b58);
 
+} // ripple
+
 #endif
-// vim:ts=4

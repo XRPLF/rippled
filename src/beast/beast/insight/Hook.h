@@ -20,10 +20,10 @@
 #ifndef BEAST_INSIGHT_HOOK_H_INCLUDED
 #define BEAST_INSIGHT_HOOK_H_INCLUDED
 
-#include <memory>
-
 #include "Base.h"
 #include "HookImpl.h"
+
+#include <memory>
 
 namespace beast {
 namespace insight {

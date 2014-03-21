@@ -20,6 +20,8 @@
 #ifndef RIPPLE_CORE_CONFIG_H_INCLUDED
 #define RIPPLE_CORE_CONFIG_H_INCLUDED
 
+namespace ripple {
+
 // VFALCO TODO Replace these with beast "unsigned long long" generators
 // VFALCO NOTE Apparently these are used elsewhere. Make them constants in the config
 //             or in the Application
@@ -491,6 +493,6 @@ public:
 
 extern Config& getConfig ();
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

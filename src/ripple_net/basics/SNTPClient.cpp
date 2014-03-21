@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (SNTPClient)
 
 // #define SNTP_DEBUG
@@ -372,3 +374,5 @@ SNTPClient* SNTPClient::New (Stoppable& parent)
 {
     return new SNTPClientImp (parent);
 }
+
+} // ripple

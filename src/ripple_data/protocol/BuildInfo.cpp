@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 char const* BuildInfo::getRawVersionString ()
 {
     static char const* const rawText =
@@ -158,16 +162,12 @@ std::string BuildInfo::Protocol::toStdString () const noexcept
 
 //------------------------------------------------------------------------------
 
-class BuildInfoTests : public beast::UnitTest
+class BuildInfo_test : public beast::unit_test::suite
 {
 public:
-    BuildInfoTests () : beast::UnitTest ("BuildInfo", "ripple", runStartup)
-    {
-    }
-
     void testVersion ()
     {
-        beginTestCase ("version");
+        testcase ("version");
 
         beast::SemanticVersion v;
 
@@ -185,7 +185,7 @@ public:
     {
         typedef BuildInfo::Protocol P;
 
-        beginTestCase ("protocol");
+        testcase ("protocol");
 
         expect (P (0, 0).toPacked () == 0);
         expect (P (0, 1).toPacked () == 1);
@@ -202,7 +202,7 @@ public:
 
     void testValues ()
     {
-        beginTestCase ("comparison");
+        testcase ("comparison");
 
         typedef BuildInfo::Protocol P;
 
@@ -217,14 +217,18 @@ public:
         expect (BuildInfo::getCurrentProtocol () >= BuildInfo::getMinimumProtocol ());
     }
 
-    void runTest ()
+    void run ()
     {
         testVersion ();
         testProtocol ();
         testValues ();
 
-        logMessage ("Ripple version: " + BuildInfo::getVersionString());
+        log <<
+            "  Ripple version: " <<
+            BuildInfo::getVersionString().toStdString();
     }
 };
 
-static BuildInfoTests buildInfoTests;
+BEAST_DEFINE_TESTSUITE(BuildInfo,ripple_data,ripple);
+
+} // ripple

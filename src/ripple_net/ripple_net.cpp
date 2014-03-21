@@ -48,7 +48,6 @@
 //
 #include "../ripple_rpc/api/ErrorCodes.h"
 
-namespace ripple {
 #include "basics/HTTPRequest.cpp"
 #include "basics/HTTPClient.cpp"
 # include "basics/impl/RPCServerImp.h"
@@ -58,6 +57,5 @@ namespace ripple {
 #include "rpc/RPCSub.cpp"
 #include "rpc/RPCUtil.cpp"
 #include "rpc/InfoSub.cpp"
-}
 
 #include "basics/RPCDoor.cpp"

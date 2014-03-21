@@ -41,6 +41,7 @@
 #include "../beast/modules/beast_asio/beast_asio.h"
 
 #include "../beast/beast/boost/ErrorCode.h"
+#include "../beast/beast/chrono/chrono_io.h"
 
 #include "impl/iosformat.h" // VFALCO NOTE move to beast
 

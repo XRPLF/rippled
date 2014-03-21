@@ -18,18 +18,20 @@
 //==============================================================================
 
 #include "../../asio/IPAddressConversion.h"
+#include "../../intrusive/List.h"
 #include "../../threads/SharedData.h"
 
-#include <deque>
-#include <climits>
-#include <set>
-#include <sstream>
-#include <thread>
-
-#include <boost/asio.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/bind.hpp>
 #include <boost/move/move.hpp>
 #include <boost/optional.hpp>
+
+#include <cassert>
+#include <climits>
+#include <deque>
+#include <set>
+#include <sstream>
+#include <thread>
 
 #ifndef BEAST_STATSDCOLLECTOR_TRACING_ENABLED
 #define BEAST_STATSDCOLLECTOR_TRACING_ENABLED 0
@@ -364,7 +366,7 @@ public:
         {
             std::string const& buffer (*iter);
             std::size_t const length (buffer.size ());
-            check_precondition (! buffer.empty ());
+            assert (! buffer.empty ());
             if (! buffers.empty () && (size + length) > max_packet_size)
             {
 #if BEAST_STATSDCOLLECTOR_TRACING_ENABLED

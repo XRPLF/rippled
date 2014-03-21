@@ -20,9 +20,6 @@
 #ifndef BEAST_INSIGHT_HOOKIMPL_H_INCLUDED
 #define BEAST_INSIGHT_HOOKIMPL_H_INCLUDED
 
-#include <functional>
-#include <memory>
-
 #include "BaseImpl.h"
 
 namespace beast {

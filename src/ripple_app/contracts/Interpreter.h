@@ -20,8 +20,9 @@
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
-namespace Script
-{
+namespace ripple {
+
+namespace Script {
 
 class Operation;
 // Contracts are non typed  have variable data types
@@ -95,5 +96,7 @@ public:
 };
 
 }  // end namespace
+
+} // ripple
 
 #endif

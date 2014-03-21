@@ -22,17 +22,13 @@ namespace NodeStore {
 
 // Tests predictable batches, and NodeObject blob encoding
 //
-class BasicTests : public TestBase
+class NodeStoreBasic_test : public TestBase
 {
 public:
-    BasicTests () : TestBase ("NodeStoreBasics")
-    {
-    }
-
     // Make sure predictable object generation works!
     void testBatches (beast::int64 const seedValue)
     {
-        beginTestCase ("batch");
+        testcase ("batch");
 
         Batch batch1;
         createPredictableBatch (batch1, 0, numObjectsToTest, seedValue);
@@ -51,7 +47,7 @@ public:
     // Checks encoding/decoding blobs
     void testBlobs (beast::int64 const seedValue)
     {
-        beginTestCase ("encoding");
+        testcase ("encoding");
 
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
@@ -74,7 +70,7 @@ public:
         }
     }
 
-    void runTest ()
+    void run ()
     {
         beast::int64 const seedValue = 50;
 
@@ -84,7 +80,7 @@ public:
     }
 };
 
-static BasicTests basicTests;
+BEAST_DEFINE_TESTSUITE(NodeStoreBasic,ripple_core,ripple);
 
 }
 }

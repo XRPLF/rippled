@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 AcceptedLedgerTx::AcceptedLedgerTx (beast::uint32 seq, SerializerIterator& sit)
 {
     Serializer          txnSer (sit.getVL ());
@@ -72,3 +74,4 @@ void AcceptedLedgerTx::buildJson ()
     }
 }
 
+} // ripple

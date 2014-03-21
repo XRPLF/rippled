@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGERHISTORY_H
 #define RIPPLE_LEDGERHISTORY_H
 
+namespace ripple {
+
 // VFALCO TODO Rename to OldLedgers ?
 class LedgerHistory : beast::LeakChecked <LedgerHistory>
 {
@@ -66,5 +68,7 @@ private:
     // Maps ledger indexes to the corresponding hash.
     std::map <LedgerIndex, LedgerHash> mLedgersByIndex; // validated ledgers
 };
+
+} // ripple
 
 #endif

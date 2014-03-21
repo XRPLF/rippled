@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PATHREQUEST_H
 #define RIPPLE_PATHREQUEST_H
 
+namespace ripple {
+
 // A pathfinding request submitted by a client
 // The request issuer must maintain a strong pointer
 
@@ -103,5 +105,7 @@ private:
     boost::posix_time::ptime        ptFullReply;
 
 };
+
+} // ripple
 
 #endif

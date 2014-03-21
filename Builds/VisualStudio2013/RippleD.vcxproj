@@ -22,12 +22,6 @@
     <ClCompile Include="..\..\build\proto\ripple.pb.cc" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beast.cpp" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c" />
-    <ClCompile Include="..\..\src\ripple\common\impl\counted_bind.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1024,7 +1018,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\RippleMain.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\Main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1712,6 +1706,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_data\protocol\HashPrefix.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\protocol\LedgerFormats.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2238,7 +2238,6 @@
     <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h" />
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h" />
     <ClInclude Include="..\..\src\ripple\common\byte_view.h" />
-    <ClInclude Include="..\..\src\ripple\common\counted_bind.h" />
     <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketType.h" />
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h" />
     <ClInclude Include="..\..\src\ripple\common\MultiSocket.h" />
@@ -2509,7 +2508,6 @@
     <ClInclude Include="..\..\src\ripple_app\main\FatalErrorReporter.h" />
     <ClInclude Include="..\..\src\ripple_app\main\LoadManager.h" />
     <ClInclude Include="..\..\src\ripple_app\main\LocalCredentials.h" />
-    <ClInclude Include="..\..\src\ripple_app\main\RippleMain.h" />
     <ClInclude Include="..\..\src\ripple_app\main\RPCHTTPServer.h" />
     <ClInclude Include="..\..\src\ripple_app\main\Tuning.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\NetworkOPs.h" />

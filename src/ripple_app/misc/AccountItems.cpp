@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 AccountItems::AccountItems (uint160 const& accountID,
                             Ledger::ref ledger,
                             AccountItem::pointer ofType)
@@ -87,4 +89,5 @@ Json::Value AccountItems::getJson (int v)
     return ret;
 }
 
-// vim:ts=4
+} // ripple
+

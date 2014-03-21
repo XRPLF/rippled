@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // #define EC_DEBUG
 
 // Functions to add CKey support for deterministic EC keys
@@ -359,3 +361,5 @@ EC_KEY* CKey::GeneratePrivateDeterministicKey (const RippleAddress& pubGen, cons
 
     return pkey;
 }
+
+} // ripple

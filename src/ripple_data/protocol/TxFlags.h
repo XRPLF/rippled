@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TXFLAGS_H
 #define RIPPLE_TXFLAGS_H
 
+namespace ripple {
+
 //
 // Transaction flags.
 //
@@ -80,5 +82,7 @@ const beast::uint32 tfSetfAuth             = 0x00010000;
 const beast::uint32 tfSetNoRipple          = 0x00020000;
 const beast::uint32 tfClearNoRipple        = 0x00040000;
 const beast::uint32 tfTrustSetMask         = ~ (tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple);
+
+} // ripple
 
 #endif

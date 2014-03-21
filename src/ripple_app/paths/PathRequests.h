@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PATHREQUESTS_H
 #define RIPPLE_PATHREQUESTS_H
 
+namespace ripple {
+
 class PathRequests
 {
 public:
@@ -70,5 +72,7 @@ private:
     LockType                         mLock;
 
 };
+
+} // ripple
 
 #endif

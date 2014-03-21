@@ -20,6 +20,8 @@
 #ifndef RIPPLE_ACCEPTEDLEDGER_H
 #define RIPPLE_ACCEPTEDLEDGER_H
 
+namespace ripple {
+
 /** A ledger that has become irrevocable.
 
     An accepted ledger is a ledger that has a sufficient number of
@@ -88,5 +90,7 @@ private:
     Ledger::pointer     mLedger;
     map_t               mMap;
 };
+
+} // ripple
 
 #endif

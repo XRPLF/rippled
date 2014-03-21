@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BUILDINFO_H_INCLUDED
 #define RIPPLE_BUILDINFO_H_INCLUDED
 
+namespace ripple {
+
 /** Versioning information for this build. */
 struct BuildInfo
 {
@@ -77,10 +79,9 @@ struct BuildInfo
     /** The oldest protocol version we will accept. */
     static Protocol const& getMinimumProtocol ();
 
-private:
-    friend class BuildInfoTests;
-
     static char const* getRawVersionString ();
 };
+
+} // ripple
 
 #endif

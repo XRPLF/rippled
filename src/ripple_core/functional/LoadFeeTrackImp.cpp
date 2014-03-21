@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 LoadFeeTrack* LoadFeeTrack::New (beast::Journal journal)
 {
     return new LoadFeeTrackImp (journal);
@@ -24,19 +28,13 @@ LoadFeeTrack* LoadFeeTrack::New (beast::Journal journal)
 
 //------------------------------------------------------------------------------
 
-class LoadFeeTrackTests : public beast::UnitTest
+class LoadFeeTrack_test : public beast::unit_test::suite
 {
 public:
-    LoadFeeTrackTests () : UnitTest ("LoadFeeTrack", "ripple")
-    {
-    }
-
-    void runTest ()
+    void run ()
     {
         Config d; // get a default configuration object
         LoadFeeTrackImp l;
-
-        beginTestCase ("fee scaling");
 
         expect (l.scaleFeeBase (10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE) == 10000);
         expect (l.scaleFeeLoad (10000, d.FEE_DEFAULT, d.TRANSACTION_FEE_BASE, false) == 10000);
@@ -53,5 +51,6 @@ public:
     }
 };
 
+BEAST_DEFINE_TESTSUITE(LoadFeeTrack,ripple_core,ripple);
 
-static LoadFeeTrackTests loadFeeTrackTests;
+} // ripple

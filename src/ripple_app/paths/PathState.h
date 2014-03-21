@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PATHSTATE_H
 #define RIPPLE_PATHSTATE_H
 
+namespace ripple {
+
 // account id, currency id, issuer id :: node
 typedef boost::tuple <uint160, uint160, uint160> aciSource;
 typedef boost::unordered_map <aciSource, unsigned int>                   curIssuerNode;  // Map of currency, issuer to node index.
@@ -180,5 +182,7 @@ private:
     TER pushNode (const int iType, const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
     TER pushImply (const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
 };
+
+} // ripple
 
 #endif

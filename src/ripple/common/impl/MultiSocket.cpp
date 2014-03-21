@@ -21,6 +21,8 @@
 
 #include "../RippleSSLContext.h"
 
+#include "../../beast/beast/unit_test/suite.h"
+
 namespace ripple {
 
 MultiSocket* MultiSocket::New (
@@ -45,7 +47,7 @@ MultiSocket* MultiSocket::New (
 
 //------------------------------------------------------------------------------
 
-class MultiSocketTests : public beast::UnitTest
+class MultiSocket_test : public beast::unit_test::suite
 {
 public:
     class MultiSocketDetails : public beast::asio::TestPeerDetails
@@ -232,7 +234,8 @@ public:
     template <typename Protocol>
     void testProxyFlags (int extraClientFlags, int extraServerFlags)
     {
-        check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
+        check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (
+            MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
 
         runProxy <Protocol> (MultiSocket::Flag::client_role | extraClientFlags,
                              MultiSocket::Flag::server_role | extraServerFlags);
@@ -243,7 +246,8 @@ public:
     template <typename Protocol>
     void testFlags (int extraClientFlags, int extraServerFlags)
     {
-        check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
+        check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (
+            MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
 
         run <Protocol> (MultiSocket::Flag::client_role | extraClientFlags,
                         MultiSocket::Flag::server_role | extraServerFlags);
@@ -288,7 +292,7 @@ public:
                                    MultiSocket::Flag::proxy | MultiSocket::Flag::ssl);
     }
 
-    void runTest ()
+    void run ()
     {
         testProtocol <boost::asio::ip::tcp> ();
     }
@@ -299,12 +303,8 @@ public:
     {
         timeoutSeconds = 10
     };
-
-    MultiSocketTests () : UnitTest ("MultiSocket", "ripple")
-    {
-    }
 };
 
-static MultiSocketTests multiSocketTests;
+BEAST_DEFINE_TESTSUITE(MultiSocket,common,ripple);
 
 }

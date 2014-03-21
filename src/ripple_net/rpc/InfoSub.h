@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
 #define RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
 
+namespace ripple {
+
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
 
@@ -134,5 +136,7 @@ private:
 
     beast::uint64                               mSeq;
 };
+
+} // ripple
 
 #endif

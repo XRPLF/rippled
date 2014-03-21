@@ -166,7 +166,6 @@ class FileOutputStream;
 #include "files/TemporaryFile.h"
 #include "logging/Logger.h"
 #include "memory/SharedSingleton.h"
-#include "misc/Main.h"
 #include "misc/WindowsRegistry.h"
 #include "streams/MemoryOutputStream.h"
 
@@ -177,7 +176,6 @@ class FileOutputStream;
 #include "threads/HighResolutionTimer.h"
 #include "threads/InterProcessLock.h"
 #include "threads/Process.h"
-#include "diagnostic/UnitTest.h"
 #include "xml/XmlDocument.h"
 #include "xml/XmlElement.h"
 #include "diagnostic/UnitTestUtilities.h"

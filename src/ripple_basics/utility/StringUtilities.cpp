@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 // VFALCO TODO Replace these with something more robust and without macros.
 //
 #if ! BEAST_MSVC
@@ -224,6 +228,8 @@ bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort)
     return bValid;
 }
 
+// VFALCO TODO Callers should be using beast::URL and beast::ParsedURL, not this home-brew.
+//
 bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath)
 {
     // scheme://username:password@hostname:port/rest
@@ -313,7 +319,7 @@ beast::StringPairArray parseDelimitedKeyValueString (beast::String parameters,
 
 //------------------------------------------------------------------------------
 
-class StringUtilitiesTests : public beast::UnitTest
+class StringUtilities_test : public beast::unit_test::suite
 {
 public:
     void testUnHexSuccess (std::string strIn, std::string strExpected)
@@ -340,7 +346,7 @@ public:
 
     void testUnHex ()
     {
-        beginTestCase ("strUnHex");
+        testcase ("strUnHex");
 
         testUnHexSuccess ("526970706c6544", "RippleD");
         testUnHexSuccess ("A", "\n");
@@ -358,7 +364,7 @@ public:
 
     void testParseUrl ()
     {
-        beginTestCase ("parseUrl");
+        testcase ("parseUrl");
 
         std::string strScheme;
         std::string strDomain;
@@ -402,16 +408,14 @@ public:
             "parseUrl: Mixed://domain/path path failed");
     }
 
-    void runTest ()
+    void run ()
     {
         testParseUrl ();
 
         testUnHex ();
     }
-
-    StringUtilitiesTests () : UnitTest ("StringUtilities", "ripple")
-    {
-    }
 };
 
-static StringUtilitiesTests stringUtilitiesTests;
+BEAST_DEFINE_TESTSUITE(StringUtilities,ripple_basics,ripple);
+
+} // ripple

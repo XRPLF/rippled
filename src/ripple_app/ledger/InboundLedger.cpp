@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 //SETUP_LOG (InboundLedger)
 template <> char const* LogPartition::getPartitionName <InboundLedger> () { return "InLedger"; }
 
@@ -1265,3 +1267,5 @@ Json::Value InboundLedger::getJson (int)
 
     return ret;
 }
+
+} // ripple

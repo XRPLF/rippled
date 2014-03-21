@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LOADFEETRACKIMP_H_INCLUDED
 #define RIPPLE_LOADFEETRACKIMP_H_INCLUDED
 
+namespace ripple {
+
 class LoadFeeTrackImp : public LoadFeeTrack
 {
 public:
@@ -227,5 +229,7 @@ private:
     beast::uint32 mClusterTxnLoadFee;      // Scale factor, lftNormalFee = normal fee
     int raiseCount;
 };
+
+} // ripple
 
 #endif

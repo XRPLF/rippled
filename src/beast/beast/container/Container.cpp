@@ -21,7 +21,5 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "impl/aged_associative_container.cpp"
-
+#include "tests/aged_associative_container.test.cpp"
 #include "tests/buffer_view.test.cpp"
-

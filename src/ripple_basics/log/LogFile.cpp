@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 LogFile::LogFile ()
     : m_stream (nullptr)
 {
@@ -80,3 +82,4 @@ void LogFile::writeln (char const* text)
     }
 }
 
+} // ripple

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 //
 // RFC 1751 code converted to C++/Boost.
 //
@@ -492,3 +494,4 @@ beast::String RFC1751::getWordFromBlob (void const* data, size_t bytes)
     return s_dictionary [hash % (sizeof (s_dictionary) / sizeof (s_dictionary [0]))];
 }
 
+} // ripple

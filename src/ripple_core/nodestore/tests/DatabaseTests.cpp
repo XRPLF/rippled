@@ -20,20 +20,9 @@
 namespace ripple {
 namespace NodeStore {
 
-class DatabaseTests : public TestBase
+class NodeStoreDatabase_test : public TestBase
 {
 public:
-    DatabaseTests ()
-        : TestBase ("NodeStore")
-    {
-    }
-
-    ~DatabaseTests ()
-    {
-    }
-
-    //--------------------------------------------------------------------------
-
     void testImport (beast::String destBackendType, beast::String srcBackendType, beast::int64 seedValue)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
@@ -49,7 +38,7 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
-        beast::Journal j ((journal ()));
+        beast::Journal j;
 
         // Write to source db
         {
@@ -74,7 +63,7 @@ public:
             std::unique_ptr <Database> dest (manager->make_Database (
                 "test", scheduler, j, 2, destParams));
 
-            beginTestCase (beast::String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
+            testcase ((beast::String ("import into '") + destBackendType + "' from '" + srcBackendType + "'").toStdString());
 
             // Do the import
             dest->import (*src);
@@ -106,7 +95,7 @@ public:
         if (useEphemeralDatabase)
             s << " (with ephemeral database)";
 
-        beginTestCase (s);
+        testcase (s.toStdString());
 
         beast::File const node_db (beast::File::createTempFile ("node_db"));
         beast::StringPairArray nodeParams;
@@ -125,7 +114,7 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
-        beast::Journal j ((journal ()));
+        beast::Journal j;
 
         {
             // Open the database
@@ -226,7 +215,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void runTest ()
+    void run ()
     {
         beast::int64 const seedValue = 50;
 
@@ -240,7 +229,7 @@ public:
     }
 };
 
-static DatabaseTests databaseTests;
+BEAST_DEFINE_TESTSUITE(NodeStoreDatabase,ripple_core,ripple);
 
 }
 }

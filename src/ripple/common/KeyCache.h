@@ -26,6 +26,7 @@
 #include <boost/smart_ptr.hpp>
 
 #include "../../beast/beast/chrono/abstract_clock.h"
+#include "../../beast/beast/chrono/chrono_io.h"
 #include "../../beast/beast/Insight.h"
 
 namespace ripple {

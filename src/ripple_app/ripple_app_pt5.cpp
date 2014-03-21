@@ -32,11 +32,8 @@
 
 #include "misc/ProofOfWork.h"
 
-namespace ripple {
-
 #include "ledger/LedgerTiming.cpp"
 #include "ledger/AcceptedLedgerTx.cpp"
 #include "main/LocalCredentials.cpp"
 #include "misc/Validations.cpp"
 #include "misc/FeeVote.cpp"
-}

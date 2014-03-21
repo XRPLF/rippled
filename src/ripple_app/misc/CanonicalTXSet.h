@@ -20,6 +20,8 @@
 #ifndef RIPPLE_CANONICALTXSET_H
 #define RIPPLE_CANONICALTXSET_H
 
+namespace ripple {
+
 /** Holds transactions which were deferred to the next pass of consensus.
 
     "Canonical" refers to the order in which transactions are applied.
@@ -118,5 +120,7 @@ private:
 
     std::map <Key, SerializedTransaction::pointer> mMap;
 };
+
+} // ripple
 
 #endif

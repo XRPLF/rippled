@@ -20,6 +20,8 @@
 #ifndef RIPPLE_DATABASE_H_INCLUDED
 #define RIPPLE_DATABASE_H_INCLUDED
 
+namespace ripple {
+
 // VFALCO Get rid of these macros
 //
 #define SQL_FOREACH(_db, _strQuery)     \
@@ -116,6 +118,6 @@ protected:
     std::vector <std::string> mColNameTable;
 };
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

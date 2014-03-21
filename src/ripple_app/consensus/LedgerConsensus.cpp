@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (LedgerConsensus)
 
 // #define TRUST_NETWORK
@@ -1922,3 +1924,5 @@ boost::shared_ptr <LedgerConsensus> LedgerConsensus::New (clock_type& clock,
     return boost::make_shared <LedgerConsensusImp> (
         clock, prevLCLHash, previousLedger,closeTime);
 }
+
+} // ripple

@@ -33,8 +33,6 @@
 #include "../ripple_data/ripple_data.h"
 #include "../ripple_websocket/autosocket/AutoSocket.h"
 
-namespace ripple {
-
 #include "basics/HTTPRequest.h"
 #include "basics/HTTPClient.h"
 #include "basics/RPCServer.h"
@@ -46,7 +44,5 @@ namespace ripple {
 #include "rpc/RPCCall.h"
 # include "rpc/InfoSub.h"
 #include "rpc/RPCSub.h"
-
-}
 
 #endif

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LOADFEETRACK_H_INCLUDED
 #define RIPPLE_LOADFEETRACK_H_INCLUDED
 
+namespace ripple {
+
 /** Manages the current fee schedule.
 
     The "base" fee is the cost to send a reference transaction under no load,
@@ -65,5 +67,7 @@ public:
     virtual bool isLoadedLocal () = 0;
     virtual bool isLoadedCluster () = 0;
 };
+
+} // ripple
 
 #endif

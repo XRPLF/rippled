@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // TODO:
 // - Do automatic bridging via XRP.
 //
@@ -932,3 +934,4 @@ Json::Value PathState::getJson () const
     return jvPathState;
 }
 
+} // ripple

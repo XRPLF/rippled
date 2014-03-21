@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 class ProofOfWorkFactoryImp
     : public ProofOfWorkFactory
     , public beast::LeakChecked <ProofOfWorkFactoryImp>
@@ -354,14 +358,10 @@ ProofOfWorkFactory* ProofOfWorkFactory::New ()
 
 //------------------------------------------------------------------------------
 
-class ProofOfWorkTests : public beast::UnitTest
+class ProofOfWork_test : public beast::unit_test::suite
 {
 public:
-    ProofOfWorkTests () : beast::UnitTest ("ProofOfWork", "ripple", runManual)
-    {
-    }
-
-    void runTest ()
+    void run ()
     {
         using namespace ripple;
 
@@ -371,7 +371,6 @@ public:
         beast::String s;
         
         s << "solve difficulty " << beast::String (pow.getDifficulty ());
-        beginTestCase ("solve");
 
         uint256 solution = pow.solve (16777216);
 
@@ -420,4 +419,6 @@ public:
     }
 };
 
-static ProofOfWorkTests proofOfWorkTests;
+BEAST_DEFINE_TESTSUITE_MANUAL(ProofOfWork,ripple_app,ripple);
+
+} // ripple

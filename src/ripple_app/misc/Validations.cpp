@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 class ValidationsImp;
 
 SETUP_LOG (Validations)
@@ -463,4 +465,4 @@ Validations* Validations::New ()
     return new ValidationsImp;
 }
 
-// vim:ts=4
+} // ripple

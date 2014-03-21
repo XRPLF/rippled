@@ -20,8 +20,9 @@
 #ifndef OPERATION_H
 #define OPERATION_H
 
-namespace Script
-{
+namespace ripple {
+
+namespace Script {
 
 // Contracts are non typed  have variable data types
 
@@ -374,7 +375,6 @@ public:
 
 }
 
+} // ripple
+
 #endif
-
-// vim:ts=4
-

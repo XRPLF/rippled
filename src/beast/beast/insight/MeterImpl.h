@@ -20,8 +20,6 @@
 #ifndef BEAST_INSIGHT_METERIMPL_H_INCLUDED
 #define BEAST_INSIGHT_METERIMPL_H_INCLUDED
 
-#include <memory>
-
 #include "BaseImpl.h"
 
 namespace beast {
@@ -34,7 +32,7 @@ class MeterImpl
     , public BaseImpl
 {
 public:
-    typedef uint64 value_type;
+    typedef std::uint64_t value_type;
 
     virtual ~MeterImpl () = 0;
     virtual void increment (value_type amount) = 0;

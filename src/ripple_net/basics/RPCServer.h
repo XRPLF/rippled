@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_BASICS_RPCSERVER_H_INCLUDED
 #define RIPPLE_NET_BASICS_RPCSERVER_H_INCLUDED
 
+namespace ripple {
+
 /** Provides RPC services to a client.
     Each client has a separate instance of this object.
 */
@@ -60,5 +62,7 @@ public:
     virtual boost::asio::ip::tcp::socket& getRawSocket () = 0;
     virtual boost::asio::ip::tcp::socket::endpoint_type& getRemoteEndpoint () = 0;
 };
+
+} // ripple
 
 #endif

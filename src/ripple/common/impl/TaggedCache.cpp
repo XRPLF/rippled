@@ -19,6 +19,7 @@
 
 #include "../TaggedCache.h"
 
+#include "../../beast/beast/unit_test/suite.h"
 #include "../../beast/beast/chrono/manual_clock.h"
 
 namespace ripple {
@@ -33,15 +34,12 @@ then canonicalize a new object with the same key, make sure you get the
 original object.
 */
 
-class TaggedCacheTests : public beast::UnitTest
+class TaggedCache_test : public beast::unit_test::suite
 {
 public:
-    void runTest ()
+    void run ()
     {
-        //Journal const j (journal());
         beast::Journal const j;
-
-        beginTestCase ("Insert");
 
         beast::manual_clock <std::chrono::seconds> clock;
         clock.set (0);
@@ -146,13 +144,8 @@ public:
             expect (c.getTrackSize() == 0);
         }
     }
-
-    TaggedCacheTests () : UnitTest (
-        "TaggedCache", "ripple")
-    {
-    }
 };
 
-static TaggedCacheTests taggedCacheTests;
+BEAST_DEFINE_TESTSUITE(TaggedCache,common,ripple);
 
 }

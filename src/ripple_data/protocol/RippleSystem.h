@@ -20,8 +20,9 @@
 #ifndef RIPPLE_RIPPLESYSTEM_H
 #define RIPPLE_RIPPLESYSTEM_H
 
-/** Protocol specific constant globals.
-*/
+namespace ripple {
+
+/** Protocol specific constant globals. */
 // VFALCO NOTE use these from now on instead of the macros!!
 class RippleSystem
 {
@@ -56,5 +57,7 @@ public:
 #define SYSTEM_CURRENCY_CODE        "XRP"
 #define SYSTEM_CURRENCY_PRECISION   6
 #define SYSTEM_CURRENCY_CODE_RIPPLE "XRR"
+
+} // ripple
 
 #endif

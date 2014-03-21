@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (ProofOfWork)
 
 // VFALCO TODO Move these to a header
@@ -190,3 +192,4 @@ bool ProofOfWork::calcResultInfo (PowResult powCode, std::string& strToken, std:
     return iIndex >= 0;
 }
 
+} // ripple

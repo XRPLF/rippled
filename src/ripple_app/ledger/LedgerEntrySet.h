@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGERENTRYSET_H
 #define RIPPLE_LEDGERENTRYSET_H
 
+namespace ripple {
+
 enum TransactionEngineParams
 {
     tapNONE             = 0x00,
@@ -286,5 +288,7 @@ inline LedgerEntrySet::iterator range_end (LedgerEntrySet& x)
 {
     return x.end ();
 }
+
+} // ripple
 
 #endif

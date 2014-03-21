@@ -50,7 +50,6 @@
 
 #include "misc/ProofOfWorkFactory.h"
 
-namespace ripple {
 # include "main/NodeStoreScheduler.h"
 #include "main/NodeStoreScheduler.cpp"
 
@@ -61,12 +60,10 @@ namespace ripple {
 #include "main/FatalErrorReporter.cpp"
 
 # include "rpc/RPCHandler.h"
-}
 # include "rpc/RPCServerHandler.h"
 # include "main/RPCHTTPServer.h"
 #include "main/RPCHTTPServer.cpp"
 #include "rpc/RPCServerHandler.cpp"
-namespace ripple {
 #include "rpc/RPCHandler.cpp"
 
 #include "websocket/WSConnection.h"
@@ -81,9 +78,6 @@ namespace ripple {
 #include "websocket/WSConnection.cpp"
 # include "websocket/WSDoor.h"
 #include "websocket/WSDoor.cpp"
-}
-
-
 
 #include "../ripple/common/ResolverAsio.h"
 
@@ -92,14 +86,13 @@ namespace ripple {
 
 #include "main/Application.cpp"
 
-
-
-namespace ripple {
-# include "main/RippleMain.h"
-#include "main/RippleMain.cpp"
-}
+#include "main/Main.cpp"
 
 //------------------------------------------------------------------------------
+
+namespace ripple {
+int run (int argc, char** argv);
+}
 
 struct ProtobufLibrary
 {
@@ -152,12 +145,5 @@ int main (int argc, char** argv)
 
     beast::SharedSingleton <ProtobufLibrary>::get ();
 
-    int result (0);
-
-    ripple::RippleMain rippled;
-
-    result = rippled.runFromMain (argc, argv);
-
-    return result;
+    return ripple::run (argc, argv);
 }
-

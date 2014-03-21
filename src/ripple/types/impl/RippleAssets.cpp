@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../../beast/beast/unit_test/suite.h"
+
 #include <set>
 #include <typeinfo>
 #include <unordered_set>
@@ -36,11 +38,9 @@
 # endif
 #endif
 
-
-
 namespace ripple {
 
-class RippleAssetTests : public beast::UnitTest
+class RippleAsset_test : public beast::unit_test::suite
 {
 public:
     // Comparison, hash tests for uint60 (via base_uint)
@@ -205,46 +205,46 @@ public:
 
     void testAssetSets ()
     {
-        beginTestCase ("std::set <RippleAsset>");
+        testcase ("std::set <RippleAsset>");
         testAssetSet <std::set <RippleAsset>> ();
 
-        beginTestCase ("std::set <RippleAssetRef>");
+        testcase ("std::set <RippleAssetRef>");
         testAssetSet <std::set <RippleAssetRef>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
-        beginTestCase ("std::unordered_set <RippleAsset>");
+        testcase ("std::unordered_set <RippleAsset>");
         testAssetSet <std::unordered_set <RippleAsset>> ();
 
-        beginTestCase ("std::unordered_set <RippleAssetRef>");
+        testcase ("std::unordered_set <RippleAssetRef>");
         testAssetSet <std::unordered_set <RippleAssetRef>> ();
 #endif
 
-        beginTestCase ("boost::unordered_set <RippleAsset>");
+        testcase ("boost::unordered_set <RippleAsset>");
         testAssetSet <boost::unordered_set <RippleAsset>> ();
 
-        beginTestCase ("boost::unordered_set <RippleAssetRef>");
+        testcase ("boost::unordered_set <RippleAssetRef>");
         testAssetSet <boost::unordered_set <RippleAssetRef>> ();
     }
 
     void testAssetMaps ()
     {
-        beginTestCase ("std::map <RippleAsset, int>");
+        testcase ("std::map <RippleAsset, int>");
         testAssetMap <std::map <RippleAsset, int>> ();
 
-        beginTestCase ("std::map <RippleAssetRef, int>");
+        testcase ("std::map <RippleAssetRef, int>");
         testAssetMap <std::map <RippleAssetRef, int>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
-        beginTestCase ("std::unordered_map <RippleAsset, int>");
+        testcase ("std::unordered_map <RippleAsset, int>");
         testAssetMap <std::unordered_map <RippleAsset, int>> ();
 
-        beginTestCase ("std::unordered_map <RippleAssetRef, int>");
+        testcase ("std::unordered_map <RippleAssetRef, int>");
         testAssetMap <std::unordered_map <RippleAssetRef, int>> ();
 
-        beginTestCase ("boost::unordered_map <RippleAsset, int>");
+        testcase ("boost::unordered_map <RippleAsset, int>");
         testAssetMap <boost::unordered_map <RippleAsset, int>> ();
 
-        beginTestCase ("boost::unordered_map <RippleAssetRef, int>");
+        testcase ("boost::unordered_map <RippleAssetRef, int>");
         testAssetMap <boost::unordered_map <RippleAssetRef, int>> ();
 
 #endif        
@@ -390,66 +390,66 @@ public:
 
     void testBookSets ()
     {
-        beginTestCase ("std::set <RippleBook>");
+        testcase ("std::set <RippleBook>");
         testBookSet <std::set <RippleBook>> ();
 
-        beginTestCase ("std::set <RippleBookRef>");
+        testcase ("std::set <RippleBookRef>");
         testBookSet <std::set <RippleBookRef>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
-        beginTestCase ("std::unordered_set <RippleBook>");
+        testcase ("std::unordered_set <RippleBook>");
         testBookSet <std::unordered_set <RippleBook>> ();
 
-        beginTestCase ("std::unordered_set <RippleBookRef>");
+        testcase ("std::unordered_set <RippleBookRef>");
         testBookSet <std::unordered_set <RippleBookRef>> ();
 #endif
 
-        beginTestCase ("boost::unordered_set <RippleBook>");
+        testcase ("boost::unordered_set <RippleBook>");
         testBookSet <boost::unordered_set <RippleBook>> ();
 
-        beginTestCase ("boost::unordered_set <RippleBookRef>");
+        testcase ("boost::unordered_set <RippleBookRef>");
         testBookSet <boost::unordered_set <RippleBookRef>> ();
     }
 
     void testBookMaps ()
     {
-        beginTestCase ("std::map <RippleBook, int>");
+        testcase ("std::map <RippleBook, int>");
         testBookMap <std::map <RippleBook, int>> ();
 
-        beginTestCase ("std::map <RippleBookRef, int>");
+        testcase ("std::map <RippleBookRef, int>");
         testBookMap <std::map <RippleBookRef, int>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
-        beginTestCase ("std::unordered_map <RippleBook, int>");
+        testcase ("std::unordered_map <RippleBook, int>");
         testBookMap <std::unordered_map <RippleBook, int>> ();
 
-        beginTestCase ("std::unordered_map <RippleBookRef, int>");
+        testcase ("std::unordered_map <RippleBookRef, int>");
         testBookMap <std::unordered_map <RippleBookRef, int>> ();
 
-        beginTestCase ("boost::unordered_map <RippleBook, int>");
+        testcase ("boost::unordered_map <RippleBook, int>");
         testBookMap <boost::unordered_map <RippleBook, int>> ();
 
-        beginTestCase ("boost::unordered_map <RippleBookRef, int>");
+        testcase ("boost::unordered_map <RippleBookRef, int>");
         testBookMap <boost::unordered_map <RippleBookRef, int>> ();
 #endif
     }
 
     //--------------------------------------------------------------------------
 
-    void runTest ()
+    void run()
     {
-        beginTestCase ("RippleCurrency");
+        testcase ("RippleCurrency");
         testUnsigned <RippleCurrency> ();
 
-        beginTestCase ("RippleIssuer");
+        testcase ("RippleIssuer");
         testUnsigned <RippleIssuer> ();
 
         // ---
 
-        beginTestCase ("RippleAsset");
+        testcase ("RippleAsset");
         testAssetType <RippleAsset> ();
 
-        beginTestCase ("RippleAssetRef");
+        testcase ("RippleAssetRef");
         testAssetType <RippleAssetRef> ();
 
         testAssetSets ();
@@ -457,21 +457,17 @@ public:
 
         // ---
 
-        beginTestCase ("RippleBook");
+        testcase ("RippleBook");
         testBook <RippleBook> ();
 
-        beginTestCase ("RippleBookRef");
+        testcase ("RippleBookRef");
         testBook <RippleBookRef> ();
 
         testBookSets ();
         testBookMaps ();
     }
-
-    RippleAssetTests () : UnitTest ("RippleAsset", "ripple")
-    {
-    }
 };
 
-static RippleAssetTests rippleAssetTests;
+BEAST_DEFINE_TESTSUITE(RippleAsset,types,ripple);
 
 }

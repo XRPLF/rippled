@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 //SETUP_LOG (TransactionAcquire)
 template <> char const* LogPartition::getPartitionName <TransactionAcquire> () { return "TxAcquire"; }
 
@@ -250,3 +252,5 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNode>& nodeID
         return SHAMapAddNode::invalid ();
     }
 }
+
+} // ripple

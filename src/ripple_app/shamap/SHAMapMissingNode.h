@@ -20,14 +20,14 @@
 #ifndef RIPPLE_SHAMAPMISSINGNODE_H
 #define RIPPLE_SHAMAPMISSINGNODE_H
 
+namespace ripple {
+
 enum SHAMapType
 {
     smtTRANSACTION  = 1,    // A tree of transactions
     smtSTATE        = 2,    // A tree of state nodes
     smtFREE         = 3,    // A tree not part of a ledger
 };
-
-namespace ripple {
 
 class SHAMapMissingNode : public std::runtime_error
 {
@@ -97,6 +97,6 @@ private:
 
 extern std::ostream& operator<< (std::ostream&, SHAMapMissingNode const&);
 
-}
+} // ripple
 
 #endif

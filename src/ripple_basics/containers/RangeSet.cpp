@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 SETUP_LOG (RangeSet)
 
 // VFALCO NOTE std::min and std::max not good enough?
@@ -257,13 +261,9 @@ void RangeSet::checkInternalConsistency () const noexcept
 
 //------------------------------------------------------------------------------
 
-class RangeSetTests : public beast::UnitTest
+class RangeSet_test : public beast::unit_test::suite
 {
 public:
-    RangeSetTests () : UnitTest ("RangeSet", "ripple")
-    {
-    }
-
     RangeSet createPredefinedSet ()
     {
         RangeSet set;
@@ -282,7 +282,7 @@ public:
 
     void testMembership ()
     {
-        beginTestCase ("membership");
+        testcase ("membership");
 
         RangeSet r1, r2;
 
@@ -301,7 +301,7 @@ public:
 
     void testPrevMissing ()
     {
-        beginTestCase ("prevMissing");
+        testcase ("prevMissing");
 
         RangeSet const set = createPredefinedSet ();
 
@@ -316,7 +316,7 @@ public:
         }
     }
 
-    void runTest ()
+    void run ()
     {
         testMembership ();
 
@@ -326,5 +326,7 @@ public:
     }
 };
 
-static RangeSetTests rangeSetTests;
+BEAST_DEFINE_TESTSUITE(RangeSet,ripple_basics,ripple);
+
+} // ripple
 

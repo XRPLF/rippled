@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 bool CanonicalTXSet::Key::operator< (Key const& rhs) const
 {
     if (mAccount < rhs.mAccount) return true;
@@ -88,4 +90,4 @@ CanonicalTXSet::iterator CanonicalTXSet::erase (iterator const& it)
     return tmp;
 }
 
-
+} // ripple

@@ -21,9 +21,11 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "impl/Atomic.cpp"
 #include "impl/RecursiveMutex.cpp"
 #include "impl/ServiceQueue.cpp"
 #include "impl/Stoppable.cpp"
 #include "impl/Thread.cpp"
 #include "impl/WaitableEvent.cpp"
+
+#include "tests/Atomic.test.cpp"
+#include "tests/ServiceQueue.test.cpp"

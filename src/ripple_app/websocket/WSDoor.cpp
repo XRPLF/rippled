@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (WSDoor)
 
 //
@@ -178,3 +180,5 @@ WSDoor* WSDoor::New (Resource::Manager& resourceManager,
 
     return door.release ();
 }
+
+} // ripple

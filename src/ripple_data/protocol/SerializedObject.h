@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERIALIZEDOBJECT_H
 #define RIPPLE_SERIALIZEDOBJECT_H
 
+namespace ripple {
+
 class STArray;
 
 class STObject
@@ -517,5 +519,7 @@ inline STArray::iterator range_end (STArray& x)
 {
     return x.end ();
 }
+
+} // ripple
 
 #endif

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
 {
     static struct
@@ -151,4 +153,4 @@ std::string transHuman (TER terCode)
     return transResultInfo (terCode, strToken, strHuman) ? strHuman : "-";
 }
 
-// vim:ts=4
+} // ripple

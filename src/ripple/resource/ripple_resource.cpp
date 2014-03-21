@@ -30,6 +30,7 @@
 
 #include "../beast/beast/Insight.h"
 #include "../beast/beast/cxx14/memory.h"
+#include "../beast/beast/chrono/chrono_io.h"
 
 #include "impl/Fees.cpp"
 #  include "impl/Kind.h"

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // Transaction database holds transactions and public keys
 const char* TxnDBInit[] =
 {
@@ -332,3 +334,4 @@ const char* PathFindDBInit[] =
 int PathFindDBCount = NUMBER (PathFindDBInit);
 */
 
+} // ripple

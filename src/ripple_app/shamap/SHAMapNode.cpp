@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (SHAMapNode)
 
 // canonicalize the hash to a node ID for this depth
@@ -175,3 +177,5 @@ void SHAMapNode::dump () const
 {
     WriteLog (lsDEBUG, SHAMapNode) << getString ();
 }
+
+} // ripple

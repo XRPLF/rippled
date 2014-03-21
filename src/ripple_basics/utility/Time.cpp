@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // VFALCO TODO Tidy this up into a RippleTime object
 
 //
@@ -55,3 +57,5 @@ uint64_t utFromSeconds (int iSeconds)
 
     return tdDelta.total_seconds ();
 }
+
+} // ripple

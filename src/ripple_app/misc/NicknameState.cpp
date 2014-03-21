@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 NicknameState::NicknameState (SerializedLedgerEntry::pointer ledgerEntry) :
     mLedgerEntry (ledgerEntry)
 {
@@ -44,3 +46,5 @@ void NicknameState::addJson (Json::Value& val)
 {
     val = mLedgerEntry->getJson (0);
 }
+
+} // ripple

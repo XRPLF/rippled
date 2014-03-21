@@ -33,13 +33,11 @@
 #include "../beast/beast/http/ParsedURL.h"
 #include "../ripple_net/ripple_net.h" // for HTTPClient
 
-namespace ripple {
 #include "functional/Config.cpp"
 # include "functional/LoadFeeTrackImp.h" // private
 #include "functional/LoadFeeTrackImp.cpp"
 #include "functional/LoadEvent.cpp"
 #include "functional/LoadMonitor.cpp"
-}
 
 #include "functional/Job.cpp"
 #include "functional/JobQueue.cpp"

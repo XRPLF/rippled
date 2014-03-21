@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (HTTPRequest)
 
 // Logic to handle incoming HTTP reqests
@@ -124,4 +126,4 @@ HTTPRequest::Action HTTPRequest::consume (boost::asio::streambuf& buf)
     return haERROR;
 }
 
-// vim:ts=4
+} // ripple

@@ -58,9 +58,6 @@
 
 #include "protocol/STParsedJSON.cpp"
 
-namespace ripple
-{
-
 #include "crypto/CKey.h" // needs RippleAddress VFALCO TODO remove this dependency cycle
 #include "crypto/RFC1751.h"
 
@@ -89,8 +86,6 @@ static const beast::uint64 tenTo17 = tenTo14 * 1000;
 static const beast::uint64 tenTo17m1 = tenTo17 - 1;
 #include "protocol/STAmount.cpp"
 #include "protocol/STAmountRound.cpp"
-
-}
 
 #if BEAST_MSVC
 #pragma warning (pop)

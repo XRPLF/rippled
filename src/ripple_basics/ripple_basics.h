@@ -37,8 +37,6 @@
 
 #include "../ripple/types/ripple_types.h"
 
-namespace ripple {
-
 #include "types/BasicTypes.h"
 
 #  include "log/LogSeverity.h"
@@ -59,7 +57,5 @@ namespace ripple {
 
 #include "containers/RangeSet.h"
 #include "containers/SyncUnorderedMap.h"
-
-}
 
 #endif

@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 SETUP_LOG (RippleAddress)
 
 RippleAddress::RippleAddress ()
@@ -892,26 +896,20 @@ RippleAddress RippleAddress::createSeedGeneric (const std::string& strText)
 
 //------------------------------------------------------------------------------
 
-class RippleAddressTests : public beast::UnitTest
+class RippleAddress_test : public beast::unit_test::suite
 {
 public:
-    RippleAddressTests () : UnitTest ("RippleAddress", "ripple")
+    void run()
     {
-    }
-
-    void runTest ()
-    {
-        beginTestCase ("public/private");
-
         // Construct a seed.
-        RippleAddress   naSeed;
+        RippleAddress naSeed;
 
         expect (naSeed.setSeedGeneric ("masterpassphrase"));
         expect (naSeed.humanSeed () == "snoPBrXtMeMyMHUVTgbuqAfg1SUTb", naSeed.humanSeed ());
 
         // Create node public/private key pair
-        RippleAddress   naNodePublic    = RippleAddress::createNodePublic (naSeed);
-        RippleAddress   naNodePrivate   = RippleAddress::createNodePrivate (naSeed);
+        RippleAddress naNodePublic    = RippleAddress::createNodePublic (naSeed);
+        RippleAddress naNodePrivate   = RippleAddress::createNodePrivate (naSeed);
 
         expect (naNodePublic.humanNodePublic () == "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9", naNodePublic.humanNodePublic ());
         expect (naNodePrivate.humanNodePrivate () == "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe", naNodePrivate.humanNodePrivate ());
@@ -966,21 +964,19 @@ public:
     }
 };
 
-static RippleAddressTests rippleAddressTests;
-
 //------------------------------------------------------------------------------
 
-class RippleIdentifierTests : public beast::UnitTest
+class RippleIdentifier_test : public beast::unit_test::suite
 {
 public:
-    void runTest ()
+    void run ()
     {
-        beginTestCase ("Seed");
+        testcase ("Seed");
         RippleAddress seed;
         expect (seed.setSeedGeneric ("masterpassphrase"));
         expect (seed.humanSeed () == "snoPBrXtMeMyMHUVTgbuqAfg1SUTb", seed.humanSeed ());
 
-        beginTestCase ("RipplePublicKey");
+        testcase ("RipplePublicKey");
         RippleAddress deprecatedPublicKey (RippleAddress::createNodePublic (seed));
         expect (deprecatedPublicKey.humanNodePublic () ==
             "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9",
@@ -989,7 +985,7 @@ public:
         expect (publicKey.to_string() == deprecatedPublicKey.humanNodePublic(),
             publicKey.to_string());
 
-        beginTestCase ("RipplePrivateKey");
+        testcase ("RipplePrivateKey");
         RippleAddress deprecatedPrivateKey (RippleAddress::createNodePrivate (seed));
         expect (deprecatedPrivateKey.humanNodePrivate () ==
             "pnen77YEeUd4fFKG7iycBWcwKpTaeFRkW2WFostaATy1DSupwXe",
@@ -998,13 +994,13 @@ public:
         expect (privateKey.to_string() == deprecatedPrivateKey.humanNodePrivate(),
             privateKey.to_string());
 
-        beginTestCase ("Generator");
+        testcase ("Generator");
         RippleAddress generator (RippleAddress::createGeneratorPublic (seed));
         expect (generator.humanGenerator () ==
             "fhuJKrhSDzV2SkjLn9qbwm5AaRmrxDPfFsHDCP6yfDZWcxDFz4mt",
                 generator.humanGenerator ());
 
-        beginTestCase ("RippleAccountID");
+        testcase ("RippleAccountID");
         RippleAddress deprecatedAccountPublicKey (
             RippleAddress::createAccountPublic (generator, 0));
         expect (deprecatedAccountPublicKey.humanAccountID () ==
@@ -1015,12 +1011,12 @@ public:
             deprecatedAccountPublicKey.humanAccountID(),
                 accountID.to_string());
 
-        beginTestCase ("RippleAccountPublicKey");
+        testcase ("RippleAccountPublicKey");
         expect (deprecatedAccountPublicKey.humanAccountPublic () ==
             "aBQG8RQAzjs1eTKFEAQXr2gS4utcDiEC9wmi7pfUPTi27VCahwgw",
                 deprecatedAccountPublicKey.humanAccountPublic ());
 
-        beginTestCase ("RippleAccountPrivateKey");
+        testcase ("RippleAccountPrivateKey");
         RippleAddress deprecatedAccountPrivateKey (
             RippleAddress::createAccountPrivate (generator, seed, 0));
         expect (deprecatedAccountPrivateKey.humanAccountPrivate () ==
@@ -1031,10 +1027,9 @@ public:
             deprecatedAccountPrivateKey.humanAccountPrivate(),
                 privateKey.to_string());
     }
-
-    RippleIdentifierTests () : beast::UnitTest ("RippleIdentifier", "ripple")
-    {
-    }
 };
 
-static RippleIdentifierTests rippleIdentifierTests;
+BEAST_DEFINE_TESTSUITE(RippleAddress,ripple_data,ripple);
+BEAST_DEFINE_TESTSUITE(RippleIdentifier,ripple_data,ripple);
+
+} // ripple

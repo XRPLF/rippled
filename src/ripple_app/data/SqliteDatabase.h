@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SQLITEDATABASE_H_INCLUDED
 #define RIPPLE_SQLITEDATABASE_H_INCLUDED
 
+namespace ripple {
+
 class SqliteDatabase
     : public Database
     , private beast::Thread
@@ -144,6 +146,6 @@ public:
     std::string getError (int);
 };
 
-#endif
+} // ripple
 
-// vim:ts=4
+#endif

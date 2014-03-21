@@ -21,8 +21,11 @@
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef RIPPLE_CKEY_H
 #define RIPPLE_CKEY_H
+
+namespace ripple {
 
 // secp256k1:
 // const unsigned int PRIVATE_KEY_SIZE = 279;
@@ -315,5 +318,6 @@ public:
     Blob decryptECIES (CKey& otherKey, Blob const& ciphertext);
 };
 
+} // ripple
+
 #endif
-// vim:ts=4

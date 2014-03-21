@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RFC1751_H
 #define RIPPLE_RFC1751_H
 
+namespace ripple {
+
 class RFC1751
 {
 public:
@@ -46,5 +48,7 @@ private:
 
     static char const* s_dictionary [];
 };
+
+} // ripple
 
 #endif

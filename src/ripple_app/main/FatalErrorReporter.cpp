@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 FatalErrorReporter::FatalErrorReporter ()
 {
     m_savedReporter = beast::FatalError::setReporter (this);
@@ -34,17 +38,11 @@ void FatalErrorReporter::reportMessage (beast::String& formattedMessage)
 
 //------------------------------------------------------------------------------
 
-class FatalErrorReporterTests : public beast::UnitTest
+class FatalErrorReporter_test : public beast::unit_test::suite
 {
 public:
-    FatalErrorReporterTests () : beast::UnitTest ("FatalErrorReporter", "ripple", runManual)
+    void run ()
     {
-    }
-
-    void runTest ()
-    {
-        beginTestCase ("report");
-
         FatalErrorReporter reporter;
 
         // We don't really expect the program to run after this
@@ -54,4 +52,6 @@ public:
     }
 };
 
-static FatalErrorReporterTests fatalErrorReporterTests;
+BEAST_DEFINE_TESTSUITE_MANUAL(FatalErrorReporter,ripple_app,ripple);
+
+} // ripple

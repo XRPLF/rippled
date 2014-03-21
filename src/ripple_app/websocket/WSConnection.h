@@ -20,7 +20,7 @@
 #ifndef RIPPLE_WSCONNECTION_H
 #define RIPPLE_WSCONNECTION_H
 
-//------------------------------------------------------------------------------
+namespace ripple {
 
 /** A Ripple WebSocket connection handler.
     This handles everything that is independent of the endpint_type.
@@ -202,5 +202,7 @@ private:
     server_type& m_serverHandler;
     weak_connection_ptr m_connection;
 };
+
+} // ripple
 
 #endif

@@ -22,6 +22,8 @@ We also need to charge for each op
 
 */
 
+namespace ripple {
+
 namespace Script
 {
 
@@ -32,3 +34,5 @@ int Operation::getFee ()
 }
 
 }
+
+} // ripple

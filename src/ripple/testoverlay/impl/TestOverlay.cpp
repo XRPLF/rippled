@@ -17,9 +17,17 @@
 */
 //==============================================================================
 
+#include "../../../beast/beast/unit_test/suite.h"
+
+#include <boost/ref.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
+
+namespace ripple {
 namespace TestOverlay {
 
-class Tests : public beast::UnitTest
+class Network1_test : public beast::unit_test::suite
 {
 public:
     template <class Config>
@@ -108,8 +116,6 @@ public:
 
     void testCreation ()
     {
-        beginTestCase ("create");
-
         Network network;
 
         Results result;
@@ -121,27 +127,22 @@ public:
                 network.steps()) + " ";
             result += network.step ();
             s << result.toString ();
-            logMessage (s);
+            log << s.toStdString();
         }
 
         int const seen (network.state().seen());
 
         beast::String s = "Seen = " + beast::String::fromNumber (seen);
-        logMessage (s);
+        log <<
+            s.toStdString();
         pass ();
     }
 
-    void runTest ()
+    void run ()
     {
         testCreation ();
     }
-
-    Tests () : UnitTest ("TestOverlay", "ripple", runManual)
-    {
-    }
 };
-
-static Tests tests;
 
 //------------------------------------------------------------------------------
 //
@@ -430,7 +431,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-class Tests2 : public beast::UnitTest
+class Network2_test : public beast::unit_test::suite
 {
 public:
     class Message : public BasicMessage
@@ -523,32 +524,28 @@ public:
 
     void test1 ()
     {
-        beginTestCase ("network");
-
         int count (0);
         std::vector <Peer> peers;
         make_peers (peers, 10000, &count);
-        make_connections (peers, 3, random());
+        make_connections (peers, 3, beast::Random());
         peers[0].send (Message ());
         for (int i = 0; i < 10; ++i)
         {
             iterate (peers);
-            journal().info << "count = " << count;
+            log <<
+                "count = " << count;
         }
         pass();
     }
 
-    void runTest ()
+    void run ()
     {
         test1 ();
     }
-
-    Tests2 ()
-        : UnitTest ("TestOverlay2", "ripple", runManual)
-    {
-    }
 };
 
-static Tests2 tests2;
+BEAST_DEFINE_TESTSUITE_MANUAL(Network1,overlay,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(Network2,overlay,ripple);
 
+}
 }

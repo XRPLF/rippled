@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_LOGSEVERITY_H_INCLUDED
 #define RIPPLE_BASICS_LOGSEVERITY_H_INCLUDED
 
+namespace ripple {
+
 enum LogSeverity
 {
     lsINVALID   = -1,   // used to indicate an invalid severity
@@ -30,5 +32,7 @@ enum LogSeverity
     lsERROR     = 4,    // A condition that indicates a problem
     lsFATAL     = 5     // A severe condition that indicates a server problem
 };
+
+} // ripple
 
 #endif

@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_TESTS_PEERTEST_H_INCLUDED
 #define BEAST_ASIO_TESTS_PEERTEST_H_INCLUDED
 
+#include "../../../beast/unit_test/suite.h"
+
 namespace beast {
 namespace asio {
 
@@ -67,14 +69,15 @@ public:
         bool timedout () const noexcept;
 
         /** Provides a descriptive message.
-            This is suitable to pass to UnitTest::fail.
+            This is suitable to pass to suite::fail.
         */
         String message () const noexcept;
 
-        /** Report the result to a UnitTest object.
+        /** Report the result to a testsuite.
             A return value of true indicates success.
         */
-        bool report (UnitTest& test, bool reportPassingTests = false) const;
+        bool report (unit_test::suite& suite,
+            bool reportPassingTests = false) const;
 
     private:
         boost::system::error_code m_ec;
@@ -97,19 +100,21 @@ public:
         bool operator== (Results const& other) const noexcept;
         bool operator!= (Results const& other) const noexcept;
 
-        /** Report the results to a UnitTest object.
+        /** Report the results to a suite object.
             A return value of true indicates success.
             @param beginTestCase `true` to call test.beginTestCase for you
         */
-        bool report (UnitTest& test, bool beginTestCase = true) const;
+        bool report (unit_test::suite& suite, bool beginTestCase = true) const;
     };
 
     //--------------------------------------------------------------------------
 
     /** Test two peers and return the results.
     */
-    template <typename Details, typename ClientLogic, typename ServerLogic, typename ClientArg, typename ServerArg>
-    static Results run (ClientArg const& clientArg, ServerArg const& serverArg, int timeoutSeconds = defaultTimeoutSeconds)
+    template <class Details, class ClientLogic, class ServerLogic,
+              class ClientArg, class ServerArg>
+    static Results run (ClientArg const& clientArg, ServerArg const& serverArg,
+        int timeoutSeconds = defaultTimeoutSeconds)
     {
         Results results;
 
@@ -199,42 +204,40 @@ public:
         return results;
     }
 
-    template <typename Details, typename ClientLogic, typename ServerLogic, class Arg>
+    template <class Details, class ClientLogic, class ServerLogic, class Arg>
     static Results run (Arg const& arg, int timeoutSeconds = defaultTimeoutSeconds)
     {
-        return run <Details, ClientLogic, ServerLogic, Arg, Arg> (arg, arg, timeoutSeconds);
+        return run <Details, ClientLogic, ServerLogic, Arg, Arg> (
+            arg, arg, timeoutSeconds);
     }
 
     //--------------------------------------------------------------------------
 
-    /** Reports tests of Details for all known asynchronous logic combinations to a UnitTest.
-    */
-    template <typename Details, class Arg>
-    static void report_async (UnitTest& test, Arg const& arg,
+    template <class Details, class Arg>
+    static void report_async (unit_test::suite& suite, Arg const& arg,
                               int timeoutSeconds = defaultTimeoutSeconds,
                               bool beginTestCase = true)
     {
         run <Details, TestPeerLogicAsyncClient, TestPeerLogicAsyncServer>
-            (arg, timeoutSeconds).report (test, beginTestCase);
+            (arg, timeoutSeconds).report (suite, beginTestCase);
     }
 
-    /** Reports tests of Details against all known logic combinations to a UnitTest.
-    */
-    template <typename Details, class Arg>
-    static void report (UnitTest& test, Arg const& arg,
-                        int timeoutSeconds = defaultTimeoutSeconds,
-                        bool beginTestCase = true)
+    template <class Details, class Arg>
+    static
+    void
+    report (unit_test::suite& suite, Arg const& arg,
+        int timeoutSeconds = defaultTimeoutSeconds, bool beginTestCase = true)
     {
         run <Details, TestPeerLogicSyncClient, TestPeerLogicSyncServer>
-            (arg, timeoutSeconds).report (test, beginTestCase);
+            (arg, timeoutSeconds).report (suite, beginTestCase);
 
         run <Details, TestPeerLogicAsyncClient, TestPeerLogicSyncServer>
-            (arg, timeoutSeconds).report (test, beginTestCase);
+            (arg, timeoutSeconds).report (suite, beginTestCase);
 
         run <Details, TestPeerLogicSyncClient, TestPeerLogicAsyncServer>
-            (arg, timeoutSeconds).report (test, beginTestCase);
+            (arg, timeoutSeconds).report (suite, beginTestCase);
 
-        report_async <Details> (test, arg, timeoutSeconds, beginTestCase);
+        report_async <Details> (suite, arg, timeoutSeconds, beginTestCase);
     }
 };
 

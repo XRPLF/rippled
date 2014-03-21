@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 // VFALCO TODO use beast::Thread::setCurrentThreadName() or something similar.
 
 #if _MSC_VER
@@ -91,3 +93,5 @@ extern void setCallingThreadName (const char*)
 }
 #endif
 #endif
+
+} // ripple

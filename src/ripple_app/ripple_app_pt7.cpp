@@ -25,9 +25,6 @@
 
 #include "../ripple/common/seconds_clock.h"
 
-namespace ripple
-{
-
 #include "ledger/InboundLedgers.cpp"
 #include "ledger/LedgerHistory.cpp"
 #include "misc/SerializedLedger.cpp"
@@ -36,5 +33,3 @@ namespace ripple
 # include "tx/TxQueueEntry.h"
 # include "tx/TxQueue.h"
 #include "misc/NetworkOPs.cpp"
-
-}

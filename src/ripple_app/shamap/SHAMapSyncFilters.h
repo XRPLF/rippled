@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SHAMAPSYNCFILTERS_H
 #define RIPPLE_SHAMAPSYNCFILTERS_H
 
+namespace ripple {
+
 // Sync filters allow low-level SHAMapSync code to interact correctly with
 // higher-level structures such as caches and transaction stores
 
@@ -91,5 +93,7 @@ public:
 private:
     beast::uint32 mLedgerSeq;
 };
+
+} // ripple
 
 #endif

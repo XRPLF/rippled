@@ -20,8 +20,9 @@
 #ifndef RIPPLE_BASICS_LOGGEDTIMINGS_H_INCLUDED
 #define RIPPLE_BASICS_LOGGEDTIMINGS_H_INCLUDED
 
-namespace detail
-{
+namespace ripple {
+
+namespace detail {
 
 /** Template class that performs destruction of an object.
     Default implementation simply calls delete
@@ -66,7 +67,7 @@ inline double cleanElapsed (double seconds) noexcept
     return static_cast <int> ((seconds * 10 + 0.5) / 10);
 }
 
-}
+} // detail
 
 //------------------------------------------------------------------------------
 
@@ -124,5 +125,7 @@ void logTimedCall (beast::Journal::Stream stream,
                     beast::Debug::getSourceLocation (fileName, lineNumber);
     }
 }
+
+} // ripple
 
 #endif

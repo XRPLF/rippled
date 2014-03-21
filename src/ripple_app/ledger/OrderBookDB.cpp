@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 SETUP_LOG (OrderBookDB)
 
 OrderBookDB::OrderBookDB (Stoppable& parent)
@@ -337,4 +339,4 @@ void BookListeners::publish (Json::Value const& jvObj)
     }
 }
 
-// vim:ts=4
+} // ripple

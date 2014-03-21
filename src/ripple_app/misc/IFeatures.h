@@ -20,6 +20,8 @@
 #ifndef RIPPLE_IFEATURES_H
 #define RIPPLE_IFEATURES_H
 
+namespace ripple {
+
 class FeatureSet
 {
     // the status of all features requested in a given window
@@ -139,5 +141,7 @@ public:
     virtual void doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;
 
 };
+
+} // ripple
 
 #endif

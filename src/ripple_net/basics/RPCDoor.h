@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_BASICS_RPCDOOR_H_INCLUDED
 #define RIPPLE_NET_BASICS_RPCDOOR_H_INCLUDED
 
+namespace ripple {
+
 /** Listening socket for RPC requests.
 */
 class RPCDoor
@@ -29,5 +31,7 @@ public:
 
     virtual ~RPCDoor () { }
 };
+
+} // ripple
 
 #endif

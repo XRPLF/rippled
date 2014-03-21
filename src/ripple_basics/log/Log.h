@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_LOG_H_INCLUDED
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
+namespace ripple {
+
 /** RAII helper for writing to the LogSink. */
 class Log : public beast::Uncopyable
 {
@@ -75,5 +77,7 @@ private:
 // Write to the log conditionally
 //
 #define CondLog(c, s, k) if (!ShouldLog (s, k) || !(c)) do {} while(0); else Log(s, LogPartition::get <k> ())
+
+} // ripple
 
 #endif

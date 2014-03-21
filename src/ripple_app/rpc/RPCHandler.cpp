@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/unit_test/suite.h"
+
+namespace ripple {
+
 //
 // Carries out the RPC.
 //
@@ -4467,13 +4471,11 @@ Json::Value RPCInternalHandler::runHandler (const std::string& name, const Json:
 
 //------------------------------------------------------------------------------
 
-class JSONRPCTests : public beast::UnitTest
+class JSONRPC_test : public beast::unit_test::suite
 {
 public:
     void testAutoFillFees ()
     {
-        beginTestCase ("autofill_fee");
-
         RippleAddress rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
         RippleAddress rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
         RippleAddress rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
@@ -4504,14 +4506,12 @@ public:
         }
     }
 
-    void runTest ()
+    void run ()
     {
         testAutoFillFees ();
     }
-
-    JSONRPCTests () : UnitTest ("ripple", "JSONRPC")
-    {
-    }
 };
 
-static JSONRPCTests jsonRPCTests;
+BEAST_DEFINE_TESTSUITE(JSONRPC,ripple_app,ripple);
+
+} // ripple

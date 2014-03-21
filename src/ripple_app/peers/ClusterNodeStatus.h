@@ -20,6 +20,8 @@
 #ifndef RIPPLE_CLUSTERNODESTATUS_H_INCLUDED
 #define RIPPLE_CLUSTERNODESTATUS_H_INCLUDED
 
+namespace ripple {
+
 class ClusterNodeStatus
 {
 public:
@@ -67,5 +69,7 @@ private:
     beast::uint32     mLoadFee;
     beast::uint32     mReportTime;
 };
+
+} // ripple
 
 #endif

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+namespace ripple {
 
 class InboundLedgersImp
     : public InboundLedgers
@@ -401,23 +402,4 @@ InboundLedgers* InboundLedgers::New (clock_type& clock, beast::Stoppable& parent
     return new InboundLedgersImp (clock, parent, collector);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+} // ripple

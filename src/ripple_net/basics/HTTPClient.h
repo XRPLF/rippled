@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_BASICS_HTTPCLIENT_H_INCLUDED
 #define RIPPLE_NET_BASICS_HTTPCLIENT_H_INCLUDED
 
+namespace ripple {
+
 /** Provides an asynchronous HTTP client implementation with optional SSL.
 */
 class HTTPClient
@@ -69,5 +71,7 @@ public:
 
     static void sendSMS (boost::asio::io_service& io_service, const std::string& strText);
 };
+
+} // ripple
 
 #endif

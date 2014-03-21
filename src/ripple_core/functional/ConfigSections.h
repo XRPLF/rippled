@@ -20,6 +20,8 @@
 #ifndef RIPPLE_CONFIGSECTIONS_H_INCLUDED
 #define RIPPLE_CONFIGSECTIONS_H_INCLUDED
 
+namespace ripple {
+
 // VFALCO NOTE
 //
 //      Please use this style for all new sections
@@ -107,5 +109,7 @@ struct ConfigSection
 #define SECTION_WEBSOCKET_SSL_KEY       "websocket_ssl_key"
 #define SECTION_VALIDATORS              "validators"
 #define SECTION_VALIDATORS_SITE         "validators_site"
+
+} // ripple
 
 #endif

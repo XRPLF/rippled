@@ -20,8 +20,9 @@
 #ifndef RIPPLE_RANGESET_H_INCLUDED
 #define RIPPLE_RANGESET_H_INCLUDED
 
-/** A sparse set of integers.
-*/
+namespace ripple {
+
+/** A sparse set of integers. */
 // VFALCO TODO Replace with juce::SparseSet
 class RangeSet
 {
@@ -76,5 +77,7 @@ private:
     // First is lowest value in range, last is highest value in range
     Map mRanges;
 };
+
+} // ripple
 
 #endif

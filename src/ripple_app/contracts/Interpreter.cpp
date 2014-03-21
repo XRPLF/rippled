@@ -17,10 +17,7 @@
 */
 //==============================================================================
 
-/*
-We also need to charge for each op
-
-*/
+namespace ripple {
 
 namespace Script
 {
@@ -226,7 +223,6 @@ bool Interpreter::canSign (const uint160& signer)
     return (true);
 }
 
+}
 
-
-
-} // end namespace
+} // ripple

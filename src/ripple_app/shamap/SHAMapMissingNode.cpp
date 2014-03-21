@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 std::ostream& operator<< (std::ostream& out, const SHAMapMissingNode& mn)
 {
     switch (mn.getMapType ())
@@ -37,3 +39,5 @@ std::ostream& operator<< (std::ostream& out, const SHAMapMissingNode& mn)
 
     return out;
 }
+
+} // ripple

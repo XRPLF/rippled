@@ -20,8 +20,9 @@
 #ifndef RIPPLE_LOCALCREDENTIALS_H
 #define RIPPLE_LOCALCREDENTIALS_H
 
-/** Holds the cryptographic credentials identifying this instance of the server.
-*/
+namespace ripple {
+
+/** Holds the cryptographic credentials identifying this instance of the server. */
 class LocalCredentials : public beast::Uncopyable
 {
 public:
@@ -64,5 +65,6 @@ private:
     LedgerIndex mLedger; // ledger we last synched to
 };
 
+} // ripple
+
 #endif
-// vim:ts=4

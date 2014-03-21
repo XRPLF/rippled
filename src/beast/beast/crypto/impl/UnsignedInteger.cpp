@@ -5,8 +5,7 @@
 
     Portions are Copyright (c) 2013 the authors listed at the following URL,
     and/or the authors of referenced articles or incorporated external code:
-    http://en.literateprograms.org/Arbitrary-precision_integer_arithmetic_(C)?action=history&offset=20100923155004
-
+    http://en.literateprograms.org/Arbitrary-precision_integer_arithmetic_(C)
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
@@ -23,6 +22,8 @@
 
 #include "../UnsignedInteger.h"
 
+#include "../../unit_test/suite.h"
+
 namespace beast {
 
 namespace multiprecsion {
@@ -31,7 +32,7 @@ namespace multiprecsion {
 
 /*  Copyright (c) 2013 the authors listed at the following URL, and/or
     the authors of referenced articles or incorporated external code:
-    http://en.literateprograms.org/Arbitrary-precision_integer_arithmetic_(C)?action=history&offset=20100923155004
+    http://en.literateprograms.org/Arbitrary-precision_integer_arithmetic_(C)
 
     Permission is hereby granted, free of charge, to any person obtaining
     a copy of this software and associated documentation files (the
@@ -341,64 +342,5 @@ char* integer_to_string(integer x) {
 #endif
 
 }
-
-//------------------------------------------------------------------------------
-
-class UnsignedIntegerTests : public UnitTest
-{
-public:
-    UnsignedIntegerTests () : UnitTest ("UnsignedInteger", "beast")
-    {
-    }
-
-    template <unsigned int Bytes>
-    void runTest ()
-    {
-        typedef UnsignedInteger <Bytes> UInt;
-
-        String s;
-
-        s << "Bytes=" << String(Bytes);
-
-        beginTestCase (s);
-
-        UInt zero;
-        zero.fill (0);
-        expect (zero.isZero (), "should be zero");
-        expect (! zero.isNotZero (), "sould not be non-zero");
-
-        UInt one (UInt::createFromInteger (1U));
-        expect (one == UInt::createFromInteger (1U), "should be equal");
-
-        expect (! one.isZero (), "should not be zero");
-        expect (one.isNotZero (), "sould be non-zero");
-
-        expect (zero < one, "should be less");
-        expect (one > zero, "should be greater");
-        expect (zero >= zero, "should be less than or equal");
-        expect (one <= one, "should be less than or equal");
-
-        expect (zero == zero, "should be equal");
-        expect (zero != one, "should not be equal");
-
-        expect (zero == UInt::createFromInteger (0U), "should be zero");
-        expect (one  == UInt::createFromInteger (1U), "should be one");
-        expect (one  != UInt::createFromInteger (2U), "should not be two");
-
-        UInt largest = UInt::createFilled (0xff);
-
-        expect (largest > zero && largest > one, "should be greater");
-    }
-
-    void runTest()
-    {
-        runTest <16> ();
-        runTest <33> ();
-    }
-
-private:
-};
-
-static UnsignedIntegerTests unsignedIntegerTests;
 
 }

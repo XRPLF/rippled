@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SYNC_UNORDERED_MAP_H
 #define RIPPLE_SYNC_UNORDERED_MAP_H
 
+namespace ripple {
+
 // Common base
 class SyncUnorderedMap
 {
@@ -162,5 +164,8 @@ struct Destroyer <SyncUnorderedMapType <Key, Value> >
     }
 };
 
-}
+} // detail
+
+} // ripple
+
 #endif
