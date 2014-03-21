@@ -32,3 +32,4 @@
 #include "tests/bassert.test.cpp"
 #include "tests/empty_base_optimization.test.cpp"
 #include "tests/Zero.test.cpp"
+#include "tests/tagged_integer.test.cpp"
