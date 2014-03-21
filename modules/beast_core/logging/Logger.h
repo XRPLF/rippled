@@ -36,8 +36,6 @@ namespace beast
 
     The logger class also contains methods for writing messages to the debugger's
     output stream.
-
-    @see FileLogger
 */
 class BEAST_API Logger
 {

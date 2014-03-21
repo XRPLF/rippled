@@ -16,12 +16,6 @@
     <None Include="..\..\modules\beast_core\native\mac_Threads.mm">
       <Filter>beast_core\native</Filter>
     </None>
-    <None Include="..\..\modules\beast_core\zip\zlib\README">
-      <Filter>beast_core\zip\zlib</Filter>
-    </None>
-    <None Include="..\..\modules\beast_core\native\java\BeastAppActivity.java">
-      <Filter>beast_core\native\java</Filter>
-    </None>
     <None Include="..\..\.gitattributes">
       <Filter>_meta</Filter>
     </None>
@@ -90,9 +84,6 @@
     <Filter Include="beast_core\files">
       <UniqueIdentifier>{3b7d8d7e-eabc-423c-a631-2ff37bf9b9eb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_core\json">
-      <UniqueIdentifier>{abe24d69-c1d1-49e2-98a1-1e7bf760b97a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast_core\maths">
       <UniqueIdentifier>{e2339099-bb8e-4437-ae8b-d4f64ef1e3f3}</UniqueIdentifier>
     </Filter>
@@ -104,9 +95,6 @@
     </Filter>
     <Filter Include="beast_core\native">
       <UniqueIdentifier>{1d018a70-71b3-4d70-9280-02efd4f348de}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast_core\network">
-      <UniqueIdentifier>{ad675f57-9303-4712-9ff2-c7f59f959e7b}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast_core\streams">
       <UniqueIdentifier>{016d839c-4860-4bc3-8f6c-e965f50c2bfa}</UniqueIdentifier>
@@ -125,15 +113,6 @@
     </Filter>
     <Filter Include="beast_core\xml">
       <UniqueIdentifier>{a1a38659-7779-41d6-8a3c-068433c4deaf}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast_core\zip">
-      <UniqueIdentifier>{df5f5a69-5919-4a24-bbce-b3f87e4903cf}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast_core\native\java">
-      <UniqueIdentifier>{b0d206d9-c002-4be1-b503-4ad16aca838a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast_core\zip\zlib">
-      <UniqueIdentifier>{31038502-9139-4c19-bd67-8f90f08a70ca}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast_core\diagnostic">
       <UniqueIdentifier>{69e28551-92ea-420b-a465-75ed248e3b59}</UniqueIdentifier>
@@ -195,17 +174,11 @@
     <Filter Include="beast">
       <UniqueIdentifier>{92d1bb42-289a-4444-85c7-cb87540f2fff}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\mpl">
-      <UniqueIdentifier>{5904368f-a0f2-4d26-a031-8cbe4448dc3f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\net">
       <UniqueIdentifier>{5faa76ea-5691-4e63-8833-577f92991356}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast\net\impl">
       <UniqueIdentifier>{93670bc9-a748-42bd-8118-8de30c468b16}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\type_traits">
-      <UniqueIdentifier>{85158eb2-9340-4b3d-a136-f7631c7f1b7c}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast\utility">
       <UniqueIdentifier>{56d34c67-7027-44ba-9f09-4591ce4afb36}</UniqueIdentifier>
@@ -270,9 +243,6 @@
     <Filter Include="beast\asio\impl">
       <UniqueIdentifier>{30b0fdfb-02b6-47dd-bdd9-ffc1f57e1f2c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\smart_ptr\impl">
-      <UniqueIdentifier>{df4f2935-13a1-4afe-90cc-d86472ec2466}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\insight">
       <UniqueIdentifier>{174b9125-76a7-4796-be97-79c2dcc751f1}</UniqueIdentifier>
     </Filter>
@@ -315,9 +285,6 @@
     <Filter Include="beast\asio\tests">
       <UniqueIdentifier>{f2594738-6447-447b-8f51-2d42fbe8a6ee}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\workaround">
-      <UniqueIdentifier>{84acd0d5-5531-470e-b9a7-42af9003aa64}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\streams">
       <UniqueIdentifier>{899ea9a6-1969-4cde-b26d-8ad60acebfa4}</UniqueIdentifier>
     </Filter>
@@ -335,31 +302,16 @@
     <ClInclude Include="..\..\modules\beast_core\containers\ArrayAllocationBase.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\DynamicObject.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\ElementComparator.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\LinkedListPointer.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\NamedValueSet.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\OwnedArray.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\PropertySet.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\ScopedValueSetter.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\SparseSet.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\Variant.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\files\DirectoryIterator.h">
@@ -377,23 +329,11 @@
     <ClInclude Include="..\..\modules\beast_core\files\FileSearchPath.h">
       <Filter>beast_core\files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\files\MemoryMappedFile.h">
-      <Filter>beast_core\files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\files\TemporaryFile.h">
       <Filter>beast_core\files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\json\JSON.h">
-      <Filter>beast_core\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\logging\FileLogger.h">
-      <Filter>beast_core\logging</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\logging\Logger.h">
       <Filter>beast_core\logging</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\maths\BigInteger.h">
-      <Filter>beast_core\maths</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\maths\Random.h">
       <Filter>beast_core\maths</Filter>
@@ -404,20 +344,11 @@
     <ClInclude Include="..\..\modules\beast_core\memory\MemoryBlock.h">
       <Filter>beast_core\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\OptionalScopedPointer.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\misc\Result.h">
-      <Filter>beast_core\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\misc\Uuid.h">
       <Filter>beast_core\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\misc\WindowsRegistry.h">
       <Filter>beast_core\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\native\android_JNIHelpers.h">
-      <Filter>beast_core\native</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\native\BasicNativeHeaders.h">
       <Filter>beast_core\native</Filter>
@@ -431,15 +362,6 @@
     <ClInclude Include="..\..\modules\beast_core\native\win32_ComSmartPtr.h">
       <Filter>beast_core\native</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\network\MACAddress.h">
-      <Filter>beast_core\network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\network\Socket.h">
-      <Filter>beast_core\network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\streams\BufferedInputStream.h">
-      <Filter>beast_core\streams</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\streams\FileInputSource.h">
       <Filter>beast_core\streams</Filter>
     </ClInclude>
@@ -449,31 +371,16 @@
     <ClInclude Include="..\..\modules\beast_core\streams\InputStream.h">
       <Filter>beast_core\streams</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\streams\MemoryInputStream.h">
-      <Filter>beast_core\streams</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\streams\MemoryOutputStream.h">
       <Filter>beast_core\streams</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\streams\OutputStream.h">
       <Filter>beast_core\streams</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\streams\SubregionStream.h">
-      <Filter>beast_core\streams</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\text\Identifier.h">
-      <Filter>beast_core\text</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\text\LocalisedStrings.h">
-      <Filter>beast_core\text</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\text\StringArray.h">
       <Filter>beast_core\text</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\text\StringPairArray.h">
-      <Filter>beast_core\text</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\text\StringPool.h">
       <Filter>beast_core\text</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\ChildProcess.h">
@@ -497,9 +404,6 @@
     <ClInclude Include="..\..\modules\beast_core\threads\ScopedLock.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\time\PerformanceCounter.h">
-      <Filter>beast_core\time</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\time\Time.h">
       <Filter>beast_core\time</Filter>
     </ClInclude>
@@ -508,60 +412,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\xml\XmlElement.h">
       <Filter>beast_core\xml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\GZIPCompressorOutputStream.h">
-      <Filter>beast_core\zip</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\GZIPDecompressorInputStream.h">
-      <Filter>beast_core\zip</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\ZipFile.h">
-      <Filter>beast_core\zip</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\crc32.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\deflate.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\inffast.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\inffixed.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\inflate.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\inftrees.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\trees.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\zconf.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\zconf.in.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\zlib.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\zip\zlib\zutil.h">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\CacheLine.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\memory\MemoryAlignment.h">
-      <Filter>beast_core\memory</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\SpinDelay.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\diagnostic\FPUFlags.h">
-      <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\Throw.h">
       <Filter>beast_core\diagnostic</Filter>
@@ -818,32 +668,8 @@
     <ClInclude Include="..\..\beast\CStdInt.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\MPL.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\Net.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\TypeTraits.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\type_traits\IsSigned.h">
-      <Filter>beast\type_traits</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\type_traits\IntegralConstant.h">
-      <Filter>beast\type_traits</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\type_traits\IsIntegral.h">
-      <Filter>beast\type_traits</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\utility\Journal.h">
       <Filter>beast\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\Utility.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\mpl\IsCallPossible.h">
-      <Filter>beast\mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Uncopyable.h">
       <Filter>beast</Filter>
@@ -868,9 +694,6 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\http\impl\http-parser\http_parser.h">
       <Filter>beast\http\impl\http-parser</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\HTTP.h">
-      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\strings\CharacterFunctions.h">
       <Filter>beast\strings</Filter>
@@ -1088,17 +911,11 @@
     <ClInclude Include="..\..\beast\threads\ScopedWrapperContext.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\Asio.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\asio\IPAddressConversion.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\crypto\MurmurHash.h">
       <Filter>beast\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\smart_ptr\AbstractObject.h">
-      <Filter>beast\smart_ptr</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Insight.h">
       <Filter>beast</Filter>
@@ -1202,9 +1019,6 @@
     <ClInclude Include="..\..\beast\chrono\chrono_util.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\CPUMeter.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\chrono\manual_clock.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
@@ -1213,12 +1027,6 @@
     </ClInclude>
     <ClInclude Include="..\..\beast\chrono\RelativeTime.h">
       <Filter>beast\chrono</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\chrono\ScopedTimeInterval.h">
-      <Filter>beast\chrono</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\type_traits\maybe_const.h">
-      <Filter>beast\type_traits</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\utility\empty_base_optimization.h">
       <Filter>beast\utility</Filter>
@@ -1335,9 +1143,6 @@
     <ClInclude Include="..\..\beast\container\cyclic_iterator.h">
       <Filter>beast\container</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\workaround\noexcept.h">
-      <Filter>beast\workaround</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\streams\abstract_ostream.h">
       <Filter>beast\streams</Filter>
     </ClInclude>
@@ -1347,20 +1152,17 @@
     <ClInclude Include="..\..\beast\streams\basic_scoped_ostream.h">
       <Filter>beast\streams</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\utility\maybe_const.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\utility\is_call_possible.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\utility\noexcept.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\modules\beast_core\containers\DynamicObject.cpp">
-      <Filter>beast_core\containers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\NamedValueSet.cpp">
-      <Filter>beast_core\containers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\PropertySet.cpp">
-      <Filter>beast_core\containers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\containers\Variant.cpp">
-      <Filter>beast_core\containers</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\files\DirectoryIterator.cpp">
       <Filter>beast_core\files</Filter>
     </ClCompile>
@@ -1379,17 +1181,8 @@
     <ClCompile Include="..\..\modules\beast_core\files\TemporaryFile.cpp">
       <Filter>beast_core\files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\json\JSON.cpp">
-      <Filter>beast_core\json</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\logging\FileLogger.cpp">
-      <Filter>beast_core\logging</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\logging\Logger.cpp">
       <Filter>beast_core\logging</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\maths\BigInteger.cpp">
-      <Filter>beast_core\maths</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\maths\Random.cpp">
       <Filter>beast_core\maths</Filter>
@@ -1399,24 +1192,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\misc\Result.cpp">
       <Filter>beast_core\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\misc\Uuid.cpp">
-      <Filter>beast_core\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\android_Files.cpp">
-      <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\android_Misc.cpp">
-      <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\android_Network.cpp">
-      <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\android_SystemStats.cpp">
-      <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\android_Threads.cpp">
-      <Filter>beast_core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\linux_Files.cpp">
       <Filter>beast_core\native</Filter>
@@ -1445,22 +1220,10 @@
     <ClCompile Include="..\..\modules\beast_core\native\win32_Threads.cpp">
       <Filter>beast_core\native</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\MACAddress.cpp">
-      <Filter>beast_core\network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\network\Socket.cpp">
-      <Filter>beast_core\network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\streams\BufferedInputStream.cpp">
-      <Filter>beast_core\streams</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\streams\FileInputSource.cpp">
       <Filter>beast_core\streams</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\streams\InputStream.cpp">
-      <Filter>beast_core\streams</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\streams\MemoryInputStream.cpp">
       <Filter>beast_core\streams</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\streams\MemoryOutputStream.cpp">
@@ -1469,22 +1232,10 @@
     <ClCompile Include="..\..\modules\beast_core\streams\OutputStream.cpp">
       <Filter>beast_core\streams</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\streams\SubregionStream.cpp">
-      <Filter>beast_core\streams</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\Identifier.cpp">
-      <Filter>beast_core\text</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\LocalisedStrings.cpp">
-      <Filter>beast_core\text</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\text\StringArray.cpp">
       <Filter>beast_core\text</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\text\StringPairArray.cpp">
-      <Filter>beast_core\text</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\text\StringPool.cpp">
       <Filter>beast_core\text</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\threads\ChildProcess.cpp">
@@ -1492,9 +1243,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\threads\HighResolutionTimer.cpp">
       <Filter>beast_core\threads</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\time\PerformanceCounter.cpp">
-      <Filter>beast_core\time</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\time\Time.cpp">
       <Filter>beast_core\time</Filter>
@@ -1504,48 +1252,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\xml\XmlElement.cpp">
       <Filter>beast_core\xml</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\GZIPCompressorOutputStream.cpp">
-      <Filter>beast_core\zip</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\GZIPDecompressorInputStream.cpp">
-      <Filter>beast_core\zip</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\ZipFile.cpp">
-      <Filter>beast_core\zip</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\adler32.c">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\compress.c">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\crc32.c">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\deflate.c">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\infback.c">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\inffast.c">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\inflate.c">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\inftrees.c">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\trees.c">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\uncompr.c">
-      <Filter>beast_core\zip\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\zip\zlib\zutil.c">
-      <Filter>beast_core\zip\zlib</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\bsd_SystemStats.cpp">
       <Filter>beast_core\native</Filter>
@@ -1557,18 +1263,6 @@
       <Filter>beast_core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\bsd_Threads.cpp">
-      <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\diagnostic\FPUFlags.cpp">
-      <Filter>beast_core\diagnostic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\SpinDelay.cpp">
-      <Filter>beast_core\threads</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\posix_FPUFlags.cpp">
-      <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\win32_FPUFlags.cpp">
       <Filter>beast_core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\UnitTest.cpp">
@@ -1843,9 +1537,6 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\MurmurHash.cpp">
       <Filter>beast\crypto\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\smart_ptr\impl\AbstractObject.cpp">
-      <Filter>beast\smart_ptr\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\insight\Insight.cpp">
       <Filter>beast\insight</Filter>

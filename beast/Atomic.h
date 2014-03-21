@@ -28,7 +28,7 @@
 #include "CStdInt.h"
 #include "StaticAssert.h"
 
-#include "workaround/noexcept.h"
+#include "utility/noexcept.h"
 
 namespace beast {
 

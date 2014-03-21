@@ -27,7 +27,7 @@
 #include "Config.h"
 #include "CStdInt.h"
 
-#include "workaround/noexcept.h"
+#include "utility/noexcept.h"
 
 #include <cmath>
 #include <algorithm>

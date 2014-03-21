@@ -27,6 +27,8 @@
 namespace beast
 {
 
+class XmlElement;
+
 //==============================================================================
 /**
     Parses a text-based XML document and creates an XmlElement object from it.

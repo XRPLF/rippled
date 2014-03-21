@@ -24,7 +24,7 @@
 
 #include <boost/asio/buffer.hpp>
 
-#include "../workaround/noexcept.h"
+#include "../utility/noexcept.h"
 #include <cstddef>
 #include <memory>
 #include <type_traits>

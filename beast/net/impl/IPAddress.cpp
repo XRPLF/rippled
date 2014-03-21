@@ -19,7 +19,7 @@
 
 #include <typeinfo>
 
-#include "../IPAddress.h"
+#include "../IPEndpoint.h"
 #include "../detail/Parse.h"
 
 namespace beast {

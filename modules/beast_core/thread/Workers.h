@@ -96,9 +96,6 @@ public:
     */
     int numberOfCurrentlyRunningTasks () const noexcept;
 
-    /** Returns the fraction of time that the CPU is being used. */
-    double getUtilization () const;
-
     //--------------------------------------------------------------------------
 
 private:
@@ -134,7 +131,6 @@ private:
 
 private:
     Callback& m_callback;
-    CPUMeter m_usage;                            // CPU utilization across threads
     String m_threadNames;                        // The name to give each thread
     WaitableEvent m_allPaused;                   // signaled when all threads paused
     semaphore m_semaphore;                       // each pending task is 1 resource

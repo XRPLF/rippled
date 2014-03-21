@@ -53,8 +53,6 @@ ServiceQueueBase::~ServiceQueueBase()
 
 std::size_t ServiceQueueBase::poll ()
 {
-    CPUMeter::ScopedActiveTime interval (m_cpuMeter);
-
     std::size_t total (0);
     ScopedServiceThread thread (this);
     for (;;)
@@ -69,8 +67,6 @@ std::size_t ServiceQueueBase::poll ()
 
 std::size_t ServiceQueueBase::poll_one ()
 {
-    CPUMeter::ScopedActiveTime interval (m_cpuMeter);
-
     ScopedServiceThread thread (this);
     return dequeue();
 }
@@ -81,15 +77,8 @@ std::size_t ServiceQueueBase::run ()
     ScopedServiceThread thread (this);
     while (! stopped())
     {
-        {
-            CPUMeter::ScopedActiveTime interval (m_cpuMeter);
-            total += poll ();
-        }
-
-        {
-            CPUMeter::ScopedIdleTime interval (m_cpuMeter);
-            wait ();
-        }
+        total += poll ();
+        wait ();
     }
     return total;
 }
@@ -100,17 +89,10 @@ std::size_t ServiceQueueBase::run_one ()
     ScopedServiceThread (this);
     for (;;)
     {
-        {
-            CPUMeter::ScopedActiveTime interval (m_cpuMeter);
-            n = poll_one();
-            if (n != 0)
-                break;
-        }
-
-        {
-            CPUMeter::ScopedIdleTime interval (m_cpuMeter);
-            wait();
-        }
+        n = poll_one();
+        if (n != 0)
+            break;
+        wait();
     }
     return n;
 }

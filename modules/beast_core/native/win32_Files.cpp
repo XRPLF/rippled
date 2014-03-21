@@ -466,63 +466,8 @@ Result RandomAccessFile::nativeFlush ()
     return result;
 }
 
-
 //==============================================================================
-void MemoryMappedFile::openInternal (const File& file, AccessMode mode)
-{
-    bassert (mode == readOnly || mode == readWrite);
 
-    if (range.getStart() > 0)
-    {
-        SYSTEM_INFO systemInfo;
-        GetNativeSystemInfo (&systemInfo);
-
-        range.setStart (range.getStart() - (range.getStart() % systemInfo.dwAllocationGranularity));
-    }
-
-    DWORD accessMode = GENERIC_READ, createType = OPEN_EXISTING;
-    DWORD protect = PAGE_READONLY, access = FILE_MAP_READ;
-
-    if (mode == readWrite)
-    {
-        accessMode = GENERIC_READ | GENERIC_WRITE;
-        createType = OPEN_ALWAYS;
-        protect = PAGE_READWRITE;
-        access = FILE_MAP_ALL_ACCESS;
-    }
-
-    HANDLE h = CreateFile (file.getFullPathName().toWideCharPointer(), accessMode, FILE_SHARE_READ, 0,
-                           createType, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, 0);
-
-    if (h != INVALID_HANDLE_VALUE)
-    {
-        fileHandle = (void*) h;
-
-        HANDLE mappingHandle = CreateFileMapping (h, 0, protect, (DWORD) (range.getEnd() >> 32), (DWORD) range.getEnd(), 0);
-
-        if (mappingHandle != 0)
-        {
-            address = MapViewOfFile (mappingHandle, access, (DWORD) (range.getStart() >> 32),
-                                     (DWORD) range.getStart(), (SIZE_T) range.getLength());
-
-            if (address == nullptr)
-                range = Range<int64>();
-
-            CloseHandle (mappingHandle);
-        }
-    }
-}
-
-MemoryMappedFile::~MemoryMappedFile()
-{
-    if (address != nullptr)
-        UnmapViewOfFile (address);
-
-    if (fileHandle != nullptr)
-        CloseHandle ((HANDLE) fileHandle);
-}
-
-//==============================================================================
 int64 File::getSize() const
 {
     WIN32_FILE_ATTRIBUTE_DATA attributes;
