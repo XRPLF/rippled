@@ -22,6 +22,11 @@
 //==============================================================================
 
 #include "../Thread.h"
+#include "../../smart_ptr/SharedObject.h"
+#include "../../smart_ptr/SharedPtr.h"
+#include "../../../modules/beast_core/time/Time.h"
+
+#include <cassert>
 
 namespace beast {
 
@@ -44,7 +49,7 @@ Thread::~Thread()
        To avoid this type of nastiness, always make sure you call stopThread() before or during
        your subclass's destructor.
     */
-    check_precondition (! isThreadRunning());
+    assert (! isThreadRunning());
 
     stopThread ();
 }

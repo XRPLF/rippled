@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-namespace beast
-{
+#include "../../../beast/unit_test/suite.h"
+
+namespace beast {
 
 unsigned char const LexicalCastUtilities::s_digitTable [256] = {
    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 0xFF - 0x07
@@ -57,13 +58,9 @@ unsigned char const LexicalCastUtilities::s_digitTable [256] = {
 
 //------------------------------------------------------------------------------
 
-class LexicalCastTests : public UnitTest
+class LexicalCast_test : public unit_test::suite
 {
 public:
-    LexicalCastTests () : UnitTest ("LexicalCast", "beast")
-    {
-    }
-
     template <class IntType>
     static IntType nextRandomInt (Random& r)
     {
@@ -74,7 +71,7 @@ public:
     void testInteger (IntType in)
     {
         String s;
-        IntType out;
+        IntType out (in+1);
 
         expect (lexicalCastChecked (s, in));
         expect (lexicalCastChecked (out, s));
@@ -85,9 +82,10 @@ public:
     void testIntegers (Random& r)
     {
         {
-            String s;
-            s << "random " << typeid (IntType).name ();
-            beginTestCase (s);
+            std::stringstream ss;
+            ss <<
+                "random " << typeid (IntType).name ();
+            testcase (ss.str());
 
             for (int i = 0; i < 1000; ++i)
             {
@@ -97,16 +95,17 @@ public:
         }
 
         {
-            String s;
-            s << "numeric_limits <" << typeid (IntType).name () << ">";
-            beginTestCase (s);
+            std::stringstream ss;
+            ss <<
+                "numeric_limits <" << typeid (IntType).name () << ">";
+            testcase (ss.str());
 
             testInteger (std::numeric_limits <IntType>::min ());
             testInteger (std::numeric_limits <IntType>::max ());
         }
     }
 
-    void runTest ()
+    void run()
     {
         int64 const seedValue = 50;
 
@@ -123,6 +122,6 @@ public:
     }
 };
 
-static LexicalCastTests lexicalCastTests;
+BEAST_DEFINE_TESTSUITE(LexicalCast,beast_core,beast);
 
-}  // namespace beast
+} // beast

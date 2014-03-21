@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include "../PropertyStream.h"
+#include "../../unit_test/suite.h"
 
 #include <limits>
 #include <iostream>
@@ -606,7 +607,7 @@ void PropertyStream::add (long double value)
 
 //------------------------------------------------------------------------------
 
-class PropertyStreamTests : public UnitTest
+class PropertyStream_test : public unit_test::suite
 {
 public:
     typedef PropertyStream::Source Source;
@@ -622,8 +623,8 @@ public:
         }
         catch (...)
         {
-            failException ();
-        }
+            fail ("unhandled exception");;
+       }
     }
 
     void test_peel_leading_slash (std::string s, std::string const& expected,
@@ -637,7 +638,7 @@ public:
         }
         catch(...)
         {
-            failException ();
+            fail ("unhandled exception");;
         }
     }
 
@@ -652,7 +653,7 @@ public:
         }
         catch (...)
         {
-            failException ();
+            fail ("unhandled exception");;
         }  
     }
 
@@ -665,7 +666,7 @@ public:
         }
         catch (...)
         {
-            failException ();
+            fail ("unhandled exception");;
         }
     }
 
@@ -679,7 +680,7 @@ public:
         }
         catch (...)
         {
-            failException ();
+            fail ("unhandled exception");;
         }
     }
 
@@ -693,7 +694,7 @@ public:
         }
         catch(...)
         {
-            failException ();
+            fail ("unhandled exception");;
         }
     }
 
@@ -708,11 +709,11 @@ public:
         }
         catch (...)
         {
-            failException ();
+            fail ("unhandled exception");;
         }
     }
 
-    void runTest()
+    void run()
     {
         Source a ("a");
         Source b ("b");
@@ -733,19 +734,19 @@ public:
         b.add ( e );
         d.add ( f );
 
-        beginTestCase ("peel_name");
+        testcase ("peel_name");
         test_peel_name ("a", "a", "");
         test_peel_name ("foo/bar", "foo", "bar");
         test_peel_name ("foo/goo/bar", "foo", "goo/bar");
         test_peel_name ("", "", "");
 
-        beginTestCase ("peel_leading_slash");
+        testcase ("peel_leading_slash");
         test_peel_leading_slash ("foo/", "foo/", false);
         test_peel_leading_slash ("foo", "foo", false);
         test_peel_leading_slash ("/foo/", "foo/", true);
         test_peel_leading_slash ("/foo", "foo", true);
 
-        beginTestCase ("peel_trailing_slashstar");
+        testcase ("peel_trailing_slashstar");
         test_peel_trailing_slashstar ("/foo/goo/*", "/foo/goo", true);
         test_peel_trailing_slashstar ("foo/goo/*", "foo/goo", true);
         test_peel_trailing_slashstar ("/foo/goo/", "/foo/goo", false);
@@ -757,13 +758,13 @@ public:
         test_peel_trailing_slashstar ("**", "*", true);
         test_peel_trailing_slashstar ("*/", "*", false);
 
-        beginTestCase ("find_one");
+        testcase ("find_one");
         test_find_one (a, &b, "b");
         test_find_one (a, nullptr, "d");
         test_find_one (b, &e, "e");
         test_find_one (d, &f, "f");
 
-        beginTestCase ("find_path");
+        testcase ("find_path");
         test_find_path (a, "a", nullptr); 
         test_find_path (a, "e", nullptr); 
         test_find_path (a, "a/b", nullptr);
@@ -774,14 +775,14 @@ public:
         test_find_path (a, "b/e", &e);
         test_find_path (a, "b/d/f", &f);
         
-        beginTestCase ("find_one_deep");
+        testcase ("find_one_deep");
         test_find_one_deep (a, "z", nullptr);
         test_find_one_deep (a, "g", &g);
         test_find_one_deep (a, "b", &b);
         test_find_one_deep (a, "d", &d);
         test_find_one_deep (a, "f", &f);
 
-        beginTestCase ("find");
+        testcase ("find");
         test_find (a, "",     &a, false);
         test_find (a, "*",    &a, true);
         test_find (a, "/b",   &b, false);
@@ -798,14 +799,9 @@ public:
         test_find (a, "/d*",  nullptr, true);
         test_find (a, "/d/*", nullptr, true);
     }
-
-    PropertyStreamTests () 
-        : UnitTest ("PropertyStream", "beast")
-    {
-    }
 };
 
-static PropertyStreamTests propertyStreamTests;
+BEAST_DEFINE_TESTSUITE(PropertyStream,utility,beast);
 
 }
 

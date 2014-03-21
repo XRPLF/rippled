@@ -21,8 +21,9 @@
 */
 //==============================================================================
 
-namespace beast
-{
+#include "../../../beast/unit_test/suite.h"
+
+namespace beast {
 
 Random::Random (const int64 seedValue) noexcept
     : seed (seedValue)
@@ -122,15 +123,11 @@ void Random::fillBitsRandomly (void* const buffer, size_t bytes)
 
 //==============================================================================
 
-class RandomTests  : public UnitTest
+class Random_test  : public unit_test::suite
 {
 public:
-    RandomTests() : UnitTest ("Random", "beast") {}
-
-    void runTest()
+    void run()
     {
-        beginTestCase ("Random");
-
         for (int j = 10; --j >= 0;)
         {
             Random r;
@@ -153,6 +150,6 @@ public:
     }
 };
 
-static RandomTests randomTests;
+BEAST_DEFINE_TESTSUITE(Random,beast_core,beast);
 
-}  // namespace beast
+} // beast

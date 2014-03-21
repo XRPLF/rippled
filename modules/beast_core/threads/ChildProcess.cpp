@@ -61,13 +61,11 @@ String ChildProcess::readAllProcessOutput()
 
 //==============================================================================
 
-class ChildProcessTests  : public UnitTest
+class ChildProcess_test  : public unit_test::suite
 {
 public:
-    void runTest()
+    void run()
     {
-        beginTestCase ("Child Processes");
-
       #if BEAST_WINDOWS || BEAST_MAC || BEAST_LINUX
         ChildProcess p;
 
@@ -87,17 +85,13 @@ public:
         //expect (output.isNotEmpty());
       #endif
     }
-
-    // VFALCO NOTE I had to disable this test because it was leaving
-    //             behind a zombie process and making other unit tests fail.
-    //             It doesnt happen with a debugger attached, or if the
-    //             unit test is run individually.
-    //
-    ChildProcessTests() : UnitTest ("ChildProcess", "beast", runManual)
-    {
-    }
 };
 
-static ChildProcessTests childProcessTests;
+// VFALCO NOTE I had to disable this test because it was leaving
+//             behind a zombie process and making other unit tests fail.
+//             It doesnt happen with a debugger attached, or if the
+//             unit test is run individually.
+//
+BEAST_DEFINE_TESTSUITE_MANUAL(ChildProcess,beast_core,beast);
 
-}  // namespace beast
+} // beast

@@ -21,9 +21,9 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "../../modules/beast_core/beast_core.h" // for UnitTest
-
-#include "impl/BinaryEncoding.cpp"
 #include "impl/MurmurHash.cpp"
 #include "impl/Sha256.cpp"
 #include "impl/UnsignedInteger.cpp"
+
+#include "tests/BinaryEncoding.test.cpp"
+#include "tests/UnsignedInteger.test.cpp"

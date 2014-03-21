@@ -20,11 +20,11 @@
 #ifndef BEAST_INSIGHT_GROUPS_H_INCLUDED
 #define BEAST_INSIGHT_GROUPS_H_INCLUDED
 
-#include <memory>
-#include <string>
-
 #include "Collector.h"
 #include "Group.h"
+
+#include <memory>
+#include <string>
 
 namespace beast {
 namespace insight {
@@ -37,9 +37,12 @@ public:
 
     /** Find or create a new collector with a given name. */
     /** @{ */
-    virtual Group::ptr const& get (std::string const& name) = 0;
+    virtual
+    Group::ptr const&
+    get (std::string const& name) = 0;
 
-    Group::ptr const& operator[] (std::string const& name)
+    Group::ptr const&
+    operator[] (std::string const& name)
     {
         return get (name);
     }

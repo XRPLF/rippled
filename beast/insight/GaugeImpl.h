@@ -20,8 +20,6 @@
 #ifndef BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
 #define BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
 
-#include <memory>
-
 #include "BaseImpl.h"
 
 namespace beast {
@@ -34,8 +32,8 @@ class GaugeImpl
     , public BaseImpl
 {
 public:
-    typedef uint64  value_type;
-    typedef int64   difference_type;
+    typedef std::uint64_t value_type;
+    typedef std::int64_t difference_type;
 
     virtual ~GaugeImpl () = 0;
     virtual void set (value_type value) = 0;

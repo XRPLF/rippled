@@ -20,11 +20,8 @@
 #ifndef BEAST_UNITTESTUTILITIES_H_INCLUDED
 #define BEAST_UNITTESTUTILITIES_H_INCLUDED
 
-namespace beast
-{
-
-namespace UnitTestUtilities
-{
+namespace beast {
+namespace UnitTestUtilities {
 
 /** Fairly shuffle an array pseudo-randomly.
 */
@@ -102,39 +99,7 @@ public:
     HeapBlock <char> data;
 };
 
-//------------------------------------------------------------------------------
-
-/** Format unit test results in JUnit XML format.
-
-    The output can be used directly with the Jenkins CI server with
-    the appropriate JUnit plugin.
-
-    JUnit FAQ:      http://junit.sourceforge.net/doc/faq/faq.htm
-
-    Jenkins Home:   http://jenkins-ci.org/
-
-    @see UnitTest, UnitTests
-*/
-
-class JUnitXMLFormatter : public Uncopyable
-{
-public:
-    JUnitXMLFormatter (UnitTests const& tests);
-
-    String createDocumentString ();
-
-private:
-    static String timeToString (Time const& time);
-    static String secondsToString (double seconds);
-
-private:
-    UnitTests const& m_tests;
-    String const m_currentTime;
-    String const m_hostName;
-};
-
-}
-
-}  // namespace beast
+} // UnitTestUtilities
+} // beast
 
 #endif

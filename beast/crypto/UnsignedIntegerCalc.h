@@ -20,6 +20,7 @@
 #ifndef BEAST_CRYPTO_UNSIGNEDINTEGERCALC_H_INCLUDED
 #define BEAST_CRYPTO_UNSIGNEDINTEGERCALC_H_INCLUDED
 
+#include <cassert>
 #include <cstdint>
 
 namespace beast {
@@ -155,7 +156,7 @@ public:
     */
     UnsignedIntegerCalc& operator= (UnsignedIntegerCalc const& other)
     {
-        bassert (other.size() <= size());
+        assert (other.size() <= size());
         size_type n (size());
         UInt* dest (m_values + size());
         for (; n-- > other.size();)
@@ -335,7 +336,7 @@ public:
             }
             *lhs++ = UInt (part);
         }
-        bassert (carry == 0); // overflow
+        assert (carry == 0); // overflow
         return *this;
     }
 
@@ -359,7 +360,7 @@ public:
             carry = part >> numBits;
             *lhs = UInt (part & maxUInt);
         }
-        bassert (carry == 0); // overflow
+        assert (carry == 0); // overflow
         return *this;
     }
 

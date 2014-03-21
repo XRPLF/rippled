@@ -31,12 +31,12 @@
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/unordered_set.hpp>
 
-#include "../../cxx14/algorithm.h"
-#include "../../cxx14/type_traits.h"
+#include "../../cxx14/algorithm.h" // <algorithm>
 #include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <memory>
+#include "../../cxx14/type_traits.h" // <type_traits>
 #include <utility>
 
 /*

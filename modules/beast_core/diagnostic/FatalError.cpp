@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-namespace beast
-{
+#include "../../../beast/unit_test/suite.h"
+
+namespace beast {
 
 //
 // FatalError::Reporter
@@ -112,26 +113,16 @@ FatalError::FatalError (char const* message, char const* fileName, int lineNumbe
 
 //------------------------------------------------------------------------------
 
-// Yes even this class can have a unit test. It's manually triggered though.
-//
-class FatalErrorTests : public UnitTest
+class FatalError_test : public unit_test::suite
 {
 public:
-    FatalErrorTests () : UnitTest ("FatalError", "beast", runManual)
+    void run ()
     {
-    }
-
-    void runTest ()
-    {
-        beginTestCase ("raise");
-
-        // We don't really expect the program to run after this
-        // but the unit test is here so you can manually test it.
         int shouldBeZero (1);
         check_invariant (shouldBeZero == 0);
     }
 };
 
-static FatalErrorTests fatalErrorTests;
+BEAST_DEFINE_TESTSUITE_MANUAL(FatalError,beast_core,beast);
 
-}  // namespace beast
+} // beast

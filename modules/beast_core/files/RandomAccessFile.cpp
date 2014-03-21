@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-namespace beast
-{
+#include "../../../beast/unit_test/suite.h"
+
+namespace beast {
 
 RandomAccessFile::RandomAccessFile () noexcept
     : fileHandle (nullptr)
@@ -101,13 +102,9 @@ Result RandomAccessFile::flush ()
 
 //------------------------------------------------------------------------------
 
-class RandomAccessFileTests : public UnitTest
+class RandomAccessFile_test : public unit_test::suite
 {
 public:
-    RandomAccessFileTests () : UnitTest ("RandomAccessFile", "beast")
-    {
-    }
-
     enum
     {
         maxPayload = 8192
@@ -221,7 +218,9 @@ public:
 
         int const seedValue = 50;
 
-        beginTestCase (String ("numRecords=") + String (numRecords));
+        std::stringstream ss;
+        ss << numRecords << " records";
+        testcase (ss.str());
 
         // Calculate the path
         File const path (File::createTempFile ("RandomAccessFile"));
@@ -264,14 +263,12 @@ public:
         }
     }
 
-    void runTest ()
+    void run ()
     {
         testFile (10000);
     }
-
-private:
 };
 
-static RandomAccessFileTests randomAccessFileTests;
+BEAST_DEFINE_TESTSUITE(RandomAccessFile,beast_core,beast);
 
-}  // namespace beast
+} // beast

@@ -17,9 +17,14 @@
 */
 //==============================================================================
 
-#include <memory>
+#if BEAST_INCLUDE_BEASTCONFIG
+#include "../../BeastConfig.h"
+#endif
 
 #include "../DynamicBuffer.h"
+
+#include <algorithm>
+#include <memory>
 
 namespace beast {
 

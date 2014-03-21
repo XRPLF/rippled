@@ -17,7 +17,14 @@
 */
 //==============================================================================
 
+#if BEAST_INCLUDE_BEASTCONFIG
+#include "../../BeastConfig.h"
+#endif
+
 #include "../IPAddressV4.h"
+#include "../detail/Parse.h"
+
+#include <sstream>
 
 namespace beast {
 namespace IP {

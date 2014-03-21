@@ -21,6 +21,10 @@
 */
 //==============================================================================
 
+#if BEAST_INCLUDE_BEASTCONFIG
+#include "../../BeastConfig.h"
+#endif
+
 #include "../CharacterFunctions.h"
 
 #include <cctype>

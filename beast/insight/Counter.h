@@ -20,10 +20,10 @@
 #ifndef BEAST_INSIGHT_COUNTER_H_INCLUDED
 #define BEAST_INSIGHT_COUNTER_H_INCLUDED
 
-#include <memory>
-
 #include "Base.h"
 #include "CounterImpl.h"
+
+#include <memory>
 
 namespace beast {
 namespace insight {
@@ -60,32 +60,58 @@ public:
 
     /** Increment the counter. */
     /** @{ */
-    void increment (value_type amount) const
+    void
+    increment (value_type amount) const
     {
         if (m_impl)
             m_impl->increment (amount);
     }
 
-    Counter const& operator+= (value_type amount) const
-        { increment (amount); return *this; }
+    Counter const&
+    operator+= (value_type amount) const
+    {
+        increment (amount);
+        return *this;
+    }
 
-    Counter const& operator-= (value_type amount) const
-        { increment (-amount); return *this; }
+    Counter const&
+    operator-= (value_type amount) const
+    {
+        increment (-amount);
+        return *this;
+    }
 
-    Counter const& operator++ () const
-        { increment (1); return *this; }
+    Counter const&
+    operator++ () const
+    {
+        increment (1);
+        return *this;
+    }
 
-    Counter const& operator++ (int) const
-        { increment (1); return *this; }
+    Counter const&
+    operator++ (int) const
+    {
+        increment (1);
+        return *this;
+    }
 
-    Counter const& operator-- () const
-        { increment (-1); return *this; }
+    Counter const&
+    operator-- () const
+    {
+        increment (-1);
+        return *this;
+    }
 
-    Counter const& operator-- (int) const
-        { increment (-1); return *this; }
+    Counter const&
+    operator-- (int) const
+    {
+        increment (-1);
+        return *this;
+    }
     /** @} */
 
-    std::shared_ptr <CounterImpl> const& impl () const
+    std::shared_ptr <CounterImpl> const&
+    impl () const
     {
         return m_impl;
     }

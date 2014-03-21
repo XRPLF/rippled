@@ -17,14 +17,15 @@
 */
 //==============================================================================
 
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include "../../unit_test/suite.h"
+
 #include "../buffer_view.h"
 
 #include "../../cxx14/algorithm.h" // <algorithm>
 
 namespace beast {
 
-class buffer_view_Tests : public UnitTest
+class buffer_view_test : public unit_test::suite
 {
 public:
     // Returns `true` if the iterator distance matches the size
@@ -153,7 +154,7 @@ public:
     // Test empty containers
     void testEmpty()
     {
-        beginTestCase ("empty");
+        testcase ("empty");
 
         buffer_view <char> v1;
         checkEmpty (v1);
@@ -239,11 +240,11 @@ public:
 
     void testConstruct()
     {
-        beginTestCase ("std::vector <char>");
+        testcase ("std::vector <char>");
         testConstruct (
             std::vector <char> ({'h', 'e', 'l', 'l', 'o'}));
 
-        beginTestCase ("std::string <char>");
+        testcase ("std::string <char>");
         testConstruct (
             std::basic_string <char> ("hello"));
     }
@@ -252,7 +253,7 @@ public:
 
     void testCoerce()
     {
-        beginTestCase ("coerce");
+        testcase ("coerce");
 
         std::string const s ("hello");
         const_buffer_view <unsigned char> v (s);
@@ -264,7 +265,7 @@ public:
 
     void testAssign()
     {
-        beginTestCase ("testAssign");
+        testcase ("testAssign");
         std::vector <int> v1({1, 2, 3});
         buffer_view<int> r1(v1);
         std::vector <int> v2({4, 5, 6, 7});
@@ -305,19 +306,15 @@ public:
     static_assert (std::is_nothrow_move_assignable <
         buffer_view <int>>::value, "");
 
-    void runTest()
+    void run()
     {
         testEmpty();
         testConstruct();
         testCoerce();
         testAssign();
     }
-
-    buffer_view_Tests() : UnitTest ("buffer_view", "beast")
-    {
-    }
 };
 
-static buffer_view_Tests buffer_view_tests;
+BEAST_DEFINE_TESTSUITE(buffer_view,container,beast);
 
 }

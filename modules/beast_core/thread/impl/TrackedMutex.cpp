@@ -17,11 +17,8 @@
 */
 //==============================================================================
 
-namespace beast
-{
-
-namespace detail
-{
+namespace beast {
+namespace detail {
 
 // Example:
 //
@@ -74,7 +71,7 @@ TrackedMutexBasics::Lists& TrackedMutexBasics::getLists ()
 
 //------------------------------------------------------------------------------
 
-} // namespace detail
+} // detail
 
 //==============================================================================
 
@@ -478,88 +475,4 @@ String TrackedMutex::makeSourceLocation (char const* fileName, int lineNumber) n
     return sourceLocation;
 }
 
-//==============================================================================
-
-namespace detail
-{
-
-class TrackedMutexUnitTests : public UnitTest
-{
-public:
-    typedef TrackedMutexType <CriticalSection> Mutex;
-
-    struct LockingThread : public Thread
-    {
-        Mutex& m_m1;
-        Mutex& m_m2;
-        WaitableEvent m_start;
-
-        explicit LockingThread (String name, Mutex& m1, Mutex& m2)
-            : Thread (name)
-            , m_m1 (m1)
-            , m_m2 (m2)
-        {
-            startThread ();
-        }
-
-        void waitForStart ()
-        {
-            m_start.wait ();
-        }
-
-        void run ()
-        {
-            Mutex::ScopedLockType l2 (m_m2, __FILE__, __LINE__);
-            {
-                Mutex::ScopedLockType l1 (m_m1, __FILE__, __LINE__);
-                m_start.signal ();
-                {
-                    Mutex::ScopedUnlockType ul1 (m_m1, __FILE__, __LINE__);
-                    this->wait ();
-                }
-            }
-        }
-    };
-
-    //--------------------------------------------------------------------------
-
-    void report (String name)
-    {
-        beginTestCase (name);
-        StringArray report;
-        TrackedMutex::generateGlobalBlockedReport (report);
-        logReport (report);
-        pass ();
-    }
-
-    void runTest ()
-    {
-        Mutex m1 ("M1", __FILE__, __LINE__);
-        Mutex m2 ("M2", __FILE__, __LINE__);
-        
-        {
-            Mutex::ScopedLockType l1 (m1, __FILE__, __LINE__);
-            LockingThread t1 ("T1", m1, m2);
-            {
-                Mutex::ScopedUnlockType ul1 (m1, __FILE__, __LINE__);
-                t1.waitForStart ();
-            }
-            report ("#1");
-            {
-                t1.notify ();
-                Mutex::ScopedUnlockType ul1 (m1, __FILE__, __LINE__);
-                t1.waitForThreadToExit ();
-            }
-        }
-    }
-
-    TrackedMutexUnitTests () : UnitTest ("TrackedMutex", "beast", runManual)
-    {
-    }
-};
-
-static TrackedMutexUnitTests trackedMutexUnitTests;
-
-} // namespace detail
-
-}  // namespace beast
+} // beast

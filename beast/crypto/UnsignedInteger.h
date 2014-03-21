@@ -23,6 +23,8 @@
 #include "UnsignedIntegerCalc.h"
 #include "MurmurHash.h"
 
+#include "../../modules/beast_core/beast_core.h" // FIX ASAP
+
 #include <cstdint>
 #include <memory>
 

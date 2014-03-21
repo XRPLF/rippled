@@ -21,8 +21,9 @@
 */
 //==============================================================================
 
-namespace beast
-{
+#include "../../../beast/unit_test/suite.h"
+
+namespace beast {
 
 // We need to make a shared singleton or else there are
 // issues with the leak detector and order of detruction.
@@ -904,14 +905,19 @@ File File::createTempFile (const String& fileNameEnding)
 
 //==============================================================================
 
-class FileTests : public UnitTest
+class File_test : public unit_test::suite
 {
 public:
-    FileTests() : UnitTest ("File", "beast") {}
-
-    void runTest()
+    template <class T1, class T2>
+    bool
+    expectEquals (T1 const& t1, T2 const& t2)
     {
-        beginTestCase ("Reading");
+        return expect (t1 == t2);
+    }
+
+    void run()
+    {
+        testcase ("Reading");
 
         const File home (File::getSpecialLocation (File::userHomeDirectory));
         const File temp (File::getSpecialLocation (File::tempDirectory));
@@ -950,7 +956,7 @@ public:
             expect (numRootsExisting > 0);
         }
 
-        beginTestCase ("Writing");
+        testcase ("Writing");
 
         File demoFolder (temp.getChildFile ("Beast UnitTests Temp Folder.folder"));
         expect (demoFolder.deleteRecursively());
@@ -991,7 +997,7 @@ public:
         expect (tempFile.exists());
         expect (tempFile.getSize() == 10);
         expect (std::abs ((int) (tempFile.getLastModificationTime().toMilliseconds() - Time::getCurrentTime().toMilliseconds())) < 3000);
-        expectEquals (tempFile.loadFileAsString(), String ("0123456789"));
+        expect (tempFile.loadFileAsString() == String ("0123456789"));
         expect (! demoFolder.containsSubDirectories());
 
         expectEquals (tempFile.getRelativePathFrom (demoFolder.getParentDirectory()), demoFolder.getFileName() + File::separatorString + tempFile.getFileName());
@@ -1036,7 +1042,7 @@ public:
             expect (tempFile.getSize() == 10);
         }
 
-        beginTestCase ("More writing");
+        testcase ("More writing");
 
         expect (tempFile.appendData ("abcdefghij", 10));
         expect (tempFile.getSize() == 20);
@@ -1058,6 +1064,6 @@ public:
     }
 };
 
-static FileTests fileTests;
+BEAST_DEFINE_TESTSUITE (File,beast_core,beast);
 
-}  // namespace beast
+} // beast

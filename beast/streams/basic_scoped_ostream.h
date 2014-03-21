@@ -21,6 +21,7 @@
 #define BEAST_STREAMS_BASIC_SCOPED_OSTREAM_H_INCLUDED
 
 #include "../cxx14/memory.h" // <memory>
+
 #include <functional>
 #include <memory>
 #include <sstream>

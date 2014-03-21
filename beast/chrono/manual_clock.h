@@ -53,12 +53,14 @@ public:
         return m_now;
     }
 
+#if 0
     std::string to_string (time_point const& tp) const
     {
         std::stringstream ss;
         ss << tp.time_since_epoch() << " from start";
         return ss.str ();
     }
+#endif
 
     /** Set the current time of the manual clock.
         Precondition:

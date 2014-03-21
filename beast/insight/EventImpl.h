@@ -20,8 +20,6 @@
 #ifndef BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
 #define BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
 
-#include <memory>
-
 #include "BaseImpl.h"
 
 namespace beast {

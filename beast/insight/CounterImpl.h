@@ -20,8 +20,6 @@
 #ifndef BEAST_INSIGHT_COUNTERIMPL_H_INCLUDED
 #define BEAST_INSIGHT_COUNTERIMPL_H_INCLUDED
 
-#include <memory>
-
 #include "BaseImpl.h"
 
 namespace beast {
@@ -34,7 +32,7 @@ class CounterImpl
     , public BaseImpl
 {
 public:
-    typedef int64 value_type;
+    typedef std::int64_t value_type;
    
     virtual ~CounterImpl () = 0;
     virtual void increment (value_type amount) = 0;

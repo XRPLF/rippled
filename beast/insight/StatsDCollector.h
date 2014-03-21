@@ -22,6 +22,7 @@
 
 #include "Collector.h"
 
+#include "../utility/Journal.h"
 #include "../net/IPEndpoint.h"
 
 namespace beast {
@@ -39,7 +40,9 @@ public:
         @param prefix A string pre-pended before each metric name.
         @param journal Destination for logging output.
     */
-    static std::shared_ptr <StatsDCollector> New (IP::Endpoint const& address,
+    static
+    std::shared_ptr <StatsDCollector>
+    New (IP::Endpoint const& address,
         std::string const& prefix, Journal journal);
 };
 

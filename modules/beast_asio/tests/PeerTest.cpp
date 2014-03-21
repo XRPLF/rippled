@@ -65,11 +65,14 @@ String PeerTest::Result::message () const noexcept
     return m_message;
 }
 
-bool PeerTest::Result::report (UnitTest& test, bool reportPassingTests) const
+bool PeerTest::Result::report (unit_test::suite& suite,
+    bool reportPassingTests) const
 {
-    bool const success = test.unexpected (failed (), message ());
+    bool const success = suite.expect (! failed (),
+        message ().toStdString());
     if (reportPassingTests && success)
-        test.logMessage (String ("pass ") + message());
+        suite.log <<
+            "pass " + message().toStdString();
     return success;
 }
 
@@ -90,14 +93,15 @@ bool PeerTest::Results::operator!= (Results const& other) const noexcept
     return (client != other.client) || (server != other.server);
 }
 
-bool PeerTest::Results::report (UnitTest& test, bool beginTestCase) const
+bool PeerTest::Results::report (unit_test::suite& suite,
+        bool beginTestCase) const
 {
     if (beginTestCase)
-        test.beginTestCase (name);
+        suite.testcase (name.toStdString());
     bool success = true;
-    if (! client.report (test))
+    if (! client.report (suite))
         success = false;
-    if (! server.report (test))
+    if (! server.report (suite))
         success = false;
     return success;
 }

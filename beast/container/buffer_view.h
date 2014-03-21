@@ -22,6 +22,7 @@
 
 #include "../Config.h"
 
+#include <array>
 #include "../cxx14/algorithm.h" // <algorithm>
 #include <cstddef>
 #include <iterator>

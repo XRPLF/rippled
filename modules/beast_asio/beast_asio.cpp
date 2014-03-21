@@ -51,8 +51,6 @@
 #include "tests/TestPeerLogicAsyncClient.cpp"
 #include "tests/TestPeerUnitTests.cpp"
 
-#include "system/BoostUnitTests.cpp"
-
 #include "http/HTTPParser.cpp"
 #include "http/HTTPRequestParser.cpp"
 #include "http/HTTPResponseParser.cpp"

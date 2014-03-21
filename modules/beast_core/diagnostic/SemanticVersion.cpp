@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-namespace beast
-{
+#include "../../../beast/unit_test/suite.h"
+
+namespace beast {
 
 SemanticVersion::SemanticVersion ()
     : majorVersion (0)
@@ -288,13 +289,9 @@ bool SemanticVersion::chopIdentifiers (StringArray* value, bool allowLeadingZero
 
 //------------------------------------------------------------------------------
 
-class SemanticVersionTests : public UnitTest
+class SemanticVersion_test: public unit_test::suite
 {
 public:
-    SemanticVersionTests () : UnitTest ("SemanticVersion", "beast")
-    {
-    }
-
     void checkPass (String const& input, bool shouldPass = true)
     {
         SemanticVersion v;
@@ -377,7 +374,7 @@ public:
 
     void testParse ()
     {
-        beginTestCase ("parse");
+        testcase ("parse");
 
         check ("0.0.0");
         check ("1.2.3");
@@ -511,7 +508,7 @@ public:
         checkLess ("0.9.9", "1.0.0");
     }
 
-    void runTest ()
+    void run ()
     {
         testParse ();
         testValues ();
@@ -519,6 +516,6 @@ public:
     }
 };
 
-static SemanticVersionTests semanticVersionTests;
+BEAST_DEFINE_TESTSUITE(SemanticVersion,beast_core,beast);
 
-}  // namespace beast
+} // beast

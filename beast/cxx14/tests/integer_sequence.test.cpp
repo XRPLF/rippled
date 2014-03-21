@@ -23,12 +23,12 @@
 
 #include "../utility.h"
 
-#include "../../../modules/beast_core/beast_core.h" // for UnitTest
+#include "../../unit_test/suite.h"
 
 namespace beast {
 namespace asio {
 
-class integer_sequence_Tests : public UnitTest
+class integer_sequence_test : public unit_test::suite
 {
 public:
     template <class AtContainer, class T, T... I>
@@ -41,10 +41,8 @@ public:
         return std::make_tuple (std::get <I> (t)...);
     }
 
-    void runTest()
+    void run()
     {
-        beginTestCase ("call");
-
         // Code from
         // http://llvm.org/svn/llvm-project/libcxx/trunk/test/utilities/intseq/intseq.general/integer_seq.pass.cpp
 
@@ -103,13 +101,9 @@ public:
         expect ( tsizemix == std::make_tuple ( 11, 11, 12, 13, 15 ));
         pass();
     }
-
-    integer_sequence_Tests() : UnitTest ("integer_sequence", "beast")
-    {
-    }
 };
 
-static integer_sequence_Tests integer_sequence_tests;
+BEAST_DEFINE_TESTSUITE(integer_sequence,cxx14,beast);
 
 }
 }

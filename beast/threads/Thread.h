@@ -24,6 +24,7 @@
 #ifndef BEAST_THREADS_THREAD_H_INCLUDED
 #define BEAST_THREADS_THREAD_H_INCLUDED
 
+#include "../strings/String.h"
 #include "../utility/LeakChecked.h"
 #include "RecursiveMutex.h"
 #include "WaitableEvent.h"
