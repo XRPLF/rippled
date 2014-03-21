@@ -26,8 +26,8 @@
 // This module requires boost and possibly OpenSSL
 #include "system/BoostIncludes.h"
 
-#include "../../beast/Utility.h"
-#include "../../beast/HTTP.h"
+#include "../../beast/http/URL.h"
+#include "../../beast/http/ParsedURL.h"
 
 #include "../../beast/asio/IPAddressConversion.h"
 

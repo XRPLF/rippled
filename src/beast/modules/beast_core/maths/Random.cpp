@@ -106,19 +106,6 @@ double Random::nextDouble() noexcept
     return static_cast <uint32> (nextInt()) / (double) 0xffffffff;
 }
 
-BigInteger Random::nextLargeNumber (const BigInteger& maximumValue)
-{
-    BigInteger n;
-
-    do
-    {
-        fillBitsRandomly (n, 0, maximumValue.getHighestBit() + 1);
-    }
-    while (n >= maximumValue);
-
-    return n;
-}
-
 void Random::fillBitsRandomly (void* const buffer, size_t bytes)
 {
     int* d = static_cast<int*> (buffer);
@@ -131,27 +118,6 @@ void Random::fillBitsRandomly (void* const buffer, size_t bytes)
         const int lastBytes = nextInt();
         memcpy (d, &lastBytes, bytes);
     }
-}
-
-void Random::fillBitsRandomly (BigInteger& arrayToChange, int startBit, int numBits)
-{
-    arrayToChange.setBit (startBit + numBits - 1, true);  // to force the array to pre-allocate space
-
-    while ((startBit & 31) != 0 && numBits > 0)
-    {
-        arrayToChange.setBit (startBit++, nextBool());
-        --numBits;
-    }
-
-    while (numBits >= 32)
-    {
-        arrayToChange.setBitRangeAsInt (startBit, 32, (unsigned int) nextInt());
-        startBit += 32;
-        numBits -= 32;
-    }
-
-    while (--numBits >= 0)
-        arrayToChange.setBit (startBit + numBits, nextBool());
 }
 
 //==============================================================================

@@ -21,7 +21,7 @@
 #define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 
 #include "../../../beast/beast/container/aged_map.h"
-#include "../../../beast/beast/type_traits/maybe_const.h"
+#include "../../../beast/beast/utility/maybe_const.h"
 
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>

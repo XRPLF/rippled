@@ -30,7 +30,6 @@ public:
     size_t const m_keyBytes;
     Scheduler& m_scheduler;
     BatchWriter m_batch;
-    beast::StringPool m_stringPool;
     std::string m_name;
     std::unique_ptr <leveldb::DB> m_db;
 

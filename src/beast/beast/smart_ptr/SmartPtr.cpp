@@ -29,5 +29,3 @@
 #include "SharedPtr.h"
 
 #include "../../modules/beast_core/beast_core.h" // for UnitTest
-
-#include "impl/AbstractObject.cpp"

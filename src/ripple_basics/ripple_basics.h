@@ -26,8 +26,6 @@
 #include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include "system/BoostIncludes.h"
 
-#include "../../beast/beast/Utility.h"
-
 #include <atomic>
 #include "../../beast/beast/cxx14/memory.h"
 

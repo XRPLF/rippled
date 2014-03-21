@@ -24,8 +24,7 @@
 #include <functional>
 
 #include "../../beast/beast/boost/ErrorCode.h"
-#include "../../beast/beast/Net.h"
-
+#include "../../beast/beast/net/IPEndpoint.h"
 
 namespace ripple {
 

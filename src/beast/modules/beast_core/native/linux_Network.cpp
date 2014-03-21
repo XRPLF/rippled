@@ -24,35 +24,6 @@
 namespace beast
 {
 
-void MACAddress::findAllAddresses (Array<MACAddress>& result)
-{
-    const int s = socket (AF_INET, SOCK_DGRAM, 0);
-    if (s != -1)
-    {
-        char buf [1024];
-        struct ifconf ifc;
-        ifc.ifc_len = sizeof (buf);
-        ifc.ifc_buf = buf;
-        ioctl (s, SIOCGIFCONF, &ifc);
-
-        for (unsigned int i = 0; i < ifc.ifc_len / sizeof (struct ifreq); ++i)
-        {
-            struct ifreq ifr;
-            strcpy (ifr.ifr_name, ifc.ifc_req[i].ifr_name);
-
-            if (ioctl (s, SIOCGIFFLAGS, &ifr) == 0
-                 && (ifr.ifr_flags & IFF_LOOPBACK) == 0
-                 && ioctl (s, SIOCGIFHWADDR, &ifr) == 0)
-            {
-                result.addIfNotAlreadyThere (MACAddress ((const uint8*) ifr.ifr_hwaddr.sa_data));
-            }
-        }
-
-        close (s);
-    }
-}
-
-
 bool Process::openEmailWithAttachments (const String& /* targetEmailAddress */,
                                         const String& /* emailSubject */,
                                         const String& /* bodyText */,

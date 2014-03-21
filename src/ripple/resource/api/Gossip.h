@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RESOURCE_GOSSIP_H_INCLUDED
 #define RIPPLE_RESOURCE_GOSSIP_H_INCLUDED
 
+#include "../../beast/beast/net/IPEndpoint.h"
+
 namespace ripple {
 namespace Resource {
 

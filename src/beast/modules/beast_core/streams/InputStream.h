@@ -35,7 +35,7 @@ class MemoryBlock;
     Input and output streams are used throughout the library - subclasses can override
     some or all of the virtual functions to implement their behaviour.
 
-    @see OutputStream, MemoryInputStream, BufferedInputStream, FileInputStream
+    @see OutputStream, FileInputStream
 */
 class BEAST_API InputStream
     : public Uncopyable

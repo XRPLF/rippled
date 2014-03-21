@@ -903,19 +903,6 @@ File File::createTempFile (const String& fileNameEnding)
 }
 
 //==============================================================================
-MemoryMappedFile::MemoryMappedFile (const File& file, MemoryMappedFile::AccessMode mode)
-    : address (nullptr), range (0, file.getSize()), fileHandle (0)
-{
-    openInternal (file, mode);
-}
-
-MemoryMappedFile::MemoryMappedFile (const File& file, const Range<int64>& fileRange, AccessMode mode)
-    : address (nullptr), range (fileRange.getIntersectionWith (Range<int64> (0, file.getSize()))), fileHandle (0)
-{
-    openInternal (file, mode);
-}
-
-//==============================================================================
 
 class FileTests : public UnitTest
 {
@@ -1047,37 +1034,6 @@ public:
             fo.write ("789", 3);
             fo.flush();
             expect (tempFile.getSize() == 10);
-        }
-
-        beginTestCase ("Memory-mapped files");
-
-        {
-            MemoryMappedFile mmf (tempFile, MemoryMappedFile::readOnly);
-            expect (mmf.getSize() == 10);
-            expect (mmf.getData() != nullptr);
-            expect (memcmp (mmf.getData(), "0123456789", 10) == 0);
-        }
-
-        {
-            const File tempFile2 (tempFile.getNonexistentSibling (false));
-            expect (tempFile2.create());
-            expect (tempFile2.appendData ("xxxxxxxxxx", 10));
-
-            {
-                MemoryMappedFile mmf (tempFile2, MemoryMappedFile::readWrite);
-                expect (mmf.getSize() == 10);
-                expect (mmf.getData() != nullptr);
-                memcpy (mmf.getData(), "abcdefghij", 10);
-            }
-
-            {
-                MemoryMappedFile mmf (tempFile2, MemoryMappedFile::readWrite);
-                expect (mmf.getSize() == 10);
-                expect (mmf.getData() != nullptr);
-                expect (memcmp (mmf.getData(), "abcdefghij", 10) == 0);
-            }
-
-            expect (tempFile2.deleteFile());
         }
 
         beginTestCase ("More writing");

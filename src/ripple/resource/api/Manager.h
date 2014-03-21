@@ -21,6 +21,7 @@
 #define RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 
 #include "../../beast/beast/insight/Collector.h"
+#include "../../beast/beast/net/IPEndpoint.h"
 
 namespace ripple {
 namespace Resource {

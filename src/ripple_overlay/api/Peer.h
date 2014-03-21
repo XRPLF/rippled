@@ -20,6 +20,8 @@
 #ifndef RIPPLE_OVERLAY_PEER_H_INCLUDED
 #define RIPPLE_OVERLAY_PEER_H_INCLUDED
 
+#include "../../beast/beast/net/IPEndpoint.h"
+
 #include <boost/asio.hpp>
 
 namespace ripple {

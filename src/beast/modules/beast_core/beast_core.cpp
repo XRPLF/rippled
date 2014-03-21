@@ -126,13 +126,7 @@
 #undef _aligned_msize
 #endif
 
-#include "containers/DynamicObject.cpp"
-#include "containers/NamedValueSet.cpp"
-#include "containers/PropertySet.cpp"
-#include "containers/Variant.cpp"
-
 #include "diagnostic/FatalError.cpp"
-#include "diagnostic/FPUFlags.cpp"
 #include "diagnostic/SemanticVersion.cpp"
 #include "diagnostic/UnitTest.cpp"
 #include "diagnostic/UnitTestUtilities.cpp"
@@ -145,66 +139,40 @@
 #include "files/RandomAccessFile.cpp"
 #include "files/TemporaryFile.cpp"
 
-#include "json/JSON.cpp"
-
-#include "logging/FileLogger.cpp"
 #include "logging/Logger.cpp"
 
-#include "maths/BigInteger.cpp"
 #include "maths/Random.cpp"
 
 #include "memory/MemoryBlock.cpp"
 
 #include "misc/Main.cpp"
 #include "misc/Result.cpp"
-#include "misc/Uuid.cpp"
 
-#include "network/MACAddress.cpp"
-#include "network/Socket.cpp"
-
-#include "streams/BufferedInputStream.cpp"
 #include "streams/FileInputSource.cpp"
 #include "streams/InputStream.cpp"
-#include "streams/MemoryInputStream.cpp"
 #include "streams/MemoryOutputStream.cpp"
 #include "streams/OutputStream.cpp"
-#include "streams/SubregionStream.cpp"
 
 #include "system/SystemStats.cpp"
 
 #include "text/LexicalCast.cpp"
-#include "text/Identifier.cpp"
-#include "text/LocalisedStrings.cpp"
 #include "text/StringArray.cpp"
 #include "text/StringPairArray.cpp"
-#include "text/StringPool.cpp"
 
 #include "thread/impl/TrackedMutex.cpp"
 #include "thread/DeadlineTimer.cpp"
 #include "thread/Workers.cpp"
 
 #include "threads/ChildProcess.cpp"
-#include "threads/SpinDelay.cpp"
 
-#include "time/PerformanceCounter.cpp"
 #include "time/AtExitHook.cpp"
 #include "time/Time.cpp"
 
 #include "xml/XmlDocument.cpp"
 #include "xml/XmlElement.cpp"
 
-#include "zip/GZIPDecompressorInputStream.cpp"
-#include "zip/GZIPCompressorOutputStream.cpp"
-#include "zip/ZipFile.cpp"
-
 #if BEAST_MAC || BEAST_IOS
 #include "native/osx_ObjCHelpers.h"
-#endif
-
-#if BEAST_WINDOWS
-#include "native/win32_FPUFlags.cpp"
-#else
-#include "native/posix_FPUFlags.cpp"
 #endif
 
 #if BEAST_ANDROID

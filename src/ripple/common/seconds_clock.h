@@ -20,9 +20,10 @@
 #ifndef RIPPLE_SECONDS_CLOCK_H_INCLUDED
 #define RIPPLE_SECONDS_CLOCK_H_INCLUDED
 
-#include <chrono>
-
+#include "../../beast/beast/chrono/abstract_clock.h"
 #include "../../beast/beast/chrono/basic_seconds_clock.h"
+
+#include <chrono>
 
 namespace ripple {
 

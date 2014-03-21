@@ -599,48 +599,6 @@ String SystemStats::getEnvironmentVariable (const String& name, const String& de
 }
 
 //==============================================================================
-void MemoryMappedFile::openInternal (const File& file, AccessMode mode)
-{
-    bassert (mode == readOnly || mode == readWrite);
-
-    if (range.getStart() > 0)
-    {
-        const long pageSize = sysconf (_SC_PAGE_SIZE);
-        range.setStart (range.getStart() - (range.getStart() % pageSize));
-    }
-
-    fileHandle = open (file.getFullPathName().toUTF8(),
-                       mode == readWrite ? (O_CREAT + O_RDWR) : O_RDONLY, 00644);
-
-    if (fileHandle != -1)
-    {
-        void* m = mmap (0, (size_t) range.getLength(),
-                        mode == readWrite ? (PROT_READ | PROT_WRITE) : PROT_READ,
-                        MAP_SHARED, fileHandle,
-                        (off_t) range.getStart());
-
-        if (m != MAP_FAILED)
-        {
-            address = m;
-            madvise (m, (size_t) range.getLength(), MADV_SEQUENTIAL);
-        }
-        else
-        {
-            range = Range<int64>();
-        }
-    }
-}
-
-MemoryMappedFile::~MemoryMappedFile()
-{
-    if (address != nullptr)
-        munmap (address, (size_t) range.getLength());
-
-    if (fileHandle != 0)
-        close (fileHandle);
-}
-
-//==============================================================================
 #if BEAST_PROBEASTR_LIVE_BUILD
 extern "C" const char* beast_getCurrentExecutablePath();
 #endif

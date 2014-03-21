@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_HTTPMESSAGE_H_INCLUDED
 #define BEAST_ASIO_HTTPMESSAGE_H_INCLUDED
 
+#include "../../../beast/net/DynamicBuffer.h"
+
 namespace beast {
 
 /** A complete HTTP message.

@@ -42,7 +42,6 @@
 #include "../ripple/sitefiles/ripple_sitefiles.h"
 #include "../ripple/validators/ripple_validators.h"
 
-#include "../beast/beast/Asio.h"
 #include "../beast/beast/asio/io_latency_probe.h"
 #include "../beast/beast/cxx14/memory.h"
 

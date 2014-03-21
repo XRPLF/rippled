@@ -412,8 +412,8 @@ String Time::getMonthName (int monthNumber, const bool threeLetterVersion)
 
     monthNumber %= 12;
 
-    return TRANS (threeLetterVersion ? shortMonthNames [monthNumber]
-                                     : longMonthNames [monthNumber]);
+    return threeLetterVersion ? shortMonthNames [monthNumber]
+                                     : longMonthNames [monthNumber];
 }
 
 String Time::getWeekdayName (int day, const bool threeLetterVersion)
@@ -423,8 +423,8 @@ String Time::getWeekdayName (int day, const bool threeLetterVersion)
 
     day %= 7;
 
-    return TRANS (threeLetterVersion ? shortDayNames [day]
-                                     : longDayNames [day]);
+    return threeLetterVersion ? shortDayNames [day]
+                                     : longDayNames [day];
 }
 
 //==============================================================================

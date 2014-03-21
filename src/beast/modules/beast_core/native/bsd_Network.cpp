@@ -24,33 +24,6 @@
 namespace beast
 {
 
-void MACAddress::findAllAddresses (Array<MACAddress>& result)
-{
-    ifaddrs* addrs = nullptr;
-
-    if (getifaddrs (&addrs) == 0)
-    {
-        for (const ifaddrs* cursor = addrs; cursor != nullptr; cursor = cursor->ifa_next)
-        {
-            sockaddr_storage* sto = (sockaddr_storage*) cursor->ifa_addr;
-            if (sto->ss_family == AF_LINK)
-            {
-                const sockaddr_dl* const sadd = (const sockaddr_dl*) cursor->ifa_addr;
-
-                #ifndef IFT_ETHER
-                 #define IFT_ETHER 6
-                #endif
-
-                if (sadd->sdl_type == IFT_ETHER)
-                    result.addIfNotAlreadyThere (MACAddress (((const uint8*) sadd->sdl_data) + sadd->sdl_nlen));
-            }
-        }
-
-        freeifaddrs (addrs);
-    }
-}
-
-
 bool Process::openEmailWithAttachments (const String& /* targetEmailAddress */,
                                         const String& /* emailSubject */,
                                         const String& /* bodyText */,

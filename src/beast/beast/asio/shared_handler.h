@@ -22,14 +22,14 @@
 
 #include "../Config.h"
 
-#include "../mpl/IsCallPossible.h"
+#include "../utility/is_call_possible.h"
 
 #include <boost/utility/base_from_member.hpp>
 #include <boost/asio/detail/handler_alloc_helpers.hpp>
 #include <boost/asio/detail/handler_cont_helpers.hpp>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
 
-#include "../workaround/noexcept.h"
+#include "../utility/noexcept.h"
 #include <functional>
 #include <memory>
 #include "../cxx14/type_traits.h" // <type_traits>

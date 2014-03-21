@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 #define RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 
+#include "../../beast/beast/chrono/abstract_clock.h"
+
 namespace ripple {
 namespace Resource {
 

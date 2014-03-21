@@ -19,6 +19,8 @@
 
 #include "../TaggedCache.h"
 
+#include "../../beast/beast/chrono/manual_clock.h"
+
 namespace ripple {
 
 /*
