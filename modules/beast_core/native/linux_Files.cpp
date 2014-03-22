@@ -261,7 +261,7 @@ public:
     }
 
     bool next (String& filenameFound,
-               bool* const isDir, bool* const isHidden, int64* const fileSize,
+               bool* const isDir, bool* const isHidden, std::int64_t* const fileSize,
                Time* const modTime, Time* const creationTime, bool* const isReadOnly)
     {
         if (dir != nullptr)
@@ -310,7 +310,7 @@ DirectoryIterator::NativeIterator::~NativeIterator()
 }
 
 bool DirectoryIterator::NativeIterator::next (String& filenameFound,
-                                              bool* const isDir, bool* const isHidden, int64* const fileSize,
+                                              bool* const isDir, bool* const isHidden, std::int64_t* const fileSize,
                                               Time* const modTime, Time* const creationTime, bool* const isReadOnly)
 {
     return pimpl->next (filenameFound, isDir, isHidden, fileSize, modTime, creationTime, isReadOnly);
@@ -371,4 +371,4 @@ void File::revealToUser() const
         getParentDirectory().startAsProcess();
 }
 
-}  // namespace beast
+} // beast

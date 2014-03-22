@@ -60,11 +60,9 @@
 #ifndef BEAST_SQDB_DETAIL_ONCE_TEMP_TYPE_H_INCLUDED
 #define BEAST_SQDB_DETAIL_ONCE_TEMP_TYPE_H_INCLUDED
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 class once_temp_type
 {
@@ -109,8 +107,8 @@ private:
     Error& m_error;
 };
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast
 
 #endif

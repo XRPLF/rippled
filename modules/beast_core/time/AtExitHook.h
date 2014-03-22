@@ -20,8 +20,9 @@
 #ifndef BEAST_CORE_ATEXITHOOK_H_INCLUDED
 #define BEAST_CORE_ATEXITHOOK_H_INCLUDED
 
-namespace beast
-{
+#include "../../../beast/intrusive/List.h"
+
+namespace beast {
 
 /** Hook for performing activity on program exit.
 
@@ -88,6 +89,6 @@ private:
 };
 /** @} */
 
-}  // namespace beast
+} // beast
 
 #endif

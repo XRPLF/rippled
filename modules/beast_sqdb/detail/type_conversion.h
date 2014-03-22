@@ -60,11 +60,9 @@
 #ifndef BEAST_SQDB_DETAIL_TYPE_CONVERSION_H_INCLUDED
 #define BEAST_SQDB_DETAIL_TYPE_CONVERSION_H_INCLUDED
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 // used to order into and uses that need conversions
 template<typename T>
@@ -188,8 +186,8 @@ use_type_ptr do_use(T const& t, indicator& ind, user_type_tag)
     return use_type_ptr(new conversion_use_type<T>(t, ind));
 }
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast
 
 #endif

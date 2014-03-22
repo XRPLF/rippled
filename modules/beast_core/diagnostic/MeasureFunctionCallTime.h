@@ -28,7 +28,7 @@ namespace beast
 template <typename Function>
 double measureFunctionCallTime (Function f)
 {
-    int64 const startTime (Time::getHighResolutionTicks ());
+    std::int64_t const startTime (Time::getHighResolutionTicks ());
     f ();
     return Time::highResolutionTicksToSeconds (
             Time::getHighResolutionTicks () - startTime);
@@ -40,7 +40,7 @@ template <typename Function,
     typename P5, typename P6, typename P7, typename P8>
 double measureFunctionCallTime (Function f, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8)
 {
-    int64 const startTime (Time::getHighResolutionTicks ());
+    std::int64_t const startTime (Time::getHighResolutionTicks ());
     f (p1, p2, p3, p4, p5 ,p6 ,p7 ,p8);
     return Time::highResolutionTicksToSeconds (
             Time::getHighResolutionTicks () - startTime);
@@ -51,7 +51,7 @@ template <typename Function,
     typename P5, typename P6, typename P7, typename P8>
 double measureFunctionCallTime (Function f, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8)
 {
-    int64 const startTime (Time::getHighResolutionTicks ());
+    std::int64_t const startTime (Time::getHighResolutionTicks ());
     f (p1, p2, p3, p4, p5 ,p6 ,p7 ,p8);
     return Time::highResolutionTicksToSeconds (
             Time::getHighResolutionTicks () - startTime);
@@ -62,7 +62,7 @@ template <typename Function,
     typename P5, typename P6, typename P7, typename P8>
 double measureFunctionCallTime (Function f, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8)
 {
-    int64 const startTime (Time::getHighResolutionTicks ());
+    std::int64_t const startTime (Time::getHighResolutionTicks ());
     f (p1, p2, p3, p4, p5 ,p6 ,p7 ,p8);
     return Time::highResolutionTicksToSeconds (
             Time::getHighResolutionTicks () - startTime);
@@ -73,13 +73,13 @@ template <typename Function,
     typename P5, typename P6, typename P7, typename P8>
 double measureFunctionCallTime (Function f, P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8)
 {
-    int64 const startTime (Time::getHighResolutionTicks ());
+    std::int64_t const startTime (Time::getHighResolutionTicks ());
     f (p1, p2, p3, p4, p5 ,p6 ,p7 ,p8);
     return Time::highResolutionTicksToSeconds (
             Time::getHighResolutionTicks () - startTime);
 }
 #endif
 
-}  // namespace beast
+} // beast
 
 #endif

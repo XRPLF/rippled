@@ -168,4 +168,4 @@ bool FileSearchPath::isFileInPath (const File& fileToCheck,
     return false;
 }
 
-}  // namespace beast
+} // beast

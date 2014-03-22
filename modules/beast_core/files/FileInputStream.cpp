@@ -24,7 +24,7 @@
 namespace beast
 {
 
-int64 beast_fileSetPosition (void* handle, int64 pos);
+std::int64_t beast_fileSetPosition (void* handle, std::int64_t pos);
 
 //==============================================================================
 FileInputStream::FileInputStream (const File& f)
@@ -43,7 +43,7 @@ FileInputStream::~FileInputStream()
 }
 
 //==============================================================================
-int64 FileInputStream::getTotalLength()
+std::int64_t FileInputStream::getTotalLength()
 {
     return file.getSize();
 }
@@ -72,18 +72,18 @@ bool FileInputStream::isExhausted()
     return currentPosition >= getTotalLength();
 }
 
-int64 FileInputStream::getPosition()
+std::int64_t FileInputStream::getPosition()
 {
     return currentPosition;
 }
 
-bool FileInputStream::setPosition (int64 pos)
+bool FileInputStream::setPosition (std::int64_t pos)
 {
     bassert (openedOk());
 
     if (pos != currentPosition)
     {
-        pos = blimit ((int64) 0, getTotalLength(), pos);
+        pos = blimit ((std::int64_t) 0, getTotalLength(), pos);
 
         needToSeek |= (currentPosition != pos);
         currentPosition = pos;
@@ -92,4 +92,4 @@ bool FileInputStream::setPosition (int64 pos)
     return true;
 }
 
-}  // namespace beast
+} // beast

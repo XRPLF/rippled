@@ -35,7 +35,7 @@ struct LexicalCastUtilities
         if (0 == std::distance (begin, end))
             return false;
 
-        uint64 accum = 0;
+        std::uint64_t accum = 0;
         InputIterator it = begin;
 
         // process sign
@@ -53,23 +53,23 @@ struct LexicalCastUtilities
             return false;
 
         // calc max of abs value
-        uint64 max;
+        std::uint64_t max;
         if (negative)
-            max = static_cast <uint64> (
-                -(static_cast <int64> (std::numeric_limits <IntType>::min ())));
+            max = static_cast <std::uint64_t> (
+                -(static_cast <std::int64_t> (std::numeric_limits <IntType>::min ())));
         else
             max = std::numeric_limits <IntType>::max ();
 
         // process digits
         while (end != it)
         {
-            uint64 const digit = static_cast <IntType> (
+            std::uint64_t const digit = static_cast <IntType> (
                 s_digitTable [static_cast <unsigned int> (*it++)]);
 
             if (0xFF == digit)
                 return false;
 
-            uint64 const overflow = (max - digit) / 10;
+            std::uint64_t const overflow = (max - digit) / 10;
 
             if (accum > overflow)
                 return false;
@@ -95,20 +95,20 @@ struct LexicalCastUtilities
         if (0 == std::distance (begin, end))
             return false;
 
-        uint64 accum = 0;
+        std::uint64_t accum = 0;
         InputIterator it = begin;
-        uint64 const max = std::numeric_limits <IntType>::max ();
+        std::uint64_t const max = std::numeric_limits <IntType>::max ();
 
         // process digits
         while (end != it)
         {
-            uint64 const digit = static_cast <IntType> (
+            std::uint64_t const digit = static_cast <IntType> (
                 s_digitTable [static_cast <unsigned int> (*it++)]);
 
             if (0xFF == digit)
                 return false;
 
-            uint64 const overflow = (max - digit) / 10;
+            std::uint64_t const overflow = (max - digit) / 10;
 
             if (accum > overflow)
                 return false;
@@ -143,8 +143,8 @@ struct LexicalCast <String, In>
     bool operator() (String& out, unsigned int in) const   { out = String (in); return true; }
     bool operator() (String& out, short in) const          { out = String (in); return true; }
     bool operator() (String& out, unsigned short in) const { out = String (in); return true; }
-    bool operator() (String& out, int64 in) const          { out = String (in); return true; }
-    bool operator() (String& out, uint64 in) const         { out = String (in); return true; }
+    bool operator() (String& out, std::int64_t in) const          { out = String (in); return true; }
+    bool operator() (String& out, std::uint64_t in) const         { out = String (in); return true; }
     bool operator() (String& out, float in) const          { out = String (in); return true; }
     bool operator() (String& out, double in) const         { out = String (in); return true; }
 };
@@ -155,10 +155,10 @@ struct LexicalCast <Out, String>
 {
     bool operator() (int& out,            String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseSigned (out, s.begin (), s.end ()); }
     bool operator() (short& out,          String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseSigned (out, s.begin (), s.end ()); }
-    bool operator() (int64& out,          String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseSigned (out, s.begin (), s.end ()); }
+    bool operator() (std::int64_t& out,          String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseSigned (out, s.begin (), s.end ()); }
     bool operator() (unsigned int& out,   String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseUnsigned (out, s.begin (), s.end ()); }
     bool operator() (unsigned short& out, String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseUnsigned (out, s.begin (), s.end ()); }
-    bool operator() (uint64& out,         String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseUnsigned (out, s.begin (), s.end ()); }
+    bool operator() (std::uint64_t& out,         String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseUnsigned (out, s.begin (), s.end ()); }
     bool operator() (float& out,          String const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
     bool operator() (double& out,         String const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
 
@@ -282,7 +282,7 @@ Out lexicalCastThrow (In in)
     if (lexicalCastChecked (out, in))
         return out;
 
-    Throw (BadLexicalCast (), __FILE__, __LINE__);
+    throw BadLexicalCast ();
 
     return Out ();
 }
@@ -303,6 +303,6 @@ Out lexicalCast (In in, Out defaultValue = Out ())
     return defaultValue;
 }
 
-}  // namespace beast
+} // beast
 
 #endif

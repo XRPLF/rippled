@@ -33,7 +33,7 @@ namespace beast
 
     @see InputStream, FileOutputStream, File::createInputStream
 */
-class BEAST_API FileInputStream
+class FileInputStream
     : public InputStream
     , LeakChecked <FileInputStream>
 {
@@ -71,17 +71,17 @@ public:
 
 
     //==============================================================================
-    int64 getTotalLength();
+    std::int64_t getTotalLength();
     int read (void* destBuffer, int maxBytesToRead);
     bool isExhausted();
-    int64 getPosition();
-    bool setPosition (int64 pos);
+    std::int64_t getPosition();
+    bool setPosition (std::int64_t pos);
 
 private:
     //==============================================================================
     File file;
     void* fileHandle;
-    int64 currentPosition;
+    std::int64_t currentPosition;
     Result status;
     bool needToSeek;
 
@@ -90,6 +90,6 @@ private:
     size_t readInternal (void* buffer, size_t numBytes);
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_FILEINPUTSTREAM_H_INCLUDED

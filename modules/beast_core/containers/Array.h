@@ -24,8 +24,11 @@
 #ifndef BEAST_ARRAY_H_INCLUDED
 #define BEAST_ARRAY_H_INCLUDED
 
-namespace beast
-{
+#include "ArrayAllocationBase.h"
+#include "ElementComparator.h"
+#include "../threads/CriticalSection.h"
+
+namespace beast {
 
 //==============================================================================
 /**
@@ -39,17 +42,13 @@ namespace beast
     - it must be able to be relocated in memory by a memcpy without this causing any problems - so
       objects whose functionality relies on external pointers or references to themselves can be used.
 
-    You can of course have an array of pointers to any kind of object, e.g. Array <MyClass*>, but if
-    you do this, the array doesn't take any ownership of the objects - see the OwnedArray class or the
-    SharedObjectArray class for more powerful ways of holding lists of objects.
-
     For holding lists of strings, you can use Array\<String\>, but it's usually better to use the
     specialised class StringArray, which provides more useful functions.
 
     To make all the array's methods thread-safe, pass in "CriticalSection" as the templated
     TypeOfCriticalSectionToUse parameter, instead of the default DummyCriticalSection.
 
-    @see OwnedArray, SharedObjectArray, StringArray, CriticalSection
+    @see SharedObjectArray, StringArray, CriticalSection
 */
 template <typename ElementType,
           typename TypeOfCriticalSectionToUse = DummyCriticalSection,
@@ -57,7 +56,7 @@ template <typename ElementType,
 class Array
 {
 private:
-    typedef PARAMETER_TYPE (ElementType) ParameterType;
+    typedef ElementType ParameterType;
 
 public:
     //==============================================================================
@@ -1055,6 +1054,6 @@ private:
     }
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_ARRAY_H_INCLUDED

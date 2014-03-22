@@ -26,18 +26,18 @@ namespace beast
 
 namespace TimeHelpers
 {
-    static struct tm millisToLocal (const int64 millis) noexcept
+    static struct tm millisToLocal (const std::int64_t millis) noexcept
     {
         struct tm result;
-        const int64 seconds = millis / 1000;
+        const std::int64_t seconds = millis / 1000;
 
-        if (seconds < literal64bit (86400) || seconds >= literal64bit (2145916800))
+        if (seconds < 86400LL || seconds >= 2145916800LL)
         {
             // use extended maths for dates beyond 1970 to 2037..
             const int timeZoneAdjustment = 31536000 - (int) (Time (1971, 0, 1, 0, 0).toMilliseconds() / 1000);
-            const int64 jdm = seconds + timeZoneAdjustment + literal64bit (210866803200);
+            const std::int64_t jdm = seconds + timeZoneAdjustment + 210866803200LL;
 
-            const int days = (int) (jdm / literal64bit (86400));
+            const int days = (int) (jdm / 86400LL);
             const int a = 32044 + days;
             const int b = (4 * a + 3) / 146097;
             const int c = a - (b * 146097) / 4;
@@ -51,7 +51,7 @@ namespace TimeHelpers
             result.tm_wday  = (days + 1) % 7;
             result.tm_yday  = -1;
 
-            int t = (int) (jdm % literal64bit (86400));
+            int t = (int) (jdm % 86400LL);
             result.tm_hour  = t / 3600;
             t %= 3600;
             result.tm_min   = t / 60;
@@ -80,7 +80,7 @@ namespace TimeHelpers
         return result;
     }
 
-    static int extendedModulo (const int64 value, const int modulo) noexcept
+    static int extendedModulo (const std::int64_t value, const int modulo) noexcept
     {
         return (int) (value >= 0 ? (value % modulo)
                                  : (value - ((value / modulo) + 1) * modulo));
@@ -114,7 +114,7 @@ namespace TimeHelpers
         }
     }
 
-    static uint32 lastMSCounterValue = 0;
+    static std::uint32_t lastMSCounterValue = 0;
 }
 
 //==============================================================================
@@ -128,7 +128,7 @@ Time::Time (const Time& other) noexcept
 {
 }
 
-Time::Time (const int64 ms) noexcept
+Time::Time (const std::int64_t ms) noexcept
     : millisSinceEpoch (ms)
 {
 }
@@ -155,7 +155,7 @@ Time::Time (const int year,
                            + (y * 365) + (y /  4) - (y / 100) + (y / 400)
                            - 32045;
 
-        const int64 s = ((int64) jd) * literal64bit (86400) - literal64bit (210866803200);
+        const std::int64_t s = ((std::int64_t) jd) * 86400LL - 210866803200LL;
 
         millisSinceEpoch = 1000 * (s + (hours * 3600 + minutes * 60 + seconds - timeZoneAdjustment))
                              + milliseconds;
@@ -171,7 +171,7 @@ Time::Time (const int year,
         t.tm_sec    = seconds;
         t.tm_isdst  = -1;
 
-        millisSinceEpoch = 1000 * (int64) mktime (&t);
+        millisSinceEpoch = 1000 * (std::int64_t) mktime (&t);
 
         if (millisSinceEpoch < 0)
             millisSinceEpoch = 0;
@@ -191,7 +191,7 @@ Time& Time::operator= (const Time& other) noexcept
 }
 
 //==============================================================================
-int64 Time::currentTimeMillis() noexcept
+std::int64_t Time::currentTimeMillis() noexcept
 {
   #if BEAST_WINDOWS
     struct _timeb t;
@@ -200,25 +200,25 @@ int64 Time::currentTimeMillis() noexcept
    #else
     _ftime (&t);
    #endif
-    return ((int64) t.time) * 1000 + t.millitm;
+    return ((std::int64_t) t.time) * 1000 + t.millitm;
   #else
     struct timeval tv;
     gettimeofday (&tv, nullptr);
-    return ((int64) tv.tv_sec) * 1000 + tv.tv_usec / 1000;
+    return ((std::int64_t) tv.tv_sec) * 1000 + tv.tv_usec / 1000;
   #endif
 }
 
-Time BEAST_CALLTYPE Time::getCurrentTime() noexcept
+Time Time::getCurrentTime() noexcept
 {
     return Time (currentTimeMillis());
 }
 
 //==============================================================================
-uint32 beast_millisecondsSinceStartup() noexcept;
+std::uint32_t beast_millisecondsSinceStartup() noexcept;
 
-uint32 Time::getMillisecondCounter() noexcept
+std::uint32_t Time::getMillisecondCounter() noexcept
 {
-    const uint32 now = beast_millisecondsSinceStartup();
+    const std::uint32_t now = beast_millisecondsSinceStartup();
 
     if (now < TimeHelpers::lastMSCounterValue)
     {
@@ -236,7 +236,7 @@ uint32 Time::getMillisecondCounter() noexcept
     return now;
 }
 
-uint32 Time::getApproximateMillisecondCounter() noexcept
+std::uint32_t Time::getApproximateMillisecondCounter() noexcept
 {
     if (TimeHelpers::lastMSCounterValue == 0)
         getMillisecondCounter();
@@ -244,11 +244,11 @@ uint32 Time::getApproximateMillisecondCounter() noexcept
     return TimeHelpers::lastMSCounterValue;
 }
 
-void Time::waitForMillisecondCounter (const uint32 targetTime) noexcept
+void Time::waitForMillisecondCounter (const std::uint32_t targetTime) noexcept
 {
     for (;;)
     {
-        const uint32 now = getMillisecondCounter();
+        const std::uint32_t now = getMillisecondCounter();
 
         if (now >= targetTime)
             break;
@@ -270,14 +270,14 @@ void Time::waitForMillisecondCounter (const uint32 targetTime) noexcept
 }
 
 //==============================================================================
-double Time::highResolutionTicksToSeconds (const int64 ticks) noexcept
+double Time::highResolutionTicksToSeconds (const std::int64_t ticks) noexcept
 {
     return ticks / (double) getHighResolutionTicksPerSecond();
 }
 
-int64 Time::secondsToHighResolutionTicks (const double seconds) noexcept
+std::int64_t Time::secondsToHighResolutionTicks (const double seconds) noexcept
 {
-    return (int64) (seconds * (double) getHighResolutionTicksPerSecond());
+    return (std::int64_t) (seconds * (double) getHighResolutionTicksPerSecond());
 }
 
 //==============================================================================
@@ -443,4 +443,4 @@ bool operator>  (Time time1, Time time2)      { return time1.toMilliseconds() > 
 bool operator<= (Time time1, Time time2)      { return time1.toMilliseconds() <= time2.toMilliseconds(); }
 bool operator>= (Time time1, Time time2)      { return time1.toMilliseconds() >= time2.toMilliseconds(); }
 
-}  // namespace beast
+} // beast

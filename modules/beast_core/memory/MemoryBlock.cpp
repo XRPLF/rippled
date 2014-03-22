@@ -56,7 +56,7 @@ MemoryBlock::MemoryBlock (const MemoryBlock& other)
 MemoryBlock::MemoryBlock (const void* const dataToInitialiseFrom, const size_t sizeInBytes)
     : size (sizeInBytes)
 {
-    bassert (((ssize_t) sizeInBytes) >= 0);
+    bassert (((std::ptrdiff_t) sizeInBytes) >= 0);
 
     if (size > 0)
     {
@@ -160,7 +160,7 @@ void MemoryBlock::swapWith (MemoryBlock& other) noexcept
 }
 
 //==============================================================================
-void MemoryBlock::fillWith (const uint8 value) noexcept
+void MemoryBlock::fillWith (const std::uint8_t value) noexcept
 {
     memset (data, (int) value, size);
 }
@@ -295,16 +295,16 @@ void MemoryBlock::setBitRange (const size_t bitRangeStart, size_t numBits, int b
 {
     size_t byte = bitRangeStart >> 3;
     size_t offsetInByte = bitRangeStart & 7;
-    uint32 mask = ~((((uint32) 0xffffffff) << (32 - numBits)) >> (32 - numBits));
+    std::uint32_t mask = ~((((std::uint32_t) 0xffffffff) << (32 - numBits)) >> (32 - numBits));
 
     while (numBits > 0 && (size_t) byte < size)
     {
         const size_t bitsThisTime = bmin (numBits, 8 - offsetInByte);
 
-        const uint32 tempMask = (mask << offsetInByte) | ~((((uint32) 0xffffffff) >> offsetInByte) << offsetInByte);
-        const uint32 tempBits = (uint32) bitsToSet << offsetInByte;
+        const std::uint32_t tempMask = (mask << offsetInByte) | ~((((std::uint32_t) 0xffffffff) >> offsetInByte) << offsetInByte);
+        const std::uint32_t tempBits = (std::uint32_t) bitsToSet << offsetInByte;
 
-        data[byte] = (char) (((uint32) data[byte] & tempMask) | tempBits);
+        data[byte] = (char) (((std::uint32_t) data[byte] & tempMask) | tempBits);
 
         ++byte;
         numBits -= bitsThisTime;
@@ -366,7 +366,7 @@ String MemoryBlock::toBase64Encoding() const
     d.write ('.');
 
     for (size_t i = 0; i < numChars; ++i)
-        d.write ((beast_wchar) (uint8) base64EncodingTable [getBitRange (i * 6, 6)]);
+        d.write ((beast_wchar) (std::uint8_t) base64EncodingTable [getBitRange (i * 6, 6)]);
 
     d.writeNull();
     return destString;
@@ -407,4 +407,4 @@ bool MemoryBlock::fromBase64Encoding (const String& s)
     return true;
 }
 
-}  // namespace beast
+} // beast

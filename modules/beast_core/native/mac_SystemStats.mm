@@ -48,9 +48,9 @@ void Logger::outputDebugString (const String& text)
 namespace SystemStatsHelpers
 {
    #if BEAST_INTEL && ! BEAST_NO_INLINE_ASM
-    static void doCPUID (uint32& a, uint32& b, uint32& c, uint32& d, uint32 type)
+    static void doCPUID (std::uint32_t& a, std::uint32_t& b, std::uint32_t& c, std::uint32_t& d, std::uint32_t type)
     {
-        uint32 la = a, lb = b, lc = c, ld = d;
+        std::uint32_t la = a, lb = b, lc = c, ld = d;
 
         asm ("mov %%ebx, %%esi \n\t"
              "cpuid \n\t"
@@ -70,7 +70,7 @@ namespace SystemStatsHelpers
 void CPUInformation::initialise() noexcept
 {
    #if BEAST_INTEL && ! BEAST_NO_INLINE_ASM
-    uint32 a = 0, b = 0, d = 0, c = 0;
+    std::uint32_t a = 0, b = 0, d = 0, c = 0;
     SystemStatsHelpers::doCPUID (a, b, c, d, 1);
 
     hasMMX = (d & (1u << 23)) != 0;
@@ -154,7 +154,7 @@ bool SystemStats::isOperatingSystem64Bit()
 
 int SystemStats::getMemorySizeInMegabytes()
 {
-    uint64 mem = 0;
+    std::uint64_t mem = 0;
     size_t memSize = sizeof (mem);
     int mib[] = { CTL_HW, HW_MEMSIZE };
     sysctl (mib, 2, &mem, &memSize, 0, 0);
@@ -164,8 +164,8 @@ int SystemStats::getMemorySizeInMegabytes()
 String SystemStats::getCpuVendor()
 {
    #if BEAST_INTEL && ! BEAST_NO_INLINE_ASM
-    uint32 dummy = 0;
-    uint32 vendor[4] = { 0 };
+    std::uint32_t dummy = 0;
+    std::uint32_t vendor[4] = { 0 };
 
     SystemStatsHelpers::doCPUID (dummy, vendor[0], vendor[2], vendor[1], 0);
 
@@ -177,7 +177,7 @@ String SystemStats::getCpuVendor()
 
 int SystemStats::getCpuSpeedInMegaherz()
 {
-    uint64 speedHz = 0;
+    std::uint64_t speedHz = 0;
     size_t speedSize = sizeof (speedHz);
     int mib[] = { CTL_HW, HW_CPU_FREQ };
     sysctl (mib, 2, &speedHz, &speedSize, 0, 0);
@@ -246,16 +246,16 @@ public:
         else
         {
             numerator   = timebase.numer;
-            denominator = timebase.denom * (uint64) 1000000;
+            denominator = timebase.denom * (std::uint64_t) 1000000;
         }
 
-        highResTimerFrequency = (timebase.denom * (uint64) 1000000000) / timebase.numer;
+        highResTimerFrequency = (timebase.denom * (std::uint64_t) 1000000000) / timebase.numer;
         highResTimerToMillisecRatio = numerator / (double) denominator;
     }
 
-    inline uint32 millisecondsSinceStartup() const noexcept
+    inline std::uint32_t millisecondsSinceStartup() const noexcept
     {
-        return (uint32) ((mach_absolute_time() * numerator) / denominator);
+        return (std::uint32_t) ((mach_absolute_time() * numerator) / denominator);
     }
 
     inline double getMillisecondCounterHiRes() const noexcept
@@ -263,10 +263,10 @@ public:
         return mach_absolute_time() * highResTimerToMillisecRatio;
     }
 
-    int64 highResTimerFrequency;
+    std::int64_t highResTimerFrequency;
 
 private:
-    uint64 numerator, denominator;
+    std::uint64_t numerator, denominator;
     double highResTimerToMillisecRatio;
 };
 
@@ -276,10 +276,10 @@ static HiResCounterHandler& hiResCounterHandler()
 	return hiResCounterHandler;
 }
 
-uint32 beast_millisecondsSinceStartup() noexcept         { return hiResCounterHandler().millisecondsSinceStartup(); }
+std::uint32_t beast_millisecondsSinceStartup() noexcept         { return hiResCounterHandler().millisecondsSinceStartup(); }
 double Time::getMillisecondCounterHiRes() noexcept      { return hiResCounterHandler().getMillisecondCounterHiRes(); }
-int64  Time::getHighResolutionTicksPerSecond() noexcept { return hiResCounterHandler().highResTimerFrequency; }
-int64  Time::getHighResolutionTicks() noexcept          { return (int64) mach_absolute_time(); }
+std::int64_t  Time::getHighResolutionTicksPerSecond() noexcept { return hiResCounterHandler().highResTimerFrequency; }
+std::int64_t  Time::getHighResolutionTicks() noexcept          { return (std::int64_t) mach_absolute_time(); }
 
 bool Time::setSystemTimeToThisTime() const
 {
@@ -293,4 +293,4 @@ int SystemStats::getPageSize()
     return (int) NSPageSize();
 }
 
-}  // namespace beast
+} // beast

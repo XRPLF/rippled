@@ -36,7 +36,7 @@ namespace beast {
 
     @see RelativeTime
 */
-class BEAST_API Time
+class Time
 {
 public:
     //==============================================================================
@@ -60,7 +60,7 @@ public:
                                         'epoch' (midnight Jan 1st 1970).
         @see getCurrentTime, currentTimeMillis
     */
-    explicit Time (int64 millisecondsSinceEpoch) noexcept;
+    explicit Time (std::int64_t millisecondsSinceEpoch) noexcept;
 
     /** Creates a time from a set of date components.
 
@@ -99,7 +99,7 @@ public:
 
         @see currentTimeMillis
     */
-    static Time BEAST_CALLTYPE getCurrentTime() noexcept;
+    static Time getCurrentTime() noexcept;
 
     /** Returns `true` if this object represents "no time", or NULL.
         Internally we check for milliseconds since Epoch equal to zero.
@@ -122,7 +122,7 @@ public:
                     midnight jan 1st 1970.
         @see getMilliseconds
     */
-    int64 toMilliseconds() const noexcept                           { return millisSinceEpoch; }
+    std::int64_t toMilliseconds() const noexcept                           { return millisSinceEpoch; }
 
     /** Returns the year.
 
@@ -307,7 +307,7 @@ public:
         Should be accurate to within a few millisecs, depending on platform,
         hardware, etc.
     */
-    static int64 currentTimeMillis() noexcept;
+    static std::int64_t currentTimeMillis() noexcept;
 
     /** Returns the number of millisecs since a fixed event (usually system startup).
 
@@ -321,7 +321,7 @@ public:
 
         @see getApproximateMillisecondCounter
     */
-    static uint32 getMillisecondCounter() noexcept;
+    static std::uint32_t getMillisecondCounter() noexcept;
 
     /** Returns the number of millisecs since a fixed event (usually system startup).
 
@@ -336,7 +336,7 @@ public:
 
         This will make the thread sleep as efficiently as it can while it's waiting.
     */
-    static void waitForMillisecondCounter (uint32 targetTime) noexcept;
+    static void waitForMillisecondCounter (std::uint32_t targetTime) noexcept;
 
     /** Less-accurate but faster version of getMillisecondCounter().
 
@@ -347,7 +347,7 @@ public:
 
         @see getMillisecondCounter
     */
-    static uint32 getApproximateMillisecondCounter() noexcept;
+    static std::uint32_t getApproximateMillisecondCounter() noexcept;
 
     //==============================================================================
     // High-resolution timers..
@@ -360,59 +360,59 @@ public:
         @see getHighResolutionTicksPerSecond, highResolutionTicksToSeconds,
              secondsToHighResolutionTicks
     */
-    static int64 getHighResolutionTicks() noexcept;
+    static std::int64_t getHighResolutionTicks() noexcept;
 
     /** Returns the resolution of the high-resolution counter in ticks per second.
 
         @see getHighResolutionTicks, highResolutionTicksToSeconds,
              secondsToHighResolutionTicks
     */
-    static int64 getHighResolutionTicksPerSecond() noexcept;
+    static std::int64_t getHighResolutionTicksPerSecond() noexcept;
 
     /** Converts a number of high-resolution ticks into seconds.
 
         @see getHighResolutionTicks, getHighResolutionTicksPerSecond,
              secondsToHighResolutionTicks
     */
-    static double highResolutionTicksToSeconds (int64 ticks) noexcept;
+    static double highResolutionTicksToSeconds (std::int64_t ticks) noexcept;
 
     /** Converts a number seconds into high-resolution ticks.
 
         @see getHighResolutionTicks, getHighResolutionTicksPerSecond,
              highResolutionTicksToSeconds
     */
-    static int64 secondsToHighResolutionTicks (double seconds) noexcept;
+    static std::int64_t secondsToHighResolutionTicks (double seconds) noexcept;
 
 
 private:
     //==============================================================================
-    int64 millisSinceEpoch;
+    std::int64_t millisSinceEpoch;
 };
 
 //==============================================================================
 /** Adds a RelativeTime to a Time. */
-BEAST_API Time operator+ (Time time, RelativeTime delta);
+Time operator+ (Time time, RelativeTime delta);
 /** Adds a RelativeTime to a Time. */
-BEAST_API Time operator+ (RelativeTime delta, Time time);
+Time operator+ (RelativeTime delta, Time time);
 
 /** Subtracts a RelativeTime from a Time. */
-BEAST_API Time operator- (Time time, RelativeTime delta);
+Time operator- (Time time, RelativeTime delta);
 /** Returns the relative time difference between two times. */
-BEAST_API const RelativeTime operator- (Time time1, Time time2);
+const RelativeTime operator- (Time time1, Time time2);
 
 /** Compares two Time objects. */
-BEAST_API bool operator== (Time time1, Time time2);
+bool operator== (Time time1, Time time2);
 /** Compares two Time objects. */
-BEAST_API bool operator!= (Time time1, Time time2);
+bool operator!= (Time time1, Time time2);
 /** Compares two Time objects. */
-BEAST_API bool operator<  (Time time1, Time time2);
+bool operator<  (Time time1, Time time2);
 /** Compares two Time objects. */
-BEAST_API bool operator<= (Time time1, Time time2);
+bool operator<= (Time time1, Time time2);
 /** Compares two Time objects. */
-BEAST_API bool operator>  (Time time1, Time time2);
+bool operator>  (Time time1, Time time2);
 /** Compares two Time objects. */
-BEAST_API bool operator>= (Time time1, Time time2);
+bool operator>= (Time time1, Time time2);
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_TIME_H_INCLUDED

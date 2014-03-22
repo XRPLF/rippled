@@ -24,8 +24,7 @@
 #ifndef BEAST_PROCESS_H_INCLUDED
 #define BEAST_PROCESS_H_INCLUDED
 
-namespace beast
-{
+namespace beast {
 
 //==============================================================================
 /** Represents the current executable's process.
@@ -35,7 +34,7 @@ namespace beast
 
     @see Thread, BEASTApplication
 */
-class BEAST_API Process : public Uncopyable
+class Process : public Uncopyable
 {
 public:
     //==============================================================================
@@ -91,17 +90,11 @@ public:
     static void lowerPrivilege();
 
     /** Returns true if this process is being hosted by a debugger. */
-    static bool BEAST_CALLTYPE isRunningUnderDebugger();
+    static bool isRunningUnderDebugger();
 
     //==============================================================================
     /** Tries to launch the OS's default reader application for a given file or URL. */
     static bool openDocument (const String& documentURL, const String& parameters);
-
-    /** Tries to launch the OS's default email application to let the user create a message. */
-    static bool openEmailWithAttachments (const String& targetEmailAddress,
-                                          const String& emailSubject,
-                                          const String& bodyText,
-                                          const StringArray& filesToAttach);
 
    #if BEAST_WINDOWS || DOXYGEN
     //==============================================================================
@@ -118,7 +111,7 @@ public:
         to provide the correct module handle in your DllMain() function, because
         the system relies on the correct instance handle when opening windows.
     */
-    static void* BEAST_CALLTYPE getCurrentModuleInstanceHandle() noexcept;
+    static void* getCurrentModuleInstanceHandle() noexcept;
 
     /** WINDOWS ONLY - Sets a new module handle to be used by the library.
 
@@ -127,7 +120,7 @@ public:
 
         @see getCurrentModuleInstanceHandle()
     */
-    static void BEAST_CALLTYPE setCurrentModuleInstanceHandle (void* newHandle) noexcept;
+    static void setCurrentModuleInstanceHandle (void* newHandle) noexcept;
    #endif
 
    #if BEAST_MAC || DOXYGEN
@@ -140,6 +133,6 @@ private:
     Process();
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_PROCESS_H_INCLUDED

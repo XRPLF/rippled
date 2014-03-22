@@ -93,9 +93,9 @@ public:
         int a2[3];
         expect (numElementsInArray(a2) == 3);
 
-        expect (ByteOrder::swap ((uint16) 0x1122) == 0x2211);
-        expect (ByteOrder::swap ((uint32) 0x11223344) == 0x44332211);
-        expect (ByteOrder::swap ((uint64) literal64bit (0x1122334455667788)) == literal64bit (0x8877665544332211));
+        expect (ByteOrder::swap ((std::uint16_t) 0x1122) == 0x2211);
+        expect (ByteOrder::swap ((std::uint32_t) 0x11223344) == 0x44332211);
+        expect (ByteOrder::swap ((std::uint64_t) 0x1122334455667788LL) == 0x8877665544332211LL);
 
         testcase ("int");
         testInteger <int> ();
@@ -103,11 +103,11 @@ public:
         testcase ("unsigned int");
         testInteger <unsigned int> ();
 
-        testcase ("int32");
-        testInteger <int32> ();
+        testcase ("std::int32_t");
+        testInteger <std::int32_t> ();
 
-        testcase ("uint32");
-        testInteger <uint32> ();
+        testcase ("std::uint32_t");
+        testInteger <std::uint32_t> ();
 
         testcase ("long");
         testInteger <long> ();
@@ -122,11 +122,11 @@ public:
         testFloat <float> ();
 
     #if ! BEAST_64BIT_ATOMICS_UNAVAILABLE  // 64-bit intrinsics aren't available on some old platforms
-        testcase ("int64");
-        testInteger <int64> ();
+        testcase ("std::int64_t");
+        testInteger <std::int64_t> ();
 
-        testcase ("uint64");
-        testInteger <uint64> ();
+        testcase ("std::uint64_t");
+        testInteger <std::uint64_t> ();
 
         testcase ("double");
         testFloat <double> ();

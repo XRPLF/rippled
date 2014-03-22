@@ -74,40 +74,4 @@
 #undef max
 #undef min
 
-//------------------------------------------------------------------------------
-
-// DLL building settings on Windows
-//
-// VFALCO TODO Deprecate this
-//
-#if BEAST_MSVC
- #ifdef BEAST_DLL_BUILD
-  #define BEAST_API __declspec (dllexport)
-  #pragma warning (disable: 4251)
- #elif defined (BEAST_DLL)
-  #define BEAST_API __declspec (dllimport)
-  #pragma warning (disable: 4251)
- #endif
- #ifdef __INTEL_COMPILER
-  #pragma warning (disable: 1125) // (virtual override warning)
- #endif
-#elif defined (BEAST_DLL) || defined (BEAST_DLL_BUILD)
- #define BEAST_API __attribute__ ((visibility("default")))
-#endif
-
-//------------------------------------------------------------------------------
-
-#ifndef BEAST_API
-#define BEAST_API  /**< This macro is added to all beast public class declarations. */
-#endif
-
-#if BEAST_MSVC && BEAST_DLL_BUILD
-#define BEAST_PUBLIC_IN_DLL_BUILD(decl)  public: decl; private:
-#else
-#define BEAST_PUBLIC_IN_DLL_BUILD(decl)  decl;
-#endif
-
-/** This macro is added to all beast public function declarations. */
-#define BEAST_PUBLIC_FUNCTION        BEAST_API BEAST_CALLTYPE
-
 #endif

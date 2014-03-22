@@ -36,7 +36,7 @@ void repeatableShuffle (int const numberOfItems, T& arrayOfItems, Random& r)
 }
 
 template <class T>
-void repeatableShuffle (int const numberOfItems, T& arrayOfItems, int64 seedValue)
+void repeatableShuffle (int const numberOfItems, T& arrayOfItems, std::int64_t seedValue)
 {
     Random r (seedValue);
     repeatableShuffle (numberOfItems, arrayOfItems, r);
@@ -64,7 +64,7 @@ struct Payload
         @param maximumBytes The largest number of bytes in the resulting payload.
         @param seedValue The value to seed the random number generator with.
     */
-    void repeatableRandomFill (int minimumBytes, int maximumBytes, int64 seedValue) noexcept
+    void repeatableRandomFill (int minimumBytes, int maximumBytes, std::int64_t seedValue) noexcept
     {
         bassert (minimumBytes >=0 && maximumBytes <= bufferSize);
 

@@ -106,7 +106,7 @@ void Thread::threadEntryPoint()
 }
 
 // used to wrap the incoming call from the platform-specific code
-void BEAST_API beast_threadEntryPoint (void* userData)
+void beast_threadEntryPoint (void* userData)
 {
     static_cast <Thread*> (userData)->threadEntryPoint();
 }
@@ -162,7 +162,7 @@ bool Thread::waitForThreadToExit (const int timeOutMilliseconds) const
     // Doh! So how exactly do you expect this thread to wait for itself to stop??
     bassert (getThreadId() != getCurrentThreadId() || getCurrentThreadId() == 0);
 
-    const uint32 timeoutEnd = Time::getMillisecondCounter() + (uint32) timeOutMilliseconds;
+    const std::uint32_t timeoutEnd = Time::getMillisecondCounter() + (std::uint32_t) timeOutMilliseconds;
 
     while (isThreadRunning())
     {
@@ -252,7 +252,7 @@ bool Thread::setCurrentThreadPriority (const int newPriority)
     return setThreadPriority (0, newPriority);
 }
 
-void Thread::setAffinityMask (const uint32 newAffinityMask)
+void Thread::setAffinityMask (const std::uint32_t newAffinityMask)
 {
     affinityMask = newAffinityMask;
 }
@@ -299,7 +299,7 @@ namespace beast {
 
 HWND beast_messageWindowHandle = 0;  // (this is used by other parts of the codebase)
 
-void BEAST_API beast_threadEntryPoint (void*);
+void beast_threadEntryPoint (void*);
 
 static unsigned int __stdcall threadEntryProc (void* userData)
 {
@@ -367,7 +367,7 @@ void Thread::setCurrentThreadName (const String& name)
 
 Thread::ThreadID Thread::getCurrentThreadId()
 {
-    return (ThreadID) (pointer_sized_int) GetCurrentThreadId();
+    return (ThreadID) (std::intptr_t) GetCurrentThreadId();
 }
 
 bool Thread::setThreadPriority (void* handle, int priority)
@@ -387,7 +387,7 @@ bool Thread::setThreadPriority (void* handle, int priority)
     return SetThreadPriority (handle, pri) != FALSE;
 }
 
-void Thread::setCurrentThreadAffinityMask (const uint32 affinityMask)
+void Thread::setCurrentThreadAffinityMask (const std::uint32_t affinityMask)
 {
     SetThreadAffinityMask (GetCurrentThread(), affinityMask);
 }
@@ -414,7 +414,7 @@ struct SleepEvent
 
 static SleepEvent sleepEvent;
 
-void BEAST_CALLTYPE Thread::sleep (const int millisecs)
+void Thread::sleep (const int millisecs)
 {
     if (millisecs >= 10 || sleepEvent.handle == 0)
     {
@@ -458,7 +458,7 @@ namespace beast{
 
 namespace beast {
 
-void BEAST_CALLTYPE Thread::sleep (int millisecs)
+void Thread::sleep (int millisecs)
 {
     struct timespec time;
     time.tv_sec = millisecs / 1000;
@@ -466,7 +466,7 @@ void BEAST_CALLTYPE Thread::sleep (int millisecs)
     nanosleep (&time, nullptr);
 }
 
-void BEAST_API beast_threadEntryPoint (void*);
+void beast_threadEntryPoint (void*);
 
 extern "C" void* threadEntryProcBeast (void*);
 extern "C" void* threadEntryProcBeast (void* userData)
@@ -576,7 +576,7 @@ void Thread::yield()
  #define SUPPORT_AFFINITIES 1
 #endif
 
-void Thread::setCurrentThreadAffinityMask (const uint32 affinityMask)
+void Thread::setCurrentThreadAffinityMask (const std::uint32_t affinityMask)
 {
    #if SUPPORT_AFFINITIES
     cpu_set_t affinity;

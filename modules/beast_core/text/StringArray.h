@@ -24,8 +24,10 @@
 #ifndef BEAST_STRINGARRAY_H_INCLUDED
 #define BEAST_STRINGARRAY_H_INCLUDED
 
-namespace beast
-{
+#include "../containers/Array.h"
+#include "../threads/CriticalSection.h"
+
+namespace beast {
 
 //==============================================================================
 /**
@@ -33,7 +35,7 @@ namespace beast
 
     @see String, StringPairArray
 */
-class BEAST_API StringArray : LeakChecked <StringArray>
+class StringArray : LeakChecked <StringArray>
 {
 public:
     //==============================================================================
@@ -407,6 +409,6 @@ private:
     Array <String> strings;
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_STRINGARRAY_H_INCLUDED

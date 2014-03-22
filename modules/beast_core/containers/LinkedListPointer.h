@@ -360,6 +360,6 @@ private:
     ObjectType* item;
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_LINKEDLISTPOINTER_H_INCLUDED

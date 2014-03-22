@@ -91,7 +91,7 @@ FatalError::FatalError (char const* message, char const* fileName, int lineNumbe
 
     static LockType s_mutex;
 
-    LockType::ScopedLockType lock (s_mutex);
+    std::lock_guard <LockType> lock (s_mutex);
 
     String const backtraceString = SystemStats::getStackBacktrace ();
 

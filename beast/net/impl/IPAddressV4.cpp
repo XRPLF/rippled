@@ -34,12 +34,12 @@ AddressV4::AddressV4 ()
 {
 }
 
-AddressV4::AddressV4 (uint32 value_)
+AddressV4::AddressV4 (std::uint32_t value_)
     : value (value_)
 {
 }
 
-AddressV4::AddressV4 (uint8 a, uint8 b, uint8 c, uint8 d)
+AddressV4::AddressV4 (std::uint8_t a, std::uint8_t b, std::uint8_t c, std::uint8_t d)
     : value ((a<<24)|(b<<16)|(c<<8)|d)
 {
 }
@@ -166,7 +166,7 @@ std::string to_string (AddressV4 const& addr)
 
 std::istream& operator>> (std::istream& is, AddressV4& addr)
 {
-    uint8 octet [4];
+    std::uint8_t octet [4];
     is >> IP::detail::integer (octet [0]);
     for (int i = 1; i < 4; ++i)
     {

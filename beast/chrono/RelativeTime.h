@@ -41,7 +41,7 @@ namespace beast {
 
     If you need an absolute time, (i.e. a date + time), see the Time class.
 */
-class BEAST_API  RelativeTime
+class  RelativeTime
 {
 public:
     //==============================================================================
@@ -88,7 +88,7 @@ public:
     /** Creates a new RelativeTime object representing a number of milliseconds.
         @see seconds, minutes, hours, days, weeks
     */
-    static RelativeTime milliseconds (int64 milliseconds) noexcept;
+    static RelativeTime milliseconds (std::int64_t milliseconds) noexcept;
 
     /** Creates a new RelativeTime object representing a number of seconds.
         @see milliseconds, minutes, hours, days, weeks
@@ -119,7 +119,7 @@ public:
     /** Returns the number of milliseconds this time represents.
         @see milliseconds, inSeconds, inMinutes, inHours, inDays, inWeeks
     */
-    int64 inMilliseconds() const noexcept;
+    std::int64_t inMilliseconds() const noexcept;
 
     /** Returns the number of seconds this time represents.
         @see inMilliseconds, inMinutes, inHours, inDays, inWeeks

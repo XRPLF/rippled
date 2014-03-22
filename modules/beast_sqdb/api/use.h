@@ -60,8 +60,8 @@
 #ifndef BEAST_SQDB_USE_H_INCLUDED
 #define BEAST_SQDB_USE_H_INCLUDED
 
-namespace sqdb
-{
+namespace beast {
+namespace sqdb {
 
 inline detail::use_type_ptr use_null()
 {
@@ -89,6 +89,7 @@ detail::use_type_ptr use(T& t, indicator& ind)
                           typename detail::exchange_traits<T>::type_family());
 }
 
-}
+} // sqdb
+} // beast
 
 #endif

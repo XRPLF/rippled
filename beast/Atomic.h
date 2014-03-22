@@ -25,10 +25,11 @@
 #define BEAST_ATOMIC_H_INCLUDED
 
 #include "Config.h"
-#include "CStdInt.h"
 #include "StaticAssert.h"
 
 #include "utility/noexcept.h"
+
+#include <cstdint>
 
 namespace beast {
 
@@ -158,10 +159,10 @@ private:
     template <typename Dest, typename Source>
     static inline Dest castTo (Source value) noexcept { union { Dest d; Source s; } u; u.s = value; return u.d; }
 
-    static inline Type castFrom32Bit (int32 value) noexcept { return castTo <Type, int32> (value); }
-    static inline Type castFrom64Bit (int64 value) noexcept { return castTo <Type, int64> (value); }
-    static inline int32 castTo32Bit (Type value) noexcept { return castTo <int32, Type> (value); }
-    static inline int64 castTo64Bit (Type value) noexcept { return castTo <int64, Type> (value); }
+    static inline Type castFrom32Bit (std::int32_t value) noexcept { return castTo <Type, std::int32_t> (value); }
+    static inline Type castFrom64Bit (std::int64_t value) noexcept { return castTo <Type, std::int64_t> (value); }
+    static inline std::int32_t castTo32Bit (Type value) noexcept { return castTo <std::int32_t, Type> (value); }
+    static inline std::int64_t castTo64Bit (Type value) noexcept { return castTo <std::int64_t, Type> (value); }
 
 
     Type operator++ (int); // better to just use pre-increment with atomics..
@@ -174,14 +175,14 @@ private:
         return sizeof (ValueType) == 1 ? (ValueType) -(signed char) n
             : (sizeof (ValueType) == 2 ? (ValueType) -(short) n
             : (sizeof (ValueType) == 4 ? (ValueType) -(int) n
-            : ((ValueType) -(int64) n)));
+            : ((ValueType) -(std::int64_t) n)));
     }
 
     /** This templated negate function will negate pointers as well as integers */
     template <typename PointerType>
     inline PointerType* negateValue (PointerType* n) noexcept
     {
-        return reinterpret_cast <PointerType*> (-reinterpret_cast <pointer_sized_int> (n));
+        return reinterpret_cast <PointerType*> (-reinterpret_cast <std::intptr_t> (n));
     }
 };
 
@@ -274,14 +275,14 @@ template <typename Type>
 inline Type Atomic<Type>::get() const noexcept
 {
   #if BEAST_ATOMICS_MAC
-    return sizeof (Type) == 4 ? castFrom32Bit ((int32) OSAtomicAdd32Barrier ((int32_t) 0, (BEAST_MAC_ATOMICS_VOLATILE int32_t*) &value))
-                              : castFrom64Bit ((int64) OSAtomicAdd64Barrier ((int64_t) 0, (BEAST_MAC_ATOMICS_VOLATILE int64_t*) &value));
+    return sizeof (Type) == 4 ? castFrom32Bit ((std::int32_t) OSAtomicAdd32Barrier ((int32_t) 0, (BEAST_MAC_ATOMICS_VOLATILE int32_t*) &value))
+                              : castFrom64Bit ((std::int64_t) OSAtomicAdd64Barrier ((int64_t) 0, (BEAST_MAC_ATOMICS_VOLATILE int64_t*) &value));
   #elif BEAST_ATOMICS_WINDOWS
-    return sizeof (Type) == 4 ? castFrom32Bit ((int32) beast_InterlockedExchangeAdd ((volatile long*) &value, (long) 0))
-                              : castFrom64Bit ((int64) beast_InterlockedExchangeAdd64 ((volatile __int64*) &value, (__int64) 0));
+    return sizeof (Type) == 4 ? castFrom32Bit ((std::int32_t) beast_InterlockedExchangeAdd ((volatile long*) &value, (long) 0))
+                              : castFrom64Bit ((std::int64_t) beast_InterlockedExchangeAdd64 ((volatile __int64*) &value, (__int64) 0));
   #elif BEAST_ATOMICS_GCC
-    return sizeof (Type) == 4 ? castFrom32Bit ((int32) __sync_add_and_fetch ((volatile int32*) &value, 0))
-                              : castFrom64Bit ((int64) __sync_add_and_fetch ((volatile int64*) &value, 0));
+    return sizeof (Type) == 4 ? castFrom32Bit ((std::int32_t) __sync_add_and_fetch ((volatile std::int32_t*) &value, 0))
+                              : castFrom64Bit ((std::int64_t) __sync_add_and_fetch ((volatile std::int64_t*) &value, 0));
   #endif
 }
 
@@ -293,8 +294,8 @@ inline Type Atomic<Type>::exchange (const Type newValue) noexcept
     while (! compareAndSetBool (newValue, currentVal)) { currentVal = value; }
     return currentVal;
   #elif BEAST_ATOMICS_WINDOWS
-    return sizeof (Type) == 4 ? castFrom32Bit ((int32) beast_InterlockedExchange ((volatile long*) &value, (long) castTo32Bit (newValue)))
-                              : castFrom64Bit ((int64) beast_InterlockedExchange64 ((volatile __int64*) &value, (__int64) castTo64Bit (newValue)));
+    return sizeof (Type) == 4 ? castFrom32Bit ((std::int32_t) beast_InterlockedExchange ((volatile long*) &value, (long) castTo32Bit (newValue)))
+                              : castFrom64Bit ((std::int64_t) beast_InterlockedExchange64 ((volatile __int64*) &value, (__int64) castTo64Bit (newValue)));
   #endif
 }
 
@@ -379,8 +380,8 @@ inline bool Atomic<Type>::compareAndSetBool (const Type newValue, const Type val
   #elif BEAST_ATOMICS_WINDOWS
     return compareAndSetValue (newValue, valueToCompare) == valueToCompare;
   #elif BEAST_ATOMICS_GCC
-    return sizeof (Type) == 4 ? __sync_bool_compare_and_swap ((volatile int32*) &value, castTo32Bit (valueToCompare), castTo32Bit (newValue))
-                              : __sync_bool_compare_and_swap ((volatile int64*) &value, castTo64Bit (valueToCompare), castTo64Bit (newValue));
+    return sizeof (Type) == 4 ? __sync_bool_compare_and_swap ((volatile std::int32_t*) &value, castTo32Bit (valueToCompare), castTo32Bit (newValue))
+                              : __sync_bool_compare_and_swap ((volatile std::int64_t*) &value, castTo64Bit (valueToCompare), castTo64Bit (newValue));
   #endif
 }
 
@@ -399,11 +400,11 @@ inline Type Atomic<Type>::compareAndSetValue (const Type newValue, const Type va
     }
 
   #elif BEAST_ATOMICS_WINDOWS
-    return sizeof (Type) == 4 ? castFrom32Bit ((int32) beast_InterlockedCompareExchange ((volatile long*) &value, (long) castTo32Bit (newValue), (long) castTo32Bit (valueToCompare)))
-                              : castFrom64Bit ((int64) beast_InterlockedCompareExchange64 ((volatile __int64*) &value, (__int64) castTo64Bit (newValue), (__int64) castTo64Bit (valueToCompare)));
+    return sizeof (Type) == 4 ? castFrom32Bit ((std::int32_t) beast_InterlockedCompareExchange ((volatile long*) &value, (long) castTo32Bit (newValue), (long) castTo32Bit (valueToCompare)))
+                              : castFrom64Bit ((std::int64_t) beast_InterlockedCompareExchange64 ((volatile __int64*) &value, (__int64) castTo64Bit (newValue), (__int64) castTo64Bit (valueToCompare)));
   #elif BEAST_ATOMICS_GCC
-    return sizeof (Type) == 4 ? castFrom32Bit ((int32) __sync_val_compare_and_swap ((volatile int32*) &value, castTo32Bit (valueToCompare), castTo32Bit (newValue)))
-                              : castFrom64Bit ((int64) __sync_val_compare_and_swap ((volatile int64*) &value, castTo64Bit (valueToCompare), castTo64Bit (newValue)));
+    return sizeof (Type) == 4 ? castFrom32Bit ((std::int32_t) __sync_val_compare_and_swap ((volatile std::int32_t*) &value, castTo32Bit (valueToCompare), castTo32Bit (newValue)))
+                              : castFrom64Bit ((std::int64_t) __sync_val_compare_and_swap ((volatile std::int64_t*) &value, castTo64Bit (valueToCompare), castTo64Bit (newValue)));
   #endif
 }
 

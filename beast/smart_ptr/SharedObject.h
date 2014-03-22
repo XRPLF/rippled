@@ -63,7 +63,7 @@ namespace beast {
 
     @see SharedPtr, SharedObjectArray, SingleThreadedSharedObject
 */
-class BEAST_API SharedObject : public Uncopyable
+class SharedObject : public Uncopyable
 {
 public:
     //==============================================================================

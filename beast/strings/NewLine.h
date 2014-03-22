@@ -41,7 +41,7 @@ namespace beast {
     The exact character sequence that will be used for the new-line can be set and
     retrieved with OutputStream::setNewLineString() and OutputStream::getNewLineString().
 */
-class BEAST_API NewLine
+class NewLine
 {
 public:
     /** Returns the default new-line sequence that the library uses.
@@ -72,7 +72,7 @@ extern NewLine newLine;
     myString << "Hello World" << newLine << newLine;
     @endcode
 */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, const NewLine&);
+String& operator<< (String& string1, const NewLine&);
 
 }
 

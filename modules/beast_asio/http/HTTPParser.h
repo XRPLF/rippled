@@ -79,7 +79,7 @@ public:
 
 protected:
     Type m_type;
-    ScopedPointer <HTTPParserImpl> m_impl;
+    std::unique_ptr <HTTPParserImpl> m_impl;
     SharedPtr <HTTPRequest> m_request;
     SharedPtr <HTTPResponse> m_response;
 };

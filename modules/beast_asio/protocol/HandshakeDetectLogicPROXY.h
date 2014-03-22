@@ -50,8 +50,8 @@ public:
         IPv4Address sourceAddress;
         IPv4Address destAddress;
 
-        uint16 sourcePort;
-        uint16 destPort;
+        std::uint16_t sourcePort;
+        std::uint16_t destPort;
     };
 
     explicit HandshakeDetectLogicPROXY (arg_type const&)

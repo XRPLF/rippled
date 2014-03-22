@@ -57,8 +57,8 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
+namespace beast {
+namespace sqdb {
 
 blob::blob()
     : m_blob(0)
@@ -117,4 +117,6 @@ void blob::close()
     }
 }
 
-}
+} // sqdb
+} // beast
+

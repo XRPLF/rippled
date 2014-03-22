@@ -157,17 +157,11 @@
 #include "text/StringArray.cpp"
 #include "text/StringPairArray.cpp"
 
-#include "thread/impl/TrackedMutex.cpp"
 #include "thread/DeadlineTimer.cpp"
 #include "thread/Workers.cpp"
 
-#include "threads/ChildProcess.cpp"
-
 #include "time/AtExitHook.cpp"
 #include "time/Time.cpp"
-
-#include "xml/XmlDocument.cpp"
-#include "xml/XmlElement.cpp"
 
 #if BEAST_MAC || BEAST_IOS
 #include "native/osx_ObjCHelpers.h"
@@ -183,7 +177,6 @@
 
 #if BEAST_MAC || BEAST_IOS
 #include "native/mac_Files.mm"
-#include "native/mac_Network.mm"
 #include "native/mac_Strings.mm"
 #include "native/mac_SystemStats.mm"
 #include "native/mac_Threads.mm"
@@ -191,33 +184,27 @@
 #elif BEAST_WINDOWS
 #include "native/win32_ComSmartPtr.h"
 #include "native/win32_Files.cpp"
-#include "native/win32_Network.cpp"
 #include "native/win32_Registry.cpp"
 #include "native/win32_SystemStats.cpp"
 #include "native/win32_Threads.cpp"
 
 #elif BEAST_LINUX
 #include "native/linux_Files.cpp"
-#include "native/linux_Network.cpp"
 #include "native/linux_SystemStats.cpp"
 #include "native/linux_Threads.cpp"
 
 #elif BEAST_BSD
 #include "native/bsd_Files.cpp"
-#include "native/bsd_Network.cpp"
 #include "native/bsd_SystemStats.cpp"
 #include "native/bsd_Threads.cpp"
 
 #elif BEAST_ANDROID
 #include "native/android_Files.cpp"
 #include "native/android_Misc.cpp"
-#include "native/android_Network.cpp"
 #include "native/android_SystemStats.cpp"
 #include "native/android_Threads.cpp"
 
 #endif
-
-#include "threads/HighResolutionTimer.cpp"
 
 // Has to be outside the beast namespace
 extern "C" {

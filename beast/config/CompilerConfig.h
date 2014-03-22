@@ -42,10 +42,8 @@
 /** This macro defines the C calling convention used as the standard for Beast calls.
 */
 #if BEAST_MSVC
-# define BEAST_CALLTYPE   __stdcall
 # define BEAST_CDECL      __cdecl
 #else
-# define BEAST_CALLTYPE
 # define BEAST_CDECL
 #endif
 
@@ -148,16 +146,6 @@ extern void beast_reportFatalError (char const* message, char const* fileName, i
 
 //------------------------------------------------------------------------------
 
-/** This macro can be added to class definitions to disable the use of new/delete to
-    allocate the object on the heap, forcing it to only be used as a stack or member variable.
-*/
-#define BEAST_PREVENT_HEAP_ALLOCATION \
-   private: \
-    static void* operator new (size_t); \
-    static void operator delete (void*);
-
-//------------------------------------------------------------------------------
-
 #if ! DOXYGEN
  #define BEAST_JOIN_MACRO_HELPER(a, b) a ## b
  #define BEAST_STRINGIFY_MACRO_HELPER(a) #a
@@ -174,19 +162,6 @@ extern void beast_reportFatalError (char const* message, char const* fileName, i
 #define BEAST_STRINGIFY(item)  BEAST_STRINGIFY_MACRO_HELPER (item)
 
 //------------------------------------------------------------------------------
-
-#if BEAST_DEBUG || DOXYGEN
-/** A platform-independent way of forcing an inline function.
-    Use the syntax: @code
-    forcedinline void myfunction (int x)
-    @endcode
-*/
-# define forcedinline inline
-#elif BEAST_MSVC
-# define forcedinline __forceinline
-#else
-# define forcedinline inline __attribute__((always_inline))
-#endif
 
 #if BEAST_MSVC || DOXYGEN
 /** This can be placed before a stack or member variable declaration to tell

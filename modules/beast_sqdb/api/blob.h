@@ -60,8 +60,8 @@
 #ifndef BEAST_SQDB_BLOB_H_INCLUDED
 #define BEAST_SQDB_BLOB_H_INCLUDED
 
-namespace sqdb
-{
+namespace beast {
+namespace sqdb {
 
 // BLOB interface
 class blob
@@ -86,6 +86,7 @@ private:
     sqlite3_blob* m_blob;
 };
 
-}
+} // sqdb
+} // beast
 
 #endif

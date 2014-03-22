@@ -70,8 +70,6 @@
 
 #include <ctime>
 
-#include "../beast_core/beast_core.h"
-
 // forward declares
 struct sqlite3;
 struct sqlite3_blob;
@@ -88,13 +86,10 @@ class session;               // statement.h
 }
 }
 
-#if BEAST_MSVC
+#ifdef _MSC_VER
 #pragma warning (push)
 #pragma warning (disable: 4355) // 'this' : used in base member initializer list
 #endif
-
-namespace beast
-{
 
 #include "api/backend.h"
 #include "api/transaction.h"
@@ -123,9 +118,7 @@ namespace beast
 
 #include "api/session.h"
 
-}
-
-#if BEAST_MSVC
+#if _MSC_VER
 #pragma warning (pop)
 #endif
 

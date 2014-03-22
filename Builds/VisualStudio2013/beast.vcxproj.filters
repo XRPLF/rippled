@@ -4,9 +4,6 @@
     <None Include="..\..\modules\beast_core\native\mac_Files.mm">
       <Filter>beast_core\native</Filter>
     </None>
-    <None Include="..\..\modules\beast_core\native\mac_Network.mm">
-      <Filter>beast_core\native</Filter>
-    </None>
     <None Include="..\..\modules\beast_core\native\mac_Strings.mm">
       <Filter>beast_core\native</Filter>
     </None>
@@ -111,9 +108,6 @@
     <Filter Include="beast_core\time">
       <UniqueIdentifier>{d3ea4af5-ae48-4144-a2ef-a212342d72ee}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast_core\xml">
-      <UniqueIdentifier>{a1a38659-7779-41d6-8a3c-068433c4deaf}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast_core\diagnostic">
       <UniqueIdentifier>{69e28551-92ea-420b-a465-75ed248e3b59}</UniqueIdentifier>
     </Filter>
@@ -158,9 +152,6 @@
     </Filter>
     <Filter Include="beast_core\thread\detail">
       <UniqueIdentifier>{1b2e8962-c087-4453-8107-7077c2de5846}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast_core\thread\impl">
-      <UniqueIdentifier>{91538dcf-b219-4c80-9861-bb4949089775}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast_asio\protocol">
       <UniqueIdentifier>{c0724499-ab69-40c3-90e2-65242dbd2eaa}</UniqueIdentifier>
@@ -326,9 +317,6 @@
     <ClInclude Include="..\..\modules\beast_core\containers\LinkedListPointer.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\containers\OwnedArray.h">
-      <Filter>beast_core\containers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\containers\ScopedValueSetter.h">
       <Filter>beast_core\containers</Filter>
     </ClInclude>
@@ -401,19 +389,10 @@
     <ClInclude Include="..\..\modules\beast_core\text\StringPairArray.h">
       <Filter>beast_core\text</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\ChildProcess.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\CriticalSection.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\DynamicLibrary.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\HighResolutionTimer.h">
-      <Filter>beast_core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\threads\InterProcessLock.h">
       <Filter>beast_core\threads</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\threads\Process.h">
@@ -424,12 +403,6 @@
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\time\Time.h">
       <Filter>beast_core\time</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\xml\XmlDocument.h">
-      <Filter>beast_core\xml</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\xml\XmlElement.h">
-      <Filter>beast_core\xml</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\diagnostic\Throw.h">
       <Filter>beast_core\diagnostic</Filter>
@@ -521,23 +494,8 @@
     <ClInclude Include="..\..\modules\beast_core\thread\MutexTraits.h">
       <Filter>beast_core\thread</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\TrackedMutex.h">
-      <Filter>beast_core\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\detail\TrackedMutex.h">
-      <Filter>beast_core\thread\detail</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\detail\ScopedLock.h">
       <Filter>beast_core\thread\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\impl\TrackedMutex.h">
-      <Filter>beast_core\thread\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\impl\TrackedMutexType.h">
-      <Filter>beast_core\thread\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\modules\beast_core\thread\impl\UntrackedMutexType.h">
-      <Filter>beast_core\thread\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\modules\beast_core\thread\DeadlineTimer.h">
       <Filter>beast_core\thread</Filter>
@@ -675,9 +633,6 @@
       <Filter>beast_core\diagnostic</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\Config.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\beast\CStdInt.h">
       <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\beast\utility\Journal.h">
@@ -1265,9 +1220,6 @@
     <ClCompile Include="..\..\modules\beast_core\native\linux_Files.cpp">
       <Filter>beast_core\native</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\linux_Network.cpp">
-      <Filter>beast_core\native</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\linux_SystemStats.cpp">
       <Filter>beast_core\native</Filter>
     </ClCompile>
@@ -1275,9 +1227,6 @@
       <Filter>beast_core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\win32_Files.cpp">
-      <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\win32_Network.cpp">
       <Filter>beast_core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\win32_Registry.cpp">
@@ -1307,28 +1256,13 @@
     <ClCompile Include="..\..\modules\beast_core\text\StringPairArray.cpp">
       <Filter>beast_core\text</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\ChildProcess.cpp">
-      <Filter>beast_core\threads</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\threads\HighResolutionTimer.cpp">
-      <Filter>beast_core\threads</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\time\Time.cpp">
       <Filter>beast_core\time</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\xml\XmlDocument.cpp">
-      <Filter>beast_core\xml</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\xml\XmlElement.cpp">
-      <Filter>beast_core\xml</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\bsd_SystemStats.cpp">
       <Filter>beast_core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\bsd_Files.cpp">
-      <Filter>beast_core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\native\bsd_Network.cpp">
       <Filter>beast_core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\native\bsd_Threads.cpp">
@@ -1390,9 +1324,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\SemanticVersion.cpp">
       <Filter>beast_core\diagnostic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\thread\impl\TrackedMutex.cpp">
-      <Filter>beast_core\thread\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\thread\DeadlineTimer.cpp">
       <Filter>beast_core\thread</Filter>

@@ -68,7 +68,7 @@ Result RandomAccessFile::read (void* buffer, ByteCount numBytes, ByteCount* pAct
 
 Result RandomAccessFile::write (const void* data, ByteCount numBytes, ByteCount* pActualAmount)
 {
-    bassert (data != nullptr && ((ssize_t) numBytes) >= 0);
+    bassert (data != nullptr && ((std::ptrdiff_t) numBytes) >= 0);
 
     Result result (Result::ok ());
 
@@ -128,7 +128,7 @@ public:
     static void createRecords (HeapBlock <Record>& records,
                                int numRecords,
                                int maxBytes,
-                               int64 seedValue)
+                               std::int64_t seedValue)
     {
         using namespace UnitTestUtilities;
 
@@ -157,7 +157,7 @@ public:
     void writeRecords (RandomAccessFile& file,
                        int numRecords,
                        HeapBlock <Record> const& records,
-                       int64 seedValue)
+                       std::int64_t seedValue)
     {
         using namespace UnitTestUtilities;
 
@@ -181,7 +181,7 @@ public:
     void readRecords (RandomAccessFile& file,
                       int numRecords,
                       HeapBlock <Record> const& records,
-                      int64 seedValue)
+                      std::int64_t seedValue)
     {
         using namespace UnitTestUtilities;
 

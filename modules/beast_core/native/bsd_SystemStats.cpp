@@ -318,7 +318,7 @@ void CPUInformation::initialise() noexcept
 }
 
 //==============================================================================
-uint32 beast_millisecondsSinceStartup() noexcept
+std::uint32_t beast_millisecondsSinceStartup() noexcept
 {
     timespec t;
     clock_gettime (CLOCK_MONOTONIC, &t);
@@ -326,15 +326,15 @@ uint32 beast_millisecondsSinceStartup() noexcept
     return t.tv_sec * 1000 + t.tv_nsec / 1000000;
 }
 
-int64 Time::getHighResolutionTicks() noexcept
+std::int64_t Time::getHighResolutionTicks() noexcept
 {
     timespec t;
     clock_gettime (CLOCK_MONOTONIC, &t);
 
-    return (t.tv_sec * (int64) 1000000) + (t.tv_nsec / 1000);
+    return (t.tv_sec * (std::int64_t) 1000000) + (t.tv_nsec / 1000);
 }
 
-int64 Time::getHighResolutionTicksPerSecond() noexcept
+std::int64_t Time::getHighResolutionTicksPerSecond() noexcept
 {
     return 1000000;  // (microseconds)
 }
@@ -353,4 +353,4 @@ bool Time::setSystemTimeToThisTime() const
     return settimeofday (&t, 0) == 0;
 }
 
-}  // namespace beast
+} // beast

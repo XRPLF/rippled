@@ -24,8 +24,9 @@
 #ifndef BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
 #define BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
 
-namespace beast
-{
+#include "../../../beast/HeapBlock.h"
+
+namespace beast {
 
 //==============================================================================
 /**
@@ -37,7 +38,7 @@ namespace beast
     It inherits from a critical section class to allow the arrays to use
     the "empty base class optimisation" pattern to reduce their footprint.
 
-    @see Array, OwnedArray, SharedObjectArray
+    @see Array, SharedObjectArray
 */
 template <class ElementType, class TypeOfCriticalSectionToUse>
 class ArrayAllocationBase
@@ -129,6 +130,6 @@ public:
     int numAllocated;
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_ARRAYALLOCATIONBASE_H_INCLUDED

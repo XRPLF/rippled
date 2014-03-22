@@ -87,7 +87,7 @@ public:
     inline bool isEmpty() const noexcept                { return *data == 0; }
 
     /** Returns the unicode character that this pointer is pointing to. */
-    inline beast_wchar operator*() const noexcept        { return (beast_wchar) (uint8) *data; }
+    inline beast_wchar operator*() const noexcept        { return (beast_wchar) (std::uint8_t) *data; }
 
     /** Moves this pointer along to the next character in the string. */
     inline CharPointer_ASCII operator++() noexcept
@@ -105,7 +105,7 @@ public:
 
     /** Returns the character that this pointer is currently pointing to, and then
         advances the pointer to point to the next character. */
-    inline beast_wchar getAndAdvance() noexcept  { return (beast_wchar) (uint8) *data++; }
+    inline beast_wchar getAndAdvance() noexcept  { return (beast_wchar) (std::uint8_t) *data++; }
 
     /** Moves this pointer along to the next character in the string. */
     CharPointer_ASCII operator++ (int) noexcept
@@ -332,27 +332,27 @@ public:
     /** Returns true if the first character of this string is a letter or digit. */
     bool isLetterOrDigit() const            { return CharacterFunctions::isLetterOrDigit (*data) != 0; }
     /** Returns true if the first character of this string is upper-case. */
-    bool isUpperCase() const                { return CharacterFunctions::isUpperCase ((beast_wchar) (uint8) *data) != 0; }
+    bool isUpperCase() const                { return CharacterFunctions::isUpperCase ((beast_wchar) (std::uint8_t) *data) != 0; }
     /** Returns true if the first character of this string is lower-case. */
-    bool isLowerCase() const                { return CharacterFunctions::isLowerCase ((beast_wchar) (uint8) *data) != 0; }
+    bool isLowerCase() const                { return CharacterFunctions::isLowerCase ((beast_wchar) (std::uint8_t) *data) != 0; }
 
     /** Returns an upper-case version of the first character of this string. */
-    beast_wchar toUpperCase() const noexcept { return CharacterFunctions::toUpperCase ((beast_wchar) (uint8) *data); }
+    beast_wchar toUpperCase() const noexcept { return CharacterFunctions::toUpperCase ((beast_wchar) (std::uint8_t) *data); }
     /** Returns a lower-case version of the first character of this string. */
-    beast_wchar toLowerCase() const noexcept { return CharacterFunctions::toLowerCase ((beast_wchar) (uint8) *data); }
+    beast_wchar toLowerCase() const noexcept { return CharacterFunctions::toLowerCase ((beast_wchar) (std::uint8_t) *data); }
 
     /** Parses this string as a 32-bit integer. */
     int getIntValue32() const noexcept      { return atoi (data); }
 
     /** Parses this string as a 64-bit integer. */
-    int64 getIntValue64() const noexcept
+    std::int64_t getIntValue64() const noexcept
     {
        #if BEAST_LINUX || BEAST_ANDROID
         return atoll (data);
        #elif BEAST_WINDOWS
         return _atoi64 (data);
        #else
-        return CharacterFunctions::getIntValue <int64, CharPointer_ASCII> (*this);
+        return CharacterFunctions::getIntValue <std::int64_t, CharPointer_ASCII> (*this);
        #endif
     }
 

@@ -24,15 +24,16 @@
 #ifndef BEAST_MEMORYBLOCK_H_INCLUDED
 #define BEAST_MEMORYBLOCK_H_INCLUDED
 
-namespace beast
-{
+#include "../../../beast/utility/LeakChecked.h"
+
+namespace beast {
 
 //==============================================================================
 /**
     A class to hold a resizable block of raw data.
 
 */
-class BEAST_API MemoryBlock : LeakChecked <MemoryBlock>
+class MemoryBlock : LeakChecked <MemoryBlock>
 {
 public:
     //==============================================================================
@@ -160,7 +161,7 @@ public:
 
         This is handy for clearing a block of memory to zero.
     */
-    void fillWith (uint8 valueToUse) noexcept;
+    void fillWith (std::uint8_t valueToUse) noexcept;
 
     /** Adds another block of data to the end of this one.
         The data pointer must not be null. This block's size will be increased accordingly.
@@ -267,7 +268,7 @@ private:
     size_t size;
 };
 
-}  // namespace beast
+} // beast
 
 #endif
 

@@ -60,11 +60,11 @@
 #ifndef BEAST_SQDB_DETAIL_REF_COUNTED_PREPARE_INFO_H_INCLUDED
 #define BEAST_SQDB_DETAIL_REF_COUNTED_PREPARE_INFO_H_INCLUDED
 
-namespace sqdb
-{
+#include <vector>
 
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 // helper that collects statement text and bindings to create the statement
 class ref_counted_prepare_info : public ref_counted_statement_base
@@ -82,8 +82,8 @@ public:
     std::vector <use_type_base*> m_uses;
 };
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast
 
 #endif

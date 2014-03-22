@@ -60,8 +60,10 @@
 #ifndef BEAST_SQDB_STATEMENT_H_INCLUDED
 #define BEAST_SQDB_STATEMENT_H_INCLUDED
 
-namespace sqdb
-{
+#include <memory>
+
+namespace beast {
+namespace sqdb {
 
 //
 // Lightweight copyable handle to a statement. This
@@ -95,9 +97,10 @@ private:
     void clean_up();
 
 private:
-    SharedPtr <detail::statement_imp> m_imp;
+    std::shared_ptr <detail::statement_imp> m_imp;
 };
 
-}
+} // sqdb
+} // beast
 
 #endif

@@ -72,7 +72,7 @@ struct RegistryKeyWrapper : public Uncopyable
                                   (DWORD) dataSize) == ERROR_SUCCESS;
     }
 
-    static uint32 getBinaryValue (const String& regValuePath, MemoryBlock& result, DWORD wow64Flags)
+    static std::uint32_t getBinaryValue (const String& regValuePath, MemoryBlock& result, DWORD wow64Flags)
     {
         const RegistryKeyWrapper key (regValuePath, false, wow64Flags);
 
@@ -135,7 +135,7 @@ struct RegistryKeyWrapper : public Uncopyable
     String valueName;
 };
 
-uint32 WindowsRegistry::getBinaryValue (const String& regValuePath, MemoryBlock& result)
+std::uint32_t WindowsRegistry::getBinaryValue (const String& regValuePath, MemoryBlock& result)
 {
     return RegistryKeyWrapper::getBinaryValue (regValuePath, result, 0);
 }
@@ -161,12 +161,12 @@ bool WindowsRegistry::setValue (const String& regValuePath, const String& value)
                                          CharPointer_UTF16::getBytesRequiredFor (value.getCharPointer()));
 }
 
-bool WindowsRegistry::setValue (const String& regValuePath, const uint32 value)
+bool WindowsRegistry::setValue (const String& regValuePath, const std::uint32_t value)
 {
     return RegistryKeyWrapper::setValue (regValuePath, REG_DWORD, &value, sizeof (value));
 }
 
-bool WindowsRegistry::setValue (const String& regValuePath, const uint64 value)
+bool WindowsRegistry::setValue (const String& regValuePath, const std::uint64_t value)
 {
     return RegistryKeyWrapper::setValue (regValuePath, REG_QWORD, &value, sizeof (value));
 }
@@ -216,4 +216,4 @@ bool WindowsRegistry::registerFileAssociation (const String& fileExtension,
                            targetExecutable.getFullPathName() + "," + String (-iconResourceNumber)));
 }
 
-}  // namespace beast
+} // beast

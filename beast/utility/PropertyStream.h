@@ -20,7 +20,6 @@
 #ifndef BEAST_UTILITY_PROPERTYSTREAM_H_INCLUDED
 #define BEAST_UTILITY_PROPERTYSTREAM_H_INCLUDED
 
-#include "../CStdInt.h"
 #include "../Uncopyable.h"
 #include "../intrusive/List.h"
 #include "../threads/SharedData.h"

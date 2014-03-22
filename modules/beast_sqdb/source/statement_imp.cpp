@@ -57,11 +57,9 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 /*
 
@@ -172,7 +170,7 @@ void statement_imp::prepare(std::string const& query, bool bRepeatable)
     }
     else
     {
-        Throw(detail::sqliteError(__FILE__, __LINE__, result));
+        throw detail::sqliteError(__FILE__, __LINE__, result);
     }
 }
 
@@ -180,7 +178,7 @@ Error statement_imp::execute()
 {
     Error error;
 
-    check_precondition (m_stmt != nullptr);
+    assert (m_stmt != nullptr);
 
     // ???
     m_bGotData = false;
@@ -252,7 +250,7 @@ bool statement_imp::fetch(Error& error)
     else
     {
         // should never get SQLITE_OK here
-        fatal_error ("invalid result");
+        throw std::invalid_argument ("invalid result");
     }
 
     return m_bGotData;
@@ -275,7 +273,7 @@ void statement_imp::do_uses()
                                       sqlite3_clear_bindings(m_stmt));
 
     if (error)
-        Throw(error);
+        throw error;
 
     for (uses_t::iterator iter = m_uses.begin(); iter != m_uses.end(); ++iter)
         (*iter)->do_use();
@@ -305,6 +303,6 @@ rowid statement_imp::last_insert_rowid()
     return m_last_insert_rowid;
 }
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast

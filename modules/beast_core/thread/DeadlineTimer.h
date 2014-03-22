@@ -111,6 +111,6 @@ private:
     double m_secondsRecurring; // non zero if recurring
 };
 
-}  // namespace beast
+} // beast
 
 #endif

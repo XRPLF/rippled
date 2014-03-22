@@ -60,11 +60,9 @@
 #ifndef BEAST_SQDB_DETAIL_STATEMENT_IMP_H_INCLUDED
 #define BEAST_SQDB_DETAIL_STATEMENT_IMP_H_INCLUDED
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 // statement implementation
 class statement_imp : public SharedObject
@@ -108,8 +106,8 @@ public:
     uses_t m_uses;
 };
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast
 
 #endif

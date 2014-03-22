@@ -60,11 +60,15 @@
 #ifndef BEAST_SQDB_BACKEND_H_INCLUDED
 #define BEAST_SQDB_BACKEND_H_INCLUDED
 
-namespace sqdb
-{
+#include <cstdint>
 
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+
+namespace detail {
+
+//signed char
+//wchar_t
 
 // supported standard types for intos and uses
 enum exchange_type
@@ -72,13 +76,12 @@ enum exchange_type
     x_null, // only for input variables
 
     x_bool,
-
-    x_char,  x_uchar,
-    x_short, x_ushort,
-    x_int,   x_uint,
-    x_long,  x_ulong,
-    x_int64, x_uint64,
-    x_float, x_double,
+    x_char,     x_uchar,
+    x_short,    x_ushort,
+    x_int,      x_uint,
+    x_long,     x_ulong,
+    x_longlong, x_ulonglong,
+    x_float,    x_double,       x_longdouble,
 
     x_cstring, // null terminated char*, only valid for use_type
     x_cwstring, // null terminated wchar*, only valid for use_type
@@ -91,7 +94,7 @@ enum exchange_type
     x_blob
 };
 
-}
+} // detail
 
 // the enum type for indicator variables
 enum indicator
@@ -104,8 +107,9 @@ enum indicator
 // sqlite row id
 
 //typedef sqlite3_int64 rowid;
-typedef int64 rowid;
+typedef std::int64_t rowid;
 
-}
+} // sqdb
+} // beast
 
 #endif

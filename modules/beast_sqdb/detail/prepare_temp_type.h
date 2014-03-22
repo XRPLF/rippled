@@ -60,11 +60,9 @@
 #ifndef BEAST_SQDB_DETAIL_PREPARE_TEMP_TYPE_H_INCLUDED
 #define BEAST_SQDB_DETAIL_PREPARE_TEMP_TYPE_H_INCLUDED
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 // lightweight copyable wrapper around the prepare info
 class prepare_temp_type
@@ -112,8 +110,8 @@ private:
     session* m_session;
 };
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast
 
 #endif

@@ -24,8 +24,17 @@
 #ifndef BEAST_FILE_H_INCLUDED
 #define BEAST_FILE_H_INCLUDED
 
-namespace beast
-{
+#include "../containers/Array.h"
+#include "../memory/MemoryBlock.h"
+#include "../misc/Result.h"
+#include "../time/Time.h"
+#include "../text/StringArray.h"
+#include "../threads/CriticalSection.h"
+
+namespace beast {
+
+class FileInputStream;
+class FileOutputStream;
 
 //==============================================================================
 /**
@@ -39,7 +48,7 @@ namespace beast
 
     @see FileInputStream, FileOutputStream
 */
-class BEAST_API  File
+class  File
 {
 public:
     //==============================================================================
@@ -123,14 +132,14 @@ public:
 
         @returns    the number of bytes in the file, or 0 if it doesn't exist.
     */
-    int64 getSize() const;
+    std::int64_t getSize() const;
 
     /** Utility function to convert a file size in bytes to a neat string description.
 
         So for example 100 would return "100 bytes", 2000 would return "2 KB",
         2000000 would produce "2 MB", etc.
     */
-    static String descriptionOfSizeInBytes (int64 bytes);
+    static String descriptionOfSizeInBytes (std::int64_t bytes);
 
     //==============================================================================
     /** Returns the complete, absolute path of this file.
@@ -235,7 +244,7 @@ public:
         This is based on the filename. Obviously it's possible, although unlikely, that
         two files will have the same hash-code.
     */
-    int64 hashCode64() const;
+    std::int64_t hashCode64() const;
 
     //==============================================================================
     /** Returns a file that represents a relative (or absolute) sub-path of the current one.
@@ -698,14 +707,14 @@ public:
         @returns the number of bytes free, or 0 if there's a problem finding this out
         @see getVolumeTotalSize
     */
-    int64 getBytesFreeOnVolume() const;
+    std::int64_t getBytesFreeOnVolume() const;
 
     /** Returns the total size of the drive that contains this file.
 
         @returns the total number of bytes that the volume can hold
         @see getBytesFreeOnVolume
     */
-    int64 getVolumeTotalSize() const;
+    std::int64_t getVolumeTotalSize() const;
 
     /** Returns true if this file is on a CD or DVD drive. */
     bool isOnCDRomDrive() const;
@@ -842,7 +851,7 @@ public:
 
         @see SpecialLocationType
     */
-    static File BEAST_CALLTYPE getSpecialLocation (const SpecialLocationType type);
+    static File getSpecialLocation (const SpecialLocationType type);
 
     //==============================================================================
     /** Returns a temporary file in the system's temp directory.
@@ -946,12 +955,12 @@ private:
     Result createDirectoryInternal (const String&) const;
     bool copyInternal (const File&) const;
     bool moveInternal (const File&) const;
-    bool setFileTimesInternal (int64 m, int64 a, int64 c) const;
-    void getFileTimesInternal (int64& m, int64& a, int64& c) const;
+    bool setFileTimesInternal (std::int64_t m, std::int64_t a, std::int64_t c) const;
+    void getFileTimesInternal (std::int64_t& m, std::int64_t& a, std::int64_t& c) const;
     bool setFileReadOnlyInternal (bool) const;
 };
 
-}  // namespace beast
+} // beast
 
 #endif
 

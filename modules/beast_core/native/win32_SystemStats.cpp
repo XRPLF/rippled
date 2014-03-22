@@ -31,8 +31,8 @@ void Logger::outputDebugString (const String& text)
 
 //==============================================================================
 #ifdef BEAST_DLL_BUILD
- BEAST_API void* beastDLL_malloc (size_t sz)    { return std::malloc (sz); }
- BEAST_API void  beastDLL_free (void* block)    { std::free (block); }
+ void* beastDLL_malloc (size_t sz)    { return std::malloc (sz); }
+ void  beastDLL_free (void* block)    { std::free (block); }
 #endif
 
 //==============================================================================
@@ -225,9 +225,9 @@ String SystemStats::getEnvironmentVariable (const String& name, const String& de
 }
 
 //==============================================================================
-uint32 beast_millisecondsSinceStartup() noexcept
+std::uint32_t beast_millisecondsSinceStartup() noexcept
 {
-    return (uint32) timeGetTime();
+    return (std::uint32_t) timeGetTime();
 }
 
 //==============================================================================
@@ -247,17 +247,17 @@ public:
         hiResTicksScaleFactor = 1000.0 / hiResTicksPerSecond;
     }
 
-    inline int64 getHighResolutionTicks() noexcept
+    inline std::int64_t getHighResolutionTicks() noexcept
     {
         LARGE_INTEGER ticks;
         QueryPerformanceCounter (&ticks);
 
-        const int64 mainCounterAsHiResTicks = (beast_millisecondsSinceStartup() * hiResTicksPerSecond) / 1000;
-        const int64 newOffset = mainCounterAsHiResTicks - ticks.QuadPart;
+        const std::int64_t mainCounterAsHiResTicks = (beast_millisecondsSinceStartup() * hiResTicksPerSecond) / 1000;
+        const std::int64_t newOffset = mainCounterAsHiResTicks - ticks.QuadPart;
 
         // fix for a very obscure PCI hardware bug that can make the counter
         // sometimes jump forwards by a few seconds..
-        const int64 offsetDrift = abs64 (newOffset - hiResTicksOffset);
+        const std::int64_t offsetDrift = abs64 (newOffset - hiResTicksOffset);
 
         if (offsetDrift > (hiResTicksPerSecond >> 1))
             hiResTicksOffset = newOffset;
@@ -270,22 +270,22 @@ public:
         return getHighResolutionTicks() * hiResTicksScaleFactor;
     }
 
-    int64 hiResTicksPerSecond, hiResTicksOffset;
+    std::int64_t hiResTicksPerSecond, hiResTicksOffset;
     double hiResTicksScaleFactor;
 };
 
 static HiResCounterHandler hiResCounterHandler;
 
-int64  Time::getHighResolutionTicksPerSecond() noexcept  { return hiResCounterHandler.hiResTicksPerSecond; }
-int64  Time::getHighResolutionTicks() noexcept           { return hiResCounterHandler.getHighResolutionTicks(); }
+std::int64_t  Time::getHighResolutionTicksPerSecond() noexcept  { return hiResCounterHandler.hiResTicksPerSecond; }
+std::int64_t  Time::getHighResolutionTicks() noexcept           { return hiResCounterHandler.getHighResolutionTicks(); }
 double Time::getMillisecondCounterHiRes() noexcept       { return hiResCounterHandler.getMillisecondCounterHiRes(); }
 
 //==============================================================================
-static int64 beast_getClockCycleCounter() noexcept
+static std::int64_t beast_getClockCycleCounter() noexcept
 {
    #if BEAST_USE_INTRINSICS
     // MS intrinsics version...
-    return (int64) __rdtsc();
+    return (std::int64_t) __rdtsc();
 
    #elif BEAST_GCC
     // GNU inline asm version...
@@ -302,7 +302,7 @@ static int64 beast_getClockCycleCounter() noexcept
            [lo] "m" (lo)
          : "cc", "eax", "ebx", "ecx", "edx", "memory");
 
-    return (int64) ((((uint64) hi) << 32) | lo);
+    return (std::int64_t) ((((std::uint64_t) hi) << 32) | lo);
    #else
     // MSVC inline asm version...
     unsigned int hi = 0, lo = 0;
@@ -316,14 +316,14 @@ static int64 beast_getClockCycleCounter() noexcept
         mov hi, edx
     }
 
-    return (int64) ((((uint64) hi) << 32) | lo);
+    return (std::int64_t) ((((std::uint64_t) hi) << 32) | lo);
    #endif
 }
 
 int SystemStats::getCpuSpeedInMegaherz()
 {
-    const int64 cycles = beast_getClockCycleCounter();
-    const uint32 millis = Time::getMillisecondCounter();
+    const std::int64_t cycles = beast_getClockCycleCounter();
+    const std::uint32_t millis = Time::getMillisecondCounter();
     int lastResult = 0;
 
     for (;;)
@@ -331,8 +331,8 @@ int SystemStats::getCpuSpeedInMegaherz()
         int n = 1000000;
         while (--n > 0) {}
 
-        const uint32 millisElapsed = Time::getMillisecondCounter() - millis;
-        const int64 cyclesNow = beast_getClockCycleCounter();
+        const std::uint32_t millisElapsed = Time::getMillisecondCounter() - millis;
+        const std::int64_t cyclesNow = beast_getClockCycleCounter();
 
         if (millisElapsed > 80)
         {
@@ -420,4 +420,4 @@ String SystemStats::getDisplayLanguage()
     return "en";
 }
 
-}  // namespace beast
+} // beast

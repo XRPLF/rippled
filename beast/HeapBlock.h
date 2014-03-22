@@ -119,7 +119,7 @@ namespace HeapBlockHelper
     then a failed allocation will just leave the heapblock with a null pointer (assuming
     that the system's malloc() function doesn't throw).
 
-    @see Array, OwnedArray, MemoryBlock
+    @see Array, MemoryBlock
 */
 template <class ElementType, bool throwOnFailure = false>
 class HeapBlock : public Uncopyable
@@ -339,10 +339,6 @@ private:
     {
         HeapBlockHelper::ThrowOnFail<throwOnFailure>::check (data);
     }
-
-   #if ! (defined (BEAST_DLL) || defined (BEAST_DLL_BUILD))
-    BEAST_PREVENT_HEAP_ALLOCATION // Creating a 'new HeapBlock' would be missing the point!
-   #endif
 };
 
 }

@@ -60,11 +60,10 @@
 #ifndef BEAST_SQDB_DETAIL_USE_TYPE_H_INCLUDED
 #define BEAST_SQDB_DETAIL_USE_TYPE_H_INCLUDED
 
-namespace sqdb
-{
+namespace beast {
+namespace sqdb {
 
-namespace detail
-{
+namespace detail {
 
 // base class for defining input data
 class use_type_base
@@ -160,8 +159,9 @@ use_type_ptr do_use(T const& t, indicator& ind, basic_type_tag)
     return use_type_ptr(new use_type<T>(t, ind));
 }
 
-}
+} // detail
 
-}
+} // sqdb
+} // beast
 
 #endif

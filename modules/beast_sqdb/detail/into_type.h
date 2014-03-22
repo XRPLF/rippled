@@ -60,11 +60,9 @@
 #ifndef BEAST_SQDB_DETAIL_INTO_TYPE_H_INCLUDED
 #define BEAST_SQDB_DETAIL_INTO_TYPE_H_INCLUDED
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 // base class for defining output data
 class into_type_base
@@ -124,8 +122,8 @@ into_type_ptr do_into(T& t, indicator& ind, basic_type_tag)
     return into_type_ptr(new into_type<T>(t, ind));
 }
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast
 
 #endif

@@ -40,7 +40,7 @@ class File;
 
     @see InputStream, MemoryOutputStream, FileOutputStream
 */
-class BEAST_API  OutputStream : public Uncopyable
+class  OutputStream : public Uncopyable
 {
 protected:
     //==============================================================================
@@ -66,13 +66,13 @@ public:
 
         @see getPosition
     */
-    virtual bool setPosition (int64 newPosition) = 0;
+    virtual bool setPosition (std::int64_t newPosition) = 0;
 
     /** Returns the stream's current position.
 
         @see setPosition
     */
-    virtual int64 getPosition() = 0;
+    virtual std::int64_t getPosition() = 0;
 
     //==============================================================================
     /** Writes a block of data to the stream.
@@ -120,7 +120,7 @@ public:
         @returns false if the write operation fails for some reason
         @see InputStream::readInt
     */
-    virtual bool writeInt32 (int32 value);
+    virtual bool writeInt32 (std::int32_t value);
 
     // DEPRECATED, assumes sizeof (int) == 4!
     virtual bool writeInt (int value);
@@ -129,7 +129,7 @@ public:
         @returns false if the write operation fails for some reason
         @see InputStream::readIntBigEndian
     */
-    virtual bool writeInt32BigEndian (int32 value);
+    virtual bool writeInt32BigEndian (std::int32_t value);
 
     // DEPRECATED, assumes sizeof (int) == 4!
     virtual bool writeIntBigEndian (int value);
@@ -138,13 +138,13 @@ public:
         @returns false if the write operation fails for some reason
         @see InputStream::readInt64
     */
-    virtual bool writeInt64 (int64 value);
+    virtual bool writeInt64 (std::int64_t value);
 
     /** Writes a 64-bit integer to the stream in a big-endian byte order.
         @returns false if the write operation fails for some reason
         @see InputStream::readInt64BigEndian
     */
-    virtual bool writeInt64BigEndian (int64 value);
+    virtual bool writeInt64BigEndian (std::int64_t value);
 
     /** Writes a 32-bit floating point value to the stream in a binary format.
         The binary 32-bit encoding of the float is written as a little-endian int.
@@ -194,7 +194,7 @@ public:
     /** Writes a byte to the output stream a given number of times.
         @returns false if the write operation fails for some reason
     */
-    virtual bool writeRepeatedByte (uint8 byte, size_t numTimesToRepeat);
+    virtual bool writeRepeatedByte (std::uint8_t byte, size_t numTimesToRepeat);
 
     /** Writes a condensed binary encoding of a 32-bit integer.
 
@@ -245,7 +245,7 @@ public:
                                     is exhausted)
         @returns the number of bytes written
     */
-    virtual int writeFromInputStream (InputStream& source, int64 maxNumBytesToWrite);
+    virtual int writeFromInputStream (InputStream& source, std::int64_t maxNumBytesToWrite);
 
     //==============================================================================
     /** Sets the string that will be written to the stream when the writeNewLine()
@@ -264,28 +264,28 @@ private:
 
 //==============================================================================
 /** Writes a number to a stream as 8-bit characters in the default system encoding. */
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, int number);
+OutputStream& operator<< (OutputStream& stream, int number);
 
 /** Writes a number to a stream as 8-bit characters in the default system encoding. */
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, int64 number);
+OutputStream& operator<< (OutputStream& stream, std::int64_t number);
 
 /** Writes a number to a stream as 8-bit characters in the default system encoding. */
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, double number);
+OutputStream& operator<< (OutputStream& stream, double number);
 
 /** Writes a character to a stream. */
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, char character);
+OutputStream& operator<< (OutputStream& stream, char character);
 
 /** Writes a null-terminated text string to a stream. */
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const char* text);
+OutputStream& operator<< (OutputStream& stream, const char* text);
 
 /** Writes a block of data from a MemoryBlock to a stream. */
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const MemoryBlock& data);
+OutputStream& operator<< (OutputStream& stream, const MemoryBlock& data);
 
 /** Writes the contents of a file to a stream. */
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const File& fileToRead);
+OutputStream& operator<< (OutputStream& stream, const File& fileToRead);
 
 /** Writes the complete contents of an input stream to an output stream. */
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, InputStream& streamToRead);
+OutputStream& operator<< (OutputStream& stream, InputStream& streamToRead);
 
 /** Writes a new-line to a stream.
     You can use the predefined symbol 'newLine' to invoke this, e.g.
@@ -294,11 +294,11 @@ BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, InputSt
     @endcode
     @see OutputStream::setNewLineString
 */
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const NewLine&);
+OutputStream& operator<< (OutputStream& stream, const NewLine&);
 
 /** Writes a string to an OutputStream as UTF8. */
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const String& stringToWrite);
+OutputStream& operator<< (OutputStream& stream, const String& stringToWrite);
 
-}  // namespace beast
+} // beast
 
 #endif

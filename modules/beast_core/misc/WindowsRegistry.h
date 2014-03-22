@@ -56,7 +56,7 @@ public:
         e.g. "HKEY_CURRENT_USER\Software\foo\bar"
         @returns a DWORD indicating the type of the key.
     */
-    static uint32 getBinaryValue (const String& regValuePath, MemoryBlock& resultData);
+    static std::uint32_t getBinaryValue (const String& regValuePath, MemoryBlock& resultData);
 
     /** Sets a registry value as a string.
         This will take care of creating any groups needed to get to the given registry value.
@@ -66,12 +66,12 @@ public:
     /** Sets a registry value as a DWORD.
         This will take care of creating any groups needed to get to the given registry value.
     */
-    static bool setValue (const String& regValuePath, uint32 value);
+    static bool setValue (const String& regValuePath, std::uint32_t value);
 
     /** Sets a registry value as a QWORD.
         This will take care of creating any groups needed to get to the given registry value.
     */
-    static bool setValue (const String& regValuePath, uint64 value);
+    static bool setValue (const String& regValuePath, std::uint64_t value);
 
     /** Sets a registry value as a binary block.
         This will take care of creating any groups needed to get to the given registry value.
@@ -119,6 +119,6 @@ private:
 
 #endif
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_WINDOWSREGISTRY_H_INCLUDED

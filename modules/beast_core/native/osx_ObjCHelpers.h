@@ -149,6 +149,6 @@ private:
     }
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_OSX_OBJCHELPERS_H_INCLUDED

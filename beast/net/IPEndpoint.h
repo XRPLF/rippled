@@ -20,16 +20,16 @@
 #ifndef BEAST_NET_IPENDPOINT_H_INCLUDED
 #define BEAST_NET_IPENDPOINT_H_INCLUDED
 
-#include <string>
-#include <ios>
-
-#include "../CStdInt.h"
 #include "IPAddress.h"
+
+#include <cstdint>
+#include <ios>
+#include <string>
 
 namespace beast {
 namespace IP {
 
-typedef uint16 Port;
+typedef std::uint16_t Port;
 
 /** A version-independent IP address and port combination. */
 class Endpoint

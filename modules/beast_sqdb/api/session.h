@@ -60,8 +60,11 @@
 #ifndef BEAST_SQDB_SESSION_H_INCLUDED
 #define BEAST_SQDB_SESSION_H_INCLUDED
 
-namespace sqdb
-{
+#include "../../../beast/smart_ptr/SharedPtr.h"
+#include "../../beast_core/memory/SharedSingleton.h"
+
+namespace beast {
+namespace sqdb {
 
 /*============================================================================*/
 /**
@@ -145,6 +148,7 @@ private:
     bool m_bGotData;
 };
 
-}
+} // sqdb
+} // beast
 
 #endif

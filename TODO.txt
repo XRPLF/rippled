@@ -2,11 +2,11 @@
 BEAST TODO
 --------------------------------------------------------------------------------
 
+- Change sqdb to use exceptions instead of errors
+
 - Use SemanticVersion for beast version numbers to replace BEAST_VERSION
 
 - add support for a __PRETTY_FUNCTION__ equivalent for all environments
-
-- add expectThrow() to UnitTest, where it expects an exception
 
 - Import secp256k1 from sipa
 
@@ -18,8 +18,6 @@ BEAST TODO
 
 - Rename HeapBlock routines to not conflict with _CRTDBG_MAP_ALLOC macros
 
-- Design a WeakPtr / SharedPtr / SharedObject intrusive system
-
 - Implement beast::Bimap?
 
 - Use Bimap for storage in the DeadlineTimer::Manager, to support
@@ -28,18 +26,9 @@ BEAST TODO
 - Think about adding a shouldStop bool to InterruptibleThread, along
   with a shouldStop () function returning bool, and a stop() method.
 
-- Make OwnedArray add routines return a pointer instead of reference
-
 - Tidy up CacheLine, MemoryAlignment
 
-- Remove anything having to do with DLL builds like
-  BEAST_DLL, BEAST_DLL_BUILD, BEAST_DISABLE_DLL_ALLOCATORS
-
-- Fix FifoFreeStoreWithTLS reference counting bug
-
 - Implement a reasonable substitute for boost's thread_local_storage
-
-- Think about doing away with BEAST_CALLTYPE and BEAST_API
 
 - Rename malloc/calloc JUCE members that conflict with the debug CRT from MSVC
 
@@ -47,19 +36,7 @@ BEAST TODO
 - Fix Doxygen metatags
 - update Beast Doxyfile
 
-- Rename include guards to boost style, e.g. BEAST_THROW_H_INCLUDED
-
-- Clean up CacheLine, StaticObject
-
-- Clean up ConcurrentObject
-
 - Rename SharedData to SharedState or something?
-
-- Put BEAST_PUBLIC_FUNCTION in front of all loose functions
-
-- restructure the repo sources to look like this:
-  /Source/beast/beast_core/beast_core.h
-  etc...
 
 - Make sure the template BeastConfig.h is included in the Doxyfile
 

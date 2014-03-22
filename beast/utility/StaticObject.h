@@ -98,7 +98,7 @@ private:
 
         static StaticData& get ()
         {
-            static uint8 storage [sizeof (StaticData)];
+            static std::uint8_t storage [sizeof (StaticData)];
             return *(reinterpret_cast <StaticData*> (&storage [0]));
         }
 

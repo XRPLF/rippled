@@ -381,8 +381,10 @@ String::String (const int number)            : text (NumberToStringConverters::c
 String::String (const unsigned int number)   : text (NumberToStringConverters::createFromInteger (number)) {}
 String::String (const short number)          : text (NumberToStringConverters::createFromInteger ((int) number)) {}
 String::String (const unsigned short number) : text (NumberToStringConverters::createFromInteger ((unsigned int) number)) {}
-String::String (const int64 number)          : text (NumberToStringConverters::createFromInteger (number)) {}
-String::String (const uint64 number)         : text (NumberToStringConverters::createFromInteger (number)) {}
+String::String (const long number)           : text (NumberToStringConverters::createFromInteger (number)) {}
+String::String (const unsigned long number)  : text (NumberToStringConverters::createFromInteger (number)) {}
+String::String (const long long number)      : text (NumberToStringConverters::createFromInteger (number)) {}
+String::String (const unsigned long long number) : text (NumberToStringConverters::createFromInteger (number)) {}
 
 String::String (const float number)          : text (NumberToStringConverters::createFromDouble ((double) number, 0)) {}
 String::String (const double number)         : text (NumberToStringConverters::createFromDouble (number, 0)) {}
@@ -434,9 +436,9 @@ int String::hashCode() const noexcept
     return detail::HashGenerator<int> ::calculate (text);
 }
 
-int64 String::hashCode64() const noexcept
+std::int64_t String::hashCode64() const noexcept
 {
-    return detail::HashGenerator<int64> ::calculate (text);
+    return detail::HashGenerator<std::int64_t> ::calculate (text);
 }
 
 std::size_t String::hash() const noexcept
@@ -445,22 +447,22 @@ std::size_t String::hash() const noexcept
 }
 
 //==============================================================================
-BEAST_API bool BEAST_CALLTYPE operator== (const String& s1, const String& s2) noexcept            { return s1.compare (s2) == 0; }
-BEAST_API bool BEAST_CALLTYPE operator== (const String& s1, const char* const s2) noexcept        { return s1.compare (s2) == 0; }
-BEAST_API bool BEAST_CALLTYPE operator== (const String& s1, const wchar_t* const s2) noexcept     { return s1.compare (s2) == 0; }
-BEAST_API bool BEAST_CALLTYPE operator== (const String& s1, const CharPointer_UTF8 s2) noexcept   { return s1.getCharPointer().compare (s2) == 0; }
-BEAST_API bool BEAST_CALLTYPE operator== (const String& s1, const CharPointer_UTF16 s2) noexcept  { return s1.getCharPointer().compare (s2) == 0; }
-BEAST_API bool BEAST_CALLTYPE operator== (const String& s1, const CharPointer_UTF32 s2) noexcept  { return s1.getCharPointer().compare (s2) == 0; }
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& s1, const String& s2) noexcept            { return s1.compare (s2) != 0; }
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& s1, const char* const s2) noexcept        { return s1.compare (s2) != 0; }
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& s1, const wchar_t* const s2) noexcept     { return s1.compare (s2) != 0; }
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& s1, const CharPointer_UTF8 s2) noexcept   { return s1.getCharPointer().compare (s2) != 0; }
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& s1, const CharPointer_UTF16 s2) noexcept  { return s1.getCharPointer().compare (s2) != 0; }
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& s1, const CharPointer_UTF32 s2) noexcept  { return s1.getCharPointer().compare (s2) != 0; }
-BEAST_API bool BEAST_CALLTYPE operator>  (const String& s1, const String& s2) noexcept            { return s1.compare (s2) > 0; }
-BEAST_API bool BEAST_CALLTYPE operator<  (const String& s1, const String& s2) noexcept            { return s1.compare (s2) < 0; }
-BEAST_API bool BEAST_CALLTYPE operator>= (const String& s1, const String& s2) noexcept            { return s1.compare (s2) >= 0; }
-BEAST_API bool BEAST_CALLTYPE operator<= (const String& s1, const String& s2) noexcept            { return s1.compare (s2) <= 0; }
+bool operator== (const String& s1, const String& s2) noexcept            { return s1.compare (s2) == 0; }
+bool operator== (const String& s1, const char* const s2) noexcept        { return s1.compare (s2) == 0; }
+bool operator== (const String& s1, const wchar_t* const s2) noexcept     { return s1.compare (s2) == 0; }
+bool operator== (const String& s1, const CharPointer_UTF8 s2) noexcept   { return s1.getCharPointer().compare (s2) == 0; }
+bool operator== (const String& s1, const CharPointer_UTF16 s2) noexcept  { return s1.getCharPointer().compare (s2) == 0; }
+bool operator== (const String& s1, const CharPointer_UTF32 s2) noexcept  { return s1.getCharPointer().compare (s2) == 0; }
+bool operator!= (const String& s1, const String& s2) noexcept            { return s1.compare (s2) != 0; }
+bool operator!= (const String& s1, const char* const s2) noexcept        { return s1.compare (s2) != 0; }
+bool operator!= (const String& s1, const wchar_t* const s2) noexcept     { return s1.compare (s2) != 0; }
+bool operator!= (const String& s1, const CharPointer_UTF8 s2) noexcept   { return s1.getCharPointer().compare (s2) != 0; }
+bool operator!= (const String& s1, const CharPointer_UTF16 s2) noexcept  { return s1.getCharPointer().compare (s2) != 0; }
+bool operator!= (const String& s1, const CharPointer_UTF32 s2) noexcept  { return s1.getCharPointer().compare (s2) != 0; }
+bool operator>  (const String& s1, const String& s2) noexcept            { return s1.compare (s2) > 0; }
+bool operator<  (const String& s1, const String& s2) noexcept            { return s1.compare (s2) < 0; }
+bool operator>= (const String& s1, const String& s2) noexcept            { return s1.compare (s2) >= 0; }
+bool operator<= (const String& s1, const String& s2) noexcept            { return s1.compare (s2) <= 0; }
 
 bool String::equalsIgnoreCase (const wchar_t* const t) const noexcept
 {
@@ -612,52 +614,52 @@ String& String::operator+= (const int number)
 }
 
 //==============================================================================
-BEAST_API String BEAST_CALLTYPE operator+ (const char* const string1, const String& string2)
+String operator+ (const char* const string1, const String& string2)
 {
     String s (string1);
     return s += string2;
 }
 
-BEAST_API String BEAST_CALLTYPE operator+ (const wchar_t* const string1, const String& string2)
+String operator+ (const wchar_t* const string1, const String& string2)
 {
     String s (string1);
     return s += string2;
 }
 
-BEAST_API String BEAST_CALLTYPE operator+ (const char s1, const String& s2)       { return String::charToString ((beast_wchar) (uint8) s1) + s2; }
-BEAST_API String BEAST_CALLTYPE operator+ (const wchar_t s1, const String& s2)    { return String::charToString (s1) + s2; }
+String operator+ (const char s1, const String& s2)       { return String::charToString ((beast_wchar) (std::uint8_t) s1) + s2; }
+String operator+ (const wchar_t s1, const String& s2)    { return String::charToString (s1) + s2; }
 #if ! BEAST_NATIVE_WCHAR_IS_UTF32
-BEAST_API String BEAST_CALLTYPE operator+ (const beast_wchar s1, const String& s2) { return String::charToString (s1) + s2; }
+String operator+ (const beast_wchar s1, const String& s2) { return String::charToString (s1) + s2; }
 #endif
 
-BEAST_API String BEAST_CALLTYPE operator+ (String s1, const String& s2)       { return s1 += s2; }
-BEAST_API String BEAST_CALLTYPE operator+ (String s1, const char* const s2)   { return s1 += s2; }
-BEAST_API String BEAST_CALLTYPE operator+ (String s1, const wchar_t* s2)      { return s1 += s2; }
+String operator+ (String s1, const String& s2)       { return s1 += s2; }
+String operator+ (String s1, const char* const s2)   { return s1 += s2; }
+String operator+ (String s1, const wchar_t* s2)      { return s1 += s2; }
 
-BEAST_API String BEAST_CALLTYPE operator+ (String s1, const char s2)          { return s1 += s2; }
-BEAST_API String BEAST_CALLTYPE operator+ (String s1, const wchar_t s2)       { return s1 += s2; }
+String operator+ (String s1, const char s2)          { return s1 += s2; }
+String operator+ (String s1, const wchar_t s2)       { return s1 += s2; }
 #if ! BEAST_NATIVE_WCHAR_IS_UTF32
-BEAST_API String BEAST_CALLTYPE operator+ (String s1, const beast_wchar s2)    { return s1 += s2; }
+String operator+ (String s1, const beast_wchar s2)    { return s1 += s2; }
 #endif
 
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const char s2)             { return s1 += s2; }
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const wchar_t s2)          { return s1 += s2; }
+String& operator<< (String& s1, const char s2)             { return s1 += s2; }
+String& operator<< (String& s1, const wchar_t s2)          { return s1 += s2; }
 #if ! BEAST_NATIVE_WCHAR_IS_UTF32
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const beast_wchar s2)       { return s1 += s2; }
+String& operator<< (String& s1, const beast_wchar s2)       { return s1 += s2; }
 #endif
 
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const char* const s2)      { return s1 += s2; }
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const wchar_t* const s2)   { return s1 += s2; }
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const String& s2)          { return s1 += s2; }
+String& operator<< (String& s1, const char* const s2)      { return s1 += s2; }
+String& operator<< (String& s1, const wchar_t* const s2)   { return s1 += s2; }
+String& operator<< (String& s1, const String& s2)          { return s1 += s2; }
 
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const short number)        { return s1 += (int) number; }
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const int number)          { return s1 += number; }
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const long number)         { return s1 += (int) number; }
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const int64 number)        { return s1 << String (number); }
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const float number)        { return s1 += String (number); }
-BEAST_API String& BEAST_CALLTYPE operator<< (String& s1, const double number)       { return s1 += String (number); }
+String& operator<< (String& s1, const short number)        { return s1 += (int) number; }
+String& operator<< (String& s1, const int number)          { return s1 += number; }
+String& operator<< (String& s1, const long number)         { return s1 += (int) number; }
+String& operator<< (String& s1, const long long number)    { return s1 << String (number); }
+String& operator<< (String& s1, const float number)        { return s1 += String (number); }
+String& operator<< (String& s1, const double number)       { return s1 += String (number); }
 
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, const NewLine&)
+String& operator<< (String& string1, const NewLine&)
 {
     return string1 += NewLine::getDefault();
 }
@@ -1711,7 +1713,7 @@ int String::getTrailingIntValue() const noexcept
     return n;
 }
 
-int64 String::getLargeIntValue() const noexcept
+std::int64_t String::getLargeIntValue() const noexcept
 {
     return text.getIntValue64();
 }
@@ -1769,9 +1771,9 @@ String String::toHexString (const int number)
     return HexConverter <unsigned int>::hexToString ((unsigned int) number);
 }
 
-String String::toHexString (const int64 number)
+String String::toHexString (const std::int64_t number)
 {
-    return HexConverter <uint64>::hexToString ((uint64) number);
+    return HexConverter <std::uint64_t>::hexToString ((std::uint64_t) number);
 }
 
 String String::toHexString (const short number)
@@ -1808,12 +1810,12 @@ String String::toHexString (const void* const d, const int size, const int group
 }
 
 int   String::getHexValue32() const noexcept    { return HexConverter<int>  ::stringToHex (text); }
-int64 String::getHexValue64() const noexcept    { return HexConverter<int64>::stringToHex (text); }
+std::int64_t String::getHexValue64() const noexcept    { return HexConverter<std::int64_t>::stringToHex (text); }
 
 //==============================================================================
 String String::createStringFromData (const void* const unknownData, const int size)
 {
-    const uint8* const data = static_cast<const uint8*> (unknownData);
+    const std::uint8_t* const data = static_cast<const std::uint8_t*> (unknownData);
 
     if (size <= 0 || data == nullptr)
         return empty;
@@ -1828,7 +1830,7 @@ String String::createStringFromData (const void* const unknownData, const int si
 
         StringCreationHelper builder ((size_t) numChars);
 
-        const uint16* const src = (const uint16*) (data + 2);
+        const std::uint16_t* const src = (const std::uint16_t*) (data + 2);
 
         if (CharPointer_UTF16::isByteOrderMarkBigEndian (data))
         {
@@ -1845,7 +1847,7 @@ String String::createStringFromData (const void* const unknownData, const int si
         return builder.result;
     }
 
-    const uint8* start = data;
+    const std::uint8_t* start = data;
 
     if (size >= 3 && CharPointer_UTF8::isByteOrderMark (data))
         start += 3;
@@ -1932,7 +1934,7 @@ struct StringCopier
 {
     static size_t copyToBuffer (const CharPointerType_Src source, typename CharPointerType_Dest::CharType* const buffer, const size_t maxBufferSizeBytes)
     {
-        bassert (((ssize_t) maxBufferSizeBytes) >= 0); // keep this value positive!
+        bassert (((std::ptrdiff_t) maxBufferSizeBytes) >= 0); // keep this value positive!
 
         if (buffer == nullptr)
             return CharPointerType_Dest::getBytesRequiredFor (source) + sizeof (typename CharPointerType_Dest::CharType);

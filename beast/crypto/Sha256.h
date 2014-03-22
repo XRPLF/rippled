@@ -21,9 +21,9 @@
 #define BEAST_CRYPTO_SHA256_H_INCLUDED
 
 #include "../Config.h"
-#include "../CStdInt.h"
 
 #include <array>
+#include <cstdint>
 
 //------------------------------------------------------------------------------
 
@@ -37,14 +37,14 @@ enum
 };
 
 /** A container suitable for holding the resulting hash. */
-typedef std::array <uint8, digestLength> digest_type;
+typedef std::array <std::uint8_t, digestLength> digest_type;
 
 namespace detail {
 struct Context
 {
-	beast::uint32 state[8];
-	beast::uint64 bitcount;
-	beast::uint8  buffer[Sha256::blockLength];
+	std::uint32_t state[8];
+	std::uint64_t bitcount;
+	std::uint8_t  buffer[Sha256::blockLength];
 };
 }
 
@@ -59,12 +59,12 @@ public:
     /** @{ */
     void update (void const* buffer, std::size_t bytes);
 
-    void update (int8 const* begin, int8 const* end)
+    void update (std::int8_t const* begin, std::int8_t const* end)
     {
         update (begin, end - begin);
     }
 
-    void update (uint8 const* begin, uint8 const* end)
+    void update (std::uint8_t const* begin, std::uint8_t const* end)
     {
         update (begin, end - begin);
     }
@@ -115,10 +115,10 @@ digest_type const& empty_digest();
 void* hash (void const* buffer, std::size_t bytes, void* digest);
 digest_type& hash ( void const* buffer, std::size_t bytes, digest_type& digest);
 digest_type hash (void const* buffer, std::size_t bytes);
-void* hash (int8 const* begin, int8 const* end, void* digest);
-void* hash (uint8 const* begin, uint8 const* end, void* digest);
-digest_type hash (int8 const* begin, int8 const* end);
-digest_type hash (uint8 const* begin, uint8 const* end);
+void* hash (std::int8_t const* begin, std::int8_t const* end, void* digest);
+void* hash (std::uint8_t const* begin, std::uint8_t const* end, void* digest);
+digest_type hash (std::int8_t const* begin, std::int8_t const* end);
+digest_type hash (std::uint8_t const* begin, std::uint8_t const* end);
 
 template <typename T>
 void* hash (T const& t, void* digest)

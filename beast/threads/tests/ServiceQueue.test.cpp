@@ -39,11 +39,11 @@ public:
         void start () { m_startTime = Time::getHighResolutionTicks (); }
         double getElapsed ()
         {
-            int64 const now = Time::getHighResolutionTicks();
+            std::int64_t const now = Time::getHighResolutionTicks();
             return Time::highResolutionTicksToSeconds (now - m_startTime);
         }
     private:
-        int64 m_startTime;
+        std::int64_t m_startTime;
     };
 
     static int const callsPerThread = 50000;
@@ -57,7 +57,7 @@ public:
         Random m_random;
         String m_string;
 
-        Consumer (int id, int64 seedValue, ServiceType& service)
+        Consumer (int id, std::int64_t seedValue, ServiceType& service)
             : Thread ("C#" + String::fromNumber (id))
             , m_service (service)
             , m_random (seedValue)
@@ -103,7 +103,7 @@ public:
         Random m_random;
         String m_string;
 
-        Producer (int id, int64 seedValue, ServiceType& service)
+        Producer (int id, std::int64_t seedValue, ServiceType& service)
             : Thread ("P#" + String::fromNumber (id))
             , m_service (service)
             , m_random (seedValue)
@@ -208,7 +208,7 @@ public:
         ServiceQueue& m_service;
         String m_string;
 
-        ServiceThread (int id, int64 seedValue,
+        ServiceThread (int id, std::int64_t seedValue,
             ServiceQueue& service)
             : Thread ("#" + String::fromNumber (id))
             , m_random (seedValue)

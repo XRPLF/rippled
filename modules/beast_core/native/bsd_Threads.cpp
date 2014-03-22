@@ -57,7 +57,7 @@ bool beast_isRunningUnderDebugger()
     return false;
 }
 
-BEAST_API bool BEAST_CALLTYPE Process::isRunningUnderDebugger()
+bool Process::isRunningUnderDebugger()
 {
     return beast_isRunningUnderDebugger();
 }
@@ -71,4 +71,4 @@ static void swapUserAndEffectiveUser()
 void Process::raisePrivilege()  { if (geteuid() != 0 && getuid() == 0) swapUserAndEffectiveUser(); }
 void Process::lowerPrivilege()  { if (geteuid() == 0 && getuid() != 0) swapUserAndEffectiveUser(); }
 
-}  // namespace beast
+} // beast

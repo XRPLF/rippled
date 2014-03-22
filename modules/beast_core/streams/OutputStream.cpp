@@ -75,7 +75,7 @@ bool OutputStream::writeByte (char byte)
     return write (&byte, 1);
 }
 
-bool OutputStream::writeRepeatedByte (uint8 byte, size_t numTimesToRepeat)
+bool OutputStream::writeRepeatedByte (std::uint8_t byte, size_t numTimesToRepeat)
 {
     for (size_t i = 0; i < numTimesToRepeat; ++i)
         if (! writeByte ((char) byte))
@@ -96,11 +96,11 @@ bool OutputStream::writeShortBigEndian (short value)
     return write (&v, 2);
 }
 
-bool OutputStream::writeInt32 (int32 value)
+bool OutputStream::writeInt32 (std::int32_t value)
 {
-    static_bassert (sizeof (int32) == 4);
+    static_bassert (sizeof (std::int32_t) == 4);
 
-    const unsigned int v = ByteOrder::swapIfBigEndian ((uint32) value);
+    const unsigned int v = ByteOrder::swapIfBigEndian ((std::uint32_t) value);
     return write (&v, 4);
 }
 
@@ -114,8 +114,8 @@ bool OutputStream::writeInt (int value)
 
 bool OutputStream::writeInt32BigEndian (int value)
 {
-    static_bassert (sizeof (int32) == 4);
-    const uint32 v = ByteOrder::swapIfLittleEndian ((uint32) value);
+    static_bassert (sizeof (std::int32_t) == 4);
+    const std::uint32_t v = ByteOrder::swapIfLittleEndian ((std::uint32_t) value);
     return write (&v, 4);
 }
 
@@ -131,16 +131,16 @@ bool OutputStream::writeCompressedInt (int value)
     unsigned int un = (value < 0) ? (unsigned int) -value
                                   : (unsigned int) value;
 
-    uint8 data[5];
+    std::uint8_t data[5];
     int num = 0;
 
     while (un > 0)
     {
-        data[++num] = (uint8) un;
+        data[++num] = (std::uint8_t) un;
         un >>= 8;
     }
 
-    data[0] = (uint8) num;
+    data[0] = (std::uint8_t) num;
 
     if (value < 0)
         data[0] |= 0x80;
@@ -148,15 +148,15 @@ bool OutputStream::writeCompressedInt (int value)
     return write (data, (size_t) num + 1);
 }
 
-bool OutputStream::writeInt64 (int64 value)
+bool OutputStream::writeInt64 (std::int64_t value)
 {
-    const uint64 v = ByteOrder::swapIfBigEndian ((uint64) value);
+    const std::uint64_t v = ByteOrder::swapIfBigEndian ((std::uint64_t) value);
     return write (&v, 8);
 }
 
-bool OutputStream::writeInt64BigEndian (int64 value)
+bool OutputStream::writeInt64BigEndian (std::int64_t value)
 {
-    const uint64 v = ByteOrder::swapIfLittleEndian ((uint64) value);
+    const std::uint64_t v = ByteOrder::swapIfLittleEndian ((std::uint64_t) value);
     return write (&v, 8);
 }
 
@@ -176,14 +176,14 @@ bool OutputStream::writeFloatBigEndian (float value)
 
 bool OutputStream::writeDouble (double value)
 {
-    union { int64 asInt; double asDouble; } n;
+    union { std::int64_t asInt; double asDouble; } n;
     n.asDouble = value;
     return writeInt64 (n.asInt);
 }
 
 bool OutputStream::writeDoubleBigEndian (double value)
 {
-    union { int64 asInt; double asDouble; } n;
+    union { std::int64_t asInt; double asDouble; } n;
     n.asDouble = value;
     return writeInt64BigEndian (n.asInt);
 }
@@ -264,17 +264,17 @@ bool OutputStream::writeText (const String& text, const bool asUTF16,
     return true;
 }
 
-int OutputStream::writeFromInputStream (InputStream& source, int64 numBytesToWrite)
+int OutputStream::writeFromInputStream (InputStream& source, std::int64_t numBytesToWrite)
 {
     if (numBytesToWrite < 0)
-        numBytesToWrite = std::numeric_limits<int64>::max();
+        numBytesToWrite = std::numeric_limits<std::int64_t>::max();
 
     int numWritten = 0;
 
     while (numBytesToWrite > 0)
     {
         char buffer [8192];
-        const int num = source.read (buffer, (int) bmin (numBytesToWrite, (int64) sizeof (buffer)));
+        const int num = source.read (buffer, (int) bmin (numBytesToWrite, (std::int64_t) sizeof (buffer)));
 
         if (num <= 0)
             break;
@@ -295,34 +295,34 @@ void OutputStream::setNewLineString (const String& newLineString_)
 }
 
 //==============================================================================
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const int number)
+OutputStream& operator<< (OutputStream& stream, const int number)
 {
     return stream << String (number);
 }
 
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const int64 number)
+OutputStream& operator<< (OutputStream& stream, const std::int64_t number)
 {
     return stream << String (number);
 }
 
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const double number)
+OutputStream& operator<< (OutputStream& stream, const double number)
 {
     return stream << String (number);
 }
 
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const char character)
+OutputStream& operator<< (OutputStream& stream, const char character)
 {
     stream.writeByte (character);
     return stream;
 }
 
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const char* const text)
+OutputStream& operator<< (OutputStream& stream, const char* const text)
 {
     stream.write (text, strlen (text));
     return stream;
 }
 
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const MemoryBlock& data)
+OutputStream& operator<< (OutputStream& stream, const MemoryBlock& data)
 {
     if (data.getSize() > 0)
         stream.write (data.getData(), data.getSize());
@@ -330,7 +330,7 @@ BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const M
     return stream;
 }
 
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const File& fileToRead)
+OutputStream& operator<< (OutputStream& stream, const File& fileToRead)
 {
     FileInputStream in (fileToRead);
 
@@ -340,13 +340,13 @@ BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const F
     return stream;
 }
 
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, InputStream& streamToRead)
+OutputStream& operator<< (OutputStream& stream, InputStream& streamToRead)
 {
     stream.writeFromInputStream (streamToRead, -1);
     return stream;
 }
 
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const NewLine&)
+OutputStream& operator<< (OutputStream& stream, const NewLine&)
 {
     return stream << stream.getNewLineString();
 }
@@ -357,68 +357,68 @@ BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const N
 // definition linker errors, even with the inline keyword!
 
 template <>
-BEAST_API bool OutputStream::writeType <char> (char v) { return writeByte (v); }
+bool OutputStream::writeType <char> (char v) { return writeByte (v); }
 
 template <>
-BEAST_API bool OutputStream::writeType <short> (short v) { return writeShort (v); }
+bool OutputStream::writeType <short> (short v) { return writeShort (v); }
 
 template <>
-BEAST_API bool OutputStream::writeType <int32> (int32 v) { return writeInt32 (v); }
+bool OutputStream::writeType <std::int32_t> (std::int32_t v) { return writeInt32 (v); }
 
 template <>
-BEAST_API bool OutputStream::writeType <int64> (int64 v) { return writeInt64 (v); }
+bool OutputStream::writeType <std::int64_t> (std::int64_t v) { return writeInt64 (v); }
 
 template <>
-BEAST_API bool OutputStream::writeType <unsigned char> (unsigned char v) { return writeByte (static_cast <char> (v)); }
+bool OutputStream::writeType <unsigned char> (unsigned char v) { return writeByte (static_cast <char> (v)); }
 
 template <>
-BEAST_API bool OutputStream::writeType <unsigned short> (unsigned short v) { return writeShort (static_cast <short> (v)); }
+bool OutputStream::writeType <unsigned short> (unsigned short v) { return writeShort (static_cast <short> (v)); }
 
 template <>
-BEAST_API bool OutputStream::writeType <uint32> (uint32 v) { return writeInt32 (static_cast <int32> (v)); }
+bool OutputStream::writeType <std::uint32_t> (std::uint32_t v) { return writeInt32 (static_cast <std::int32_t> (v)); }
 
 template <>
-BEAST_API bool OutputStream::writeType <uint64> (uint64 v) { return writeInt64 (static_cast <int64> (v)); }
+bool OutputStream::writeType <std::uint64_t> (std::uint64_t v) { return writeInt64 (static_cast <std::int64_t> (v)); }
 
 template <>
-BEAST_API bool OutputStream::writeType <float> (float v) { return writeFloat (v); }
+bool OutputStream::writeType <float> (float v) { return writeFloat (v); }
 
 template <>
-BEAST_API bool OutputStream::writeType <double> (double v) { return writeDouble (v); }
+bool OutputStream::writeType <double> (double v) { return writeDouble (v); }
 
 //------------------------------------------------------------------------------
 
 template <>
-BEAST_API bool OutputStream::writeTypeBigEndian <char> (char v) { return writeByte (v); }
+bool OutputStream::writeTypeBigEndian <char> (char v) { return writeByte (v); }
 
 template <>
-BEAST_API bool OutputStream::writeTypeBigEndian <short> (short v) { return writeShortBigEndian (v); }
+bool OutputStream::writeTypeBigEndian <short> (short v) { return writeShortBigEndian (v); }
 
 template <>
-BEAST_API bool OutputStream::writeTypeBigEndian <int32> (int32 v) { return writeInt32BigEndian (v); }
+bool OutputStream::writeTypeBigEndian <std::int32_t> (std::int32_t v) { return writeInt32BigEndian (v); }
 
 template <>
-BEAST_API bool OutputStream::writeTypeBigEndian <int64> (int64 v) { return writeInt64BigEndian (v); }
+bool OutputStream::writeTypeBigEndian <std::int64_t> (std::int64_t v) { return writeInt64BigEndian (v); }
 
 template <>
-BEAST_API bool OutputStream::writeTypeBigEndian <unsigned char> (unsigned char v) { return writeByte (static_cast <char> (v)); }
+bool OutputStream::writeTypeBigEndian <unsigned char> (unsigned char v) { return writeByte (static_cast <char> (v)); }
 
 template <>
-BEAST_API bool OutputStream::writeTypeBigEndian <unsigned short> (unsigned short v) { return writeShortBigEndian (static_cast <short> (v)); }
+bool OutputStream::writeTypeBigEndian <unsigned short> (unsigned short v) { return writeShortBigEndian (static_cast <short> (v)); }
 
 template <>
-BEAST_API bool OutputStream::writeTypeBigEndian <uint32> (uint32 v) { return writeInt32BigEndian (static_cast <int32> (v)); }
+bool OutputStream::writeTypeBigEndian <std::uint32_t> (std::uint32_t v) { return writeInt32BigEndian (static_cast <std::int32_t> (v)); }
 
 template <>
-BEAST_API bool OutputStream::writeTypeBigEndian <uint64> (uint64 v) { return writeInt64BigEndian (static_cast <int64> (v)); }
+bool OutputStream::writeTypeBigEndian <std::uint64_t> (std::uint64_t v) { return writeInt64BigEndian (static_cast <std::int64_t> (v)); }
 
 template <>
-BEAST_API bool OutputStream::writeTypeBigEndian <float> (float v) { return writeFloatBigEndian (v); }
+bool OutputStream::writeTypeBigEndian <float> (float v) { return writeFloatBigEndian (v); }
 
 template <>
-BEAST_API bool OutputStream::writeTypeBigEndian <double> (double v) { return writeDoubleBigEndian (v); }
+bool OutputStream::writeTypeBigEndian <double> (double v) { return writeDoubleBigEndian (v); }
 
-BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const String& text)
+OutputStream& operator<< (OutputStream& stream, const String& text)
 {
     const size_t numBytes = text.getNumBytesAsUTF8();
 
@@ -435,4 +435,4 @@ BEAST_API OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const S
     return stream;
 }
 
-}  // namespace beast
+} // beast

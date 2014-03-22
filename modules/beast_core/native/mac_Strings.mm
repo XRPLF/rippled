@@ -93,4 +93,4 @@ String String::convertToPrecomposedUnicode() const
    #endif
 }
 
-}  // namespace beast
+} // beast

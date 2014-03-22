@@ -74,13 +74,13 @@ public:
 
         static Page* create (size_type pageBytes)
         {
-            return new (new uint8[pageBytes + overhead()]) Page (pageBytes);
+            return new (new std::uint8_t[pageBytes + overhead()]) Page (pageBytes);
         }
 
         static void destroy (Page* page)
         {
             page->~Page();
-            delete[] ((uint8*)page);
+            delete[] ((std::uint8_t*)page);
         }
 
         void reset ()
@@ -599,10 +599,10 @@ private:
 
         (*item)();
 
-        typename Allocator::template rebind <uint8>::other a (m_alloc);
+        typename Allocator::template rebind <std::uint8_t>::other a (m_alloc);
         std::size_t const size (item->size());
         item->~Item();
-        a.deallocate (reinterpret_cast<uint8*>(item), size);
+        a.deallocate (reinterpret_cast<std::uint8_t*>(item), size);
         return 1;
     }
 

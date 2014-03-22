@@ -179,7 +179,7 @@ template <class ElementType>
 class DefaultElementComparator
 {
 private:
-    typedef PARAMETER_TYPE (ElementType) ParameterType;
+    typedef ElementType ParameterType;
 
 public:
     static int compareElements (ParameterType first, ParameterType second)
@@ -188,7 +188,7 @@ public:
     }
 };
 
-}  // namespace beast
+} // beast
 
 #endif
 
