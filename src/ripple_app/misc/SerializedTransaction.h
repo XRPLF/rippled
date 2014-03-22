@@ -90,11 +90,11 @@ public:
         return mFormat->getName ();
     }
 
-    beast::uint32 getSequence () const
+    std::uint32_t getSequence () const
     {
         return getFieldU32 (sfSequence);
     }
-    void setSequence (beast::uint32 seq)
+    void setSequence (std::uint32_t seq)
     {
         return setFieldU32 (sfSequence, seq);
     }
@@ -130,15 +130,15 @@ public:
     static std::string getSQLValueHeader ();
     static std::string getSQLInsertHeader ();
     static std::string getSQLInsertIgnoreHeader ();
-    std::string getSQL (std::string & sql, beast::uint32 inLedger, char status) const;
-    std::string getSQL (beast::uint32 inLedger, char status) const;
-    std::string getSQL (Serializer rawTxn, beast::uint32 inLedger, char status) const;
+    std::string getSQL (std::string & sql, std::uint32_t inLedger, char status) const;
+    std::string getSQL (std::uint32_t inLedger, char status) const;
+    std::string getSQL (Serializer rawTxn, std::uint32_t inLedger, char status) const;
 
     // SQL Functions with metadata
     static std::string getMetaSQLValueHeader ();
     static std::string getMetaSQLInsertReplaceHeader ();
-    std::string getMetaSQL (beast::uint32 inLedger, const std::string & escapedMetaData) const;
-    std::string getMetaSQL (Serializer rawTxn, beast::uint32 inLedger, char status, const std::string & escapedMetaData) const;
+    std::string getMetaSQL (std::uint32_t inLedger, const std::string & escapedMetaData) const;
+    std::string getMetaSQL (Serializer rawTxn, std::uint32_t inLedger, char status, const std::string & escapedMetaData) const;
 
 private:
     TxType mType;

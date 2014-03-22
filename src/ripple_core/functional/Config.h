@@ -20,6 +20,8 @@
 #ifndef RIPPLE_CORE_CONFIG_H_INCLUDED
 #define RIPPLE_CORE_CONFIG_H_INCLUDED
 
+#include "../../beast/modules/beast_core/files/File.h"
+
 namespace ripple {
 
 // VFALCO TODO Replace these with beast "unsigned long long" generators
@@ -453,25 +455,25 @@ public:
     RippleAddress               NODE_SEED, NODE_PUB, NODE_PRIV;
 
     // Fee schedule (All below values are in fee units)
-    beast::uint64                      FEE_DEFAULT;            // Default fee.
-    beast::uint64                      FEE_ACCOUNT_RESERVE;    // Amount of units not allowed to send.
-    beast::uint64                      FEE_OWNER_RESERVE;      // Amount of units not allowed to send per owner entry.
-    beast::uint64                      FEE_NICKNAME_CREATE;    // Fee to create a nickname.
-    beast::uint64                      FEE_OFFER;              // Rate per day.
+    std::uint64_t                      FEE_DEFAULT;            // Default fee.
+    std::uint64_t                      FEE_ACCOUNT_RESERVE;    // Amount of units not allowed to send.
+    std::uint64_t                      FEE_OWNER_RESERVE;      // Amount of units not allowed to send per owner entry.
+    std::uint64_t                      FEE_NICKNAME_CREATE;    // Fee to create a nickname.
+    std::uint64_t                      FEE_OFFER;              // Rate per day.
     int                         FEE_CONTRACT_OPERATION; // fee for each contract operation
 
     // Node storage configuration
-    beast::uint32                      LEDGER_HISTORY;
-    beast::uint32                      FETCH_DEPTH;
+    std::uint32_t                      LEDGER_HISTORY;
+    std::uint32_t                      FETCH_DEPTH;
     int                         NODE_SIZE;
 
     // Client behavior
     int                         ACCOUNT_PROBE_MAX;      // How far to scan for accounts.
 
     // Signing signatures.
-    beast::uint32                      SIGN_TRANSACTION;
-    beast::uint32                      SIGN_VALIDATION;
-    beast::uint32                      SIGN_PROPOSAL;
+    std::uint32_t                      SIGN_TRANSACTION;
+    std::uint32_t                      SIGN_VALIDATION;
+    std::uint32_t                      SIGN_PROPOSAL;
 
     bool                        SSL_VERIFY;
     std::string                 SSL_VERIFY_FILE;

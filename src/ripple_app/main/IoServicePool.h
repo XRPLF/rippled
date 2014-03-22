@@ -44,7 +44,7 @@ private:
     beast::String m_name;
     boost::asio::io_service m_service;
     boost::optional <boost::asio::io_service::work> m_work;
-    beast::OwnedArray <ServiceThread> m_threads;
+    std::vector <std::unique_ptr <ServiceThread>> m_threads;
     int m_threadsDesired;
     beast::Atomic <int> m_threadsRunning;
 };

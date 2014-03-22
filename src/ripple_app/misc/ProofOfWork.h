@@ -55,13 +55,13 @@ public:
         return mChallenge;
     }
 
-    beast::uint64 getDifficulty () const
+    std::uint64_t getDifficulty () const
     {
         return getDifficulty (mTarget, mIterations);
     }
 
     // approximate number of hashes needed to solve
-    static beast::uint64 getDifficulty (uint256 const& target, int iterations);
+    static std::uint64_t getDifficulty (uint256 const& target, int iterations);
 
     static bool validateToken (const std::string& strToken);
 

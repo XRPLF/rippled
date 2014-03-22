@@ -57,11 +57,9 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 once_type::once_type(const once_type& other)
     : m_session(other.m_session)
@@ -115,6 +113,6 @@ once_type::once_type(session* s, Error& error)
 {
 }
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast

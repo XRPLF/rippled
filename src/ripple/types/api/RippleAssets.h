@@ -89,11 +89,7 @@ public:
     bool is_xrp () const
     {
         if (currency.isZero ())
-        {
-            //check_invariant (issuer == ACCOUNT_ONE);
             return true;
-        }
-
         return false;
     }
 };

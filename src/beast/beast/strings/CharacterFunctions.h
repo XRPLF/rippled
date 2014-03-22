@@ -27,8 +27,9 @@
 #include <limits>
 
 #include "../Config.h"
-#include "../CStdInt.h"
 #include "../Memory.h"
+
+#include <cstdint>
 
 namespace beast {
 
@@ -50,7 +51,7 @@ namespace beast {
  /** A platform-independent 32-bit unicode character type. */
  typedef wchar_t        beast_wchar;
 #else
- typedef uint32         beast_wchar;
+ typedef std::uint32_t         beast_wchar;
 #endif
 
 #ifndef DOXYGEN
@@ -78,7 +79,7 @@ namespace beast {
 
     @see String, CharPointer_UTF8, CharPointer_UTF16, CharPointer_UTF32
 */
-class BEAST_API CharacterFunctions
+class CharacterFunctions
 {
 public:
     //==============================================================================

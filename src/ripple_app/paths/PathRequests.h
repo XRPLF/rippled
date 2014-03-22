@@ -28,7 +28,6 @@ public:
     PathRequests (beast::Journal journal, beast::insight::Collector::ptr const& collector)
         : mJournal (journal)
         , mLastIdentifier (0)
-        , mLock ("PathRequests", __FILE__, __LINE__)
     {
         mFast = collector->make_event ("pathfind_fast");
         mFull = collector->make_event ("pathfind_full");
@@ -68,7 +67,7 @@ private:
     beast::Atomic<int>               mLastIdentifier;
 
     typedef RippleRecursiveMutex     LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType                         mLock;
 
 };

@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
+#include "../../beast/modules/beast_core/logging/Logger.h"
+
 namespace ripple {
 
 LogSink::LogSink ()
-    : m_mutex ("Log", __FILE__, __LINE__)
-    , m_minSeverity (lsINFO)
+    : m_minSeverity (lsINFO)
 {
 }
 
@@ -31,14 +32,14 @@ LogSink::~LogSink ()
 
 LogSeverity LogSink::getMinSeverity ()
 {
-    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+    ScopedLockType lock (m_mutex);
 
     return m_minSeverity;
 }
 
 void LogSink::setMinSeverity (LogSeverity s, bool all)
 {
-    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+    ScopedLockType lock (m_mutex);
 
     m_minSeverity = s;
 
@@ -58,7 +59,7 @@ void LogSink::setLogFile (boost::filesystem::path const& path)
 
 std::string LogSink::rotateLog ()
 {
-    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+    ScopedLockType lock (m_mutex);
 
     bool const wasOpened = m_logFile.closeAndReopen ();
 
@@ -123,13 +124,13 @@ void LogSink::write (
 
 void LogSink::write (std::string const& output, LogSeverity severity)
 {
-    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+    ScopedLockType lock (m_mutex);
     write (output, severity >= getMinSeverity(), lock);
 }
 
 void LogSink::write (std::string const& text)
 {
-    ScopedLockType lock (m_mutex, __FILE__, __LINE__);
+    ScopedLockType lock (m_mutex);
     write (text, true, lock);
 }
 

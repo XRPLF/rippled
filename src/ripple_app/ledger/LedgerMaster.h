@@ -40,14 +40,14 @@ public:
 
 public:
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-    typedef LockType::ScopedUnlockType ScopedUnlockType;
+    typedef std::unique_lock <LockType> ScopedLockType;
+    typedef beast::GenericScopedUnlock <LockType> ScopedUnlockType;
 
     static LedgerMaster* New (Stoppable& parent, beast::Journal journal);
 
     virtual ~LedgerMaster () = 0;
 
-    virtual beast::uint32 getCurrentLedgerIndex () = 0;
+    virtual std::uint32_t getCurrentLedgerIndex () = 0;
 
     virtual LockType& peekMutex () = 0;
 
@@ -75,7 +75,7 @@ public:
 
     virtual void setMinValidations (int v) = 0;
 
-    virtual beast::uint32 getEarliestFetch () = 0;
+    virtual std::uint32_t getEarliestFetch () = 0;
 
     virtual void pushLedger (Ledger::pointer newLedger) = 0;
     virtual void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL) = 0;
@@ -86,7 +86,7 @@ public:
 
     virtual void switchLedgers (Ledger::pointer lastClosed, Ledger::pointer newCurrent) = 0;
 
-    virtual void failedSave(beast::uint32 seq, uint256 const& hash) = 0;
+    virtual void failedSave(std::uint32_t seq, uint256 const& hash) = 0;
 
     virtual std::string getCompleteLedgers () = 0;
 
@@ -94,31 +94,31 @@ public:
 
     /** Get a ledger's hash by sequence number using the cache
     */
-    virtual uint256 getHashBySeq (beast::uint32 index) = 0;
+    virtual uint256 getHashBySeq (std::uint32_t index) = 0;
 
     /** Walk to a ledger's hash using the skip list
     */
-    virtual uint256 walkHashBySeq (beast::uint32 index) = 0;
-    virtual uint256 walkHashBySeq (beast::uint32 index, Ledger::ref referenceLedger) = 0;
+    virtual uint256 walkHashBySeq (std::uint32_t index) = 0;
+    virtual uint256 walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger) = 0;
 
-    virtual Ledger::pointer findAcquireLedger (beast::uint32 index, uint256 const& hash) = 0;
+    virtual Ledger::pointer findAcquireLedger (std::uint32_t index, uint256 const& hash) = 0;
 
-    virtual Ledger::pointer getLedgerBySeq (beast::uint32 index) = 0;
+    virtual Ledger::pointer getLedgerBySeq (std::uint32_t index) = 0;
 
     virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;
 
-    virtual void setLedgerRangePresent (beast::uint32 minV, beast::uint32 maxV) = 0;
+    virtual void setLedgerRangePresent (std::uint32_t minV, std::uint32_t maxV) = 0;
 
-    virtual uint256 getLedgerHash(beast::uint32 desiredSeq, Ledger::ref knownGoodLedger) = 0;
+    virtual uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger) = 0;
 
     virtual void addHeldTransaction (Transaction::ref trans) = 0;
     virtual void fixMismatch (Ledger::ref ledger) = 0;
 
-    virtual bool haveLedgerRange (beast::uint32 from, beast::uint32 to) = 0;
-    virtual bool haveLedger (beast::uint32 seq) = 0;
-    virtual void clearLedger (beast::uint32 seq) = 0;
-    virtual bool getValidatedRange (beast::uint32& minVal, beast::uint32& maxVal) = 0;
-    virtual bool getFullValidatedRange (beast::uint32& minVal, beast::uint32& maxVal) = 0;
+    virtual bool haveLedgerRange (std::uint32_t from, std::uint32_t to) = 0;
+    virtual bool haveLedger (std::uint32_t seq) = 0;
+    virtual void clearLedger (std::uint32_t seq) = 0;
+    virtual bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
+    virtual bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
 
     virtual void tune (int size, int age) = 0;
     virtual void sweep () = 0;
@@ -126,7 +126,7 @@ public:
     virtual void addValidateCallback (callback& c) = 0;
 
     virtual void checkAccept (Ledger::ref ledger) = 0;
-    virtual void checkAccept (uint256 const& hash, beast::uint32 seq) = 0;
+    virtual void checkAccept (uint256 const& hash, std::uint32_t seq) = 0;
 
     virtual void tryAdvance () = 0;
     virtual void newPathRequest () = 0;
@@ -138,8 +138,8 @@ public:
 
     virtual beast::PropertyStream::Source& getPropertySource () = 0;
 
-    static bool shouldAcquire (beast::uint32 currentLedgerID,
-                               beast::uint32 ledgerHistory, beast::uint32 targetLedger);
+    static bool shouldAcquire (std::uint32_t currentLedgerID,
+                               std::uint32_t ledgerHistory, std::uint32_t targetLedger);
 };
 
 } // ripple

@@ -20,8 +20,6 @@
 #ifndef RIPPLE_VALIDATORS_H_INCLUDED
 #define RIPPLE_VALIDATORS_H_INCLUDED
 
-#include "../beast/modules/beast_core/beast_core.h"
-
 #include "../beast/beast/http/URL.h"
 
 #include "../ripple/types/ripple_types.h"

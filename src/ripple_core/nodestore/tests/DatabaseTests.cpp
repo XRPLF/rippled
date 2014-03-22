@@ -23,7 +23,7 @@ namespace NodeStore {
 class NodeStoreDatabase_test : public TestBase
 {
 public:
-    void testImport (beast::String destBackendType, beast::String srcBackendType, beast::int64 seedValue)
+    void testImport (beast::String destBackendType, beast::String srcBackendType, std::int64_t seedValue)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
 
@@ -83,7 +83,7 @@ public:
     void testNodeStore (beast::String type,
                         bool const useEphemeralDatabase,
                         bool const testPersistence,
-                        beast::int64 const seedValue,
+                        std::int64_t const seedValue,
                         int numObjectsToTest = 2000)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
@@ -177,7 +177,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void runBackendTests (bool useEphemeralDatabase, beast::int64 const seedValue)
+    void runBackendTests (bool useEphemeralDatabase, std::int64_t const seedValue)
     {
         testNodeStore ("leveldb", useEphemeralDatabase, true, seedValue);
 
@@ -196,7 +196,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void runImportTests (beast::int64 const seedValue)
+    void runImportTests (std::int64_t const seedValue)
     {
         testImport ("leveldb", "leveldb", seedValue);
 
@@ -217,7 +217,7 @@ public:
 
     void run ()
     {
-        beast::int64 const seedValue = 50;
+        std::int64_t const seedValue = 50;
 
         testNodeStore ("memory", false, false, seedValue);
 

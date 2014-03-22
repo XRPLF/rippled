@@ -131,7 +131,7 @@ public:
     }
 
     void init (Ledger::ref ledger, uint256 const & transactionID,
-               beast::uint32 ledgerID, TransactionEngineParams params);
+               std::uint32_t ledgerID, TransactionEngineParams params);
 
     void clear ();
 
@@ -160,14 +160,14 @@ public:
 
     // Directory functions.
     TER dirAdd (
-        beast::uint64 &                      uNodeDir,      // Node of entry.
+        std::uint64_t &                      uNodeDir,      // Node of entry.
         uint256 const &                      uRootIndex,
         uint256 const &                      uLedgerIndex,
         std::function<void (SLE::ref, bool)> fDescriber);
 
     TER dirDelete (
         const bool                      bKeepRoot,
-        const beast::uint64 &           uNodeDir,      // Node item is mentioned in.
+        const std::uint64_t &           uNodeDir,      // Node item is mentioned in.
         uint256 const &                  uRootIndex,
         uint256 const &                  uLedgerIndex,  // Item being deleted
         const bool                      bStable,
@@ -176,7 +176,7 @@ public:
     bool                dirFirst (uint256 const & uRootIndex, SLE::pointer & sleNode, unsigned int & uDirEntry, uint256 & uEntryIndex);
     bool                dirNext (uint256 const & uRootIndex, SLE::pointer & sleNode, unsigned int & uDirEntry, uint256 & uEntryIndex);
     bool                dirIsEmpty (uint256 const & uDirIndex);
-    TER                 dirCount (uint256 const & uDirIndex, beast::uint32 & uCount);
+    TER                 dirCount (uint256 const & uDirIndex, std::uint32_t & uCount);
 
     uint256             getNextLedgerIndex (uint256 const & uHash);
     uint256             getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);
@@ -188,13 +188,13 @@ public:
     TER                 offerDelete (SLE::pointer sleOffer);
 
     // Balance functions.
-    beast::uint32       rippleTransferRate (const uint160 & uIssuerID);
-    beast::uint32       rippleTransferRate (const uint160 & uSenderID, const uint160 & uReceiverID, const uint160 & uIssuerID);
+    std::uint32_t       rippleTransferRate (const uint160 & uIssuerID);
+    std::uint32_t       rippleTransferRate (const uint160 & uSenderID, const uint160 & uReceiverID, const uint160 & uIssuerID);
     STAmount            rippleOwed (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID);
     STAmount            rippleLimit (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID);
-    beast::uint32       rippleQualityIn (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID,
+    std::uint32_t       rippleQualityIn (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID,
                                          SField::ref sfLow = sfLowQualityIn, SField::ref sfHigh = sfHighQualityIn);
-    beast::uint32       rippleQualityOut (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID)
+    std::uint32_t       rippleQualityOut (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID)
     {
         return rippleQualityIn (uToAccountID, uFromAccountID, uCurrencyID, sfLowQualityOut, sfHighQualityOut);
     }
@@ -218,12 +218,12 @@ public:
         const bool      bNoRipple,
         const STAmount & saSrcBalance,
         const STAmount & saSrcLimit,
-        const beast::uint32 uSrcQualityIn = 0,
-        const beast::uint32 uSrcQualityOut = 0);
+        const std::uint32_t uSrcQualityIn = 0,
+        const std::uint32_t uSrcQualityOut = 0);
     TER                 trustDelete (SLE::ref sleRippleState, const uint160 & uLowAccountID, const uint160 & uHighAccountID);
 
     Json::Value getJson (int) const;
-    void calcRawMeta (Serializer&, TER result, beast::uint32 index);
+    void calcRawMeta (Serializer&, TER result, std::uint32_t index);
 
     // iterator functions
     typedef std::map<uint256, LedgerEntrySetEntry>::iterator                iterator;

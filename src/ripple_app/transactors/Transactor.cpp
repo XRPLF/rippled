@@ -95,7 +95,7 @@ void Transactor::calculateFee ()
         calculateBaseFee (), isSetBit (mParams, tapADMIN)));
 }
 
-beast::uint64 Transactor::calculateBaseFee ()
+std::uint64_t Transactor::calculateBaseFee ()
 {
     return getConfig ().FEE_DEFAULT;
 }
@@ -171,8 +171,8 @@ TER Transactor::checkSig ()
 
 TER Transactor::checkSeq ()
 {
-    beast::uint32 t_seq = mTxn.getSequence ();
-    beast::uint32 a_seq = mTxnAccount->getFieldU32 (sfSequence);
+    std::uint32_t t_seq = mTxn.getSequence ();
+    std::uint32_t a_seq = mTxnAccount->getFieldU32 (sfSequence);
 
     m_journal.trace << "Aseq=" << a_seq << ", Tseq=" << t_seq;
 
@@ -260,7 +260,7 @@ TER Transactor::apply ()
         return (terResult);
 
     // Restructure this to avoid the dependency on LedgerBase::mLock
-    Ledger::ScopedLockType sl (mEngine->getLedger ()->mLock, __FILE__, __LINE__);
+    Ledger::ScopedLockType sl (mEngine->getLedger ()->mLock);
 
     mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT, 
         Ledger::getAccountRootIndex (mTxnAccountID));

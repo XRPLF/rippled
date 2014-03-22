@@ -43,8 +43,7 @@ LoadMonitor::Stats::Stats()
 SETUP_LOG (LoadMonitor)
 
 LoadMonitor::LoadMonitor ()
-    : mLock (this, "LoadMonitor", __FILE__, __LINE__)
-    , mCounts (0)
+    : mCounts (0)
     , mLatencyEvents (0)
     , mLatencyMSAvg (0)
     , mLatencyMSPeak (0)
@@ -103,7 +102,7 @@ void LoadMonitor::update ()
 
 void LoadMonitor::addCount ()
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     update ();
     ++mCounts;
@@ -115,7 +114,7 @@ void LoadMonitor::addLatency (int latency)
     if (latency == 1)
         latency = 0;
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     update ();
 
@@ -154,7 +153,7 @@ void LoadMonitor::addLoadSample (LoadEvent const& sample)
     if (latencyMilliseconds == 1)
         latencyMilliseconds = 0;
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     update ();
     ++mCounts;
@@ -169,13 +168,13 @@ void LoadMonitor::addLoadSample (LoadEvent const& sample)
         mLatencyMSPeak = latencyPeak;
 }
 
-void LoadMonitor::setTargetLatency (beast::uint64 avg, beast::uint64 pk)
+void LoadMonitor::setTargetLatency (std::uint64_t avg, std::uint64_t pk)
 {
     mTargetLatencyAvg  = avg;
     mTargetLatencyPk = pk;
 }
 
-bool LoadMonitor::isOverTarget (beast::uint64 avg, beast::uint64 peak)
+bool LoadMonitor::isOverTarget (std::uint64_t avg, std::uint64_t peak)
 {
     return (mTargetLatencyPk && (peak > mTargetLatencyPk)) ||
            (mTargetLatencyAvg && (avg > mTargetLatencyAvg));
@@ -183,7 +182,7 @@ bool LoadMonitor::isOverTarget (beast::uint64 avg, beast::uint64 peak)
 
 bool LoadMonitor::isOver ()
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     update ();
 
@@ -197,7 +196,7 @@ LoadMonitor::Stats LoadMonitor::getStats ()
 {
     Stats stats;
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     update ();
 

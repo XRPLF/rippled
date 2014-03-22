@@ -20,8 +20,6 @@
 #ifndef RIPPLE_HTTP_H_INCLUDED
 #define RIPPLE_HTTP_H_INCLUDED
 
-#include "../beast/modules/beast_core/beast_core.h"
-
 // VFALCO NOTE this sucks that we have to include asio in the header
 //             just for HTTPMessage!!
 #include "../beast/modules/beast_asio/beast_asio.h"

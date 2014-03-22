@@ -57,8 +57,8 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
+namespace beast {
+namespace sqdb {
 
 statement::statement(session& s)
     : m_imp(new detail::statement_imp(s))
@@ -136,4 +136,5 @@ void statement::clean_up()
     m_imp->clean_up();
 }
 
-}
+} // sqdb
+} // beast

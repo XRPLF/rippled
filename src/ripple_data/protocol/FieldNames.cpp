@@ -27,7 +27,7 @@ int SField::num = 0;
 // Solve construction issues for objects with static storage duration.
 SField::StaticLockType& SField::getMutex ()
 {
-    static StaticLockType mutex ("SField", __FILE__, __LINE__);
+    static StaticLockType mutex;
     return mutex;
 }
 
@@ -79,7 +79,7 @@ SField::ref SField::getField (int code)
     if ((type <= 0) || (field <= 0))
         return sfInvalid;
 
-    StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
+    StaticScopedLockType sl (getMutex ());
 
     std::map<int, SField::ptr>::iterator it = codeToField.find (code);
 
@@ -138,7 +138,7 @@ std::string SField::getName () const
 SField::ref SField::getField (const std::string& fieldName)
 {
     // OPTIMIZEME me with a map. CHECKME this is case sensitive
-    StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
+    StaticScopedLockType sl (getMutex ());
     typedef std::map<int, SField::ptr>::value_type int_sfref_pair;
     BOOST_FOREACH (const int_sfref_pair & fieldPair, codeToField)
     {
@@ -150,7 +150,7 @@ SField::ref SField::getField (const std::string& fieldName)
 
 SField::~SField ()
 {
-    StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
+    StaticScopedLockType sl (getMutex ());
     std::map<int, ptr>::iterator it = codeToField.find (fieldCode);
 
     if ((it != codeToField.end ()) && (it->second == this))

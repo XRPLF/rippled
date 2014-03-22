@@ -22,6 +22,7 @@
 
 #include "../../beast/beast/insight/Collector.h"
 #include "../../beast/beast/net/IPEndpoint.h"
+#include "../../beast/beast/utility/Journal.h"
 
 namespace ripple {
 namespace Resource {

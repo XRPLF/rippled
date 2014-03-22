@@ -57,8 +57,10 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
+#include <cassert>
+
+namespace beast {
+namespace sqdb {
 
 class session::Sqlite3
 {
@@ -67,13 +69,7 @@ public:
     {
         int threadSafe = sqlite3_threadsafe();
 
-        check_precondition (threadSafe != 0);
-
-#if 0
-        int result = sqlite3_config(SQLITE_CONFIG_MULTITHREAD);
-
-        check_postcondition (result == SQLITE_OK);
-#endif
+        assert (threadSafe != 0);
 
         sqlite3_initialize();
     }
@@ -113,7 +109,7 @@ session::~session()
 
 Error session::clone()
 {
-    check_precondition (! m_connection);
+    assert (! m_connection);
 
     return open(m_fileName, m_connectString);
 }
@@ -131,7 +127,7 @@ Error session::open(String fileName, std::string options)
     Error err;
 
     // can't open twice
-    check_precondition (! m_connection);
+    assert (! m_connection);
 
     int mode = 0;
     int flags = 0;
@@ -180,12 +176,12 @@ Error session::open(String fileName, std::string options)
                 }
                 else
                 {
-                    fatal_error ("bad parameter");
+                    throw std::invalid_argument ("bad parameter");
                 }
             }
             else
             {
-                fatal_error ("duplicate parameter");
+                throw std::invalid_argument ("duplicate parameter");
             }
         }
 
@@ -206,12 +202,12 @@ Error session::open(String fileName, std::string options)
                 }
                 else
                 {
-                    fatal_error ("bad parameter");
+                    throw std::invalid_argument ("bad parameter");
                 }
             }
             else
             {
-                fatal_error ("duplicate parameter");
+                throw std::invalid_argument ("duplicate parameter");
             }
         }
 
@@ -230,17 +226,17 @@ Error session::open(String fileName, std::string options)
                 }
                 else
                 {
-                    fatal_error ("bad parameter");
+                    throw std::invalid_argument ("bad parameter");
                 }
             }
             else
             {
-                fatal_error ("duplicate parameter");
+                throw std::invalid_argument ("duplicate parameter");
             }
         }
         else
         {
-            fatal_error ("unknown parameter");
+            throw std::invalid_argument ("unknown parameter");
         }
     }
 
@@ -306,7 +302,7 @@ void session::begin()
     Error error = hard_exec("BEGIN");
 
     if (error)
-        Throw(error);
+        throw error;
 }
 
 Error session::commit()
@@ -323,7 +319,7 @@ void session::rollback()
     Error error = hard_exec("ROLLBACK");
 
     if (error)
-        Throw(error);
+        throw error;
 }
 
 detail::once_type session::once(Error& error)
@@ -382,4 +378,5 @@ Error session::hard_exec(std::string const& query)
     return error;
 }
 
-}
+} // sqdb
+} // beast

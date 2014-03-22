@@ -25,13 +25,8 @@ namespace ripple {
 /** Synchronization primitives.
     This lets us switch between tracked and untracked mutexes.
 */
-#if RIPPLE_TRACK_MUTEXES
-typedef beast::TrackedMutexType <boost::mutex> RippleMutex;
-typedef beast::TrackedMutexType <boost::recursive_mutex> RippleRecursiveMutex;
-#else
-typedef beast::UntrackedMutexType <boost::mutex> RippleMutex;
-typedef beast::UntrackedMutexType <boost::recursive_mutex> RippleRecursiveMutex;
-#endif
+typedef std::mutex RippleMutex;
+typedef boost::recursive_mutex RippleRecursiveMutex;
 
 typedef boost::recursive_mutex DeprecatedRecursiveMutex;
 typedef DeprecatedRecursiveMutex::scoped_lock DeprecatedScopedLock;

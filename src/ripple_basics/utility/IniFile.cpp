@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <boost/algorithm/string.hpp>
+
 namespace ripple {
 
 #define SECTION_DEFAULT_NAME    ""

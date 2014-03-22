@@ -51,7 +51,7 @@ struct Config
     bool autoConnect;
 
     /** The listening port number. */
-    beast::uint16 listeningPort;
+    std::uint16_t listeningPort;
 
     /** The set of features we advertise. */
     std::string features;

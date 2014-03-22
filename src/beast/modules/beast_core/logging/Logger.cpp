@@ -60,4 +60,4 @@ void logAssertion (const char* const filename, const int lineNum)
 }
 #endif
 
-}  // namespace beast
+} // beast

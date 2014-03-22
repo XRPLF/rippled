@@ -53,7 +53,7 @@ public:
     /** Uniquely identifies a particular connection of a peer
         This works upto a restart of rippled.
     */
-    typedef beast::uint32 ShortId;
+    typedef std::uint32_t ShortId;
 
     virtual void sendPacket (const PackedMessage::pointer& packet, bool onStrand) = 0;
 
@@ -72,11 +72,11 @@ public:
 
     virtual uint256 const& getClosedLedgerHash () const = 0;
 
-    virtual bool hasLedger (uint256 const& hash, beast::uint32 seq) const = 0;
+    virtual bool hasLedger (uint256 const& hash, std::uint32_t seq) const = 0;
 
     virtual void getLedger (protocol::TMGetLedger &) = 0;
 
-    virtual void ledgerRange (beast::uint32& minSeq, beast::uint32& maxSeq) const = 0;
+    virtual void ledgerRange (std::uint32_t& minSeq, std::uint32_t& maxSeq) const = 0;
 
     virtual bool hasTxSet (uint256 const& hash) const = 0;
 
@@ -90,7 +90,7 @@ public:
 
     virtual bool supportsVersion (int version) = 0;
 
-    virtual bool hasRange (beast::uint32 uMin, beast::uint32 uMax) = 0;
+    virtual bool hasRange (std::uint32_t uMin, std::uint32_t uMax) = 0;
 
     virtual beast::IP::Endpoint getRemoteAddress() const = 0;
 

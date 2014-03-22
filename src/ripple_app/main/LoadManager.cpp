@@ -73,7 +73,7 @@ public:
 
     beast::Journal m_journal;
     typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
     bool mArmed;
@@ -88,7 +88,6 @@ public:
         : LoadManager (parent)
         , Thread ("loadmgr")
         , m_journal (journal)
-        , mLock (this, "LoadManagerImp", __FILE__, __LINE__)
         , mArmed (false)
         , mDeadLock (0)
         , mCosts (LT_MAX)
@@ -136,7 +135,7 @@ public:
 
     void resetDeadlockDetector ()
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         mDeadLock = UptimeTimer::getInstance ().getElapsedSeconds ();
     }
 
@@ -174,7 +173,7 @@ public:
         {
             {
                 // VFALCO NOTE What is this lock protecting?
-                ScopedLockType sl (mLock, __FILE__, __LINE__);
+                ScopedLockType sl (mLock);
 
                 // VFALCO NOTE I think this is to reduce calls to the operating system
                 //             for retrieving the current time.

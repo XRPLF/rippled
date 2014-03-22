@@ -63,9 +63,9 @@ Transaction::Transaction (
     TxType ttKind,
     const RippleAddress&    naPublicKey,
     const RippleAddress&    naSourceAccount,
-    beast::uint32           uSeq,
+    std::uint32_t           uSeq,
     const STAmount&         saFee,
-    beast::uint32           uSourceTag) :
+    std::uint32_t           uSourceTag) :
     mAccountFrom (naSourceAccount), mFromPubKey (naPublicKey), mInLedger (0), mStatus (NEW), mResult (temUNCERTAIN)
 {
     assert (mFromPubKey.isValid ());
@@ -130,7 +130,7 @@ bool Transaction::checkSign () const
     return mTransaction->checkSign (mFromPubKey);
 }
 
-void Transaction::setStatus (TransStatus ts, beast::uint32 lseq)
+void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
 {
     mStatus     = ts;
     mInLedger   = lseq;
@@ -140,7 +140,7 @@ Transaction::pointer Transaction::transactionFromSQL (Database* db, bool bValida
 {
     Serializer rawTxn;
     std::string status;
-    beast::uint32 inLedger;
+    std::uint32_t inLedger;
 
     int txSize = 2048;
     rawTxn.resize (txSize);
@@ -202,7 +202,7 @@ Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
 {
     Serializer rawTxn;
     std::string status;
-    beast::uint32 inLedger;
+    std::uint32_t inLedger;
 
     int txSize = 2048;
     rawTxn.resize (txSize);
@@ -277,7 +277,7 @@ Transaction::pointer Transaction::load (uint256 const& id)
     return transactionFromSQL (sql);
 }
 
-bool Transaction::convertToTransactions (beast::uint32 firstLedgerSeq, beast::uint32 secondLedgerSeq,
+bool Transaction::convertToTransactions (std::uint32_t firstLedgerSeq, std::uint32_t secondLedgerSeq,
         bool checkFirstTransactions, bool checkSecondTransactions, const SHAMap::Delta& inMap,
         std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap)
 {

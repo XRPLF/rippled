@@ -107,7 +107,7 @@ private:
 protected:
     // VFALCO TODO try to make some of these private
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::unique_lock <LockType> ScopedLockType;
 
     PeerSet (uint256 const& hash, int interval, bool txnData,
         clock_type& clock, beast::Journal journal);

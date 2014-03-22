@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include "../../beast/modules/beast_core/thread/DeadlineTimer.h"
+#include "../../beast/modules/beast_core/system/SystemStats.h"
+
 namespace ripple {
 
 class NetworkOPsImp
@@ -40,7 +43,6 @@ public:
         : NetworkOPs (parent)
         , m_clock (clock)
         , m_journal (journal)
-        , mLock (this, "NetOPs", __FILE__, __LINE__)
         , mMode (omDISCONNECTED)
         , mNeedNetworkLedger (false)
         , mProposing (false)
@@ -67,13 +69,13 @@ public:
     }
 
     // network information
-    beast::uint32 getNetworkTimeNC ();                 // Our best estimate of wall time in seconds from 1/1/2000
-    beast::uint32 getCloseTimeNC ();                   // Our best estimate of current ledger close time
-    beast::uint32 getValidationTimeNC ();              // Use *only* to timestamp our own validation
+    std::uint32_t getNetworkTimeNC ();                 // Our best estimate of wall time in seconds from 1/1/2000
+    std::uint32_t getCloseTimeNC ();                   // Our best estimate of current ledger close time
+    std::uint32_t getValidationTimeNC ();              // Use *only* to timestamp our own validation
     void closeTimeOffset (int);
     boost::posix_time::ptime getNetworkTimePT ();
-    beast::uint32 getLedgerID (uint256 const& hash);
-    beast::uint32 getCurrentLedgerID ();
+    std::uint32_t getLedgerID (uint256 const& hash);
+    std::uint32_t getCurrentLedgerID ();
     OperatingMode getOperatingMode ()
     {
         return mMode;
@@ -100,8 +102,8 @@ public:
     {
         return m_ledgerMaster.getLedgerByHash (hash);
     }
-    Ledger::pointer getLedgerBySeq (const beast::uint32 seq);
-    void            missingNodeInLedger (const beast::uint32 seq);
+    Ledger::pointer getLedgerBySeq (const std::uint32_t seq);
+    void            missingNodeInLedger (const std::uint32_t seq);
 
     uint256         getClosedLedgerHash ()
     {
@@ -109,20 +111,20 @@ public:
     }
 
     // Do we have this inclusive range of ledgers in our database
-    bool haveLedgerRange (beast::uint32 from, beast::uint32 to);
-    bool haveLedger (beast::uint32 seq);
-    beast::uint32 getValidatedSeq ();
-    bool isValidated (beast::uint32 seq);
-    bool isValidated (beast::uint32 seq, uint256 const& hash);
+    bool haveLedgerRange (std::uint32_t from, std::uint32_t to);
+    bool haveLedger (std::uint32_t seq);
+    std::uint32_t getValidatedSeq ();
+    bool isValidated (std::uint32_t seq);
+    bool isValidated (std::uint32_t seq, uint256 const& hash);
     bool isValidated (Ledger::ref l)
     {
         return isValidated (l->getLedgerSeq (), l->getHash ());
     }
-    bool getValidatedRange (beast::uint32& minVal, beast::uint32& maxVal)
+    bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
     {
         return m_ledgerMaster.getValidatedRange (minVal, maxVal);
     }
-    bool getFullValidatedRange (beast::uint32& minVal, beast::uint32& maxVal)
+    bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
     {
         return m_ledgerMaster.getFullValidatedRange (minVal, maxVal);
     }
@@ -169,10 +171,10 @@ public:
     Transaction::pointer findTransactionByID (uint256 const& transactionID);
 #if 0
     int findTransactionsBySource (uint256 const& uLedger, std::list<Transaction::pointer>&, const RippleAddress& sourceAccount,
-                                  beast::uint32 minSeq, beast::uint32 maxSeq);
+                                  std::uint32_t minSeq, std::uint32_t maxSeq);
 #endif
     int findTransactionsByDestination (std::list<Transaction::pointer>&, const RippleAddress& destinationAccount,
-                                       beast::uint32 startLedgerSeq, beast::uint32 endLedgerSeq, int maxTransactions);
+                                       std::uint32_t startLedgerSeq, std::uint32_t endLedgerSeq, int maxTransactions);
 
     //
     // Account functions
@@ -186,7 +188,7 @@ public:
     //
 
     STVector256             getDirNodeInfo (Ledger::ref lrLedger, uint256 const& uRootIndex,
-                                            beast::uint64& uNodePrevious, beast::uint64& uNodeNext);
+                                            std::uint64_t& uNodePrevious, std::uint64_t& uNodeNext);
 
 #if 0
     //
@@ -229,9 +231,9 @@ public:
     void mapComplete (uint256 const& hash, SHAMap::ref map);
     bool stillNeedTXSet (uint256 const& hash);
     void makeFetchPack (Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<protocol::TMGetObjectByHash> request,
-                        Ledger::pointer wantLedger, Ledger::pointer haveLedger, beast::uint32 uUptime);
-    bool shouldFetchPack (beast::uint32 seq);
-    void gotFetchPack (bool progress, beast::uint32 seq);
+                        Ledger::pointer wantLedger, Ledger::pointer haveLedger, std::uint32_t uUptime);
+    bool shouldFetchPack (std::uint32_t seq);
+    void gotFetchPack (bool progress, std::uint32_t seq);
     void addFetchPack (uint256 const& hash, boost::shared_ptr< Blob >& data);
     bool getFetchPack (uint256 const& hash, Blob& data);
     int getFetchSize ();
@@ -300,11 +302,11 @@ public:
     {
         return mLastCloseConvergeTime;
     }
-    beast::uint32 getLastCloseTime ()
+    std::uint32_t getLastCloseTime ()
     {
         return mLastCloseTime;
     }
-    void setLastCloseTime (beast::uint32 t)
+    void setLastCloseTime (std::uint32_t t)
     {
         mLastCloseTime = t;
     }
@@ -312,7 +314,7 @@ public:
     Json::Value getServerInfo (bool human, bool admin);
     void clearLedgerFetch ();
     Json::Value getLedgerFetchInfo ();
-    beast::uint32 acceptLedger ();
+    std::uint32_t acceptLedger ();
     boost::unordered_map < uint160,
           std::list<LedgerProposal::pointer> > & peekStoredProposals ()
     {
@@ -324,32 +326,32 @@ public:
 
     //Helper function to generate SQL query to get transactions
     std::string transactionsSQL (std::string selection, const RippleAddress& account,
-                                 beast::int32 minLedger, beast::int32 maxLedger,
-                                 bool descending, beast::uint32 offset, int limit,
+                                 std::int32_t minLedger, std::int32_t maxLedger,
+                                 bool descending, std::uint32_t offset, int limit,
                                  bool binary, bool count, bool bAdmin);
 
 
     // client information retrieval functions
     std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-    getAccountTxs (const RippleAddress& account, beast::int32 minLedger, beast::int32 maxLedger,
-                   bool descending, beast::uint32 offset, int limit, bool bAdmin);
+    getAccountTxs (const RippleAddress& account, std::int32_t minLedger, std::int32_t maxLedger,
+                   bool descending, std::uint32_t offset, int limit, bool bAdmin);
 
     std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-    getTxsAccount (const RippleAddress& account, beast::int32 minLedger, beast::int32 maxLedger,
+    getTxsAccount (const RippleAddress& account, std::int32_t minLedger, std::int32_t maxLedger,
                    bool forward, Json::Value& token, int limit, bool bAdmin);
 
-    typedef boost::tuple<std::string, std::string, beast::uint32> txnMetaLedgerType;
+    typedef boost::tuple<std::string, std::string, std::uint32_t> txnMetaLedgerType;
 
     std::vector<txnMetaLedgerType>
-    getAccountTxsB (const RippleAddress& account, beast::int32 minLedger,
-                    beast::int32 maxLedger,  bool descending, beast::uint32 offset,
+    getAccountTxsB (const RippleAddress& account, std::int32_t minLedger,
+                    std::int32_t maxLedger,  bool descending, std::uint32_t offset,
                     int limit, bool bAdmin);
 
     std::vector<txnMetaLedgerType>
-    getTxsAccountB (const RippleAddress& account, beast::int32 minLedger,
-                    beast::int32 maxLedger,  bool forward, Json::Value& token, int limit, bool bAdmin);
+    getTxsAccountB (const RippleAddress& account, std::int32_t minLedger,
+                    std::int32_t maxLedger,  bool forward, Json::Value& token, int limit, bool bAdmin);
 
-    std::vector<RippleAddress> getLedgerAffectedAccounts (beast::uint32 ledgerSeq);
+    std::vector<RippleAddress> getLedgerAffectedAccounts (std::uint32_t ledgerSeq);
 
     //
     // Monitoring: publisher side
@@ -363,28 +365,28 @@ public:
     //
     void subAccount (InfoSub::ref ispListener,
                      const boost::unordered_set<RippleAddress>& vnaAccountIDs,
-                     beast::uint32 uLedgerIndex, bool rt);
-    void unsubAccount (beast::uint64 uListener,
+                     std::uint32_t uLedgerIndex, bool rt);
+    void unsubAccount (std::uint64_t uListener,
                        const boost::unordered_set<RippleAddress>& vnaAccountIDs,
                        bool rt);
 
     bool subLedger (InfoSub::ref ispListener, Json::Value& jvResult);
-    bool unsubLedger (beast::uint64 uListener);
+    bool unsubLedger (std::uint64_t uListener);
 
     bool subServer (InfoSub::ref ispListener, Json::Value& jvResult);
-    bool unsubServer (beast::uint64 uListener);
+    bool unsubServer (std::uint64_t uListener);
 
     bool subBook (InfoSub::ref ispListener, RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
                   RippleIssuer const& issuerPays, RippleIssuer const& issuerGets);
-    bool unsubBook (beast::uint64 uListener, RippleCurrency const& currencyPays,
+    bool unsubBook (std::uint64_t uListener, RippleCurrency const& currencyPays,
                     RippleCurrency const& currencyGets,
                     RippleIssuer const& issuerPays, RippleIssuer const& issuerGets);
 
     bool subTransactions (InfoSub::ref ispListener);
-    bool unsubTransactions (beast::uint64 uListener);
+    bool unsubTransactions (std::uint64_t uListener);
 
     bool subRTTransactions (InfoSub::ref ispListener);
-    bool unsubRTTransactions (beast::uint64 uListener);
+    bool unsubRTTransactions (std::uint64_t uListener);
 
     InfoSub::pointer    findRpcSub (const std::string& strUrl);
     InfoSub::pointer    addRpcSub (const std::string& strUrl, InfoSub::ref rspEntry);
@@ -430,7 +432,7 @@ private:
 
     // XXX Split into more locks.
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
 
     beast::Journal m_journal;
     LockType mLock;
@@ -454,8 +456,8 @@ private:
     // last ledger close
     int                                 mLastCloseProposers, mLastCloseConvergeTime;
     uint256                             mLastCloseHash;
-    beast::uint32                       mLastCloseTime;
-    beast::uint32                       mLastValidationTime;
+    std::uint32_t                       mLastCloseTime;
+    std::uint32_t                       mLastValidationTime;
     SerializedValidation::pointer       mLastValidation;
 
     // Recent positions taken
@@ -472,10 +474,10 @@ private:
     SubMapType                                          mSubRTTransactions;     // all proposed and accepted transactions
 
     TaggedCache< uint256, Blob>                     mFetchPack;
-    beast::uint32                                       mFetchSeq;
+    std::uint32_t                                       mFetchSeq;
 
-    beast::uint32                                       mLastLoadBase;
-    beast::uint32                                       mLastLoadFactor;
+    std::uint32_t                                       mLastLoadBase;
+    std::uint32_t                                       mLastLoadFactor;
 };
 
 //------------------------------------------------------------------------------
@@ -513,7 +515,7 @@ void NetworkOPsImp::onDeadlineTimer (beast::DeadlineTimer& timer)
 void NetworkOPsImp::processHeartbeatTimer ()
 {
     {
-        Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
+        Application::ScopedLockType lock (getApp().getMasterLock ());
 
         // VFALCO NOTE This is for diagnosing a crash on exit
         Application& app (getApp ());
@@ -637,19 +639,19 @@ boost::posix_time::ptime NetworkOPsImp::getNetworkTimePT ()
     return boost::posix_time::microsec_clock::universal_time () + boost::posix_time::seconds (offset);
 }
 
-beast::uint32 NetworkOPsImp::getNetworkTimeNC ()
+std::uint32_t NetworkOPsImp::getNetworkTimeNC ()
 {
     return iToSeconds (getNetworkTimePT ());
 }
 
-beast::uint32 NetworkOPsImp::getCloseTimeNC ()
+std::uint32_t NetworkOPsImp::getCloseTimeNC ()
 {
     return iToSeconds (getNetworkTimePT () + boost::posix_time::seconds (mCloseTimeOffset));
 }
 
-beast::uint32 NetworkOPsImp::getValidationTimeNC ()
+std::uint32_t NetworkOPsImp::getValidationTimeNC ()
 {
-    beast::uint32 vt = getNetworkTimeNC ();
+    std::uint32_t vt = getNetworkTimeNC ();
 
     if (vt <= mLastValidationTime)
         vt = mLastValidationTime + 1;
@@ -672,39 +674,39 @@ void NetworkOPsImp::closeTimeOffset (int offset)
         m_journal.info << "Close time offset now " << mCloseTimeOffset;
 }
 
-beast::uint32 NetworkOPsImp::getLedgerID (uint256 const& hash)
+std::uint32_t NetworkOPsImp::getLedgerID (uint256 const& hash)
 {
     Ledger::pointer  lrLedger   = m_ledgerMaster.getLedgerByHash (hash);
 
     return lrLedger ? lrLedger->getLedgerSeq () : 0;
 }
 
-Ledger::pointer NetworkOPsImp::getLedgerBySeq (const beast::uint32 seq)
+Ledger::pointer NetworkOPsImp::getLedgerBySeq (const std::uint32_t seq)
 {
     return m_ledgerMaster.getLedgerBySeq (seq);
 }
 
-beast::uint32 NetworkOPsImp::getCurrentLedgerID ()
+std::uint32_t NetworkOPsImp::getCurrentLedgerID ()
 {
     return m_ledgerMaster.getCurrentLedger ()->getLedgerSeq ();
 }
 
-bool NetworkOPsImp::haveLedgerRange (beast::uint32 from, beast::uint32 to)
+bool NetworkOPsImp::haveLedgerRange (std::uint32_t from, std::uint32_t to)
 {
     return m_ledgerMaster.haveLedgerRange (from, to);
 }
 
-bool NetworkOPsImp::haveLedger (beast::uint32 seq)
+bool NetworkOPsImp::haveLedger (std::uint32_t seq)
 {
     return m_ledgerMaster.haveLedger (seq);
 }
 
-beast::uint32 NetworkOPsImp::getValidatedSeq ()
+std::uint32_t NetworkOPsImp::getValidatedSeq ()
 {
     return m_ledgerMaster.getValidatedLedger ()->getLedgerSeq ();
 }
 
-bool NetworkOPsImp::isValidated (beast::uint32 seq, uint256 const& hash)
+bool NetworkOPsImp::isValidated (std::uint32_t seq, uint256 const& hash)
 {
     if (!isValidated (seq))
         return false;
@@ -712,7 +714,7 @@ bool NetworkOPsImp::isValidated (beast::uint32 seq, uint256 const& hash)
     return m_ledgerMaster.getHashBySeq (seq) == hash;
 }
 
-bool NetworkOPsImp::isValidated (beast::uint32 seq)
+bool NetworkOPsImp::isValidated (std::uint32_t seq)
 {
     // use when ledger was retrieved by seq
     return haveLedger (seq) && (seq <= m_ledgerMaster.getValidatedLedger ()->getLedgerSeq ());
@@ -815,7 +817,7 @@ void NetworkOPsImp::runTransactionQueue ()
             LoadEvent::autoptr ev = getApp().getJobQueue ().getLoadEventAP (jtTXN_PROC, "runTxnQ");
 
             {
-                Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
+                Application::ScopedLockType lock (getApp().getMasterLock ());
 
                 Transaction::pointer dbtx = getApp().getMasterTransaction ().fetch (txn->getID (), true);
                 assert (dbtx);
@@ -918,7 +920,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
     }
 
     {
-        Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
+        Application::ScopedLockType lock (getApp().getMasterLock ());
 
         bool didApply;
         TER r = m_ledgerMaster.doTransaction (trans->getSTransaction (),
@@ -1009,8 +1011,8 @@ Transaction::pointer NetworkOPsImp::findTransactionByID (uint256 const& transact
 }
 
 int NetworkOPsImp::findTransactionsByDestination (std::list<Transaction::pointer>& txns,
-        const RippleAddress& destinationAccount, beast::uint32 startLedgerSeq,
-        beast::uint32 endLedgerSeq, int maxTransactions)
+        const RippleAddress& destinationAccount, std::uint32_t startLedgerSeq,
+        std::uint32_t endLedgerSeq, int maxTransactions)
 {
     // WRITEME
     return 0;
@@ -1041,8 +1043,8 @@ SLE::pointer NetworkOPsImp::getGenerator (Ledger::ref lrLedger, const uint160& u
 STVector256 NetworkOPsImp::getDirNodeInfo (
     Ledger::ref         lrLedger,
     uint256 const&      uNodeIndex,
-    beast::uint64&      uNodePrevious,
-    beast::uint64&      uNodeNext)
+    std::uint64_t&      uNodePrevious,
+    std::uint64_t&      uNodeNext)
 {
     STVector256         svIndexes;
     SLE::pointer        sleNode     = lrLedger->getDirNode (uNodeIndex);
@@ -1097,7 +1099,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (Ledger::pointer lpLedger, const RippleA
 
     if (sleNode)
     {
-        beast::uint64  uNodeDir;
+        std::uint64_t  uNodeDir;
 
         do
         {
@@ -1482,7 +1484,7 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
         boost::shared_ptr<protocol::TMProposeSet> set, RippleAddress nodePublic, uint256 checkLedger, bool sigGood)
 {
     {
-        Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
+        Application::ScopedLockType lock (getApp().getMasterLock ());
 
         bool relay = true;
 
@@ -1637,7 +1639,7 @@ void NetworkOPsImp::pubServer ()
     //             list into a local array while holding the lock then release the
     //             lock and call send on everyone.
     //
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     if (!mSubServer.empty ())
     {
@@ -1705,14 +1707,14 @@ void NetworkOPsImp::setMode (OperatingMode om)
 
 std::string
 NetworkOPsImp::transactionsSQL (std::string selection, const RippleAddress& account,
-                             beast::int32 minLedger, beast::int32 maxLedger, bool descending,
-                             beast::uint32 offset, int limit,
+                             std::int32_t minLedger, std::int32_t maxLedger, bool descending,
+                             std::uint32_t offset, int limit,
                              bool binary, bool count, bool bAdmin)
 {
-    beast::uint32 NONBINARY_PAGE_LENGTH = 200;
-    beast::uint32 BINARY_PAGE_LENGTH = 500;
+    std::uint32_t NONBINARY_PAGE_LENGTH = 200;
+    std::uint32_t BINARY_PAGE_LENGTH = 500;
 
-    beast::uint32 numberOfResults;
+    std::uint32_t numberOfResults;
 
     if (count)
         numberOfResults = 1000000000;
@@ -1720,7 +1722,7 @@ NetworkOPsImp::transactionsSQL (std::string selection, const RippleAddress& acco
         numberOfResults = binary ? BINARY_PAGE_LENGTH : NONBINARY_PAGE_LENGTH;
     else if (!bAdmin)
         numberOfResults = std::min (binary ? BINARY_PAGE_LENGTH
-                                           : NONBINARY_PAGE_LENGTH, static_cast<beast::uint32> (limit));
+                                           : NONBINARY_PAGE_LENGTH, static_cast<std::uint32_t> (limit));
     else
         numberOfResults = limit;
 
@@ -1767,8 +1769,8 @@ NetworkOPsImp::transactionsSQL (std::string selection, const RippleAddress& acco
 }
 
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-NetworkOPsImp::getAccountTxs (const RippleAddress& account, beast::int32 minLedger,
-                              beast::int32 maxLedger, bool descending, beast::uint32 offset,
+NetworkOPsImp::getAccountTxs (const RippleAddress& account, std::int32_t minLedger,
+                              std::int32_t maxLedger, bool descending, std::uint32_t offset,
                               int limit, bool bAdmin)
 {
     // can be called with no locks
@@ -1800,7 +1802,7 @@ NetworkOPsImp::getAccountTxs (const RippleAddress& account, beast::int32 minLedg
 
             if (rawMeta.getLength() == 0)
             { // Work around a bug that could leave the metadata missing
-                beast::uint32 seq = static_cast<beast::uint32>(db->getBigInt("LedgerSeq"));
+                std::uint32_t seq = static_cast<std::uint32_t>(db->getBigInt("LedgerSeq"));
                 m_journal.warning << "Recovering ledger " << seq << ", txn " << txn->getID();
                 Ledger::pointer ledger = getLedgerBySeq(seq);
                 if (ledger)
@@ -1818,8 +1820,8 @@ NetworkOPsImp::getAccountTxs (const RippleAddress& account, beast::int32 minLedg
 }
 
 std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
-    const RippleAddress& account, beast::int32 minLedger, beast::int32 maxLedger, bool descending,
-    beast::uint32 offset, int limit, bool bAdmin)
+    const RippleAddress& account, std::int32_t minLedger, std::int32_t maxLedger, bool descending,
+    std::uint32_t offset, int limit, bool bAdmin)
 {
     // can be called with no locks
     std::vector< txnMetaLedgerType> ret;
@@ -1870,18 +1872,18 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
 
 
 std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-NetworkOPsImp::getTxsAccount (const RippleAddress& account, beast::int32 minLedger,
-                              beast::int32 maxLedger, bool forward, Json::Value& token,
+NetworkOPsImp::getTxsAccount (const RippleAddress& account, std::int32_t minLedger,
+                              std::int32_t maxLedger, bool forward, Json::Value& token,
                               int limit, bool bAdmin)
 {
     std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
-    beast::uint32 NONBINARY_PAGE_LENGTH = 200;
-    beast::uint32 EXTRA_LENGTH = 20;
+    std::uint32_t NONBINARY_PAGE_LENGTH = 200;
+    std::uint32_t EXTRA_LENGTH = 20;
 
     bool foundResume = token.isNull() || !token.isObject();
 
-    beast::uint32 numberOfResults, queryLimit;
+    std::uint32_t numberOfResults, queryLimit;
     if (limit <= 0)
         numberOfResults = NONBINARY_PAGE_LENGTH;
     else if (!bAdmin && (limit > NONBINARY_PAGE_LENGTH))
@@ -1890,7 +1892,7 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, beast::int32 minLedg
         numberOfResults = limit;
     queryLimit = numberOfResults + 1 + (foundResume ? 0 : EXTRA_LENGTH);
 
-    beast::uint32 findLedger = 0, findSeq = 0;
+    std::uint32_t findLedger = 0, findSeq = 0;
     if (!foundResume)
     {
         try
@@ -1961,7 +1963,7 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, beast::int32 minLedg
 
                 if (rawMeta.getLength() == 0)
                 { // Work around a bug that could leave the metadata missing
-                    beast::uint32 seq = static_cast<beast::uint32>(db->getBigInt("LedgerSeq"));
+                    std::uint32_t seq = static_cast<std::uint32_t>(db->getBigInt("LedgerSeq"));
                     m_journal.warning << "Recovering ledger " << seq << ", txn " << txn->getID();
                     Ledger::pointer ledger = getLedgerBySeq(seq);
                     if (ledger)
@@ -1980,18 +1982,18 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, beast::int32 minLedg
 }
 
 std::vector<NetworkOPsImp::txnMetaLedgerType>
-NetworkOPsImp::getTxsAccountB (const RippleAddress& account, beast::int32 minLedger,
-                               beast::int32 maxLedger,  bool forward, Json::Value& token,
+NetworkOPsImp::getTxsAccountB (const RippleAddress& account, std::int32_t minLedger,
+                               std::int32_t maxLedger,  bool forward, Json::Value& token,
                                int limit, bool bAdmin)
 {
     std::vector<txnMetaLedgerType> ret;
 
-    beast::uint32 BINARY_PAGE_LENGTH = 500;
-    beast::uint32 EXTRA_LENGTH = 20;
+    std::uint32_t BINARY_PAGE_LENGTH = 500;
+    std::uint32_t EXTRA_LENGTH = 20;
 
     bool foundResume = token.isNull() || !token.isObject();
 
-    beast::uint32 numberOfResults, queryLimit;
+    std::uint32_t numberOfResults, queryLimit;
     if (limit <= 0)
         numberOfResults = BINARY_PAGE_LENGTH;
     else if (!bAdmin && (limit > BINARY_PAGE_LENGTH))
@@ -2000,7 +2002,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, beast::int32 minLed
         numberOfResults = limit;
     queryLimit = numberOfResults + 1 + (foundResume ? 0 : EXTRA_LENGTH);
 
-    beast::uint32 findLedger = 0, findSeq = 0;
+    std::uint32_t findLedger = 0, findSeq = 0;
     if (!foundResume)
     {
         try
@@ -2088,7 +2090,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, beast::int32 minLed
 
 
 std::vector<RippleAddress>
-NetworkOPsImp::getLedgerAffectedAccounts (beast::uint32 ledgerSeq)
+NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
 {
     std::vector<RippleAddress> accounts;
     std::string sql = str (boost::format
@@ -2203,8 +2205,8 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
             static_cast<double> (getApp().getFeeTrack ().getLoadFactor ()) / getApp().getFeeTrack ().getLoadBase ();
         if (admin)
         {
-            beast::uint32 base = getApp().getFeeTrack().getLoadBase();
-            beast::uint32 fee = getApp().getFeeTrack().getLocalFee();
+            std::uint32_t base = getApp().getFeeTrack().getLoadBase();
+            std::uint32_t fee = getApp().getFeeTrack().getLocalFee();
             if (fee != base)
                 info["load_factor_local"] =
                     static_cast<double> (fee) / base;
@@ -2229,8 +2231,8 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     if (lpClosed)
     {
-        beast::uint64 baseFee = lpClosed->getBaseFee ();
-        beast::uint64 baseRef = lpClosed->getReferenceFeeUnits ();
+        std::uint64_t baseFee = lpClosed->getBaseFee ();
+        std::uint64_t baseRef = lpClosed->getReferenceFeeUnits ();
         Json::Value l (Json::objectValue);
         l["seq"]                = Json::UInt (lpClosed->getLedgerSeq ());
         l["hash"]               = lpClosed->getHash ().GetHex ();
@@ -2250,12 +2252,12 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
             l["reserve_inc_xrp"]    =
                 static_cast<double> (Json::UInt (lpClosed->getReserveInc () * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
 
-            beast::uint32 closeTime = getCloseTimeNC ();
-            beast::uint32 lCloseTime = lpClosed->getCloseTimeNC ();
+            std::uint32_t closeTime = getCloseTimeNC ();
+            std::uint32_t lCloseTime = lpClosed->getCloseTimeNC ();
 
             if (lCloseTime <= closeTime)
             {
-                beast::uint32 age = closeTime - lCloseTime;
+                std::uint32_t age = closeTime - lCloseTime;
 
                 if (age < 1000000)
                     l["age"]            = Json::UInt (age);
@@ -2310,7 +2312,7 @@ void NetworkOPsImp::pubProposedTransaction (Ledger::ref lpCurrent, SerializedTra
     Json::Value jvObj   = transJson (*stTxn, terResult, false, lpCurrent);
 
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         NetworkOPsImp::SubMapType::const_iterator it = mSubRTTransactions.begin ();
 
         while (it != mSubRTTransactions.end ())
@@ -2340,7 +2342,7 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
     Ledger::ref lpAccepted = alpAccepted->getLedger ();
 
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         if (!mSubLedger.empty ())
         {
@@ -2441,7 +2443,7 @@ void NetworkOPsImp::pubValidatedTransaction (Ledger::ref alAccepted, const Accep
     std::string sObj = w.write (jvObj);
 
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         NetworkOPsImp::SubMapType::const_iterator it = mSubTransactions.begin ();
 
@@ -2484,7 +2486,7 @@ void NetworkOPsImp::pubAccountTransaction (Ledger::ref lpCurrent, const Accepted
     int                             iAccepted   = 0;
 
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         if (!bAccepted && mSubRTAccount.empty ()) return;
 
@@ -2564,7 +2566,7 @@ void NetworkOPsImp::pubAccountTransaction (Ledger::ref lpCurrent, const Accepted
 
 void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
     const boost::unordered_set<RippleAddress>& vnaAccountIDs,
-    beast::uint32 uLedgerIndex, bool rt)
+    std::uint32_t uLedgerIndex, bool rt)
 {
     SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
 
@@ -2576,7 +2578,7 @@ void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
         isrListener->insertSubAccountInfo (naAccountID, uLedgerIndex);
     }
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
     {
@@ -2597,7 +2599,7 @@ void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
     }
 }
 
-void NetworkOPsImp::unsubAccount (beast::uint64 uSeq,
+void NetworkOPsImp::unsubAccount (std::uint64_t uSeq,
                                   const boost::unordered_set<RippleAddress>& vnaAccountIDs,
                                   bool rt)
 {
@@ -2610,7 +2612,7 @@ void NetworkOPsImp::unsubAccount (beast::uint64 uSeq,
     //  isrListener->deleteSubAccountInfo(naAccountID);
     // }
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
     {
@@ -2649,7 +2651,7 @@ bool NetworkOPsImp::subBook (InfoSub::ref isrListener, RippleCurrency const& cur
     return true;
 }
 
-bool NetworkOPsImp::unsubBook (beast::uint64 uSeq,
+bool NetworkOPsImp::unsubBook (std::uint64_t uSeq,
                             RippleCurrency const& currencyPays, RippleCurrency const& currencyGets, RippleIssuer const& issuerPays, RippleIssuer const& issuerGets)
 {
     BookListeners::pointer listeners =
@@ -2669,7 +2671,7 @@ void NetworkOPsImp::newLCL (int proposers, int convergeTime, uint256 const& ledg
     mLastCloseHash = ledgerHash;
 }
 
-beast::uint32 NetworkOPsImp::acceptLedger ()
+std::uint32_t NetworkOPsImp::acceptLedger ()
 {
     // accept the current transaction tree, return the new ledger's sequence
     beginConsensus (m_ledgerMaster.getClosedLedger ()->getHash (), m_ledgerMaster.getCurrentLedger ());
@@ -2717,14 +2719,14 @@ bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
     if ((mMode >= omSYNCING) && !isNeedNetworkLedger ())
         jvResult["validated_ledgers"]   = getApp().getLedgerMaster ().getCompleteLedgers ();
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return mSubLedger.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
-bool NetworkOPsImp::unsubLedger (beast::uint64 uSeq)
+bool NetworkOPsImp::unsubLedger (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return !!mSubLedger.erase (uSeq);
 }
 
@@ -2742,48 +2744,48 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult)
     jvResult["load_base"]       = getApp().getFeeTrack ().getLoadBase ();
     jvResult["load_factor"]     = getApp().getFeeTrack ().getLoadFactor ();
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return mSubServer.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
-bool NetworkOPsImp::unsubServer (beast::uint64 uSeq)
+bool NetworkOPsImp::unsubServer (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return !!mSubServer.erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPsImp::subTransactions (InfoSub::ref isrListener)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return mSubTransactions.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
-bool NetworkOPsImp::unsubTransactions (beast::uint64 uSeq)
+bool NetworkOPsImp::unsubTransactions (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return !!mSubTransactions.erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
 bool NetworkOPsImp::subRTTransactions (InfoSub::ref isrListener)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return mSubRTTransactions.emplace (isrListener->getSeq (), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
-bool NetworkOPsImp::unsubRTTransactions (beast::uint64 uSeq)
+bool NetworkOPsImp::unsubRTTransactions (std::uint64_t uSeq)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return !!mSubRTTransactions.erase (uSeq);
 }
 
 InfoSub::pointer NetworkOPsImp::findRpcSub (const std::string& strUrl)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     subRpcMapType::iterator it = mRpcSubMap.find (strUrl);
 
@@ -2795,7 +2797,7 @@ InfoSub::pointer NetworkOPsImp::findRpcSub (const std::string& strUrl)
 
 InfoSub::pointer NetworkOPsImp::addRpcSub (const std::string& strUrl, InfoSub::ref rspEntry)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     mRpcSubMap.emplace (strUrl, rspEntry);
 
@@ -2835,7 +2837,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
     if ((iLeft == 0) || (iLeft > 300))
         iLeft = 300;
 
-    beast::uint32  uTransferRate   = lesActive.rippleTransferRate (uTakerGetsIssuerID);
+    std::uint32_t  uTransferRate   = lesActive.rippleTransferRate (uTakerGetsIssuerID);
 
     while (!bDone && (--iLeft > 0))
     {
@@ -2911,7 +2913,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
                 STAmount    saTakerGetsFunded;
                 STAmount    saOwnerFundsLimit;
-                beast::uint32 uOfferRate;
+                std::uint32_t uOfferRate;
 
 
                 if (uTransferRate != QUALITY_ONE                // Have a tranfer fee.
@@ -3004,7 +3006,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
     if ((iLeft == 0) || (iLeft > 300))
         iLeft = 300;
 
-    beast::uint32  uTransferRate   = lesActive.rippleTransferRate (uTakerGetsIssuerID);
+    std::uint32_t  uTransferRate   = lesActive.rippleTransferRate (uTakerGetsIssuerID);
 
     while ((--iLeft > 0) && obIterator.nextOffer ())
     {
@@ -3054,7 +3056,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
             STAmount    saTakerGetsFunded;
             STAmount    saOwnerFundsLimit;
-            beast::uint32 uOfferRate;
+            std::uint32_t uOfferRate;
 
 
             if (uTransferRate != QUALITY_ONE                // Have a tranfer fee.
@@ -3115,7 +3117,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
 #endif
 
-static void fpAppender (protocol::TMGetObjectByHash* reply, beast::uint32 ledgerSeq,
+static void fpAppender (protocol::TMGetObjectByHash* reply, std::uint32_t ledgerSeq,
                         const uint256& hash, const Blob& blob)
 {
     protocol::TMIndexedObject& newObj = * (reply->add_objects ());
@@ -3127,7 +3129,7 @@ static void fpAppender (protocol::TMGetObjectByHash* reply, beast::uint32 ledger
 void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
                                 boost::shared_ptr<protocol::TMGetObjectByHash> request,
                                 Ledger::pointer wantLedger, Ledger::pointer haveLedger,
-                                beast::uint32 uUptime)
+                                std::uint32_t uUptime)
 {
     if (UptimeTimer::getInstance ().getElapsedSeconds () > (uUptime + 1))
     {
@@ -3159,7 +3161,7 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
 
         do
         {
-            beast::uint32 lSeq = wantLedger->getLedgerSeq ();
+            std::uint32_t lSeq = wantLedger->getLedgerSeq ();
 
             protocol::TMIndexedObject& newObj = *reply.add_objects ();
             newObj.set_hash (wantLedger->getHash ().begin (), 256 / 8);
@@ -3223,7 +3225,7 @@ bool NetworkOPsImp::getFetchPack (uint256 const& hash, Blob& data)
     return true;
 }
 
-bool NetworkOPsImp::shouldFetchPack (beast::uint32 seq)
+bool NetworkOPsImp::shouldFetchPack (std::uint32_t seq)
 {
     if (mFetchSeq == seq)
         return false;
@@ -3236,7 +3238,7 @@ int NetworkOPsImp::getFetchSize ()
     return mFetchPack.getCacheSize ();
 }
 
-void NetworkOPsImp::gotFetchPack (bool progress, beast::uint32 seq)
+void NetworkOPsImp::gotFetchPack (bool progress, std::uint32_t seq)
 {
 
     // FIXME: Calling this function more than once will result in
@@ -3247,7 +3249,7 @@ void NetworkOPsImp::gotFetchPack (bool progress, beast::uint32 seq)
                                    BIND_TYPE (&InboundLedgers::gotFetchPack, &getApp().getInboundLedgers (), P_1));
 }
 
-void NetworkOPsImp::missingNodeInLedger (beast::uint32 seq)
+void NetworkOPsImp::missingNodeInLedger (std::uint32_t seq)
 {
     uint256 hash = getApp().getLedgerMaster ().getHashBySeq (seq);
     if (hash.isZero())

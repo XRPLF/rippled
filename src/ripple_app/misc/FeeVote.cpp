@@ -81,8 +81,8 @@ private:
     };
 
 public:
-    FeeVote (beast::uint64 targetBaseFee, beast::uint32 targetReserveBase,
-             beast::uint32 targetReserveIncrement)
+    FeeVote (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
+             std::uint32_t targetReserveIncrement)
         : mTargetBaseFee (targetBaseFee)
         , mTargetReserveBase (targetReserveBase)
         , mTargetReserveIncrement (targetReserveIncrement)
@@ -119,9 +119,9 @@ public:
         // LCL must be flag ledger
         assert ((lastClosedLedger->getLedgerSeq () % 256) == 0);
 
-        VotableInteger<beast::uint64> baseFeeVote (lastClosedLedger->getBaseFee (), mTargetBaseFee);
-        VotableInteger<beast::uint32> baseReserveVote (lastClosedLedger->getReserve (0), mTargetReserveBase);
-        VotableInteger<beast::uint32> incReserveVote (lastClosedLedger->getReserveInc (), mTargetReserveIncrement);
+        VotableInteger<std::uint64_t> baseFeeVote (lastClosedLedger->getBaseFee (), mTargetBaseFee);
+        VotableInteger<std::uint32_t> baseReserveVote (lastClosedLedger->getReserve (0), mTargetReserveBase);
+        VotableInteger<std::uint32_t> incReserveVote (lastClosedLedger->getReserveInc (), mTargetReserveIncrement);
 
         // get validations for ledger before flag
         ValidationSet set = getApp().getValidations ().getValidations (lastClosedLedger->getParentHash ());
@@ -161,9 +161,9 @@ public:
         }
 
         // choose our positions
-        beast::uint64 baseFee = baseFeeVote.getVotes ();
-        beast::uint32 baseReserve = baseReserveVote.getVotes ();
-        beast::uint32 incReserve = incReserveVote.getVotes ();
+        std::uint64_t baseFee = baseFeeVote.getVotes ();
+        std::uint32_t baseReserve = baseReserveVote.getVotes ();
+        std::uint32_t incReserve = incReserveVote.getVotes ();
 
         // add transactions to our position
         if ((baseFee != lastClosedLedger->getBaseFee ()) ||
@@ -196,16 +196,16 @@ public:
     }
 
 private:
-    beast::uint64 mTargetBaseFee;
-    beast::uint32 mTargetReserveBase;
-    beast::uint32 mTargetReserveIncrement;
+    std::uint64_t mTargetBaseFee;
+    std::uint32_t mTargetReserveBase;
+    std::uint32_t mTargetReserveIncrement;
 };
 
 //------------------------------------------------------------------------------
 
-IFeeVote* IFeeVote::New (beast::uint64 targetBaseFee,
-                         beast::uint32 targetReserveBase,
-                         beast::uint32 targetReserveIncrement)
+IFeeVote* IFeeVote::New (std::uint64_t targetBaseFee,
+                         std::uint32_t targetReserveBase,
+                         std::uint32_t targetReserveIncrement)
 {
     return new FeeVote (targetBaseFee, targetReserveBase, targetReserveIncrement);
 }

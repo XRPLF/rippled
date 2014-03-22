@@ -1101,7 +1101,7 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
             loadLedger = Ledger::loadByHash (hash);
         }
         else // assume by sequence
-            loadLedger = Ledger::loadByIndex (beast::lexicalCastThrow <beast::uint32> (l));
+            loadLedger = Ledger::loadByIndex (beast::lexicalCastThrow <std::uint32_t> (l));
 
         if (!loadLedger)
         {

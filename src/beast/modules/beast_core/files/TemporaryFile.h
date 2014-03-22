@@ -65,7 +65,7 @@ namespace beast
 
     @see File, FileOutputStream
 */
-class BEAST_API TemporaryFile : LeakChecked <TemporaryFile>, public Uncopyable
+class TemporaryFile : LeakChecked <TemporaryFile>, public Uncopyable
 {
 public:
     //==============================================================================
@@ -161,6 +161,6 @@ private:
     const File temporaryFile, targetFile;
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_TEMPORARYFILE_H_INCLUDED

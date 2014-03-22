@@ -27,14 +27,14 @@ namespace asio {
 //
 // http://tools.ietf.org/html/rfc5246#appendix-E.2
 //
-// uint8 V2CipherSpec[3];
+// std::uint8_t V2CipherSpec[3];
 // struct {
-//    uint16 msg_length;   
-//    uint8 msg_type;
+//    std::uint16_t msg_length;   
+//    std::uint8_t msg_type;
 //    Version version;              Should be 'ProtocolVersion'?
-//    uint16 cipher_spec_length;
-//    uint16 session_id_length;
-//    uint16 challenge_length;
+//    std::uint16_t cipher_spec_length;
+//    std::uint16_t session_id_length;
+//    std::uint16_t challenge_length;
 //    ...
 //
 class HandshakeDetectLogicSSL2 : public HandshakeDetectLogic
@@ -67,7 +67,7 @@ public:
         FixedInputBufferSize <bytesNeeded> in (buffer);
 
         {
-            uint8 byte;
+            std::uint8_t byte;
             if (! in.peek (&byte))
                 return;
 
@@ -80,7 +80,7 @@ public:
         // The remaining bits contain the
         // length of the following data in bytes.
         //
-        uint16 msg_length;
+        std::uint16_t msg_length;
         if (! in.readNetworkInteger(&msg_length))
             return;
 
@@ -95,7 +95,7 @@ public:
         if (msg_length < 9)
             return fail ();
 
-        uint8 msg_type;
+        std::uint8_t msg_type;
         if (! in.read (&msg_type))
             return;
 

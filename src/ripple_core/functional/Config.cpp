@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../beast/modules/beast_core/text/LexicalCast.h"
+
 namespace ripple {
 
 //
@@ -390,8 +392,7 @@ void Config::load ()
                 peerPROXYListeningPort = beast::lexicalCastThrow <int> (strTemp);
 
                 if (peerPROXYListeningPort != 0 && peerPROXYListeningPort == peerListeningPort)
-                    beast::FatalError ("Peer and proxy listening ports can't be the same.",
-                        __FILE__, __LINE__);
+                    throw std::runtime_error ("Peer and proxy listening ports can't be the same.");
             }
             else
             {
@@ -524,10 +525,10 @@ void Config::load ()
                 VALIDATION_QUORUM   = std::max (0, beast::lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_FEE_ACCOUNT_RESERVE, strTemp))
-                FEE_ACCOUNT_RESERVE = beast::lexicalCastThrow <beast::uint64> (strTemp);
+                FEE_ACCOUNT_RESERVE = beast::lexicalCastThrow <std::uint64_t> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_OWNER_RESERVE, strTemp))
-                FEE_OWNER_RESERVE   = beast::lexicalCastThrow <beast::uint64> (strTemp);
+                FEE_OWNER_RESERVE   = beast::lexicalCastThrow <std::uint64_t> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_NICKNAME_CREATE, strTemp))
                 FEE_NICKNAME_CREATE = beast::lexicalCastThrow <int> (strTemp);
@@ -550,7 +551,7 @@ void Config::load ()
                 else if (strTemp == "none")
                     LEDGER_HISTORY = 0;
                 else
-                    LEDGER_HISTORY = beast::lexicalCastThrow <beast::uint32> (strTemp);
+                    LEDGER_HISTORY = beast::lexicalCastThrow <std::uint32_t> (strTemp);
             }
             if (SectionSingleB (secConfig, SECTION_FETCH_DEPTH, strTemp))
             {
@@ -561,7 +562,7 @@ void Config::load ()
                 else if (strTemp == "full")
                     FETCH_DEPTH = 1000000000u;
                 else
-                    FETCH_DEPTH = beast::lexicalCastThrow <beast::uint32> (strTemp);
+                    FETCH_DEPTH = beast::lexicalCastThrow <std::uint32_t> (strTemp);
 
                 if (FETCH_DEPTH < 10)
                     FETCH_DEPTH = 10;

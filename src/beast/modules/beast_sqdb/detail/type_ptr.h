@@ -60,11 +60,9 @@
 #ifndef BEAST_SQDB_DETAIL_TYPE_PTR_H_INCLUDED
 #define BEAST_SQDB_DETAIL_TYPE_PTR_H_INCLUDED
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 // helper for managing the lifetime of into and use objects
 template <typename T>
@@ -90,8 +88,8 @@ private:
     mutable T* m_p;
 };
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast
 
 #endif

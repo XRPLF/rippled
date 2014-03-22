@@ -20,11 +20,10 @@
 #ifndef BEAST_NET_IPADDRESSV4_H_INCLUDED
 #define BEAST_NET_IPADDRESSV4_H_INCLUDED
 
-#include <string>
+#include <cstdint>
 #include <ios>
+#include <string>
 #include <utility>
-
-#include "../CStdInt.h"
 
 namespace beast {
 namespace IP {
@@ -38,12 +37,12 @@ struct AddressV4
     /** Construct from a 32-bit unsigned.
         @note Octets are formed in order from the MSB to the LSB.       
     */
-    explicit AddressV4 (uint32 value_);
+    explicit AddressV4 (std::uint32_t value_);
 
     /** Construct from four individual octets..
         @note The resulting address is a.b.c.d
     */
-    AddressV4 (uint8 a, uint8 b, uint8 c, uint8 d);
+    AddressV4 (std::uint8_t a, std::uint8_t b, std::uint8_t c, std::uint8_t d);
 
     /** Create an address from an IPv4 address string in dotted decimal form.
         @return A pair with the address, and bool set to `true` on success.
@@ -108,7 +107,7 @@ struct AddressV4
     {
     public:
         typedef typename std::conditional <
-            IsConst, uint32 const*, uint32*>::type Pointer;
+            IsConst, std::uint32_t const*, std::uint32_t*>::type Pointer;
 
         Proxy (int shift, Pointer value)
             : m_shift (shift)
@@ -116,7 +115,7 @@ struct AddressV4
         {
         }
 
-        operator uint8() const
+        operator std::uint8_t() const
         {
             return ((*m_value)>>m_shift) & 0xff;
         }
@@ -141,7 +140,7 @@ struct AddressV4
     /** @{ */
 
     /** The value as a 32 bit unsigned. */
-    uint32 value;
+    std::uint32_t value;
 };
 
 //------------------------------------------------------------------------------

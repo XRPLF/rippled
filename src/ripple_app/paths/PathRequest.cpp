@@ -25,7 +25,6 @@ PathRequest::PathRequest (
 const boost::shared_ptr<InfoSub>& subscriber, int id, PathRequests& owner,
     beast::Journal journal)
     : m_journal (journal)
-    , mLock (this, "PathRequest", __FILE__, __LINE__)
     , mOwner (owner)
     , wpSubscriber (subscriber)
     , jvStatus (Json::objectValue)
@@ -72,7 +71,7 @@ PathRequest::~PathRequest()
 
 bool PathRequest::isValid ()
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return bValid;
 }
 
@@ -114,7 +113,7 @@ bool PathRequest::needsUpdate (bool newOnly, LedgerIndex index)
 
 bool PathRequest::isValid (RippleLineCache::ref crCache)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     bValid = raSrcAccount.isSet () && raDstAccount.isSet () && saDstAmount.isPositive ();
     Ledger::pointer lrLedger = crCache->getLedger ();
 
@@ -305,13 +304,13 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
 Json::Value PathRequest::doClose (const Json::Value&)
 {
     m_journal.debug << iIdentifier << " closed";
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return jvStatus;
 }
 
 Json::Value PathRequest::doStatus (const Json::Value&)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return jvStatus;
 }
 
@@ -325,7 +324,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 {
     m_journal.debug << iIdentifier << " update " << (fast ? "fast" : "normal");
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     if (!isValid (cache))
         return jvStatus;

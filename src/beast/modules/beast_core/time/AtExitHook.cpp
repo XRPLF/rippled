@@ -137,4 +137,4 @@ AtExitHook::~AtExitHook ()
     Manager::get().erase (m_item);
 }
 
-}  // namespace beast
+} // beast

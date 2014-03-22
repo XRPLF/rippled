@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../ripple_basics/log/LogPartition.h"
+#include "../../ripple_basics/utility/PlatformMacros.h"
+#include "OfferCreateTransactor.h"
+
 namespace ripple {
 
 SETUP_LOG (OfferCreateTransactor)
@@ -131,7 +135,7 @@ TER OfferCreateTransactor::takeOffers (
     WriteLog (lsDEBUG, OfferCreateTransactor) << "takeOffers: bSell: " << bSell << ": against book: " << uBookBase.ToString ();
 
     LedgerEntrySet&         lesActive           = mEngine->getNodes ();
-    const beast::uint64     uTakeQuality        = STAmount::getRate (saTakerGets, saTakerPays);
+    const std::uint64_t     uTakeQuality        = STAmount::getRate (saTakerGets, saTakerPays);
     STAmount                saTakerRate         = STAmount::setRate (uTakeQuality);
     const uint160           uTakerPaysAccountID = saTakerPays.getIssuer ();
     const uint160           uTakerGetsAccountID = saTakerGets.getIssuer ();
@@ -153,7 +157,7 @@ TER OfferCreateTransactor::takeOffers (
         STAmount        saTakerFunds    = lesActive.accountFunds (uTakerAccountID, saTakerPays);
         STAmount        saSubTakerPays  = saTakerPays - saTakerPaid; // How much more to spend.
         STAmount        saSubTakerGets  = saTakerGets - saTakerGot; // How much more is wanted.
-        beast::uint64   uTipQuality     = bookIterator.getCurrentQuality();
+        std::uint64_t   uTipQuality     = bookIterator.getCurrentQuality();
 
         if (!saTakerFunds.isPositive ())
         {
@@ -374,7 +378,7 @@ TER OfferCreateTransactor::takeOffers (
 TER OfferCreateTransactor::doApply ()
 {
     WriteLog (lsTRACE, OfferCreateTransactor) << "OfferCreate> " << mTxn.getJson (0);
-    const beast::uint32       uTxFlags                = mTxn.getFlags ();
+    const std::uint32_t       uTxFlags                = mTxn.getFlags ();
     const bool                bPassive                = isSetBit (uTxFlags, tfPassive);
     const bool                bImmediateOrCancel        = isSetBit (uTxFlags, tfImmediateOrCancel);
     const bool                bFillOrKill                = isSetBit (uTxFlags, tfFillOrKill);
@@ -391,12 +395,12 @@ TER OfferCreateTransactor::doApply ()
 
     const uint160            uPaysIssuerID            = saTakerPays.getIssuer ();
     const uint160            uGetsIssuerID            = saTakerGets.getIssuer ();
-    const beast::uint32       uExpiration                = mTxn.getFieldU32 (sfExpiration);
+    const std::uint32_t       uExpiration                = mTxn.getFieldU32 (sfExpiration);
     const bool                bHaveExpiration            = mTxn.isFieldPresent (sfExpiration);
     const bool                bHaveCancel                = mTxn.isFieldPresent (sfOfferSequence);
-    const beast::uint32     uCancelSequence            = mTxn.getFieldU32 (sfOfferSequence);
-    const beast::uint32     uAccountSequenceNext    = mTxnAccount->getFieldU32 (sfSequence);
-    const beast::uint32     uSequence                = mTxn.getSequence ();
+    const std::uint32_t     uCancelSequence            = mTxn.getFieldU32 (sfOfferSequence);
+    const std::uint32_t     uAccountSequenceNext    = mTxnAccount->getFieldU32 (sfSequence);
+    const std::uint32_t     uSequence                = mTxn.getSequence ();
 
     const uint256            uLedgerIndex            = Ledger::getOfferIndex (mTxnAccountID, uSequence);
 
@@ -404,12 +408,12 @@ TER OfferCreateTransactor::doApply ()
 
     const uint160            uPaysCurrency            = saTakerPays.getCurrency ();
     const uint160            uGetsCurrency            = saTakerGets.getCurrency ();
-    const beast::uint64      uRate                    = STAmount::getRate (saTakerGets, saTakerPays);
+    const std::uint64_t      uRate                    = STAmount::getRate (saTakerGets, saTakerPays);
 
     TER                        terResult                = tesSUCCESS;
     uint256                    uDirectory;        // Delete hints.
-    beast::uint64              uOwnerNode;
-    beast::uint64              uBookNode;
+    std::uint64_t              uOwnerNode;
+    std::uint64_t              uBookNode;
 
     LedgerEntrySet&            lesActive                = mEngine->getNodes ();
     LedgerEntrySet            lesCheckpoint            = lesActive;                            // Checkpoint with just fees paid.

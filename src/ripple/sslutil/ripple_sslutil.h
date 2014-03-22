@@ -20,8 +20,6 @@
 #ifndef RIPPLE_SSLUTIL_H_INCLUDED
 #define RIPPLE_SSLUTIL_H_INCLUDED
 
-#include "../beast/modules/beast_core/beast_core.h"
-
 #include "../types/ripple_types.h"
 
 #include <openssl/bn.h>

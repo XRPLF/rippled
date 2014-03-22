@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <cassert>
+
 namespace ripple {
 
 #define MIN_VALIDATION_RATIO    150     // 150/256ths of validations of previous ledger
@@ -35,8 +37,8 @@ public:
     typedef std::function <void (Ledger::ref)> callback;
 
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-    typedef LockType::ScopedUnlockType ScopedUnlockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
+    typedef beast::GenericScopedUnlock <LockType> ScopedUnlockType;
 
     beast::Journal m_journal;
 
@@ -61,7 +63,7 @@ public:
 
     int                         mMinValidations;    // The minimum validations to publish a ledger
     uint256                     mLastValidateHash;
-    beast::uint32               mLastValidateSeq;
+    std::uint32_t               mLastValidateSeq;
     std::list<callback>         mOnValidate;        // Called when a ledger has enough validations
 
     bool                        mAdvanceThread;     // Publish thread is running
@@ -72,17 +74,16 @@ public:
     bool                        mPathFindNewLedger;
     bool                        mPathFindNewRequest;
 
-    std::atomic <beast::uint32> mPubLedgerClose;
-    std::atomic <beast::uint32> mPubLedgerSeq;
-    std::atomic <beast::uint32> mValidLedgerClose;
-    std::atomic <beast::uint32> mValidLedgerSeq;
+    std::atomic <std::uint32_t> mPubLedgerClose;
+    std::atomic <std::uint32_t> mPubLedgerSeq;
+    std::atomic <std::uint32_t> mValidLedgerClose;
+    std::atomic <std::uint32_t> mValidLedgerSeq;
 
     //--------------------------------------------------------------------------
 
     explicit LedgerMasterImp (Stoppable& parent, beast::Journal journal)
         : LedgerMaster (parent)
         , m_journal (journal)
-        , m_mutex (this, "LedgerMaster", __FILE__, __LINE__)
         , mHeldTransactions (uint256 ())
         , mLedgerCleaner (LedgerCleaner::New(*this, LogPartition::getJournal<LedgerCleanerLog>()))
         , mMinValidations (0)
@@ -103,23 +104,23 @@ public:
     {
     }
 
-    beast::uint32 getCurrentLedgerIndex ()
+    std::uint32_t getCurrentLedgerIndex ()
     {
         return mCurrentLedger.get ()->getLedgerSeq ();
     }
 
     int getPublishedLedgerAge ()
     {
-        beast::uint32 pubClose = mPubLedgerClose.load();
+        std::uint32_t pubClose = mPubLedgerClose.load();
         if (!pubClose)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "No published ledger";
             return 999999;
         }
 
-        beast::int64 ret = getApp().getOPs ().getCloseTimeNC ();
-        ret -= static_cast<beast::int64> (pubClose);
-        ret = std::max (0LL, ret);
+        std::int64_t ret = getApp().getOPs ().getCloseTimeNC ();
+        ret -= static_cast<std::int64_t> (pubClose);
+        ret = (ret > 0) ? ret : 0;
 
         WriteLog (lsTRACE, LedgerMaster) << "Published ledger age is " << ret;
         return static_cast<int> (ret);
@@ -127,16 +128,16 @@ public:
 
     int getValidatedLedgerAge ()
     {
-        beast::uint32 valClose = mValidLedgerClose.load();
+        std::uint32_t valClose = mValidLedgerClose.load();
         if (!valClose)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "No validated ledger";
             return 999999;
         }
 
-        beast::int64 ret = getApp().getOPs ().getCloseTimeNC ();
-        ret -= static_cast<beast::int64> (valClose);
-        ret = std::max (0LL, ret);
+        std::int64_t ret = getApp().getOPs ().getCloseTimeNC ();
+        ret -= static_cast<std::int64_t> (valClose);
+        ret = (ret > 0) ? ret : 0;
 
         WriteLog (lsTRACE, LedgerMaster) << "Validated ledger age is " << ret;
         return static_cast<int> (ret);
@@ -149,8 +150,8 @@ public:
             reason = "No recently-published ledger";
             return false;
         }
-        beast::uint32 validClose = mValidLedgerClose.load();
-        beast::uint32 pubClose = mPubLedgerClose.load();
+        std::uint32_t validClose = mValidLedgerClose.load();
+        std::uint32_t pubClose = mPubLedgerClose.load();
         if (!validClose || !pubClose)
         {
             reason = "No published ledger";
@@ -181,7 +182,7 @@ public:
     void addHeldTransaction (Transaction::ref transaction)
     {
         // returns true if transaction was added
-        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex);
         mHeldTransactions.push_back (transaction->getSTransaction ());
     }
 
@@ -192,7 +193,7 @@ public:
         WriteLog (lsINFO, LedgerMaster) << "PushLedger: " << newLedger->getHash ();
 
         {
-            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex);
 
             Ledger::pointer closedLedger = mCurrentLedger.getMutable ();
             if (closedLedger)
@@ -222,7 +223,7 @@ public:
 
 
         {
-            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex);
             mClosedLedger.set (newLCL);
             mCurrentLedger.set (newOL);
             mEngine.setLedger (newOL);
@@ -245,7 +246,7 @@ public:
         assert (lastClosed && current);
 
         {
-            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex);
 
             lastClosed->setClosed ();
             lastClosed->setAccepted ();
@@ -277,7 +278,7 @@ public:
 
     void closeLedger (bool recover)
     {
-        ScopedLockType sl (m_mutex, __FILE__, __LINE__);
+        ScopedLockType sl (m_mutex);
         Ledger::pointer closingLedger = mCurrentLedger.getMutable ();
 
         if (recover)
@@ -322,7 +323,7 @@ public:
         TER result;
 
         {
-            ScopedLockType sl (m_mutex, __FILE__, __LINE__);
+            ScopedLockType sl (m_mutex);
             result = mEngine.applyTransaction (*txn, params, didApply);
             ledger = mEngine.getLedger ();
         }
@@ -334,27 +335,27 @@ public:
         return result;
     }
 
-    bool haveLedgerRange (beast::uint32 from, beast::uint32 to)
+    bool haveLedgerRange (std::uint32_t from, std::uint32_t to)
     {
-        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
-        beast::uint32 prevMissing = mCompleteLedgers.prevMissing (to + 1);
+        ScopedLockType sl (mCompleteLock);
+        std::uint32_t prevMissing = mCompleteLedgers.prevMissing (to + 1);
         return (prevMissing == RangeSet::absent) || (prevMissing < from);
     }
 
-    bool haveLedger (beast::uint32 seq)
+    bool haveLedger (std::uint32_t seq)
     {
-        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+        ScopedLockType sl (mCompleteLock);
         return mCompleteLedgers.hasValue (seq);
     }
 
-    void clearLedger (beast::uint32 seq)
+    void clearLedger (std::uint32_t seq)
     {
-        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+        ScopedLockType sl (mCompleteLock);
         return mCompleteLedgers.clearValue (seq);
     }
 
     // returns Ledgers we have all the nodes for
-    bool getFullValidatedRange (beast::uint32& minVal, beast::uint32& maxVal)
+    bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
     {
         maxVal = mPubLedgerSeq.load();
 
@@ -362,7 +363,7 @@ public:
             return false;
 
         {
-            ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+            ScopedLockType sl (mCompleteLock);
             minVal = mCompleteLedgers.prevMissing (maxVal);
         }
 
@@ -375,7 +376,7 @@ public:
     }
 
     // Returns Ledgers we have all the nodes for and are indexed
-    bool getValidatedRange (beast::uint32& minVal, beast::uint32& maxVal)
+    bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
     { 
         maxVal = mPubLedgerSeq.load();
 
@@ -383,7 +384,7 @@ public:
             return false;
 
         {
-            ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+            ScopedLockType sl (mCompleteLock);
             minVal = mCompleteLedgers.prevMissing (maxVal);
         }
 
@@ -395,7 +396,7 @@ public:
         // Remove from the validated range any ledger sequences that may not be
         // fully updated in the database yet
 
-        std::set<beast::uint32> sPendingSaves = Ledger::getPendingSaves();
+        std::set<std::uint32_t> sPendingSaves = Ledger::getPendingSaves();
 
         if (!sPendingSaves.empty() && ((minVal != 0) || (maxVal != 0)))
         {
@@ -408,7 +409,7 @@ public:
                 ++minVal;
 
             // Best effort for remaining exclusions
-            BOOST_FOREACH(beast::uint32 v, sPendingSaves)
+            BOOST_FOREACH(std::uint32_t v, sPendingSaves)
             {
                 if ((v >= minVal) && (v <= maxVal))
                 {
@@ -427,11 +428,11 @@ public:
     }
 
     // Get the earliest ledger we will let peers fetch
-    beast::uint32 getEarliestFetch ()
+    std::uint32_t getEarliestFetch ()
     {
         // The earliest ledger we will let people fetch is ledger zero,
         // unless that creates a larger range than allowed
-        beast::uint32 e = getClosedLedger()->getLedgerSeq();
+        std::uint32_t e = getClosedLedger()->getLedgerSeq();
         if (e > getConfig().FETCH_DEPTH)
             e -= getConfig().FETCH_DEPTH;
         else
@@ -441,18 +442,18 @@ public:
 
     void tryFill (Job& job, Ledger::pointer ledger)
     {
-        beast::uint32 seq = ledger->getLedgerSeq ();
+        std::uint32_t seq = ledger->getLedgerSeq ();
         uint256 prevHash = ledger->getParentHash ();
 
-        std::map< beast::uint32, std::pair<uint256, uint256> > ledgerHashes;
+        std::map< std::uint32_t, std::pair<uint256, uint256> > ledgerHashes;
 
-        beast::uint32 minHas = ledger->getLedgerSeq ();
-        beast::uint32 maxHas = ledger->getLedgerSeq ();
+        std::uint32_t minHas = ledger->getLedgerSeq ();
+        std::uint32_t maxHas = ledger->getLedgerSeq ();
 
         while (! job.shouldCancel() && seq > 0)
         {
             {
-                ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+                ScopedLockType ml (m_mutex);
                 minHas = seq;
                 --seq;
 
@@ -460,7 +461,7 @@ public:
                     break;
             }
 
-            std::map< beast::uint32, std::pair<uint256, uint256> >::iterator it = ledgerHashes.find (seq);
+            std::map< std::uint32_t, std::pair<uint256, uint256> >::iterator it = ledgerHashes.find (seq);
 
             if (it == ledgerHashes.end ())
             {
@@ -468,7 +469,7 @@ public:
                     return;
 
                 {
-                    ScopedLockType ml (mCompleteLock, __FILE__, __LINE__);
+                    ScopedLockType ml (mCompleteLock);
                     mCompleteLedgers.setRange (minHas, maxHas);
                 }
                 maxHas = minHas;
@@ -486,11 +487,11 @@ public:
         }
 
         {
-            ScopedLockType ml (mCompleteLock, __FILE__, __LINE__);
+            ScopedLockType ml (mCompleteLock);
             mCompleteLedgers.setRange (minHas, maxHas);
         }
         {
-            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex);
             mFillInProgress = 0;
             tryAdvance();
         }
@@ -535,7 +536,7 @@ public:
         int invalidate = 0;
         uint256 hash;
 
-        for (beast::uint32 lSeq = ledger->getLedgerSeq () - 1; lSeq > 0; --lSeq)
+        for (std::uint32_t lSeq = ledger->getLedgerSeq () - 1; lSeq > 0; --lSeq)
             if (haveLedger (lSeq))
             {
                 try
@@ -585,11 +586,11 @@ public:
         {
 
             {
-                ScopedLockType ml (mCompleteLock, __FILE__, __LINE__);
+                ScopedLockType ml (mCompleteLock);
                 mCompleteLedgers.setValue (ledger->getLedgerSeq ());
             }
 
-            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex);
 
             if (ledger->getLedgerSeq() > mValidLedgerSeq)
                 setValidLedger(ledger);
@@ -623,13 +624,13 @@ public:
         //--------------------------------------------------------------------------
     }
 
-    void failedSave(beast::uint32 seq, uint256 const& hash)
+    void failedSave(std::uint32_t seq, uint256 const& hash)
     {
         clearLedger(seq);
         getApp().getInboundLedgers().findCreate(hash, seq, InboundLedger::fcGENERIC);
     }
 
-    void checkAccept (uint256 const& hash, beast::uint32 seq)
+    void checkAccept (uint256 const& hash, std::uint32_t seq)
     {
         if ((seq == 0) && (seq <= mValidLedgerSeq))
             return;
@@ -661,7 +662,7 @@ public:
             return;
 
         // Can we advance the last fully-validated ledger? If so, can we publish?
-        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex);
 
         if (ledger->getLedgerSeq() <= mValidLedgerSeq)
             return;
@@ -703,7 +704,7 @@ public:
             getApp().getOrderBookDB().setup(ledger);
         }
 
-        beast::uint64 fee, fee2, ref;
+        std::uint64_t fee, fee2, ref;
         ref = getApp().getFeeTrack().getLoadBase();
         int count = getApp().getValidations().getFeeAverage(ledger->getHash(), ref, fee);
         int count2 = getApp().getValidations().getFeeAverage(ledger->getParentHash(), ref, fee2);
@@ -718,7 +719,7 @@ public:
 
     void advanceThread()
     {
-        ScopedLockType sl (m_mutex, __FILE__, __LINE__);
+        ScopedLockType sl (m_mutex);
         assert (!mValidLedger.empty () && mAdvanceThread);
 
         WriteLog (lsTRACE, LedgerMaster) << "advanceThread<";
@@ -751,9 +752,9 @@ public:
                     (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
                     (mValidLedgerSeq == mPubLedgerSeq))
                 { // We are in sync, so can acquire
-                    beast::uint32 missing;
+                    std::uint32_t missing;
                     {
-                        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+                        ScopedLockType sl (mCompleteLock);
                         missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
                     }
                     WriteLog (lsTRACE, LedgerMaster) << "tryAdvance discovered missing " << missing;
@@ -763,7 +764,7 @@ public:
                     {
                         WriteLog (lsTRACE, LedgerMaster) << "advanceThread should acquire";
                         {
-                            ScopedUnlockType sl(m_mutex, __FILE__, __LINE__);
+                            ScopedUnlockType sl(m_mutex);
                             Ledger::pointer nextLedger = mLedgerHistory.getLedgerBySeq(missing + 1);
                             if (nextLedger)
                             {
@@ -797,7 +798,7 @@ public:
                                     setFullLedger(ledger, false, false);
                                     if ((mFillInProgress == 0) && (Ledger::getHashByIndex(ledger->getLedgerSeq() - 1) == ledger->getParentHash()))
                                     { // Previous ledger is in DB
-                                        ScopedLockType sl(m_mutex, __FILE__, __LINE__);
+                                        ScopedLockType sl(m_mutex);
                                         mFillInProgress = ledger->getLedgerSeq();
                                         getApp().getJobQueue().addJob(jtADVANCE, "tryFill", BIND_TYPE (
                                             &LedgerMasterImp::tryFill, this, P_1, ledger));
@@ -810,7 +811,7 @@ public:
                                     {
                                         for (int i = 0; i < getConfig().getSize(siLedgerFetch); ++i)
                                         {
-                                            beast::uint32 seq = missing - i;
+                                            std::uint32_t seq = missing - i;
                                             uint256 hash = nextLedger->getLedgerHash(seq);
                                             if (hash.isNonZero())
                                                 getApp().getInboundLedgers().findCreate(hash,
@@ -848,7 +849,7 @@ public:
                 BOOST_FOREACH(Ledger::ref ledger, pubLedgers)
                 {
                     {
-                        ScopedUnlockType sul (m_mutex, __FILE__, __LINE__);
+                        ScopedUnlockType sul (m_mutex);
                         WriteLog(lsDEBUG, LedgerMaster) << "tryAdvance publishing seq " << ledger->getLedgerSeq();
 
                         setFullLedger(ledger, true, true);
@@ -890,14 +891,14 @@ public:
         {
             int acqCount = 0;
 
-            beast::uint32 pubSeq = mPubLedgerSeq + 1; // Next sequence to publish
+            std::uint32_t pubSeq = mPubLedgerSeq + 1; // Next sequence to publish
             Ledger::pointer valLedger = mValidLedger.get ();
-            beast::uint32 valSeq = valLedger->getLedgerSeq ();
+            std::uint32_t valSeq = valLedger->getLedgerSeq ();
 
-            ScopedUnlockType sul(m_mutex, __FILE__, __LINE__);
+            ScopedUnlockType sul(m_mutex);
             try
             {
-                for (beast::uint32 seq = pubSeq; seq <= valSeq; ++seq)
+                for (std::uint32_t seq = pubSeq; seq <= valSeq; ++seq)
                 {
                     WriteLog (lsTRACE, LedgerMaster) << "Trying to fetch/publish valid ledger " << seq;
 
@@ -968,7 +969,7 @@ public:
 
     void tryAdvance()
     {
-        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex);
 
         // Can't advance without at least one fully-valid ledger
         mAdvanceWork = true;
@@ -981,7 +982,7 @@ public:
     }
 
     // Return the hash of the valid ledger with a particular sequence, given a subsequent ledger known valid
-    uint256 getLedgerHash(beast::uint32 desiredSeq, Ledger::ref knownGoodLedger)
+    uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger)
     { 
         assert(desiredSeq < knownGoodLedger->getLedgerSeq());
 
@@ -990,7 +991,7 @@ public:
         // Not directly in the given ledger
         if (hash.isZero ())
         { 
-            beast::uint32 seq = (desiredSeq + 255) % 256;
+            std::uint32_t seq = (desiredSeq + 255) % 256;
             assert(seq < desiredSeq);
 
             uint256 i = knownGoodLedger->getLedgerHash(seq);
@@ -1013,7 +1014,7 @@ public:
     void updatePaths (Job& job)
     {
         {
-            ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+            ScopedLockType ml (m_mutex);
             if (getApp().getOPs().isNeedNetworkLedger () || mCurrentLedger.empty ())
             {
                 --mPathFindThread;
@@ -1026,7 +1027,7 @@ public:
         {
             Ledger::pointer lastLedger;
             {
-                ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+                ScopedLockType ml (m_mutex);
 
                 if (!mValidLedger.empty() &&
                     (!mPathLedger || (mPathLedger->getLedgerSeq() != mValidLedgerSeq)))
@@ -1047,8 +1048,8 @@ public:
 
             if (!getConfig().RUN_STANDALONE)
             { // don't pathfind with a ledger that's more than 60 seconds old
-                beast::int64 age = getApp().getOPs().getCloseTimeNC();
-                age -= static_cast<beast::int64> (lastLedger->getCloseTimeNC());
+                std::int64_t age = getApp().getOPs().getCloseTimeNC();
+                age -= static_cast<std::int64_t> (lastLedger->getCloseTimeNC());
                 if (age > 60)
                 {
                     WriteLog (lsDEBUG, LedgerMaster) << "Published ledger too old for updating paths";
@@ -1072,7 +1073,7 @@ public:
 
     void newPathRequest ()
     {
-        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex);
         mPathFindNewRequest = true;
 
         newPFWork("pf:newRequest");
@@ -1080,7 +1081,7 @@ public:
 
     bool isNewPathRequest ()
     {
-        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex);
         if (!mPathFindNewRequest)
             return false;
         mPathFindNewRequest = false;
@@ -1090,7 +1091,7 @@ public:
     // If the order book is radically updated, we need to reprocess all pathfinding requests
     void newOrderBookDB ()
     {
-        ScopedLockType ml (m_mutex, __FILE__, __LINE__);
+        ScopedLockType ml (m_mutex);
         mPathLedger.reset();
 
         newPFWork("pf:newOBDB");
@@ -1149,14 +1150,14 @@ public:
 
     std::string getCompleteLedgers ()
     {
-        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+        ScopedLockType sl (mCompleteLock);
         return mCompleteLedgers.toString ();
     }
 
     /** Find or acquire the ledger with the specified index and the specified hash
         Return a pointer to that ledger if it is immediately available
     */
-    Ledger::pointer findAcquireLedger (beast::uint32 index, uint256 const& hash)
+    Ledger::pointer findAcquireLedger (std::uint32_t index, uint256 const& hash)
     {
         Ledger::pointer ledger (getLedgerByHash (hash));
         if (!ledger)
@@ -1169,7 +1170,7 @@ public:
         return ledger;
     }
 
-    uint256 getHashBySeq (beast::uint32 index)
+    uint256 getHashBySeq (std::uint32_t index)
     {
         uint256 hash = mLedgerHistory.getLedgerHash (index);
 
@@ -1179,7 +1180,7 @@ public:
         return Ledger::getHashByIndex (index);
     }
 
-    uint256 walkHashBySeq (beast::uint32 index)
+    uint256 walkHashBySeq (std::uint32_t index)
     {
         uint256 ledgerHash;
         Ledger::pointer referenceLedger;
@@ -1197,7 +1198,7 @@ public:
         from the reference ledger or any prior ledger are not present
         in the node store.
     */
-    uint256 walkHashBySeq (beast::uint32 index, Ledger::ref referenceLedger)
+    uint256 walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger)
     {
         uint256 ledgerHash;
         if (!referenceLedger || (referenceLedger->getLedgerSeq() < index))
@@ -1212,7 +1213,9 @@ public:
             LedgerIndex refIndex = (index + 255) & (~255);
             LedgerHash refHash = referenceLedger->getLedgerHash (refIndex);
 
-            if (meets_precondition (refHash.isNonZero ()))
+            bool const nonzero (refHash.isNonZero ());
+            assert (nonzero);
+            if (nonzero)
             {
                 // We found the hash and sequence of a better reference ledger
                 Ledger::pointer ledger = findAcquireLedger (refIndex, refHash);
@@ -1226,7 +1229,7 @@ public:
         return ledgerHash;
     }
 
-    Ledger::pointer getLedgerBySeq (beast::uint32 index)
+    Ledger::pointer getLedgerBySeq (std::uint32_t index)
     {
         Ledger::pointer ret = mLedgerHistory.getLedgerBySeq (index);
         if (ret)
@@ -1269,9 +1272,9 @@ public:
         mLedgerCleaner->doClean (parameters);
     }
 
-    void setLedgerRangePresent (beast::uint32 minV, beast::uint32 maxV)
+    void setLedgerRangePresent (std::uint32_t minV, std::uint32_t maxV)
     {
-        ScopedLockType sl (mCompleteLock, __FILE__, __LINE__);
+        ScopedLockType sl (mCompleteLock);
         mCompleteLedgers.setRange (minV, maxV);
     }
     void tune (int size, int age)
@@ -1312,7 +1315,7 @@ LedgerMaster::~LedgerMaster ()
 }
 
 bool LedgerMaster::shouldAcquire (
-    beast::uint32 currentLedger, beast::uint32 ledgerHistory, beast::uint32 candidateLedger)
+    std::uint32_t currentLedger, std::uint32_t ledgerHistory, std::uint32_t candidateLedger)
 {
     bool ret;
 

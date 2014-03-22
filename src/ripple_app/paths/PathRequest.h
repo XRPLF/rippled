@@ -74,7 +74,7 @@ private:
     beast::Journal m_journal;
 
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
     PathRequests&                   mOwner;

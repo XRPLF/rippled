@@ -57,11 +57,11 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
+#include <cassert>
 
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 namespace
 {
@@ -97,7 +97,7 @@ void standard_into_type::do_into()
     if (colType == SQLITE_NULL)
     {
         // null encountered with no indicator
-        check_precondition (m_ind != nullptr);
+        assert (m_ind != nullptr);
 
         *m_ind = i_null;
     }
@@ -114,72 +114,38 @@ void standard_into_type::do_into()
 
             switch (m_type)
             {
-            case x_bool:
-                as<bool>(m_data) = v != 0;
-                break;
-
-            case x_char:
-                integer_into<char>(m_data, v);
-                break;
-
-            case x_short:
-                integer_into<short>(m_data, v);
-                break;
-
-            case x_int:
-                integer_into<int>(m_data, v);
-                break;
-
-            case x_long:
-                integer_into<long>(m_data, v);
-                break;
-
-            case x_int64:
-                integer_into<int64>(m_data, v);
-                break;
-
-            case x_uchar:
-                integer_into<unsigned char>(m_data, v);
-                break;
-
-            case x_ushort:
-                integer_into<unsigned short>(m_data, v);
-                break;
-
-            case x_uint:
-                integer_into<unsigned int>(m_data, v);
-                break;
-
-            case x_ulong:
-                integer_into<unsigned long>(m_data, v);
-                break;
-
-            case x_uint64:
-                integer_into<uint64>(m_data, v);
-                break;
+            case x_bool:        as <bool> (m_data) = v != 0; break;
+            case x_char:        integer_into <char> (m_data, v); break;
+            case x_uchar:       integer_into <unsigned char> (m_data, v); break;
+            case x_short:       integer_into <short> (m_data, v); break;
+            case x_ushort:      integer_into <unsigned short> (m_data, v); break;
+            case x_int:         integer_into <int> (m_data, v); break;
+            case x_uint:        integer_into <unsigned int> (m_data, v); break;
+            case x_long:        integer_into <long> (m_data, v); break;
+            case x_ulong:       integer_into <unsigned long> (m_data, v); break;
+            case x_longlong:    integer_into <long long> (m_data, v); break;
+            case x_ulonglong:   integer_into <unsigned long long> (m_data, v); break;
 
             case x_beastString:
                 as <String> (m_data) = String(v);
                 break;
 
             default:
-                fatal_error ("unknown case");
+                throw std::invalid_argument ("unknown case");
             }
         }
         break;
 
         case SQLITE_FLOAT:
         {
-            double v = sqlite3_column_double(m_st->m_stmt, m_iCol);
+            double const v (sqlite3_column_double (
+                m_st->m_stmt, m_iCol));
 
             switch (m_type)
             {
-            case x_float:
-                as<float>(m_data) = static_cast<float>(v);
-                break;
-
-            case x_double:
-                as<double>(m_data) = v;
+            case x_float:       as <float> (m_data) = static_cast <float> (v); break;
+            case x_double:      as <double> (m_data) = v; break;
+            case x_longdouble:  as <long double> (m_data) = v; break;
                 break;
 
             case x_beastString:
@@ -187,7 +153,7 @@ void standard_into_type::do_into()
                 break;
 
             default:
-                fatal_error ("unknown case");
+                throw std::invalid_argument ("unknown case");
             };
         }
         break;
@@ -207,7 +173,7 @@ void standard_into_type::do_into()
             break;
 
             case x_stdwstring:
-                fatal_error ("invalid case");
+                throw std::invalid_argument ("invalid case");
                 break;
 
             case x_beastString:
@@ -230,52 +196,20 @@ void standard_into_type::do_into()
 
                 switch (m_type)
                 {
-                case x_bool:
-                    as<bool>(m_data) = v != 0;
-                    break;
-
-                case x_char:
-                    integer_into<char>(m_data, v);
-                    break;
-
-                case x_short:
-                    integer_into<short>(m_data, v);
-                    break;
-
-                case x_int:
-                    integer_into<int>(m_data, v);
-                    break;
-
-                case x_long:
-                    integer_into<long>(m_data, v);
-                    break;
-
-                case x_int64:
-                    integer_into<int64>(m_data, v);
-                    break;
-
-                case x_uchar:
-                    integer_into<unsigned char>(m_data, v);
-                    break;
-
-                case x_ushort:
-                    integer_into<unsigned short>(m_data, v);
-                    break;
-
-                case x_uint:
-                    integer_into<unsigned int>(m_data, v);
-                    break;
-
-                case x_ulong:
-                    integer_into<unsigned long>(m_data, v);
-                    break;
-
-                case x_uint64:
-                    integer_into<uint64>(m_data, v);
-                    break;
+                case x_bool:        as <bool> (m_data) = v != 0; break;
+                case x_char:        integer_into <char> (m_data, v); break;
+                case x_uchar:       integer_into <unsigned char> (m_data, v); break;
+                case x_short:       integer_into <short> (m_data, v); break;
+                case x_ushort:      integer_into <unsigned short> (m_data, v); break;
+                case x_int:         integer_into <int> (m_data, v); break;
+                case x_uint:        integer_into <unsigned int> (m_data, v); break;
+                case x_long:        integer_into <long> (m_data, v); break;
+                case x_ulong:       integer_into <unsigned long> (m_data, v); break;
+                case x_longlong:    integer_into <long long> (m_data, v); break;
+                case x_ulonglong:   integer_into <unsigned long long> (m_data, v); break;
 
                 default:
-                    fatal_error ("unknown case");
+                    throw std::invalid_argument ("unknown case");
                 }
 
             }
@@ -285,16 +219,16 @@ void standard_into_type::do_into()
         break;
 
         case SQLITE_BLOB:
-            fatal_error ("invalid case");
+            throw std::invalid_argument ("invalid case");
 
         default:
-            fatal_error ("unknown case");
+            throw std::invalid_argument ("unknown case");
         };
     }
 
     convert_from_base();
 }
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast

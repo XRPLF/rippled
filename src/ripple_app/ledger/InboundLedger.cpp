@@ -34,7 +34,7 @@ enum
     ,ledgerBecomeAggressiveThreshold = 6
 };
 
-InboundLedger::InboundLedger (uint256 const& hash, beast::uint32 seq, fcReason reason,
+InboundLedger::InboundLedger (uint256 const& hash, std::uint32_t seq, fcReason reason,
     clock_type& clock)
     : PeerSet (hash, ledgerAcquireTimeoutMillis, false, clock,
         LogPartition::getJournal <InboundLedger> ())
@@ -55,7 +55,7 @@ InboundLedger::InboundLedger (uint256 const& hash, beast::uint32 seq, fcReason r
 
 bool InboundLedger::checkLocal ()
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     if (!isDone () && tryLocal())
     {
@@ -79,7 +79,7 @@ InboundLedger::~InboundLedger ()
 
 void InboundLedger::init (ScopedLockType& collectionLock)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     collectionLock.unlock ();
 
     if (!tryLocal ())
@@ -374,7 +374,7 @@ void InboundLedger::done ()
 
     std::vector< std::function<void (InboundLedger::pointer)> > triggers;
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         triggers.swap (mOnComplete);
     }
 
@@ -395,7 +395,7 @@ void InboundLedger::done ()
 bool InboundLedger::addOnComplete (
     std::function <void (InboundLedger::pointer)> triggerFunc)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     if (isDone ())
         return false;
@@ -408,7 +408,7 @@ bool InboundLedger::addOnComplete (
 */
 void InboundLedger::trigger (Peer::ref peer)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     if (isDone ())
     {
@@ -487,7 +487,7 @@ void InboundLedger::trigger (Peer::ref peer)
                 PackedMessage::pointer packet (boost::make_shared <PackedMessage> (
                     tmBH, protocol::mtGET_OBJECTS));
                 {
-                    ScopedLockType sl (mLock, __FILE__, __LINE__);
+                    ScopedLockType sl (mLock);
 
                     for (PeerSetMap::iterator it = mPeers.begin (), end = mPeers.end ();
                             it != end; ++it)
@@ -873,7 +873,7 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
     if (nodeIDs.size () == 1 && m_journal.trace) m_journal.trace <<
         "got AS node: " << nodeIDs.front ();
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     if (!mHaveBase)
     {
@@ -1032,7 +1032,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 bool InboundLedger::gotData (boost::weak_ptr<Peer> peer,
     boost::shared_ptr<protocol::TMLedgerData> data)
 {
-    ScopedLockType sl (mReceivedDataLock, __FILE__, __LINE__);
+    ScopedLockType sl (mReceivedDataLock);
 
     mReceivedData.push_back (PeerDataPairType (peer, data));
 
@@ -1054,7 +1054,7 @@ bool InboundLedger::gotData (boost::weak_ptr<Peer> peer,
 int InboundLedger::processData (boost::shared_ptr<Peer> peer,
     protocol::TMLedgerData& packet)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     if (packet.type () == protocol::liBASE)
     {
@@ -1177,7 +1177,7 @@ void InboundLedger::runData ()
     {
         data.clear();
         {
-            ScopedLockType sl (mReceivedDataLock, __FILE__, __LINE__);
+            ScopedLockType sl (mReceivedDataLock);
 
             if (mReceivedData.empty ())
             {
@@ -1213,7 +1213,7 @@ Json::Value InboundLedger::getJson (int)
 {
     Json::Value ret (Json::objectValue);
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     ret["hash"] = mHash.GetHex ();
 

@@ -42,11 +42,11 @@ public:
     CBigNum (short n);
     CBigNum (int n);
     CBigNum (long n);
-    CBigNum (beast::int64 n);
+    CBigNum (long long n);
     CBigNum (unsigned char n);
     CBigNum (unsigned short n);
     CBigNum (unsigned int n);
-    CBigNum (beast::uint64 n);
+    CBigNum (unsigned long long n);
     explicit CBigNum (uint256 n);
     explicit CBigNum (Blob const& vch);
     CBigNum (unsigned char const* begin, unsigned char const* end);
@@ -55,9 +55,9 @@ public:
     void setuint (unsigned int n);
     unsigned int getuint () const;
     int getint () const;
-    void setint64 (beast::int64 n);
-    beast::uint64 getuint64 () const;
-    void setuint64 (beast::uint64 n);
+    void setint64 (std::int64_t n);
+    std::uint64_t getuint64 () const;
+    void setuint64 (std::uint64_t n);
     void setuint256 (uint256 const& n);
     uint256 getuint256 ();
     void setvch (unsigned char const* begin, unsigned char const* end);
@@ -111,10 +111,10 @@ bool operator> (const CBigNum& a, const CBigNum& b);
 //------------------------------------------------------------------------------
 
 // VFALCO I believe only STAmount uses these
-int BN_add_word64 (BIGNUM* a, beast::uint64 w);
-int BN_sub_word64 (BIGNUM* a, beast::uint64 w);
-int BN_mul_word64 (BIGNUM* a, beast::uint64 w);
-beast::uint64 BN_div_word64 (BIGNUM* a, beast::uint64 w);
+int BN_add_word64 (BIGNUM* a, std::uint64_t w);
+int BN_sub_word64 (BIGNUM* a, std::uint64_t w);
+int BN_mul_word64 (BIGNUM* a, std::uint64_t w);
+std::uint64_t BN_div_word64 (BIGNUM* a, std::uint64_t w);
 
 }
 

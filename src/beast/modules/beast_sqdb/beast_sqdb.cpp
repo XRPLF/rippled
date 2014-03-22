@@ -31,15 +31,10 @@
 #pragma warning (disable: 4355) // 'this' used in base member
 #endif
 
-namespace beast
-{
 // implementation headers
 #include "detail/error_codes.h"
 #include "detail/statement_imp.h"
-}
 
-namespace beast
-{
 #include "source/blob.cpp"
 #include "source/error_codes.cpp"
 #include "source/into_type.cpp"
@@ -52,7 +47,6 @@ namespace beast
 #include "source/statement_imp.cpp"
 #include "source/transaction.cpp"
 #include "source/use_type.cpp"
-}
 
 #if BEAST_MSVC
 #pragma warning (pop)

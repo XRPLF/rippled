@@ -28,15 +28,15 @@ String SystemStats::getBeastVersion()
 {
     // Some basic tests, to keep an eye on things and make sure these types work ok
     // on all platforms. Let me know if any of these assertions fail on your system!
-    static_bassert (sizeof (pointer_sized_int) == sizeof (void*));
-    static_bassert (sizeof (int8) == 1);
-    static_bassert (sizeof (uint8) == 1);
-    static_bassert (sizeof (int16) == 2);
-    static_bassert (sizeof (uint16) == 2);
-    static_bassert (sizeof (int32) == 4);
-    static_bassert (sizeof (uint32) == 4);
-    static_bassert (sizeof (int64) == 8);
-    static_bassert (sizeof (uint64) == 8);
+    static_bassert (sizeof (std::intptr_t) == sizeof (void*));
+    static_bassert (sizeof (std::int8_t) == 1);
+    static_bassert (sizeof (std::uint8_t) == 1);
+    static_bassert (sizeof (std::int16_t) == 2);
+    static_bassert (sizeof (std::uint16_t) == 2);
+    static_bassert (sizeof (std::int32_t) == 4);
+    static_bassert (sizeof (std::uint32_t) == 4);
+    static_bassert (sizeof (std::int64_t) == 8);
+    static_bassert (sizeof (std::uint64_t) == 8);
 
     return "Beast v" BEAST_STRINGIFY(BEAST_MAJOR_VERSION)
                 "." BEAST_STRINGIFY(BEAST_MINOR_VERSION)
@@ -107,7 +107,7 @@ String SystemStats::getStackBacktrace()
             if (::SymGetModuleInfo64 (process, symbol->ModBase, &moduleInfo))
                 result << moduleInfo.ModuleName << ": ";
 
-            result << symbol->Name << " + 0x" << String::toHexString ((int64) displacement) << newLine;
+            result << symbol->Name << " + 0x" << String::toHexString ((std::int64_t) displacement) << newLine;
         }
     }
 
@@ -162,4 +162,4 @@ void SystemStats::setApplicationCrashHandler (CrashHandlerFunction handler)
    #endif
 }
 
-}  // namespace beast
+} // beast

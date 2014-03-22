@@ -59,7 +59,7 @@ Test USD to EUR
 //    correct currency at the end
 
 // quality, length, liquidity, index
-typedef boost::tuple<beast::uint64, int, STAmount, unsigned int> path_LQ_t;
+typedef boost::tuple<std::uint64_t, int, STAmount, unsigned int> path_LQ_t;
 
 // Lower numbers have better quality. Sort higher quality first.
 static bool bQualityCmp (const path_LQ_t& a, const path_LQ_t& b)
@@ -81,7 +81,7 @@ static bool bQualityCmp (const path_LQ_t& a, const path_LQ_t& b)
 }
 
 typedef std::pair<int, uint160> candidate_t;
-static bool candCmp (beast::uint32 seq, const candidate_t& first, const candidate_t& second)
+static bool candCmp (std::uint32_t seq, const candidate_t& first, const candidate_t& second)
 {
     if (first.first < second.first)
         return false;
@@ -333,7 +333,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         }
         else
         {
-            beast::uint64  uQuality = STAmount::getRate (saDstAmountAct, saMaxAmountAct);
+            std::uint64_t  uQuality = STAmount::getRate (saDstAmountAct, saMaxAmountAct);
 
             WriteLog (lsDEBUG, Pathfinder)
                     << boost::str (boost::format ("findPaths: quality: %d: %s")

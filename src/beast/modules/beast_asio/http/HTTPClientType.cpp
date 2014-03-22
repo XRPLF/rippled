@@ -21,6 +21,8 @@
 #include "../../../beast/asio/placeholders.h"
 #include "../../../beast/unit_test/suite.h"
 
+#include "../../../beast/cxx14/memory.h" // <memory>
+
 namespace beast {
 namespace asio {
 
@@ -190,7 +192,7 @@ public:
 
         String m_get_string;
         WaitableEvent m_done;
-        ScopedPointer <abstract_socket> m_stream;
+        std::unique_ptr <abstract_socket> m_stream;
 
         struct State
         {
@@ -387,7 +389,8 @@ public:
             if (m_url.scheme () == "https")
             {
                 typedef boost::asio::ssl::stream <socket&> ssl_stream;
-                m_stream = new socket_wrapper <ssl_stream> (m_socket, m_context);
+                m_stream = std::make_unique <
+                    socket_wrapper <ssl_stream>> (m_socket, m_context);
                 /*
                 m_stream->set_verify_mode (
                     boost::asio::ssl::verify_peer |
@@ -399,7 +402,7 @@ public:
                 return;
             }
 
-            m_stream = new socket_wrapper <socket&> (m_socket);
+            m_stream = std::make_unique <socket_wrapper <socket&>> (m_socket);
             handle_handshake (ec);
         }
 
@@ -637,7 +640,7 @@ public:
 
     void testSync (String const& s, double timeoutSeconds)
     {
-        ScopedPointer <HTTPClientBase> client (
+        std::unique_ptr <HTTPClientBase> client (
             HTTPClientBase::New (Journal(), timeoutSeconds));
 
         HTTPClientBase::result_type const& result (
@@ -649,7 +652,7 @@ public:
     void testAsync (String const& s, double timeoutSeconds)
     {
         IoServiceThread t;
-        ScopedPointer <HTTPClientBase> client (
+        std::unique_ptr <HTTPClientBase> client (
             HTTPClientBase::New (Journal(), timeoutSeconds));
 
         client->async_get (t.get_io_service (), ParsedURL (s).url (),

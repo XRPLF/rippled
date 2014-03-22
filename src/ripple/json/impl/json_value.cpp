@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-namespace Json
-{
+#include "../../beast/modules/beast_core/text/LexicalCast.h"
+
+namespace Json {
 
 const Value Value::null;
 const Int Value::minInt = Int ( ~ (UInt (-1) / 2) );

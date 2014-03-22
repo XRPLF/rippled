@@ -19,6 +19,8 @@
 
 #if RIPPLE_ROCKSDB_AVAILABLE
 
+#include "../../../beast/beast/threads/Thread.h"
+
 #include <atomic>
 
 namespace ripple {
@@ -91,7 +93,7 @@ public:
         , m_name (keyValues ["path"].toStdString ())
     {
         if (m_name.empty())
-            beast::Throw (std::runtime_error ("Missing path in RocksDBFactory backend"));
+            throw std::runtime_error ("Missing path in RocksDBFactory backend");
 
         rocksdb::Options options;
         options.create_if_missing = true;
@@ -137,7 +139,7 @@ public:
         rocksdb::DB* db = nullptr;
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
-            beast::Throw (std::runtime_error (std::string("Unable to open/create RocksDB: ") + status.ToString()));
+            throw std::runtime_error (std::string("Unable to open/create RocksDB: ") + status.ToString());
 
         m_db.reset (db);
     }

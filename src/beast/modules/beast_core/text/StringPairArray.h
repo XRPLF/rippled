@@ -24,8 +24,10 @@
 #ifndef BEAST_STRINGPAIRARRAY_H_INCLUDED
 #define BEAST_STRINGPAIRARRAY_H_INCLUDED
 
-namespace beast
-{
+#include "StringArray.h"
+#include "../../../beast/utility/LeakChecked.h"
+
+namespace beast {
 
 //==============================================================================
 /**
@@ -33,7 +35,7 @@ namespace beast
 
     @see StringArray
 */
-class BEAST_API StringPairArray : LeakChecked <StringPairArray>
+class StringPairArray : LeakChecked <StringPairArray>
 {
 public:
     //==============================================================================
@@ -155,6 +157,6 @@ private:
     bool ignoreCase;
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_STRINGPAIRARRAY_H_INCLUDED

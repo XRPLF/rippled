@@ -20,6 +20,8 @@
 #ifndef RIPPLE_INIFILE_H_INCLUDED
 #define RIPPLE_INIFILE_H_INCLUDED
 
+#include "../../beast/modules/beast_core/text/StringPairArray.h"
+
 namespace ripple {
 
 // VFALCO TODO Rename to IniFile and clean up

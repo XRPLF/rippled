@@ -230,7 +230,7 @@ struct Get <Digit>
 // An unsigned 32 bit number expressed as a string
 struct UInt32Str
 {
-    uint32 value;
+    std::uint32_t value;
 };
 
 template <>
@@ -239,7 +239,7 @@ struct Get <UInt32Str>
     static State func (Input in, UInt32Str& t)
     {
         State state;
-        uint32 value (0);
+        std::uint32_t value (0);
 
         Digit digit;
         // have to have at least one digit
@@ -266,7 +266,7 @@ struct Get <UInt32Str>
             if (value == 0)
                 return State::fail;
 
-            uint32 newValue = (value * 10) + digit.value;
+            std::uint32_t newValue = (value * 10) + digit.value;
 
             // overflow
             if (newValue < value)
@@ -284,7 +284,7 @@ struct Get <UInt32Str>
 // An unsigned 16 bit number expressed as a string
 struct UInt16Str
 {
-    uint16 value;
+    std::uint16_t value;
 };
 
 template <>
@@ -298,7 +298,7 @@ struct Get <UInt16Str>
         {
             if (v.value <= 65535)
             {
-                t.value = uint16(v.value);
+                t.value = std::uint16_t(v.value);
                 return State::pass;
             }
             return State::fail;
@@ -312,7 +312,7 @@ struct Get <UInt16Str>
 // An unsigned 8 bit number expressed as a string
 struct UInt8Str
 {
-    uint8 value;
+    std::uint8_t value;
 };
 
 template <>
@@ -326,7 +326,7 @@ struct Get <UInt8Str>
         {
             if (v.value <= 255)
             {
-                t.value = uint8(v.value);
+                t.value = std::uint8_t(v.value);
                 return State::pass;
             }
             return State::fail;
@@ -340,7 +340,7 @@ struct Get <UInt8Str>
 // An dotted IPv4 address
 struct IPv4Address
 {
-    uint8 value [4];
+    std::uint8_t value [4];
 
     String toString () const
     {

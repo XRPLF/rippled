@@ -20,14 +20,13 @@
 namespace ripple {
 
 RippleLineCache::RippleLineCache (Ledger::ref l)
-    : mLock (this, "RippleLineCache", __FILE__, __LINE__)
-    , mLedger (l)
+    : mLedger (l)
 {
 }
 
 AccountItems& RippleLineCache::getRippleLines (const uint160& accountID)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     boost::unordered_map <uint160, AccountItems::pointer>::iterator it = mRLMap.find (accountID);
 

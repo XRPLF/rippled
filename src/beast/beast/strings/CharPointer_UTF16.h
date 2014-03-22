@@ -26,9 +26,10 @@
 
 #include "../Config.h"
 #include "../Atomic.h"
-#include "../CStdInt.h"
 
 #include "CharacterFunctions.h"
+
+#include <cstdint>
 
 namespace beast {
 
@@ -44,7 +45,7 @@ public:
    #if BEAST_NATIVE_WCHAR_IS_UTF16
     typedef wchar_t CharType;
    #else
-    typedef int16 CharType;
+    typedef std::int16_t CharType;
    #endif
 
     inline explicit CharPointer_UTF16 (const CharType* const rawPointer) noexcept
@@ -89,10 +90,10 @@ public:
     /** Returns the unicode character that this pointer is pointing to. */
     beast_wchar operator*() const noexcept
     {
-        uint32 n = (uint32) (uint16) *data;
+        std::uint32_t n = (std::uint32_t) (std::uint16_t) *data;
 
-        if (n >= 0xd800 && n <= 0xdfff && ((uint32) (uint16) data[1]) >= 0xdc00)
-            n = 0x10000 + (((n - 0xd800) << 10) | (((uint32) (uint16) data[1]) - 0xdc00));
+        if (n >= 0xd800 && n <= 0xdfff && ((std::uint32_t) (std::uint16_t) data[1]) >= 0xdc00)
+            n = 0x10000 + (((n - 0xd800) << 10) | (((std::uint32_t) (std::uint16_t) data[1]) - 0xdc00));
 
         return (beast_wchar) n;
     }
@@ -102,7 +103,7 @@ public:
     {
         const beast_wchar n = *data++;
 
-        if (n >= 0xd800 && n <= 0xdfff && ((uint32) (uint16) *data) >= 0xdc00)
+        if (n >= 0xd800 && n <= 0xdfff && ((std::uint32_t) (std::uint16_t) *data) >= 0xdc00)
             ++data;
 
         return *this;
@@ -123,10 +124,10 @@ public:
         advances the pointer to point to the next character. */
     beast_wchar getAndAdvance() noexcept
     {
-        uint32 n = (uint32) (uint16) *data++;
+        std::uint32_t n = (std::uint32_t) (std::uint16_t) *data++;
 
-        if (n >= 0xd800 && n <= 0xdfff && ((uint32) (uint16) *data) >= 0xdc00)
-            n = 0x10000 + ((((n - 0xd800) << 10) | (((uint32) (uint16) *data++) - 0xdc00)));
+        if (n >= 0xd800 && n <= 0xdfff && ((std::uint32_t) (std::uint16_t) *data) >= 0xdc00)
+            n = 0x10000 + ((((n - 0xd800) << 10) | (((std::uint32_t) (std::uint16_t) *data++) - 0xdc00)));
 
         return (beast_wchar) n;
     }
@@ -418,12 +419,12 @@ public:
     }
 
     /** Parses this string as a 64-bit integer. */
-    int64 getIntValue64() const noexcept
+    std::int64_t getIntValue64() const noexcept
     {
        #if BEAST_WINDOWS
         return _wtoi64 (data);
        #else
-        return CharacterFunctions::getIntValue <int64, CharPointer_UTF16> (*this);
+        return CharacterFunctions::getIntValue <std::int64_t, CharPointer_UTF16> (*this);
        #endif
     }
 
@@ -447,7 +448,7 @@ public:
 
         while (--maxBytesToRead >= 0 && *dataToTest != 0)
         {
-            const uint32 n = (uint32) (uint16) *dataToTest++;
+            const std::uint32_t n = (std::uint32_t) (std::uint16_t) *dataToTest++;
 
             if (n >= 0xd800)
             {
@@ -459,7 +460,7 @@ public:
                     if (n > 0xdc00)
                         return false;
 
-                    const uint32 nextChar = (uint32) (uint16) *dataToTest++;
+                    const std::uint32_t nextChar = (std::uint32_t) (std::uint16_t) *dataToTest++;
 
                     if (nextChar < 0xdc00 || nextChar > 0xdfff)
                         return false;
@@ -491,10 +492,10 @@ public:
     static bool isByteOrderMarkBigEndian (const void* possibleByteOrder) noexcept
     {
         bassert (possibleByteOrder != nullptr);
-        const uint8* const c = static_cast<const uint8*> (possibleByteOrder);
+        const std::uint8_t* const c = static_cast<const std::uint8_t*> (possibleByteOrder);
 
-        return c[0] == (uint8) byteOrderMarkBE1
-            && c[1] == (uint8) byteOrderMarkBE2;
+        return c[0] == (std::uint8_t) byteOrderMarkBE1
+            && c[1] == (std::uint8_t) byteOrderMarkBE2;
     }
 
     /** Returns true if the first pair of bytes in this pointer are the UTF16 byte-order mark (little endian).
@@ -503,10 +504,10 @@ public:
     static bool isByteOrderMarkLittleEndian (const void* possibleByteOrder) noexcept
     {
         bassert (possibleByteOrder != nullptr);
-        const uint8* const c = static_cast<const uint8*> (possibleByteOrder);
+        const std::uint8_t* const c = static_cast<const std::uint8_t*> (possibleByteOrder);
 
-        return c[0] == (uint8) byteOrderMarkLE1
-            && c[1] == (uint8) byteOrderMarkLE2;
+        return c[0] == (std::uint8_t) byteOrderMarkLE1
+            && c[1] == (std::uint8_t) byteOrderMarkLE2;
     }
 
 private:

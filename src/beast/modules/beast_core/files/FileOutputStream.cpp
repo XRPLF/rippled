@@ -24,7 +24,7 @@
 namespace beast
 {
 
-int64 beast_fileSetPosition (void* handle, int64 pos);
+std::int64_t beast_fileSetPosition (void* handle, std::int64_t pos);
 
 //==============================================================================
 FileOutputStream::FileOutputStream (const File& f, const size_t bufferSizeToUse)
@@ -46,12 +46,12 @@ FileOutputStream::~FileOutputStream()
     closeHandle();
 }
 
-int64 FileOutputStream::getPosition()
+std::int64_t FileOutputStream::getPosition()
 {
     return currentPosition;
 }
 
-bool FileOutputStream::setPosition (int64 newPosition)
+bool FileOutputStream::setPosition (std::int64_t newPosition)
 {
     if (newPosition != currentPosition)
     {
@@ -68,7 +68,7 @@ bool FileOutputStream::flushBuffer()
 
     if (bytesInBuffer > 0)
     {
-        ok = (writeInternal (buffer, bytesInBuffer) == (ssize_t) bytesInBuffer);
+        ok = (writeInternal (buffer, bytesInBuffer) == (std::ptrdiff_t) bytesInBuffer);
         bytesInBuffer = 0;
     }
 
@@ -83,7 +83,7 @@ void FileOutputStream::flush()
 
 bool FileOutputStream::write (const void* const src, const size_t numBytes)
 {
-    bassert (src != nullptr && ((ssize_t) numBytes) >= 0);
+    bassert (src != nullptr && ((std::ptrdiff_t) numBytes) >= 0);
 
     if (bytesInBuffer + numBytes < bufferSize)
     {
@@ -104,22 +104,22 @@ bool FileOutputStream::write (const void* const src, const size_t numBytes)
         }
         else
         {
-            const ssize_t bytesWritten = writeInternal (src, numBytes);
+            const std::ptrdiff_t bytesWritten = writeInternal (src, numBytes);
 
             if (bytesWritten < 0)
                 return false;
 
             currentPosition += bytesWritten;
-            return bytesWritten == (ssize_t) numBytes;
+            return bytesWritten == (std::ptrdiff_t) numBytes;
         }
     }
 
     return true;
 }
 
-bool FileOutputStream::writeRepeatedByte (uint8 byte, size_t numBytes)
+bool FileOutputStream::writeRepeatedByte (std::uint8_t byte, size_t numBytes)
 {
-    bassert (((ssize_t) numBytes) >= 0);
+    bassert (((std::ptrdiff_t) numBytes) >= 0);
 
     if (bytesInBuffer + numBytes < bufferSize)
     {
@@ -132,4 +132,4 @@ bool FileOutputStream::writeRepeatedByte (uint8 byte, size_t numBytes)
     return OutputStream::writeRepeatedByte (byte, numBytes);
 }
 
-}  // namespace beast
+} // beast

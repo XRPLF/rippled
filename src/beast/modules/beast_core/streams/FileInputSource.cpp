@@ -43,9 +43,9 @@ InputStream* FileInputSource::createInputStreamFor (const String& relatedItemPat
     return file.getSiblingFile (relatedItemPath).createInputStream();
 }
 
-int64 FileInputSource::hashCode() const
+std::int64_t FileInputSource::hashCode() const
 {
-    int64 h = file.hashCode();
+    std::int64_t h = file.hashCode();
 
     if (useFileTimeInHashGeneration)
         h ^= file.getLastModificationTime().toMilliseconds();
@@ -53,4 +53,4 @@ int64 FileInputSource::hashCode() const
     return h;
 }
 
-}  // namespace beast
+} // beast

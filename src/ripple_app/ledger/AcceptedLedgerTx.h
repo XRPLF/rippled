@@ -77,7 +77,7 @@ public:
     {
         return mResult;
     }
-    beast::uint32 getTxnSeq () const
+    std::uint32_t getTxnSeq () const
     {
         return mMeta->getIndex ();
     }

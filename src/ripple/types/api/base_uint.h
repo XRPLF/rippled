@@ -25,6 +25,8 @@
 #ifndef RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 #define RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 
+#include "../../beast/beast/utility/hardened_hash.h"
+
 #include <functional>
 
 namespace ripple {
@@ -100,25 +102,7 @@ public:
     /** Value hashing function.
         The seed prevents crafted inputs from causing degenarate parent containers.
     */
-    class hasher
-    {
-    public:
-        explicit hasher (std::size_t seedToUse = 
-                                   beast::Random::getSystemRandom ().nextInt ())
-            : m_seed (seedToUse)
-        {
-        }
-
-        std::size_t operator() (base_uint const& value) const
-        {
-            std::size_t hash;
-            beast::Murmur::Hash (value.cbegin (), (BITS / 8), m_seed, &hash);
-            return hash;
-        }
-
-    private:
-        std::size_t m_seed;
-    };
+    typedef beast::hardened_hash <base_uint> hasher;
 
     /** Container equality testing function. */
     class key_equal
@@ -177,12 +161,12 @@ public:
         return ret;
     }
 
-    base_uint& operator= (beast::uint64 uHost)
+    base_uint& operator= (std::uint64_t uHost)
     {
         zero ();
 
         // Put in least significant bits.
-        ((beast::uint64*) end ())[-1] = htobe64 (uHost);
+        ((std::uint64_t*) end ())[-1] = htobe64 (uHost);
 
         return *this;
     }
@@ -238,7 +222,7 @@ public:
     {
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            beast::uint32 prev = pn[i];
+            std::uint32_t prev = pn[i];
             pn[i] = htobe32 (be32toh (pn[i]) - 1);
 
             if (prev != 0)
@@ -259,11 +243,11 @@ public:
 
     base_uint& operator+= (const base_uint& b)
     {
-        beast::uint64 carry = 0;
+        std::uint64_t carry = 0;
 
         for (int i = WIDTH; i--;)
         {
-            beast::uint64 n = carry + be32toh (pn[i]) + be32toh (b.pn[i]);
+            std::uint64_t n = carry + be32toh (pn[i]) + be32toh (b.pn[i]);
 
             pn[i] = htobe32 (n & 0xffffffff);
             carry = n >> 32;
@@ -272,7 +256,7 @@ public:
         return *this;
     }
 
-    std::size_t hash_combine (std::size_t& seed) const
+    std::size_t hash_combine (std::size_t& seed) const noexcept
     {
         for (int i = 0; i < WIDTH; ++i)
             boost::hash_combine (seed, pn[i]);

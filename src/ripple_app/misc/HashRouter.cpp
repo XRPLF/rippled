@@ -83,8 +83,7 @@ private:
 
 public:
     explicit HashRouter (int holdTime)
-        : mLock (this, "HashRouter", __FILE__, __LINE__)
-        , mHoldTime (holdTime)
+        : mHoldTime (holdTime)
     {
     }
 
@@ -104,7 +103,7 @@ private:
     Entry& findCreateEntry (uint256 const& , bool& created);
 
     typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
     // Stores all suppressed hashes and their expiration time
@@ -149,7 +148,7 @@ HashRouter::Entry& HashRouter::findCreateEntry (uint256 const& index, bool& crea
 
 bool HashRouter::addSuppression (uint256 const& index)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     bool created;
     findCreateEntry (index, created);
@@ -158,7 +157,7 @@ bool HashRouter::addSuppression (uint256 const& index)
 
 HashRouter::Entry HashRouter::getEntry (uint256 const& index)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     bool created;
     return findCreateEntry (index, created);
@@ -166,7 +165,7 @@ HashRouter::Entry HashRouter::getEntry (uint256 const& index)
 
 bool HashRouter::addSuppressionPeer (uint256 const& index, PeerShortID peer)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     bool created;
     findCreateEntry (index, created).addPeer (peer);
@@ -175,7 +174,7 @@ bool HashRouter::addSuppressionPeer (uint256 const& index, PeerShortID peer)
 
 bool HashRouter::addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     bool created;
     Entry& s = findCreateEntry (index, created);
@@ -186,7 +185,7 @@ bool HashRouter::addSuppressionPeer (uint256 const& index, PeerShortID peer, int
 
 int HashRouter::getFlags (uint256 const& index)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     bool created;
     return findCreateEntry (index, created).getFlags ();
@@ -194,7 +193,7 @@ int HashRouter::getFlags (uint256 const& index)
 
 bool HashRouter::addSuppressionFlags (uint256 const& index, int flag)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     bool created;
     findCreateEntry (index, created).setFlag (flag);
@@ -210,7 +209,7 @@ bool HashRouter::setFlag (uint256 const& index, int flag)
     // return: true = changed, false = unchanged
     assert (flag != 0);
 
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     bool created;
     Entry& s = findCreateEntry (index, created);
@@ -224,7 +223,7 @@ bool HashRouter::setFlag (uint256 const& index, int flag)
 
 bool HashRouter::swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     bool created;
     Entry& s = findCreateEntry (index, created);

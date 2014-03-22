@@ -487,7 +487,7 @@ void RFC1751::getEnglishFromKey (std::string& strHuman, const std::string& strKe
 
 beast::String RFC1751::getWordFromBlob (void const* data, size_t bytes)
 {
-    beast::uint32 hash;
+    std::uint32_t hash;
 
     beast::Murmur::Hash (data, bytes, 0, &hash);
 

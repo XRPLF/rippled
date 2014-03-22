@@ -25,7 +25,7 @@ TransactionMaster::TransactionMaster ()
 {
 }
 
-bool TransactionMaster::inLedger (uint256 const& hash, beast::uint32 ledger)
+bool TransactionMaster::inLedger (uint256 const& hash, std::uint32_t ledger)
 {
     Transaction::pointer txn = mCache.fetch (hash);
 
@@ -55,7 +55,7 @@ Transaction::pointer TransactionMaster::fetch (uint256 const& txnID, bool checkD
 
 SerializedTransaction::pointer TransactionMaster::fetch (SHAMapItem::ref item,
         SHAMapTreeNode::TNType type,
-        bool checkDisk, beast::uint32 uCommitLedger)
+        bool checkDisk, std::uint32_t uCommitLedger)
 {
     SerializedTransaction::pointer  txn;
     Transaction::pointer            iTx = getApp().getMasterTransaction ().fetch (item->getTag (), false);

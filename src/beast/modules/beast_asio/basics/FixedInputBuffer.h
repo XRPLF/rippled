@@ -35,13 +35,13 @@ class FixedInputBuffer
 protected:
     struct CtorParams
     {
-        CtorParams (uint8 const* begin_, std::size_t bytes_)
+        CtorParams (std::uint8_t const* begin_, std::size_t bytes_)
             : begin (begin_)
             , bytes (bytes_)
         {
         }
 
-        uint8 const* begin;
+        std::uint8_t const* begin;
         std::size_t bytes;
     };
 
@@ -107,7 +107,7 @@ public:
         return read_impl (sizeof (T), t) != nullptr;
     }
 
-    uint8 operator[] (std::size_t index) const noexcept
+    std::uint8_t operator[] (std::size_t index) const noexcept
     {
         bassert (index >= 0 && index < size ());
         return m_iter [index];
@@ -153,9 +153,9 @@ protected:
     }
 
 private:
-    uint8 const* m_begin;
-    uint8 const* m_iter;
-    uint8 const* m_end;
+    std::uint8_t const* m_begin;
+    std::uint8_t const* m_iter;
+    std::uint8_t const* m_end;
 };
 
 //------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ protected:
         SizedCtorParams (ConstBufferSequence const& buffers, Storage& storage)
         {
             boost::asio::mutable_buffer buffer (boost::asio::buffer (storage));
-            data = boost::asio::buffer_cast <uint8 const*> (buffer);
+            data = boost::asio::buffer_cast <std::uint8_t const*> (buffer);
             bytes = boost::asio::buffer_copy (buffer, buffers);
         }
 
@@ -179,7 +179,7 @@ protected:
             return CtorParams (data, bytes);
         }
 
-        uint8 const* data;
+        std::uint8_t const* data;
         std::size_t bytes;
     };
 
@@ -191,7 +191,7 @@ public:
     }
 
 private:
-    boost::array <uint8, Bytes> m_storage;
+    boost::array <std::uint8_t, Bytes> m_storage;
     boost::asio::mutable_buffer m_buffer;
 };
 

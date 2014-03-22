@@ -42,7 +42,7 @@ public:
         , m_name (keyValues ["path"].toStdString ())
     {
         if (m_name.empty())
-            beast::Throw (std::runtime_error ("Missing path in LevelDBFactory backend"));
+            throw std::runtime_error ("Missing path in LevelDBFactory backend");
 
         leveldb::Options options;
         options.create_if_missing = true;
@@ -74,7 +74,7 @@ public:
         leveldb::DB* db = nullptr;
         leveldb::Status status = leveldb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
-            beast::Throw (std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString()));
+            throw std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString());
 
         m_db.reset (db);
     }

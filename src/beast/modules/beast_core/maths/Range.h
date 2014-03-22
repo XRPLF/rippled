@@ -258,6 +258,6 @@ private:
     ValueType start, end;
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_RANGE_H_INCLUDED

@@ -149,6 +149,6 @@ private:
     static Reporter* s_reporter;
 };
 
-}  // namespace beast
+} // beast
 
 #endif

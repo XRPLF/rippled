@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <functional>
+
 namespace ripple {
 namespace SiteFiles {
 
@@ -60,13 +62,13 @@ public:
     void addListener (SiteFiles::Listener& listener)
     {
         m_queue.post (beast::bind (
-            &Logic::addListener, &m_logic, beast::ref (listener)));
+            &Logic::addListener, &m_logic, std::ref (listener)));
     }
 
     void removeListener (SiteFiles::Listener& listener)
     {
         m_queue.post (beast::bind (
-            &Logic::removeListener, &m_logic, beast::ref (listener)));
+            &Logic::removeListener, &m_logic, std::ref (listener)));
     }
 
     void addURL (std::string const& urlstr)

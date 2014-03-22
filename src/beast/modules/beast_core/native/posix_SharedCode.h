@@ -128,7 +128,7 @@ namespace
         return statfs (f.getFullPathName().toUTF8(), &result) == 0;
     }
 
-    void updateStatInfoForFile (const String& path, bool* const isDir, int64* const fileSize,
+    void updateStatInfoForFile (const String& path, bool* const isDir, std::int64_t* const fileSize,
                                 Time* const modTime, Time* const creationTime, bool* const isReadOnly)
     {
         if (isDir != nullptr || fileSize != nullptr || modTime != nullptr || creationTime != nullptr)
@@ -138,8 +138,8 @@ namespace
 
             if (isDir != nullptr)         *isDir        = statOk && ((info.st_mode & S_IFDIR) != 0);
             if (fileSize != nullptr)      *fileSize     = statOk ? info.st_size : 0;
-            if (modTime != nullptr)       *modTime      = Time (statOk ? (int64) info.st_mtime * 1000 : 0);
-            if (creationTime != nullptr)  *creationTime = Time (statOk ? (int64) info.st_ctime * 1000 : 0);
+            if (modTime != nullptr)       *modTime      = Time (statOk ? (std::int64_t) info.st_mtime * 1000 : 0);
+            if (creationTime != nullptr)  *creationTime = Time (statOk ? (std::int64_t) info.st_ctime * 1000 : 0);
         }
 
         if (isReadOnly != nullptr)
@@ -156,8 +156,8 @@ namespace
         return value == -1 ? getResultForErrno() : Result::ok();
     }
 
-    int getFD (void* handle) noexcept        { return (int) (pointer_sized_int) handle; }
-    void* fdToVoidPointer (int fd) noexcept  { return (void*) (pointer_sized_int) fd; }
+    int getFD (void* handle) noexcept        { return (int) (std::intptr_t) handle; }
+    void* fdToVoidPointer (int fd) noexcept  { return (void*) (std::intptr_t) fd; }
 }
 
 bool File::isDirectory() const
@@ -179,7 +179,7 @@ bool File::existsAsFile() const
     return exists() && ! isDirectory();
 }
 
-int64 File::getSize() const
+std::int64_t File::getSize() const
 {
     beast_statStruct info;
     return beast_stat (fullPath, info) ? info.st_size : 0;
@@ -214,7 +214,7 @@ bool File::setFileReadOnlyInternal (const bool shouldBeReadOnly) const
     return chmod (fullPath.toUTF8(), info.st_mode) == 0;
 }
 
-void File::getFileTimesInternal (int64& modificationTime, int64& accessTime, int64& creationTime) const
+void File::getFileTimesInternal (std::int64_t& modificationTime, std::int64_t& accessTime, std::int64_t& creationTime) const
 {
     modificationTime = 0;
     accessTime = 0;
@@ -223,13 +223,13 @@ void File::getFileTimesInternal (int64& modificationTime, int64& accessTime, int
     beast_statStruct info;
     if (beast_stat (fullPath, info))
     {
-        modificationTime = (int64) info.st_mtime * 1000;
-        accessTime = (int64) info.st_atime * 1000;
-        creationTime = (int64) info.st_ctime * 1000;
+        modificationTime = (std::int64_t) info.st_mtime * 1000;
+        accessTime = (std::int64_t) info.st_atime * 1000;
+        creationTime = (std::int64_t) info.st_ctime * 1000;
     }
 }
 
-bool File::setFileTimesInternal (int64 modificationTime, int64 accessTime, int64 /*creationTime*/) const
+bool File::setFileTimesInternal (std::int64_t modificationTime, std::int64_t accessTime, std::int64_t /*creationTime*/) const
 {
     beast_statStruct info;
 
@@ -278,7 +278,7 @@ Result File::createDirectoryInternal (const String& fileName) const
 }
 
 //=====================================================================
-int64 beast_fileSetPosition (void* handle, int64 pos)
+std::int64_t beast_fileSetPosition (void* handle, std::int64_t pos)
 {
     if (handle != 0 && lseek (getFD (handle), pos, SEEK_SET) == pos)
         return pos;
@@ -307,7 +307,7 @@ void FileInputStream::closeHandle()
 
 size_t FileInputStream::readInternal (void* const buffer, const size_t numBytes)
 {
-    ssize_t result = 0;
+    std::ptrdiff_t result = 0;
 
     if (fileHandle != 0)
     {
@@ -369,9 +369,9 @@ void FileOutputStream::closeHandle()
     }
 }
 
-ssize_t FileOutputStream::writeInternal (const void* const data, const size_t numBytes)
+std::ptrdiff_t FileOutputStream::writeInternal (const void* const data, const size_t numBytes)
 {
-    ssize_t result = 0;
+    std::ptrdiff_t result = 0;
 
     if (fileHandle != 0)
     {
@@ -512,7 +512,7 @@ Result RandomAccessFile::nativeRead (void* buffer, ByteCount numBytes, ByteCount
 {
     bassert (isOpen ());
 
-    ssize_t bytesRead = ::read (getFD (fileHandle), buffer, numBytes);
+    std::ptrdiff_t bytesRead = ::read (getFD (fileHandle), buffer, numBytes);
 
     if (bytesRead < 0)
     {
@@ -537,7 +537,7 @@ Result RandomAccessFile::nativeWrite (void const* data, ByteCount numBytes, size
 {
     bassert (isOpen ());
 
-    ssize_t bytesWritten = ::write (getFD (fileHandle), data, numBytes);
+    std::ptrdiff_t bytesWritten = ::write (getFD (fileHandle), data, numBytes);
 
     // write(3) says that the actual return will be exactly -1 on
     // error, but we will assume anything negative indicates failure.
@@ -627,20 +627,20 @@ File beast_getExecutableFile()
 }
 
 //==============================================================================
-int64 File::getBytesFreeOnVolume() const
+std::int64_t File::getBytesFreeOnVolume() const
 {
     struct statfs buf;
     if (beast_doStatFS (*this, buf))
-        return (int64) buf.f_bsize * (int64) buf.f_bavail; // Note: this returns space available to non-super user
+        return (std::int64_t) buf.f_bsize * (std::int64_t) buf.f_bavail; // Note: this returns space available to non-super user
 
     return 0;
 }
 
-int64 File::getVolumeTotalSize() const
+std::int64_t File::getVolumeTotalSize() const
 {
     struct statfs buf;
     if (beast_doStatFS (*this, buf))
-        return (int64) buf.f_bsize * (int64) buf.f_blocks;
+        return (std::int64_t) buf.f_bsize * (std::int64_t) buf.f_blocks;
 
     return 0;
 }
@@ -723,149 +723,6 @@ String beast_getOutputFromCommand (const String& command)
     return result;
 }
 
-
-//==============================================================================
-#if BEAST_IOS
-class InterProcessLock::Pimpl
-{
-public:
-    Pimpl (const String&, int)
-        : handle (1), refCount (1) // On iOS just fake success..
-    {
-    }
-
-    int handle, refCount;
-};
-
-#else
-
-class InterProcessLock::Pimpl
-{
-public:
-    Pimpl (const String& lockName, const int timeOutMillisecs)
-        : handle (0), refCount (1)
-    {
-       #if BEAST_MAC
-        if (! createLockFile (File ("~/Library/Caches/com.beast.locks").getChildFile (lockName), timeOutMillisecs))
-            // Fallback if the user's home folder is on a network drive with no ability to lock..
-            createLockFile (File ("/tmp/com.beast.locks").getChildFile (lockName), timeOutMillisecs);
-
-       #else
-        File tempFolder ("/var/tmp");
-        if (! tempFolder.isDirectory())
-            tempFolder = "/tmp";
-
-        createLockFile (tempFolder.getChildFile (lockName), timeOutMillisecs);
-       #endif
-    }
-
-    ~Pimpl()
-    {
-        closeFile();
-    }
-
-    bool createLockFile (const File& file, const int timeOutMillisecs)
-    {
-        file.create();
-        handle = open (file.getFullPathName().toUTF8(), O_RDWR);
-
-        if (handle != 0)
-        {
-            struct flock fl;
-            zerostruct (fl);
-
-            fl.l_whence = SEEK_SET;
-            fl.l_type = F_WRLCK;
-
-            const int64 endTime = Time::currentTimeMillis() + timeOutMillisecs;
-
-            for (;;)
-            {
-                const int result = fcntl (handle, F_SETLK, &fl);
-
-                if (result >= 0)
-                    return true;
-
-                const int error = errno;
-
-                if (error != EINTR)
-                {
-                    if (error == EBADF || error == ENOTSUP)
-                        return false;
-
-                    if (timeOutMillisecs == 0
-                         || (timeOutMillisecs > 0 && Time::currentTimeMillis() >= endTime))
-                        break;
-
-                    Thread::sleep (10);
-                }
-            }
-        }
-
-        closeFile();
-        return true; // only false if there's a file system error. Failure to lock still returns true.
-    }
-
-    void closeFile()
-    {
-        if (handle != 0)
-        {
-            struct flock fl;
-            zerostruct (fl);
-
-            fl.l_whence = SEEK_SET;
-            fl.l_type = F_UNLCK;
-
-            while (! (fcntl (handle, F_SETLKW, &fl) >= 0 || errno != EINTR))
-            {}
-
-            close (handle);
-            handle = 0;
-        }
-    }
-
-    int handle, refCount;
-};
-#endif
-
-InterProcessLock::InterProcessLock (const String& nm)  : name (nm)
-{
-}
-
-InterProcessLock::~InterProcessLock()
-{
-}
-
-bool InterProcessLock::enter (const int timeOutMillisecs)
-{
-    const ScopedLock sl (lock);
-
-    if (pimpl == nullptr)
-    {
-        pimpl = new Pimpl (name, timeOutMillisecs);
-
-        if (pimpl->handle == 0)
-            pimpl = nullptr;
-    }
-    else
-    {
-        pimpl->refCount++;
-    }
-
-    return pimpl != nullptr;
-}
-
-void InterProcessLock::exit()
-{
-    const ScopedLock sl (lock);
-
-    // Trying to release the lock too many times!
-    bassert (pimpl != nullptr);
-
-    if (pimpl != nullptr && --(pimpl->refCount) == 0)
-        pimpl = nullptr;
-}
-
 //==============================================================================
 
 bool DynamicLibrary::open (const String& name)
@@ -889,284 +746,4 @@ void* DynamicLibrary::getFunction (const String& functionName) noexcept
     return handle != nullptr ? dlsym (handle, functionName.toUTF8()) : nullptr;
 }
 
-
-
-//==============================================================================
-class ChildProcess::ActiveProcess : LeakChecked <ActiveProcess>, public Uncopyable
-{
-public:
-    ActiveProcess (const StringArray& arguments)
-        : childPID (0), pipeHandle (0), readHandle (0)
-    {
-        int pipeHandles[2] = { 0 };
-
-        if (pipe (pipeHandles) == 0)
-        {
-            const pid_t result = fork();
-
-            if (result < 0)
-            {
-                close (pipeHandles[0]);
-                close (pipeHandles[1]);
-            }
-            else if (result == 0)
-            {
-                // we're the child process..
-                close (pipeHandles[0]);   // close the read handle
-                dup2 (pipeHandles[1], 1); // turns the pipe into stdout
-                dup2 (pipeHandles[1], 2); //  + stderr
-                close (pipeHandles[1]);
-
-                Array<char*> argv;
-                for (int i = 0; i < arguments.size(); ++i)
-                    if (arguments[i].isNotEmpty())
-                        argv.add (arguments[i].toUTF8().getAddress());
-
-                argv.add (nullptr);
-
-                execvp (argv[0], argv.getRawDataPointer());
-                exit (-1);
-            }
-            else
-            {
-                // we're the parent process..
-                childPID = result;
-                pipeHandle = pipeHandles[0];
-                close (pipeHandles[1]); // close the write handle
-            }
-        }
-    }
-
-    ~ActiveProcess()
-    {
-        if (readHandle != 0)
-            fclose (readHandle);
-
-        if (pipeHandle != 0)
-            close (pipeHandle);
-    }
-
-    bool isRunning() const
-    {
-        if (childPID != 0)
-        {
-            int childState;
-            const int pid = waitpid (childPID, &childState, WNOHANG);
-            return pid == 0 || ! (WIFEXITED (childState) || WIFSIGNALED (childState));
-        }
-
-        return false;
-    }
-
-    int read (void* const dest, const int numBytes)
-    {
-        bassert (dest != nullptr);
-
-        #ifdef fdopen
-         #error // the zlib headers define this function as NULL!
-        #endif
-
-        if (readHandle == 0 && childPID != 0)
-            readHandle = fdopen (pipeHandle, "r");
-
-        if (readHandle != 0)
-            return (int) fread (dest, 1, (size_t) numBytes, readHandle);
-
-        return 0;
-    }
-
-    bool killProcess() const
-    {
-        return ::kill (childPID, SIGKILL) == 0;
-    }
-
-    int childPID;
-
-private:
-    int pipeHandle;
-    FILE* readHandle;
-};
-
-bool ChildProcess::start (const String& command)
-{
-    return start (StringArray::fromTokens (command, true));
-}
-
-bool ChildProcess::start (const StringArray& args)
-{
-    if (args.size() == 0)
-        return false;
-
-    activeProcess = new ActiveProcess (args);
-
-    if (activeProcess->childPID == 0)
-        activeProcess = nullptr;
-
-    return activeProcess != nullptr;
-}
-
-bool ChildProcess::isRunning() const
-{
-    return activeProcess != nullptr && activeProcess->isRunning();
-}
-
-int ChildProcess::readProcessOutput (void* dest, int numBytes)
-{
-    return activeProcess != nullptr ? activeProcess->read (dest, numBytes) : 0;
-}
-
-bool ChildProcess::kill()
-{
-    return activeProcess == nullptr || activeProcess->killProcess();
-}
-
-//==============================================================================
-struct HighResolutionTimer::Pimpl : public Uncopyable
-{
-    Pimpl (HighResolutionTimer& t)  : owner (t), thread (0), shouldStop (false)
-    {
-    }
-
-    ~Pimpl()
-    {
-        bassert (thread == 0);
-    }
-
-    void start (int newPeriod)
-    {
-        periodMs = newPeriod;
-
-        if (thread == 0)
-        {
-            shouldStop = false;
-
-            if (pthread_create (&thread, nullptr, timerThread, this) == 0)
-                setThreadToRealtime (thread, (uint64) newPeriod);
-            else
-                bassertfalse;
-        }
-    }
-
-    void stop()
-    {
-        if (thread != 0)
-        {
-            shouldStop = true;
-
-            while (thread != 0 && thread != pthread_self())
-                Thread::yield();
-        }
-    }
-
-    HighResolutionTimer& owner;
-    int volatile periodMs;
-
-private:
-    pthread_t thread;
-    bool volatile shouldStop;
-
-    static void* timerThread (void* param)
-    {
-       #if ! BEAST_ANDROID
-        int dummy;
-        pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, &dummy);
-       #endif
-
-        reinterpret_cast<Pimpl*> (param)->timerThread();
-        return nullptr;
-    }
-
-    void timerThread()
-    {
-        Clock clock (periodMs);
-
-        while (! shouldStop)
-        {
-            clock.wait();
-            owner.hiResTimerCallback();
-        }
-
-        periodMs = 0;
-        thread = 0;
-    }
-
-    struct Clock
-    {
-       #if BEAST_MAC || BEAST_IOS
-        Clock (double millis) noexcept
-        {
-            mach_timebase_info_data_t timebase;
-            (void) mach_timebase_info (&timebase);
-            delta = (((uint64_t) (millis * 1000000.0)) * timebase.numer) / timebase.denom;
-            time = mach_absolute_time();
-        }
-
-        void wait() noexcept
-        {
-            time += delta;
-            mach_wait_until (time);
-        }
-
-        uint64_t time, delta;
-
-       #elif BEAST_ANDROID || BEAST_BSD
-        Clock (double millis) noexcept  : delta ((uint64) (millis * 1000000))
-        {
-        }
-
-        void wait() noexcept
-        {
-            struct timespec t;
-            t.tv_sec  = (time_t) (delta / 1000000000);
-            t.tv_nsec = (long)   (delta % 1000000000);
-            nanosleep (&t, nullptr);
-        }
-
-        uint64 delta;
-       #else
-        Clock (double millis) noexcept  : delta ((uint64) (millis * 1000000))
-        {
-            struct timespec t;
-            clock_gettime (CLOCK_MONOTONIC, &t);
-            time = 1000000000 * (int64) t.tv_sec + t.tv_nsec;
-        }
-
-        void wait() noexcept
-        {
-            time += delta;
-
-            struct timespec t;
-            t.tv_sec  = (time_t) (time / 1000000000);
-            t.tv_nsec = (long)   (time % 1000000000);
-            clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &t, nullptr);
-        }
-
-        uint64 time, delta;
-       #endif
-    };
-
-    static bool setThreadToRealtime (pthread_t thread, uint64 periodMs)
-    {
-       #if BEAST_MAC || BEAST_IOS
-        thread_time_constraint_policy_data_t policy;
-        policy.period      = (uint32_t) (periodMs * 1000000);
-        policy.computation = 50000;
-        policy.constraint  = policy.period;
-        policy.preemptible = true;
-
-        return thread_policy_set (pthread_mach_thread_np (thread),
-                                  THREAD_TIME_CONSTRAINT_POLICY,
-                                  (thread_policy_t) &policy,
-                                  THREAD_TIME_CONSTRAINT_POLICY_COUNT) == KERN_SUCCESS;
-
-       #else
-        (void) periodMs;
-        struct sched_param param;
-        param.sched_priority = sched_get_priority_max (SCHED_RR);
-        return pthread_setschedparam (thread, SCHED_RR, &param) == 0;
-
-       #endif
-    }
-};
-
-}  // namespace beast
+} // beast

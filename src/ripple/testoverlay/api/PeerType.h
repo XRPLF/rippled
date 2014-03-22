@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TESTOVERLAY_PEERTYPE_H_INCLUDED
 #define RIPPLE_TESTOVERLAY_PEERTYPE_H_INCLUDED
 
+#include <cassert>
+
 namespace TestOverlay
 {
 
@@ -119,7 +121,7 @@ public:
                 typename Connection::IsPeer (peer)));
         if (iter != connections().end())
             return false;
-        check_postcondition (std::find_if (peer.connections().begin(),
+        assert (std::find_if (peer.connections().begin(),
             peer.connections().end(),
                 typename Connection::IsPeer (*this))
                     == peer.connections().end ());
@@ -143,7 +145,7 @@ public:
         typename Connections::iterator const iter2 (std::find_if (
             peer.connections().begin(), peer.connections().end (),
                 typename Connection::IsPeer (*this)));
-        check_postcondition (iter2 != peer.connections().end());
+        assert (iter2 != peer.connections().end());
         connections().erase (iter1);
         peer.connections().erase (iter2);
         return true;
@@ -157,8 +159,8 @@ public:
     void send (Peer& peer, Payload const& payload)
     {
         Message const m (network().state().nextMessageID(), payload);
-        check_postcondition (msg_table().insert (m.id()).second);
-        check_postcondition (send_to (peer,
+        assert (msg_table().insert (m.id()).second);
+        assert (send_to (peer,
             Message (network().state().nextMessageID(),
                 payload)));
     }
@@ -177,8 +179,8 @@ public:
     void send_all (Payload const& payload)
     {
         Message const m (network().state().nextMessageID(), payload);
-        check_postcondition (msg_table().insert (m.id()).second);
-        check_postcondition (send_all_if (m,
+        assert (msg_table().insert (m.id()).second);
+        assert (send_all_if (m,
             typename Connection::Any ()));
     };
 
@@ -199,8 +201,8 @@ public:
     void send_all_if (Payload const& payload, Predicate p)
     {
         Message const m (network().state().nextMessageID(), payload);
-        check_postcondition (msg_table().insert (m.id()).second);
-        check_postcondition (send_all_if (m, p));
+        assert (msg_table().insert (m.id()).second);
+        assert (send_all_if (m, p));
     }
 
     /** Send an existing message to all connections that pass the predicate.
@@ -232,8 +234,8 @@ private:
         typename Connections::iterator const iter (std::find_if (
             peer.connections().begin(), peer.connections().end (),
                 typename Connection::IsPeer (*this)));
-        check_postcondition (iter != peer.connections().end());
-        check_postcondition (peer.msg_table().insert(m.id()).second);
+        assert (iter != peer.connections().end());
+        assert (peer.msg_table().insert(m.id()).second);
         iter->pending().push_back (m);
         ++results().sent;
         return true;
@@ -260,7 +262,7 @@ public:
                 c.messages().begin()); iter != c.messages().end(); ++iter)
             {
                 Message const& m (*iter);
-                check_precondition (msg_table().count (m.id()) == 1);
+                assert (msg_table().count (m.id()) == 1);
                 m_logic.receive (c, m);
                 ++results().received;
             }

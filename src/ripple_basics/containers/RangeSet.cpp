@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include "../../beast/beast/unit_test/suite.h"
+#include "../../beast/modules/beast_core/text/LexicalCast.h"
 
 namespace ripple {
 
@@ -27,16 +28,16 @@ SETUP_LOG (RangeSet)
 //        NOTE Why isn't this written as a template?
 //        TODO Replace this with std calls.
 //
-inline beast::uint32 min (beast::uint32 x, beast::uint32 y)
+inline std::uint32_t min (std::uint32_t x, std::uint32_t y)
 {
     return (x < y) ? x : y;
 }
-inline beast::uint32 max (beast::uint32 x, beast::uint32 y)
+inline std::uint32_t max (std::uint32_t x, std::uint32_t y)
 {
     return (x > y) ? x : y;
 }
 
-bool RangeSet::hasValue (beast::uint32 v) const
+bool RangeSet::hasValue (std::uint32_t v) const
 {
     BOOST_FOREACH (const value_type & it, mRanges)
     {
@@ -46,7 +47,7 @@ bool RangeSet::hasValue (beast::uint32 v) const
     return false;
 }
 
-beast::uint32 RangeSet::getFirst () const
+std::uint32_t RangeSet::getFirst () const
 {
     const_iterator it = mRanges.begin ();
 
@@ -56,7 +57,7 @@ beast::uint32 RangeSet::getFirst () const
     return it->first;
 }
 
-beast::uint32 RangeSet::getNext (beast::uint32 v) const
+std::uint32_t RangeSet::getNext (std::uint32_t v) const
 {
     BOOST_FOREACH (const value_type & it, mRanges)
     {
@@ -69,7 +70,7 @@ beast::uint32 RangeSet::getNext (beast::uint32 v) const
     return absent;
 }
 
-beast::uint32 RangeSet::getLast () const
+std::uint32_t RangeSet::getLast () const
 {
     const_reverse_iterator it = mRanges.rbegin ();
 
@@ -79,7 +80,7 @@ beast::uint32 RangeSet::getLast () const
     return it->second;
 }
 
-beast::uint32 RangeSet::getPrev (beast::uint32 v) const
+std::uint32_t RangeSet::getPrev (std::uint32_t v) const
 {
     BOOST_REVERSE_FOREACH (const value_type & it, mRanges)
     {
@@ -94,9 +95,9 @@ beast::uint32 RangeSet::getPrev (beast::uint32 v) const
 
 // Return the largest number not in the set that is less than the given number
 //
-beast::uint32 RangeSet::prevMissing (beast::uint32 v) const
+std::uint32_t RangeSet::prevMissing (std::uint32_t v) const
 {
-    beast::uint32 result = absent;
+    std::uint32_t result = absent;
 
     if (v != 0)
     {
@@ -122,7 +123,7 @@ beast::uint32 RangeSet::prevMissing (beast::uint32 v) const
     return result;
 }
 
-void RangeSet::setValue (beast::uint32 v)
+void RangeSet::setValue (std::uint32_t v)
 {
     if (!hasValue (v))
     {
@@ -132,7 +133,7 @@ void RangeSet::setValue (beast::uint32 v)
     }
 }
 
-void RangeSet::setRange (beast::uint32 minV, beast::uint32 maxV)
+void RangeSet::setRange (std::uint32_t minV, std::uint32_t maxV)
 {
     while (hasValue (minV))
     {
@@ -147,7 +148,7 @@ void RangeSet::setRange (beast::uint32 minV, beast::uint32 maxV)
     simplify ();
 }
 
-void RangeSet::clearValue (beast::uint32 v)
+void RangeSet::clearValue (std::uint32_t v)
 {
     for (iterator it = mRanges.begin (); it != mRanges.end (); ++it)
     {
@@ -161,7 +162,7 @@ void RangeSet::clearValue (beast::uint32 v)
                 }
                 else
                 {
-                    beast::uint32 oldEnd = it->second;
+                    std::uint32_t oldEnd = it->second;
                     mRanges.erase(it);
                     mRanges[v + 1] = oldEnd;
                 }
@@ -172,7 +173,7 @@ void RangeSet::clearValue (beast::uint32 v)
             }
             else
             {
-                beast::uint32 oldEnd = it->second;
+                std::uint32_t oldEnd = it->second;
                 it->second = v - 1;
                 mRanges[v + 1] = oldEnd;
             }

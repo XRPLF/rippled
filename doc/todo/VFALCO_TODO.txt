@@ -53,19 +53,6 @@ David Features:
         down the cache and then something that uses the cache, objects may get
         put in the cache after it was shut down.
 
-- Do something about the throw() reporting weaknesses:
-  * Make sure all Sconstruct and .pro builds have debug symbols in release
-  * Replace all throw with beast::Throw()
-    (Only in ripple sources, not in Subtrees/, protobuf, or websocket)
-  - Improved Beast exception object, provides __FILE__ and __LINE__
-  - Add file and line capabilities to beast::Throw()
-  - Allow beast::Throw to be hooked for logging
-  - Add stack trace capability to beast::Throw() diagnostics via the hook
-    (use the existing beast::SystemStats::getStackBacktrace())
-  - Implement getStackBacktrace for BEAST_BSD targets
-  - Add UnhandledExceptionCatcher to beast
-  - Return EXIT_FAILURE on unhandled exception
-
 - Consolidate JSON code maybe use Beast
 
 - Deeply create directories specified in config settings
@@ -132,19 +119,9 @@ David Features:
 
 - Rename LedgerMaster to Ledgers, create ILedgers interface.
 
-- Replace all NULL with nullptr
-
-- Make TxFormats a member of ICore instead of a singleton.
-  PROBLEM: STObject derived classes like STInt16 make direct use of the
-           singleton. It might have to remain a singleton. At the very least,
-           it should be a SharedSingleton to resolve ordering issues.
-
 - Replace C11X with BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
 
 - Remove "ENABLE_INSECURE" when the time is right.
-
-- lift unique_ptr / auto_ptr into ripple namespace,
-  or replace with ScopedPointer (preferred)
 
 - Go searching through VFALCO notes and fix everything
 

@@ -99,7 +99,7 @@ public:
 
     struct TestSource : Source
     {
-        TestSource (beast::String const& name, beast::uint32 start, beast::uint32 end)
+        TestSource (beast::String const& name, std::uint32_t start, std::uint32_t end)
             : m_name (name)
             , m_start (start)
             , m_end (end)
@@ -130,7 +130,7 @@ public:
             results.message = beast::String::empty;
             results.list.reserve (numberOfTestValidators);
 
-            for (beast::uint32 i = m_start ; i < m_end; ++i)
+            for (std::uint32_t i = m_start ; i < m_end; ++i)
             {
                 Item item;;
                 item.publicKey = RipplePublicKey::createFromInteger (i);
@@ -178,8 +178,8 @@ public:
         for (int i = 1; i <= numberofTestSources; ++i)
         {
             beast::String const name (beast::String::fromNumber (i));
-            beast::uint32 const start = r.nextInt (numberOfTestValidators);
-            beast::uint32 const end   = start + r.nextInt (numberOfTestValidators);
+            std::uint32_t const start = r.nextInt (numberOfTestValidators);
+            std::uint32_t const end   = start + r.nextInt (numberOfTestValidators);
             logic.add (new TestSource (name, start, end));
         }
     }

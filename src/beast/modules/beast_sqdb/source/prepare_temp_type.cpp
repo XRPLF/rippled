@@ -57,11 +57,9 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 prepare_temp_type::prepare_temp_type(session& s)
     : m_rcpi(new ref_counted_prepare_info(s))
@@ -101,6 +99,6 @@ prepare_temp_type& prepare_temp_type::operator, (use_type_ptr const& u)
     return *this;
 }
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast

@@ -19,7 +19,7 @@
 
 namespace ripple {
 
-void STAmount::canonicalizeRound (bool isNative, beast::uint64& value, int& offset, bool roundUp)
+void STAmount::canonicalizeRound (bool isNative, std::uint64_t& value, int& offset, bool roundUp)
 {
     if (!roundUp) // canonicalize already rounds down
         return;
@@ -74,7 +74,7 @@ STAmount STAmount::addRound (const STAmount& v1, const STAmount& v2, bool roundU
         return STAmount (v1.getFName (), v1.getSNValue () + v2.getSNValue ());
 
     int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    beast::int64 vv1 = static_cast<beast::int64> (v1.mValue), vv2 = static_cast<beast::uint64> (v2.mValue);
+    std::int64_t vv1 = static_cast<std::int64_t> (v1.mValue), vv2 = static_cast<std::uint64_t> (v2.mValue);
 
     if (v1.mIsNegative)
         vv1 = -vv1;
@@ -112,19 +112,19 @@ STAmount STAmount::addRound (const STAmount& v1, const STAmount& v2, bool roundU
         ++ov2;
     }
 
-    beast::int64 fv = vv1 + vv2;
+    std::int64_t fv = vv1 + vv2;
 
     if ((fv >= -10) && (fv <= 10))
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer);
     else if (fv >= 0)
     {
-        beast::uint64 v = static_cast<beast::uint64> (fv);
+        std::uint64_t v = static_cast<std::uint64_t> (fv);
         canonicalizeRound (false, v, ov1, roundUp);
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer, v, ov1, false);
     }
     else
     {
-        beast::uint64 v = static_cast<beast::uint64> (-fv);
+        std::uint64_t v = static_cast<std::uint64_t> (-fv);
         canonicalizeRound (false, v, ov1, !roundUp);
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer, v, ov1, true);
     }
@@ -144,7 +144,7 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
         return STAmount (v1.getFName (), v1.getSNValue () - v2.getSNValue ());
 
     int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    beast::int64 vv1 = static_cast<beast::int64> (v1.mValue), vv2 = static_cast<beast::uint64> (v2.mValue);
+    std::int64_t vv1 = static_cast<std::int64_t> (v1.mValue), vv2 = static_cast<std::uint64_t> (v2.mValue);
 
     if (v1.mIsNegative)
         vv1 = -vv1;
@@ -182,19 +182,19 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
         ++ov2;
     }
 
-    beast::int64 fv = vv1 + vv2;
+    std::int64_t fv = vv1 + vv2;
 
     if ((fv >= -10) && (fv <= 10))
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer);
     else if (fv >= 0)
     {
-        beast::uint64 v = static_cast<beast::uint64> (fv);
+        std::uint64_t v = static_cast<std::uint64_t> (fv);
         canonicalizeRound (false, v, ov1, roundUp);
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer, v, ov1, false);
     }
     else
     {
-        beast::uint64 v = static_cast<beast::uint64> (-fv);
+        std::uint64_t v = static_cast<std::uint64_t> (-fv);
         canonicalizeRound (false, v, ov1, !roundUp);
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer, v, ov1, true);
     }
@@ -208,8 +208,8 @@ STAmount STAmount::mulRound (const STAmount& v1, const STAmount& v2,
 
     if (v1.mIsNative && v2.mIsNative && uCurrencyID.isZero ())
     {
-        beast::uint64 minV = (v1.getSNValue () < v2.getSNValue ()) ? v1.getSNValue () : v2.getSNValue ();
-        beast::uint64 maxV = (v1.getSNValue () < v2.getSNValue ()) ? v2.getSNValue () : v1.getSNValue ();
+        std::uint64_t minV = (v1.getSNValue () < v2.getSNValue ()) ? v1.getSNValue () : v2.getSNValue ();
+        std::uint64_t maxV = (v1.getSNValue () < v2.getSNValue ()) ? v2.getSNValue () : v1.getSNValue ();
 
         if (minV > 3000000000ull) // sqrt(cMaxNative)
             throw std::runtime_error ("Native value overflow");
@@ -220,7 +220,7 @@ STAmount STAmount::mulRound (const STAmount& v1, const STAmount& v2,
         return STAmount (v1.getFName (), minV * maxV);
     }
 
-    beast::uint64 value1 = v1.mValue, value2 = v2.mValue;
+    std::uint64_t value1 = v1.mValue, value2 = v2.mValue;
     int offset1 = v1.mOffset, offset2 = v2.mOffset;
 
     if (v1.mIsNative)
@@ -252,13 +252,13 @@ STAmount STAmount::mulRound (const STAmount& v1, const STAmount& v2,
     if (resultNegative != roundUp) // rounding down is automatic when we divide
         BN_add_word64 (&v, tenTo14m1);
 
-    if  (BN_div_word64 (&v, tenTo14) == ((beast::uint64) - 1))
+    if  (BN_div_word64 (&v, tenTo14) == ((std::uint64_t) - 1))
         throw std::runtime_error ("internal bn error");
 
     // 10^16 <= product <= 10^18
     assert (BN_num_bytes (&v) <= 64);
 
-    beast::uint64 amount = v.getuint64 ();
+    std::uint64_t amount = v.getuint64 ();
     int offset = offset1 + offset2 + 14;
     canonicalizeRound (uCurrencyID.isZero (), amount, offset, resultNegative != roundUp);
     return STAmount (uCurrencyID, uIssuerID, amount, offset, resultNegative);
@@ -273,7 +273,7 @@ STAmount STAmount::divRound (const STAmount& num, const STAmount& den,
     if (num.isZero ())
         return STAmount (uCurrencyID, uIssuerID);
 
-    beast::uint64 numVal = num.mValue, denVal = den.mValue;
+    std::uint64_t numVal = num.mValue, denVal = den.mValue;
     int numOffset = num.mOffset, denOffset = den.mOffset;
 
     if (num.mIsNative)
@@ -301,13 +301,13 @@ STAmount STAmount::divRound (const STAmount& num, const STAmount& den,
     if (resultNegative != roundUp) // Rounding down is automatic when we divide
         BN_add_word64 (&v, denVal - 1);
 
-    if (BN_div_word64 (&v, denVal) == ((beast::uint64) - 1))
+    if (BN_div_word64 (&v, denVal) == ((std::uint64_t) - 1))
         throw std::runtime_error ("internal bn error");
 
     // 10^16 <= quotient <= 10^18
     assert (BN_num_bytes (&v) <= 64);
 
-    beast::uint64 amount = v.getuint64 ();
+    std::uint64_t amount = v.getuint64 ();
     int offset = numOffset - denOffset - 17;
     canonicalizeRound (uCurrencyID.isZero (), amount, offset, resultNegative != roundUp);
     return STAmount (uCurrencyID, uIssuerID, amount, offset, resultNegative);

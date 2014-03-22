@@ -65,12 +65,12 @@ class SHAMap
 {
 private:
     /** Function object which handles missing nodes. */
-    typedef std::function <void (beast::uint32 refNum)> MissingNodeHandler;
+    typedef std::function <void (std::uint32_t refNum)> MissingNodeHandler;
 
     /** Default handler which calls NetworkOPs. */
     struct DefaultMissingNodeHandler
     {
-        void operator() (beast::uint32 refNUm);
+        void operator() (std::uint32_t refNUm);
     };
 
 public:
@@ -96,7 +96,7 @@ public:
 public:
     // build new map
     explicit SHAMap (SHAMapType t, FullBelowCache& fullBelowCache,
-        beast::uint32 seq = 1, MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
+        std::uint32_t seq = 1, MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
 
     SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCache,
         MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
@@ -114,7 +114,7 @@ public:
     // Remove nodes from memory
     void dropCache ();
 
-    void setLedgerSeq (beast::uint32 lseq)
+    void setLedgerSeq (std::uint32_t lseq)
     {
         mLedgerSeq = lseq;
     }
@@ -206,15 +206,15 @@ public:
 
     int armDirty ();
     static int flushDirty (NodeMap & dirtyMap, int maxNodes, NodeObjectType t,
-                           beast::uint32 seq);
+                           std::uint32_t seq);
     boost::shared_ptr<NodeMap> disarmDirty ();
 
-    void setSeq (beast::uint32 seq)
+    void setSeq (std::uint32_t seq)
     {
         mSeq = seq;
         assert (seq != 0);
     }
-    beast::uint32 getSeq ()
+    std::uint32_t getSeq ()
     {
         return mSeq;
     }
@@ -320,8 +320,8 @@ private:
     mutable LockType mLock;
 
     FullBelowCache& m_fullBelowCache;
-    beast::uint32 mSeq;
-    beast::uint32 mLedgerSeq; // sequence number of ledger this is part of
+    std::uint32_t mSeq;
+    std::uint32_t mLedgerSeq; // sequence number of ledger this is part of
     SyncUnorderedMapType< SHAMapNode, SHAMapTreeNode::pointer > mTNByID;
     boost::shared_ptr<NodeMap> mDirtyNodes;
     SHAMapTreeNode::pointer root;

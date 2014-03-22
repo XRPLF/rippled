@@ -34,8 +34,6 @@
 #include "impl/json_batchallocator.h"
 #endif
 
-#include "../beast/modules/beast_core/beast_core.h"
-
 #include "ripple_json.h"
 
 #define JSON_ASSERT_UNREACHABLE assert( false )

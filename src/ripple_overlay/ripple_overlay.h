@@ -20,8 +20,6 @@
 #ifndef RIPPLE_OVERLAY_H_INCLUDED
 #define RIPPLE_OVERLAY_H_INCLUDED
 
-#include "../beast/modules/beast_core/beast_core.h"
-
 #include "../ripple_data/ripple_data.h"
 
 #include "api/PackedMessage.h"

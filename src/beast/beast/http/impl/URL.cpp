@@ -28,7 +28,7 @@ URL::URL ()
 URL::URL (
     String scheme_,
     String host_,
-    uint16 port_,
+    std::uint16_t port_,
     String port_string_,
     String path_,
     String query_,
@@ -92,7 +92,7 @@ String URL::port_string () const
     return m_port_string;
 }
 
-uint16 URL::port () const
+std::uint16_t URL::port () const
 {
     return m_port;
 }

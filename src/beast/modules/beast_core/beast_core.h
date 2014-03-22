@@ -44,7 +44,6 @@
 //------------------------------------------------------------------------------
 
 // New header-only library modeled more closely according to boost
-#include "../../beast/CStdInt.h"
 #include "../../beast/SmartPtr.h"
 #include "../../beast/StaticAssert.h"
 #include "../../beast/Uncopyable.h"
@@ -74,12 +73,11 @@ class OutputStream;
 class FileInputStream;
 class FileOutputStream;
 
-}  // namespace beast
+} // beast
 
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
 
-#include "diagnostic/Throw.h"
 #include "system/Functional.h"
 
 #include "time/AtExitHook.h"
@@ -143,14 +141,12 @@ class FileOutputStream;
 #include "files/File.h"
 
 #include "thread/MutexTraits.h"
-#include "thread/TrackedMutex.h"
 #include "diagnostic/FatalError.h"
 #include "text/LexicalCast.h"
 #include "maths/Math.h"
 #include "logging/Logger.h"
 #include "containers/LinkedListPointer.h"
 #include "maths/Random.h"
-#include "containers/OwnedArray.h"
 #include "text/StringPairArray.h"
 #include "containers/ScopedValueSetter.h"
 #include "maths/Range.h"
@@ -171,13 +167,8 @@ class FileOutputStream;
 
 #include "system/SystemStats.h"
 #include "diagnostic/SemanticVersion.h"
-#include "threads/ChildProcess.h"
 #include "threads/DynamicLibrary.h"
-#include "threads/HighResolutionTimer.h"
-#include "threads/InterProcessLock.h"
 #include "threads/Process.h"
-#include "xml/XmlDocument.h"
-#include "xml/XmlElement.h"
 #include "diagnostic/UnitTestUtilities.h"
 
 #include "diagnostic/MeasureFunctionCallTime.h"

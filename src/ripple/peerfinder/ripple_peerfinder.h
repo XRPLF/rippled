@@ -20,8 +20,6 @@
 #ifndef RIPPLE_PEERFINDER_H_INCLUDED
 #define RIPPLE_PEERFINDER_H_INCLUDED
 
-#include "../beast/modules/beast_core/beast_core.h"
-
 #include "../sitefiles/ripple_sitefiles.h"
 
 #include "../types/api/RipplePublicKey.h"

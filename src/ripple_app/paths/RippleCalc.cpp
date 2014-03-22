@@ -1030,13 +1030,13 @@ TER RippleCalc::calcNodeOfferFwd (
 // This routine is called one or two times for a node in a pass. If called once, it will work and set a rate.  If called again,
 // the new work must not worsen the previous rate.
 void RippleCalc::calcNodeRipple (
-    const beast::uint32 uQualityIn,
-    const beast::uint32 uQualityOut,
+    const std::uint32_t uQualityIn,
+    const std::uint32_t uQualityOut,
     const STAmount& saPrvReq,   // --> in limit including fees, <0 = unlimited
     const STAmount& saCurReq,   // --> out limit (driver)
     STAmount& saPrvAct,         // <-> in limit including achieved so far: <-- <= -->
     STAmount& saCurAct,         // <-> out limit including achieved : <-- <= -->
-    beast::uint64& uRateMax)
+    std::uint64_t& uRateMax)
 {
     WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeRipple> uQualityIn=%d uQualityOut=%d saPrvReq=%s saCurReq=%s saPrvAct=%s saCurAct=%s")
                                    % uQualityIn
@@ -1086,7 +1086,7 @@ void RippleCalc::calcNodeRipple (
         // Fee.
         WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeRipple: Fee"));
 
-        beast::uint64  uRate   = STAmount::getRate (STAmount (uQualityOut), STAmount (uQualityIn));
+        std::uint64_t  uRate   = STAmount::getRate (STAmount (uQualityOut), STAmount (uQualityIn));
 
         if (!uRateMax || uRate <= uRateMax)
         {
@@ -1141,7 +1141,7 @@ TER RippleCalc::calcNodeAccountRev (const unsigned int uNode, PathState& psCur, 
     TER                 terResult       = tesSUCCESS;
     const unsigned int  uLast           = psCur.vpnNodes.size () - 1;
 
-    beast::uint64           uRateMax        = 0;
+    std::uint64_t           uRateMax        = 0;
 
     PathState::Node&        pnPrv       = psCur.vpnNodes[uNode ? uNode - 1 : 0];
     PathState::Node&        pnCur       = psCur.vpnNodes[uNode];
@@ -1158,8 +1158,8 @@ TER RippleCalc::calcNodeAccountRev (const unsigned int uNode, PathState& psCur, 
     const uint160&      uCurrencyID     = pnCur.uCurrencyID;
 
     // XXX Don't look up quality for XRP
-    const beast::uint32 uQualityIn      = uNode ? lesActive.rippleQualityIn (uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
-    const beast::uint32 uQualityOut     = uNode != uLast ? lesActive.rippleQualityOut (uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
+    const std::uint32_t uQualityIn      = uNode ? lesActive.rippleQualityIn (uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
+    const std::uint32_t uQualityOut     = uNode != uLast ? lesActive.rippleQualityOut (uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
 
     // For bPrvAccount
     const STAmount      saPrvOwed       = bPrvAccount && uNode                              // Previous account is owed.
@@ -1504,7 +1504,7 @@ TER RippleCalc::calcNodeAccountFwd (
     TER                 terResult   = tesSUCCESS;
     const unsigned int  uLast       = psCur.vpnNodes.size () - 1;
 
-    beast::uint64       uRateMax    = 0;
+    std::uint64_t       uRateMax    = 0;
 
     PathState::Node&    pnPrv       = psCur.vpnNodes[uNode ? uNode - 1 : 0];
     PathState::Node&    pnCur       = psCur.vpnNodes[uNode];
@@ -1521,8 +1521,8 @@ TER RippleCalc::calcNodeAccountFwd (
 
     const uint160&  uCurrencyID     = pnCur.uCurrencyID;
 
-    beast::uint32   uQualityIn      = uNode ? lesActive.rippleQualityIn (uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
-    beast::uint32   uQualityOut     = uNode == uLast ? lesActive.rippleQualityOut (uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
+    std::uint32_t   uQualityIn      = uNode ? lesActive.rippleQualityIn (uCurAccountID, uPrvAccountID, uCurrencyID) : QUALITY_ONE;
+    std::uint32_t   uQualityOut     = uNode == uLast ? lesActive.rippleQualityOut (uCurAccountID, uNxtAccountID, uCurrencyID) : QUALITY_ONE;
 
     // When looking backward (prv) for req we care about what we just calculated: use fwd
     // When looking forward (cur) for req we care about what was desired: use rev
@@ -2116,7 +2116,7 @@ TER RippleCalc::rippleCalc (
     saDstAmountAct  = STAmount (saDstAmountReq.getCurrency (), saDstAmountReq.getIssuer ());
 
     const LedgerEntrySet    lesBase         = lesActive;                            // Checkpoint with just fees paid.
-    const beast::uint64     uQualityLimit   = bLimitQuality ? STAmount::getRate (saDstAmountReq, saMaxAmountReq) : 0;
+    const std::uint64_t     uQualityLimit   = bLimitQuality ? STAmount::getRate (saDstAmountReq, saMaxAmountReq) : 0;
     // When processing, don't want to complicate directory walking with deletion.
     std::vector<uint256>    vuUnfundedBecame;                                       // Offers that became unfunded.
 
@@ -2398,7 +2398,7 @@ void TransactionEngine::calcOfferBridgeNext (
     uint256 const&      uBookRoot,      // --> Which order book to look in.
     uint256 const&      uBookEnd,       // --> Limit of how far to look.
     uint256&            uBookDirIndex,  // <-> Current directory. <-- 0 = no offer available.
-    beast::uint64&      uBookDirNode,   // <-> Which node. 0 = first.
+    std::uint64_t&      uBookDirNode,   // <-> Which node. 0 = first.
     unsigned int&       uBookDirEntry,  // <-> Entry in node. 0 = first.
     STAmount&           saOfferIn,      // <-- How much to pay in, fee inclusive, to get saOfferOut out.
     STAmount&           saOfferOut      // <-- How much offer pays out.

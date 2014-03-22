@@ -24,10 +24,10 @@ namespace ripple {
 */
 RippleLineCache::pointer PathRequests::getLineCache (Ledger::pointer& ledger, bool authoritative)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
-    beast::uint32 lineSeq = mLineCache ? mLineCache->getLedger()->getLedgerSeq() : 0;
-    beast::uint32 lgrSeq = ledger->getLedgerSeq();
+    std::uint32_t lineSeq = mLineCache ? mLineCache->getLedger()->getLedgerSeq() : 0;
+    std::uint32_t lgrSeq = ledger->getLedgerSeq();
 
     if ( (lineSeq == 0) ||                                 // no ledger
          (authoritative && (lgrSeq > lineSeq)) ||          // newer authoritative ledger
@@ -54,7 +54,7 @@ void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
     Ledger::pointer ledger = inLedger;
     RippleLineCache::pointer cache;
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         requests = mRequests;
         cache = getLineCache (ledger, true);
     }
@@ -99,7 +99,7 @@ void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
             {
                 PathRequest::pointer pRequest = wRequest.lock ();
 
-                ScopedLockType sl (mLock, __FILE__, __LINE__);
+                ScopedLockType sl (mLock);
 
                 // Remove any dangling weak pointers or weak pointers that refer to this path request.
                 std::vector<PathRequest::wptr>::iterator it = mRequests.begin();
@@ -139,7 +139,7 @@ void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
 
         {
             // Get the latest requests, cache, and ledger for next pass
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
 
             if (mRequests.empty())
                 break;
@@ -167,7 +167,7 @@ Json::Value PathRequests::makePathRequest(
     RippleLineCache::pointer cache;
 
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         cache = getLineCache (ledger, false);
     }
 
@@ -177,7 +177,7 @@ Json::Value PathRequests::makePathRequest(
     if (valid)
     {
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
 
             // Insert after any older unserviced requests but before any serviced requests
             std::vector<PathRequest::wptr>::iterator it = mRequests.begin ();

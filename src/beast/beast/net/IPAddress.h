@@ -20,13 +20,13 @@
 #ifndef BEAST_NET_IPADDRESS_H_INCLUDED
 #define BEAST_NET_IPADDRESS_H_INCLUDED
 
-#include <string>
-#include <ios>
-#include <sstream>
-   
-#include "../CStdInt.h"
 #include "IPAddressV4.h"
 #include "IPAddressV6.h"
+
+#include <cstdint>
+#include <ios>
+#include <string>
+#include <sstream>
 
 //------------------------------------------------------------------------------
 

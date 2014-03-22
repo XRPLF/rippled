@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../beast/modules/beast_core/diagnostic/UnitTestUtilities.h"
+
 namespace ripple {
 namespace NodeStore {
 
@@ -25,7 +27,7 @@ namespace NodeStore {
 class Backend_test : public TestBase
 {
 public:
-    void testBackend (beast::String type, beast::int64 const seedValue,
+    void testBackend (beast::String type, std::int64_t const seedValue,
                       int numObjectsToTest = 2000)
     {
         std::unique_ptr <Manager> manager (make_Manager ());

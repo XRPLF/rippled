@@ -20,6 +20,9 @@
 #ifndef RIPPLE_NODESTORE_BATCHWRITER_H_INCLUDED
 #define RIPPLE_NODESTORE_BATCHWRITER_H_INCLUDED
 
+#include <condition_variable>
+#include <mutex>
+
 namespace ripple {
 namespace NodeStore {
 
@@ -69,8 +72,8 @@ private:
     void waitForWriting ();
 
 private:
-    typedef boost::recursive_mutex LockType;
-    typedef boost::condition_variable_any CondvarType;
+    typedef std::recursive_mutex LockType;
+    typedef std::condition_variable_any CondvarType;
 
     Callback& m_callback;
     Scheduler& m_scheduler;

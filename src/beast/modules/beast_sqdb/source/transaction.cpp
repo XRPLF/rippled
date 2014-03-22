@@ -57,8 +57,10 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
+#include <cassert>
+
+namespace beast {
+namespace sqdb {
 
 transaction::transaction(session& s)
     : m_session(s), m_bHandled(false)
@@ -77,7 +79,7 @@ Error transaction::commit()
     Error error;
 
     // already handled
-    check_precondition (!m_bHandled);
+    assert (!m_bHandled);
 
     // if commit() throws, m_bHandled will remain false
     // and the destructor will attempt a rollback.
@@ -92,10 +94,11 @@ Error transaction::commit()
 void transaction::rollback()
 {
     // already handled
-    check_precondition (!m_bHandled);
+    assert (!m_bHandled);
 
     m_session.rollback();
     m_bHandled = true;
 }
 
-}
+} // sqdb
+} // beast

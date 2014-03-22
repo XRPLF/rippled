@@ -17,16 +17,18 @@
 */
 //==============================================================================
 
-namespace ripple {
-
 #ifndef RIPPLE_PLATFORMMACROS_H
 #define RIPPLE_PLATFORMMACROS_H
 
-#define BIND_TYPE     beast::bind
-#define P_1           beast::_1
-#define P_2           beast::_2
-#define P_3           beast::_3
-#define P_4           beast::_4
+#include <functional>
+
+namespace ripple {
+
+#define BIND_TYPE     std::bind
+#define P_1           std::placeholders::_1
+#define P_2           std::placeholders::_2
+#define P_3           std::placeholders::_3
+#define P_4           std::placeholders::_4
 
 // VFALCO TODO Clean this stuff up. Remove as much as possible
 // DEPRECATED

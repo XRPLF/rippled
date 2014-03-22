@@ -25,15 +25,14 @@ class TxQueueImp
 {
 public:
     TxQueueImp ()
-        : mLock (this, "TxQueue", __FILE__, __LINE__)
-        , mRunning (false)
+        : mRunning (false)
     {
     }
 
     bool addEntryForSigCheck (TxQueueEntry::ref entry)
     {
         // we always dispatch a thread to check the signature
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         if (!mTxMap.insert (valueType (entry->getID (), entry)).second)
         {
@@ -48,7 +47,7 @@ public:
 
     bool addEntryForExecution (TxQueueEntry::ref entry)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         entry->mSigChecked = true;
 
@@ -74,7 +73,7 @@ public:
     {
         TxQueueEntry::pointer ret;
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         mapType::left_map::iterator it = mTxMap.left.find (id);
 
@@ -89,7 +88,7 @@ public:
 
     void getJob (TxQueueEntry::pointer& job)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         assert (mRunning);
 
         if (job)
@@ -109,7 +108,7 @@ public:
     bool stopProcessing (TxQueueEntry::ref finishedJob)
     {
         // returns true if a new thread must be dispatched
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         assert (mRunning);
 
         mTxMap.left.erase (finishedJob->getID ());
@@ -130,7 +129,7 @@ private:
     typedef mapType::value_type                         valueType;
 
     typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
     mapType         mTxMap;

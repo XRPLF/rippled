@@ -56,7 +56,7 @@ protected:
     friend class Transactor;
 
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 };
 
@@ -99,15 +99,15 @@ public:
     };
 
     // ledger close flags
-    static const beast::uint32 sLCF_NoConsensusTime = 1;
+    static const std::uint32_t sLCF_NoConsensusTime = 1;
 
 public:
-    Ledger (const RippleAddress & masterID, beast::uint64 startAmount); // used for the starting bootstrap ledger
+    Ledger (const RippleAddress & masterID, std::uint64_t startAmount); // used for the starting bootstrap ledger
 
     Ledger (uint256 const & parentHash, uint256 const & transHash, uint256 const & accountHash,
-            beast::uint64 totCoins, beast::uint32 closeTime, beast::uint32 parentCloseTime,
+            std::uint64_t totCoins, std::uint32_t closeTime, std::uint32_t parentCloseTime,
             int closeFlags, int closeResolution,
-            beast::uint32 ledgerSeq, bool & loaded); // used for database ledgers
+            std::uint32_t ledgerSeq, bool & loaded); // used for database ledgers
 
     Ledger (Blob const & rawLedger, bool hasPrefix);
 
@@ -123,7 +123,7 @@ public:
     static Ledger::pointer getSQL1 (SqliteStatement*);
     static void getSQL2 (Ledger::ref);
     static Ledger::pointer getLastFullLedger ();
-    static beast::uint32 roundCloseTime (beast::uint32 closeTime, beast::uint32 closeResolution);
+    static std::uint32_t roundCloseTime (std::uint32_t closeTime, std::uint32_t closeResolution);
 
     void updateHash ();
     void setClosed ()
@@ -134,7 +134,7 @@ public:
     {
         mValidated = true;
     }
-    void setAccepted (beast::uint32 closeTime, int closeResolution, bool correctCloseTime);
+    void setAccepted (std::uint32_t closeTime, int closeResolution, bool correctCloseTime);
     void setAccepted ();
     void setImmutable ();
     bool isClosed ()
@@ -180,23 +180,23 @@ public:
     {
         return mAccountHash;
     }
-    beast::uint64 getTotalCoins () const
+    std::uint64_t getTotalCoins () const
     {
         return mTotCoins;
     }
-    void destroyCoins (beast::uint64 fee)
+    void destroyCoins (std::uint64_t fee)
     {
         mTotCoins -= fee;
     }
-    beast::uint32 getCloseTimeNC () const
+    std::uint32_t getCloseTimeNC () const
     {
         return mCloseTime;
     }
-    beast::uint32 getParentCloseTimeNC () const
+    std::uint32_t getParentCloseTimeNC () const
     {
         return mParentCloseTime;
     }
-    beast::uint32 getLedgerSeq () const
+    std::uint32_t getLedgerSeq () const
     {
         return mLedgerSeq;
     }
@@ -210,7 +210,7 @@ public:
     }
 
     // close time functions
-    void setCloseTime (beast::uint32 ct)
+    void setCloseTime (std::uint32_t ct)
     {
         assert (!mImmutable);
         mCloseTime = ct;
@@ -271,12 +271,12 @@ public:
     void visitStateItems (std::function<void (SLE::ref)>);
 
     // database functions (low-level)
-    static Ledger::pointer loadByIndex (beast::uint32 ledgerIndex);
+    static Ledger::pointer loadByIndex (std::uint32_t ledgerIndex);
     static Ledger::pointer loadByHash (uint256 const & ledgerHash);
-    static uint256 getHashByIndex (beast::uint32 index);
-    static bool getHashesByIndex (beast::uint32 index, uint256 & ledgerHash, uint256 & parentHash);
-    static std::map< beast::uint32, std::pair<uint256, uint256> >
-                  getHashesByIndex (beast::uint32 minSeq, beast::uint32 maxSeq);
+    static uint256 getHashByIndex (std::uint32_t index);
+    static bool getHashesByIndex (std::uint32_t index, uint256 & ledgerHash, uint256 & parentHash);
+    static std::map< std::uint32_t, std::pair<uint256, uint256> >
+                  getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq);
     bool pendSaveValidated (bool isSynchronous, bool isCurrent);
 
     // next/prev function
@@ -294,11 +294,11 @@ public:
 
     // Ledger hash table function
     static uint256 getLedgerHashIndex ();
-    static uint256 getLedgerHashIndex (beast::uint32 desiredLedgerIndex);
-    static int getLedgerHashOffset (beast::uint32 desiredLedgerIndex);
-    static int getLedgerHashOffset (beast::uint32 desiredLedgerIndex, beast::uint32 currentLedgerIndex);
-    uint256 getLedgerHash (beast::uint32 ledgerIndex);
-    std::vector< std::pair<beast::uint32, uint256> > getLedgerHashes ();
+    static uint256 getLedgerHashIndex (std::uint32_t desiredLedgerIndex);
+    static int getLedgerHashOffset (std::uint32_t desiredLedgerIndex);
+    static int getLedgerHashOffset (std::uint32_t desiredLedgerIndex, std::uint32_t currentLedgerIndex);
+    uint256 getLedgerHash (std::uint32_t ledgerIndex);
+    std::vector< std::pair<std::uint32_t, uint256> > getLedgerHashes ();
 
     static uint256 getLedgerFeatureIndex ();
     static uint256 getLedgerFeeIndex ();
@@ -364,13 +364,13 @@ public:
 
     SLE::pointer getOffer (uint256 const & uIndex);
 
-    SLE::pointer getOffer (const uint160 & uAccountID, beast::uint32 uSequence)
+    SLE::pointer getOffer (const uint160 & uAccountID, std::uint32_t uSequence)
     {
         return getOffer (getOfferIndex (uAccountID, uSequence));
     }
 
     // The index of an offer.
-    static uint256 getOfferIndex (const uint160 & uAccountID, beast::uint32 uSequence);
+    static uint256 getOfferIndex (const uint160 & uAccountID, std::uint32_t uSequence);
 
     //
     // Owner functions
@@ -387,7 +387,7 @@ public:
     // Directories are doubly linked lists of nodes.
 
     // Given a directory root and and index compute the index of a node.
-    static uint256 getDirNodeIndex (uint256 const & uDirRoot, const beast::uint64 uNodeIndex = 0);
+    static uint256 getDirNodeIndex (uint256 const & uDirRoot, const std::uint64_t uNodeIndex = 0);
     static void ownerDirDescriber (SLE::ref, bool, const uint160 & owner);
 
     // Return a node: root or normal
@@ -397,13 +397,13 @@ public:
     // Quality
     //
 
-    static uint256  getQualityIndex (uint256 const & uBase, const beast::uint64 uNodeDir = 0);
+    static uint256  getQualityIndex (uint256 const & uBase, const std::uint64_t uNodeDir = 0);
     static uint256  getQualityNext (uint256 const & uBase);
-    static beast::uint64   getQuality (uint256 const & uBase);
+    static std::uint64_t   getQuality (uint256 const & uBase);
     static void     qualityDirDescriber (SLE::ref, bool,
                                          const uint160 & uTakerPaysCurrency, const uint160 & uTakerPaysIssuer,
                                          const uint160 & uTakerGetsCurrency, const uint160 & uTakerGetsIssuer,
-                                         const beast::uint64 & uRate);
+                                         const std::uint64_t & uRate);
 
     //
     // Ripple functions : credit lines
@@ -431,38 +431,38 @@ public:
         return getRippleState (getRippleStateIndex (RippleAddress::createAccountID (uiA), RippleAddress::createAccountID (uiB), uCurrency));
     }
 
-    beast::uint32 getReferenceFeeUnits ()
+    std::uint32_t getReferenceFeeUnits ()
     {
         if (!mBaseFee) updateFees ();
 
         return mReferenceFeeUnits;
     }
 
-    beast::uint64 getBaseFee ()
+    std::uint64_t getBaseFee ()
     {
         if (!mBaseFee) updateFees ();
 
         return mBaseFee;
     }
 
-    beast::uint64 getReserve (int increments)
+    std::uint64_t getReserve (int increments)
     {
         if (!mBaseFee) updateFees ();
 
-        return scaleFeeBase (static_cast<beast::uint64> (increments) * mReserveIncrement + mReserveBase);
+        return scaleFeeBase (static_cast<std::uint64_t> (increments) * mReserveIncrement + mReserveBase);
     }
 
-    beast::uint64 getReserveInc ()
+    std::uint64_t getReserveInc ()
     {
         if (!mBaseFee) updateFees ();
 
         return mReserveIncrement;
     }
 
-    beast::uint64 scaleFeeBase (beast::uint64 fee);
-    beast::uint64 scaleFeeLoad (beast::uint64 fee, bool bAdmin);
+    std::uint64_t scaleFeeBase (std::uint64_t fee);
+    std::uint64_t scaleFeeLoad (std::uint64_t fee, bool bAdmin);
 
-    static std::set<beast::uint32> getPendingSaves();
+    static std::set<std::uint32_t> getPendingSaves();
 
     Json::Value getJson (int options);
     void addJson (Json::Value&, int options);
@@ -493,27 +493,27 @@ private:
     uint256       mParentHash;
     uint256       mTransHash;
     uint256       mAccountHash;
-    beast::uint64 mTotCoins;
-    beast::uint32 mLedgerSeq;
-    beast::uint32 mCloseTime;         // when this ledger closed
-    beast::uint32 mParentCloseTime;   // when the previous ledger closed
+    std::uint64_t mTotCoins;
+    std::uint32_t mLedgerSeq;
+    std::uint32_t mCloseTime;         // when this ledger closed
+    std::uint32_t mParentCloseTime;   // when the previous ledger closed
     int           mCloseResolution;   // the resolution for this ledger close time (2-120 seconds)
-    beast::uint32 mCloseFlags;        // flags indicating how this ledger close took place
+    std::uint32_t mCloseFlags;        // flags indicating how this ledger close took place
     bool          mClosed, mValidated, mValidHash, mAccepted, mImmutable;
 
-    beast::uint32 mReferenceFeeUnits;                 // Fee units for the reference transaction
-    beast::uint32 mReserveBase, mReserveIncrement;    // Reserve basse and increment in fee units
-    beast::uint64 mBaseFee;                           // Ripple cost of the reference transaction
+    std::uint32_t mReferenceFeeUnits;                 // Fee units for the reference transaction
+    std::uint32_t mReserveBase, mReserveIncrement;    // Reserve basse and increment in fee units
+    std::uint64_t mBaseFee;                           // Ripple cost of the reference transaction
 
     SHAMap::pointer mTransactionMap;
     SHAMap::pointer mAccountStateMap;
 
     typedef RippleMutex StaticLockType;
-    typedef StaticLockType::ScopedLockType StaticScopedLockType;
+    typedef std::lock_guard <StaticLockType> StaticScopedLockType;
     // ledgers not fully saved, validated ledger present but DB may not be correct yet
     static StaticLockType sPendingSaveLock;
 
-    static std::set<beast::uint32>  sPendingSaves;
+    static std::set<std::uint32_t>  sPendingSaves;
 };
 
 inline LedgerStateParms operator| (const LedgerStateParms& l1, const LedgerStateParms& l2)

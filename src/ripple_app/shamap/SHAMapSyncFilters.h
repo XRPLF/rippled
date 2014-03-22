@@ -55,7 +55,7 @@ private:
 class AccountStateSF : public SHAMapSyncFilter
 {
 public:
-    explicit AccountStateSF (beast::uint32 ledgerSeq);
+    explicit AccountStateSF (std::uint32_t ledgerSeq);
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
@@ -69,7 +69,7 @@ public:
                    Blob& nodeData);
 
 private:
-    beast::uint32 mLedgerSeq;
+    std::uint32_t mLedgerSeq;
 };
 
 // This class is only needed on add functions
@@ -77,7 +77,7 @@ private:
 class TransactionStateSF : public SHAMapSyncFilter
 {
 public:
-    explicit TransactionStateSF (beast::uint32 ledgerSeq);
+    explicit TransactionStateSF (std::uint32_t ledgerSeq);
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
@@ -91,7 +91,7 @@ public:
                    Blob& nodeData);
 
 private:
-    beast::uint32 mLedgerSeq;
+    std::uint32_t mLedgerSeq;
 };
 
 } // ripple

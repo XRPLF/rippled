@@ -36,7 +36,7 @@ namespace beast
 
     @see FileInputSource
 */
-class BEAST_API InputSource : LeakChecked <InputSource>
+class InputSource : LeakChecked <InputSource>
 {
 public:
     //==============================================================================
@@ -63,9 +63,9 @@ public:
 
     /** Returns a hash code that uniquely represents this item.
     */
-    virtual int64 hashCode() const = 0;
+    virtual std::int64_t hashCode() const = 0;
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_INPUTSOURCE_H_INCLUDED

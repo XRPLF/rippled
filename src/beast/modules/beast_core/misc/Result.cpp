@@ -80,4 +80,4 @@ Result::operator bool() const noexcept      { return errorMessage.isEmpty(); }
 bool Result::failed() const noexcept        { return errorMessage.isNotEmpty(); }
 bool Result::operator!() const noexcept     { return errorMessage.isNotEmpty(); }
 
-}  // namespace beast
+} // beast

@@ -30,17 +30,17 @@ public:
 
     BookListeners ();
     void addSubscriber (InfoSub::ref sub);
-    void removeSubscriber (beast::uint64 sub);
+    void removeSubscriber (std::uint64_t sub);
     void publish (Json::Value const& jvObj);
 
 private:
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
     // VFALCO TODO Use a typedef for the uint64
     //             Use a typedef for the container
-    boost::unordered_map<beast::uint64, InfoSub::wptr> mListeners;
+    boost::unordered_map<std::uint64_t, InfoSub::wptr> mListeners;
 };
 
 //------------------------------------------------------------------------------
@@ -90,14 +90,14 @@ private:
     boost::unordered_set <RippleAsset> mXRPBooks;
 
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
     typedef boost::unordered_map <RippleBook, BookListeners::pointer> MapType;
 
     MapType mListeners;
 
-    beast::uint32 mSeq;
+    std::uint32_t mSeq;
 
 };
 

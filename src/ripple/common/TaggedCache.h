@@ -29,6 +29,7 @@
 #include <functional>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
 
 namespace ripple {
 
@@ -548,8 +549,8 @@ private:
     // Number of items cached
     int m_cache_count;
     cache_type m_cache;  // Hold strong reference to recent objects
-    beast::uint64 m_hits;
-    beast::uint64 m_misses;
+    std::uint64_t m_hits;
+    std::uint64_t m_misses;
 };
 
 }

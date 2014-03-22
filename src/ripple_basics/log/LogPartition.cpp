@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <boost/algorithm/string.hpp>
+
 namespace ripple {
 
 void LogPartition::write (beast::Journal::Severity level, std::string const& text)

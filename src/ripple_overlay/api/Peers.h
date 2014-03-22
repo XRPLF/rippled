@@ -24,10 +24,13 @@
 #include "../../ripple/peerfinder/api/Slot.h"
 #include "../../ripple/common/Resolver.h"
 
-#include <set>
+#include "../../beast/beast/threads/Stoppable.h"
+#include "../../beast/modules/beast_core/files/File.h"
 
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
+
+#include <set>
 
 namespace ripple {
 

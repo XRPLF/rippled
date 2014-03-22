@@ -20,6 +20,8 @@
 #ifndef RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 #define RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 
+#include "../../beast/beast/threads/Stoppable.h"
+
 namespace ripple {
 
 class JobQueue : public beast::Stoppable

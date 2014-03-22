@@ -64,10 +64,10 @@ public:
         STAmount&                   saInAct,
         STAmount&                   saInFees);
 
-    void                calcNodeRipple (const beast::uint32 uQualityIn, const beast::uint32 uQualityOut,
+    void                calcNodeRipple (const std::uint32_t uQualityIn, const std::uint32_t uQualityOut,
                                         const STAmount& saPrvReq, const STAmount& saCurReq,
                                         STAmount& saPrvAct, STAmount& saCurAct,
-                                        beast::uint64& uRateMax);
+                                        std::uint64_t& uRateMax);
 
     RippleCalc (LedgerEntrySet& lesNodes, const bool bOpenLedger)
         : lesActive (lesNodes), mOpenLedger (bOpenLedger)

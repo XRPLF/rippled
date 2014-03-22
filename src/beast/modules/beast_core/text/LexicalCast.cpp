@@ -107,7 +107,7 @@ public:
 
     void run()
     {
-        int64 const seedValue = 50;
+        std::int64_t const seedValue = 50;
 
         Random r (seedValue);
 
@@ -115,10 +115,10 @@ public:
         testIntegers <unsigned int> (r);
         testIntegers <short> (r);
         testIntegers <unsigned short> (r);
-        testIntegers <int32> (r);
-        testIntegers <uint32> (r);
-        testIntegers <int64> (r);
-        testIntegers <uint64> (r);
+        testIntegers <std::int32_t> (r);
+        testIntegers <std::uint32_t> (r);
+        testIntegers <std::int64_t> (r);
+        testIntegers <std::uint64_t> (r);
     }
 };
 

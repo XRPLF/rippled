@@ -77,7 +77,7 @@ void MemoryOutputStream::reset() noexcept
 
 char* MemoryOutputStream::prepareToWrite (size_t numBytes)
 {
-    bassert ((ssize_t) numBytes >= 0);
+    bassert ((std::ptrdiff_t) numBytes >= 0);
     size_t storageNeeded = position + numBytes;
 
     char* data;
@@ -119,7 +119,7 @@ bool MemoryOutputStream::write (const void* const buffer, size_t howMany)
     return false;
 }
 
-bool MemoryOutputStream::writeRepeatedByte (uint8 byte, size_t howMany)
+bool MemoryOutputStream::writeRepeatedByte (std::uint8_t byte, size_t howMany)
 {
     if (howMany == 0)
         return true;
@@ -160,9 +160,9 @@ const void* MemoryOutputStream::getData() const noexcept
     return blockToUse->getData();
 }
 
-bool MemoryOutputStream::setPosition (int64 newPosition)
+bool MemoryOutputStream::setPosition (std::int64_t newPosition)
 {
-    if (newPosition <= (int64) size)
+    if (newPosition <= (std::int64_t) size)
     {
         // ok to seek backwards
         position = blimit ((size_t) 0, size, (size_t) newPosition);
@@ -173,10 +173,10 @@ bool MemoryOutputStream::setPosition (int64 newPosition)
     return false;
 }
 
-int MemoryOutputStream::writeFromInputStream (InputStream& source, int64 maxNumBytesToWrite)
+int MemoryOutputStream::writeFromInputStream (InputStream& source, std::int64_t maxNumBytesToWrite)
 {
     // before writing from an input, see if we can preallocate to make it more efficient..
-    int64 availableData = source.getTotalLength() - source.getPosition();
+    std::int64_t availableData = source.getTotalLength() - source.getPosition();
 
     if (availableData > 0)
     {
@@ -201,7 +201,7 @@ String MemoryOutputStream::toString() const
     return String::createStringFromData (getData(), (int) getDataSize());
 }
 
-OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const MemoryOutputStream& streamToRead)
+OutputStream& operator<< (OutputStream& stream, const MemoryOutputStream& streamToRead)
 {
     const size_t dataSize = streamToRead.getDataSize();
 
@@ -211,4 +211,4 @@ OutputStream& BEAST_CALLTYPE operator<< (OutputStream& stream, const MemoryOutpu
     return stream;
 }
 
-}  // namespace beast
+} // beast

@@ -37,7 +37,7 @@ class MemoryBlock;
 
     @see OutputStream, FileInputStream
 */
-class BEAST_API InputStream
+class InputStream
     : public Uncopyable
     , LeakChecked <InputStream>
 {
@@ -55,13 +55,13 @@ public:
 
         @see getNumBytesRemaining
     */
-    virtual int64 getTotalLength() = 0;
+    virtual std::int64_t getTotalLength() = 0;
 
     /** Returns the number of bytes available for reading, or a negative value if
         the remaining length is not known.
         @see getTotalLength
     */
-    int64 getNumBytesRemaining();
+    std::int64_t getNumBytesRemaining();
 
     /** Returns true if the stream has no more data to read. */
     virtual bool isExhausted() = 0;
@@ -113,8 +113,8 @@ public:
     virtual short readShort();
 
     // VFALCO TODO Implement these functions
-    //virtual int16 readInt16 ();
-    //virtual uint16 readUInt16 ();
+    //virtual std::int16_t readInt16 ();
+    //virtual std::uint16_t readUInt16 ();
 
     /** Reads two bytes from the stream as a little-endian 16-bit value.
 
@@ -135,11 +135,11 @@ public:
 
         @see OutputStream::writeInt, readIntBigEndian
     */
-    virtual int32 readInt32();
+    virtual std::int32_t readInt32();
 
     // VFALCO TODO Implement these functions
-    //virtual int16 readInt16BigEndian ();
-    //virtual uint16 readUInt16BigEndian ();
+    //virtual std::int16_t readInt16BigEndian ();
+    //virtual std::uint16_t readUInt16BigEndian ();
 
     // DEPRECATED, assumes sizeof(int) == 4!
     virtual int readInt();
@@ -153,7 +153,7 @@ public:
 
         @see OutputStream::writeIntBigEndian, readInt
     */
-    virtual int32 readInt32BigEndian();
+    virtual std::int32_t readInt32BigEndian();
 
     // DEPRECATED, assumes sizeof(int) == 4!
     virtual int readIntBigEndian();
@@ -167,7 +167,7 @@ public:
 
         @see OutputStream::writeInt64, readInt64BigEndian
     */
-    virtual int64 readInt64();
+    virtual std::int64_t readInt64();
 
     /** Reads eight bytes from the stream as a big-endian 64-bit value.
 
@@ -178,7 +178,7 @@ public:
 
         @see OutputStream::writeInt64BigEndian, readInt64
     */
-    virtual int64 readInt64BigEndian();
+    virtual std::int64_t readInt64BigEndian();
 
     /** Reads four bytes as a 32-bit floating point value.
 
@@ -202,7 +202,7 @@ public:
 
     /** Reads eight bytes as a 64-bit floating point value.
 
-        The raw 64-bit encoding of the double is read from the stream as a little-endian int64.
+        The raw 64-bit encoding of the double is read from the stream as a little-endian std::int64_t.
 
         If the stream is exhausted partway through reading the bytes, this will return zero.
 
@@ -212,7 +212,7 @@ public:
 
     /** Reads eight bytes as a 64-bit floating point value.
 
-        The raw 64-bit encoding of the double is read from the stream as a big-endian int64.
+        The raw 64-bit encoding of the double is read from the stream as a big-endian std::int64_t.
 
         If the stream is exhausted partway through reading the bytes, this will return zero.
 
@@ -318,14 +318,14 @@ public:
         @returns the number of bytes that were added to the memory block
     */
     virtual int readIntoMemoryBlock (MemoryBlock& destBlock,
-                                     ssize_t maxNumBytesToRead = -1);
+                                     std::ptrdiff_t maxNumBytesToRead = -1);
 
     //==============================================================================
     /** Returns the offset of the next byte that will be read from the stream.
 
         @see setPosition
     */
-    virtual int64 getPosition() = 0;
+    virtual std::int64_t getPosition() = 0;
 
     /** Tries to move the current read position of the stream.
 
@@ -339,7 +339,7 @@ public:
         @returns  true if the stream manages to reposition itself correctly
         @see getPosition
     */
-    virtual bool setPosition (int64 newPosition) = 0;
+    virtual bool setPosition (std::int64_t newPosition) = 0;
 
     /** Reads and discards a number of bytes from the stream.
 
@@ -347,7 +347,7 @@ public:
         class will just keep reading data until the requisite number of bytes
         have been done.
     */
-    virtual void skipNextBytes (int64 numBytesToSkip);
+    virtual void skipNextBytes (std::int64_t numBytesToSkip);
 
 
 protected:
@@ -355,6 +355,6 @@ protected:
     InputStream() noexcept {}
 };
 
-}  // namespace beast
+} // beast
 
 #endif

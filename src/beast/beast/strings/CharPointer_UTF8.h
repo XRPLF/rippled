@@ -90,11 +90,11 @@ public:
         const signed char byte = (signed char) *data;
 
         if (byte >= 0)
-            return (beast_wchar) (uint8) byte;
+            return (beast_wchar) (std::uint8_t) byte;
 
-        uint32 n = (uint32) (uint8) byte;
-        uint32 mask = 0x7f;
-        uint32 bit = 0x40;
+        std::uint32_t n = (std::uint32_t) (std::uint8_t) byte;
+        std::uint32_t mask = 0x7f;
+        std::uint32_t bit = 0x40;
         size_t numExtraValues = 0;
 
         while ((n & bit) != 0 && bit > 0x10)
@@ -108,7 +108,7 @@ public:
 
         for (size_t i = 1; i <= numExtraValues; ++i)
         {
-            const uint8 nextByte = (uint8) data [i];
+            const std::uint8_t nextByte = (std::uint8_t) data [i];
 
             if ((nextByte & 0xc0) != 0x80)
                 break;
@@ -157,11 +157,11 @@ public:
         const signed char byte = (signed char) *data++;
 
         if (byte >= 0)
-            return (beast_wchar) (uint8) byte;
+            return (beast_wchar) (std::uint8_t) byte;
 
-        uint32 n = (uint32) (uint8) byte;
-        uint32 mask = 0x7f;
-        uint32 bit = 0x40;
+        std::uint32_t n = (std::uint32_t) (std::uint8_t) byte;
+        std::uint32_t mask = 0x7f;
+        std::uint32_t bit = 0x40;
         int numExtraValues = 0;
 
         while ((n & bit) != 0 && bit > 0x8)
@@ -175,7 +175,7 @@ public:
 
         while (--numExtraValues >= 0)
         {
-            const uint32 nextByte = (uint32) (uint8) *data++;
+            const std::uint32_t nextByte = (std::uint32_t) (std::uint8_t) *data++;
 
             if ((nextByte & 0xc0) != 0x80)
                 break;
@@ -248,11 +248,11 @@ public:
 
         for (;;)
         {
-            const uint32 n = (uint32) (uint8) *d++;
+            const std::uint32_t n = (std::uint32_t) (std::uint8_t) *d++;
 
             if ((n & 0x80) != 0)
             {
-                uint32 bit = 0x40;
+                std::uint32_t bit = 0x40;
 
                 while ((n & bit) != 0)
                 {
@@ -299,7 +299,7 @@ public:
     static size_t getBytesRequiredFor (const beast_wchar charToWrite) noexcept
     {
         size_t num = 1;
-        const uint32 c = (uint32) charToWrite;
+        const std::uint32_t c = (std::uint32_t) charToWrite;
 
         if (c >= 0x80)
         {
@@ -340,7 +340,7 @@ public:
     /** Writes a unicode character to this string, and advances this pointer to point to the next position. */
     void write (const beast_wchar charToWrite) noexcept
     {
-        const uint32 c = (uint32) charToWrite;
+        const std::uint32_t c = (std::uint32_t) charToWrite;
 
         if (c >= 0x80)
         {
@@ -352,7 +352,7 @@ public:
                     ++numExtraBytes;
             }
 
-            *data++ = (CharType) ((uint32) (0xff << (7 - numExtraBytes)) | (c >> (numExtraBytes * 6)));
+            *data++ = (CharType) ((std::uint32_t) (0xff << (7 - numExtraBytes)) | (c >> (numExtraBytes * 6)));
 
             while (--numExtraBytes >= 0)
                 *data++ = (CharType) (0x80 | (0x3f & (c >> (numExtraBytes * 6))));
@@ -488,14 +488,14 @@ public:
     int getIntValue32() const noexcept      { return atoi (data); }
 
     /** Parses this string as a 64-bit integer. */
-    int64 getIntValue64() const noexcept
+    std::int64_t getIntValue64() const noexcept
     {
        #if BEAST_LINUX || BEAST_ANDROID
         return atoll (data);
        #elif BEAST_WINDOWS
         return _atoi64 (data);
        #else
-        return CharacterFunctions::getIntValue <int64, CharPointer_UTF8> (*this);
+        return CharacterFunctions::getIntValue <std::int64_t, CharPointer_UTF8> (*this);
        #endif
     }
 
@@ -520,7 +520,7 @@ public:
 
             if (byte < 0)
             {
-                uint8 bit = 0x40;
+                std::uint8_t bit = 0x40;
                 int numExtraValues = 0;
 
                 while ((byte & bit) != 0)
@@ -569,11 +569,11 @@ public:
     static bool isByteOrderMark (const void* possibleByteOrder) noexcept
     {
         bassert (possibleByteOrder != nullptr);
-        const uint8* const c = static_cast<const uint8*> (possibleByteOrder);
+        const std::uint8_t* const c = static_cast<const std::uint8_t*> (possibleByteOrder);
 
-        return c[0] == (uint8) byteOrderMark1
-            && c[1] == (uint8) byteOrderMark2
-            && c[2] == (uint8) byteOrderMark3;
+        return c[0] == (std::uint8_t) byteOrderMark1
+            && c[1] == (std::uint8_t) byteOrderMark2
+            && c[2] == (std::uint8_t) byteOrderMark3;
     }
 
 private:

@@ -36,7 +36,7 @@ public:
     // These defaults can be overridden in
     // Params simply by adding declarations to it.
 
-    static beast::int64 const               randomSeedValue  = 42;
+    static std::int64_t const               randomSeedValue  = 42;
 
     typedef std::size_t                     SizeType;
 

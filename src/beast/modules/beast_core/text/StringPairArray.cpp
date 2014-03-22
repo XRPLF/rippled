@@ -146,4 +146,4 @@ void StringPairArray::minimiseStorageOverheads()
     values.minimiseStorageOverheads();
 }
 
-}  // namespace beast
+} // beast

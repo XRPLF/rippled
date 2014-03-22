@@ -101,7 +101,7 @@ public:
     inline void writeln (std::string const& str) { writeln (str.c_str ()); }
 
 private:
-    beast::ScopedPointer <std::ofstream> m_stream;
+    std::unique_ptr <std::ofstream> m_stream;
     boost::filesystem::path m_path;
 };
 

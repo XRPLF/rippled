@@ -86,7 +86,7 @@ DirectoryEntryIterator BookDirIterator::getOfferIterator () const
     return DirectoryEntryIterator (mOfferDir);
 }
 
-beast::uint64 BookDirIterator::getRate () const
+std::uint64_t BookDirIterator::getRate () const
 {
     return Ledger::getQuality(mIndex);
 }
@@ -126,7 +126,7 @@ STAmount OrderBookIterator::getCurrentRate () const
     return mDirectoryIterator.getCurrentRate();
 }
 
-beast::uint64 OrderBookIterator::getCurrentQuality () const
+std::uint64_t OrderBookIterator::getCurrentQuality () const
 {
     return mDirectoryIterator.getCurrentQuality();
 }

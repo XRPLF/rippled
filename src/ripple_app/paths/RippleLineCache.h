@@ -40,7 +40,7 @@ public:
 
 private:
     typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
    
     Ledger::pointer mLedger;

@@ -140,10 +140,10 @@ public:
         otherwise there are no guarantees what will happen! Best just to use it
         as a local stack object, rather than creating one with the new() operator.
     */
-    inline explicit GenericScopedUnlock (const LockType& lock) noexcept
+    inline explicit GenericScopedUnlock (LockType& lock) noexcept
         : lock_ (lock)
     { 
-        lock.exit();
+        lock.unlock();
     }
 
     /** Destructor.
@@ -155,13 +155,13 @@ public:
     */
     inline ~GenericScopedUnlock() noexcept
     {
-        lock_.enter();
+        lock_.lock();
     }
 
 
 private:
     //==============================================================================
-    const LockType& lock_;
+    LockType& lock_;
 };
 
 //==============================================================================
@@ -243,7 +243,7 @@ private:
     const bool lockWasSuccessful;
 };
 
-}  // namespace beast
+} // beast
 
 #endif
 

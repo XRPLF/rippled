@@ -60,15 +60,17 @@
 #ifndef BEAST_SQDB_TRANSACTION_H_INCLUDED
 #define BEAST_SQDB_TRANSACTION_H_INCLUDED
 
-namespace sqdb
-{
+#include "../../../beast/utility/Error.h"
 
-class transaction : public Uncopyable
+namespace beast {
+namespace sqdb {
+
+class transaction
 {
 public:
     explicit transaction(session& s);
     ~transaction();
-
+    transaction& operator= (transaction const&) = delete;
     Error commit();
     void rollback();
 
@@ -77,6 +79,7 @@ private:
     bool m_bHandled;
 };
 
-}
+} // sqdb
+} // beast
 
 #endif

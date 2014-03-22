@@ -44,7 +44,7 @@ namespace beast {
 
     @see CriticalSection
 */
-class BEAST_API SpinLock : public Uncopyable
+class SpinLock : public Uncopyable
 {
 public:
     /** Provides the type of scoped lock to use for locking a SpinLock. */

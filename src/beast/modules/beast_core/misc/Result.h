@@ -53,7 +53,7 @@ namespace beast
     }
     @endcode
 */
-class BEAST_API  Result
+class  Result
 {
 public:
     //==============================================================================
@@ -116,7 +116,7 @@ private:
     operator void*() const;
 };
 
-}  // namespace beast
+} // beast
 
 #endif
 

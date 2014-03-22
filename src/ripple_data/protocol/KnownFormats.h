@@ -20,6 +20,8 @@
 #ifndef RIPPLE_KNOWNFORMATS_H_INCLUDED
 #define RIPPLE_KNOWNFORMATS_H_INCLUDED
 
+#include "../../beast/beast/cxx14/memory.h" // <memory>
+
 namespace ripple {
 
 /** Manages a list of known formats.
@@ -75,7 +77,6 @@ public:
     };
 
 private:
-    // VFALCO TODO use String instead of std::string
     typedef std::map <std::string, Item*> NameMap;
     typedef std::map <KeyType, Item*> TypeMap;
 
@@ -162,7 +163,9 @@ protected:
     */
     Item& add (char const* name, KeyType type)
     {
-        Item& item = *m_formats.add (new Item (name, type));
+        m_formats.emplace_back (
+            std::make_unique <Item> (name, type));
+        auto& item (*m_formats.back());
 
         addCommonFields (item);
 
@@ -179,7 +182,7 @@ protected:
     virtual void addCommonFields (Item& item) = 0;
 
 private:
-    beast::OwnedArray <Item> m_formats;
+    std::vector <std::unique_ptr <Item>> m_formats;
     NameMap m_names;
     TypeMap m_types;
 };

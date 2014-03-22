@@ -46,9 +46,9 @@ struct Protocol
 /** A ledger index.
 */
 // VFALCO TODO pick one. I like Index since its not an abbreviation
-typedef beast::uint32 LedgerIndex;
+typedef std::uint32_t LedgerIndex;
 // VFALCO NOTE "LedgerSeq" appears in some SQL statement text
-typedef beast::uint32 LedgerSeq;
+typedef std::uint32_t LedgerSeq;
 
 /** A transaction identifier.
 */
@@ -57,7 +57,7 @@ typedef uint256 TxID;
 
 /** A transaction index.
 */
-typedef beast::uint32 TxSeq; // VFALCO NOTE Should read TxIndex or TxNum
+typedef std::uint32_t TxSeq; // VFALCO NOTE Should read TxIndex or TxNum
 
 /** An account hash.
 

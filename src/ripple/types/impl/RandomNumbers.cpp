@@ -180,7 +180,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
     // VFALCO TODO Remove all this fancy stuff
     struct
     {
-        beast::int64 operator () () const
+        std::int64_t operator () () const
         {
             return time (nullptr);
         }
@@ -193,9 +193,9 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
             struct
             {
                 // VFALCO TODO clean this up
-                beast::int64 operator () () const
+                std::int64_t operator () () const
                 {
-                    beast::int64 nCounter = 0;
+                    std::int64_t nCounter = 0;
 #if BEAST_WIN32
                     QueryPerformanceCounter ((LARGE_INTEGER*)&nCounter);
 #else
@@ -208,7 +208,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
             } GetPerformanceCounter;
 
             // Seed with CPU performance counter
-            beast::int64 nCounter = GetPerformanceCounter ();
+            std::int64_t nCounter = GetPerformanceCounter ();
             RAND_add (&nCounter, sizeof (nCounter), 1.5);
             memset (&nCounter, 0, sizeof (nCounter));
         }
@@ -217,7 +217,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
     RandAddSeed ();
 
     // This can take up to 2 seconds, so only do it every 10 minutes
-    static beast::int64 nLastPerfmon;
+    static std::int64_t nLastPerfmon;
 
     if (GetTime () < nLastPerfmon + 10 * 60)
         return;

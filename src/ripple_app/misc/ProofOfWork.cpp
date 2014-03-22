@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <boost/algorithm/string.hpp>
+#include <boost/regex.hpp>
+
 namespace ripple {
 
 SETUP_LOG (ProofOfWork)
@@ -58,7 +61,7 @@ bool ProofOfWork::isValid () const
     return false;
 }
 
-beast::uint64 ProofOfWork::getDifficulty (uint256 const& target, int iterations)
+std::uint64_t ProofOfWork::getDifficulty (uint256 const& target, int iterations)
 {
     // calculate the approximate number of hashes required to solve this proof of work
     if ((iterations > kMaxIterations) || (target < sMinTarget))
@@ -71,7 +74,7 @@ beast::uint64 ProofOfWork::getDifficulty (uint256 const& target, int iterations)
     }
 
     // more iterations means more hashes per iteration but also a larger final hash
-    beast::uint64 difficulty = iterations + (iterations / 8);
+    std::uint64_t difficulty = iterations + (iterations / 8);
 
     // Multiply the number of hashes needed by 256 for each leading zero byte in the difficulty
     const unsigned char* ptr = target.begin ();

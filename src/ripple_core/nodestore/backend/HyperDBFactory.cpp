@@ -44,7 +44,7 @@ public:
         , m_name (keyValues ["path"].toStdString ())
     {
         if (m_name.empty ())
-            beast::Throw (std::runtime_error ("Missing path in LevelDBFactory backend"));
+            throw std::runtime_error ("Missing path in LevelDBFactory backend");
 
         hyperleveldb::Options options;
         options.create_if_missing = true;
@@ -76,8 +76,8 @@ public:
         hyperleveldb::DB* db = nullptr;
         hyperleveldb::Status status = hyperleveldb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
-            beast::Throw (std::runtime_error (std::string (
-                "Unable to open/create hyperleveldb: ") + status.ToString()));
+            throw std::runtime_error (std::string (
+                "Unable to open/create hyperleveldb: ") + status.ToString());
 
         m_db.reset (db);
     }

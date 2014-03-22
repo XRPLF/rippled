@@ -120,7 +120,7 @@ overlooked. Blank lines are used to separate code into "paragraphs."
   `static_cast`. And when you're reinterpreting data, always use
   `reinterpret_cast`.
 * Until C++ gets a universal 64-bit primitive type (part of the C++11
-  standard), it's best to stick to the `int64` and `uint64` typedefs.
+  standard), it's best to stick to the `std::int64_t` and `std::uint64_t` typedefs.
 
 ## Object lifetime and ownership
 

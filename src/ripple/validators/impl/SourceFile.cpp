@@ -54,11 +54,11 @@ public:
     
     void fetch (Results& results, beast::Journal journal)
     {
-        beast::int64 const fileSize (m_file.getSize ());
+        std::int64_t const fileSize (m_file.getSize ());
 
         if (fileSize != 0)
         {
-            if (fileSize < std::numeric_limits<beast::int32>::max())
+            if (fileSize < std::numeric_limits<std::int32_t>::max())
             {
                 beast::MemoryBlock buffer (fileSize);
                 beast::RandomAccessFile f;

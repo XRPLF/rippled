@@ -67,7 +67,7 @@ void AccountItems::fillItems (const uint160& accountID, Ledger::ref ledger)
             }
         }
 
-        beast::uint64 uNodeNext    = ownerDir->getFieldU64 (sfIndexNext);
+        std::uint64_t uNodeNext    = ownerDir->getFieldU64 (sfIndexNext);
 
         // VFALCO TODO Rewrite to not return from the middle of the function
         if (!uNodeNext)

@@ -42,7 +42,7 @@ public:
 
     virtual int getTrustedValidationCount (uint256 const& ledger) = 0;
 
-    virtual int getFeeAverage(uint256 const& ledger, beast::uint64 ref, beast::uint64& fee) = 0;
+    virtual int getFeeAverage(uint256 const& ledger, std::uint64_t ref, std::uint64_t& fee) = 0;
 
     virtual int getNodesAfter (uint256 const& ledger) = 0;
     virtual int getLoadRatio (bool overLoaded) = 0;

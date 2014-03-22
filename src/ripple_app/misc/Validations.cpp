@@ -30,8 +30,8 @@ class ValidationsImp : public Validations
 {
 private:
     typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-    typedef LockType::ScopedUnlockType ScopedUnlockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
+    typedef beast::GenericScopedUnlock <LockType> ScopedUnlockType;
     LockType mLock;
 
     TaggedCache<uint256, ValidationSet>     mValidations;
@@ -61,8 +61,7 @@ private:
 
 public:
     ValidationsImp ()
-        : mLock (this, "Validations", __FILE__, __LINE__)
-        , mValidations ("Validations", 128, 600, get_seconds_clock (),
+        : mValidations ("Validations", 128, 600, get_seconds_clock (),
             LogPartition::getJournal <TaggedCacheLog> ())
         , mWriting (false)
     {
@@ -78,8 +77,8 @@ private:
         if (val->isTrusted () || getApp().getUNL ().nodeInUNL (signer))
         {
             val->setTrusted ();
-            beast::uint32 now = getApp().getOPs ().getCloseTimeNC ();
-            beast::uint32 valClose = val->getSignTime ();
+            std::uint32_t now = getApp().getOPs ().getCloseTimeNC ();
+            std::uint32_t valClose = val->getSignTime ();
 
             if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
                 isCurrent = true;
@@ -98,7 +97,7 @@ private:
         uint160 node = signer.getNodeID ();
 
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
 
             if (!findCreateSet (hash)->insert (std::make_pair (node, val)).second)
                 return false;
@@ -142,7 +141,7 @@ private:
     ValidationSet getValidations (uint256 const& ledger)
     {
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
             VSpointer set = findSet (ledger);
 
             if (set)
@@ -154,19 +153,19 @@ private:
     void getValidationCount (uint256 const& ledger, bool currentOnly, int& trusted, int& untrusted)
     {
         trusted = untrusted = 0;
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         VSpointer set = findSet (ledger);
 
         if (set)
         {
-            beast::uint32 now = getApp().getOPs ().getNetworkTimeNC ();
+            std::uint32_t now = getApp().getOPs ().getNetworkTimeNC ();
             BOOST_FOREACH (u160_val_pair & it, *set)
             {
                 bool isTrusted = it.second->isTrusted ();
 
                 if (isTrusted && currentOnly)
                 {
-                    beast::uint32 closeTime = it.second->getSignTime ();
+                    std::uint32_t closeTime = it.second->getSignTime ();
 
                     if ((now < (closeTime - LEDGER_EARLY_INTERVAL)) || (now > (closeTime + LEDGER_VAL_INTERVAL)))
                         isTrusted = false;
@@ -189,7 +188,7 @@ private:
     void getValidationTypes (uint256 const& ledger, int& full, int& partial)
     {
         full = partial = 0;
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         VSpointer set = findSet (ledger);
 
         if (set)
@@ -213,7 +212,7 @@ private:
     int getTrustedValidationCount (uint256 const& ledger)
     {
         int trusted = 0;
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         VSpointer set = findSet (ledger);
 
         if (set)
@@ -228,12 +227,12 @@ private:
         return trusted;
     }
 
-    int getFeeAverage (uint256 const& ledger, beast::uint64 ref, beast::uint64& fee)
+    int getFeeAverage (uint256 const& ledger, std::uint64_t ref, std::uint64_t& fee)
     {
         int trusted = 0;
         fee = 0;
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         VSpointer set = findSet (ledger);
 
         if (set)
@@ -262,7 +261,7 @@ private:
     {
         // Number of trusted nodes that have moved past this ledger
         int count = 0;
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
         {
             if (it.second->isTrusted () && it.second->isPreviousHash (ledger))
@@ -277,7 +276,7 @@ private:
         int goodNodes = overLoaded ? 1 : 0;
         int badNodes = overLoaded ? 0 : 1;
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
             BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
             {
                 if (it.second->isTrusted ())
@@ -294,11 +293,11 @@ private:
 
     std::list<SerializedValidation::pointer> getCurrentTrustedValidations ()
     {
-        beast::uint32 cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        std::uint32_t cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
 
         std::list<SerializedValidation::pointer> ret;
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
 
         while (it != mCurrentValidations.end ())
@@ -329,13 +328,13 @@ private:
     boost::unordered_map<uint256, currentValidationCount>
     getCurrentValidations (uint256 currentLedger, uint256 priorLedger)
     {
-        beast::uint32 cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        std::uint32_t cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
         bool valPriorLedger = priorLedger.isNonZero ();
 
         boost::unordered_map<uint256, currentValidationCount> ret;
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
 
         while (it != mCurrentValidations.end ())
@@ -382,7 +381,7 @@ private:
         bool anyNew = false;
 
         WriteLog (lsINFO, Validations) << "Flushing validations";
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
         {
             if (it.second)
@@ -397,7 +396,7 @@ private:
 
         while (mWriting)
         {
-            ScopedUnlockType sul (mLock, __FILE__, __LINE__);
+            ScopedUnlockType sul (mLock);
             boost::this_thread::sleep (boost::posix_time::milliseconds (100));
         }
 
@@ -420,7 +419,7 @@ private:
         boost::format insVal ("INSERT INTO Validations "
                               "(LedgerHash,NodePubKey,SignTime,RawData) VALUES ('%s','%s','%u',%s);");
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         assert (mWriting);
 
         while (!mStaleValidations.empty ())
@@ -430,7 +429,7 @@ private:
             mStaleValidations.swap (vector);
 
             {
-                ScopedUnlockType sul (mLock, __FILE__, __LINE__);
+                ScopedUnlockType sul (mLock);
                 {
                     Database* db = getApp().getLedgerDB ()->getDB ();
                     DeprecatedScopedLock dbl (getApp().getLedgerDB ()->getDBLock ());
@@ -455,7 +454,7 @@ private:
 
     void sweep ()
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         mValidations.sweep ();
     }
 };

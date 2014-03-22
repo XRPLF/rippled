@@ -19,8 +19,6 @@
 
 #include "../RippleSSLContext.h"
 
-#include "../../beast/modules/beast_core/beast_core.h"
-
 #include <cstdint>
 #include <sstream>
 

@@ -30,7 +30,7 @@ namespace beast
 
     http://semver.org/
 */
-class BEAST_API SemanticVersion
+class SemanticVersion
 {
 public:
     int majorVersion;
@@ -74,6 +74,6 @@ private:
     static bool chopIdentifiers (StringArray* value, bool preRelease, String& input);
 };
 
-}  // namespace beast
+} // beast
 
 #endif

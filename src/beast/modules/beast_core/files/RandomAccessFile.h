@@ -39,14 +39,14 @@ namespace beast
 
     @see FileInputStream, FileOutputStream
 */
-class BEAST_API  RandomAccessFile : public Uncopyable, LeakChecked <RandomAccessFile>
+class  RandomAccessFile : public Uncopyable, LeakChecked <RandomAccessFile>
 {
 public:
     /** The type of an FileOffset.
 
         This can be useful when writing templates.
     */
-    typedef int64 FileOffset;
+    typedef std::int64_t FileOffset;
 
     /** The type of a byte count.
 
@@ -194,7 +194,7 @@ private:
     FileOffset currentPosition;
 };
 
-}  // namespace beast
+} // beast
 
 #endif
 

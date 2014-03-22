@@ -60,8 +60,12 @@
 #ifndef BEAST_SQDB_TYPE_CONVERSION_TRAITS_H_INCLUDED
 #define BEAST_SQDB_TYPE_CONVERSION_TRAITS_H_INCLUDED
 
-namespace sqdb
-{
+#include "../../beast_core/time/Time.h"
+
+#include <cassert>
+
+namespace beast {
+namespace sqdb {
 
 // default conversion (copy in to out)
 template<typename T>
@@ -72,7 +76,7 @@ struct type_conversion
     static void from_base(base_type const& in, indicator ind, T& out)
     {
         // null not allowed
-        check_precondition (ind != i_null);
+        assert (ind != i_null);
         out = in;
     }
 
@@ -88,7 +92,7 @@ template <>
 struct type_conversion <Time>
 {
     //typedef sqlite3_int64 base_type;
-    typedef int64 base_type;
+    typedef std::int64_t base_type;
 
     static void from_base(const base_type v, indicator ind, Time& result)
     {
@@ -110,6 +114,7 @@ struct type_conversion <Time>
     }
 };
 
-}
+} // sqdb
+} // beast
 
 #endif

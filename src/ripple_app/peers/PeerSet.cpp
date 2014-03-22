@@ -32,7 +32,6 @@ PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData,
     clock_type& clock, beast::Journal journal)
     : m_journal (journal)
     , m_clock (clock)
-    , mLock (this, "PeerSet", __FILE__, __LINE__)
     , mHash (hash)
     , mTimerInterval (interval)
     , mTimeouts (0)
@@ -53,7 +52,7 @@ PeerSet::~PeerSet ()
 
 bool PeerSet::peerHas (Peer::ref ptr)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     if (!mPeers.insert (std::make_pair (ptr->getShortId (), 0)).second)
         return false;
@@ -64,7 +63,7 @@ bool PeerSet::peerHas (Peer::ref ptr)
 
 void PeerSet::badPeer (Peer::ref ptr)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     mPeers.erase (ptr->getShortId ());
 }
 
@@ -76,7 +75,7 @@ void PeerSet::setTimer ()
 
 void PeerSet::invokeOnTimer ()
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     if (isDone ())
         return;
@@ -138,7 +137,7 @@ void PeerSet::TimerJobEntry (Job&, boost::shared_ptr<PeerSet> ptr)
 
 bool PeerSet::isActive ()
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
     return !isDone ();
 }
 
@@ -152,7 +151,7 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ref peer)
 
 void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     if (mPeers.empty ())
         return;

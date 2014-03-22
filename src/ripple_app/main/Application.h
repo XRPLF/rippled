@@ -71,7 +71,7 @@ public:
         other things
     */
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::unique_lock <LockType> ScopedLockType;
 
     virtual LockType& getMasterLock () = 0;
 

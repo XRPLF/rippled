@@ -64,7 +64,7 @@ public:
 
     /** Get the current quality
     */
-    beast::uint64 getCurrentQuality () const
+    std::uint64_t getCurrentQuality () const
     {
         return Ledger::getQuality(mIndex);
     }
@@ -86,7 +86,7 @@ public:
     */
     DirectoryEntryIterator getOfferIterator () const;
 
-    beast::uint64 getRate () const;
+    std::uint64_t getRate () const;
 
     bool addJson (Json::Value&) const;
 
@@ -129,7 +129,7 @@ public:
 
     STAmount getCurrentRate () const;
 
-    beast::uint64 getCurrentQuality () const;
+    std::uint64_t getCurrentQuality () const;
 
     uint256 getCurrentIndex () const;
 

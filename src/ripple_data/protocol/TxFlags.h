@@ -36,52 +36,52 @@ namespace ripple {
 class TxFlag
 {
 public:
-    static beast::uint32 const requireDestTag = 0x00010000;
+    static std::uint32_t const requireDestTag = 0x00010000;
 };
 // VFALCO TODO Move all flags into this container after some study.
 
 // Universal Transaction flags:
-const beast::uint32 tfFullyCanonicalSig    = 0x80000000;
-const beast::uint32 tfUniversal            = tfFullyCanonicalSig;
-const beast::uint32 tfUniversalMask        = ~ tfUniversal;
+const std::uint32_t tfFullyCanonicalSig    = 0x80000000;
+const std::uint32_t tfUniversal            = tfFullyCanonicalSig;
+const std::uint32_t tfUniversalMask        = ~ tfUniversal;
 
 // AccountSet flags:
 // VFALCO TODO Javadoc comment every one of these constants
-//const beast::uint32 TxFlag::requireDestTag       = 0x00010000;
-const beast::uint32 tfOptionalDestTag      = 0x00020000;
-const beast::uint32 tfRequireAuth          = 0x00040000;
-const beast::uint32 tfOptionalAuth         = 0x00080000;
-const beast::uint32 tfDisallowXRP          = 0x00100000;
-const beast::uint32 tfAllowXRP             = 0x00200000;
-const beast::uint32 tfAccountSetMask       = ~ (TxFlag::requireDestTag | tfOptionalDestTag
+//const std::uint32_t TxFlag::requireDestTag       = 0x00010000;
+const std::uint32_t tfOptionalDestTag      = 0x00020000;
+const std::uint32_t tfRequireAuth          = 0x00040000;
+const std::uint32_t tfOptionalAuth         = 0x00080000;
+const std::uint32_t tfDisallowXRP          = 0x00100000;
+const std::uint32_t tfAllowXRP             = 0x00200000;
+const std::uint32_t tfAccountSetMask       = ~ (TxFlag::requireDestTag | tfOptionalDestTag
                                              | tfRequireAuth | tfOptionalAuth
                                              | tfDisallowXRP | tfAllowXRP);
 
 // AccountSet SetFlag/ClearFlag values
-const beast::uint32 asfRequireDest         = 1;
-const beast::uint32 asfRequireAuth         = 2;
-const beast::uint32 asfDisallowXRP         = 3;
-const beast::uint32 asfDisableMaster       = 4;
-const beast::uint32 asfAccountTxnID        = 5;
+const std::uint32_t asfRequireDest         = 1;
+const std::uint32_t asfRequireAuth         = 2;
+const std::uint32_t asfDisallowXRP         = 3;
+const std::uint32_t asfDisableMaster       = 4;
+const std::uint32_t asfAccountTxnID        = 5;
 
 // OfferCreate flags:
-const beast::uint32 tfPassive              = 0x00010000;
-const beast::uint32 tfImmediateOrCancel    = 0x00020000;
-const beast::uint32 tfFillOrKill           = 0x00040000;
-const beast::uint32 tfSell                 = 0x00080000;
-const beast::uint32 tfOfferCreateMask      = ~ (tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
+const std::uint32_t tfPassive              = 0x00010000;
+const std::uint32_t tfImmediateOrCancel    = 0x00020000;
+const std::uint32_t tfFillOrKill           = 0x00040000;
+const std::uint32_t tfSell                 = 0x00080000;
+const std::uint32_t tfOfferCreateMask      = ~ (tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
 
 // Payment flags:
-const beast::uint32 tfNoRippleDirect       = 0x00010000;
-const beast::uint32 tfPartialPayment       = 0x00020000;
-const beast::uint32 tfLimitQuality         = 0x00040000;
-const beast::uint32 tfPaymentMask          = ~ (tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect);
+const std::uint32_t tfNoRippleDirect       = 0x00010000;
+const std::uint32_t tfPartialPayment       = 0x00020000;
+const std::uint32_t tfLimitQuality         = 0x00040000;
+const std::uint32_t tfPaymentMask          = ~ (tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect);
 
 // TrustSet flags:
-const beast::uint32 tfSetfAuth             = 0x00010000;
-const beast::uint32 tfSetNoRipple          = 0x00020000;
-const beast::uint32 tfClearNoRipple        = 0x00040000;
-const beast::uint32 tfTrustSetMask         = ~ (tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple);
+const std::uint32_t tfSetfAuth             = 0x00010000;
+const std::uint32_t tfSetNoRipple          = 0x00020000;
+const std::uint32_t tfClearNoRipple        = 0x00040000;
+const std::uint32_t tfTrustSetMask         = ~ (tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple);
 
 } // ripple
 

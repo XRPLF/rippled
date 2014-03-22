@@ -20,6 +20,10 @@
 #ifndef RIPPLE_BASICS_LOGGEDTIMINGS_H_INCLUDED
 #define RIPPLE_BASICS_LOGGEDTIMINGS_H_INCLUDED
 
+#include "../../beast/modules/beast_core/time/Time.h"
+#include "../../beast/modules/beast_core/diagnostic/MeasureFunctionCallTime.h"
+#include "../../beast/beast/utility/Debug.h"
+    
 namespace ripple {
 
 namespace detail {
@@ -77,7 +81,7 @@ inline double cleanElapsed (double seconds) noexcept
 template <typename Object>
 double timedDestroy (Object& object)
 {
-    beast::int64 const startTime (beast::Time::getHighResolutionTicks ());
+    std::int64_t const startTime (beast::Time::getHighResolutionTicks ());
 
     detail::Destroyer <Object>::destroy (object);
 

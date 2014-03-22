@@ -84,6 +84,6 @@ inline T radiansToDegrees (U radians)
     return deg;
 }
 
-}  // namespace beast
+} // beast
 
 #endif

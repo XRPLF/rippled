@@ -57,11 +57,9 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 ref_counted_statement_base::ref_counted_statement_base(session& s)
     : m_refs(1)
@@ -122,6 +120,6 @@ void ref_counted_statement::final_action()
     m_st.clean_up();
 }
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast

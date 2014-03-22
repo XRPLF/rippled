@@ -75,13 +75,13 @@ public:
         if (std::numeric_limits <IntegerType>::is_signed)
         {
             if (n >= 0)
-                return printDigits (t, static_cast <uint64> (n));
+                return printDigits (t, static_cast <std::uint64_t> (n));
 
             // NB: this needs to be careful not to call
-            // -std::numeric_limits<int64>::min(),
+            // -std::numeric_limits<std::int64_t>::min(),
             // which has undefined behaviour
             //
-            t = printDigits (t, static_cast <uint64> (-(n + 1)) + 1);
+            t = printDigits (t, static_cast <std::uint64_t> (-(n + 1)) + 1);
             *--t = '-';
             return t;
         }
@@ -123,7 +123,7 @@ public:
         {
             char* const end = buffer + numChars;
             char* t = end;
-            int64 v = (int64) (pow (10.0, numDecPlaces) * std::abs (n) + 0.5);
+            std::int64_t v = (std::int64_t) (pow (10.0, numDecPlaces) * std::abs (n) + 0.5);
             *--t = (char) 0;
 
             while (numDecPlaces >= 0 || v > 0)

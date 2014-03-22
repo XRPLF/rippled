@@ -22,6 +22,7 @@
 
 #include "../../beast/beast/FixedArray.h"
 #include "../../beast/beast/crypto/MurmurHash.h"
+#include "../../beast/beast/utility/hardened_hash.h"
 
 namespace ripple {
 
@@ -32,7 +33,7 @@ class IdentifierStorage
 public:
     typedef std::size_t         size_type;
     typedef std::ptrdiff_t      difference_type;
-    typedef beast::uint8        value_type;
+    typedef std::uint8_t        value_type;
     typedef value_type*         iterator;
     typedef value_type const*   const_iterator;
     typedef value_type&         reference;
@@ -44,29 +45,12 @@ public:
     static size_type const      storage_size = pre_size + size + post_size;
 
     typedef beast::FixedArray <
-        beast::uint8, storage_size>    storage_type;
+        std::uint8_t, storage_size>    storage_type;
 
     /** Value hashing function.
         The seed prevents crafted inputs from causing degenarate parent containers.
     */
-    class hasher
-    {
-    public:
-        explicit hasher (std::size_t seedToUse = beast::Random::getSystemRandom ().nextInt ())
-            : m_seed (seedToUse)
-        {
-        }
-
-        std::size_t operator() (IdentifierStorage const& storage) const
-        {
-            std::size_t hash;
-            beast::Murmur::Hash (storage.cbegin (), storage.size, m_seed, &hash);
-            return hash;
-        }
-
-    private:
-        std::size_t m_seed;
-    };
+    typedef beast::hardened_hash <IdentifierStorage> hasher;
 
     /** Container equality testing function. */
     class key_equal
@@ -143,6 +127,14 @@ public:
     bool isNotZero() const
     {
         return !isZero();
+    }
+
+    void
+    hash_combine (std::size_t& seed) const noexcept
+    {
+        std::size_t result;
+        beast::Murmur::Hash (m_storage.cbegin (), m_storage.size(), seed, &result);
+        seed = result;
     }
 
 private:

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SQLITEDATABASE_H_INCLUDED
 #define RIPPLE_SQLITEDATABASE_H_INCLUDED
 
+#include "../../beast/beast/threads/Thread.h"
+
 namespace ripple {
 
 class SqliteDatabase
@@ -50,13 +52,13 @@ public:
 
     bool getNull (int colIndex);
     char* getStr (int colIndex, std::string& retStr);
-    beast::int32 getInt (int colIndex);
+    std::int32_t getInt (int colIndex);
     float getFloat (int colIndex);
     bool getBool (int colIndex);
     // returns amount stored in buf
     int getBinary (int colIndex, unsigned char* buf, int maxSize);
     Blob getBinary (int colIndex);
-    beast::uint64 getBigInt (int colIndex);
+    std::uint64_t getBigInt (int colIndex);
 
     sqlite3* peekConnection ()
     {
@@ -79,7 +81,7 @@ private:
     void runWal ();
 
     typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType m_walMutex;
 
     sqlite3* mConnection;
@@ -121,7 +123,7 @@ public:
     int bind (int position, const std::string& value);
     int bindStatic (int position, const std::string& value);
 
-    int bind (int position, beast::uint32 value);
+    int bind (int position, std::uint32_t value);
     int bind (int position);
 
     // columns start at 0
@@ -132,8 +134,8 @@ public:
 
     std::string getString (int column);
     const char* peekString (int column);
-    beast::uint32 getUInt32 (int column);
-    beast::int64 getInt64 (int column);
+    std::uint32_t getUInt32 (int column);
+    std::int64_t getInt64 (int column);
 
     int step ();
     int reset ();

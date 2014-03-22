@@ -39,7 +39,7 @@ public:
     URL (
         String schema_,
         String host_,
-        uint16 port_,
+        std::uint16_t port_,
         String port_string_,
         String path_,
         String query_ = "",
@@ -68,7 +68,7 @@ public:
     /** Returns the port number as an integer.
         If no port was specified, the value will be zero.
     */
-    uint16 port () const;
+    std::uint16_t port () const;
 
     /** Returns the port number as a string.
         If no port was specified, the string will be empty.
@@ -100,7 +100,7 @@ public:
 private:
     String m_scheme;
     String m_host;
-    uint16 m_port;
+    std::uint16_t m_port;
     String m_port_string;
     String m_path;
     String m_query;

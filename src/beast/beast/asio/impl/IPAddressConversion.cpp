@@ -33,7 +33,7 @@ Endpoint from_asio (boost::asio::ip::address const& address)
     }
 
     // VFALCO TODO IPv6 support
-    bassertfalse;
+    assert(false);
     return Endpoint();
 }
 
@@ -52,7 +52,7 @@ boost::asio::ip::address to_asio_address (Endpoint const& endpoint)
     }
 
     // VFALCO TODO IPv6 support
-    bassertfalse;
+    assert(false);
     return boost::asio::ip::address (
         boost::asio::ip::address_v6 ());
 }

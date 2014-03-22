@@ -34,7 +34,7 @@ public:
 
     static boost::shared_ptr <LedgerConsensus> New (clock_type& clock,
         LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
-            beast::uint32 closeTime);
+            std::uint32_t closeTime);
 
     virtual ~LedgerConsensus () = 0;
 

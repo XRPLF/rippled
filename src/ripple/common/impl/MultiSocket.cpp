@@ -23,6 +23,8 @@
 
 #include "../../beast/beast/unit_test/suite.h"
 
+#include <cassert>
+
 namespace ripple {
 
 MultiSocket* MultiSocket::New (
@@ -234,7 +236,7 @@ public:
     template <typename Protocol>
     void testProxyFlags (int extraClientFlags, int extraServerFlags)
     {
-        check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (
+        assert (! MultiSocket::Flag (extraClientFlags).any_set (
             MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
 
         runProxy <Protocol> (MultiSocket::Flag::client_role | extraClientFlags,
@@ -246,7 +248,7 @@ public:
     template <typename Protocol>
     void testFlags (int extraClientFlags, int extraServerFlags)
     {
-        check_precondition (! MultiSocket::Flag (extraClientFlags).any_set (
+        assert (! MultiSocket::Flag (extraClientFlags).any_set (
             MultiSocket::Flag::client_role | MultiSocket::Flag::server_role));
 
         run <Protocol> (MultiSocket::Flag::client_role | extraClientFlags,

@@ -31,7 +31,7 @@ TER WalletAddTransactor::doApply ()
     const RippleAddress                 naMasterPubKey  = RippleAddress::createAccountPublic (vucPubKey);
     const uint160                       uDstAccountID   = naMasterPubKey.getAccountID ();
 
-    const beast::uint32                 uTxFlags        = mTxn.getFlags ();
+    const std::uint32_t                 uTxFlags        = mTxn.getFlags ();
 
     if (uTxFlags & tfUniversalMask)
     {
@@ -62,8 +62,8 @@ TER WalletAddTransactor::doApply ()
 
     STAmount        saDstAmount     = mTxn.getFieldAmount (sfAmount);
     const STAmount  saSrcBalance    = mTxnAccount->getFieldAmount (sfBalance);
-    const beast::uint32 uOwnerCount     = mTxnAccount->getFieldU32 (sfOwnerCount);
-    const beast::uint64 uReserve        = mEngine->getLedger ()->getReserve (uOwnerCount);
+    const std::uint32_t uOwnerCount     = mTxnAccount->getFieldU32 (sfOwnerCount);
+    const std::uint64_t uReserve        = mEngine->getLedger ()->getReserve (uOwnerCount);
     STAmount        saPaid          = mTxn.getTransactionFee ();
 
     // Make sure have enough reserve to send. Allow final spend to use reserve for fee.

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/cxx14/memory.h" // <memory>
+
 namespace ripple {
 
 SETUP_LOG (WSDoor)
@@ -51,7 +53,6 @@ public:
         , m_resourceManager (resourceManager)
         , m_source (source)
         , m_ssl_context (ssl_context)
-        , m_endpointLock (this, "WSDoor", __FILE__, __LINE__)
         , mPublic (bPublic)
         , mProxy (bProxy)
         , mIp (strIp)
@@ -77,7 +78,7 @@ private:
                 m_resourceManager, m_source, m_ssl_context, mPublic, mProxy));
 
         {
-            ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
+            ScopedLockType lock (m_endpointLock);
 
             m_endpoint = boost::make_shared<websocketpp::server_multitls> (handler);
         }
@@ -110,7 +111,7 @@ private:
         }
 
         {
-            ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
+            ScopedLockType lock (m_endpointLock);
 
             m_endpoint.reset();
         }
@@ -123,7 +124,7 @@ private:
         boost::shared_ptr<websocketpp::server_multitls> endpoint;
 
         {
-            ScopedLockType lock (m_endpointLock, __FILE__, __LINE__);
+            ScopedLockType lock (m_endpointLock);
 
              endpoint = m_endpoint;
         }
@@ -139,7 +140,7 @@ private:
 
 private:
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     
     Resource::Manager& m_resourceManager;
     InfoSub::Source& m_source;
@@ -166,16 +167,15 @@ WSDoor* WSDoor::New (Resource::Manager& resourceManager,
     InfoSub::Source& source, std::string const& strIp,
         int iPort, bool bPublic, bool bProxy, boost::asio::ssl::context& ssl_context)
 {
-    beast::ScopedPointer <WSDoor> door;
+    std::unique_ptr <WSDoor> door;
 
     try
     {
-        door = new WSDoorImp (resourceManager,
+        door = std::make_unique <WSDoorImp> (resourceManager,
             source, strIp, iPort, bPublic, bProxy, ssl_context);
     }
     catch (...)
     {
-        door = nullptr;
     }
 
     return door.release ();

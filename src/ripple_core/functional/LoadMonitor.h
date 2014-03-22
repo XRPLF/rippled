@@ -37,18 +37,18 @@ public:
 
     void addLoadSample (LoadEvent const& sample);
 
-    void setTargetLatency (beast::uint64 avg, beast::uint64 pk);
+    void setTargetLatency (std::uint64_t avg, std::uint64_t pk);
 
-    bool isOverTarget (beast::uint64 avg, beast::uint64 peak);
+    bool isOverTarget (std::uint64_t avg, std::uint64_t peak);
 
     // VFALCO TODO make this return the values in a struct.
     struct Stats
     {
         Stats();
 
-        beast::uint64 count;
-        beast::uint64 latencyAvg;
-        beast::uint64 latencyPeak;
+        std::uint64_t count;
+        std::uint64_t latencyAvg;
+        std::uint64_t latencyPeak;
         bool isOverloaded;
     };
 
@@ -62,15 +62,15 @@ private:
     void update ();
 
     typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
-    beast::uint64 mCounts;
+    std::uint64_t mCounts;
     int           mLatencyEvents;
-    beast::uint64 mLatencyMSAvg;
-    beast::uint64 mLatencyMSPeak;
-    beast::uint64 mTargetLatencyAvg;
-    beast::uint64 mTargetLatencyPk;
+    std::uint64_t mLatencyMSAvg;
+    std::uint64_t mLatencyMSPeak;
+    std::uint64_t mTargetLatencyAvg;
+    std::uint64_t mTargetLatencyPk;
     int           mLastUpdate;
 };
 

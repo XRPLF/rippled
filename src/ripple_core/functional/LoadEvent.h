@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LOADEVENT_H
 #define RIPPLE_LOADEVENT_H
 
+#include "../../beast/beast/chrono/RelativeTime.h"
+
 namespace ripple {
 
 class LoadMonitor;
@@ -72,6 +74,7 @@ private:
     LoadMonitor& m_loadMonitor;
     bool m_isRunning;
     std::string m_name;
+    // VFALCO TODO Replace these with chrono
     beast::RelativeTime m_timeStopped;
     beast::RelativeTime m_timeStarted;
     double m_secondsWaiting;

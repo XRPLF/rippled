@@ -78,9 +78,9 @@ bool beast_isRunningUnderDebugger()
     return testResult > 0;
 }
 
-BEAST_API bool BEAST_CALLTYPE Process::isRunningUnderDebugger()
+bool Process::isRunningUnderDebugger()
 {
     return beast_isRunningUnderDebugger();
 }
 
-}  // namespace beast
+} // beast

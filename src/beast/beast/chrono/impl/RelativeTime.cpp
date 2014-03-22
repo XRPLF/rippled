@@ -54,7 +54,7 @@ RelativeTime RelativeTime::milliseconds (const int milliseconds) noexcept
     return RelativeTime (milliseconds * 0.001);
 }
 
-RelativeTime RelativeTime::milliseconds (const int64 milliseconds) noexcept
+RelativeTime RelativeTime::milliseconds (const std::int64_t milliseconds) noexcept
 {
     return RelativeTime (milliseconds * 0.001);
 }
@@ -86,9 +86,9 @@ RelativeTime RelativeTime::weeks (const RelativeTime::value_type numberOfWeeks) 
 
 //==============================================================================
 
-int64 RelativeTime::inMilliseconds() const noexcept
+std::int64_t RelativeTime::inMilliseconds() const noexcept
 {
-    return (int64) (numSeconds * 1000.0);
+    return (std::int64_t) (numSeconds * 1000.0);
 }
 
 RelativeTime::value_type RelativeTime::inMinutes() const noexcept
@@ -301,7 +301,7 @@ static double monotonicCurrentTimeInSeconds()
 			{
 				numerator   = timebase.numer;
                 // VFALCO NOTE I don't understand this code
-				//denominator = timebase.denom * (uint64) 1000000 * 1000.0;
+				//denominator = timebase.denom * (std::uint64_t) 1000000 * 1000.0;
                 denominator = timebase.denom * 1000000000.0;
 			}
 			

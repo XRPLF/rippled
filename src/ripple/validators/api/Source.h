@@ -20,6 +20,9 @@
 #ifndef RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 
+#include "../../beast/beast/smart_ptr/SharedObject.h"
+#include "../../beast/modules/beast_core/time/Time.h"
+
 namespace ripple {
 namespace Validators {
 
@@ -69,7 +72,9 @@ public:
         Results ();
 
         bool success;
+        // VFALCO TODO Replace with std::string
         beast::String message;
+        // VFALCO TODO Replace with chrono
         beast::Time expirationTime;
         std::vector <Item> list;
     };

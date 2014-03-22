@@ -19,6 +19,8 @@
 
 #include "../../beast/beast/unit_test/suite.h"
 
+#include <boost/algorithm/string.hpp>
+
 namespace ripple {
 
 class ProofOfWorkFactoryImp
@@ -34,8 +36,7 @@ public:
     //--------------------------------------------------------------------------
 
     ProofOfWorkFactoryImp ()
-        : mLock (this, "PoWFactory", __FILE__, __LINE__)
-        , mValidTime (180)
+        : mValidTime (180)
     {
         setDifficulty (1);
         RandomNumbers::getInstance ().fillBytes (mSecret.begin (), mSecret.size ());
@@ -154,7 +155,7 @@ public:
         uint256 challenge;
         RandomNumbers::getInstance ().fillBytes (challenge.begin (), challenge.size ());
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         std::string s = boost::str (boost::format (f) % challenge.GetHex () % mTarget.GetHex () % mIterations % now);
         std::string c = mSecret.GetHex () + s;
@@ -198,7 +199,7 @@ public:
         // Broken with lexicalCast<> changes
         t = beast::lexicalCast <time_t> (fields[3]);
     #else
-        t = static_cast <time_t> (beast::lexicalCast <beast::uint64> (fields [3]));
+        t = static_cast <time_t> (beast::lexicalCast <std::uint64_t> (fields [3]));
     #endif
 
         time_t now = time (nullptr);
@@ -206,7 +207,7 @@ public:
         int iterations = beast::lexicalCast <int> (fields[2]);
 
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
 
             if ((t * 4) > (now + mValidTime))
             {
@@ -231,7 +232,7 @@ public:
         }
 
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
 
             if (!mSolvedChallenges.insert (powMap_vt (now, challenge)).second)
             {
@@ -249,7 +250,7 @@ public:
     {
         time_t expire = time (nullptr) - mValidTime;
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         do
         {
@@ -272,7 +273,7 @@ public:
     {
         time_t now = time (nullptr);
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         if (mLastDifficultyChange == now)
             return;
@@ -290,7 +291,7 @@ public:
     {
         time_t now = time (nullptr);
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         if (mLastDifficultyChange == now)
             return;
@@ -309,7 +310,7 @@ public:
         assert ((i >= 0) && (i <= kMaxDifficulty));
         time_t now = time (nullptr);
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         mPowEntry = i;
         PowEntries const& entries (getPowEntries ());
         mIterations = entries [i].iterations;
@@ -319,7 +320,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    beast::uint64 getDifficulty ()
+    std::uint64_t getDifficulty ()
     {
         return ProofOfWork::getDifficulty (mTarget, mIterations);
     }
@@ -336,7 +337,7 @@ public:
 
 private:
     typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
     uint256      mSecret;

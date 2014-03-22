@@ -37,10 +37,10 @@ struct Port
     Port ();
     Port (Port const& other);
     Port& operator= (Port const& other);
-    Port (beast::uint16 port_, beast::IP::Endpoint const& addr_,
+    Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
             Security security_, beast::asio::SSLContext* context_);
 
-    beast::uint16 port;
+    std::uint16_t port;
     beast::IP::Endpoint addr;
     Security security;
     beast::asio::SSLContext* context;

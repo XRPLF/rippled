@@ -56,10 +56,10 @@ public:
     template <typename ConstBufferSequence>
     void analyze (ConstBufferSequence const& buffer)
     {
-        uint16 version;
+        std::uint16_t version;
         FixedInputBufferSize <bytesNeeded> in (buffer);
 
-        uint8 msg_type;
+        std::uint8_t msg_type;
         if (! in.read (&msg_type))
             return;
 
@@ -72,7 +72,7 @@ public:
             return;
         version = fromNetworkByteOrder (version);
 
-        uint16 length;
+        std::uint16_t length;
         if (! in.read (&length))
             return;
 

@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <cassert>
+
+#include "../../beast/modules/beast_core/text/LexicalCast.h"
+
 namespace ripple {
 
 STParsedJSON::STParsedJSON (std::string const& name, Json::Value const& json)
@@ -192,7 +196,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                                 findTypeByName (strValue));
 
                             data.push_back (new STUInt16 (field,
-                                static_cast <beast::uint16> (txType)));
+                                static_cast <std::uint16_t> (txType)));
 
                             if (*name == sfGeneric)
                                 name = &sfTransaction;
@@ -203,7 +207,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                                 findTypeByName (strValue));
 
                             data.push_back (new STUInt16 (field,
-                                static_cast <beast::uint16> (type)));
+                                static_cast <std::uint16_t> (type)));
 
                             if (*name == sfGeneric)
                                 name = &sfLedgerEntry;
@@ -217,19 +221,19 @@ bool STParsedJSON::parse (std::string const& json_name,
                     else
                     {
                         data.push_back (new STUInt16 (field,
-                            beast::lexicalCastThrow <beast::uint16> (strValue)));
+                            beast::lexicalCastThrow <std::uint16_t> (strValue)));
                     }
                 }
                 else if (value.isInt ())
                 {
                     data.push_back (new STUInt16 (field,
-                        range_check_cast <beast::uint16> (
+                        range_check_cast <std::uint16_t> (
                             value.asInt (), 0, 65535)));
                 }
                 else if (value.isUInt ())
                 {
                     data.push_back (new STUInt16 (field,
-                        range_check_cast <beast::uint16> (
+                        range_check_cast <std::uint16_t> (
                             value.asUInt (), 0, 65535)));
                 }
                 else
@@ -252,17 +256,17 @@ bool STParsedJSON::parse (std::string const& json_name,
                 if (value.isString ())
                 {
                     data.push_back (new STUInt32 (field,
-                        beast::lexicalCastThrow <beast::uint32> (value.asString ())));
+                        beast::lexicalCastThrow <std::uint32_t> (value.asString ())));
                 }
                 else if (value.isInt ())
                 {
                     data.push_back (new STUInt32 (field,
-                        range_check_cast <beast::uint32> (value.asInt (), 0u, 4294967295u)));
+                        range_check_cast <std::uint32_t> (value.asInt (), 0u, 4294967295u)));
                 }
                 else if (value.isUInt ())
                 {
                     data.push_back (new STUInt32 (field,
-                        static_cast <beast::uint32> (value.asUInt ())));
+                        static_cast <std::uint32_t> (value.asUInt ())));
                 }
                 else
                 {
@@ -289,13 +293,13 @@ bool STParsedJSON::parse (std::string const& json_name,
                 else if (value.isInt ())
                 {
                     data.push_back (new STUInt64 (field,
-                        range_check_cast<beast::uint64> (
+                        range_check_cast<std::uint64_t> (
                             value.asInt (), 0, 18446744073709551615ull)));
                 }
                 else if (value.isUInt ())
                 {
                     data.push_back (new STUInt64 (field,
-                        static_cast <beast::uint64> (value.asUInt ())));
+                        static_cast <std::uint64_t> (value.asUInt ())));
                 }
                 else
                 {
@@ -422,7 +426,7 @@ bool STParsedJSON::parse (std::string const& json_name,
             {
                 data.push_back (new STVector256 (field));
                 STVector256* tail (dynamic_cast <STVector256*> (&data.back ()));
-                check_precondition (tail);
+                assert (tail);
 
                 for (Json::UInt i = 0; !json.isValidIndex (i); ++i)
                 {
@@ -450,7 +454,7 @@ bool STParsedJSON::parse (std::string const& json_name,
             {
                 data.push_back (new STPathSet (field));
                 STPathSet* tail = dynamic_cast <STPathSet*> (&data.back ());
-                check_precondition (tail);
+                assert (tail);
 
                 for (Json::UInt i = 0; value.isValidIndex (i); ++i)
                 {
@@ -663,7 +667,7 @@ bool STParsedJSON::parse (std::string const& json_name,
             {
                 data.push_back (new STArray (field));
                 STArray* tail = dynamic_cast<STArray*> (&data.back ());
-                check_precondition (tail);
+                assert (tail);
 
                 for (Json::UInt i = 0; value.isValidIndex (i); ++i)
                 {

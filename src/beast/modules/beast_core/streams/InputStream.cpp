@@ -24,9 +24,9 @@
 namespace beast
 {
 
-int64 InputStream::getNumBytesRemaining()
+std::int64_t InputStream::getNumBytesRemaining()
 {
-    int64 len = getTotalLength();
+    std::int64_t len = getTotalLength();
 
     if (len >= 0)
         len -= getPosition();
@@ -78,12 +78,12 @@ int InputStream::readInt()
     return 0;
 }
 
-int32 InputStream::readInt32()
+std::int32_t InputStream::readInt32()
 {
     char temp[4];
 
     if (read (temp, 4) == 4)
-        return (int32) ByteOrder::littleEndianInt (temp);
+        return (std::int32_t) ByteOrder::littleEndianInt (temp);
 
     return 0;
 }
@@ -98,19 +98,19 @@ int InputStream::readIntBigEndian()
     return 0;
 }
 
-int32 InputStream::readInt32BigEndian()
+std::int32_t InputStream::readInt32BigEndian()
 {
     char temp[4];
 
     if (read (temp, 4) == 4)
-        return (int32) ByteOrder::bigEndianInt (temp);
+        return (std::int32_t) ByteOrder::bigEndianInt (temp);
 
     return 0;
 }
 
 int InputStream::readCompressedInt()
 {
-    const uint8 sizeByte = (uint8) readByte();
+    const std::uint8_t sizeByte = (std::uint8_t) readByte();
     if (sizeByte == 0)
         return 0;
 
@@ -130,22 +130,22 @@ int InputStream::readCompressedInt()
     return (sizeByte >> 7) ? -num : num;
 }
 
-int64 InputStream::readInt64()
+std::int64_t InputStream::readInt64()
 {
-    union { uint8 asBytes[8]; uint64 asInt64; } n;
+    union { std::uint8_t asBytes[8]; std::uint64_t asInt64; } n;
 
     if (read (n.asBytes, 8) == 8)
-        return (int64) ByteOrder::swapIfBigEndian (n.asInt64);
+        return (std::int64_t) ByteOrder::swapIfBigEndian (n.asInt64);
 
     return 0;
 }
 
-int64 InputStream::readInt64BigEndian()
+std::int64_t InputStream::readInt64BigEndian()
 {
-    union { uint8 asBytes[8]; uint64 asInt64; } n;
+    union { std::uint8_t asBytes[8]; std::uint64_t asInt64; } n;
 
     if (read (n.asBytes, 8) == 8)
-        return (int64) ByteOrder::swapIfLittleEndian (n.asInt64);
+        return (std::int64_t) ByteOrder::swapIfLittleEndian (n.asInt64);
 
     return 0;
 }
@@ -153,29 +153,29 @@ int64 InputStream::readInt64BigEndian()
 float InputStream::readFloat()
 {
     // the union below relies on these types being the same size...
-    static_bassert (sizeof (int32) == sizeof (float));
-    union { int32 asInt; float asFloat; } n;
-    n.asInt = (int32) readInt();
+    static_bassert (sizeof (std::int32_t) == sizeof (float));
+    union { std::int32_t asInt; float asFloat; } n;
+    n.asInt = (std::int32_t) readInt();
     return n.asFloat;
 }
 
 float InputStream::readFloatBigEndian()
 {
-    union { int32 asInt; float asFloat; } n;
-    n.asInt = (int32) readIntBigEndian();
+    union { std::int32_t asInt; float asFloat; } n;
+    n.asInt = (std::int32_t) readIntBigEndian();
     return n.asFloat;
 }
 
 double InputStream::readDouble()
 {
-    union { int64 asInt; double asDouble; } n;
+    union { std::int64_t asInt; double asDouble; } n;
     n.asInt = readInt64();
     return n.asDouble;
 }
 
 double InputStream::readDoubleBigEndian()
 {
-    union { int64 asInt; double asDouble; } n;
+    union { std::int64_t asInt; double asDouble; } n;
     n.asInt = readInt64BigEndian();
     return n.asDouble;
 }
@@ -212,7 +212,7 @@ String InputStream::readNextLine()
 
         if (data[i] == '\r')
         {
-            const int64 lastPos = getPosition();
+            const std::int64_t lastPos = getPosition();
 
             if (readByte() != '\n')
                 setPosition (lastPos);
@@ -230,7 +230,7 @@ String InputStream::readNextLine()
     return String::fromUTF8 (data, (int) i);
 }
 
-int InputStream::readIntoMemoryBlock (MemoryBlock& block, ssize_t numBytes)
+int InputStream::readIntoMemoryBlock (MemoryBlock& block, std::ptrdiff_t numBytes)
 {
     MemoryOutputStream mo (block, true);
     return mo.writeFromInputStream (*this, numBytes);
@@ -244,15 +244,15 @@ String InputStream::readEntireStreamAsString()
 }
 
 //==============================================================================
-void InputStream::skipNextBytes (int64 numBytesToSkip)
+void InputStream::skipNextBytes (std::int64_t numBytesToSkip)
 {
     if (numBytesToSkip > 0)
     {
-        const int skipBufferSize = (int) bmin (numBytesToSkip, (int64) 16384);
+        const int skipBufferSize = (int) bmin (numBytesToSkip, (std::int64_t) 16384);
         HeapBlock<char> temp ((size_t) skipBufferSize);
 
         while (numBytesToSkip > 0 && ! isExhausted())
-            numBytesToSkip -= read (temp, (int) bmin (numBytesToSkip, (int64) skipBufferSize));
+            numBytesToSkip -= read (temp, (int) bmin (numBytesToSkip, (std::int64_t) skipBufferSize));
     }
 }
 
@@ -268,10 +268,10 @@ template <>
 short InputStream::readType <short> () { return readShort (); }
 
 template <>
-int32 InputStream::readType <int32> () { return readInt32 (); }
+std::int32_t InputStream::readType <std::int32_t> () { return readInt32 (); }
 
 template <>
-int64 InputStream::readType <int64> () { return readInt64 (); }
+std::int64_t InputStream::readType <std::int64_t> () { return readInt64 (); }
 
 template <>
 unsigned char InputStream::readType <unsigned char> () { return static_cast <unsigned char> (readByte ()); }
@@ -280,10 +280,10 @@ template <>
 unsigned short InputStream::readType <unsigned short> () { return static_cast <unsigned short> (readShort ()); }
 
 template <>
-uint32 InputStream::readType <uint32> () { return static_cast <uint32> (readInt32 ()); }
+std::uint32_t InputStream::readType <std::uint32_t> () { return static_cast <std::uint32_t> (readInt32 ()); }
 
 template <>
-uint64 InputStream::readType <uint64> () { return static_cast <uint64> (readInt64 ()); }
+std::uint64_t InputStream::readType <std::uint64_t> () { return static_cast <std::uint64_t> (readInt64 ()); }
 
 template <>
 float InputStream::readType <float> () { return readFloat (); }
@@ -300,10 +300,10 @@ template <>
 short InputStream::readTypeBigEndian <short> () { return readShortBigEndian (); }
 
 template <>
-int32 InputStream::readTypeBigEndian <int32> () { return readInt32BigEndian (); }
+std::int32_t InputStream::readTypeBigEndian <std::int32_t> () { return readInt32BigEndian (); }
 
 template <>
-int64 InputStream::readTypeBigEndian <int64> () { return readInt64BigEndian (); }
+std::int64_t InputStream::readTypeBigEndian <std::int64_t> () { return readInt64BigEndian (); }
 
 template <>
 unsigned char InputStream::readTypeBigEndian <unsigned char> () { return static_cast <unsigned char> (readByte ()); }
@@ -312,10 +312,10 @@ template <>
 unsigned short InputStream::readTypeBigEndian <unsigned short> () { return static_cast <unsigned short> (readShortBigEndian ()); }
 
 template <>
-uint32 InputStream::readTypeBigEndian <uint32> () { return static_cast <uint32> (readInt32BigEndian ()); }
+std::uint32_t InputStream::readTypeBigEndian <std::uint32_t> () { return static_cast <std::uint32_t> (readInt32BigEndian ()); }
 
 template <>
-uint64 InputStream::readTypeBigEndian <uint64> () { return static_cast <uint64> (readInt64BigEndian ()); }
+std::uint64_t InputStream::readTypeBigEndian <std::uint64_t> () { return static_cast <std::uint64_t> (readInt64BigEndian ()); }
 
 template <>
 float InputStream::readTypeBigEndian <float> () { return readFloatBigEndian (); }
@@ -323,4 +323,4 @@ float InputStream::readTypeBigEndian <float> () { return readFloatBigEndian (); 
 template <>
 double InputStream::readTypeBigEndian <double> () { return readDoubleBigEndian (); }
 
-}  // namespace beast
+} // beast

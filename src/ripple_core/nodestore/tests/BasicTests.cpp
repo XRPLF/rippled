@@ -26,7 +26,7 @@ class NodeStoreBasic_test : public TestBase
 {
 public:
     // Make sure predictable object generation works!
-    void testBatches (beast::int64 const seedValue)
+    void testBatches (std::int64_t const seedValue)
     {
         testcase ("batch");
 
@@ -45,7 +45,7 @@ public:
     }
 
     // Checks encoding/decoding blobs
-    void testBlobs (beast::int64 const seedValue)
+    void testBlobs (std::int64_t const seedValue)
     {
         testcase ("encoding");
 
@@ -72,7 +72,7 @@ public:
 
     void run ()
     {
-        beast::int64 const seedValue = 50;
+        std::int64_t const seedValue = 50;
 
         testBatches (seedValue);
 

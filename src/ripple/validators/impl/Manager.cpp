@@ -283,7 +283,7 @@ public:
     {
         Context::Scope scope (m_context);
 
-        map ["trusted"] = beast::uint32 (
+        map ["trusted"] = std::uint32_t (
             m_logic.m_chosenList ?
                 m_logic.m_chosenList->size() : 0);
 

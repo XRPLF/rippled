@@ -19,6 +19,10 @@
 
 #include "../../beast/beast/unit_test/suite.h"
 
+#include <boost/regex.hpp>
+
+#include <cstdarg>
+
 namespace ripple {
 
 // VFALCO TODO Replace these with something more robust and without macros.
@@ -262,16 +266,16 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
 // Quality parsing
 // - integers as is.
 // - floats multiplied by a billion
-bool parseQuality (const std::string& strSource, beast::uint32& uQuality)
+bool parseQuality (const std::string& strSource, std::uint32_t& uQuality)
 {
-    uQuality    = beast::lexicalCast <beast::uint32> (strSource);
+    uQuality    = beast::lexicalCast <std::uint32_t> (strSource);
 
     if (!uQuality)
     {
         float   fQuality    = beast::lexicalCast <float> (strSource);
 
         if (fQuality)
-            uQuality    = (beast::uint32) (QUALITY_ONE * fQuality);
+            uQuality    = (std::uint32_t) (QUALITY_ONE * fQuality);
     }
 
     return !!uQuality;

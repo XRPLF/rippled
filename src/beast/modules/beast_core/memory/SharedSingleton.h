@@ -20,6 +20,10 @@
 #ifndef BEAST_SHAREDSINGLETON_H_INCLUDED
 #define BEAST_SHAREDSINGLETON_H_INCLUDED
 
+#include "../../../beast/threads/SpinLock.h"
+#include "../../../beast/smart_ptr/SharedPtr.h"
+#include "../time/AtExitHook.h"
+
 namespace beast
 {
 
@@ -38,7 +42,7 @@ namespace beast
     @ingroup beast_core
 */
 /** @{ */
-class BEAST_API SingletonLifetime
+class SingletonLifetime
 {
 public:
     // It would be nice if we didn't have to qualify the enumeration but
@@ -88,7 +92,7 @@ public:
         SharedSingleton* instance = staticData.instance;
         if (instance == nullptr)
         {
-            LockType::ScopedLockType lock (staticData.mutex);
+            std::lock_guard <LockType> lock (staticData.mutex);
             instance = staticData.instance;
             if (instance == nullptr)
             {
@@ -138,7 +142,7 @@ private:
         //
         {
             StaticData& staticData (getStaticData ());
-            LockType::ScopedLockType lock (staticData.mutex);
+            std::lock_guard <LockType> lock (staticData.mutex);
 
             if (this->getReferenceCount() != 0)
             {
@@ -180,7 +184,7 @@ private:
 
     static StaticData& getStaticData ()
     {
-        static uint8 storage [sizeof (StaticData)];
+        static std::uint8_t storage [sizeof (StaticData)];
         return *(reinterpret_cast <StaticData*> (&storage [0]));
     }
 
@@ -193,6 +197,6 @@ private:
 
 //------------------------------------------------------------------------------
 
-}  // namespace beast
+} // beast
 
 #endif

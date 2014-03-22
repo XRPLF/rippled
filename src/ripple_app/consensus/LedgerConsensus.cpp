@@ -34,7 +34,7 @@ public:
     static char const* getCountedObjectName () { return "LedgerConsensus"; }
 
     LedgerConsensusImp (clock_type& clock, LedgerHash const & prevLCLHash, 
-        Ledger::ref previousLedger, beast::uint32 closeTime)
+        Ledger::ref previousLedger, std::uint32_t closeTime)
         : m_clock (clock)
         , mState (lcsPRE_CLOSE)
         , mCloseTime (closeTime)
@@ -209,7 +209,7 @@ public:
 
             if (!mCloseTimes.empty ())
             {
-                typedef std::map<beast::uint32, int>::value_type ct_t;
+                typedef std::map<std::uint32_t, int>::value_type ct_t;
                 Json::Value ctj (Json::objectValue);
                 BOOST_FOREACH (ct_t & ct, mCloseTimes)
                 {
@@ -856,13 +856,13 @@ private:
 
         {
             Application::ScopedLockType lock 
-                (getApp ().getMasterLock (), __FILE__, __LINE__);
+                (getApp ().getMasterLock ());
 
             assert (set->getHash () == mOurPosition->getCurrentHash ());
             // these are now obsolete
             getApp().getOPs ().peekStoredProposals ().clear (); 
 
-            beast::uint32 closeTime = roundCloseTime (mOurPosition->getCloseTime ());
+            std::uint32_t closeTime = roundCloseTime (mOurPosition->getCloseTime ());
             bool closeTimeCorrect = true;
 
             if (closeTime == 0)
@@ -973,7 +973,7 @@ private:
             Ledger::pointer newOL = boost::make_shared<Ledger> 
                 (true, boost::ref (*newLCL));
             LedgerMaster::ScopedLockType sl 
-                (getApp().getLedgerMaster ().peekMutex (), __FILE__, __LINE__);
+                (getApp().getLedgerMaster ().peekMutex ());
 
             // Apply disputed transactions that didn't get in
             TransactionEngine engine (newOL);
@@ -1022,10 +1022,10 @@ private:
                 WriteLog (lsINFO, LedgerConsensus) 
                     << "We closed at " 
                     << beast::lexicalCastThrow <std::string> (mCloseTime);
-                beast::uint64 closeTotal = mCloseTime;
+                std::uint64_t closeTotal = mCloseTime;
                 int closeCount = 1;
 
-                for (std::map<beast::uint32, int>::iterator it = mCloseTimes.begin ()
+                for (std::map<std::uint32_t, int>::iterator it = mCloseTimes.begin ()
                     , end = mCloseTimes.end (); it != end; ++it)
                 {
                     // FIXME: Use median, not average
@@ -1034,8 +1034,8 @@ private:
                         << " time votes for " 
                         << beast::lexicalCastThrow <std::string> (it->first);
                     closeCount += it->second;
-                    closeTotal += static_cast<beast::uint64> 
-                        (it->first) * static_cast<beast::uint64> (it->second);
+                    closeTotal += static_cast<std::uint64_t> 
+                        (it->first) * static_cast<std::uint64_t> (it->second);
                 }
 
                 closeTotal += (closeCount / 2);
@@ -1411,7 +1411,7 @@ private:
 #endif
     }
 
-    beast::uint32 roundCloseTime (beast::uint32 closeTime)
+    std::uint32_t roundCloseTime (std::uint32_t closeTime)
     {
         return Ledger::roundCloseTime (closeTime, mCloseResolution);
     }
@@ -1434,7 +1434,7 @@ private:
         hash = ledger.getHash ();
         s.set_ledgerhash (hash.begin (), hash.size ());
 
-        beast::uint32 uMin, uMax;
+        std::uint32_t uMin, uMax;
         if (!getApp().getOPs ().getFullValidatedRange (uMin, uMax))
         {
             uMin = 0;
@@ -1443,7 +1443,7 @@ private:
         else
         {
             // Don't advertise ledgers we're not willing to serve
-            beast::uint32 early = getApp().getLedgerMaster().getEarliestFetch ();
+            std::uint32_t early = getApp().getLedgerMaster().getEarliestFetch ();
             if (uMin < early)
                uMin = early;
         }
@@ -1534,7 +1534,7 @@ private:
         //  std::vector<uint256> addedTx, removedTx;
 
         // Verify freshness of peer positions and compute close times
-        std::map<beast::uint32, int> closeTimes;
+        std::map<std::uint32_t, int> closeTimes;
         boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it 
             = mPeerPositions.begin ();
 
@@ -1598,7 +1598,7 @@ private:
         else
             neededWeight = AV_STUCK_CONSENSUS_PCT;
 
-        beast::uint32 closeTime = 0;
+        std::uint32_t closeTime = 0;
         mHaveCloseTimeConsensus = false;
 
         if (mPeerPositions.empty ())
@@ -1636,7 +1636,7 @@ private:
                 << mPeerPositions.size () << " nw:" << neededWeight
                 << " thrV:" << threshVote << " thrC:" << threshConsensus;
 
-            for (std::map<beast::uint32, int>::iterator it = closeTimes.begin ()
+            for (std::map<std::uint32_t, int>::iterator it = closeTimes.begin ()
                 , end = closeTimes.end (); it != end; ++it)
             {
                 WriteLog (lsDEBUG, LedgerConsensus) << "CCTime: seq" 
@@ -1854,10 +1854,10 @@ private:
     */
     void addLoad(SerializedValidation::ref val)
     {
-        beast::uint32 fee = std::max(
+        std::uint32_t fee = std::max(
             getApp().getFeeTrack().getLocalFee(),
             getApp().getFeeTrack().getClusterFee());
-        beast::uint32 ref = getApp().getFeeTrack().getLoadBase();
+        std::uint32_t ref = getApp().getFeeTrack().getLoadBase();
         if (fee > ref)
             val->setFieldU32(sfLoadFee, fee);
     }
@@ -1876,7 +1876,7 @@ private:
     };
 
     LCState mState;
-    beast::uint32 mCloseTime;      // The wall time this ledger closed
+    std::uint32_t mCloseTime;      // The wall time this ledger closed
     uint256 mPrevLedgerHash, mNewLedgerHash, mAcquiringLedger;
     Ledger::pointer mPreviousLedger;
     LedgerProposal::pointer mOurPosition;
@@ -1906,7 +1906,7 @@ private:
     boost::unordered_set<uint256> mCompares;
 
     // Close time estimates
-    std::map<beast::uint32, int> mCloseTimes;
+    std::map<std::uint32_t, int> mCloseTimes;
 
     // nodes that have bowed out of this consensus process
     boost::unordered_set<uint160> mDeadNodes;
@@ -1919,7 +1919,7 @@ LedgerConsensus::~LedgerConsensus ()
 }
 
 boost::shared_ptr <LedgerConsensus> LedgerConsensus::New (clock_type& clock,
-    LedgerHash const &prevLCLHash, Ledger::ref previousLedger, beast::uint32 closeTime)
+    LedgerHash const &prevLCLHash, Ledger::ref previousLedger, std::uint32_t closeTime)
 {
     return boost::make_shared <LedgerConsensusImp> (
         clock, prevLCLHash, previousLedger,closeTime);

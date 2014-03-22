@@ -33,7 +33,6 @@ public:
                        beast::insight::Collector::ptr const& collector)
         : Stoppable ("InboundLedgers", parent)
         , m_clock (clock)
-        , mLock (this, "InboundLedger", __FILE__, __LINE__)
         , mRecentFailures ("LedgerAcquireRecentFailures",
             clock, 0, kReacquireIntervalSeconds)
         , mCounter(collector->make_counter("ledger_fetches"))
@@ -42,7 +41,7 @@ public:
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
-    InboundLedger::pointer findCreate (uint256 const& hash, beast::uint32 seq, InboundLedger::fcReason reason)
+    InboundLedger::pointer findCreate (uint256 const& hash, std::uint32_t seq, InboundLedger::fcReason reason)
     {
         assert (hash.isNonZero ());
         InboundLedger::pointer ret;
@@ -51,7 +50,7 @@ public:
         InboundLedger::pointer oldLedger;
 
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
 
             if (! isStopping ())
             {
@@ -110,7 +109,7 @@ public:
         InboundLedger::pointer ret;
 
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
 
             boost::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
             if (it != mLedgers.end ())
@@ -126,7 +125,7 @@ public:
     {
         assert (hash.isNonZero ());
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         return mLedgers.find (hash) != mLedgers.end ();
     }
 
@@ -134,7 +133,7 @@ public:
     {
         assert (hash.isNonZero ());
 
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         mLedgers.erase (hash);
 
     }
@@ -194,7 +193,7 @@ public:
         std::vector<u256_acq_pair> inboundLedgers;
 
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
 
             inboundLedgers.reserve(mLedgers.size());
             BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
@@ -267,7 +266,7 @@ public:
 
     void clearFailures ()
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         mRecentFailures.clear();
         mLedgers.clear();
@@ -279,7 +278,7 @@ public:
 
         std::vector<u256_acq_pair> acquires;
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
 
             acquires.reserve (mLedgers.size ());
             BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
@@ -291,7 +290,7 @@ public:
 
         BOOST_FOREACH (const u256_acq_pair& it, acquires)
         {
-            beast::uint32 seq = it.second->getSeq();
+            std::uint32_t seq = it.second->getSeq();
             if (seq > 1)
                 ret[beast::lexicalCastThrow <std::string>(seq)] = it.second->getJson(0);
             else
@@ -305,7 +304,7 @@ public:
     {
         std::vector<InboundLedger::pointer> acquires;
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
 
             acquires.reserve (mLedgers.size ());
             BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
@@ -331,7 +330,7 @@ public:
         std::vector <MapType::mapped_type> stuffToSweep;
         std::size_t total;
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
             MapType::iterator it (mLedgers.begin ());
             total = mLedgers.size ();
             stuffToSweep.reserve (total);
@@ -364,7 +363,7 @@ public:
 
     void onStop ()
     {
-        ScopedLockType lock (mLock, __FILE__, __LINE__);
+        ScopedLockType lock (mLock);
 
         mLedgers.clear();
         mRecentFailures.clear();
@@ -378,7 +377,7 @@ private:
     typedef boost::unordered_map <uint256, InboundLedger::pointer> MapType;
 
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::unique_lock <LockType> ScopedLockType;
     LockType mLock;
 
     MapType mLedgers;

@@ -60,8 +60,8 @@
 #ifndef BEAST_SQDB_INTO_H_INCLUDED
 #define BEAST_SQDB_INTO_H_INCLUDED
 
-namespace sqdb
-{
+namespace beast {
+namespace sqdb {
 
 template<typename T>
 detail::into_type_ptr into(T& t)
@@ -77,6 +77,7 @@ detail::into_type_ptr into(T& t, indicator& ind)
                            typename detail::exchange_traits<T>::type_family());
 }
 
-}
+} // sqdb
+} // beast
 
 #endif

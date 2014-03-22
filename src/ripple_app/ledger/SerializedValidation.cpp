@@ -34,7 +34,7 @@ SerializedValidation::SerializedValidation (SerializerIterator& sit, bool checkS
 }
 
 SerializedValidation::SerializedValidation (
-    uint256 const& ledgerHash, beast::uint32 signTime,
+    uint256 const& ledgerHash, std::uint32_t signTime,
     const RippleAddress& raPub, bool isFull)
     : STObject (getFormat (), sfValidation)
     , mTrusted (false)
@@ -75,12 +75,12 @@ uint256 SerializedValidation::getLedgerHash () const
     return getFieldH256 (sfLedgerHash);
 }
 
-beast::uint32 SerializedValidation::getSignTime () const
+std::uint32_t SerializedValidation::getSignTime () const
 {
     return getFieldU32 (sfSigningTime);
 }
 
-beast::uint32 SerializedValidation::getFlags () const
+std::uint32_t SerializedValidation::getFlags () const
 {
     return getFieldU32 (sfFlags);
 }

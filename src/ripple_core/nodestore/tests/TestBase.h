@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
 
 #include "../../../beast/beast/unit_test/suite.h"
+#include "../../../beast/modules/beast_core/maths/Random.h"
 
 namespace ripple {
 namespace NodeStore {
@@ -42,7 +43,7 @@ public:
     class PredictableObjectFactory
     {
     public:
-        explicit PredictableObjectFactory (beast::int64 seedValue)
+        explicit PredictableObjectFactory (std::int64_t seedValue)
             : m_seedValue (seedValue)
         {
         }
@@ -78,13 +79,13 @@ public:
         }
 
     private:
-        beast::int64 const m_seedValue;
+        std::int64_t const m_seedValue;
     };
 
 public:
     // Create a predictable batch of objects
     static void createPredictableBatch (Batch& batch, int startingIndex,
-                                        int numObjects, beast::int64 seedValue)
+                                        int numObjects, std::int64_t seedValue)
     {
         batch.reserve (numObjects);
 

@@ -22,7 +22,6 @@
 
 #include "../json/ripple_json.h"
 
-#include "../beast/modules/beast_core/beast_core.h"
 #include "../beast/beast/Crypto.h"
 
 #include "../beast/modules/beast_core/system/BeforeBoost.h"

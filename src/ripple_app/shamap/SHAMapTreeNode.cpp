@@ -19,9 +19,9 @@
 
 namespace ripple {
 
-SHAMapTreeNode::SHAMapTreeNode (beast::uint32 seq, const SHAMapNode& nodeID)
+SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq, const SHAMapNode& nodeID)
     : SHAMapNode (nodeID)
-    , mHash (beast::uint64(0))
+    , mHash (std::uint64_t(0))
     , mSeq (seq)
     , mAccessSeq (seq)
     , mType (tnERROR)
@@ -30,7 +30,7 @@ SHAMapTreeNode::SHAMapTreeNode (beast::uint32 seq, const SHAMapNode& nodeID)
 {
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, beast::uint32 seq) : SHAMapNode (node),
+SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq) : SHAMapNode (node),
     mHash (node.mHash), mSeq (seq), mType (node.mType), mIsBranch (node.mIsBranch), mFullBelow (false)
 {
     if (node.mItem)
@@ -40,14 +40,14 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, beast::uint32 seq) :
 }
 
 SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& node, SHAMapItem::ref item,
-                                TNType type, beast::uint32 seq) :
+                                TNType type, std::uint32_t seq) :
     SHAMapNode (node), mItem (item), mSeq (seq), mType (type), mIsBranch (0), mFullBelow (false)
 {
     assert (item->peekData ().size () >= 12);
     updateHash ();
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, beast::uint32 seq,
+SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::uint32_t seq,
                                 SHANodeFormat format, uint256 const& hash, bool hashValid) :
     SHAMapNode (id), mSeq (seq), mType (tnERROR), mIsBranch (0), mFullBelow (false)
 {
@@ -148,7 +148,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, beast
             throw std::runtime_error ("invalid P node");
         }
 
-        beast::uint32 prefix = rawNode[0];
+        std::uint32_t prefix = rawNode[0];
         prefix <<= 8;
         prefix |= rawNode[1];
         prefix <<= 8;

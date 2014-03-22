@@ -40,8 +40,7 @@ InfoSub::Source::Source (char const* name, Stoppable& parent)
 //------------------------------------------------------------------------------
 
 InfoSub::InfoSub (Source& source, Consumer consumer)
-    : mLock (this, "InfoSub", __FILE__, __LINE__)
-    , m_consumer (consumer)
+    : m_consumer (consumer)
     , m_source (source)
 {
     static beast::Atomic <int> s_seq_id;
@@ -68,7 +67,7 @@ void InfoSub::send (const Json::Value& jvObj, const std::string& sObj, bool broa
     send (jvObj, broadcast);
 }
 
-beast::uint64 InfoSub::getSeq ()
+std::uint64_t InfoSub::getSeq ()
 {
     return mSeq;
 }
@@ -77,9 +76,9 @@ void InfoSub::onSendEmpty ()
 {
 }
 
-void InfoSub::insertSubAccountInfo (RippleAddress addr, beast::uint32 uLedgerIndex)
+void InfoSub::insertSubAccountInfo (RippleAddress addr, std::uint32_t uLedgerIndex)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    ScopedLockType sl (mLock);
 
     mSubAccountInfo.insert (addr);
 }

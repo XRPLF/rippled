@@ -27,7 +27,7 @@ class SyncUnorderedMap
 {
 public:
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
 };
 
 /** This is a synchronized unordered map.
@@ -61,7 +61,7 @@ public:
 
     SyncUnorderedMapType (const SyncUnorderedMapType& m)
     {
-        ScopedLockType sl (m.mLock, __FILE__, __LINE__);
+        ScopedLockType sl (m.mLock);
         mMap = m.mMap;
     }
 
@@ -74,7 +74,7 @@ public:
 
     void operator= (const SyncUnorderedMapType& m)
     {
-        ScopedLockType sl (m.mLock, __FILE__, __LINE__);
+        ScopedLockType sl (m.mLock);
         mMap = m.mMap;
     }
 
@@ -112,7 +112,7 @@ public:
 
     std::size_t size () const
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         return mMap.size ();
     }
 
@@ -121,7 +121,7 @@ public:
     // Returns 'true' if the value was added to the map
     bool canonicalize (key_type const& key, data_type* value)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         typename std::pair < typename map_type::iterator, bool > it =
             mMap.insert (typename map_type::value_type (key, *value));
@@ -138,7 +138,7 @@ public:
     {
         data_type ret;
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
             typename map_type::iterator it = mMap.find (key);
             if (it != mMap.end ())
                ret = it->second;

@@ -36,7 +36,7 @@ namespace IP {
 class IPEndpoint_test : public unit_test::suite
 {
 public:
-    void shouldParseV4 (std::string const& s, uint32 value)
+    void shouldParseV4 (std::string const& s, std::uint32_t value)
     {
         std::pair <AddressV4, bool> const result (
             AddressV4::from_string (s));

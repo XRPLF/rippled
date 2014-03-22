@@ -76,7 +76,7 @@ private:
     static const boost::posix_time::seconds nodeVerifySeconds;
 
     /** The clock drift we allow a remote peer to have */
-    static const beast::uint32 clockToleranceDeltaSeconds = 20;
+    static const std::uint32_t clockToleranceDeltaSeconds = 20;
 
     /** The length of the smallest valid finished message */
     static const size_t sslMinimumFinishedLength = 12;
@@ -529,7 +529,7 @@ public:
             ret["protocol"] = BuildInfo::Protocol (mHello.protoversion ()).toStdString ();
         }
 
-        beast::uint32 minSeq, maxSeq;
+        std::uint32_t minSeq, maxSeq;
         ledgerRange(minSeq, maxSeq);
 
         if ((minSeq != 0) || (maxSeq != 0))
@@ -582,7 +582,7 @@ public:
         return m_closedLedgerHash;
     }
 
-    bool hasLedger (uint256 const& hash, beast::uint32 seq) const
+    bool hasLedger (uint256 const& hash, std::uint32_t seq) const
     {
         boost::mutex::scoped_lock sl(m_recentLock);
 
@@ -598,7 +598,7 @@ public:
         return false;
     }
 
-    void ledgerRange (beast::uint32& minSeq, beast::uint32& maxSeq) const
+    void ledgerRange (std::uint32_t& minSeq, std::uint32_t& maxSeq) const
     {
         boost::mutex::scoped_lock sl(m_recentLock);
 
@@ -645,7 +645,7 @@ public:
         return mHello.has_protoversion () && (mHello.protoversion () >= version);
     }
 
-    bool hasRange (beast::uint32 uMin, beast::uint32 uMax)
+    bool hasRange (std::uint32_t uMin, std::uint32_t uMax)
     {
         return (uMin >= m_minLedger) && (uMax <= m_maxLedger);
     }
@@ -748,7 +748,7 @@ private:
             m_journal.info << "ReadBody: " << ec.message ();
 
             {
-            Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+            Application::ScopedLockType lock (getApp ().getMasterLock ());
             detach ("hrb");
             }
             
@@ -1352,14 +1352,14 @@ private:
 
         (void) m_timer.cancel ();
 
-        beast::uint32 const ourTime (getApp().getOPs ().getNetworkTimeNC ());
-        beast::uint32 const minTime (ourTime - clockToleranceDeltaSeconds);
-        beast::uint32 const maxTime (ourTime + clockToleranceDeltaSeconds);
+        std::uint32_t const ourTime (getApp().getOPs ().getNetworkTimeNC ());
+        std::uint32_t const minTime (ourTime - clockToleranceDeltaSeconds);
+        std::uint32_t const maxTime (ourTime + clockToleranceDeltaSeconds);
 
     #ifdef BEAST_DEBUG
         if (packet.has_nettime ())
         {
-            beast::int64 to = ourTime;
+            std::int64_t to = ourTime;
             to -= packet.nettime ();
             m_journal.debug << "Connect: time offset " << to;
         }
@@ -1559,7 +1559,7 @@ private:
 
     void recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet)
     {
-        beast::uint32 closeTime = getApp().getOPs().getCloseTimeNC();
+        std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC();
 
         if (packet->validation ().size () < 50)
         {
@@ -1767,7 +1767,7 @@ private:
         else
         {
             // this is a reply
-            beast::uint32 pLSeq = 0;
+            std::uint32_t pLSeq = 0;
             bool pLDo = true;
             bool progress = false;
 
@@ -1912,7 +1912,7 @@ private:
 
             SHAMapAddNode san;
             {
-                Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+                Application::ScopedLockType lock (getApp ().getMasterLock ());
 
                 san =  getApp().getOPs ().gotTXData (shared_from_this (), hash, nodeIDs, nodeData);
             }
@@ -2057,7 +2057,7 @@ private:
         uint256 consensusLCL;
         
         {
-            Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+            Application::ScopedLockType lock (getApp ().getMasterLock ());
             consensusLCL = getApp().getOPs ().getConsensusLCL ();
         }
         
@@ -2092,7 +2092,7 @@ private:
             addTxSet (hash);
 
         {
-            Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+            Application::ScopedLockType lock (getApp ().getMasterLock ());
             
             if (!getApp().getOPs ().hasTXSet (shared_from_this (), hash, packet.status ()))
                 charge (Resource::feeUnwantedData);
@@ -2218,7 +2218,7 @@ private:
 	        memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
 
 	        {
-	            Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+	            Application::ScopedLockType lock (getApp ().getMasterLock ());
 	            map = getApp().getOPs ().getTXMap (txHash);
 	        }
 
@@ -2292,7 +2292,7 @@ private:
 
 	            if (!ledger && (packet.has_querytype () && !packet.has_requestcookie ()))
 	            {
-	                beast::uint32 seq = 0;
+	                std::uint32_t seq = 0;
 
 	                if (packet.has_ledgerseq ())
 	                    seq = packet.ledgerseq ();

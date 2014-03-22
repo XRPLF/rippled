@@ -24,13 +24,10 @@
 
 #if defined (fatal_error) || \
     defined (fatal_condition) || \
-    defined (fatal_assert) || \
     defined (meets_condition) || \
     defined (meets_precondition) || \
     defined (meets_postcondition) || \
     defined (meets_invariant) || \
-    defined (check_precondition) || \
-    defined (check_postcondition) || \
     defined (check_invariant)
 #error "Programming by contract macros cannot be overriden!"
 #endif
@@ -51,13 +48,6 @@
 #define fatal_condition(condition,category) static_cast <void> \
     (((!!(condition)) || (beast_reportFatalError ( \
         category " '" BEAST_STRINGIFY(condition) "' failed.", __FILE__, __LINE__), 0)))
-
-/** Replacement for assert which generates a fatal error if the condition is false.
-    The condition is always evaluated regardless of compilation settings.
-    Meets this declaration syntax:
-    @code inline void fatal_assert (bool condition); @endcode
-*/
-#define fatal_assert(condition) fatal_condition(condition,"Assertion")
 
 /** Reports a fatal error message type if the condition is false
     The condition is always evaluated regardless of settings.
@@ -87,12 +77,8 @@
 */
 /** @{ */
 #if ! BEAST_DISABLE_CONTRACT_CHECKS
-# define check_precondition(condition)  meets_precondition(condition)
-# define check_postcondition(condition) meets_postcondition(condition)
 # define check_invariant(condition)     meets_invariant(condition)
 #else
-# define check_precondition(condition)  ((void)0)
-# define check_postcondition(condition) ((void)0)
 # define check_invariant(condition)     ((void)0)
 #endif
 /** @} */

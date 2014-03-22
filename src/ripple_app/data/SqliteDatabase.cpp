@@ -53,7 +53,6 @@ SqliteStatement::~SqliteStatement ()
 SqliteDatabase::SqliteDatabase (const char* host)
     : Database (host)
     , Thread ("sqlitedb")
-    , m_walMutex (this, "SqliteDB", __FILE__, __LINE__)
     , mWalQ (nullptr)
     , walRunning (false)
 {
@@ -85,7 +84,7 @@ void SqliteDatabase::connect ()
 
 sqlite3* SqliteDatabase::getAuxConnection ()
 {
-    ScopedLockType sl (m_walMutex, __FILE__, __LINE__);
+    ScopedLockType sl (m_walMutex);
 
     if (mAuxConnection == nullptr)
     {
@@ -236,7 +235,7 @@ char* SqliteDatabase::getStr (int colIndex, std::string& retStr)
     return const_cast<char*> (retStr.c_str ());
 }
 
-beast::int32 SqliteDatabase::getInt (int colIndex)
+std::int32_t SqliteDatabase::getInt (int colIndex)
 {
     return (sqlite3_column_int (mCurrentStmt, colIndex));
 }
@@ -274,7 +273,7 @@ Blob SqliteDatabase::getBinary (int colIndex)
     return vucResult;
 }
 
-beast::uint64 SqliteDatabase::getBigInt (int colIndex)
+std::uint64_t SqliteDatabase::getBigInt (int colIndex)
 {
     return (sqlite3_column_int64 (mCurrentStmt, colIndex));
 }
@@ -310,7 +309,7 @@ void SqliteDatabase::doHook (const char* db, int pages)
         return;
 
     {
-        ScopedLockType sl (m_walMutex, __FILE__, __LINE__);
+        ScopedLockType sl (m_walMutex);
 
         if (walRunning)
             return;
@@ -358,7 +357,7 @@ void SqliteDatabase::runWal ()
                                            "): frames=" << log << ", written=" << ckpt;
 
     {
-        ScopedLockType sl (m_walMutex, __FILE__, __LINE__);
+        ScopedLockType sl (m_walMutex);
         walRunning = false;
     }
 }
@@ -383,7 +382,7 @@ int SqliteStatement::bindStatic (int position, Blob const& value)
     return sqlite3_bind_blob (statement, position, &value.front (), value.size (), SQLITE_STATIC);
 }
 
-int SqliteStatement::bind (int position, beast::uint32 value)
+int SqliteStatement::bind (int position, std::uint32_t value)
 {
     return sqlite3_bind_int64 (statement, position, static_cast<sqlite3_int64> (value));
 }
@@ -431,12 +430,12 @@ const char* SqliteStatement::peekString (int column)
     return reinterpret_cast<const char*> (sqlite3_column_text (statement, column));
 }
 
-beast::uint32 SqliteStatement::getUInt32 (int column)
+std::uint32_t SqliteStatement::getUInt32 (int column)
 {
-    return static_cast<beast::uint32> (sqlite3_column_int64 (statement, column));
+    return static_cast<std::uint32_t> (sqlite3_column_int64 (statement, column));
 }
 
-beast::int64 SqliteStatement::getInt64 (int column)
+std::int64_t SqliteStatement::getInt64 (int column)
 {
     return sqlite3_column_int64 (statement, column);
 }

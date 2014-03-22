@@ -339,7 +339,9 @@ public:
                 LedgerIndex refIndex = (ledgerIndex + 255) & (~255);
                 LedgerHash refHash = getLedgerHash (referenceLedger, refIndex);
 
-                if (meets_precondition (refHash.isNonZero ()))
+                bool const nonzero (refHash.isNonZero ());
+                assert (nonzero);
+                if (nonzero)
                 {
                     // We found the hash and sequence of a better reference ledger
                     referenceLedger = getApp().getLedgerMaster().findAcquireLedger (refIndex, refHash);

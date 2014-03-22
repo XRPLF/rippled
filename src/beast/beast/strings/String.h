@@ -25,7 +25,6 @@
 #define BEAST_STRINGS_STRING_H_INCLUDED
 
 #include "../Config.h"
-#include "../CStdInt.h"
 #include "../Memory.h"
 
 #include "CharacterFunctions.h"
@@ -44,6 +43,7 @@
 #include "StringFromNumber.h"
 #include "String.h"
 
+#include <cstdint>
 #include <ostream>
 
 namespace beast {
@@ -66,7 +66,7 @@ namespace beast {
 
     @see StringArray, StringPairArray
 */
-class BEAST_API String
+class String
 {
 public:
     //==============================================================================
@@ -193,7 +193,7 @@ public:
     int hashCode() const noexcept;
 
     /** Generates a probably-unique 64-bit hashcode from this string. */
-    int64 hashCode64() const noexcept;
+    std::int64_t hashCode64() const noexcept;
 
     /** Returns a hash value suitable for use with std::hash. */
     std::size_t hash() const noexcept;
@@ -920,15 +920,13 @@ public:
     */
     explicit String (unsigned short decimalInteger);
 
-    /** Creates a string containing this signed 64-bit integer as a decimal number.
-        @see getLargeIntValue, getFloatValue, getDoubleValue, toHexString
-    */
-    explicit String (int64 largeIntegerValue);
+    explicit String (long largeIntegerValue);
 
-    /** Creates a string containing this unsigned 64-bit integer as a decimal number.
-        @see getLargeIntValue, getFloatValue, getDoubleValue, toHexString
-    */
-    explicit String (uint64 largeIntegerValue);
+    explicit String (unsigned long largeIntegerValue);
+
+    explicit String (long long largeIntegerValue);
+
+    explicit String (unsigned long long largeIntegerValue);
 
     /** Creates a string representing this floating-point number.
         @param floatValue               the value to convert to a string
@@ -971,7 +969,7 @@ public:
 
         @returns the value of the string as a 64 bit signed base-10 integer.
     */
-    int64 getLargeIntValue() const noexcept;
+    std::int64_t getLargeIntValue() const noexcept;
 
     /** Parses a decimal number from the end of the string.
 
@@ -1018,13 +1016,13 @@ public:
 
         @returns    a 64-bit number which is the value of the string in hex.
     */
-    int64 getHexValue64() const noexcept;
+    std::int64_t getHexValue64() const noexcept;
 
     /** Creates a string representing this 32-bit value in hexadecimal. */
     static String toHexString (int number);
 
     /** Creates a string representing this 64-bit value in hexadecimal. */
-    static String toHexString (int64 number);
+    static String toHexString (std::int64_t number);
 
     /** Creates a string representing this 16-bit value in hexadecimal. */
     static String toHexString (short number);
@@ -1273,103 +1271,103 @@ inline String String::fromNumber <double> (double number, int numberOfDecimalPla
 //------------------------------------------------------------------------------
 
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (const char* string1,     const String& string2);
+String operator+ (const char* string1,     const String& string2);
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (const wchar_t* string1,  const String& string2);
+String operator+ (const wchar_t* string1,  const String& string2);
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (char string1,            const String& string2);
+String operator+ (char string1,            const String& string2);
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (wchar_t string1,         const String& string2);
+String operator+ (wchar_t string1,         const String& string2);
 #if ! BEAST_NATIVE_WCHAR_IS_UTF32
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (beast_wchar string1,      const String& string2);
+String operator+ (beast_wchar string1,      const String& string2);
 #endif
 
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (String string1, const String& string2);
+String operator+ (String string1, const String& string2);
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (String string1, const char* string2);
+String operator+ (String string1, const char* string2);
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (String string1, const wchar_t* string2);
+String operator+ (String string1, const wchar_t* string2);
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (String string1, char characterToAppend);
+String operator+ (String string1, char characterToAppend);
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (String string1, wchar_t characterToAppend);
+String operator+ (String string1, wchar_t characterToAppend);
 #if ! BEAST_NATIVE_WCHAR_IS_UTF32
 /** Concatenates two strings. */
-BEAST_API String BEAST_CALLTYPE operator+ (String string1, beast_wchar characterToAppend);
+String operator+ (String string1, beast_wchar characterToAppend);
 #endif
 
 //==============================================================================
 /** Appends a character at the end of a string. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, char characterToAppend);
+String& operator<< (String& string1, char characterToAppend);
 /** Appends a character at the end of a string. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, wchar_t characterToAppend);
+String& operator<< (String& string1, wchar_t characterToAppend);
 #if ! BEAST_NATIVE_WCHAR_IS_UTF32
 /** Appends a character at the end of a string. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, beast_wchar characterToAppend);
+String& operator<< (String& string1, beast_wchar characterToAppend);
 #endif
 
 /** Appends a string to the end of the first one. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, const char* string2);
+String& operator<< (String& string1, const char* string2);
 /** Appends a string to the end of the first one. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, const wchar_t* string2);
+String& operator<< (String& string1, const wchar_t* string2);
 /** Appends a string to the end of the first one. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, const String& string2);
+String& operator<< (String& string1, const String& string2);
 
 /** Appends a decimal number at the end of a string. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, short number);
+String& operator<< (String& string1, short number);
 /** Appends a decimal number at the end of a string. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, int number);
+String& operator<< (String& string1, int number);
 /** Appends a decimal number at the end of a string. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, long number);
+String& operator<< (String& string1, long number);
 /** Appends a decimal number at the end of a string. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, int64 number);
+String& operator<< (String& string1, std::int64_t number);
 /** Appends a decimal number at the end of a string. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, float number);
+String& operator<< (String& string1, float number);
 /** Appends a decimal number at the end of a string. */
-BEAST_API String& BEAST_CALLTYPE operator<< (String& string1, double number);
+String& operator<< (String& string1, double number);
 
 //==============================================================================
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator== (const String& string1, const String& string2) noexcept;
+bool operator== (const String& string1, const String& string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator== (const String& string1, const char* string2) noexcept;
+bool operator== (const String& string1, const char* string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator== (const String& string1, const wchar_t* string2) noexcept;
+bool operator== (const String& string1, const wchar_t* string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator== (const String& string1, const CharPointer_UTF8 string2) noexcept;
+bool operator== (const String& string1, const CharPointer_UTF8 string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator== (const String& string1, const CharPointer_UTF16 string2) noexcept;
+bool operator== (const String& string1, const CharPointer_UTF16 string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator== (const String& string1, const CharPointer_UTF32 string2) noexcept;
+bool operator== (const String& string1, const CharPointer_UTF32 string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& string1, const String& string2) noexcept;
+bool operator!= (const String& string1, const String& string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& string1, const char* string2) noexcept;
+bool operator!= (const String& string1, const char* string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& string1, const wchar_t* string2) noexcept;
+bool operator!= (const String& string1, const wchar_t* string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& string1, const CharPointer_UTF8 string2) noexcept;
+bool operator!= (const String& string1, const CharPointer_UTF8 string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& string1, const CharPointer_UTF16 string2) noexcept;
+bool operator!= (const String& string1, const CharPointer_UTF16 string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator!= (const String& string1, const CharPointer_UTF32 string2) noexcept;
+bool operator!= (const String& string1, const CharPointer_UTF32 string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator>  (const String& string1, const String& string2) noexcept;
+bool operator>  (const String& string1, const String& string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator<  (const String& string1, const String& string2) noexcept;
+bool operator<  (const String& string1, const String& string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator>= (const String& string1, const String& string2) noexcept;
+bool operator>= (const String& string1, const String& string2) noexcept;
 /** Case-sensitive comparison of two strings. */
-BEAST_API bool BEAST_CALLTYPE operator<= (const String& string1, const String& string2) noexcept;
+bool operator<= (const String& string1, const String& string2) noexcept;
 
 //==============================================================================
 /** This operator allows you to write a beast String directly to std output streams.
     This is handy for writing strings to std::cout, std::cerr, etc.
 */
 template <class traits>
-std::basic_ostream <char, traits>& BEAST_CALLTYPE operator<< (std::basic_ostream <char, traits>& stream, const String& stringToWrite)
+std::basic_ostream <char, traits>& operator<< (std::basic_ostream <char, traits>& stream, const String& stringToWrite)
 {
     return stream << stringToWrite.toRawUTF8();
 }
@@ -1378,7 +1376,7 @@ std::basic_ostream <char, traits>& BEAST_CALLTYPE operator<< (std::basic_ostream
     This is handy for writing strings to std::wcout, std::wcerr, etc.
 */
 template <class traits>
-std::basic_ostream <wchar_t, traits>& BEAST_CALLTYPE operator<< (std::basic_ostream <wchar_t, traits>& stream, const String& stringToWrite)
+std::basic_ostream <wchar_t, traits>& operator<< (std::basic_ostream <wchar_t, traits>& stream, const String& stringToWrite)
 {
     return stream << stringToWrite.toWideCharPointer();
 }

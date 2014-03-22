@@ -512,4 +512,4 @@ void StringArray::minimiseStorageOverheads()
     strings.minimiseStorageOverheads();
 }
 
-}  // namespace beast
+} // beast

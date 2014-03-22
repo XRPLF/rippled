@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/cxx14/memory.h" // <memory>
+
 namespace ripple {
 
 LogFile::LogFile ()
@@ -40,14 +42,14 @@ bool LogFile::open (boost::filesystem::path const& path)
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    beast::ScopedPointer <std::ofstream> stream (
+    std::unique_ptr <std::ofstream> stream (
         new std::ofstream (path.c_str (), std::fstream::app));
 
     if (stream->good ())
     {
         m_path = path;
 
-        m_stream = stream.release ();
+        m_stream = std::move (stream);
 
         wasOpened = true;
     }

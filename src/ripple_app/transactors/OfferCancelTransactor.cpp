@@ -24,12 +24,12 @@ SETUP_LOG (OfferCancelTransactor)
 TER OfferCancelTransactor::doApply ()
 {
     TER             terResult;
-    const beast::uint32    uOfferSequence       = mTxn.getFieldU32 (sfOfferSequence);
-    const beast::uint32    uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
+    const std::uint32_t    uOfferSequence       = mTxn.getFieldU32 (sfOfferSequence);
+    const std::uint32_t    uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
 
     WriteLog (lsDEBUG, OfferCancelTransactor) << "OfferCancel: uAccountSequenceNext=" << uAccountSequenceNext << " uOfferSequence=" << uOfferSequence;
 
-    const beast::uint32    uTxFlags             = mTxn.getFlags ();
+    const std::uint32_t    uTxFlags             = mTxn.getFlags ();
 
     if (uTxFlags & tfUniversalMask)
     {

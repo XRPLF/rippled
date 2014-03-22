@@ -27,28 +27,28 @@ namespace ripple {
 class RangeSet
 {
 public:
-    static const beast::uint32 absent = static_cast <beast::uint32> (-1);
+    static const std::uint32_t absent = static_cast <std::uint32_t> (-1);
 
 public:
     RangeSet () { }
 
-    bool hasValue (beast::uint32) const;
+    bool hasValue (std::uint32_t) const;
 
-    beast::uint32 getFirst () const;
-    beast::uint32 getNext (beast::uint32) const;
-    beast::uint32 getLast () const;
-    beast::uint32 getPrev (beast::uint32) const;
+    std::uint32_t getFirst () const;
+    std::uint32_t getNext (std::uint32_t) const;
+    std::uint32_t getLast () const;
+    std::uint32_t getPrev (std::uint32_t) const;
 
     // largest number not in the set that is less than the given number
-    beast::uint32 prevMissing (beast::uint32) const;
+    std::uint32_t prevMissing (std::uint32_t) const;
 
     // Add an item to the set
-    void setValue (beast::uint32);
+    void setValue (std::uint32_t);
 
     // Add the closed interval to the set
-    void setRange (beast::uint32, beast::uint32);
+    void setRange (std::uint32_t, std::uint32_t);
 
-    void clearValue (beast::uint32);
+    void clearValue (std::uint32_t);
 
     std::string toString () const;
 
@@ -62,14 +62,14 @@ private:
     void simplify ();
 
 private:
-    typedef std::map <beast::uint32, beast::uint32> Map;
+    typedef std::map <std::uint32_t, std::uint32_t> Map;
 
     typedef Map::const_iterator            const_iterator;
     typedef Map::const_reverse_iterator    const_reverse_iterator;
     typedef Map::value_type                value_type;
     typedef Map::iterator                  iterator;
 
-    static bool contains (value_type const& it, beast::uint32 v)
+    static bool contains (value_type const& it, std::uint32_t v)
     {
         return (it.first <= v) && (it.second >= v);
     }

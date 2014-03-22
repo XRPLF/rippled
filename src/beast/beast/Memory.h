@@ -78,7 +78,7 @@ Type* createCopyIfNotNull (const Type* pointer)
  /** A handy C++ wrapper that creates and deletes an NSAutoreleasePool object using RAII.
      You should use the BEAST_AUTORELEASEPOOL macro to create a local auto-release pool on the stack.
  */
- class BEAST_API ScopedAutoReleasePool : public Uncopyable
+ class ScopedAutoReleasePool : public Uncopyable
  {
  public:
      ScopedAutoReleasePool();

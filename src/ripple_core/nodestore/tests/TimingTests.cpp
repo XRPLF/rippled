@@ -42,18 +42,18 @@ public:
 
         double getElapsed ()
         {
-            beast::int64 const now = beast::Time::getHighResolutionTicks();
+            std::int64_t const now = beast::Time::getHighResolutionTicks();
 
             return beast::Time::highResolutionTicksToSeconds (now - m_startTime);
         }
 
     private:
-        beast::int64 m_startTime;
+        std::int64_t m_startTime;
     };
 
     //--------------------------------------------------------------------------
 
-    void testBackend (beast::String type, beast::int64 const seedValue)
+    void testBackend (beast::String type, std::int64_t const seedValue)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
 

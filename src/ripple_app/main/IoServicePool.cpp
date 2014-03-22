@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/cxx14/memory.h" // <memory>
+
 namespace ripple {
 
 class IoServicePool::ServiceThread : private beast::Thread
@@ -86,10 +88,11 @@ IoServicePool::operator boost::asio::io_service& ()
 
 void IoServicePool::onStart ()
 {
-    m_threads.ensureStorageAllocated (m_threadsDesired);
+    m_threads.reserve (m_threadsDesired);
     for (int i = 0; i < m_threadsDesired; ++i)
     {
-        m_threads.add (new ServiceThread (m_name, *this, m_service));
+        m_threads.emplace_back (std::move (std::make_unique <
+            ServiceThread> (m_name, *this, m_service)));
         ++m_threadsRunning;
         m_threads[i]->start ();
     }

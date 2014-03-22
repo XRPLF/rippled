@@ -28,6 +28,8 @@
 
 #include "../ResolverAsio.h"
 
+#include <cassert>
+
 namespace ripple {
 
 class ResolverAsioImpl
@@ -81,8 +83,8 @@ public:
 
     ~ResolverAsioImpl ()
     {
-        check_precondition (m_work.empty ());
-        check_precondition (m_stopped);
+        assert (m_work.empty ());
+        assert (m_stopped);
     }
 
     //-------------------------------------------------------------------------
@@ -100,9 +102,9 @@ public:
 
     void start ()
     {
-        check_precondition (m_work.empty ());
-        check_precondition (m_stopped == true);
-        check_precondition (m_stop_called == false);
+        assert (m_work.empty ());
+        assert (m_stopped == true);
+        assert (m_stop_called == false);
 
         if (m_stopped.exchange (false) == true)
         {
@@ -136,9 +138,9 @@ public:
         std::vector <std::string> const& names,
         HandlerType const& handler)
     {
-        check_precondition (m_stop_called == false);
-        check_precondition (m_stopped == true);
-        check_precondition (!names.empty());
+        assert (m_stop_called == false);
+        assert (m_stopped == true);
+        assert (!names.empty());
 
         // TODO NIKB use rvalue references to construct and move
         //           reducing cost.
@@ -151,7 +153,7 @@ public:
     // Resolver
     void do_stop (CompletionCounter)
     {
-        check_precondition (m_stop_called == true);
+        assert (m_stop_called == true);
 
         if (m_stopped.exchange (true) == false)
         {
@@ -277,7 +279,7 @@ public:
     void do_resolve (std::vector <std::string> const& names,
         HandlerType const& handler, CompletionCounter)
     {
-        check_precondition (! names.empty());
+        assert (! names.empty());
 
         if (m_stop_called == false)
         {

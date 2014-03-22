@@ -53,7 +53,7 @@ public:
         return mLedgerEntry->getFieldAmount (sfBalance);
     }
 
-    beast::uint32 getSeq () const
+    std::uint32_t getSeq () const
     {
         return mLedgerEntry->getFieldU32 (sfSequence);
     }

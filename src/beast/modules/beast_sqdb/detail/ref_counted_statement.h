@@ -60,11 +60,9 @@
 #ifndef BEAST_SQDB_DETAIL_REF_COUNTED_STATEMENT_H_INCLUDED
 #define BEAST_SQDB_DETAIL_REF_COUNTED_STATEMENT_H_INCLUDED
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 // used for "once" and "prepare"
 class ref_counted_statement_base : public Uncopyable
@@ -107,8 +105,8 @@ private:
     statement m_st;
 };
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast
 
 #endif

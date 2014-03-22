@@ -27,17 +27,10 @@
 // not add any more includes.
 //
 
-#include <boost/version.hpp>
-
-#if BOOST_VERSION < 105500
-# error Ripple requires Boost version 1.55 or later
-#endif
-
 // This is better than setting it in some Makefile or IDE Project file.
 //
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 
-#include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -46,11 +39,8 @@
 #include <boost/format.hpp>
 #include <boost/function.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/ptr_container/ptr_vector.hpp> // VFALCO NOTE this looks like junk
 #include <boost/ref.hpp>
-#include <boost/regex.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>

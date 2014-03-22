@@ -114,7 +114,7 @@ public:
         m_connection.reset ();
 
         {
-            ScopedLockType sl (m_receiveQueueMutex, __FILE__, __LINE__);
+            ScopedLockType sl (m_receiveQueueMutex);
             m_isDead = true;
         }
     }

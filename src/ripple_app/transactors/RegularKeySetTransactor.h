@@ -24,7 +24,7 @@ namespace ripple {
 
 class RegularKeySetTransactor : public Transactor
 {
-    beast::uint64 calculateBaseFee ();
+    std::uint64_t calculateBaseFee ();
 public:
     RegularKeySetTransactor (const SerializedTransaction& txn,
                              TransactionEngineParams params,

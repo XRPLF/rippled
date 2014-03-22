@@ -49,12 +49,12 @@ Context::Context ()
 
 void Context::update (void const* buffer, std::size_t bytes)
 {
-    detail::SHA256_Update (&m_context, static_cast <uint8 const*> (buffer), bytes);
+    detail::SHA256_Update (&m_context, static_cast <std::uint8_t const*> (buffer), bytes);
 }
 
 void* Context::finish (void* hash)
 {
-    detail::SHA256_Final (static_cast <uint8*> (hash), &m_context);
+    detail::SHA256_Final (static_cast <std::uint8_t*> (hash), &m_context);
     return hash;
 }
 
@@ -66,7 +66,7 @@ digest_type const& empty_digest()
     {
         Holder ()
         {
-            uint8 zero (0);
+            std::uint8_t zero (0);
             hash (zero, digest);
         }
 
@@ -99,24 +99,24 @@ digest_type hash (void const* buffer, std::size_t bytes)
     return digest;
 }
 
-void* hash (int8 const* begin, int8 const* end, void* digest)
+void* hash (std::int8_t const* begin, std::int8_t const* end, void* digest)
 {
     return hash (begin, end - begin, digest);
 }
 
-void* hash (uint8 const* begin, uint8 const* end, void* digest)
+void* hash (std::uint8_t const* begin, std::uint8_t const* end, void* digest)
 {
     return hash (begin, end - begin, digest);
 }
 
-digest_type hash (int8 const* begin, int8 const* end)
+digest_type hash (std::int8_t const* begin, std::int8_t const* end)
 {
     digest_type digest;
     hash (begin, end - begin, digest);
     return digest;
 }
 
-digest_type hash (uint8 const* begin, uint8 const* end)
+digest_type hash (std::uint8_t const* begin, std::uint8_t const* end)
 {
     digest_type digest;
     hash (begin, end - begin, digest);

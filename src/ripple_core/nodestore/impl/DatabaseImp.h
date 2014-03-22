@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
 
+#include "../../beast/beast/threads/Thread.h"
+
 #include <thread>
 #include <condition_variable>
 
@@ -118,7 +120,7 @@ public:
             std::unique_lock <std::mutex> lock (m_readLock);
 
             // Wake in two generations
-            beast::uint64 const wakeGeneration = m_readGen + 2;
+            std::uint64_t const wakeGeneration = m_readGen + 2;
 
             while (!m_readShut && !m_readSet.empty () && (m_readGen < wakeGeneration))
                 m_readGenCondVar.wait (lock);
@@ -232,7 +234,7 @@ public:
     //------------------------------------------------------------------------------
 
     void store (NodeObjectType type,
-                beast::uint32 index,
+                std::uint32_t index,
                 Blob& data,
                 uint256 const& hash)
     {

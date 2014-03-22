@@ -49,7 +49,7 @@ TransactionAcquire::~TransactionAcquire ()
 static void TACompletionHandler (uint256 hash, SHAMap::pointer map)
 {
     {
-        Application::ScopedLockType lock (getApp ().getMasterLock (), __FILE__, __LINE__);
+        Application::ScopedLockType lock (getApp ().getMasterLock ());
 
         getApp().getOPs ().mapComplete (hash, map);
 
@@ -85,7 +85,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
         WriteLog (lsWARNING, TransactionAcquire) << "Ten timeouts on TX set " << getHash ();
         psl.unlock();
         {
-            Application::ScopedLockType lock (getApp().getMasterLock (), __FILE__, __LINE__);
+            Application::ScopedLockType lock (getApp().getMasterLock ());
 
             if (getApp().getOPs ().stillNeedTXSet (mHash))
             {
@@ -94,7 +94,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
                 aggressive = true;
             }
         }
-        psl.lock(__FILE__, __LINE__);
+        psl.lock();
 
         if (!aggressive)
         {

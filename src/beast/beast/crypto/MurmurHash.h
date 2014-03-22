@@ -20,22 +20,23 @@
 #ifndef BEAST_CRYPTO_MURMURHASH_H_INCLUDED
 #define BEAST_CRYPTO_MURMURHASH_H_INCLUDED
 
-#include "../CStdInt.h"
+#include <cstdint>
+#include <stdexcept>
 
 // Original source code links in .cpp file
 
 namespace beast {
 namespace Murmur {
 
-extern void MurmurHash3_x86_32  (const void* key, int len, uint32 seed, void* out);
-extern void MurmurHash3_x86_128 (const void* key, int len, uint32 seed, void* out);
-extern void MurmurHash3_x64_128 (const void* key, int len, uint32 seed, void* out);
+extern void MurmurHash3_x86_32  (const void* key, int len, std::uint32_t seed, void* out);
+extern void MurmurHash3_x86_128 (const void* key, int len, std::uint32_t seed, void* out);
+extern void MurmurHash3_x64_128 (const void* key, int len, std::uint32_t seed, void* out);
 
 // Uses Beast to choose an appropriate routine
 
 // This handy template deduces which size hash is desired
 template <typename HashType>
-inline void Hash (const void* key, int len, uint32 seed, HashType* out)
+inline void Hash (const void* key, int len, std::uint32_t seed, HashType* out)
 {
     switch (8 * sizeof (HashType))
     {
@@ -72,7 +73,7 @@ inline void Hash (const void* key, int len, uint32 seed, HashType* out)
 #endif
 
     default:
-        Throw (std::runtime_error ("invalid key size in MurmurHash"));
+        throw std::runtime_error ("invalid key size in MurmurHash");
         break;
     };
 }

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TYPES_RANDOMNUMBERS_H
 #define RIPPLE_TYPES_RANDOMNUMBERS_H
 
+#include "../../beast/beast/utility/Journal.h"
+
 namespace ripple {
 
 /** Cryptographically secure random number source.

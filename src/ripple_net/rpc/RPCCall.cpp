@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <boost/regex.hpp>
+
 namespace ripple {
 
 class RPCParser;
@@ -49,7 +51,7 @@ private:
         }
         else
         {
-            jvRequest["ledger_index"]   = beast::lexicalCast <beast::uint32> (strLedger);
+            jvRequest["ledger_index"]   = beast::lexicalCast <std::uint32_t> (strLedger);
         }
 
         return true;
@@ -173,8 +175,8 @@ private:
         }
         else
         {
-            beast::int64   uLedgerMin  = jvParams[1u].asInt ();
-            beast::int64   uLedgerMax  = jvParams[2u].asInt ();
+            std::int64_t   uLedgerMin  = jvParams[1u].asInt ();
+            std::int64_t   uLedgerMax  = jvParams[2u].asInt ();
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
@@ -242,8 +244,8 @@ private:
         }
         else
         {
-            beast::int64   uLedgerMin  = jvParams[1u].asInt ();
-            beast::int64   uLedgerMax  = jvParams[2u].asInt ();
+            std::int64_t   uLedgerMin  = jvParams[1u].asInt ();
+            std::int64_t   uLedgerMax  = jvParams[2u].asInt ();
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
@@ -453,7 +455,7 @@ private:
         }
         else
         {
-            jvRequest["ledger_index"]   = beast::lexicalCast <beast::uint32> (strLedger);
+            jvRequest["ledger_index"]   = beast::lexicalCast <std::uint32_t> (strLedger);
         }
 
         return jvRequest;

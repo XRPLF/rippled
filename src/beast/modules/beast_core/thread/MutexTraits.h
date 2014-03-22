@@ -75,6 +75,6 @@ struct MutexTraits <CriticalSection>
     }
 };
 
-}  // namespace beast
+} // beast
 
 #endif

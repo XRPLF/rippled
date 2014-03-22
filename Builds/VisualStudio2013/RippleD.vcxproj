@@ -2590,6 +2590,9 @@
     <ClInclude Include="..\..\src\ripple_basics\utility\UptimeTimer.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\Config.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\ConfigSections.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\JobTypeData.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\JobTypeInfo.h" />
+    <ClInclude Include="..\..\src\ripple_core\functional\JobTypes.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\Job.h" />
     <ClInclude Include="..\..\src\ripple_core\functional\JobQueue.h" />

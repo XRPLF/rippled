@@ -20,8 +20,10 @@
 #ifndef BEAST_WORKERS_H_INCLUDED
 #define BEAST_WORKERS_H_INCLUDED
 
-namespace beast
-{
+#include "../system/SystemStats.h"
+#include "../../../beast/threads/semaphore.h"
+
+namespace beast {
 
 /** A group of threads that process tasks.
 */
@@ -142,6 +144,6 @@ private:
     LockFreeStack <Worker, PausedTag> m_paused;  // holds just paused workers
 };
 
-}  // namespace beast
+} // beast
 
 #endif

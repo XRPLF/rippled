@@ -20,6 +20,8 @@
 #ifndef RIPPLE_COUNTEDOBJECT_H_INCLUDED
 #define RIPPLE_COUNTEDOBJECT_H_INCLUDED
 
+#include "../../beast/beast/utility/LeakChecked.h"
+
 namespace ripple {
 
 /** Manages all counted object types. */

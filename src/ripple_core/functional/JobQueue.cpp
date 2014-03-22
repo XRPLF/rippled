@@ -24,6 +24,8 @@
 
 #include "../../beast/beast/cxx14/memory.h"
 #include "../../beast/beast/chrono/chrono_util.h"
+#include "../../beast/modules/beast_core/thread/Workers.h"
+#include "../../beast/modules/beast_core/system/SystemStats.h"
 
 #include <chrono>
 
@@ -40,7 +42,7 @@ public:
 
     beast::Journal m_journal;
     beast::CriticalSection m_mutex;
-    beast::uint64 m_lastJob;
+    std::uint64_t m_lastJob;
     JobSet m_jobSet;
     JobDataMap m_jobData;
     JobTypeData m_invalidJobData;

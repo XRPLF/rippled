@@ -60,18 +60,16 @@
 #ifndef BEAST_SQDB_DETAIL_ERROR_CODES_H_INCLUDED
 #define BEAST_SQDB_DETAIL_ERROR_CODES_H_INCLUDED
 
-namespace sqdb
-{
-
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 // Converts SQLITE error codes into an Error object
 extern const Error sqliteError(const char* sourceFileName,
                                int lineNumber,
                                int sqliteErrorCode);
-}
-
-}
+} // detail
+} // sqdb
+} // beast
 
 #endif

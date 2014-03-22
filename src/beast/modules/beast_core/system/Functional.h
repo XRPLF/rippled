@@ -376,6 +376,6 @@ using namespace placeholders;
 
 #endif
 
-}  // namespace beast
+} // beast
 
 #endif

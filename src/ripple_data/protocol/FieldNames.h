@@ -82,7 +82,7 @@ public:
         , fieldMeta (sMD_Default)
         , signingField (true)
     {
-        StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
+        StaticScopedLockType sl (getMutex ());
 
         codeToField[fieldCode] = this;
 
@@ -97,7 +97,7 @@ public:
         , fieldMeta (sMD_Default)
         , signingField (true)
     {
-        StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
+        StaticScopedLockType sl (getMutex ());
 
         codeToField[fieldCode] = this;
 
@@ -111,7 +111,7 @@ public:
         , fieldMeta (sMD_Never)
         , signingField (true)
     {
-        StaticScopedLockType sl (getMutex (), __FILE__, __LINE__);
+        StaticScopedLockType sl (getMutex ());
         fieldNum = ++num;
     }
 
@@ -213,7 +213,7 @@ protected:
     static std::map<int, ptr>   codeToField;
 
     typedef RippleMutex StaticLockType;
-    typedef StaticLockType::ScopedLockType StaticScopedLockType;
+    typedef std::lock_guard <StaticLockType> StaticScopedLockType;
 
     static StaticLockType& getMutex ();
 

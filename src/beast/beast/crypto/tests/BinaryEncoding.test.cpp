@@ -21,6 +21,7 @@
 #include "../UnsignedInteger.h"
 
 #include "../../unit_test/suite.h"
+#include "../../../modules/beast_core/maths/Random.h"
 
 #include <cstddef>
 #include <string>
@@ -134,12 +135,12 @@ public:
     static std::string encode (UnsignedInteger <Bytes> const& v)
     {
         std::string s;
-        uint8 const* src (v.cbegin()-1);
+        std::uint8_t const* src (v.cbegin()-1);
         char const* const tab (alphabet().c_str());
         s.reserve (Bytes * 2);
         for (std::size_t bytes (v.size);bytes--;)
         {
-            uint8 const v (*++src);
+            std::uint8_t const v (*++src);
             s.push_back (tab [v>>4]);
             s.push_back (tab [v&0x0f]);
         }
@@ -153,7 +154,7 @@ public:
         // can't have an odd size
         if (s.size() & 1)
             return false;
-        uint8* dest (rv.begin()-1);
+        std::uint8_t* dest (rv.begin()-1);
         int const* const tab (&inverse_alphabet().front());
         for (std::string::const_iterator iter (s.begin()); iter != s.end();)
         {
@@ -163,7 +164,7 @@ public:
             int const n2 (tab [*iter++]);
             if (n2 == -1)
                 return false;
-            *++dest = ((uint8)((n1<<4)|n2));
+            *++dest = ((std::uint8_t)((n1<<4)|n2));
         }
         return true;
     }

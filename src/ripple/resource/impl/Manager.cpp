@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../../beast/beast/threads/Thread.h"
+
 namespace ripple {
 namespace Resource {
 

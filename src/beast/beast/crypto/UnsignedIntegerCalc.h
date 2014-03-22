@@ -20,8 +20,11 @@
 #ifndef BEAST_CRYPTO_UNSIGNEDINTEGERCALC_H_INCLUDED
 #define BEAST_CRYPTO_UNSIGNEDINTEGERCALC_H_INCLUDED
 
+#include "../ByteOrder.h"
+
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 
 namespace beast {
 
@@ -111,7 +114,7 @@ public:
         if (swizzle)
         {
             // Zero fill the possibly uninitialized pad bytes
-            memset (buffer, 0,
+            std::memset (buffer, 0,
                 ((sizeof(UInt)-(bytes&(sizeof(UInt)-1)))&(sizeof(UInt)-1)));
             // Swap and swizzle
             UInt* lo (values);

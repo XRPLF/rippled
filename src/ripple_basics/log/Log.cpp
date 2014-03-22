@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <boost/algorithm/string.hpp>
+
 namespace ripple {
 
 Log::Log (LogSeverity s)

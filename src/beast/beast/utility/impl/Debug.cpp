@@ -19,6 +19,7 @@
 
 #include "../Debug.h"
 #include "../../unit_test/suite.h"
+#include "../../../modules/beast_core/system/SystemStats.h"
 
 namespace beast {
 

@@ -42,26 +42,26 @@ public:
     virtual ~LoadFeeTrack () { }
 
     // Scale from fee units to millionths of a ripple
-    virtual beast::uint64 scaleFeeBase (beast::uint64 fee, beast::uint64 baseFee,
-                                        beast::uint32 referenceFeeUnits) = 0;
+    virtual std::uint64_t scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee,
+                                        std::uint32_t referenceFeeUnits) = 0;
 
     // Scale using load as well as base rate
-    virtual beast::uint64 scaleFeeLoad (beast::uint64 fee, beast::uint64 baseFee,
-                                        beast::uint32 referenceFeeUnits,
+    virtual std::uint64_t scaleFeeLoad (std::uint64_t fee, std::uint64_t baseFee,
+                                        std::uint32_t referenceFeeUnits,
                                         bool bAdmin) = 0;
 
-    virtual void setRemoteFee (beast::uint32) = 0;
+    virtual void setRemoteFee (std::uint32_t) = 0;
 
-    virtual beast::uint32 getRemoteFee () = 0;
-    virtual beast::uint32 getLocalFee () = 0;
-    virtual beast::uint32 getClusterFee () = 0;
+    virtual std::uint32_t getRemoteFee () = 0;
+    virtual std::uint32_t getLocalFee () = 0;
+    virtual std::uint32_t getClusterFee () = 0;
 
-    virtual beast::uint32 getLoadBase () = 0;
-    virtual beast::uint32 getLoadFactor () = 0;
+    virtual std::uint32_t getLoadBase () = 0;
+    virtual std::uint32_t getLoadFactor () = 0;
 
-    virtual Json::Value getJson (beast::uint64 baseFee, beast::uint32 referenceFeeUnits) = 0;
+    virtual Json::Value getJson (std::uint64_t baseFee, std::uint32_t referenceFeeUnits) = 0;
 
-    virtual void setClusterFee (beast::uint32) = 0;
+    virtual void setClusterFee (std::uint32_t) = 0;
     virtual bool raiseLocalFee () = 0;
     virtual bool lowerLocalFee () = 0;
     virtual bool isLoadedLocal () = 0;

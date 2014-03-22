@@ -23,14 +23,14 @@ namespace ripple {
 
 SETUP_LOG (SHAMap)
 
-void SHAMap::DefaultMissingNodeHandler::operator() (beast::uint32 refNUm)
+void SHAMap::DefaultMissingNodeHandler::operator() (std::uint32_t refNUm)
 {
     getApp().getOPs ().missingNodeInLedger (refNUm);
 };
 
 //------------------------------------------------------------------------------
 
-SHAMap::SHAMap (SHAMapType t, FullBelowCache& fullBelowCache, beast::uint32 seq,
+SHAMap::SHAMap (SHAMapType t, FullBelowCache& fullBelowCache, std::uint32_t seq,
     MissingNodeHandler missing_node_handler)
     : m_fullBelowCache (fullBelowCache)
     , mSeq (seq)
@@ -293,7 +293,7 @@ SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& id, uint256 const& ha
             WriteLog (lsFATAL, SHAMap) << "ID: " << id;
             WriteLog (lsFATAL, SHAMap) << "TgtHash " << hash;
             WriteLog (lsFATAL, SHAMap) << "NodHash " << node->getNodeHash ();
-            beast::Throw (std::runtime_error ("invalid node"));
+            throw std::runtime_error ("invalid node");
         }
 
 #endif
@@ -1100,7 +1100,7 @@ int SHAMap::armDirty ()
     return ++mSeq;
 }
 
-int SHAMap::flushDirty (NodeMap& map, int maxNodes, NodeObjectType t, beast::uint32 seq)
+int SHAMap::flushDirty (NodeMap& map, int maxNodes, NodeObjectType t, std::uint32_t seq)
 {
     int flushed = 0;
     Serializer s;

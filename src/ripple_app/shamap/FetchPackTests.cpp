@@ -19,6 +19,8 @@
 
 #include "../../beast/beast/unit_test/suite.h"
 
+#include <functional>
+
 namespace ripple {
 
 class FetchPack_test : public beast::unit_test::suite
@@ -87,10 +89,10 @@ public:
 
         // turn t1 into t2
         Map map;
-        t2->getFetchPack (t1.get(), true, 1000000, boost::bind (
-            &FetchPack_test::on_fetch, this, boost::ref (map), beast::_1, beast::_2));
-        t1->getFetchPack (nullptr, true, 1000000, boost::bind (
-            &FetchPack_test::on_fetch, this, boost::ref (map), beast::_1, beast::_2));
+        t2->getFetchPack (t1.get(), true, 1000000, std::bind (
+            &FetchPack_test::on_fetch, this, std::ref (map), std::placeholders::_1, std::placeholders::_2));
+        t1->getFetchPack (nullptr, true, 1000000, std::bind (
+            &FetchPack_test::on_fetch, this, std::ref (map), std::placeholders::_1, std::placeholders::_2));
 
         // try to rebuild t2 from the fetch pack
         boost::shared_ptr <Table> t3;

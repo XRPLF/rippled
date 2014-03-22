@@ -20,11 +20,11 @@
 #ifndef BEAST_NET_IPADDRESSV6_H_INCLUDED
 #define BEAST_NET_IPADDRESSV6_H_INCLUDED
 
-#include <string>
+#include <cassert>
+#include <cstdint>
 #include <ios>
+#include <string>
 #include <utility>
-
-#include "../CStdInt.h"
 
 namespace beast {
 namespace IP {
@@ -37,9 +37,9 @@ struct AddressV6
     /** Arithmetic comparison. */
     /** @{ */
     friend bool operator== (AddressV6 const&, AddressV6 const&)
-        { bassertfalse; return false; }
+        { assert(false); return false; }
     friend bool operator<  (AddressV6 const&, AddressV6 const&)
-        { bassertfalse; return false; }
+        { assert(false); return false; }
 
     friend bool operator!= (AddressV6 const& lhs, AddressV6 const& rhs)
         { return ! (lhs == rhs); }
@@ -73,7 +73,7 @@ bool is_public (AddressV6 const& addr);
 
 /** boost::hash support. */
 inline std::size_t hash_value (AddressV6 const&)
-    { bassertfalse; return 0; }
+    { assert(false); return 0; }
 
 /** Returns the address represented as a string. */
 std::string to_string (AddressV6 const& addr);

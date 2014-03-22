@@ -57,12 +57,11 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
-namespace detail
-{
-
+// VFALCO What the heck is this?!
 #ifdef c
 #undef c
 #endif
@@ -231,6 +230,6 @@ const Error sqliteError(const char* sourceFileName,
     return e;
 }
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast

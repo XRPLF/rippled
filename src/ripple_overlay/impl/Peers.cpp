@@ -21,8 +21,11 @@
 #include "PeerImp.h"
 
 #include "../../ripple/common/seconds_clock.h"
+#include "../../beast/beast/ByteOrder.h"
 
 #include <boost/config.hpp>
+
+#include <cassert>
 #include <condition_variable>
 #include <mutex>
 
@@ -535,14 +538,14 @@ public:
                 boost::unordered::piecewise_construct,
                 boost::make_tuple (peer->getShortId()),
                 boost::make_tuple (peer)));
-        check_postcondition(idResult.second);
+        assert(idResult.second);
 
         std::pair<PeerByPublicKey::iterator, bool> keyResult(
             m_publicKeyMap.emplace (
                 boost::unordered::piecewise_construct,
                 boost::make_tuple (peer->getNodePublic()),
                 boost::make_tuple (peer)));
-        check_postcondition(keyResult.second);
+        assert(keyResult.second);
 
         m_journal.debug << 
             "activated " << peer->getRemoteAddress() <<
@@ -550,7 +553,7 @@ public:
             ":" << RipplePublicKey(peer->getNodePublic()) << ")";
 
         // We just accepted this peer so we have non-zero active peers
-        check_postcondition(size() != 0);
+        assert(size() != 0);
     }
 
     /** A peer is being disconnected

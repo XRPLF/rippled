@@ -25,11 +25,11 @@
 #define BEAST_ARITHMETIC_H_INCLUDED
 
 #include "Config.h"
-#include "CStdInt.h"
 
 #include "utility/noexcept.h"
 
 #include <cmath>
+#include <cstdint>
 #include <algorithm>
 
 namespace beast {
@@ -197,12 +197,6 @@ inline bool isPositiveAndNotGreaterThan (const int valueToTest, const int upperL
 }
 
 //==============================================================================
-/** Handy function to swap two values. */
-template <typename Type>
-inline void swapVariables (Type& variable1, Type& variable2)
-{
-    std::swap (variable1, variable2);
-}
 
 /** Handy function for getting the number of elements in a simple const C array.
     E.g.
@@ -220,54 +214,12 @@ int numElementsInArray (Type (&array)[N])
     return N;
 }
 
-//==============================================================================
-// Some useful maths functions that aren't always present with all compilers and build settings.
-
-/** Using beast_hypot is easier than dealing with the different types of hypot function
-    that are provided by the various platforms and compilers. */
-template <typename Type>
-inline Type beast_hypot (Type a, Type b) noexcept
-{
-   #if BEAST_MSVC
-    return static_cast <Type> (_hypot (a, b));
-   #else
-    return static_cast <Type> (hypot (a, b));
-   #endif
-}
-
 /** 64-bit abs function. */
-inline int64 abs64 (const int64 n) noexcept
+inline std::int64_t abs64 (const std::int64_t n) noexcept
 {
     return (n >= 0) ? n : -n;
 }
 
-//==============================================================================
-/** A predefined value for Pi, at double-precision.
-    @see float_Pi
-*/
-const double  double_Pi  = 3.1415926535897932384626433832795;
-
-/** A predefined value for Pi, at single-precision.
-    @see double_Pi
-*/
-const float   float_Pi   = 3.14159265358979323846f;
-
-
-//==============================================================================
-/** The isfinite() method seems to vary between platforms, so this is a
-    platform-independent function for it.
-*/
-template <typename FloatingPointType>
-inline bool beast_isfinite (FloatingPointType value)
-{
-   #if BEAST_WINDOWS
-    return _finite (value);
-   #elif BEAST_ANDROID
-    return isfinite (value);
-   #else
-    return std::isfinite (value);
-   #endif
-}
 
 //==============================================================================
 #if BEAST_MSVC
@@ -310,149 +262,6 @@ inline int roundToInt (const FloatType value) noexcept
  #endif
  #pragma optimize ("", on)  // resets optimisations to the project defaults
 #endif
-
-/** Fast floating-point-to-integer conversion.
-
-    This is a slightly slower and slightly more accurate version of roundDoubleToInt(). It works
-    fine for values above zero, but negative numbers are rounded the wrong way.
-*/
-inline int roundToIntAccurate (const double value) noexcept
-{
-   #ifdef __INTEL_COMPILER
-    #pragma float_control (pop)
-   #endif
-
-    return roundToInt (value + 1.5e-8);
-}
-
-/** Fast floating-point-to-integer conversion.
-
-    This is faster than using the normal c++ cast to convert a double to an int, and
-    it will round the value to the nearest integer, rather than rounding it down
-    like the normal cast does.
-
-    Note that this routine gets its speed at the expense of some accuracy, and when
-    rounding values whose floating point component is exactly 0.5, odd numbers and
-    even numbers will be rounded up or down differently. For a more accurate conversion,
-    see roundDoubleToIntAccurate().
-*/
-inline int roundDoubleToInt (const double value) noexcept
-{
-    return roundToInt (value);
-}
-
-/** Fast floating-point-to-integer conversion.
-
-    This is faster than using the normal c++ cast to convert a float to an int, and
-    it will round the value to the nearest integer, rather than rounding it down
-    like the normal cast does.
-
-    Note that this routine gets its speed at the expense of some accuracy, and when
-    rounding values whose floating point component is exactly 0.5, odd numbers and
-    even numbers will be rounded up or down differently.
-*/
-inline int roundFloatToInt (const float value) noexcept
-{
-    return roundToInt (value);
-}
-
-//==============================================================================
-/** Returns true if the specified integer is a power-of-two.
-*/
-template <typename IntegerType>
-bool isPowerOfTwo (IntegerType value)
-{
-   return (value & (value - 1)) == 0;
-}
-
-/** Returns the smallest power-of-two which is equal to or greater than the given integer.
-*/
-inline int nextPowerOfTwo (int n) noexcept
-{
-    --n;
-    n |= (n >> 1);
-    n |= (n >> 2);
-    n |= (n >> 4);
-    n |= (n >> 8);
-    n |= (n >> 16);
-    return n + 1;
-}
-
-/** Performs a modulo operation, but can cope with the dividend being negative.
-    The divisor must be greater than zero.
-*/
-template <typename IntegerType>
-IntegerType negativeAwareModulo (IntegerType dividend, const IntegerType divisor) noexcept
-{
-    bassert (divisor > 0);
-    dividend %= divisor;
-    return (dividend < 0) ? (dividend + divisor) : dividend;
-}
-
-//==============================================================================
-#if (BEAST_INTEL && BEAST_32BIT) || defined (DOXYGEN)
- /** This macro can be applied to a float variable to check whether it contains a denormalised
-     value, and to normalise it if necessary.
-     On CPUs that aren't vulnerable to denormalisation problems, this will have no effect.
- */
- #define BEAST_UNDENORMALISE(x)   x += 1.0f; x -= 1.0f;
-#else
- #define BEAST_UNDENORMALISE(x)
-#endif
-
-//==============================================================================
-/** This namespace contains a few template classes for helping work out class type variations.
-*/
-namespace TypeHelpers
-{
-   #if BEAST_VC8_OR_EARLIER
-    #define PARAMETER_TYPE(type) const type&
-   #else
-    /** The ParameterType struct is used to find the best type to use when passing some kind
-        of object as a parameter.
-
-        Of course, this is only likely to be useful in certain esoteric template situations.
-
-        Because "typename TypeHelpers::ParameterType<SomeClass>::type" is a bit of a mouthful, there's
-        a PARAMETER_TYPE(SomeClass) macro that you can use to get the same effect.
-
-        E.g. "myFunction (PARAMETER_TYPE (int), PARAMETER_TYPE (MyObject))"
-        would evaluate to "myfunction (int, const MyObject&)", keeping any primitive types as
-        pass-by-value, but passing objects as a const reference, to avoid copying.
-    */
-    template <typename Type> struct ParameterType                   { typedef const Type& type; };
-
-   #if ! DOXYGEN
-    template <typename Type> struct ParameterType <Type&>           { typedef Type& type; };
-    template <typename Type> struct ParameterType <Type*>           { typedef Type* type; };
-    template <>              struct ParameterType <char>            { typedef char type; };
-    template <>              struct ParameterType <unsigned char>   { typedef unsigned char type; };
-    template <>              struct ParameterType <short>           { typedef short type; };
-    template <>              struct ParameterType <unsigned short>  { typedef unsigned short type; };
-    template <>              struct ParameterType <int>             { typedef int type; };
-    template <>              struct ParameterType <unsigned int>    { typedef unsigned int type; };
-    template <>              struct ParameterType <long>            { typedef long type; };
-    template <>              struct ParameterType <unsigned long>   { typedef unsigned long type; };
-    template <>              struct ParameterType <int64>           { typedef int64 type; };
-    template <>              struct ParameterType <uint64>          { typedef uint64 type; };
-    template <>              struct ParameterType <bool>            { typedef bool type; };
-    template <>              struct ParameterType <float>           { typedef float type; };
-    template <>              struct ParameterType <double>          { typedef double type; };
-   #endif
-
-    /** A helpful macro to simplify the use of the ParameterType template.
-        @see ParameterType
-    */
-    #define PARAMETER_TYPE(a)    typename TypeHelpers::ParameterType<a>::type
-   #endif
-
-
-    /** These templates are designed to take a type, and if it's a double, they return a double
-        type; for anything else, they return a float type.
-    */
-    template <typename Type> struct SmallestFloatType             { typedef float  type; };
-    template <>              struct SmallestFloatType <double>    { typedef double type; };
-}
 
 }
 

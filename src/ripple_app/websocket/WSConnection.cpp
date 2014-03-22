@@ -30,7 +30,6 @@ WSConnection::WSConnection (Resource::Manager& resourceManager,
     , m_resourceManager (resourceManager)
     , m_isPublic (isPublic)
     , m_remoteAddress (remoteAddress)
-    , m_receiveQueueMutex (this, "WSConnection", __FILE__, __LINE__)
     , m_netOPs (getApp ().getOPs ())
     , m_pingTimer (io_service)
     , m_sentPing (false)
@@ -53,7 +52,7 @@ void WSConnection::onPong (const std::string&)
 
 void WSConnection::rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueue)
 {
-    ScopedLockType sl (m_receiveQueueMutex, __FILE__, __LINE__);
+    ScopedLockType sl (m_receiveQueueMutex);
 
     if (m_isDead)
     {
@@ -84,7 +83,7 @@ void WSConnection::rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueu
 
 bool WSConnection::checkMessage ()
 {
-    ScopedLockType sl (m_receiveQueueMutex, __FILE__, __LINE__);
+    ScopedLockType sl (m_receiveQueueMutex);
 
     assert (m_receiveQueueRunning);
 
@@ -99,7 +98,7 @@ bool WSConnection::checkMessage ()
 
 WSConnection::message_ptr WSConnection::getMessage ()
 {
-    ScopedLockType sl (m_receiveQueueMutex, __FILE__, __LINE__);
+    ScopedLockType sl (m_receiveQueueMutex);
 
     if (m_isDead || m_receiveQueue.empty ())
     {
@@ -114,7 +113,7 @@ WSConnection::message_ptr WSConnection::getMessage ()
 
 void WSConnection::returnMessage (message_ptr ptr)
 {
-    ScopedLockType sl (m_receiveQueueMutex, __FILE__, __LINE__);
+    ScopedLockType sl (m_receiveQueueMutex);
 
     if (!m_isDead)
     {

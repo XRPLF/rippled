@@ -72,7 +72,7 @@ public:
 
     void send (const Json::Value& jvObj, bool broadcast)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         if (mDeque.size () >= eventQueueMax)
         {
@@ -100,14 +100,14 @@ public:
 
     void setUsername (const std::string& strUsername)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         mUsername = strUsername;
     }
 
     void setPassword (const std::string& strPassword)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         mPassword = strPassword;
     }
@@ -123,7 +123,7 @@ private:
         {
             {
                 // Obtain the lock to manipulate the queue and change sending.
-                ScopedLockType sl (mLock, __FILE__, __LINE__);
+                ScopedLockType sl (mLock);
 
                 if (mDeque.empty ())
                 {

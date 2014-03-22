@@ -45,7 +45,7 @@ namespace beast {
     @see CriticalSection, WaitableEvent, Process, ThreadWithProgressWindow,
          MessageManagerLock
 */
-class BEAST_API Thread : LeakChecked <Thread>, public Uncopyable
+class Thread : LeakChecked <Thread>, public Uncopyable
 {
 public:
     //==============================================================================
@@ -185,7 +185,7 @@ public:
 
         @see setCurrentThreadAffinityMask
     */
-    void setAffinityMask (uint32 affinityMask);
+    void setAffinityMask (std::uint32_t affinityMask);
 
     /** Changes the affinity mask for the caller thread.
 
@@ -193,14 +193,14 @@ public:
 
         @see setAffinityMask
     */
-    static void setCurrentThreadAffinityMask (uint32 affinityMask);
+    static void setCurrentThreadAffinityMask (std::uint32_t affinityMask);
 
     //==============================================================================
     // this can be called from any thread that needs to pause..
-    static void BEAST_CALLTYPE sleep (int milliseconds);
+    static void sleep (int milliseconds);
 
     /** Yields the calling thread's current time-slot. */
-    static void BEAST_CALLTYPE yield();
+    static void yield();
 
     //==============================================================================
     /** Makes the thread wait for a notification.
@@ -275,11 +275,11 @@ private:
     RecursiveMutex startStopLock;
     WaitableEvent startSuspensionEvent, defaultEvent;
     int threadPriority;
-    uint32 affinityMask;
+    std::uint32_t affinityMask;
     bool volatile shouldExit;
 
    #ifndef DOXYGEN
-    friend void BEAST_API beast_threadEntryPoint (void*);
+    friend void beast_threadEntryPoint (void*);
    #endif
 
     void launchThread();

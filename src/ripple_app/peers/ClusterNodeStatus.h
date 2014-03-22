@@ -32,7 +32,7 @@ public:
     explicit ClusterNodeStatus(std::string const& name) : mNodeName(name), mLoadFee(0), mReportTime(0)
     { ; }
 
-    ClusterNodeStatus(const std::string& name, beast::uint32 fee, beast::uint32 rtime) :
+    ClusterNodeStatus(const std::string& name, std::uint32_t fee, std::uint32_t rtime) :
         mNodeName(name),
         mLoadFee(fee),
         mReportTime(rtime)
@@ -43,12 +43,12 @@ public:
         return mNodeName;
     }
 
-    beast::uint32 getLoadFee()
+    std::uint32_t getLoadFee()
     {
         return mLoadFee;
     }
 
-    beast::uint32 getReportTime()
+    std::uint32_t getReportTime()
     {
         return mReportTime;
     }
@@ -66,8 +66,8 @@ public:
 
 private:
     std::string       mNodeName;
-    beast::uint32     mLoadFee;
-    beast::uint32     mReportTime;
+    std::uint32_t     mLoadFee;
+    std::uint32_t     mReportTime;
 };
 
 } // ripple

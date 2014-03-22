@@ -28,6 +28,8 @@
 
 #include "../../../beast/beast/cxx14/type_traits.h"
 
+#include <cassert>
+
 #ifndef RIPPLE_MULTISOCKET_NO_ALLOCATOR
 #define RIPPLE_MULTISOCKET_NO_ALLOCATOR 0
 #endif
@@ -387,7 +389,7 @@ protected:
     static Flag cleaned_flags (Flag flags)
     {
         // Can't set both client and server
-        check_precondition (! flags.set (
+        assert (! flags.set (
             Flag::client_role | Flag::server_role));
 
         if (flags.set (Flag::client_role))

@@ -31,22 +31,22 @@ public:
 public:
     TransactionMetaSet ()
         : mLedger (0)
-        , mIndex (static_cast<beast::uint32> (-1))
+        , mIndex (static_cast<std::uint32_t> (-1))
         , mResult (255)
     {
     }
 
-    TransactionMetaSet (uint256 const& txID, beast::uint32 ledger, beast::uint32 index)
+    TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, std::uint32_t index)
         : mTransactionID (txID)
         , mLedger (ledger)
-        , mIndex (static_cast<beast::uint32> (-1))
+        , mIndex (static_cast<std::uint32_t> (-1))
         , mResult (255)
     {
     }
 
-    TransactionMetaSet (uint256 const& txID, beast::uint32 ledger, Blob const&);
+    TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, Blob const&);
 
-    void init (uint256 const& transactionID, beast::uint32 ledger);
+    void init (uint256 const& transactionID, std::uint32_t ledger);
     void clear ()
     {
         mNodes.clear ();
@@ -57,7 +57,7 @@ public:
     {
         return mTransactionID;
     }
-    beast::uint32 getLgrSeq ()
+    std::uint32_t getLgrSeq ()
     {
         return mLedger;
     }
@@ -69,13 +69,13 @@ public:
     {
         return static_cast<TER> (mResult);
     }
-    beast::uint32 getIndex () const
+    std::uint32_t getIndex () const
     {
         return mIndex;
     }
 
     bool isNodeAffected (uint256 const& ) const;
-    void setAffectedNode (uint256 const& , SField::ref type, beast::uint16 nodeType);
+    void setAffectedNode (uint256 const& , SField::ref type, std::uint16_t nodeType);
     STObject& getAffectedNode (SLE::ref node, SField::ref type); // create if needed
     STObject& getAffectedNode (uint256 const& );
     const STObject& peekAffectedNode (uint256 const& ) const;
@@ -86,7 +86,7 @@ public:
     {
         return getAsObject ().getJson (p);
     }
-    void addRaw (Serializer&, TER, beast::uint32 index);
+    void addRaw (Serializer&, TER, std::uint32_t index);
 
     STObject getAsObject () const;
     STArray& getNodes ()
@@ -110,12 +110,12 @@ public:
          return mDelivered;
     }
 
-    static bool thread (STObject& node, uint256 const& prevTxID, beast::uint32 prevLgrID);
+    static bool thread (STObject& node, uint256 const& prevTxID, std::uint32_t prevLgrID);
 
 private:
     uint256       mTransactionID;
-    beast::uint32 mLedger;
-    beast::uint32 mIndex;
+    std::uint32_t mLedger;
+    std::uint32_t mIndex;
     int           mResult;
 
     boost::optional <STAmount> mDelivered;

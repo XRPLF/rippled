@@ -91,6 +91,6 @@ private:
     const ValueType originalValue;
 };
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_SCOPEDVALUESETTER_H_INCLUDED

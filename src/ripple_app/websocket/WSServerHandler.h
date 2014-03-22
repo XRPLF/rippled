@@ -63,7 +63,7 @@ private:
 protected:
     // VFALCO TODO Make this private.
     typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
 private:
@@ -82,7 +82,6 @@ public:
         InfoSub::Source& source, boost::asio::ssl::context& ssl_context, bool bPublic, bool bProxy)
         : m_resourceManager (resourceManager)
         , m_source (source)
-        , mLock (static_cast <WSServerHandlerBase*> (this), "WSServerHandler", __FILE__, __LINE__)
         , m_ssl_context (ssl_context)
         , mPublic (bPublic)
         , mProxy (bProxy)
@@ -145,7 +144,7 @@ public:
     {
         wsc_ptr ptr;
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
@@ -175,7 +174,7 @@ public:
     {
         wsc_ptr ptr;
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
@@ -189,7 +188,7 @@ public:
 
     void on_open (connection_ptr cpClient)
     {
-        ScopedLockType   sl (mLock, __FILE__, __LINE__);
+        ScopedLockType   sl (mLock);
 
         try
         {
@@ -197,7 +196,7 @@ public:
                 mMap.emplace (cpClient,
                     boost::make_shared < WSConnectionType <endpoint_type> > (boost::ref(m_resourceManager),
                     boost::ref (m_source), boost::ref(*this), boost::cref(cpClient))));
-            check_postcondition (result.second);
+            assert (result.second);
             WriteLog (lsDEBUG, WSServerHandlerLog) <<
                 "Ws:: on_open(" << cpClient->get_socket ().remote_endpoint ().to_string () << ")";
         }
@@ -210,7 +209,7 @@ public:
     {
         wsc_ptr ptr;
         {
-            ScopedLockType   sl (mLock, __FILE__, __LINE__);
+            ScopedLockType   sl (mLock);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
@@ -244,7 +243,7 @@ public:
         // we cannot destroy the connection while holding the map lock or we deadlock with pubLedger
         wsc_ptr ptr;
         {
-            ScopedLockType   sl (mLock, __FILE__, __LINE__);
+            ScopedLockType   sl (mLock);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
@@ -284,7 +283,7 @@ public:
     {
         wsc_ptr ptr;
         {
-            ScopedLockType   sl (mLock, __FILE__, __LINE__);
+            ScopedLockType   sl (mLock);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
@@ -318,7 +317,7 @@ public:
     {
         wsc_ptr ptr;
         {
-            ScopedLockType   sl (mLock, __FILE__, __LINE__);
+            ScopedLockType   sl (mLock);
             typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())

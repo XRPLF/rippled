@@ -1145,8 +1145,8 @@ public:
         // VFALCO NOTE These ugly casts are needed because
         //             of how std::size_t is declared on some linuxes
         //
-        map ["bootcache"]   = beast::uint32 (state->bootcache.size());
-        map ["fixed"]       = beast::uint32 (state->fixed.size());
+        map ["bootcache"]   = std::uint32_t (state->bootcache.size());
+        map ["fixed"]       = std::uint32_t (state->fixed.size());
 
         {
             beast::PropertyStream::Set child ("peers", map);

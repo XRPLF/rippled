@@ -20,6 +20,9 @@
 #ifndef RIPPLE_BASICS_LOGSINK_H_INCLUDED
 #define RIPPLE_BASICS_LOGSINK_H_INCLUDED
 
+#include "../../beast/beast/smart_ptr/SharedPtr.h"
+#include "../../beast/modules/beast_core/memory/SharedSingleton.h"
+
 namespace ripple {
 
 /** An endpoint for all logging messages. */
@@ -79,7 +82,7 @@ public:
 
 private:
     typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
 
     enum
     {

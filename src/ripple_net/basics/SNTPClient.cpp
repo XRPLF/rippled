@@ -66,7 +66,7 @@ public:
     public:
         bool                mReceivedReply;
         time_t              mLocalTimeSent;
-        beast::uint32              mQueryNonce;
+        std::uint32_t              mQueryNonce;
 
         SNTPQuery (time_t j = (time_t) - 1)   : mReceivedReply (false), mLocalTimeSent (j)
         {
@@ -79,7 +79,6 @@ public:
     explicit SNTPClientImp (Stoppable& parent)
         : SNTPClient (parent)
         , Thread ("SNTPClient")
-        , mLock (this, "SNTPClient", __FILE__, __LINE__)
         , mSocket (m_io_service)
         , mTimer (m_io_service)
         , mResolver (m_io_service)
@@ -143,7 +142,7 @@ public:
 
     void addServer (const std::string& server)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         mServers.push_back (std::make_pair (server, (time_t) - 1));
     }
 
@@ -155,7 +154,7 @@ public:
 
     bool getOffset (int& offset)
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
 
         if ((mLastOffsetUpdate == (time_t) - 1) || ((mLastOffsetUpdate + NTP_TIMESTAMP_VALID) < time (nullptr)))
             return false;
@@ -166,7 +165,7 @@ public:
 
     bool doQuery ()
     {
-        ScopedLockType sl (mLock, __FILE__, __LINE__);
+        ScopedLockType sl (mLock);
         std::vector< std::pair<std::string, time_t> >::iterator best = mServers.end ();
 
         for (std::vector< std::pair<std::string, time_t> >::iterator it = mServers.begin (), end = best;
@@ -213,7 +212,7 @@ public:
 
             if (sel != boost::asio::ip::udp::resolver::iterator ())
             {
-                ScopedLockType sl (mLock, __FILE__, __LINE__);
+                ScopedLockType sl (mLock);
                 SNTPQuery& query = mQueries[*sel];
                 time_t now = time (nullptr);
 
@@ -227,8 +226,8 @@ public:
                 query.mReceivedReply = false;
                 query.mLocalTimeSent = now;
                 RandomNumbers::getInstance ().fill (&query.mQueryNonce);
-                reinterpret_cast<beast::uint32*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<beast::uint32> (time (nullptr)) + NTP_UNIX_OFFSET;
-                reinterpret_cast<beast::uint32*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
+                reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<std::uint32_t> (time (nullptr)) + NTP_UNIX_OFFSET;
+                reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
                 mSocket.async_send_to (boost::asio::buffer (SNTPQueryData, 48), *sel,
                                        boost::bind (&SNTPClientImp::sendComplete, this,
                                                     boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
@@ -240,7 +239,7 @@ public:
     {
         if (!error)
         {
-            ScopedLockType sl (mLock, __FILE__, __LINE__);
+            ScopedLockType sl (mLock);
     #ifdef SNTP_DEBUG
             WriteLog (lsTRACE, SNTPClient) << "SNTP: Packet from " << mReceiveEndpoint;
     #endif
@@ -259,7 +258,7 @@ public:
                 else if (bytes_xferd < 48)
                     WriteLog (lsWARNING, SNTPClient) << "SNTP: Short reply from " << mReceiveEndpoint
                                                      << " (" << bytes_xferd << ") " << mReceiveBuffer.size ();
-                else if (reinterpret_cast<beast::uint32*> (&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryNonce)
+                else if (reinterpret_cast<std::uint32_t*> (&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryNonce)
                     WriteLog (lsWARNING, SNTPClient) << "SNTP: Reply from " << mReceiveEndpoint << "had wrong nonce";
                 else
                     processReply ();
@@ -279,7 +278,7 @@ public:
     void processReply ()
     {
         assert (mReceiveBuffer.size () >= 48);
-        beast::uint32* recvBuffer = reinterpret_cast<beast::uint32*> (&mReceiveBuffer.front ());
+        std::uint32_t* recvBuffer = reinterpret_cast<std::uint32_t*> (&mReceiveBuffer.front ());
 
         unsigned info = ntohl (recvBuffer[NTP_OFF_INFO]);
         int64_t timev = ntohl (recvBuffer[NTP_OFF_RECVTS_INT]);
@@ -297,7 +296,7 @@ public:
             return;
         }
 
-        beast::int64 now = static_cast<int> (time (nullptr));
+        std::int64_t now = static_cast<int> (time (nullptr));
         timev -= now;
         timev -= NTP_UNIX_OFFSET;
 
@@ -341,7 +340,7 @@ public:
 
 private:
     typedef RippleMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
     boost::asio::io_service m_io_service;

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <cassert>
+
 namespace ripple {
 namespace RadixMap {
 
@@ -37,8 +39,8 @@ void add_random_items (std::size_t n, Table& t, beast::Random& r)
     {
         boost::shared_ptr <SHAMapItem> item (
             make_random_item (r));
-        meets_postcondition (
-            t.addItem (*item, false, false));
+        auto const result (t.addItem (*item, false, false));
+        assert (result);
     }
 }
 

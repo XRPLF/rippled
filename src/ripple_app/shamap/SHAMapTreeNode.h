@@ -51,13 +51,13 @@ public:
     };
 
 public:
-    SHAMapTreeNode (beast::uint32 seq, const SHAMapNode & nodeID); // empty node
-    SHAMapTreeNode (const SHAMapTreeNode & node, beast::uint32 seq); // copy node from older tree
+    SHAMapTreeNode (std::uint32_t seq, const SHAMapNode & nodeID); // empty node
+    SHAMapTreeNode (const SHAMapTreeNode & node, std::uint32_t seq); // copy node from older tree
     SHAMapTreeNode (const SHAMapNode & nodeID, SHAMapItem::ref item, TNType type,
-                    beast::uint32 seq);
+                    std::uint32_t seq);
 
     // raw node functions
-    SHAMapTreeNode (const SHAMapNode & id, Blob const & data, beast::uint32 seq,
+    SHAMapTreeNode (const SHAMapNode & id, Blob const & data, std::uint32_t seq,
                     SHANodeFormat format, uint256 const & hash, bool hashValid);
     void addRaw (Serializer&, SHANodeFormat format);
 
@@ -67,15 +67,15 @@ public:
     }
 
     // node functions
-    beast::uint32 getSeq () const
+    std::uint32_t getSeq () const
     {
         return mSeq;
     }
-    void setSeq (beast::uint32 s)
+    void setSeq (std::uint32_t s)
     {
         mAccessSeq = mSeq = s;
     }
-    void touch (beast::uint32 s)
+    void touch (std::uint32_t s)
     {
         if (mSeq != 0)
             mAccessSeq = s;
@@ -178,7 +178,7 @@ private:
     uint256             mHash;
     uint256             mHashes[16];
     SHAMapItem::pointer mItem;
-    beast::uint32       mSeq, mAccessSeq;
+    std::uint32_t       mSeq, mAccessSeq;
     TNType              mType;
     int                 mIsBranch;
     bool                mFullBelow;

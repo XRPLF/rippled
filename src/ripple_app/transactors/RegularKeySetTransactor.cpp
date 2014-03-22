@@ -21,7 +21,7 @@ namespace ripple {
 
 SETUP_LOG (RegularKeySetTransactor)
 
-beast::uint64 RegularKeySetTransactor::calculateBaseFee ()
+std::uint64_t RegularKeySetTransactor::calculateBaseFee ()
 {
     if ( mTxnAccount
             && (! (mTxnAccount->getFlags () & lsfPasswordSpent))
@@ -39,7 +39,7 @@ TER RegularKeySetTransactor::doApply ()
 {
     Log::out() << "RegularKeySet>";
 
-    const beast::uint32   uTxFlags        = mTxn.getFlags ();
+    const std::uint32_t   uTxFlags        = mTxn.getFlags ();
 
     if (uTxFlags & tfUniversalMask)
     {

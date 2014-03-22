@@ -24,8 +24,9 @@
 #ifndef BEAST_CRITICALSECTION_H_INCLUDED
 #define BEAST_CRITICALSECTION_H_INCLUDED
 
-namespace beast
-{
+#include "ScopedLock.h"
+
+namespace beast {
 
 //==============================================================================
 /**
@@ -35,9 +36,9 @@ namespace beast
     one of these is by using RAII in the form of a local ScopedLock object - have a look
     through the codebase for many examples of how to do this.
 
-    @see ScopedLock, ScopedTryLock, ScopedUnlock, SpinLock, ReadWriteLock, Thread, InterProcessLock
+    @see ScopedLock, ScopedTryLock, ScopedUnlock, SpinLock, Thread
 */
-class BEAST_API CriticalSection : public Uncopyable
+class CriticalSection : public Uncopyable
 {
 public:
     //==============================================================================
@@ -117,9 +118,9 @@ private:
     // a block of memory here that's big enough to be used internally as a windows
     // CRITICAL_SECTION structure.
     #if BEAST_64BIT
-     uint8 section[44];
+     std::uint8_t section[44];
     #else
-     uint8 section[24];
+     std::uint8_t section[24];
     #endif
    #else
     mutable pthread_mutex_t mutex;
@@ -134,9 +135,9 @@ private:
     This is currently used by some templated classes, and most compilers should
     manage to optimise it out of existence.
 
-    @see CriticalSection, Array, OwnedArray, SharedObjectArray
+    @see CriticalSection, Array, SharedObjectArray
 */
-class BEAST_API DummyCriticalSection : public Uncopyable
+class DummyCriticalSection : public Uncopyable
 {
 public:
     inline DummyCriticalSection() noexcept      {}
@@ -255,6 +256,6 @@ typedef CriticalSection::ScopedUnlockType  ScopedUnlock;
 */
 typedef CriticalSection::ScopedTryLockType  ScopedTryLock;
 
-}  // namespace beast
+} // beast
 
 #endif   // BEAST_CRITICALSECTION_H_INCLUDED

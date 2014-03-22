@@ -57,11 +57,11 @@
 */
 //==============================================================================
 
-namespace sqdb
-{
+#include <cassert>
 
-namespace detail
-{
+namespace beast {
+namespace sqdb {
+namespace detail {
 
 standard_use_type::~standard_use_type()
 {
@@ -73,8 +73,7 @@ void standard_use_type::bind(statement_imp& st, int& iParam)
     m_iParam = iParam++;
 }
 
-namespace
-{
+namespace {
 
 template<typename T>
 inline T const& as(void const* v)
@@ -87,7 +86,7 @@ inline T const& as(void const* v)
 {
     T const& val = *static_cast <T const*>(v);
 
-    check_precondition (val <= T(std::numeric_limits<L>::max()));
+    assert (val <= T(std::numeric_limits<L>::max()));
 
     return val;
 }
@@ -114,40 +113,40 @@ void standard_use_type::do_use()
         result = sqlite3_bind_int(m_st->m_stmt, m_iParam, as <char> (m_data));
         break;
 
-    case x_short:
-        result = sqlite3_bind_int(m_st->m_stmt, m_iParam, as <short> (m_data));
-        break;
-
-    case x_int:
-        result = sqlite3_bind_int(m_st->m_stmt, m_iParam, as <int> (m_data));
-        break;
-
-    case x_long:
-        result = sqlite3_bind_int(m_st->m_stmt, m_iParam, as <long> (m_data));
-        break;
-
-    case x_int64:
-        result = sqlite3_bind_int64(m_st->m_stmt, m_iParam, as <int64> (m_data));
-        break;
-
     case x_uchar:
         result = sqlite3_bind_int(m_st->m_stmt, m_iParam, as <unsigned char> (m_data));
+        break;
+
+    case x_short:
+        result = sqlite3_bind_int(m_st->m_stmt, m_iParam, as <short> (m_data));
         break;
 
     case x_ushort:
         result = sqlite3_bind_int(m_st->m_stmt, m_iParam, as <unsigned short> (m_data));
         break;
 
+    case x_int:
+        result = sqlite3_bind_int(m_st->m_stmt, m_iParam, as <int> (m_data));
+        break;
+
     case x_uint:
         result = sqlite3_bind_int64(m_st->m_stmt, m_iParam, as <unsigned int> (m_data));
+        break;
+
+    case x_long:
+        result = sqlite3_bind_int(m_st->m_stmt, m_iParam, as <long> (m_data));
         break;
 
     case x_ulong:
         result = sqlite3_bind_int64(m_st->m_stmt, m_iParam, as <unsigned long> (m_data));
         break;
 
-    case x_uint64:
-        result = sqlite3_bind_int64(m_st->m_stmt, m_iParam, as <sqlite3_uint64, sqlite3_int64> (m_data));
+    case x_longlong:
+        result = sqlite3_bind_int64(m_st->m_stmt, m_iParam, as <long long> (m_data));
+        break;
+
+    case x_ulonglong:
+        result = sqlite3_bind_int64(m_st->m_stmt, m_iParam, as <unsigned long long> (m_data));
         break;
 
     case x_float:
@@ -157,6 +156,12 @@ void standard_use_type::do_use()
     case x_double:
         result = sqlite3_bind_double(m_st->m_stmt, m_iParam, as <double> (m_data));
         break;
+
+#if 0
+    case x_longdouble:
+        result = sqlite3_bind_double(m_st->m_stmt, m_iParam, as <long double> (m_data));
+        break;
+#endif
 
     case x_cstring:
         result = sqlite3_bind_text(m_st->m_stmt, m_iParam, as <char*> (m_data), -1, SQLITE_STATIC);
@@ -202,11 +207,11 @@ void standard_use_type::do_use()
     case x_stdtm:
     case x_blob:
     default:
-        fatal_error ("bad parameter");
+        throw std::invalid_argument ("bad parameter");
     }
 
     if (result != SQLITE_OK)
-        Throw(detail::sqliteError(__FILE__, __LINE__, result));
+        throw detail::sqliteError(__FILE__, __LINE__, result);
 }
 
 void standard_use_type::post_use()
@@ -218,6 +223,6 @@ void standard_use_type::clean_up()
 {
 }
 
-}
-
-}
+} // detail
+} // sqdb
+} // beast

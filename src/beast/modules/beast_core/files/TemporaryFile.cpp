@@ -114,4 +114,4 @@ bool TemporaryFile::deleteTemporaryFile() const
     return false;
 }
 
-}  // namespace beast
+} // beast

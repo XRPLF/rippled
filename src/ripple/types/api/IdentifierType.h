@@ -84,7 +84,7 @@ public:
         { }
 
     /** Create a copy of the value from range of bytes. */
-    IdentifierType (beast::uint8 const* begin, beast::uint8 const* end)
+    IdentifierType (std::uint8_t const* begin, std::uint8_t const* end)
         { Traits::construct (begin, end, m_value); }
 
     /** Conversion construction from any specialized type. */

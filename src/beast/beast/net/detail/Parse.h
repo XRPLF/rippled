@@ -61,16 +61,16 @@ struct integer_holder
 
 /** Parse 8-bit unsigned integer. */
 template <typename InputStream>
-InputStream& operator>> (InputStream& is, integer_holder <uint8> const& i)
+InputStream& operator>> (InputStream& is, integer_holder <std::uint8_t> const& i)
 {
-    uint16 v;
+    std::uint16_t v;
     is >> v;
     if (! (v>=0 && v<=255))
     {
         is.setstate (std::ios_base::failbit);
         return is;
     }
-    i = uint8(v);
+    i = std::uint8_t(v);
     return is;
 }
 

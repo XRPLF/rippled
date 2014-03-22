@@ -36,19 +36,19 @@ namespace WindowsFileHelpers
         return GetFileAttributes (path.toWideCharPointer());
     }
 
-    int64 fileTimeToTime (const FILETIME* const ft)
+    std::int64_t fileTimeToTime (const FILETIME* const ft)
     {
         static_bassert (sizeof (ULARGE_INTEGER) == sizeof (FILETIME)); // tell me if this fails!
 
-        return (int64) ((reinterpret_cast<const ULARGE_INTEGER*> (ft)->QuadPart - literal64bit (116444736000000000)) / 10000);
+        return (std::int64_t) ((reinterpret_cast<const ULARGE_INTEGER*> (ft)->QuadPart - 116444736000000000LL) / 10000);
     }
 
-    FILETIME* timeToFileTime (const int64 time, FILETIME* const ft) noexcept
+    FILETIME* timeToFileTime (const std::int64_t time, FILETIME* const ft) noexcept
     {
         if (time <= 0)
             return nullptr;
 
-        reinterpret_cast<ULARGE_INTEGER*> (ft)->QuadPart = (ULONGLONG) (time * 10000 + literal64bit (116444736000000000));
+        reinterpret_cast<ULARGE_INTEGER*> (ft)->QuadPart = (ULONGLONG) (time * 10000 + 116444736000000000LL);
         return ft;
     }
 
@@ -68,13 +68,13 @@ namespace WindowsFileHelpers
         return path;
     }
 
-    int64 getDiskSpaceInfo (const String& path, const bool total)
+    std::int64_t getDiskSpaceInfo (const String& path, const bool total)
     {
         ULARGE_INTEGER spc, tot, totFree;
 
         if (GetDiskFreeSpaceEx (getDriveFromPath (path).toWideCharPointer(), &spc, &tot, &totFree))
-            return total ? (int64) tot.QuadPart
-                         : (int64) spc.QuadPart;
+            return total ? (std::int64_t) tot.QuadPart
+                         : (std::int64_t) spc.QuadPart;
 
         return 0;
     }
@@ -213,7 +213,7 @@ Result File::createDirectoryInternal (const String& fileName) const
 }
 
 //==============================================================================
-int64 beast_fileSetPosition (void* handle, int64 pos)
+std::int64_t beast_fileSetPosition (void* handle, std::int64_t pos)
 {
     LARGE_INTEGER li;
     li.QuadPart = pos;
@@ -279,7 +279,7 @@ void FileOutputStream::closeHandle()
     CloseHandle ((HANDLE) fileHandle);
 }
 
-ssize_t FileOutputStream::writeInternal (const void* buffer, size_t numBytes)
+std::ptrdiff_t FileOutputStream::writeInternal (const void* buffer, size_t numBytes)
 {
     if (fileHandle != nullptr)
     {
@@ -287,7 +287,7 @@ ssize_t FileOutputStream::writeInternal (const void* buffer, size_t numBytes)
         if (! WriteFile ((HANDLE) fileHandle, buffer, (DWORD) numBytes, &actualNum, 0))
             status = WindowsFileHelpers::getResultForLastError();
 
-        return (ssize_t) actualNum;
+        return (std::ptrdiff_t) actualNum;
     }
 
     return 0;
@@ -468,17 +468,17 @@ Result RandomAccessFile::nativeFlush ()
 
 //==============================================================================
 
-int64 File::getSize() const
+std::int64_t File::getSize() const
 {
     WIN32_FILE_ATTRIBUTE_DATA attributes;
 
     if (GetFileAttributesEx (fullPath.toWideCharPointer(), GetFileExInfoStandard, &attributes))
-        return (((int64) attributes.nFileSizeHigh) << 32) | attributes.nFileSizeLow;
+        return (((std::int64_t) attributes.nFileSizeHigh) << 32) | attributes.nFileSizeLow;
 
     return 0;
 }
 
-void File::getFileTimesInternal (int64& modificationTime, int64& accessTime, int64& creationTime) const
+void File::getFileTimesInternal (std::int64_t& modificationTime, std::int64_t& accessTime, std::int64_t& creationTime) const
 {
     using namespace WindowsFileHelpers;
     WIN32_FILE_ATTRIBUTE_DATA attributes;
@@ -495,7 +495,7 @@ void File::getFileTimesInternal (int64& modificationTime, int64& accessTime, int
     }
 }
 
-bool File::setFileTimesInternal (int64 modificationTime, int64 accessTime, int64 creationTime) const
+bool File::setFileTimesInternal (std::int64_t modificationTime, std::int64_t accessTime, std::int64_t creationTime) const
 {
     using namespace WindowsFileHelpers;
 
@@ -564,12 +564,12 @@ int File::getVolumeSerialNumber() const
     return (int) serialNum;
 }
 
-int64 File::getBytesFreeOnVolume() const
+std::int64_t File::getBytesFreeOnVolume() const
 {
     return WindowsFileHelpers::getDiskSpaceInfo (getFullPathName(), false);
 }
 
-int64 File::getVolumeTotalSize() const
+std::int64_t File::getVolumeTotalSize() const
 {
     return WindowsFileHelpers::getDiskSpaceInfo (getFullPathName(), true);
 }
@@ -607,7 +607,7 @@ bool File::isOnRemovableDrive() const
 }
 
 //==============================================================================
-File BEAST_CALLTYPE File::getSpecialLocation (const SpecialLocationType type)
+File File::getSpecialLocation (const SpecialLocationType type)
 {
     int csidlType = 0;
 
@@ -751,7 +751,7 @@ public:
     }
 
     bool next (String& filenameFound,
-               bool* const isDir, bool* const isHidden, int64* const fileSize,
+               bool* const isDir, bool* const isHidden, std::int64_t* const fileSize,
                Time* const modTime, Time* const creationTime, bool* const isReadOnly)
     {
         using namespace WindowsFileHelpers;
@@ -775,7 +775,7 @@ public:
         if (isDir != nullptr)         *isDir        = ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
         if (isHidden != nullptr)      *isHidden     = ((findData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) != 0);
         if (isReadOnly != nullptr)    *isReadOnly   = ((findData.dwFileAttributes & FILE_ATTRIBUTE_READONLY) != 0);
-        if (fileSize != nullptr)      *fileSize     = findData.nFileSizeLow + (((int64) findData.nFileSizeHigh) << 32);
+        if (fileSize != nullptr)      *fileSize     = findData.nFileSizeLow + (((std::int64_t) findData.nFileSizeHigh) << 32);
         if (modTime != nullptr)       *modTime      = Time (fileTimeToTime (&findData.ftLastWriteTime));
         if (creationTime != nullptr)  *creationTime = Time (fileTimeToTime (&findData.ftCreationTime));
 
@@ -797,7 +797,7 @@ DirectoryIterator::NativeIterator::~NativeIterator()
 }
 
 bool DirectoryIterator::NativeIterator::next (String& filenameFound,
-                                              bool* const isDir, bool* const isHidden, int64* const fileSize,
+                                              bool* const isDir, bool* const isHidden, std::int64_t* const fileSize,
                                               Time* const modTime, Time* const creationTime, bool* const isReadOnly)
 {
     return pimpl->next (filenameFound, isDir, isHidden, fileSize, modTime, creationTime, isReadOnly);
