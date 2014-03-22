@@ -1227,6 +1227,9 @@
     <ClInclude Include="..\..\beast\unit_test\define_print.cpp">
       <Filter>beast\unit_test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\utility\hardened_hash.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\files\DirectoryIterator.cpp">
@@ -1699,6 +1702,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\threads\tests\Atomic.test.cpp">
       <Filter>beast\threads\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\tests\hardened_hash.test.cpp">
+      <Filter>beast\utility\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

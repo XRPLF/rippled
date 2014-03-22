@@ -34,3 +34,4 @@
 
 #include "tests/bassert.test.cpp"
 #include "tests/empty_base_optimization.test.cpp"
+#include "tests/hardened_hash.test.cpp"
