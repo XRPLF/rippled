@@ -29,25 +29,25 @@ namespace beast {
 //
 namespace is_call_possible_detail
 {
-    template<typename T>
+    template<typename Z>
     struct add_reference
     {
-      typedef T& type;
+      typedef Z& type;
     };
 
-    template<typename T>
-    struct add_reference<T&>
+    template<typename Z>
+    struct add_reference<Z&>
     {
-      typedef T& type;
+      typedef Z& type;
     };
 
-   template <typename T> class void_exp_result {}; 
+   template <typename Z> class void_exp_result {}; 
 
-   template <typename T, typename U> 
-   U const& operator,(U const&, void_exp_result<T>); 
+   template <typename Z, typename U> 
+   U const& operator,(U const&, void_exp_result<Z>); 
 
-   template <typename T, typename U> 
-   U& operator,(U&, void_exp_result<T>); 
+   template <typename Z, typename U> 
+   U& operator,(U&, void_exp_result<Z>); 
 
    template <typename src_type, typename dest_type> 
    struct clone_constness 
@@ -63,10 +63,10 @@ namespace is_call_possible_detail
 }
 
 #define BEAST_DEFINE_HAS_MEMBER_FUNCTION(trait_name, member_function_name)                                   \
-template<typename T, typename IsCallPossibleSignature> class trait_name;                                     \
+template<typename Z, typename IsCallPossibleSignature> class trait_name;                                     \
                                                                                                              \
-template<typename T, typename Result>                                                                        \
-class trait_name<T, Result(void)>                                                                            \
+template<typename Z, typename Result>                                                                        \
+class trait_name<Z, Result(void)>                                                                            \
 {                                                                                                            \
    class yes { char m; };                                                                                    \
    class no { yes m[2]; };                                                                                   \
@@ -74,7 +74,7 @@ class trait_name<T, Result(void)>                                               
    {                                                                                                         \
      Result member_function_name();                                                                          \
    };                                                                                                        \
-   struct base : public T, public base_mixin { private: base(); };                                           \
+   struct base : public Z, public base_mixin { private: base(); };                                           \
    template <typename U, U t>  class helper{};                                                               \
    template <typename U>                                                                                     \
    static no deduce(U*, helper<Result (base_mixin::*)(), &U::member_function_name>* = 0);                    \
@@ -83,8 +83,8 @@ public:                                                                         
    static const bool value = sizeof(yes) == sizeof(deduce(static_cast<base*>(0)));                           \
 };                                                                                                           \
                                                                                                              \
-template<typename T, typename Result, typename Arg>                                                          \
-class trait_name<T, Result(Arg)>                                                                             \
+template<typename Z, typename Result, typename Arg>                                                          \
+class trait_name<Z, Result(Arg)>                                                                             \
 {                                                                                                            \
    class yes { char m; };                                                                                    \
    class no { yes m[2]; };                                                                                   \
@@ -92,7 +92,7 @@ class trait_name<T, Result(Arg)>                                                
    {                                                                                                         \
      Result member_function_name(Arg);                                                                       \
    };                                                                                                        \
-   struct base : public T, public base_mixin { private: base(); };                                           \
+   struct base : public Z, public base_mixin { private: base(); };                                           \
    template <typename U, U t>  class helper{};                                                               \
    template <typename U>                                                                                     \
    static no deduce(U*, helper<Result (base_mixin::*)(Arg), &U::member_function_name>* = 0);                 \
@@ -101,8 +101,8 @@ public:                                                                         
    static const bool value = sizeof(yes) == sizeof(deduce(static_cast<base*>(0)));                           \
 };                                                                                                           \
                                                                                                              \
-template<typename T, typename Result, typename Arg1, typename Arg2>                                          \
-class trait_name<T, Result(Arg1,Arg2)>                                                                       \
+template<typename Z, typename Result, typename Arg1, typename Arg2>                                          \
+class trait_name<Z, Result(Arg1,Arg2)>                                                                       \
 {                                                                                                            \
    class yes { char m; };                                                                                    \
    class no { yes m[2]; };                                                                                   \
@@ -110,7 +110,7 @@ class trait_name<T, Result(Arg1,Arg2)>                                          
    {                                                                                                         \
      Result member_function_name(Arg1,Arg2);                                                                 \
    };                                                                                                        \
-   struct base : public T, public base_mixin { private: base(); };                                           \
+   struct base : public Z, public base_mixin { private: base(); };                                           \
    template <typename U, U t>  class helper{};                                                               \
    template <typename U>                                                                                     \
    static no deduce(U*, helper<Result (base_mixin::*)(Arg1,Arg2), &U::member_function_name>* = 0);           \
@@ -119,8 +119,8 @@ public:                                                                         
    static const bool value = sizeof(yes) == sizeof(deduce(static_cast<base*>(0)));                           \
 };                                                                                                           \
                                                                                                              \
-template<typename T, typename Result, typename Arg1, typename Arg2, typename Arg3>                           \
-class trait_name<T, Result(Arg1,Arg2,Arg3)>                                                                  \
+template<typename Z, typename Result, typename Arg1, typename Arg2, typename Arg3>                           \
+class trait_name<Z, Result(Arg1,Arg2,Arg3)>                                                                  \
 {                                                                                                            \
    class yes { char m; };                                                                                    \
    class no { yes m[2]; };                                                                                   \
@@ -128,7 +128,7 @@ class trait_name<T, Result(Arg1,Arg2,Arg3)>                                     
    {                                                                                                         \
      Result member_function_name(Arg1,Arg2,Arg3);                                                            \
    };                                                                                                        \
-   struct base : public T, public base_mixin { private: base(); };                                           \
+   struct base : public Z, public base_mixin { private: base(); };                                           \
    template <typename U, U t>  class helper{};                                                               \
    template <typename U>                                                                                     \
    static no deduce(U*, helper<Result (base_mixin::*)(Arg1,Arg2,Arg3), &U::member_function_name>* = 0);      \
@@ -137,8 +137,8 @@ public:                                                                         
    static const bool value = sizeof(yes) == sizeof(deduce(static_cast<base*>(0)));                           \
 };                                                                                                           \
                                                                                                              \
-template<typename T, typename Result, typename Arg1, typename Arg2, typename Arg3, typename Arg4>            \
-class trait_name<T, Result(Arg1,Arg2,Arg3,Arg4)>                                                             \
+template<typename Z, typename Result, typename Arg1, typename Arg2, typename Arg3, typename Arg4>            \
+class trait_name<Z, Result(Arg1,Arg2,Arg3,Arg4)>                                                             \
 {                                                                                                            \
    class yes { char m; };                                                                                    \
    class no { yes m[2]; };                                                                                   \
@@ -146,7 +146,7 @@ class trait_name<T, Result(Arg1,Arg2,Arg3,Arg4)>                                
    {                                                                                                         \
      Result member_function_name(Arg1,Arg2,Arg3,Arg4);                                                       \
    };                                                                                                        \
-   struct base : public T, public base_mixin { private: base(); };                                           \
+   struct base : public Z, public base_mixin { private: base(); };                                           \
    template <typename U, U t>  class helper{};                                                               \
    template <typename U>                                                                                     \
    static no deduce(U*, helper<Result (base_mixin::*)(Arg1,Arg2,Arg3,Arg4), &U::member_function_name>* = 0); \
@@ -165,17 +165,17 @@ template <typename DT, typename IsCallPossibleSignature>                        
 struct trait_name                                                                                                       \
 {                                                                                                                       \
 private:                                                                                                                \
-   typedef std::remove_reference_t <DT> T;                                                                              \
+   typedef std::remove_reference_t <DT> Z;                                                                              \
    class yes {};                                                                                                        \
    class no { yes m[2]; };                                                                                              \
-   struct derived : public T                                                                                            \
+   struct derived : public Z                                                                                            \
    {                                                                                                                    \
-     using T::member_function_name;                                                                                     \
+     using Z::member_function_name;                                                                                     \
      no member_function_name(...) const;                                                                                \
      private: derived ();                                                                                               \
    };                                                                                                                   \
                                                                                                                         \
-   typedef typename beast::is_call_possible_detail::clone_constness<T, derived>::type derived_type;                \
+   typedef typename beast::is_call_possible_detail::clone_constness<Z, derived>::type derived_type;                \
                                                                                                                         \
    template <typename U, typename Result>                                                                               \
    struct return_value_check                                                                                            \
@@ -183,7 +183,7 @@ private:                                                                        
      static yes deduce(Result);                                                                                         \
      static no deduce(...);                                                                                             \
      static no deduce(no);                                                                                              \
-     static no deduce(beast::is_call_possible_detail::void_exp_result<T>);                                         \
+     static no deduce(beast::is_call_possible_detail::void_exp_result<Z>);                                         \
    };                                                                                                                   \
                                                                                                                         \
    template <typename U>                                                                                                \
@@ -206,8 +206,8 @@ private:                                                                        
                                                                                                                         \
      static const bool value =                                                                                          \
        sizeof(                                                                                                          \
-            return_value_check<T, Result>::deduce(                                                                      \
-             (test_me.member_function_name(), beast::is_call_possible_detail::void_exp_result<T>()))               \
+            return_value_check<Z, Result>::deduce(                                                                      \
+             (test_me.member_function_name(), beast::is_call_possible_detail::void_exp_result<Z>()))               \
             ) == sizeof(yes);                                                                                           \
    };                                                                                                                   \
                                                                                                                         \
@@ -219,8 +219,8 @@ private:                                                                        
                                                                                                                         \
      static const bool value =                                                                                          \
        sizeof(                                                                                                          \
-            return_value_check<T, Result>::deduce(                                                                      \
-             (test_me.member_function_name(arg), beast::is_call_possible_detail::void_exp_result<T>())             \
+            return_value_check<Z, Result>::deduce(                                                                      \
+             (test_me.member_function_name(arg), beast::is_call_possible_detail::void_exp_result<Z>())             \
                          )                                                                                              \
             ) == sizeof(yes);                                                                                           \
    };                                                                                                                   \
@@ -234,8 +234,8 @@ private:                                                                        
                                                                                                                         \
      static const bool value =                                                                                          \
        sizeof(                                                                                                          \
-            return_value_check<T, Result>::deduce(                                                                      \
-             (test_me.member_function_name(arg1,arg2), beast::is_call_possible_detail::void_exp_result<T>())       \
+            return_value_check<Z, Result>::deduce(                                                                      \
+             (test_me.member_function_name(arg1,arg2), beast::is_call_possible_detail::void_exp_result<Z>())       \
                          )                                                                                              \
             ) == sizeof(yes);                                                                                           \
    };                                                                                                                   \
@@ -250,8 +250,8 @@ private:                                                                        
                                                                                                                         \
      static const bool value =                                                                                          \
        sizeof(                                                                                                          \
-            return_value_check<T, Result>::deduce(                                                                      \
-             (test_me.member_function_name(arg1,arg2,arg3), beast::is_call_possible_detail::void_exp_result<T>())  \
+            return_value_check<Z, Result>::deduce(                                                                      \
+             (test_me.member_function_name(arg1,arg2,arg3), beast::is_call_possible_detail::void_exp_result<Z>())  \
                          )                                                                                              \
             ) == sizeof(yes);                                                                                           \
    };                                                                                                                   \
@@ -267,15 +267,15 @@ private:                                                                        
                                                                                                                         \
      static const bool value =                                                                                          \
        sizeof(                                                                                                          \
-            return_value_check<T, Result>::deduce(                                                                      \
+            return_value_check<Z, Result>::deduce(                                                                      \
              (test_me.member_function_name(arg1,arg2,arg3,arg4),                                                        \
-                beast::is_call_possible_detail::void_exp_result<T>())                                              \
+                beast::is_call_possible_detail::void_exp_result<Z>())                                              \
                          )                                                                                              \
             ) == sizeof(yes);                                                                                           \
    };                                                                                                                   \
                                                                                                                         \
   public:                                                                                                               \
-    static const bool value = impl<trait_name##_detail::template has_member<T,IsCallPossibleSignature>::value,          \
+    static const bool value = impl<trait_name##_detail::template has_member<Z,IsCallPossibleSignature>::value,          \
         IsCallPossibleSignature>::value;                                                                                \
 }
 
