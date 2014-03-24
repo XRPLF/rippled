@@ -3061,6 +3061,12 @@ Json::Value RPCHandler::doGetCounts (Json::Value params, Resource::Charge& loadT
     if (dbKB > 0)
         ret["dbKBTransaction"] = dbKB;
 
+    {
+        std::size_t c = getApp().getOPs().getLocalTxCount ();
+        if (c > 0)
+            ret["local_txs"] = static_cast<Json::UInt> (c);
+    }
+
     ret["write_load"] = getApp().getNodeStore ().getWriteLoad ();
 
     ret["SLE_hit_rate"] = getApp().getSLECache ().getHitRate ();

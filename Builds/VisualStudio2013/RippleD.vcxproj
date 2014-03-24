@@ -1362,6 +1362,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\LocalTxs.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\tx\Transaction.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2559,6 +2565,7 @@
     <ClInclude Include="..\..\src\ripple_app\transactors\Transactor.h" />
     <ClInclude Include="..\..\src\ripple_app\transactors\TrustSetTransactor.h" />
     <ClInclude Include="..\..\src\ripple_app\transactors\WalletAddTransactor.h" />
+    <ClInclude Include="..\..\src\ripple_app\tx\LocalTxs.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\Transaction.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\TransactionAcquire.h" />
     <ClInclude Include="..\..\src\ripple_app\tx\TransactionEngine.h" />

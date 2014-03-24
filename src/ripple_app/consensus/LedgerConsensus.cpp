@@ -33,9 +33,11 @@ public:
 
     static char const* getCountedObjectName () { return "LedgerConsensus"; }
 
-    LedgerConsensusImp (clock_type& clock, LedgerHash const & prevLCLHash, 
+    LedgerConsensusImp (clock_type& clock, LocalTxs& localtx,
+        LedgerHash const & prevLCLHash, 
         Ledger::ref previousLedger, std::uint32_t closeTime)
         : m_clock (clock)
+        , m_localTX (localtx)
         , mState (lcsPRE_CLOSE)
         , mCloseTime (closeTime)
         , mPrevLedgerHash (prevLCLHash)
@@ -1010,6 +1012,12 @@ private:
             applyTransactions (getApp().getLedgerMaster ().getCurrentLedger
                 ()->peekTransactionMap (), newOL, newLCL,
                 failedTransactions, true);
+
+            {
+                TransactionEngine engine (newOL);
+                m_localTX.apply (engine);
+            }
+
             getApp().getLedgerMaster ().pushLedger (newLCL, newOL);
             mNewLedgerHash = newLCL->getHash ();
             mState = lcsACCEPTED;
@@ -1863,6 +1871,7 @@ private:
     }
 private:
     clock_type& m_clock;
+    LocalTxs& m_localTX;
 
     // VFALCO TODO Rename these to look pretty
     enum LCState
@@ -1918,11 +1927,12 @@ LedgerConsensus::~LedgerConsensus ()
 {
 }
 
-boost::shared_ptr <LedgerConsensus> LedgerConsensus::New (clock_type& clock,
+boost::shared_ptr <LedgerConsensus> LedgerConsensus::New (
+    clock_type& clock, LocalTxs& localtx,
     LedgerHash const &prevLCLHash, Ledger::ref previousLedger, std::uint32_t closeTime)
 {
     return boost::make_shared <LedgerConsensusImp> (
-        clock, prevLCLHash, previousLedger,closeTime);
+        clock, localtx, prevLCLHash, previousLedger,closeTime);
 }
 
 } // ripple
