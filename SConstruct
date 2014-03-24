@@ -15,6 +15,7 @@ FreeBSD = bool('FreeBSD' == platform.system())
 Linux   = bool('Linux' == platform.system())
 Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
 Debian  = bool(Linux and 'debian' == platform.linux_distribution()[0])
+Fedora  = bool(Linux and 'Fedora' == platform.linux_distribution()[0])
 Archlinux  = bool(Linux and ('','','') == platform.linux_distribution()) #Arch still has issues with the platform module
 
 USING_CLANG = OSX or os.environ.get('CC', None) == 'clang'
@@ -114,7 +115,7 @@ BOOST_LIBS = [
 # included the platform can be whitelisted.
 # if FreeBSD or Ubuntu or Archlinux:
 
-if not (USING_CLANG and Linux) and (FreeBSD or Ubuntu or Archlinux or Debian or OSX):
+if not (USING_CLANG and Linux) and (FreeBSD or Ubuntu or Archlinux or Debian or OSX or Fedora):
     # non-mt libs do link with pthreads.
     env.Append(
         LIBS = BOOST_LIBS
