@@ -26,4 +26,4 @@
 #include "impl/joyent_parser.cpp"
 #include "impl/raw_parser.cpp"
 
-#include "tests/ParsedURL.test.cpp"
+#include "tests/ParsedURL.cpp"

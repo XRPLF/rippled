@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+// LIBS: boost_system
+
 #if BEAST_INCLUDE_BEASTCONFIG
 #include "../../../BeastConfig.h"
 #endif

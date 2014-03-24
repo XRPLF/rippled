@@ -22,9 +22,11 @@
 
 #include "../ByteOrder.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <utility>
 
 namespace beast {
 

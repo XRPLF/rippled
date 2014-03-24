@@ -27,6 +27,7 @@
 #include <ios>
 #include <string>
 #include <sstream>
+#include <typeinfo>
 
 //------------------------------------------------------------------------------
 

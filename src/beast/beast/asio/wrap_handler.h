@@ -24,7 +24,7 @@
 #include <boost/asio/detail/handler_cont_helpers.hpp>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
 
-#include <type_traits>
+#include "../cxx14/type_traits.h" // <type_traits>
 #include <utility>
 
 namespace beast {

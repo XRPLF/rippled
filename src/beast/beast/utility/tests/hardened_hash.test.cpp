@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+// MODULES: ../../crypto/impl/Sha256.cpp
+
 #if BEAST_INCLUDE_BEASTCONFIG
 #include "../../../BeastConfig.h"
 #endif

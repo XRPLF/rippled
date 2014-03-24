@@ -440,6 +440,10 @@ void Thread::yield()
 
 #else
 
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include <time.h>
 #if BEAST_BSD
  // ???
