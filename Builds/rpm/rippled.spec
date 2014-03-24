@@ -36,7 +36,7 @@ cp LICENSE %{buildroot}/usr/share/%{name}/
 mkdir -p %{buildroot}/usr/bin
 cp build/rippled %{buildroot}/usr/bin/rippled
 mkdir -p %{buildroot}/etc/%{name}
-cp doc/rippled-example.cfg %{buildroot}/etc/%{name}/
+cp doc/rippled-example.cfg %{buildroot}/etc/%{name}/rippled.cfg
 mkdir -p %{buildroot}/var/lib/%{name}/db
 mkdir -p %{buildroot}/var/log/%{name}
 
