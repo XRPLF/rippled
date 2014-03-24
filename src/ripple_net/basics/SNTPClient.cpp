@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/threads/Thread.h"
+
 namespace ripple {
 
 SETUP_LOG (SNTPClient)

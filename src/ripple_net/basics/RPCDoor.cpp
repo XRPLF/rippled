@@ -56,7 +56,6 @@ public:
 
     void startListening ()
     {
-        // VFALCO NOTE Why not use make_shared?
         RPCServerImp::pointer new_connection (boost::make_shared <RPCServerImp> (
             boost::ref (mAcceptor.get_io_service ()),
                 boost::ref (m_sslContext->get ()),
@@ -130,16 +129,15 @@ private:
     RPCServer::Handler& m_rpcServerHandler;
     boost::asio::ip::tcp::acceptor      mAcceptor;
     boost::asio::deadline_timer         mDelayTimer;
-    beast::ScopedPointer <RippleSSLContext>    m_sslContext;
+    std::unique_ptr <RippleSSLContext>    m_sslContext;
 };
 
 //------------------------------------------------------------------------------
 
+// VFALCO TODO Return std::unique_ptr here
 RPCDoor* RPCDoor::New (boost::asio::io_service& io_service, RPCServer::Handler& handler)
 {
-    beast::ScopedPointer <RPCDoor> result (new RPCDoorImp (io_service, handler));
-
-    return result.release ();
+    return new RPCDoorImp (io_service, handler);
 }
 
 }

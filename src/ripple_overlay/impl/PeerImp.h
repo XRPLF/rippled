@@ -33,6 +33,8 @@
 //        just include what is needed.
 #include "../../ripple_app/ripple_app.h"
 
+#include "../../beast/beast/asio/IPAddressConversion.h"
+
 #include <cstdint>
 
 namespace ripple {

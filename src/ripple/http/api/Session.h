@@ -20,6 +20,11 @@
 #ifndef RIPPLE_HTTP_SESSION_H_INCLUDED
 #define RIPPLE_HTTP_SESSION_H_INCLUDED
 
+#include "../../beast/beast/smart_ptr/SharedPtr.h"
+#include "../../beast/beast/net/IPEndpoint.h"
+#include "../../beast/beast/utility/Journal.h"
+#include "../../beast/modules/beast_asio/http/HTTPRequest.h"
+
 #include <ostream>
 
 namespace ripple {
@@ -31,9 +36,12 @@ namespace HTTP {
     Some fields are input parameters, some are output parameters,
     and all only become defined during specific callbacks.
 */
-class Session : public beast::Uncopyable
+class Session
 {
 public:
+    Session() = default;
+    Session (Session const&) = delete;
+
     /** A user-definable pointer.
         The initial value is always zero.
         Changes to the value are persisted between calls.

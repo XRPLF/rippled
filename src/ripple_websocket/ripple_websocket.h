@@ -27,6 +27,7 @@
 
 #include "../ripple_net/ripple_net.h"
 
+#include "../beast/modules/beast_core/text/LexicalCast.h"
 #include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>

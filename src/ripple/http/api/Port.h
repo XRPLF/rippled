@@ -20,6 +20,11 @@
 #ifndef RIPPLE_HTTP_PORT_H_INCLUDED
 #define RIPPLE_HTTP_PORT_H_INCLUDED
 
+#include "../../beast/beast/net/IPEndpoint.h"
+#include "../../beast/modules/beast_asio/basics/SSLContext.h"
+
+#include <cstdint>
+
 namespace ripple {
 
 namespace HTTP {

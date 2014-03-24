@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../beast/modules/beast_core/text/LexicalCast.h"
+
+#include <string>
+
 namespace ripple {
 
 SETUP_LOG (HTTPRequest)

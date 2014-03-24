@@ -35,7 +35,7 @@ namespace beast {
 
     @see String, StringPairArray
 */
-class StringArray : LeakChecked <StringArray>
+class StringArray
 {
 public:
     //==============================================================================

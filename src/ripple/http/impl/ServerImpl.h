@@ -20,6 +20,9 @@
 #ifndef RIPPLE_HTTP_SERVERIMPL_H_INCLUDED
 #define RIPPLE_HTTP_SERVERIMPL_H_INCLUDED
 
+#include "../../beast/beast/threads/Thread.h"
+#include "../../beast/modules/beast_asio/basics/SharedArg.h"
+
 namespace ripple {
 namespace HTTP {
 

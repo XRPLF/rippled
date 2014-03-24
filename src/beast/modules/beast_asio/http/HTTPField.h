@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_HTTPFIELD_H_INCLUDED
 #define BEAST_ASIO_HTTPFIELD_H_INCLUDED
 
+#include "../../../beast/strings/String.h"
+
 namespace beast {
 
 /** A single header.

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/asio/IPAddressConversion.h"
+
 namespace ripple {
 
 SETUP_LOG (RPCServer)
