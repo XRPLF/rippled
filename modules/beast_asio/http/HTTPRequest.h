@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_HTTPREQUEST_H_INCLUDED
 #define BEAST_ASIO_HTTPREQUEST_H_INCLUDED
 
+#include "HTTPMessage.h"
+
 namespace beast {
 
 class HTTPRequest : public HTTPMessage

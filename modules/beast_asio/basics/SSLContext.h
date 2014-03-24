@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_BASICS_SSLCONTEXT_H_INCLUDED
 #define BEAST_ASIO_BASICS_SSLCONTEXT_H_INCLUDED
 
+#include <boost/asio/ssl/context.hpp>
+
 namespace beast {
 namespace asio {
 

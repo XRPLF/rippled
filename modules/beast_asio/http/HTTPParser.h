@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_HTTPPARSER_H_INCLUDED
 #define BEAST_ASIO_HTTPPARSER_H_INCLUDED
 
+#include "HTTPRequest.h"
+#include "HTTPResponse.h"
+
 namespace beast {
 
 class HTTPParserImpl;

@@ -20,6 +20,10 @@
 #ifndef BEAST_ASIO_HTTPHEADERS_H_INCLUDED
 #define BEAST_ASIO_HTTPHEADERS_H_INCLUDED
 
+#include "HTTPField.h"
+
+#include "../../beast_core/text/StringPairArray.h"
+
 namespace beast {
 
 /** A set of HTTP headers. */
