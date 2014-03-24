@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+// MODULES: ../../../modules/beast_core/beast_core.cpp ../../strings/Strings.cpp ../../chrono/Chrono.cpp ../../threads/Threads.cpp
 #include "../BinaryEncoding.h"
 #include "../UnsignedInteger.h"
 

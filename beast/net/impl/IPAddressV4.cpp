@@ -25,7 +25,8 @@
 #include "../detail/Parse.h"
 
 #include <sstream>
-
+#include <stdexcept>
+    
 namespace beast {
 namespace IP {
 
@@ -95,7 +96,7 @@ AddressV4::Proxy <true> AddressV4::operator[] (std::size_t index) const
     switch (index)
     {
     default:
-        bassertfalse;
+        throw std::out_of_range ("bad array index");
     case 0: return Proxy <true> (24, &value);
     case 1: return Proxy <true> (16, &value);
     case 2: return Proxy <true> ( 8, &value);
@@ -108,7 +109,7 @@ AddressV4::Proxy <false> AddressV4::operator[] (std::size_t index)
     switch (index)
     {
     default:
-        bassertfalse;
+        throw std::out_of_range ("bad array index");
     case 0: return Proxy <false> (24, &value);
     case 1: return Proxy <false> (16, &value);
     case 2: return Proxy <false> ( 8, &value);

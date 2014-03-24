@@ -300,6 +300,9 @@
     <Filter Include="beast\streams\tests">
       <UniqueIdentifier>{63c495fa-b6b2-42ed-8ae3-9f3582e76bf5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="beast\unit_test\tests">
+      <UniqueIdentifier>{8dc7ce09-9255-48c0-8a90-78a0f94d22c5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\beast_core\beast_core.h">
@@ -1601,9 +1604,6 @@
     <ClCompile Include="..\..\beast\crypto\tests\UnsignedInteger.test.cpp">
       <Filter>beast\crypto\tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\crypto\tests\BinaryEncoding.test.cpp">
-      <Filter>beast\crypto\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\utility\tests\bassert.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
@@ -1633,6 +1633,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\tests\hardened_hash.test.cpp">
       <Filter>beast\utility\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\tests\BinaryEncoding.cpp">
+      <Filter>beast\crypto\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\unit_test\tests\main.cpp">
+      <Filter>beast\unit_test\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

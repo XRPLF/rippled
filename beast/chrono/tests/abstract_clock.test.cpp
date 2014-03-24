@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+// MODULES: ../impl/chrono_io.cpp
+
 #include "../abstract_clock.h"
 #include "../abstract_clock_io.h"
 #include "../manual_clock.h"

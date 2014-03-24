@@ -28,4 +28,4 @@
 #include "impl/WaitableEvent.cpp"
 
 #include "tests/Atomic.test.cpp"
-#include "tests/ServiceQueue.test.cpp"
+#include "tests/ServiceQueue.cpp"

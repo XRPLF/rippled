@@ -17,14 +17,41 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
+#include "../../unit_test.h"
+#include "../../streams/debug_ostream.h"
+
+#ifdef _MSC_VER
+# ifndef WIN32_LEAN_AND_MEAN // VC_EXTRALEAN
+#  define WIN32_LEAN_AND_MEAN
+#  include <windows.h>
+#  undef WIN32_LEAN_AND_MEAN
+# else
+#  include <windows.h>
+# endif
 #endif
 
-#include "impl/MurmurHash.cpp"
-#include "impl/Sha256.cpp"
-#include "impl/UnsignedInteger.cpp"
+#include <cstdlib>
 
-#include "tests/BinaryEncoding.cpp"
+// Simple main used to produce stand
+// alone executables that run unit tests.
+int main()
+{
+    using namespace beast::unit_test;
 
-#include "tests/UnsignedInteger.test.cpp"
+#ifdef _MSC_VER
+    {
+        int flags = _CrtSetDbgFlag (_CRTDBG_REPORT_FLAG);
+        flags |= _CRTDBG_LEAK_CHECK_DF;
+        _CrtSetDbgFlag (flags);
+    }
+#endif
+
+    {
+        beast::debug_ostream s;
+        reporter r (s);
+        bool failed (r.run_each (global_suites()));
+        if (failed)
+            return EXIT_FAILURE;
+        return EXIT_SUCCESS;
+    }
+}

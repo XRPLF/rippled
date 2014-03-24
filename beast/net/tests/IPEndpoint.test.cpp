@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+// MODULES: ../impl/IPEndpoint.cpp ../impl/IPAddressV4.cpp ../impl/IPAddressV6.cpp
+
 #if BEAST_INCLUDE_BEASTCONFIG
 #include "../../BeastConfig.h"
 #endif

@@ -20,6 +20,7 @@
 #ifndef BEAST_NET_DYNAMICBUFFER_H_INCLUDED
 #define BEAST_NET_DYNAMICBUFFER_H_INCLUDED
 
+#include <string>
 #include <vector>
 
 namespace beast {
