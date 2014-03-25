@@ -65,7 +65,7 @@
       <Filter>beast\crypto\impl\sha2</Filter>
     </None>
     <None Include="..\..\scripts\compile.sh">
-      <Filter>scripts</Filter>
+      <Filter>beast_asio\scripts</Filter>
     </None>
     <None Include="..\..\beast\asio\README.md">
       <Filter>beast\asio</Filter>
@@ -204,9 +204,6 @@
     <Filter Include="beast\chrono\impl">
       <UniqueIdentifier>{39886e0f-1607-4b7a-81cf-011d83dadee3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="scripts">
-      <UniqueIdentifier>{c65af439-8c23-46c3-9b95-7da15651e5f6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\config\compiler">
       <UniqueIdentifier>{8d88283b-24ec-49ca-a94b-cb6271bc14f9}</UniqueIdentifier>
     </Filter>
@@ -302,6 +299,9 @@
     </Filter>
     <Filter Include="beast\unit_test\tests">
       <UniqueIdentifier>{8dc7ce09-9255-48c0-8a90-78a0f94d22c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast_asio\scripts">
+      <UniqueIdentifier>{c65af439-8c23-46c3-9b95-7da15651e5f6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1182,8 +1182,8 @@
     <ClInclude Include="..\..\beast\unit_test\define_print.cpp">
       <Filter>beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\utility\hardened_hash.h">
-      <Filter>beast\utility</Filter>
+    <ClInclude Include="..\..\beast\container\hardened_hash.h">
+      <Filter>beast\container</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1639,6 +1639,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\unit_test\tests\main.cpp">
       <Filter>beast\unit_test\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\container\tests\hardened_hash.test.cpp">
+      <Filter>beast\container\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

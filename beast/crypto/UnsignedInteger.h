@@ -24,7 +24,7 @@
 #include "MurmurHash.h"
 
 #include "../ByteOrder.h"
-#include "../utility/hardened_hash.h"
+#include "../container/hardened_hash.h"
 
 #include "../utility/noexcept.h"
 #include <algorithm>

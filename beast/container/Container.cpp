@@ -23,3 +23,4 @@
 
 #include "tests/aged_associative_container.test.cpp"
 #include "tests/buffer_view.test.cpp"
+#include "tests/hardened_hash.test.cpp"

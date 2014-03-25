@@ -129,6 +129,7 @@
     <ClInclude Include="..\..\beast\container\detail\aged_container_iterator.h" />
     <ClInclude Include="..\..\beast\container\detail\aged_unordered_container.h" />
     <ClInclude Include="..\..\beast\container\buffer_view.h" />
+    <ClInclude Include="..\..\beast\container\hardened_hash.h" />
     <ClInclude Include="..\..\beast\Crypto.h" />
     <ClInclude Include="..\..\beast\crypto\BinaryEncoding.h" />
     <ClInclude Include="..\..\beast\crypto\impl\sha2\sha2.h" />
@@ -239,7 +240,6 @@
     <ClInclude Include="..\..\beast\utility\Debug.h" />
     <ClInclude Include="..\..\beast\utility\empty_base_optimization.h" />
     <ClInclude Include="..\..\beast\utility\Error.h" />
-    <ClInclude Include="..\..\beast\utility\hardened_hash.h" />
     <ClInclude Include="..\..\beast\utility\hash_pair.h" />
     <ClInclude Include="..\..\beast\utility\is_call_possible.h" />
     <ClInclude Include="..\..\beast\utility\Journal.h" />
@@ -437,6 +437,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\beast\container\tests\buffer_view.test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\container\tests\hardened_hash.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
