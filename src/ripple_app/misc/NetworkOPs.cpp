@@ -765,7 +765,7 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
     {
         try
         {
-            if (!isMemoOkay (*trans) || !trans->checkSign ())
+            if (!passesLocalChecks (*trans) || !trans->checkSign ())
             {
                 m_journal.warning << "Submitted transaction has bad signature";
                 getApp().getHashRouter ().setFlag (suppress, SF_BAD);

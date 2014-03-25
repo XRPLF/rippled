@@ -442,10 +442,11 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
             "Exception occurred during transaction");
     }
 
-    if (!isMemoOkay (*stpTrans))
+    std::string reason;
+    if (!passesLocalChecks (*stpTrans, reason))
     {
         return RPC::make_error (rpcINVALID_PARAMS,
-            "The memo exceeds the maximum allowed size.");
+            reason);
     }
 
     if (params.isMember ("debug_signing"))

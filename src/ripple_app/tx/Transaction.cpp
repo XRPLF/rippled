@@ -33,7 +33,7 @@ Transaction::Transaction (SerializedTransaction::ref sit, bool bValidate)
         return;
     }
 
-    if (!bValidate || (isMemoOkay (*mTransaction) && checkSign ()))
+    if (!bValidate || (passesLocalChecks (*mTransaction) && checkSign ()))
         mStatus = NEW;
 }
 

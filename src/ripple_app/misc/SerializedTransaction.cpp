@@ -313,6 +313,7 @@ std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, std::uint32_t 
 }
 
 //------------------------------------------------------------------------------
+
 bool isMemoOkay (STObject const& st)
 {
     if (!st.isFieldPresent (sfMemos))
@@ -326,6 +327,42 @@ bool isMemoOkay (STObject const& st)
         return false;
     return true;
 }
+
+// Ensure all account fields are 160-bits
+bool isAccountFieldOkay (STObject const& st)
+{
+    for (int i = 0; i < st.getCount(); ++i)
+    {
+        const STAccount* t = dynamic_cast<STAccount const*>(st.peekAtPIndex (i));
+        if (t&& !t->isValueH160 ())
+            return false;
+    }
+
+    return true;
+}
+
+bool passesLocalChecks (STObject const& st, std::string& reason)
+{
+    if (!isMemoOkay (st))
+    {
+        reason = "The memo exceeds the maximum allowed size.";
+        return false;
+    }
+    if (!isAccountFieldOkay (st))
+    {
+        reason = "An account field is invalid.";
+        return false;
+    }
+
+    return true;
+}
+
+bool passesLocalChecks (STObject const& st)
+{
+    std::string reason;
+    return passesLocalChecks (st, reason);
+}
+
 
 //------------------------------------------------------------------------------
 
