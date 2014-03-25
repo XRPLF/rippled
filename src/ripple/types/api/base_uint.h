@@ -25,7 +25,7 @@
 #ifndef RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 #define RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 
-#include "../../beast/beast/utility/hardened_hash.h"
+#include "../../beast/beast/container/hardened_hash.h"
 
 #include <functional>
 

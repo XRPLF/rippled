@@ -22,7 +22,7 @@
 
 #include "../../beast/beast/FixedArray.h"
 #include "../../beast/beast/crypto/MurmurHash.h"
-#include "../../beast/beast/utility/hardened_hash.h"
+#include "../../beast/beast/container/hardened_hash.h"
 
 namespace ripple {
 

@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#ifndef BEAST_UTILITY_HARDENED_HASH_H_INCLUDED
-#define BEAST_UTILITY_HARDENED_HASH_H_INCLUDED
+#ifndef BEAST_CONTAINER_HARDENED_HASH_H_INCLUDED
+#define BEAST_CONTAINER_HARDENED_HASH_H_INCLUDED
 
-#include "is_call_possible.h"
+#include "../utility/is_call_possible.h"
 
-#include "noexcept.h"
+#include "../utility/noexcept.h"
 #include <functional>
 #include <mutex>
 #include <random>
