@@ -36,7 +36,7 @@ else:
 # scons tools
 #
 
-HONOR_ENVS = ['CC', 'CXX', 'PATH']
+HONOR_ENVS = ['CC', 'CXX', 'PATH', 'PKG_CONFIG_PATH']
 
 env = Environment(
     tools = ['default', 'protoc'],
