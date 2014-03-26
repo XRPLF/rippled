@@ -88,18 +88,21 @@ namespace detail {
         BigNum m_bn;
 
     public:
-        SignaturePart (unsigned char const* sig, size_t len)
+        SignaturePart (unsigned char const* sig, size_t size)
             : m_skip (0)
         {
-            // The format is: <02> <len> <sig>
-            if ((sig[0] != 0x02) || (len < 3))
+            // The format is: <02> <length of signature> <signature>
+            if ((sig[0] != 0x02) || (size < 3))
                 return;
             
-            size_t sigLen = sig[1];
+            size_t const len (sig[1]);
             
-            // Can't be longer than the data we have and must
-            // be between 1 and 33 bytes.
-            if ((sigLen > len) || (sigLen < 2) || (sigLen > 33))
+            // Claimed length can't be longer than amount of data available
+            if (len > (size - 2))
+                return;
+
+            // Signature must be between 1 and 33 bytes.
+            if ((len < 1) || (len > 33))
                 return;
 
             // The signature can't be negative
@@ -114,9 +117,10 @@ namespace detail {
             if ((sig[2] == 0) && ((sig[3] & 0x80) == 0))
                 return;
 
-            // Load the signature but skip the marker prefix and length
-            if (m_bn.set (sig + 2, sigLen))
-                m_skip = sigLen + 2;
+            // Load the signature (ignore the marker prefix and length) and if
+            // successful, count the number of bytes we consumed.
+            if (m_bn.set (sig + 2, len))
+                m_skip = len + 2;
         }
 
         bool valid () const
@@ -161,7 +165,7 @@ bool isCanonicalECDSASig (void const* vSig, size_t sigLen, ECDSA strict_param)
 
     unsigned char const* sig = reinterpret_cast<unsigned char const*> (vSig);
 
-    if ((sigLen < 10) || (sigLen > 72))
+    if ((sigLen < 8) || (sigLen > 72))
         return false;
 
     if ((sig[0] != 0x30) || (sig[1] != (sigLen - 2)))
@@ -311,8 +315,7 @@ public:
         return b;
     }
 
-    /** Verifies that a signature is valid.
-        Valid signatures may not be canonical
+    /** Verifies that a signature is syntactically valid.
     */
     bool isValid (std::string const& hex)
     {
@@ -320,8 +323,7 @@ public:
         return isCanonicalECDSASig (&j[0], j.size(), ECDSA::not_strict);
     }
 
-    /** Verifies that a signature is canonical.
-        Canonical signatures are valid.
+    /** Verifies that a signature is syntactically valid and in canonical form.
     */
     bool isStrictlyCanonical (std::string const& hex)
     {
@@ -386,6 +388,12 @@ public:
     {
         testcase ("Canonical signature checks", abort_on_fail);
 
+        // r and s 1 byte 1
+        expect (isValid ("3006" 
+            "020101" 
+            "020102"),
+            "Well-formed short signature");
+
         expect (isValid ("3044"
             "02203932c892e2e550f3af8ee4ce9c215a87f9bb831dcac87b2838e2c2eaa891df0c"
             "022030b61dd36543125d56b9f9f3a1f53189e5af33cdda8d77a5209aec03978fa001"),
@@ -436,6 +444,41 @@ public:
             "0201FF"
             "0200"),
             "tooshort");
+
+        expect (!isValid ("3006" 
+            "020101" 
+            "020202"),
+            "Slen-Overlong");
+
+        expect (!isValid ("3006" 
+            "020701" 
+            "020102"),
+            "Rlen-Overlong-OOB");
+
+        expect (!isValid ("3006" 
+            "020401" 
+            "020102"),
+            "Rlen-Overlong-OOB");
+
+        expect (!isValid ("3006" 
+            "020501" 
+            "020102"),
+            "Rlen-Overlong-OOB");
+
+        expect (!isValid ("3006" 
+            "020201" 
+            "020102"),
+            "Rlen-Overlong");
+
+        expect (!isValid ("3006" 
+            "020301" 
+            "020202"),
+            "Rlen Overlong and Slen-Overlong");
+
+        expect (!isValid ("3006" 
+            "020401" 
+            "020202"),
+            "Rlen Overlong and OOB and Slen-Overlong");
 
         expect (!isValid("3047"
             "0221005990e0584b2b238e1dfaad8d6ed69ecc1a4a13ac85fc0b31d0df395eb1ba6105"
