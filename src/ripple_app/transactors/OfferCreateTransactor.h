@@ -78,6 +78,26 @@ private:
         std::unordered_set<uint160, beast::hardened_hash<uint160>>&  usAccountTouched,
         STAmount&           saOfferFunds);
 
+    bool applyOffer (
+        const bool bSell,
+        const std::uint32_t uTakerPaysRate, const std::uint32_t uOfferPaysRate,
+        const STAmount& saOfferRate,
+        const STAmount& saOfferFunds, const STAmount& saTakerFunds,
+        const STAmount& saOfferPays, const STAmount& saOfferGets,
+        const STAmount& saTakerPays, const STAmount& saTakerGets,
+        STAmount& saTakerPaid, STAmount& saTakerGot,
+        STAmount& saTakerIssuerFee, STAmount& saOfferIssuerFee);
+
+    bool canCross (
+        STAmount const& saTakerFunds,
+        STAmount const& saSubTakerPays,
+        STAmount const& saSubTakerGets,
+        std::uint64_t uTipQuality,
+        std::uint64_t uTakeQuality,
+        bool isPassive,
+        bool& isUnfunded,
+        TER& terResult) const;
+        
     TER takeOffers (
         bool const bOpenLedger,
         bool const bPassive,

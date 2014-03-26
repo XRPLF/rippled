@@ -763,18 +763,6 @@ public:
     static std::uint64_t getRate (const STAmount& offerOut, const STAmount& offerIn);
     static STAmount setRate (std::uint64_t rate);
 
-    // Someone is offering X for Y, I try to pay Z, how much do I get?
-    // And what's left of the offer? And how much do I actually pay?
-    static bool applyOffer (
-        const bool bSell,
-        const std::uint32_t uTakerPaysRate, const std::uint32_t uOfferPaysRate,
-        const STAmount& saOfferRate,
-        const STAmount& saOfferFunds, const STAmount& saTakerFunds,
-        const STAmount& saOfferPays, const STAmount& saOfferGets,
-        const STAmount& saTakerPays, const STAmount& saTakerGets,
-        STAmount& saTakerPaid, STAmount& saTakerGot,
-        STAmount& saTakerIssuerFee, STAmount& saOfferIssuerFee);
-
     // Someone is offering X for Y, I need Z, how much do I pay
     static STAmount getPay (const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
 

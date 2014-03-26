@@ -95,6 +95,225 @@ bool OfferCreateTransactor::isValidOffer (
     return true;
 }
 
+/**
+*/
+bool OfferCreateTransactor::canCross (
+    STAmount const& saTakerFunds,
+    STAmount const& saSubTakerPays,
+    STAmount const& saSubTakerGets,
+    std::uint64_t uTipQuality,
+    std::uint64_t uTakeQuality,
+    bool isPassive,
+    bool& isUnfunded,
+    TER& terResult) const
+{
+    if (!saTakerFunds.isPositive ())
+    {
+        // Taker is out of funds. Don't create the offer.
+        isUnfunded = true;
+        terResult = tesSUCCESS;
+        return false;
+    }
+
+    if (!saSubTakerPays.isPositive() || !saSubTakerGets.isPositive())
+    {
+        // Offer is completely consumed
+        terResult = tesSUCCESS;
+        return false;
+    }
+
+    // TODO We must also consider the synthesized tip as well
+    if ((uTakeQuality < uTipQuality) || (isPassive && (uTakeQuality == uTipQuality)))
+    {
+        // Offer does not cross this offer
+        terResult = tesSUCCESS;
+        return false;
+    }
+
+    return true;
+}
+
+/** Apply a particular offer
+
+    An existing offer is on the books. The price is the offer owner's, which
+    might be better for taker. The taker pays what they can and gets all taker
+    can pay for with `saTakerFunds`/`uTakerPaysRate`, limited by `saOfferPays`
+    and `saOfferFunds`/`uOfferPaysRate`.
+    If taker is an offer, taker is spending at same or better rate than they
+    wanted.
+    The taker should consider themselves as wanting to buy X amount and as
+    willing to pay at most the rate of Y/X each.
+    After having some part of their offer fulfilled at a better rate their offer
+    should be reduced accordingly.
+    There are no quality costs for offer vs offer taking.
+
+    @param bSell `true` if using sell semantics.
+    @param uTakerPaysRate >= QUALITY_ONE | TransferRate for third party IOUs paid by taker.
+    @param uOfferPaysRate >= QUALITY_ONE | TransferRate for third party IOUs paid by offer owner.
+    @param saOfferRate Original saOfferGets/saOfferPays, when offer was made.
+    @param saOfferFunds Limit for saOfferPays : How much can pay including fees.
+    @param saTakerFunds Limit for saOfferGets : How much can pay including fees.
+    @param saOfferPays Request : this should be reduced as the offer is fullfilled.
+    @param saOfferGets Request : this should be reduced as the offer is fullfilled.
+    @param saTakerPays Limit for taker to pay.
+    @param saTakerGets Limit for taker to get.
+    @param saTakerPaid Actual amount the taker paid
+    @param saTakerGot Actual amount the taker got
+    @param saTakerIssuerFee Actual 
+    @param saOfferIssuerFee Actual
+
+    @note Buy vs. Sell semantics:
+    
+    In Ripple, placed offers are always executed at the rate at which they were
+    placed. However, the offer we are processing hasn't been placed yet and it
+    can cross with offers that have. Such crossing offers can be consumed by
+    existing offers that give a better rate.
+
+    The only difference between buy and sell offers is the way in which we
+    calculate what remains to be placed on the books after crossing offers
+    are consumed.
+
+    First, consider the case where a user is trying to place an offer to buy
+    1 BTC for 700 USD: 
+    If an offer to giving 0.5 BTC for 300 USD is on the books, the offers cross
+    and under buy semantics the user buys 0.5 BTC for 300 USD (less than the
+    350 USD he was willing to pay) and the offer is adjusted and placed on the
+    books as: "give 0.5 BTC for 350 USD" which is the amount left to buy at the
+    original rate.
+
+    Now consider the case where a user is trying to place an offer to sell
+    700 USD for 1 BTC instead:
+    If an offer to giving 0.5 BTC for 300 USD is on the books, the offers cross
+    and under sell semantics the user will sell 350 USD for 0.5 BTC (more than
+    he was willing to get) and his offer will be be adjusted and placed on the
+    books as: "give 0.57 BTC for 400 USD" which is what is left to sell at the
+    original rate.
+*/
+bool OfferCreateTransactor::applyOffer (
+    const bool bSell,
+    const std::uint32_t uTakerPaysRate, const std::uint32_t uOfferPaysRate,
+    const STAmount& saOfferRate,
+    const STAmount& saOfferFunds, const STAmount& saTakerFunds,
+    const STAmount& saOfferPays, const STAmount& saOfferGets,
+    const STAmount& saTakerPays, const STAmount& saTakerGets,
+    STAmount& saTakerPaid, STAmount& saTakerGot,
+    STAmount& saTakerIssuerFee, STAmount& saOfferIssuerFee)
+{
+    saOfferGets.throwComparable (saTakerFunds);
+
+    assert (saOfferFunds.isPositive () && saTakerFunds.isPositive ()); // Both must have funds.
+    assert (saOfferGets.isPositive () && saOfferPays.isPositive ()); // Must not be a null offer.
+
+    // Available = limited by funds.
+    // Limit offerer funds available, by transfer fees.
+    STAmount    saOfferFundsAvailable   = QUALITY_ONE == uOfferPaysRate
+                                          ? saOfferFunds          // As is.
+                                          : STAmount::divide (saOfferFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9)); // Reduce by offer fees.
+
+    WriteLog (lsINFO, STAmount) << "applyOffer: uOfferPaysRate=" << uOfferPaysRate;
+    WriteLog (lsINFO, STAmount) << "applyOffer: saOfferFundsAvailable=" << saOfferFundsAvailable.getFullText ();
+
+    // Limit taker funds available, by transfer fees.
+    STAmount    saTakerFundsAvailable   = QUALITY_ONE == uTakerPaysRate
+                                          ? saTakerFunds          // As is.
+                                          : STAmount::divide (saTakerFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9)); // Reduce by taker fees.
+
+    WriteLog (lsINFO, STAmount) << "applyOffer: TAKER_FEES=" << STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9).getFullText ();
+    WriteLog (lsINFO, STAmount) << "applyOffer: uTakerPaysRate=" << uTakerPaysRate;
+    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerFundsAvailable=" << saTakerFundsAvailable.getFullText ();
+
+    STAmount    saOfferPaysAvailable;   // Amount offer can pay out, limited by offer and offerer funds.
+    STAmount    saOfferGetsAvailable;   // Amount offer would get, limited by offer funds.
+
+    if (saOfferFundsAvailable >= saOfferPays)
+    {
+        // Offer was fully funded, avoid math shenanigans.
+
+        saOfferPaysAvailable    = saOfferPays;
+        saOfferGetsAvailable    = saOfferGets;
+    }
+    else
+    {
+        // Offer has limited funding, limit offer gets and pays by funds available.
+
+        saOfferPaysAvailable    = saOfferFundsAvailable;
+        saOfferGetsAvailable    = std::min (saOfferGets, STAmount::mulRound (saOfferPaysAvailable, saOfferRate, saOfferGets, true));
+    }
+
+    WriteLog (lsINFO, STAmount) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText ();
+    WriteLog (lsINFO, STAmount) << "applyOffer: saOfferGetsAvailable=" << saOfferGetsAvailable.getFullText ();
+
+    STAmount    saTakerPaysAvailable    = std::min (saTakerPays, saTakerFundsAvailable);
+    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaysAvailable=" << saTakerPaysAvailable.getFullText ();
+
+    // Limited = limited by other sides raw numbers.
+    // Taker can't pay more to offer than offer can get.
+    STAmount    saTakerPaysLimited      = std::min (saTakerPaysAvailable, saOfferGetsAvailable);
+    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaysLimited=" << saTakerPaysLimited.getFullText ();
+
+    // Align saTakerGetsLimited with saTakerPaysLimited.
+    STAmount    saTakerGetsLimited      = saTakerPaysLimited >= saOfferGetsAvailable              // Cannot actually be greater
+                                          ? saOfferPaysAvailable                                  // Potentially take entire offer. Avoid math shenanigans.
+                                          : std::min (saOfferPaysAvailable, STAmount::divRound (saTakerPaysLimited, saOfferRate, saTakerGets, true)); // Take a portion of offer.
+
+    WriteLog (lsINFO, STAmount) << "applyOffer: saOfferRate=" << saOfferRate.getFullText ();
+    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGetsLimited=" << saTakerGetsLimited.getFullText ();
+
+    // Got & Paid = Calculated by price and transfered without fees.
+    // Compute from got as when !bSell, we want got to be exact to finish off offer if possible.
+
+    saTakerGot  = bSell
+                  ? saTakerGetsLimited                            // Get all available that are paid for.
+                  : std::min (saTakerGets, saTakerGetsLimited);   // Limit by wanted.
+    saTakerPaid = saTakerGot >= saTakerGetsLimited
+                  ? saTakerPaysLimited
+                  : std::min (saTakerPaysLimited, STAmount::mulRound (saTakerGot, saOfferRate, saTakerFunds, true));
+
+    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGot=" << saTakerGot.getFullText ();
+    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaid=" << saTakerPaid.getFullText ();
+
+    if (uTakerPaysRate == QUALITY_ONE)
+    {
+        saTakerIssuerFee    = STAmount (saTakerPaid.getCurrency (), saTakerPaid.getIssuer ());
+    }
+    else
+    {
+        // Compute fees in a rounding safe way.
+
+        STAmount    saTransferRate  = STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9);
+        WriteLog (lsINFO, STAmount) << "applyOffer: saTransferRate=" << saTransferRate.getFullText ();
+
+        // TakerCost includes transfer fees.
+        STAmount    saTakerCost     = STAmount::mulRound (saTakerPaid, saTransferRate, true);
+
+        WriteLog (lsINFO, STAmount) << "applyOffer: saTakerCost=" << saTakerCost.getFullText ();
+        WriteLog (lsINFO, STAmount) << "applyOffer: saTakerFunds=" << saTakerFunds.getFullText ();
+        saTakerIssuerFee    = saTakerCost > saTakerFunds
+                              ? saTakerFunds - saTakerPaid // Not enough funds to cover fee, stiff issuer the rounding error.
+                              : saTakerCost - saTakerPaid;
+        WriteLog (lsINFO, STAmount) << "applyOffer: saTakerIssuerFee=" << saTakerIssuerFee.getFullText ();
+        assert (!saTakerIssuerFee.isNegative ());
+    }
+
+    if (uOfferPaysRate == QUALITY_ONE)
+    {
+        saOfferIssuerFee    = STAmount (saTakerGot.getCurrency (), saTakerGot.getIssuer ());
+    }
+    else
+    {
+        // Compute fees in a rounding safe way.
+        STAmount    saOfferCost = STAmount::mulRound (saTakerGot, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9), true);
+
+        saOfferIssuerFee    = saOfferCost > saOfferFunds
+                              ? saOfferFunds - saTakerGot // Not enough funds to cover fee, stiff issuer the rounding error.
+                              : saOfferCost - saTakerGot;
+    }
+
+    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGot=" << saTakerGot.getFullText ();
+
+    return saTakerGot >= saOfferPaysAvailable;              // True, if consumed offer.
+}
+
 /** Take as much as possible. 
     We adjusts account balances and charges fees on top to taker.
 
@@ -153,292 +372,329 @@ TER OfferCreateTransactor::takeOffers (
 
     // TODO: need to track the synthesized book (source->XRP + XRP->target)
     //       here as well.
-    OrderBookIterator bookIterator (lesActive,
+    OrderBookIterator directBookIter (lesActive,
         saTakerPays.getCurrency(), saTakerPays.getIssuer(),
         saTakerGets.getCurrency(), saTakerGets.getIssuer());
 
-    while ((temUNCERTAIN == terResult) && bookIterator.nextOffer())
+#ifdef RIPPLE_AUTOBRIDGE
+    std::unique_ptr<OrderBookIterator> bridgeBookIn;
+    std::unique_ptr<OrderBookIterator> bridgeBookOut;
+
+    // If XRP isn't an already an endpoint, then we also create two additional
+    // iterators:
+    //  (1) source -> XPR
+    //  (2) XRP -> target
+    if (!saTakerPays.isNative () && !saTakerGets.isNative ())
+    {
+        if (m_journal.trace)
+        {
+            beast::Journal::ScopedStream ss (m_journal.trace);
+
+            ss <<
+                "Autobridging offer '" << saTakerPays.getFullText () <<
+                "' to '" << saTakerGets.getFullText () << "'" << std::endl;
+
+            ss <<
+                "Selected bridge: '" <<
+                    STAmount::createHumanCurrency(saTakerPays.getCurrency()) <<
+                    "/" <<
+                    RippleAddress::createHumanAccountID (saTakerPays.getIssuer()) <<
+                "' - XRP - '" <<
+                    STAmount::createHumanCurrency(saTakerGets.getCurrency ()) << 
+                    "/" << 
+                    RippleAddress::createHumanAccountID (saTakerGets.getIssuer()) <<
+                "'";
+        }
+    }
+#endif
+
+    while ((temUNCERTAIN == terResult) && directBookIter.nextOffer())
     {
         STAmount saTakerFunds = lesActive.accountFunds (uTakerAccountID, saTakerPays);
         STAmount saSubTakerPays = saTakerPays - saTakerPaid; // How much more to spend.
         STAmount saSubTakerGets = saTakerGets - saTakerGot; // How much more is wanted.
-        std::uint64_t uTipQuality = bookIterator.getCurrentQuality();
+        std::uint64_t uTipQuality = directBookIter.getCurrentQuality();
 
-        if (!saTakerFunds.isPositive ())
+#ifdef RIPPLE_AUTOBRIDGE
+        if (bridgeBookIn && bridgeBookIn->nextOffer() && 
+            bridgeBookOut && bridgeBookOut->nextOffer())
         {
-            // Taker is out of funds. Don't create the offer.
-            bUnfunded = true;
-            terResult = tesSUCCESS;
+            STAmount bridgeIn = STAmount::setRate (bridgeBookIn->getCurrentQuality());
+            STAmount bridgeOut = STAmount::setRate (bridgeBookOut->getCurrentQuality());
+
+            m_journal.error << 
+                "The direct quality is: " << STAmount::setRate (uTipQuality);
+
+            m_journal.error << 
+                "The bridge-to-XRP quality is: " << bridgeIn;
+
+            m_journal.error << 
+                "The bridge-from-XRP quality is: " << bridgeOut;
+
+            m_journal.error <<
+                "The bridge synthetic quality is: " << 
+                STAmount::multiply (bridgeIn, bridgeOut, CURRENCY_ONE, ACCOUNT_ONE);
         }
-        else if (!saSubTakerPays.isPositive() || !saSubTakerGets.isPositive())
-        {
-            // Offer is completely consumed
-            terResult = tesSUCCESS;
+#endif
+        
+        if (!canCross(
+                saTakerFunds,
+                saSubTakerPays,
+                saSubTakerGets,
+                uTipQuality,
+                uTakeQuality,
+                bPassive,
+                bUnfunded,
+                terResult))
+            break;
+
+        // We have a crossing offer to consider.
+
+        // TODO Must consider the synthesized orderbook instead of just the
+        // direct one (i.e. look at A->XRP->B)
+        SLE::pointer sleOffer = directBookIter.getCurrentOffer ();
+
+        if (!sleOffer)
+        { // offer is in directory but not in ledger
+            // CHECKME is this cleaning up corruption?
+            uint256 offerIndex = directBookIter.getCurrentIndex ();
+            m_journal.warning <<
+                "takeOffers: offer not found : " << offerIndex;
+            usMissingOffers.insert (missingOffer_t (
+                directBookIter.getCurrentIndex (), 
+                directBookIter.getCurrentDirectory ()));
+
+            continue;
         }
-        // TODO We must also consider the synthesized tip as well
-        else if ((uTakeQuality < uTipQuality)
-                 || (bPassive && uTakeQuality == uTipQuality))
+
+        m_journal.debug <<
+            "takeOffers: considering offer : " <<
+            sleOffer->getJson (0);
+
+        uint160 const&  uOfferOwnerID = sleOffer->getFieldAccount160 (sfAccount);
+        STAmount saOfferPays = sleOffer->getFieldAmount (sfTakerGets);
+        STAmount saOfferGets = sleOffer->getFieldAmount (sfTakerPays);
+
+        STAmount        saOfferFunds;   // Funds of offer owner to payout.
+
+        bool const bValid = isValidOffer (
+            sleOffer,
+            uOfferOwnerID,
+            saOfferPays,
+            saOfferGets,
+            uTakerAccountID,
+            usOfferUnfundedBecame,
+            usAccountTouched,
+            saOfferFunds);
+
+        if (bValid)
         {
-            // Offer does not cross this offer
-            STAmount    saTipRate           = STAmount::setRate (uTipQuality);
+            STAmount    saSubTakerPaid;
+            STAmount    saSubTakerGot;
+            STAmount    saTakerIssuerFee;
+            STAmount    saOfferIssuerFee;
+            STAmount    saOfferRate = STAmount::setRate (uTipQuality);
 
-            if (m_journal.debug) m_journal.debug <<
-                "takeOffers: done:" <<
-                " uTakeQuality=" << uTakeQuality <<
-                " " << get_compare_sign (uTakeQuality, uTipQuality) <<
-                " uTipQuality=" << uTipQuality <<
-                " saTakerRate=" << saTakerRate <<
-                " " << get_compare_sign (saTakerRate, saTipRate) <<
-                " saTipRate=" << saTakerRate <<
-                " bPassive=" << bPassive;
+            if (m_journal.trace)
+            {
+                m_journal.trace <<
+                    "takeOffers: applyOffer:    saTakerPays: " <<
+                    saTakerPays.getFullText ();
+                m_journal.trace <<
+                    "takeOffers: applyOffer:    saTakerPaid: " <<
+                    saTakerPaid.getFullText ();
+                m_journal.trace <<
+                    "takeOffers: applyOffer:   saTakerFunds: " <<
+                    saTakerFunds.getFullText ();
+                m_journal.trace <<
+                    "takeOffers: applyOffer:   saOfferFunds: " <<
+                    saOfferFunds.getFullText ();
+                m_journal.trace <<
+                    "takeOffers: applyOffer:    saOfferPays: " <<
+                    saOfferPays.getFullText ();
+                m_journal.trace <<
+                    "takeOffers: applyOffer:    saOfferGets: " <<
+                    saOfferGets.getFullText ();
+                m_journal.trace <<
+                    "takeOffers: applyOffer:    saOfferRate: " <<
+                    saOfferRate.getFullText ();
+                m_journal.trace <<
+                    "takeOffers: applyOffer: saSubTakerPays: " <<
+                    saSubTakerPays.getFullText ();
+                m_journal.trace <<
+                    "takeOffers: applyOffer: saSubTakerGets: " <<
+                    saSubTakerGets.getFullText ();
+                m_journal.trace <<
+                    "takeOffers: applyOffer:    saTakerPays: " <<
+                    saTakerPays.getFullText ();
+                m_journal.trace <<
+                    "takeOffers: applyOffer:    saTakerGets: " <<
+                    saTakerGets.getFullText ();
+            }
 
-            terResult   = tesSUCCESS;
-        }
-        else
-        {
-            // We have a crossing offer to consider.
+            bool const bOfferDelete = applyOffer (
+                bSell,
+                lesActive.rippleTransferRate (
+                    uTakerAccountID,
+                    uOfferOwnerID,
+                    uTakerPaysAccountID),
+                lesActive.rippleTransferRate (
+                    uOfferOwnerID,
+                    uTakerAccountID,
+                    uTakerGetsAccountID),
+                saOfferRate,
+                saOfferFunds,
+                saTakerFunds,
+                saOfferPays,
+                saOfferGets,
+                saSubTakerPays,
+                saSubTakerGets,
+                saSubTakerPaid,
+                saSubTakerGot,
+                saTakerIssuerFee,
+                saOfferIssuerFee);
 
-            // TODO Must consider the synthesized orderbook instead of just the
-            // direct one (i.e. look at A->XRP->B)
-            SLE::pointer sleOffer = bookIterator.getCurrentOffer ();
+            if (m_journal.debug)
+            {
+                m_journal.debug <<
+                    "takeOffers: applyOffer: saSubTakerPaid: " <<
+                    saSubTakerPaid.getFullText ();
+                m_journal.debug <<
+                    "takeOffers: applyOffer:  saSubTakerGot: " <<
+                    saSubTakerGot.getFullText ();
+            }
 
-            if (!sleOffer)
-            { // offer is in directory but not in ledger
-                // CHECKME is this cleaning up corruption?
-                uint256 offerIndex = bookIterator.getCurrentIndex ();
-                m_journal.warning <<
-                    "takeOffers: offer not found : " << offerIndex;
-                usMissingOffers.insert (missingOffer_t (
-                    bookIterator.getCurrentIndex (), bookIterator.getCurrentDirectory ()));
+            // Adjust offer
+            // TODO We need to consider the combined (synthesized)
+            // order book.
+
+            // Offer owner will pay less.  Subtract what taker just got.
+            saOfferPays -= saSubTakerGot;
+            sleOffer->setFieldAmount (sfTakerGets, saOfferPays);
+
+            // Offer owner will get less.  Subtract what owner just paid.
+            saOfferGets -= saSubTakerPaid;
+            sleOffer->setFieldAmount (sfTakerPays, saOfferGets);
+
+            mEngine->entryModify (sleOffer);
+
+            if (bOfferDelete)
+            {
+                // TODO need to handle the synthetic case here
+
+                // Offer now fully claimed or now unfunded.
+                m_journal.debug <<
+                    "takeOffers: Offer claimed: Delete.";
+
+                // Delete unfunded offer on success.
+                usOfferUnfundedBecame.insert (sleOffer->getIndex());
+
+                // Offer owner's account is no longer pristine.
+                usAccountTouched.insert (uOfferOwnerID);
+            }
+            else if (saSubTakerGot)
+            {
+                m_journal.debug <<
+                    "takeOffers: Offer partial claim.";
+
+                // TODO check the synthetic case here (to ensure there
+                //      is no corruption)
+
+                if (!saOfferPays.isPositive () || !saOfferGets.isPositive ())
+                {
+                    m_journal.warning << 
+                        "takeOffers: ILLEGAL OFFER RESULT.";
+                    bUnfunded   = true;
+                    terResult   = bOpenLedger 
+                                    ? telFAILED_PROCESSING
+                                    : tecFAILED_PROCESSING;
+                }
             }
             else
             {
-                m_journal.debug <<
-                    "takeOffers: considering offer : " <<
-                    sleOffer->getJson (0);
+                // Taker got nothing, probably due to rounding. Consider
+                // taker unfunded.
+                m_journal.debug << "takeOffers: No claim.";
 
-                uint160 const&  uOfferOwnerID = sleOffer->getFieldAccount160 (sfAccount);
-                STAmount saOfferPays = sleOffer->getFieldAmount (sfTakerGets);
-                STAmount saOfferGets = sleOffer->getFieldAmount (sfTakerPays);
+                bUnfunded   = true;
+                terResult   = tesSUCCESS;                   // Done.
+            }
 
-                STAmount        saOfferFunds;   // Funds of offer owner to payout.
+            assert (uTakerGetsAccountID == saSubTakerGot.getIssuer ());
+            assert (uTakerPaysAccountID == saSubTakerPaid.getIssuer ());
 
-                bool const bValid  = isValidOffer (
-                    sleOffer,
-                    uOfferOwnerID,
-                    saOfferPays,
-                    saOfferGets,
-                    uTakerAccountID,
-                    usOfferUnfundedBecame,
-                    usAccountTouched,
-                    saOfferFunds);
+            if (!bUnfunded)
+            {
+                // Distribute funds. The sends charge appropriate fees
+                // which are implied by offer.
 
-                if (bValid)
+                // TODO Adjust for synthetic transfers - pay into A->XRP
+                // and pay out of XRP->B
+
+                // Offer owner pays taker.
+                terResult = lesActive.accountSend (
+                    uOfferOwnerID, uTakerAccountID, saSubTakerGot);
+
+                if (tesSUCCESS == terResult)
                 {
-                    STAmount    saSubTakerPaid;
-                    STAmount    saSubTakerGot;
-                    STAmount    saTakerIssuerFee;
-                    STAmount    saOfferIssuerFee;
-                    STAmount    saOfferRate = STAmount::setRate (uTipQuality);
+                    // TODO: in the synthesized case, pay from B to the original taker
+                    // Taker -> A -> XRP -> B -> ... -> Taker
 
-                    if (m_journal.trace)
-                    {
-                        m_journal.trace <<
-                            "takeOffers: applyOffer:    saTakerPays: " <<
-                            saTakerPays.getFullText ();
-                        m_journal.trace <<
-                            "takeOffers: applyOffer:    saTakerPaid: " <<
-                            saTakerPaid.getFullText ();
-                        m_journal.trace <<
-                            "takeOffers: applyOffer:   saTakerFunds: " <<
-                            saTakerFunds.getFullText ();
-                        m_journal.trace <<
-                            "takeOffers: applyOffer:   saOfferFunds: " <<
-                            saOfferFunds.getFullText ();
-                        m_journal.trace <<
-                            "takeOffers: applyOffer:    saOfferPays: " <<
-                            saOfferPays.getFullText ();
-                        m_journal.trace <<
-                            "takeOffers: applyOffer:    saOfferGets: " <<
-                            saOfferGets.getFullText ();
-                        m_journal.trace <<
-                            "takeOffers: applyOffer:    saOfferRate: " <<
-                            saOfferRate.getFullText ();
-                        m_journal.trace <<
-                            "takeOffers: applyOffer: saSubTakerPays: " <<
-                            saSubTakerPays.getFullText ();
-                        m_journal.trace <<
-                            "takeOffers: applyOffer: saSubTakerGets: " <<
-                            saSubTakerGets.getFullText ();
-                        m_journal.trace <<
-                            "takeOffers: applyOffer:    saTakerPays: " <<
-                            saTakerPays.getFullText ();
-                        m_journal.trace <<
-                            "takeOffers: applyOffer:    saTakerGets: " <<
-                            saTakerGets.getFullText ();
-                    }
-
-                    bool const bOfferDelete = STAmount::applyOffer (
-                        bSell,
-                        lesActive.rippleTransferRate (
-                            uTakerAccountID,
-                            uOfferOwnerID,
-                            uTakerPaysAccountID),
-                        lesActive.rippleTransferRate (
-                            uOfferOwnerID,
-                            uTakerAccountID,
-                            uTakerGetsAccountID),
-                        saOfferRate,
-                        saOfferFunds,
-                        saTakerFunds,
-                        saOfferPays,
-                        saOfferGets,
-                        saSubTakerPays,
-                        saSubTakerGets,
-                        saSubTakerPaid,
-                        saSubTakerGot,
-                        saTakerIssuerFee,
-                        saOfferIssuerFee);
-
-                    m_journal.debug <<
-
-                        "takeOffers: applyOffer: saSubTakerPaid: " <<
-                        saSubTakerPaid.getFullText ();
-                    m_journal.debug <<
-                        "takeOffers: applyOffer:  saSubTakerGot: " <<
-                        saSubTakerGot.getFullText ();
-
-                    // Adjust offer
-                    // TODO We need to consider the combined (synthesized)
-                    // order book.
-
-                    // Offer owner will pay less.  Subtract what taker just got.
-                    sleOffer->setFieldAmount (sfTakerGets, saOfferPays -= saSubTakerGot);
-
-                    // Offer owner will get less.  Subtract what owner just paid.
-                    sleOffer->setFieldAmount (sfTakerPays, saOfferGets -= saSubTakerPaid);
-
-                    mEngine->entryModify (sleOffer);
-
-                    if (bOfferDelete)
-                    {
-                        // TODO need to handle the synthetic case here
-
-                        // Offer now fully claimed or now unfunded.
-                        m_journal.debug <<
-                            "takeOffers: Offer claimed: Delete.";
-
-                        // Delete unfunded offer on success.
-                        usOfferUnfundedBecame.insert (sleOffer->getIndex());
-
-                        // Offer owner's account is no longer pristine.
-                        usAccountTouched.insert (uOfferOwnerID);
-                    }
-                    else if (saSubTakerGot)
-                    {
-                        m_journal.debug <<
-                            "takeOffers: Offer partial claim.";
-
-                        // TODO check the synthetic case here (to ensure there
-                        //      is no corruption)
-
-                        if (!saOfferPays.isPositive () || !saOfferGets.isPositive ())
-                        {
-                            m_journal.warning << 
-                                "takeOffers: ILLEGAL OFFER RESULT.";
-                            bUnfunded   = true;
-                            terResult   = bOpenLedger 
-                                            ? telFAILED_PROCESSING
-                                            : tecFAILED_PROCESSING;
-                        }
-                    }
-                    else
-                    {
-                        // Taker got nothing, probably due to rounding. Consider
-                        // taker unfunded.
-                        m_journal.debug << "takeOffers: No claim.";
-
-                        bUnfunded   = true;
-                        terResult   = tesSUCCESS;                   // Done.
-                    }
-
-                    assert (uTakerGetsAccountID == saSubTakerGot.getIssuer ());
-                    assert (uTakerPaysAccountID == saSubTakerPaid.getIssuer ());
-
-                    if (!bUnfunded)
-                    {
-                        // Distribute funds. The sends charge appropriate fees
-                        // which are implied by offer.
-
-                        // TODO Adjust for synthetic transfers - pay into A->XRP
-                        // and pay out of XRP->B
-
-                        // Offer owner pays taker.
-                        terResult = lesActive.accountSend (
-                            uOfferOwnerID, uTakerAccountID, saSubTakerGot);
-
-                        if (tesSUCCESS == terResult)
-                        {
-                            // TODO: in the synthesized case, pay from B to the original taker
-                            // Taker -> A -> XRP -> B -> ... -> Taker
-
-                            // Taker pays offer owner.
-                            terResult   = lesActive.accountSend (
-                                uTakerAccountID, uOfferOwnerID, saSubTakerPaid);
-                        }
-
-                        if (bSell)
-                        {
-                            // Sell semantics:
-                            // Reduce amount considered received to original
-                            // offer's rate. Not by the crossing rate, which is
-                            // higher.
-                            STAmount saEffectiveGot = STAmount::divide(
-                                saSubTakerPaid, saTakerRate, saTakerGets);
-                            saSubTakerGot = std::min(saEffectiveGot, saSubTakerGot);
-                        }
-                        else
-                        {
-                            // Buy semantics: Reduce amount considered paid by
-                            // taker's rate. Not by actual cost which is lower.
-                            // That is, take less as to just satify our buy
-                            // requirement.
-
-                            // Taker could pay.
-                            STAmount saTakerCould = saTakerPays - saTakerPaid;
-
-                            if (saTakerFunds < saTakerCould)
-                                saTakerCould = saTakerFunds;
-
-                            STAmount saTakerUsed = STAmount::multiply (
-                                saSubTakerGot, saTakerRate, saTakerPays);
-
-                            if (m_journal.debug)
-                            {
-                                m_journal.debug <<
-                                    "takeOffers: applyOffer:   saTakerCould: " <<
-                                    saTakerCould.getFullText ();
-                                m_journal.debug <<
-                                    "takeOffers: applyOffer:  saSubTakerGot: " <<
-                                    saSubTakerGot.getFullText ();
-                                m_journal.debug <<
-                                    "takeOffers: applyOffer:    saTakerRate: " <<
-                                    saTakerRate.getFullText ();
-                                m_journal.debug <<
-                                    "takeOffers: applyOffer:    saTakerUsed: " <<
-                                    saTakerUsed.getFullText ();
-                            }
-
-                            saSubTakerPaid  = std::min (saTakerCould, saTakerUsed);
-                        }
-
-                        saTakerPaid     += saSubTakerPaid;
-                        saTakerGot      += saSubTakerGot;
-
-                        if (tesSUCCESS == terResult)
-                            terResult   = temUNCERTAIN;
-                    }
+                    // Taker pays offer owner.
+                    terResult   = lesActive.accountSend (
+                        uTakerAccountID, uOfferOwnerID, saSubTakerPaid);
                 }
+
+                if (bSell)
+                {
+                    // Sell semantics:
+                    // Reduce amount considered received to original
+                    // offer's rate. Not by the crossing rate, which is
+                    // higher.
+                    STAmount saEffectiveGot = STAmount::divide(
+                        saSubTakerPaid, saTakerRate, saTakerGets);
+                    saSubTakerGot = std::min(saEffectiveGot, saSubTakerGot);
+                }
+                else
+                {
+                    // Buy semantics: Reduce amount considered paid by
+                    // taker's rate. Not by actual cost which is lower.
+                    // That is, take less as to just satify our buy
+                    // requirement.
+
+                    // Taker could pay.
+                    STAmount saTakerCould = saTakerPays - saTakerPaid;
+
+                    if (saTakerFunds < saTakerCould)
+                        saTakerCould = saTakerFunds;
+
+                    STAmount saTakerUsed = STAmount::multiply (
+                        saSubTakerGot, saTakerRate, saTakerPays);
+
+                    if (m_journal.debug)
+                    {
+                        m_journal.debug <<
+                            "takeOffers: applyOffer:   saTakerCould: " <<
+                            saTakerCould.getFullText ();
+                        m_journal.debug <<
+                            "takeOffers: applyOffer:  saSubTakerGot: " <<
+                            saSubTakerGot.getFullText ();
+                        m_journal.debug <<
+                            "takeOffers: applyOffer:    saTakerRate: " <<
+                            saTakerRate.getFullText ();
+                        m_journal.debug <<
+                            "takeOffers: applyOffer:    saTakerUsed: " <<
+                            saTakerUsed.getFullText ();
+                    }
+
+                    saSubTakerPaid  = std::min (saTakerCould, saTakerUsed);
+                }
+
+                saTakerPaid     += saSubTakerPaid;
+                saTakerGot      += saSubTakerGot;
+
+                if (tesSUCCESS == terResult)
+                    terResult   = temUNCERTAIN;
             }
         }
     }
@@ -925,8 +1181,8 @@ TER OfferCreateTransactor::doApply ()
         }
 
         // Go through the list of offers not found and remove them from the
-        // order book. This may be a fix to remove corrupted entries - check
-        // with David.
+        // order book.
+        // DAVIDSCHWARTZ - is this a fix to remove corrupted entries?
         for (auto const& indexes : usMissingOffers)
         {
             SLE::pointer sleDirectory (
