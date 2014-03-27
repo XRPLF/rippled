@@ -148,10 +148,11 @@ PeerDoor::PeerDoor (Stoppable& parent)
 }
 
 //------------------------------------------------------------------------------
-PeerDoor* PeerDoor::New (
-    Kind kind, Peers& peers,
+std::unique_ptr<PeerDoor>
+createPeerDoor (
+    PeerDoor::Kind kind, Peers& peers,
         std::string const& ip, int port,
-        boost::asio::io_service& io_service)
+            boost::asio::io_service& io_service)
 {
     // You have to listen on something!
     bassert(port != 0);
@@ -160,7 +161,7 @@ PeerDoor* PeerDoor::New (
         boost::asio::ip::address ().from_string (
             ip.empty () ? "0.0.0.0" : ip), port);
 
-    return new PeerDoorImp (kind, peers, ep, io_service);
+    return std::make_unique<PeerDoorImp>(kind, peers, ep, io_service);
 }
 
 }

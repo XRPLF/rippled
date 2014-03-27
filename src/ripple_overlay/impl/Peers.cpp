@@ -453,23 +453,24 @@ public:
 
         // Configure the peer doors, which allow the server to accept incoming
         // peer connections:
-        // Create the listening sockets for peers
-        //
-        m_doorDirect.reset (PeerDoor::New (
-            PeerDoor::sslRequired,
-            *this,
-            getConfig ().PEER_IP,
-            getConfig ().peerListeningPort,
-            m_io_service));
-
-        if (getConfig ().peerPROXYListeningPort != 0)
+        if (! getConfig ().RUN_STANDALONE)
         {
-            m_doorProxy.reset (PeerDoor::New (
-                PeerDoor::sslAndPROXYRequired,
+            m_doorDirect = createPeerDoor (
+                PeerDoor::sslRequired,
                 *this,
                 getConfig ().PEER_IP,
-                getConfig ().peerPROXYListeningPort,
-                m_io_service));
+                getConfig ().peerListeningPort,
+                m_io_service);
+
+            if (getConfig ().peerPROXYListeningPort != 0)
+            {
+                m_doorProxy = createPeerDoor (
+                    PeerDoor::sslAndPROXYRequired,
+                    *this,
+                    getConfig ().PEER_IP,
+                    getConfig ().peerPROXYListeningPort,
+                    m_io_service);
+            }
         }
     }
 

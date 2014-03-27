@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERDOOR_H_INCLUDED
 #define RIPPLE_PEERDOOR_H_INCLUDED
 
+#include "../../beast/beast/cxx14/memory.h" // <memory>
+
 namespace ripple {
 
 /** Handles incoming connections from peers. */
@@ -36,11 +38,13 @@ public:
         sslRequired,
         sslAndPROXYRequired
     };
-
-    static PeerDoor* New (Kind kind, Peers& peers,
-        std::string const& ip, int port,
-        boost::asio::io_service& io_service);
 };
+
+std::unique_ptr <PeerDoor>
+createPeerDoor (
+    PeerDoor::Kind kind, Peers& peers,
+        std::string const& ip, int port,
+            boost::asio::io_service& io_service);
 
 }
 
