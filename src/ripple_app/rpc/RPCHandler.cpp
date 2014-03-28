@@ -338,7 +338,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
         }
     }
 
-    if (!tx_json.isMember ("Flags")) tx_json["Flags"] = 0;
+    if (!tx_json.isMember ("Flags")) tx_json["Flags"] = tfFullyCanonicalSig;
 
     if (!bOffline)
     {
