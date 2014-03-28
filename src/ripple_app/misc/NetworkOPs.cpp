@@ -1561,6 +1561,7 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
     }
 }
 
+// Must be called while holding the master lock
 SHAMap::pointer NetworkOPsImp::getTXMap (uint256 const& hash)
 {
     std::map<uint256, std::pair<int, SHAMap::pointer> >::iterator it = mRecentPositions.find (hash);
@@ -1574,6 +1575,7 @@ SHAMap::pointer NetworkOPsImp::getTXMap (uint256 const& hash)
     return mConsensus->getTransactionTree (hash, false);
 }
 
+// Must be called while holding the master lock
 void NetworkOPsImp::takePosition (int seq, SHAMap::ref position)
 {
     mRecentPositions[position->getHash ()] = std::make_pair (seq, position);

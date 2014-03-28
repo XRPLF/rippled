@@ -520,7 +520,7 @@ public:
                         &getApp().getInboundLedgers(),
                         mPrevLedgerHash, 0, InboundLedger::fcCONSENSUS));
                 mHaveCorrectLCL = false;
-	    }
+            }
             return;
         }
 
@@ -851,14 +851,15 @@ private:
     */
     void accept (SHAMap::pointer set)
     {
-        if (set->getHash ().isNonZero ()) 
-        // put our set where others can get it later    
-            getApp().getOPs ().takePosition (mPreviousLedger
-                ->getLedgerSeq (), set);
 
         {
             Application::ScopedLockType lock 
                 (getApp ().getMasterLock ());
+
+            // put our set where others can get it later
+            if (set->getHash ().isNonZero ())
+               getApp().getOPs ().takePosition (
+                   mPreviousLedger->getLedgerSeq (), set);
 
             assert (set->getHash () == mOurPosition->getCurrentHash ());
             // these are now obsolete
