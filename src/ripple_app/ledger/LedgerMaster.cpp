@@ -104,9 +104,14 @@ public:
     {
     }
 
-    std::uint32_t getCurrentLedgerIndex ()
+    LedgerIndex getCurrentLedgerIndex ()
     {
         return mCurrentLedger.get ()->getLedgerSeq ();
+    }
+
+    LedgerIndex getValidLedgerIndex ()
+    {
+        return mValidLedgerSeq;
     }
 
     int getPublishedLedgerAge ()

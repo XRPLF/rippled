@@ -47,7 +47,8 @@ public:
 
     virtual ~LedgerMaster () = 0;
 
-    virtual std::uint32_t getCurrentLedgerIndex () = 0;
+    virtual LedgerIndex getCurrentLedgerIndex () = 0;
+    virtual LedgerIndex getValidLedgerIndex () = 0;
 
     virtual LockType& peekMutex () = 0;
 
