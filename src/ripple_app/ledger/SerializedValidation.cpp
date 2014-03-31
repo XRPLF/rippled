@@ -63,6 +63,7 @@ void SerializedValidation::sign (uint256& signingHash, const RippleAddress& raPr
     Blob signature;
     raPriv.signNodePrivate (signingHash, signature);
     setFieldVL (sfSignature, signature);
+    setFlag (vfFullyCanonicalSig);
 }
 
 uint256 SerializedValidation::getSigningHash () const

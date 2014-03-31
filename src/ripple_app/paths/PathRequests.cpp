@@ -86,11 +86,15 @@ void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
                     InfoSub::pointer ipSub = pRequest->getSubscriber ();
                     if (ipSub)
                     {
-                        Json::Value update = pRequest->doUpdate (cache, false);
-                        update["type"] = "path_find";
-                        ipSub->send (update, false);
-                        remove = false;
-                        ++processed;
+                        ipSub->getConsumer ().charge (Resource::feePathFindUpdate);
+                        if (!ipSub->getConsumer ().warn ())
+                        {
+                            Json::Value update = pRequest->doUpdate (cache, false);
+                            update["type"] = "path_find";
+                            ipSub->send (update, false);
+                            remove = false;
+                            ++processed;
+                        }
                     }
                 }
             }

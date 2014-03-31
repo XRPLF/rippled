@@ -1497,6 +1497,9 @@
     <ClCompile Include="..\..\src\ripple_app\main\Main.cpp">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\LocalTxs.cpp">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">
@@ -3056,6 +3059,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\functional\JobTypes.h">
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\tx\LocalTxs.h">
+      <Filter>[2] Old Ripple\ripple_app\tx</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

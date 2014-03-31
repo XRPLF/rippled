@@ -273,6 +273,10 @@ public:
     
     virtual void reportFeeChange () = 0;
 
+    virtual void updateLocalTx (Ledger::ref newValidLedger) = 0;
+    virtual void addLocalTx (Ledger::ref openLedger, SerializedTransaction::ref txn) = 0;
+    virtual std::size_t getLocalTxCount () = 0;
+
     //Helper function to generate SQL query to get transactions
     virtual std::string transactionsSQL (std::string selection,
         const RippleAddress& account, std::int32_t minLedger, std::int32_t maxLedger,

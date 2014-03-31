@@ -33,9 +33,11 @@ public:
 
     static char const* getCountedObjectName () { return "LedgerConsensus"; }
 
-    LedgerConsensusImp (clock_type& clock, LedgerHash const & prevLCLHash, 
+    LedgerConsensusImp (clock_type& clock, LocalTxs& localtx,
+        LedgerHash const & prevLCLHash, 
         Ledger::ref previousLedger, std::uint32_t closeTime)
         : m_clock (clock)
+        , m_localTX (localtx)
         , mState (lcsPRE_CLOSE)
         , mCloseTime (closeTime)
         , mPrevLedgerHash (prevLCLHash)
@@ -518,7 +520,7 @@ public:
                         &getApp().getInboundLedgers(),
                         mPrevLedgerHash, 0, InboundLedger::fcCONSENSUS));
                 mHaveCorrectLCL = false;
-	    }
+            }
             return;
         }
 
@@ -849,14 +851,15 @@ private:
     */
     void accept (SHAMap::pointer set)
     {
-        if (set->getHash ().isNonZero ()) 
-        // put our set where others can get it later    
-            getApp().getOPs ().takePosition (mPreviousLedger
-                ->getLedgerSeq (), set);
 
         {
             Application::ScopedLockType lock 
                 (getApp ().getMasterLock ());
+
+            // put our set where others can get it later
+            if (set->getHash ().isNonZero ())
+               getApp().getOPs ().takePosition (
+                   mPreviousLedger->getLedgerSeq (), set);
 
             assert (set->getHash () == mOurPosition->getCurrentHash ());
             // these are now obsolete
@@ -1010,6 +1013,12 @@ private:
             applyTransactions (getApp().getLedgerMaster ().getCurrentLedger
                 ()->peekTransactionMap (), newOL, newLCL,
                 failedTransactions, true);
+
+            {
+                TransactionEngine engine (newOL);
+                m_localTX.apply (engine);
+            }
+
             getApp().getLedgerMaster ().pushLedger (newLCL, newOL);
             mNewLedgerHash = newLCL->getHash ();
             mState = lcsACCEPTED;
@@ -1863,6 +1872,7 @@ private:
     }
 private:
     clock_type& m_clock;
+    LocalTxs& m_localTX;
 
     // VFALCO TODO Rename these to look pretty
     enum LCState
@@ -1918,11 +1928,12 @@ LedgerConsensus::~LedgerConsensus ()
 {
 }
 
-boost::shared_ptr <LedgerConsensus> LedgerConsensus::New (clock_type& clock,
+boost::shared_ptr <LedgerConsensus> LedgerConsensus::New (
+    clock_type& clock, LocalTxs& localtx,
     LedgerHash const &prevLCLHash, Ledger::ref previousLedger, std::uint32_t closeTime)
 {
     return boost::make_shared <LedgerConsensusImp> (
-        clock, prevLCLHash, previousLedger,closeTime);
+        clock, localtx, prevLCLHash, previousLedger,closeTime);
 }
 
 } // ripple

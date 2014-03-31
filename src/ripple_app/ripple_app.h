@@ -115,6 +115,7 @@
 #include "main/Application.h"
 #include "ledger/OrderBookDB.h"
 #include "tx/TransactionAcquire.h"
+#include "tx/LocalTxs.h"
 #include "consensus/DisputedTx.h"
 #include "consensus/LedgerConsensus.h"
 #include "ledger/LedgerTiming.h"

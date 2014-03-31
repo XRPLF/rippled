@@ -27,10 +27,10 @@ namespace Resource {
 enum
 {
     // Balance at which a warning is issued
-     warningThreshold           = 1000
+     warningThreshold           = 500
 
     // Balance at which the consumer is disconnected
-    ,dropThreshold              = 5000
+    ,dropThreshold              = 1500
 
     // The number of seconds until an inactive table item is removed
     ,secondsUntilExpiration     = 300

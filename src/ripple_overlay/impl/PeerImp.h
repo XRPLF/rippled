@@ -2606,12 +2606,19 @@ private:
         try
         {
     #endif
-            Transaction::pointer tx;
 
-            if (isSetBit (flags, SF_SIGGOOD))
-                tx = boost::make_shared<Transaction> (stx, false);
-            else
-                tx = boost::make_shared<Transaction> (stx, true);
+            if (stx->isFieldPresent(sfLastLedgerSequence) &&
+                (stx->getFieldU32 (sfLastLedgerSequence) <
+                getApp().getLedgerMaster().getValidLedgerIndex()))
+	    { // Transaction has expired
+                getApp().getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
+                Peer::charge (peer, Resource::feeUnwantedData);
+                return;
+            }
+
+            bool needCheck = ! isSetBit (flags, SF_SIGGOOD);
+            Transaction::pointer tx =
+                boost::make_shared<Transaction> (stx, needCheck);
 
             if (tx->getStatus () == INVALID)
             {

@@ -338,7 +338,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
         }
     }
 
-    if (!tx_json.isMember ("Flags")) tx_json["Flags"] = 0;
+    if (!tx_json.isMember ("Flags")) tx_json["Flags"] = tfFullyCanonicalSig;
 
     if (!bOffline)
     {
@@ -442,10 +442,11 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
             "Exception occurred during transaction");
     }
 
-    if (!isMemoOkay (*stpTrans))
+    std::string reason;
+    if (!passesLocalChecks (*stpTrans, reason))
     {
         return RPC::make_error (rpcINVALID_PARAMS,
-            "The memo exceeds the maximum allowed size.");
+            reason);
     }
 
     if (params.isMember ("debug_signing"))
@@ -3061,6 +3062,12 @@ Json::Value RPCHandler::doGetCounts (Json::Value params, Resource::Charge& loadT
     if (dbKB > 0)
         ret["dbKBTransaction"] = dbKB;
 
+    {
+        std::size_t c = getApp().getOPs().getLocalTxCount ();
+        if (c > 0)
+            ret["local_txs"] = static_cast<Json::UInt> (c);
+    }
+
     ret["write_load"] = getApp().getNodeStore ().getWriteLoad ();
 
     ret["SLE_hit_rate"] = getApp().getSLECache ().getHitRate ();
@@ -3893,6 +3900,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
         }
     }
 
+    bool bHaveMasterLock = true;
     if (!params.isMember ("books"))
     {
         nothing ();
@@ -4003,7 +4011,11 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
             if (bSnapshot)
             {
-                masterLockHolder.unlock ();
+                if (bHaveMasterLock)
+                {
+                    masterLockHolder.unlock ();
+                    bHaveMasterLock = false;
+                }
 
                 loadType = Resource::feeMediumBurdenRPC;
                 Ledger::pointer     lpLedger = getApp().getLedgerMaster ().getPublishedLedger ();

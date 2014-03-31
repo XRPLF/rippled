@@ -153,7 +153,8 @@ private:
     mutable bool mSigBad;
 };
 
-bool isMemoOkay (STObject const& st);
+bool passesLocalChecks (STObject const& st, std::string&);
+bool passesLocalChecks (STObject const& st);
 
 } // ripple
 

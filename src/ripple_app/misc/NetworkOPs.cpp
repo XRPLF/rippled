@@ -43,6 +43,7 @@ public:
         : NetworkOPs (parent)
         , m_clock (clock)
         , m_journal (journal)
+        , m_localTX (LocalTxs::New ())
         , mMode (omDISCONNECTED)
         , mNeedNetworkLedger (false)
         , mProposing (false)
@@ -323,6 +324,19 @@ public:
     void storeProposal (LedgerProposal::ref proposal,    const RippleAddress& peerPublic);
     uint256 getConsensusLCL ();
     void reportFeeChange ();
+ 
+    void updateLocalTx (Ledger::ref newValidLedger) override
+    {
+        m_localTX->sweep (newValidLedger);
+    }
+    void addLocalTx (Ledger::ref openLedger, SerializedTransaction::ref txn) override
+    {
+        m_localTX->push_back (openLedger->getLedgerSeq(), txn);
+    }
+    std::size_t getLocalTxCount () override
+    {
+        return m_localTX->size ();
+    }
 
     //Helper function to generate SQL query to get transactions
     std::string transactionsSQL (std::string selection, const RippleAddress& account,
@@ -435,6 +449,9 @@ private:
     typedef std::lock_guard <LockType> ScopedLockType;
 
     beast::Journal m_journal;
+
+    std::unique_ptr <LocalTxs> m_localTX;
+
     LockType mLock;
 
     OperatingMode                       mMode;
@@ -748,7 +765,7 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
     {
         try
         {
-            if (!isMemoOkay (*trans) || !trans->checkSign ())
+            if (!passesLocalChecks (*trans) || !trans->checkSign ())
             {
                 m_journal.warning << "Submitted transaction has bad signature";
                 getApp().getHashRouter ().setFlag (suppress, SF_BAD);
@@ -945,12 +962,15 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
         if (callback)
             callback (trans, r);
 
+
         if (r == tefFAILURE)
         {
             // VFALCO TODO All callers use a try block so this should be changed to
             //             a return value.
             throw Fault (IO_ERROR);
         }
+
+        bool addLocal = bLocal;
 
         if (r == tesSUCCESS)
         {
@@ -968,13 +988,15 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
         }
         else if (isTerRetry (r))
         {
-            if (!bFailHard)
+            if (bFailHard)
+                addLocal = false;
+            else
             {
-                    // transaction should be held
-                    m_journal.debug << "Transaction should be held: " << r;
-                    trans->setStatus (HELD);
-                    getApp().getMasterTransaction ().canonicalize (&trans);
-                    m_ledgerMaster.addHeldTransaction (trans);
+                // transaction should be held
+                m_journal.debug << "Transaction should be held: " << r;
+                trans->setStatus (HELD);
+                getApp().getMasterTransaction ().canonicalize (&trans);
+                m_ledgerMaster.addHeldTransaction (trans);
             }
         }
         else
@@ -982,6 +1004,9 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
             m_journal.debug << "Status other than success " << r;
             trans->setStatus (INVALID);
         }
+
+        if (addLocal)
+            addLocalTx (m_ledgerMaster.getCurrentLedger (), trans->getSTransaction ());
 
         if (didApply || ((mMode != omFULL) && !bFailHard && bLocal))
         {
@@ -1435,7 +1460,7 @@ int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer
     assert (!mConsensus);
     prevLedger->setImmutable ();
     
-    mConsensus = LedgerConsensus::New (m_clock,
+    mConsensus = LedgerConsensus::New (m_clock, *m_localTX,
         networkClosed, prevLedger,
         m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC ());
 
@@ -1536,6 +1561,7 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
     }
 }
 
+// Must be called while holding the master lock
 SHAMap::pointer NetworkOPsImp::getTXMap (uint256 const& hash)
 {
     std::map<uint256, std::pair<int, SHAMap::pointer> >::iterator it = mRecentPositions.find (hash);
@@ -1549,6 +1575,7 @@ SHAMap::pointer NetworkOPsImp::getTXMap (uint256 const& hash)
     return mConsensus->getTransactionTree (hash, false);
 }
 
+// Must be called while holding the master lock
 void NetworkOPsImp::takePosition (int seq, SHAMap::ref position)
 {
     mRecentPositions[position->getHash ()] = std::make_pair (seq, position);

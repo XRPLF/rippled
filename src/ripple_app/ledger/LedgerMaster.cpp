@@ -104,9 +104,14 @@ public:
     {
     }
 
-    std::uint32_t getCurrentLedgerIndex ()
+    LedgerIndex getCurrentLedgerIndex ()
     {
         return mCurrentLedger.get ()->getLedgerSeq ();
+    }
+
+    LedgerIndex getValidLedgerIndex ()
+    {
+        return mValidLedgerSeq;
     }
 
     int getPublishedLedgerAge ()
@@ -170,6 +175,7 @@ public:
         mValidLedger.set (l);
         mValidLedgerClose = l->getCloseTimeNC();
         mValidLedgerSeq = l->getLedgerSeq();
+        getApp().getOPs().updateLocalTx (l);
     }
 
     void setPubLedger(Ledger::ref l)
@@ -299,6 +305,11 @@ public:
 
                     if (didApply)
                         ++recovers;
+
+                    // If a transaction is recovered but hasn't been relayed,
+                    // it will become disputed in the consensus process, which
+                    // will cause it to be relayed.
+
                 }
                 catch (...)
                 {

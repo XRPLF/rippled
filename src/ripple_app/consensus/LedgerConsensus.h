@@ -32,7 +32,8 @@ class LedgerConsensus
 public:    
     typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
-    static boost::shared_ptr <LedgerConsensus> New (clock_type& clock,
+    static boost::shared_ptr <LedgerConsensus> New (
+        clock_type& clock, LocalTxs& localtx,
         LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
             std::uint32_t closeTime);
 

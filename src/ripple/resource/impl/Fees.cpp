@@ -31,19 +31,20 @@ Charge const feeInvalidRPC        (  10, "malformed RPC"          );
 Charge const feeReferenceRPC      (   2, "reference RPC"          );
 Charge const feeExceptionRPC      (  10, "exceptioned RPC"        );
 Charge const feeLightRPC          (   5, "light RPC"              ); // DAVID: Check the cost
-Charge const feeLowBurdenRPC      (  10, "low RPC"                );
-Charge const feeMediumBurdenRPC   (  20, "medium RPC"             );
-Charge const feeHighBurdenRPC     (  50, "heavy RPC"              );
+Charge const feeLowBurdenRPC      (  20, "low RPC"                );
+Charge const feeMediumBurdenRPC   (  40, "medium RPC"             );
+Charge const feeHighBurdenRPC     ( 300, "heavy RPC"              );
+Charge const feePathFindUpdate    ( 100, "path update"            );
 
 Charge const feeNewTrustedNote    (  10, "trusted note"           );
-Charge const feeNewValidTx        (   2, "valid tx"               );
+Charge const feeNewValidTx        (  10, "valid tx"               );
 Charge const feeSatisfiedRequest  (  10, "needed data"            );
 
-Charge const feeRequestedData     (   5, "costly request"         );
-Charge const feeCheapQuery        (   1, "trivial query"          );
+Charge const feeRequestedData     (  50, "costly request"         );
+Charge const feeCheapQuery        (  10, "trivial query"          );
 
-Charge const feeWarning           (  10, "received warning"       ); // DAVID: Check the cost
-Charge const feeDrop              ( 100, "dropped"                ); // DAVID: Check the cost
+Charge const feeWarning           ( 200, "received warning"       );
+Charge const feeDrop              ( 300, "dropped"                );
 
 }
 }

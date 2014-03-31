@@ -17,20 +17,35 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#ifndef RIPPLE_LOCALTRANSACTIONS_H
+#define RIPPLE_LOCALTRANSACTIONS_H
 
-#include "ripple_app.h"
+namespace ripple {
 
-#include "../ripple/resource/ripple_resource.h"
+// Track transactions issued by local clients
+// Ensure we always apply them to our open ledger
+// Hold them until we see them in a fully-validated ledger
 
-#include "../ripple/common/seconds_clock.h"
+class LocalTxs
+{
+public:
 
-#include "ledger/InboundLedgers.cpp"
-#include "ledger/LedgerHistory.cpp"
-#include "misc/SerializedLedger.cpp"
-#include "tx/TransactionAcquire.cpp"
+    virtual ~LocalTxs () = default;
 
-# include "tx/TxQueueEntry.h"
-# include "tx/TxQueue.h"
-# include "tx/LocalTxs.cpp"
-#include "misc/NetworkOPs.cpp"
+    static std::unique_ptr<LocalTxs> New ();
+
+    // Add a new local transaction
+    virtual void push_back (LedgerIndex index, SerializedTransaction::ref txn) = 0;
+
+    // Apply local transactions to a new open ledger
+    virtual void apply (TransactionEngine&) = 0;
+
+    // Remove obsolete transactions based on a new fully-valid ledger
+    virtual void sweep (Ledger::ref validLedger) = 0;
+
+    virtual std::size_t size () = 0;
+};
+
+} // ripple
+
+#endif
