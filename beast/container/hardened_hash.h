@@ -20,12 +20,16 @@
 #ifndef BEAST_CONTAINER_HARDENED_HASH_H_INCLUDED
 #define BEAST_CONTAINER_HARDENED_HASH_H_INCLUDED
 
-#include "../utility/is_call_possible.h"
+#include "hash_append.h"
+
+#include "impl/spookyv2.h"
 
 #include "../utility/noexcept.h"
+#include <cstdint>
 #include <functional>
 #include <mutex>
 #include <random>
+#include "../cxx14/type_traits.h" // <type_traits>
 #include "../cxx14/utility.h" // <utility>
 
 // When set to 1, makes the seed per-process instead
@@ -40,7 +44,6 @@
 #endif
 
 namespace beast {
-
 namespace detail {
 
 template <class Result>
@@ -72,6 +75,12 @@ private:
 
 #if BEAST_NO_HARDENED_HASH_INSTANCE_SEED
 protected:
+    hardened_hash_base() noexcept = default;
+
+    hardened_hash_base(result_type) noexcept
+    {
+    }
+
     result_type
     seed() const noexcept
     {
@@ -83,6 +92,11 @@ protected:
 protected:
     hardened_hash_base() noexcept
         : m_seed (next_seed())
+    {
+    }
+
+    hardened_hash_base(result_type seed) noexcept
+        : m_seed (seed)
     {
     }
 
@@ -99,70 +113,83 @@ private:
 #endif
 };
 
-}
+//------------------------------------------------------------------------------
+
+class spooky_wrapper
+{
+    SpookyHash state_;
+public: 
+    spooky_wrapper (std::size_t seed1 = 1, std::size_t seed2 = 2) noexcept
+    {
+        state_.Init (seed1, seed2);
+    }
+
+    void
+    append (void const* key, std::size_t len) noexcept
+    {
+        state_.Update (key, len);
+    }
+
+    explicit
+    operator std::size_t() noexcept
+    {
+        std::uint64_t h1, h2;
+        state_.Final (&h1, &h2);
+        return static_cast <std::size_t> (h1);
+    }
+};
+
+} // detail
+
+//------------------------------------------------------------------------------
 
 /** A std compatible hash adapter that resists adversarial inputs.
-    For this to work, one of the following must exist:
-    
-    * A member function of `T` called `hash_combine` with
-      this signature:
+    For this to work, T must implement in its own namespace:
 
-        @code
-        
-        void hash_combine (std::size_t&) const noexcept;
+    @code
 
-        @endcode
+    template <class Hasher>
+    void
+    hash_append (Hasher& h, T const& t) noexcept
+    {
+        // hash_append each base and member that should
+        //  participate in forming the hash
+        using beast::hash_append;
+        hash_append (h, static_cast<T::base1 const&>(t));
+        hash_append (h, static_cast<T::base2 const&>(t));
+        // ...
+        hash_append (h, t.member1);
+        hash_append (h, t.member2);
+        // ...
+    }
 
-    * A free function called `hash_combine`, found via argument
-      dependent lookup, callable with this signature:
-
-        @code
-
-        void hash_combine (std::size_t, T const& t) noexcept;
-
-        @endcode
+    @endcode
 */
-template <class T>
+template <class T, class Hasher = detail::spooky_wrapper>
 class hardened_hash
     : public detail::hardened_hash_base <std::size_t>
 {
+    typedef detail::hardened_hash_base <std::size_t> base;
 public:
     typedef T argument_type;
     using detail::hardened_hash_base <std::size_t>::result_type;
 
-private:
-    BEAST_DEFINE_IS_CALL_POSSIBLE(has_hash_combine,hash_combine);
-
-    typedef detail::hardened_hash_base <std::size_t> base;
-
-    // Called when hash_combine is a member function
-    result_type
-    operator() (argument_type const& key, std::true_type) const noexcept
-    {
-        result_type result (base::seed());
-        key.hash_combine (result);
-        return result;
-    }
-
-    result_type
-    operator() (argument_type const& key, std::false_type) const noexcept
-    {
-        result_type result (base::seed());
-        hash_combine (result, key);
-        return result;
-    }
-
 public:
     hardened_hash() = default;
+    explicit hardened_hash(result_type seed)
+        : base (seed)
+    {
+    }
 
     result_type
     operator() (argument_type const& key) const noexcept
     {
-        return operator() (key, std::integral_constant <bool,
-            has_hash_combine <T,void(result_type&)>::value>());
+        Hasher h {base::seed()};
+        hash_append (h, key);
+        return static_cast<result_type> (h);
     }
 };
 
-}
+} // beast
 
 #endif

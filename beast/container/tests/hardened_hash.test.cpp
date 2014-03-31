@@ -51,10 +51,11 @@ public:
     {
     }
 
-    void
-    hash_combine (std::size_t& seed) const noexcept
+    template <class Hasher>
+    friend void hash_append (Hasher& h, test_user_type_member const& a) noexcept
     {
-        boost::hash_combine (seed, t);
+        using beast::hash_append;
+        hash_append (h, a.t);
     }
 };
 
@@ -70,12 +71,11 @@ public:
     {
     }
 
-    friend
-    void
-    hash_combine (std::size_t& seed,
-        test_user_type_free const& v) noexcept
+    template <class Hasher>
+    friend void hash_append (Hasher& h, test_user_type_free const& a) noexcept
     {
-        boost::hash_combine (seed, v.t);
+        using beast::hash_append;
+        hash_append (h, a.t);
     }
 };
 
@@ -154,11 +154,11 @@ public:
         return &m_vec[0];
     }
 
-    void
-    hash_combine (std::size_t& seed) const noexcept
+    template <class Hasher>
+    friend void hash_append(Hasher& h, unsigned_integer const& a) noexcept
     {
-        for (std::size_t i (0); i < size; ++i)
-            boost::hash_combine (seed, m_vec[i]);
+        using beast::hash_append;
+        hash_append (h, a.m_vec);
     }
 
     friend
