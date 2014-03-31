@@ -17,24 +17,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_OFFERCREATE_H_INCLUDED
-#define RIPPLE_TX_OFFERCREATE_H_INCLUDED
+#ifndef RIPPLE_TX_CLASSIC_OFFERCREATE_H_INCLUDED
+#define RIPPLE_TX_CLASSIC_OFFERCREATE_H_INCLUDED
 
 #include <unordered_set>
 
 namespace ripple {
 
-class OfferCreateTransactorLog;
-
-template <>
-char const*
-LogPartition::getPartitionName <OfferCreateTransactorLog> ()
-{
-    return "Tx/OfferCreate";
-}
-
-class OfferCreateTransactor
-    : public Transactor
+class ClassicOfferCreateTransactor
+    : public OfferCreateTransactor
 {
 private:
     template <class T>
@@ -52,20 +43,19 @@ private:
     }
 
 public:
-    OfferCreateTransactor (
+    ClassicOfferCreateTransactor (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
-        : Transactor (
+        : OfferCreateTransactor (
             txn,
             params,
-            engine,
-            LogPartition::getJournal <OfferCreateTransactorLog> ())
+            engine)
     {
 
     }
 
-    TER doApply ();
+    TER doApply () override;
 
 private:
     bool isValidOffer (

@@ -22,7 +22,7 @@ namespace ripple {
 /** Determine if an order is still valid
     If the order is not valid it will be marked as unfunded.
 */
-bool OfferCreateTransactor::isValidOffer (
+bool ClassicOfferCreateTransactor::isValidOffer (
     SLE::ref sleOffer,
     uint160 const& uOfferOwnerID,
     STAmount const& saOfferPays,
@@ -36,7 +36,7 @@ bool OfferCreateTransactor::isValidOffer (
         sleOffer->getFieldU32 (sfExpiration) <= mEngine->getLedger ()->getParentCloseTimeNC ())
     {
         // Offer is expired. Expired offers are considered unfunded. Delete it.
-        m_journal.trace << "isValidOffer: encountered expired offer";
+        m_journal.debug << "isValidOffer: encountered expired offer";
 
         usOfferUnfundedFound.insert (sleOffer->getIndex());
 
@@ -46,7 +46,7 @@ bool OfferCreateTransactor::isValidOffer (
     if (uOfferOwnerID == uTakerAccountID)
     {
         // Would take own offer. Consider old offer expired. Delete it.
-        m_journal.trace << "isValidOffer: encountered taker's own old offer";
+        m_journal.debug << "isValidOffer: encountered taker's own old offer";
 
         usOfferUnfundedFound.insert (sleOffer->getIndex());
 
@@ -65,7 +65,7 @@ bool OfferCreateTransactor::isValidOffer (
         return false;
     }
 
-    m_journal.trace <<
+    m_journal.debug <<
         "isValidOffer: saOfferPays=" << saOfferPays.getFullText ();
 
     saOfferFunds = mEngine->view ().accountFunds (uOfferOwnerID, saOfferPays);
@@ -97,7 +97,7 @@ bool OfferCreateTransactor::isValidOffer (
 
 /**
 */
-bool OfferCreateTransactor::canCross (
+bool ClassicOfferCreateTransactor::canCross (
     STAmount const& saTakerFunds,
     STAmount const& saSubTakerPays,
     STAmount const& saSubTakerGets,
@@ -189,7 +189,7 @@ bool OfferCreateTransactor::canCross (
     books as: "give 0.57 BTC for 400 USD" which is what is left to sell at the
     original rate.
 */
-bool OfferCreateTransactor::applyOffer (
+bool ClassicOfferCreateTransactor::applyOffer (
     const bool bSell,
     const std::uint32_t uTakerPaysRate, const std::uint32_t uOfferPaysRate,
     const STAmount& saOfferRate,
@@ -210,17 +210,17 @@ bool OfferCreateTransactor::applyOffer (
                                           ? saOfferFunds          // As is.
                                           : STAmount::divide (saOfferFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9)); // Reduce by offer fees.
 
-    WriteLog (lsINFO, STAmount) << "applyOffer: uOfferPaysRate=" << uOfferPaysRate;
-    WriteLog (lsINFO, STAmount) << "applyOffer: saOfferFundsAvailable=" << saOfferFundsAvailable.getFullText ();
+    m_journal.info << "applyOffer: uOfferPaysRate=" << uOfferPaysRate;
+    m_journal.info << "applyOffer: saOfferFundsAvailable=" << saOfferFundsAvailable.getFullText ();
 
     // Limit taker funds available, by transfer fees.
     STAmount    saTakerFundsAvailable   = QUALITY_ONE == uTakerPaysRate
                                           ? saTakerFunds          // As is.
                                           : STAmount::divide (saTakerFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9)); // Reduce by taker fees.
 
-    WriteLog (lsINFO, STAmount) << "applyOffer: TAKER_FEES=" << STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9).getFullText ();
-    WriteLog (lsINFO, STAmount) << "applyOffer: uTakerPaysRate=" << uTakerPaysRate;
-    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerFundsAvailable=" << saTakerFundsAvailable.getFullText ();
+    m_journal.info << "applyOffer: TAKER_FEES=" << STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9).getFullText ();
+    m_journal.info << "applyOffer: uTakerPaysRate=" << uTakerPaysRate;
+    m_journal.info << "applyOffer: saTakerFundsAvailable=" << saTakerFundsAvailable.getFullText ();
 
     STAmount    saOfferPaysAvailable;   // Amount offer can pay out, limited by offer and offerer funds.
     STAmount    saOfferGetsAvailable;   // Amount offer would get, limited by offer funds.
@@ -240,24 +240,24 @@ bool OfferCreateTransactor::applyOffer (
         saOfferGetsAvailable    = std::min (saOfferGets, STAmount::mulRound (saOfferPaysAvailable, saOfferRate, saOfferGets, true));
     }
 
-    WriteLog (lsINFO, STAmount) << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText ();
-    WriteLog (lsINFO, STAmount) << "applyOffer: saOfferGetsAvailable=" << saOfferGetsAvailable.getFullText ();
+    m_journal.info << "applyOffer: saOfferPaysAvailable=" << saOfferPaysAvailable.getFullText ();
+    m_journal.info << "applyOffer: saOfferGetsAvailable=" << saOfferGetsAvailable.getFullText ();
 
     STAmount    saTakerPaysAvailable    = std::min (saTakerPays, saTakerFundsAvailable);
-    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaysAvailable=" << saTakerPaysAvailable.getFullText ();
+    m_journal.info << "applyOffer: saTakerPaysAvailable=" << saTakerPaysAvailable.getFullText ();
 
     // Limited = limited by other sides raw numbers.
     // Taker can't pay more to offer than offer can get.
     STAmount    saTakerPaysLimited      = std::min (saTakerPaysAvailable, saOfferGetsAvailable);
-    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaysLimited=" << saTakerPaysLimited.getFullText ();
+    m_journal.info << "applyOffer: saTakerPaysLimited=" << saTakerPaysLimited.getFullText ();
 
     // Align saTakerGetsLimited with saTakerPaysLimited.
     STAmount    saTakerGetsLimited      = saTakerPaysLimited >= saOfferGetsAvailable              // Cannot actually be greater
                                           ? saOfferPaysAvailable                                  // Potentially take entire offer. Avoid math shenanigans.
                                           : std::min (saOfferPaysAvailable, STAmount::divRound (saTakerPaysLimited, saOfferRate, saTakerGets, true)); // Take a portion of offer.
 
-    WriteLog (lsINFO, STAmount) << "applyOffer: saOfferRate=" << saOfferRate.getFullText ();
-    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGetsLimited=" << saTakerGetsLimited.getFullText ();
+    m_journal.info << "applyOffer: saOfferRate=" << saOfferRate.getFullText ();
+    m_journal.info << "applyOffer: saTakerGetsLimited=" << saTakerGetsLimited.getFullText ();
 
     // Got & Paid = Calculated by price and transfered without fees.
     // Compute from got as when !bSell, we want got to be exact to finish off offer if possible.
@@ -269,8 +269,8 @@ bool OfferCreateTransactor::applyOffer (
                   ? saTakerPaysLimited
                   : std::min (saTakerPaysLimited, STAmount::mulRound (saTakerGot, saOfferRate, saTakerFunds, true));
 
-    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGot=" << saTakerGot.getFullText ();
-    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerPaid=" << saTakerPaid.getFullText ();
+    m_journal.info << "applyOffer: saTakerGot=" << saTakerGot.getFullText ();
+    m_journal.info << "applyOffer: saTakerPaid=" << saTakerPaid.getFullText ();
 
     if (uTakerPaysRate == QUALITY_ONE)
     {
@@ -281,17 +281,17 @@ bool OfferCreateTransactor::applyOffer (
         // Compute fees in a rounding safe way.
 
         STAmount    saTransferRate  = STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9);
-        WriteLog (lsINFO, STAmount) << "applyOffer: saTransferRate=" << saTransferRate.getFullText ();
+        m_journal.info << "applyOffer: saTransferRate=" << saTransferRate.getFullText ();
 
         // TakerCost includes transfer fees.
         STAmount    saTakerCost     = STAmount::mulRound (saTakerPaid, saTransferRate, true);
 
-        WriteLog (lsINFO, STAmount) << "applyOffer: saTakerCost=" << saTakerCost.getFullText ();
-        WriteLog (lsINFO, STAmount) << "applyOffer: saTakerFunds=" << saTakerFunds.getFullText ();
+        m_journal.info << "applyOffer: saTakerCost=" << saTakerCost.getFullText ();
+        m_journal.info << "applyOffer: saTakerFunds=" << saTakerFunds.getFullText ();
         saTakerIssuerFee    = saTakerCost > saTakerFunds
                               ? saTakerFunds - saTakerPaid // Not enough funds to cover fee, stiff issuer the rounding error.
                               : saTakerCost - saTakerPaid;
-        WriteLog (lsINFO, STAmount) << "applyOffer: saTakerIssuerFee=" << saTakerIssuerFee.getFullText ();
+        m_journal.info << "applyOffer: saTakerIssuerFee=" << saTakerIssuerFee.getFullText ();
         assert (saTakerIssuerFee >= zero);
     }
 
@@ -309,7 +309,7 @@ bool OfferCreateTransactor::applyOffer (
                               : saOfferCost - saTakerGot;
     }
 
-    WriteLog (lsINFO, STAmount) << "applyOffer: saTakerGot=" << saTakerGot.getFullText ();
+    m_journal.info << "applyOffer: saTakerGot=" << saTakerGot.getFullText ();
 
     return saTakerGot >= saOfferPaysAvailable;              // True, if consumed offer.
 }
@@ -327,7 +327,7 @@ bool OfferCreateTransactor::applyOffer (
     @return tesSUCCESS, terNO_ACCOUNT, telFAILED_PROCESSING, or
             tecFAILED_PROCESSING
 */
-TER OfferCreateTransactor::takeOffers (
+TER ClassicOfferCreateTransactor::takeOffers (
     const bool          bOpenLedger,
     const bool          bPassive,
     const bool          bSell,
@@ -376,66 +376,12 @@ TER OfferCreateTransactor::takeOffers (
         saTakerPays.getCurrency(), saTakerPays.getIssuer(),
         saTakerGets.getCurrency(), saTakerGets.getIssuer());
 
-#ifdef RIPPLE_AUTOBRIDGE
-    std::unique_ptr<OrderBookIterator> bridgeBookIn;
-    std::unique_ptr<OrderBookIterator> bridgeBookOut;
-
-    // If XRP isn't an already an endpoint, then we also create two additional
-    // iterators:
-    //  (1) source -> XPR
-    //  (2) XRP -> target
-    if (!saTakerPays.isNative () && !saTakerGets.isNative ())
-    {
-        if (m_journal.trace)
-        {
-            beast::Journal::ScopedStream ss (m_journal.trace);
-
-            ss <<
-                "Autobridging offer '" << saTakerPays.getFullText () <<
-                "' to '" << saTakerGets.getFullText () << "'" << std::endl;
-
-            ss <<
-                "Selected bridge: '" <<
-                    STAmount::createHumanCurrency(saTakerPays.getCurrency()) <<
-                    "/" <<
-                    RippleAddress::createHumanAccountID (saTakerPays.getIssuer()) <<
-                "' - XRP - '" <<
-                    STAmount::createHumanCurrency(saTakerGets.getCurrency ()) <<
-                    "/" <<
-                    RippleAddress::createHumanAccountID (saTakerGets.getIssuer()) <<
-                "'";
-        }
-    }
-#endif
-
     while ((temUNCERTAIN == terResult) && directBookIter.nextOffer())
     {
         STAmount saTakerFunds = lesActive.accountFunds (uTakerAccountID, saTakerPays);
         STAmount saSubTakerPays = saTakerPays - saTakerPaid; // How much more to spend.
         STAmount saSubTakerGets = saTakerGets - saTakerGot; // How much more is wanted.
         std::uint64_t uTipQuality = directBookIter.getCurrentQuality();
-
-#ifdef RIPPLE_AUTOBRIDGE
-        if (bridgeBookIn && bridgeBookIn->nextOffer() &&
-            bridgeBookOut && bridgeBookOut->nextOffer())
-        {
-            STAmount bridgeIn = STAmount::setRate (bridgeBookIn->getCurrentQuality());
-            STAmount bridgeOut = STAmount::setRate (bridgeBookOut->getCurrentQuality());
-
-            m_journal.error <<
-                "The direct quality is: " << STAmount::setRate (uTipQuality);
-
-            m_journal.error <<
-                "The bridge-to-XRP quality is: " << bridgeIn;
-
-            m_journal.error <<
-                "The bridge-from-XRP quality is: " << bridgeOut;
-
-            m_journal.error <<
-                "The bridge synthetic quality is: " <<
-                STAmount::multiply (bridgeIn, bridgeOut, CURRENCY_ONE, ACCOUNT_ONE);
-        }
-#endif
 
         if (!canCross(
                 saTakerFunds,
@@ -495,39 +441,39 @@ TER OfferCreateTransactor::takeOffers (
             STAmount    saOfferIssuerFee;
             STAmount    saOfferRate = STAmount::setRate (uTipQuality);
 
-            if (m_journal.trace)
+            if (m_journal.debug)
             {
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer:    saTakerPays: " <<
                     saTakerPays.getFullText ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer:    saTakerPaid: " <<
                     saTakerPaid.getFullText ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer:   saTakerFunds: " <<
                     saTakerFunds.getFullText ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer:   saOfferFunds: " <<
                     saOfferFunds.getFullText ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer:    saOfferPays: " <<
                     saOfferPays.getFullText ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer:    saOfferGets: " <<
                     saOfferGets.getFullText ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer:    saOfferRate: " <<
                     saOfferRate.getFullText ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer: saSubTakerPays: " <<
                     saSubTakerPays.getFullText ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer: saSubTakerGets: " <<
                     saSubTakerGets.getFullText ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer:    saTakerPays: " <<
                     saTakerPays.getFullText ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "takeOffers: applyOffer:    saTakerGets: " <<
                     saTakerGets.getFullText ();
             }
@@ -725,9 +671,9 @@ TER OfferCreateTransactor::takeOffers (
     return terResult;
 }
 
-TER OfferCreateTransactor::doApply ()
+TER ClassicOfferCreateTransactor::doApply ()
 {
-    if (m_journal.trace) m_journal.trace <<
+    if (m_journal.debug) m_journal.debug <<
         "OfferCreate> " << mTxn.getJson (0);
 
     std::uint32_t const uTxFlags = mTxn.getFlags ();
@@ -741,7 +687,7 @@ TER OfferCreateTransactor::doApply ()
     if (!saTakerPays.isLegalNet () || !saTakerGets.isLegalNet ())
         return temBAD_AMOUNT;
 
-    m_journal.trace <<
+    m_journal.debug <<
         "saTakerPays=" << saTakerPays.getFullText () <<
         " saTakerGets=" << saTakerGets.getFullText ();
 
@@ -763,7 +709,7 @@ TER OfferCreateTransactor::doApply ()
 
     const uint256 uLedgerIndex = Ledger::getOfferIndex (mTxnAccountID, uSequence);
 
-    m_journal.trace <<
+    m_journal.debug <<
         "Creating offer node: " << to_string (uLedgerIndex) <<
         " uSequence=" << uSequence;
 
@@ -785,14 +731,14 @@ TER OfferCreateTransactor::doApply ()
 
     if (uTxFlags & tfOfferCreateMask)
     {
-        m_journal.trace <<
+        m_journal.debug <<
             "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
     }
     else if (bImmediateOrCancel && bFillOrKill)
     {
-        m_journal.trace <<
+        m_journal.debug <<
             "Malformed transaction: both IoC and FoK set.";
 
         return temINVALID_FLAG;
@@ -851,7 +797,7 @@ TER OfferCreateTransactor::doApply ()
     // before the transaction sequence number.
     else if (bHaveCancel && (!uCancelSequence || uAccountSequenceNext - 1 <= uCancelSequence))
     {
-        m_journal.trace <<
+        m_journal.debug <<
             "uAccountSequenceNext=" << uAccountSequenceNext <<
             " uOfferSequence=" << uCancelSequence;
 
@@ -1076,7 +1022,7 @@ TER OfferCreateTransactor::doApply ()
     else
     {
         // We need to place the remainder of the offer into its order book.
-        if (m_journal.trace) m_journal.trace <<
+        if (m_journal.debug) m_journal.debug <<
             "offer not fully consumed:" <<
             " saTakerPays=" << saTakerPays.getFullText () <<
             " saTakerGets=" << saTakerGets.getFullText ();
@@ -1127,10 +1073,10 @@ TER OfferCreateTransactor::doApply ()
                 m_journal.debug <<
                     "uGetsIssuerID=" <<
                     RippleAddress::createHumanAccountID (uGetsIssuerID);
-                m_journal.trace <<
+                m_journal.debug <<
                     "saTakerPays.isNative()=" <<
                     saTakerPays.isNative ();
-                m_journal.trace <<
+                m_journal.debug <<
                     "saTakerGets.isNative()=" <<
                     saTakerGets.isNative ();
                 m_journal.debug <<
@@ -1160,7 +1106,7 @@ TER OfferCreateTransactor::doApply ()
             if (bSell)
                 sleOffer->setFlag (lsfSell);
 
-            if (m_journal.trace) m_journal.trace <<
+            if (m_journal.debug) m_journal.debug <<
                 "final terResult=" << transToken (terResult) <<
                 " sleOffer=" << sleOffer->getJson (0);
         }
@@ -1176,7 +1122,6 @@ TER OfferCreateTransactor::doApply ()
         {
             m_journal.trace <<
                 "takeOffers: found unfunded: " << to_string (uOfferIndex);
-
             lesActive.offerDelete (uOfferIndex);
         }
 
@@ -1207,7 +1152,7 @@ TER OfferCreateTransactor::doApply ()
                 }
                 else
                 {
-                    m_journal.trace <<
+                    m_journal.debug <<
                         "takeOffers: offer " << indexes.first <<
                         " not found in directory " << indexes.second;
                 }
@@ -1221,11 +1166,10 @@ TER OfferCreateTransactor::doApply ()
         }
     }
 
-    if (tesSUCCESS != terResult) m_journal.trace <<
+    if (tesSUCCESS != terResult) m_journal.debug <<
         "final terResult=" << transToken (terResult);
 
     return terResult;
 }
 
 }
-

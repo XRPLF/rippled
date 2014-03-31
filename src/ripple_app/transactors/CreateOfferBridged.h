@@ -17,36 +17,7 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#ifndef RIPPLE_TX_BRIDGE_OFFERCREATE_H_INCLUDED
+#define RIPPLE_TX_BRIDGE_OFFERCREATE_H_INCLUDED
 
-#include "ripple_types.h"
-#include "../ripple/sslutil/ripple_sslutil.h"
-
-#ifdef BEAST_WIN32
-# include <Winsock2.h> // for ByteOrder.cpp
-// <Winsock2.h> defines min, max and does other stupid things
-# ifdef max
-# undef max
-# endif
-# ifdef min
-# undef min
-# endif
 #endif
-
-#include <set>
-#include <map>
-#include <unordered_set>
-#include <unordered_map>
-#include <boost/unordered_set.hpp>
-
-#include "impl/Base58.cpp"
-#include "impl/ByteOrder.cpp"
-#include "impl/RandomNumbers.cpp"
-#include "impl/strHex.cpp"
-#include "impl/base_uint.cpp"
-#include "impl/UInt160.cpp"
-#include "impl/RippleIdentifierTests.cpp"
-#include "impl/RippleAssets.cpp"
-
-#include "../common/tests/cross_offer.test.cpp"
-

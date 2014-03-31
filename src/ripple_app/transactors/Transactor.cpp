@@ -18,14 +18,14 @@
 //==============================================================================
 
 #include "Transactor.h"
-#include "ChangeTransactor.h"
-#include "OfferCancelTransactor.h"
-#include "OfferCreateTransactor.h"
-#include "PaymentTransactor.h"
-#include "RegularKeySetTransactor.h"
-#include "AccountSetTransactor.h"
-#include "TrustSetTransactor.h"
-#include "WalletAddTransactor.h"
+#include "AddWallet.h"
+#include "CancelOffer.h"
+#include "Change.h"
+#include "CreateOffer.h"
+#include "Payment.h"
+#include "SetAccount.h"
+#include "SetRegularKey.h"
+#include "SetTrust.h"
 
 namespace ripple {
 
@@ -53,8 +53,7 @@ std::unique_ptr<Transactor> Transactor::makeTransactor (
             new TrustSetTransactor (txn, params, engine));
 
     case ttOFFER_CREATE:
-        return std::unique_ptr<Transactor> (
-            new OfferCreateTransactor (txn, params, engine));
+        return make_OfferCreateTransactor (txn, params, engine);
 
     case ttOFFER_CANCEL:
         return std::unique_ptr<Transactor> (

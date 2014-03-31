@@ -43,11 +43,15 @@ public:
         Options (std::uint32_t tx_flags)
             : sell (is_bit_set (tx_flags, tfSell))
             , passive (is_bit_set (tx_flags, tfPassive))
+            , fill_or_kill (is_bit_set (tx_flags, tfFillOrKill))
+            , immediate_or_cancel (is_bit_set (tx_flags, tfImmediateOrCancel))
         {
         }
 
-        bool sell;
-        bool passive;
+        bool const sell;
+        bool const passive;
+        bool const fill_or_kill;
+        bool const immediate_or_cancel;
     };
 
 private:
@@ -91,7 +95,7 @@ public:
         // If this is a passive order (tfPassive), this prevents
         // offers at the same quality level from being consumed.
         if (m_options.passive)
-            --m_threshold;
+            ++m_threshold;
     }
 
     LedgerView&
@@ -125,7 +129,7 @@ public:
         {
             // With the sell option, we are finished when
             // we have consumed all the input currency.
-            if (! m_in.isPositive())
+            if (m_in <= zero)
                 return true;
         }
         else if (m_out >= m_amount.out)
@@ -136,14 +140,14 @@ public:
         }
 
         // We are finished if the taker is out of funds
-        return ! funds().isPositive();
+        return funds() <= zero;
     }
 
-Quality
-threshold() const noexcept
-{
-    return m_threshold;
-}
+    Quality
+    threshold() const noexcept
+    {
+        return m_threshold;
+    }
 
     /** Returns `true` if the quality does not meet the taker's requirements. */
     bool
@@ -221,7 +225,7 @@ threshold() const noexcept
             assert (m_out < m_amount.out);
             taker_amount = offer.quality().ceil_out (
                 taker_amount, m_amount.out - m_out);
-            assert (! taker_amount.in.isZero());
+            assert (taker_amount.in != zero);
         }
 
         // Calculate the amount that will flow through the offer
@@ -251,6 +255,7 @@ threshold() const noexcept
 
         // VFALCO For the case of !sell, is it possible for the taker
         //        to get a tiny bit more than he asked for?
+        // DAVIDS Can you verify?
         assert (m_options.sell || flow.out <= m_amount.out);
 
         // Calculate remaining portion of offer

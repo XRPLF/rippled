@@ -215,4 +215,11 @@ This determines whether to add any features to the proposed transaction set.
 #define RIPPLE_PROPOSE_AMENDMENTS 0
 #endif
 
+/** Config: RIPPLE_USE_OLD_CREATE_TRANSACTOR
+This determines whether ripple uses the legacy OfferCreate transactor.
+*/
+#ifndef RIPPLE_USE_OLD_CREATE_TRANSACTOR
+#define RIPPLE_USE_OLD_CREATE_TRANSACTOR 1
+#endif
+
 #endif

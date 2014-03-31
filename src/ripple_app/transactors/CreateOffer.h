@@ -17,36 +17,53 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#ifndef RIPPLE_TX_OFFERCREATE_H_INCLUDED
+#define RIPPLE_TX_OFFERCREATE_H_INCLUDED
 
-#include "ripple_types.h"
-#include "../ripple/sslutil/ripple_sslutil.h"
+#include "../../beast/beast/cxx14/memory.h"
 
-#ifdef BEAST_WIN32
-# include <Winsock2.h> // for ByteOrder.cpp
-// <Winsock2.h> defines min, max and does other stupid things
-# ifdef max
-# undef max
-# endif
-# ifdef min
-# undef min
-# endif
+namespace ripple {
+
+class OfferCreateTransactorLog;
+
+template <>
+char const*
+LogPartition::getPartitionName <OfferCreateTransactorLog> ()
+{
+    return "Tx/OfferCreate";
+}
+
+class OfferCreateTransactor
+    : public Transactor
+{
+private:
+    template <class T>
+    static std::string
+    get_compare_sign (T const& lhs, T const& rhs)
+    {
+        if (lhs > rhs)
+            return ">";
+
+        if (rhs > lhs)
+            return "<";
+
+        // If neither is bigger than the other, they must be equal
+        return "=";
+    }
+
+public:
+    OfferCreateTransactor (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine);
+};
+
+std::unique_ptr <Transactor> make_OfferCreateTransactor (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine);
+
+}
+
 #endif
-
-#include <set>
-#include <map>
-#include <unordered_set>
-#include <unordered_map>
-#include <boost/unordered_set.hpp>
-
-#include "impl/Base58.cpp"
-#include "impl/ByteOrder.cpp"
-#include "impl/RandomNumbers.cpp"
-#include "impl/strHex.cpp"
-#include "impl/base_uint.cpp"
-#include "impl/UInt160.cpp"
-#include "impl/RippleIdentifierTests.cpp"
-#include "impl/RippleAssets.cpp"
-
-#include "../common/tests/cross_offer.test.cpp"
 
