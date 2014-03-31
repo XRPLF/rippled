@@ -3900,6 +3900,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
         }
     }
 
+    bool bHaveMasterLock = true;
     if (!params.isMember ("books"))
     {
         nothing ();
@@ -4010,7 +4011,11 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
             if (bSnapshot)
             {
-                masterLockHolder.unlock ();
+                if (bHaveMasterLock)
+                {
+                    masterLockHolder.unlock ();
+                    bHaveMasterLock = false;
+                }
 
                 loadType = Resource::feeMediumBurdenRPC;
                 Ledger::pointer     lpLedger = getApp().getLedgerMaster ().getPublishedLedger ();
