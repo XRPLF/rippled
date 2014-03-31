@@ -339,7 +339,7 @@ else:
      # This needs to be a CCFLAGS not a CXXFLAGS
      env.Append(CCFLAGS = more_warnings)
 
-env.Append(CXXFLAGS = ['-O1','-pthread', '-Wno-invalid-offsetof', '-Wformat']+more_warnings+DEBUGFLAGS)
+env.Append(CXXFLAGS = ['-O3', '-fno-strict-aliasing', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+more_warnings+DEBUGFLAGS)
 
 # RTTI is required for Beast and CountedObject.
 #

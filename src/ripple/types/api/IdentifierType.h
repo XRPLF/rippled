@@ -49,7 +49,7 @@ public:
         template <typename Arg>
         hasher (Arg arg) : m_hasher (arg)
             { }
-        std::size_t operator() (IdentifierType const& id) const
+        std::size_t operator() (IdentifierType const& id) const noexcept
             { return m_hasher(id.value()); }
     private:
         typename Traits::hasher m_hasher;
@@ -65,7 +65,7 @@ public:
         key_equal (Arg arg) : m_equal (arg)
             { }
         bool operator() (IdentifierType const& lhs,
-                         IdentifierType const& rhs) const
+                         IdentifierType const& rhs) const noexcept
             { return m_equal (lhs.value(), rhs.value()); }
     private:
         typename Traits::key_equal m_equal;

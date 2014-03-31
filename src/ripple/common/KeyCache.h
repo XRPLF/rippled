@@ -28,6 +28,7 @@
 #include "../../beast/beast/chrono/abstract_clock.h"
 #include "../../beast/beast/chrono/chrono_io.h"
 #include "../../beast/beast/Insight.h"
+#include "../../beast/beast/container/hardened_hash.h"
 
 namespace ripple {
 
@@ -40,7 +41,7 @@ namespace ripple {
 // VFALCO TODO Figure out how to pass through the allocator
 template <
     class Key,
-    class Hash = std::hash <Key>,
+    class Hash = beast::hardened_hash <Key>,
     class KeyEqual = std::equal_to <Key>,
     //class Allocator = std::allocator <std::pair <Key const, Entry>>,
     class Mutex = std::mutex

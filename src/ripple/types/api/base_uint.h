@@ -256,12 +256,11 @@ public:
         return *this;
     }
 
-    std::size_t hash_combine (std::size_t& seed) const noexcept
+    template <class Hasher>
+    friend void hash_append(Hasher& h, base_uint const& a) noexcept
     {
-        for (int i = 0; i < WIDTH; ++i)
-            boost::hash_combine (seed, pn[i]);
-
-        return seed;
+        using beast::hash_append;
+        hash_append (h, a.pn);
     }
 
     friend inline int compare (const base_uint& a, const base_uint& b)
@@ -484,37 +483,8 @@ std::ostream& operator<< (std::ostream& out, const base_uint<BITS>& u)
 
 //------------------------------------------------------------------------------
 
-namespace std {
-
-/** Specialization for hash. */
-template <unsigned int BITS>
-struct hash <ripple::base_uint <BITS> >
+namespace std
 {
-public:
-    typedef ripple::base_uint <BITS> argument_type;
-    typedef std::size_t              result_type;
-
-    hash ()
-    {
-        static typename argument_type::hasher s_hash;
-        m_hash = s_hash;
-    }
-
-    template <typename Arg>
-    explicit hash (Arg arg) : m_hash (arg)
-    {
-    }
-
-    result_type operator() (argument_type const& key) const
-    {
-        return m_hash (key);
-    }
-
-private:
-    typename argument_type::hasher m_hash;
-};
-
-//------------------------------------------------------------------------------
 
 /** Specialization for equal_to. */
 template <unsigned int BITS>
@@ -546,6 +516,6 @@ private:
     typename argument_type::equal m_equal;
 };
 
-}
+}  // std
 
 #endif

@@ -276,6 +276,24 @@ public:
 
         std::hash <Book> hash;
 
+//         log << std::hex << hash (Book (a1, a2));
+//         log << std::hex << hash (Book (a1, a2));
+// 
+//         log << std::hex << hash (Book (a1, a3));
+//         log << std::hex << hash (Book (a1, a3));
+// 
+//         log << std::hex << hash (Book (a1, a4));
+//         log << std::hex << hash (Book (a1, a4));
+// 
+//         log << std::hex << hash (Book (a2, a3));
+//         log << std::hex << hash (Book (a2, a3));
+// 
+//         log << std::hex << hash (Book (a2, a4));
+//         log << std::hex << hash (Book (a2, a4));
+// 
+//         log << std::hex << hash (Book (a3, a4));
+//         log << std::hex << hash (Book (a3, a4));
+
         expect (hash (Book (a1, a2)) == hash (Book (a1, a2)));
         expect (hash (Book (a1, a3)) == hash (Book (a1, a3)));
         expect (hash (Book (a1, a4)) == hash (Book (a1, a4)));

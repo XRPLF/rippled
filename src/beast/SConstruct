@@ -45,7 +45,7 @@ def print_build_vars(env,var):
 
 def print_build_config(env):
     config_vars = ['CC', 'CXX', 'CFLAGS', 'CCFLAGS', 'CPPFLAGS',
-                   'CXXFLAGS', 'LIBPATH', 'LINKFLAGS', 'LIBS']
+                   'CXXFLAGS', 'LIBPATH', 'LINKFLAGS', 'LIBS', 'BOOST_HOME']
     sys.stdout.write("\nConfiguration:\n")
     for var in config_vars:
         print_build_vars(env,var)
@@ -143,6 +143,8 @@ def main():
     env.Append(CXXFLAGS = [
         '-std=c++11',
         '-frtti',
+        '-O3',
+        '-fno-strict-aliasing',
         '-g'
         ])
 

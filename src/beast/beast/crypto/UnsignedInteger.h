@@ -60,14 +60,6 @@ public:
     typedef value_type*        iterator;
     typedef value_type const*  const_iterator;
 
-    void
-    hash_combine (std::size_t& seed) const noexcept
-    {
-        std::size_t result;
-        Murmur::Hash (get(), size, seed, &result);
-        seed = result;
-    }
-
     /** Hardened hash function for use with hash based containers.
         The seed is used to make the hash unpredictable. This prevents
         attackers from exploiting crafted inputs to produce degenerate

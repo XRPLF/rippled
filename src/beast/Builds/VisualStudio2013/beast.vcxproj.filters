@@ -70,6 +70,7 @@
     <None Include="..\..\beast\asio\README.md">
       <Filter>beast\asio</Filter>
     </None>
+    <None Include="..\..\SConstruct" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="beast_core">
@@ -302,6 +303,9 @@
     </Filter>
     <Filter Include="beast_asio\scripts">
       <UniqueIdentifier>{c65af439-8c23-46c3-9b95-7da15651e5f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="beast\container\impl">
+      <UniqueIdentifier>{18193ca8-bfb0-48af-b401-52ead0015ba5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1185,6 +1189,21 @@
     <ClInclude Include="..\..\beast\container\hardened_hash.h">
       <Filter>beast\container</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\utility\meta.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\impl\spookyv2.h">
+      <Filter>beast\container\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\hash_append.h">
+      <Filter>beast\container</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\container\tests\hash_metrics.h">
+      <Filter>beast\container\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\beast\utility\type_name.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\files\DirectoryIterator.cpp">
@@ -1642,6 +1661,12 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\container\tests\hardened_hash.test.cpp">
       <Filter>beast\container\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\container\tests\hash_append.test.cpp">
+      <Filter>beast\container\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\container\impl\spookyv2.cpp">
+      <Filter>beast\container\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

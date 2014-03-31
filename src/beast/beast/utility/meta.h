@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+    Copyright 2014, Howard Hinnant <howard.hinnant@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,13 +17,49 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
-#endif
+#ifndef BEAST_UTILITY_META_H_INCLUDED
+#define BEAST_UTILITY_META_H_INCLUDED
 
-#include "impl/spookyv2.cpp"
+#include <type_traits>
 
-#include "tests/aged_associative_container.test.cpp"
-#include "tests/buffer_view.test.cpp"
-#include "tests/hardened_hash.test.cpp"
-#include "tests/hash_append.test.cpp"
+namespace beast {
+
+template <bool ...> struct static_and;
+
+template <bool b0, bool ... bN>
+struct static_and <b0, bN...>
+    : public std::integral_constant <
+        bool, b0 && static_and<bN...>::value>
+{
+};
+
+template <>
+struct static_and<>
+    : public std::true_type
+{
+};
+
+static_assert( static_and<true, true, true>::value, "");
+static_assert(!static_and<true, false, true>::value, "");
+
+template <std::size_t ...>
+struct static_sum;
+
+template <std::size_t s0, std::size_t ...sN>
+struct static_sum <s0, sN...>
+    : public std::integral_constant <
+        std::size_t, s0 + static_sum<sN...>::value>
+{
+};
+
+template <>
+struct static_sum<>
+    : public std::integral_constant<std::size_t, 0>
+{
+};
+
+static_assert(static_sum<5, 2, 17, 0>::value == 24, "");
+
+} // beast
+
+#endif // BEAST_UTILITY_META_H_INCLUDED

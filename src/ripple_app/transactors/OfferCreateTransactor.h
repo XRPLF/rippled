@@ -74,8 +74,8 @@ private:
         STAmount const&     saOfferPays,
         STAmount const&     saOfferGets,
         uint160 const&      uTakerAccountID,
-        std::unordered_set<uint256>&  usOfferUnfundedBecame,
-        std::unordered_set<uint160>&  usAccountTouched,
+        std::unordered_set<uint256, beast::hardened_hash<uint256>>&  usOfferUnfundedBecame,
+        std::unordered_set<uint160, beast::hardened_hash<uint160>>&  usAccountTouched,
         STAmount&           saOfferFunds);
 
     TER takeOffers (
@@ -92,7 +92,7 @@ private:
         bool&               bUnfunded);
 
     // Offers found unfunded.
-    std::unordered_set<uint256> usOfferUnfundedFound;
+    std::unordered_set<uint256, beast::hardened_hash<uint256>> usOfferUnfundedFound;
 
     typedef std::pair <uint256, uint256> missingOffer_t;
     std::set<missingOffer_t> usMissingOffers;

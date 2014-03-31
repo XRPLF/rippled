@@ -23,7 +23,7 @@ std::size_t hash_value (uint256 const& u)
 {
     std::size_t seed = HashMaps::getInstance ().getNonce <size_t> ();
 
-    return u.hash_combine (seed);
+    return beast::hardened_hash<uint256>{seed}(u);
 }
 
 }

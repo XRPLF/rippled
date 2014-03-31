@@ -20,9 +20,10 @@
 #ifndef RIPPLE_TYPES_IDENTIFIERSTORAGE_H_INCLUDED
 #define RIPPLE_TYPES_IDENTIFIERSTORAGE_H_INCLUDED
 
-#include "../../beast/beast/FixedArray.h"
 #include "../../beast/beast/crypto/MurmurHash.h"
 #include "../../beast/beast/container/hardened_hash.h"
+
+#include <boost/array.hpp>
 
 namespace ripple {
 
@@ -44,7 +45,7 @@ public:
     static size_type const      post_size = PostSize;
     static size_type const      storage_size = pre_size + size + post_size;
 
-    typedef beast::FixedArray <
+    typedef boost::array <
         std::uint8_t, storage_size>    storage_type;
 
     /** Value hashing function.
@@ -129,12 +130,11 @@ public:
         return !isZero();
     }
 
-    void
-    hash_combine (std::size_t& seed) const noexcept
+    template <class Hasher>
+    friend void hash_append (Hasher& h, IdentifierStorage const& a) noexcept
     {
-        std::size_t result;
-        beast::Murmur::Hash (m_storage.cbegin (), m_storage.size(), seed, &result);
-        seed = result;
+        using beast::hash_append;
+        hash_append (h, a.m_storage);
     }
 
 private:

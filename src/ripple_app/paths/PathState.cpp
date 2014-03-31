@@ -30,13 +30,8 @@ class RippleCalc; // for logging
 
 std::size_t hash_value (const aciSource& asValue)
 {
-    std::size_t seed = 0;
-
-    asValue.get<0> ().hash_combine (seed);
-    asValue.get<1> ().hash_combine (seed);
-    asValue.get<2> ().hash_combine (seed);
-
-    return seed;
+    std::size_t const seed = 0;
+    return beast::hardened_hash<aciSource>{seed}(asValue);
 }
 
 // Compare the non-calculated fields.
@@ -534,7 +529,7 @@ void PathState::setExpanded (
         {
             const Node&  pnCur   = vpnNodes[uNode];
 
-            if (!umForward.insert (std::make_pair (boost::make_tuple (pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uNode)).second)
+            if (!umForward.insert (std::make_pair (std::make_tuple (pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uNode)).second)
             {
                 // Failed to insert. Have a loop.
                 WriteLog (lsDEBUG, RippleCalc) << boost::str (boost::format ("setExpanded: loop detected: %s")

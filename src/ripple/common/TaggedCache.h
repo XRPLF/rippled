@@ -23,6 +23,7 @@
 #include "../../beast/beast/chrono/abstract_clock.h"
 #include "../../beast/beast/chrono/chrono_io.h"
 #include "../../beast/beast/Insight.h"
+#include "../../beast/beast/container/hardened_hash.h"
 
 #include <boost/smart_ptr.hpp>
 
@@ -52,7 +53,7 @@ struct TaggedCacheLog;
 template <
     class Key,
     class T,
-    class Hash = std::hash <Key>,
+    class Hash = beast::hardened_hash <Key>,
     class KeyEqual = std::equal_to <Key>,
     //class Allocator = std::allocator <std::pair <Key const, Entry>>,
     class Mutex = std::recursive_mutex

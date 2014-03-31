@@ -211,7 +211,7 @@ TER RippleCalc::calcNodeAdvance (
                 saTakerPays = sleOffer->getFieldAmount (sfTakerPays);
                 saTakerGets = sleOffer->getFieldAmount (sfTakerGets);
 
-                const aciSource         asLine              = boost::make_tuple (uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
+                const aciSource         asLine              = std::make_tuple (uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
 
                 WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAdvance: uOfrOwnerID=%s saTakerPays=%s saTakerGets=%s uOfferIndex=%s")
                                                % RippleAddress::createHumanAccountID (uOfrOwnerID)

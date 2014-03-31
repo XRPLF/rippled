@@ -28,8 +28,8 @@ bool OfferCreateTransactor::isValidOffer (
     STAmount const& saOfferPays,
     STAmount const& saOfferGets,
     uint160 const& uTakerAccountID,
-    std::unordered_set<uint256>& usOfferUnfundedBecame,
-    std::unordered_set<uint160>& usAccountTouched,
+    std::unordered_set<uint256, beast::hardened_hash<uint256>>& usOfferUnfundedBecame,
+    std::unordered_set<uint160, beast::hardened_hash<uint160>>& usAccountTouched,
     STAmount& saOfferFunds)
 {
     if (sleOffer->isFieldPresent (sfExpiration) && 
@@ -142,10 +142,10 @@ TER OfferCreateTransactor::takeOffers (
     TER terResult = temUNCERTAIN;
 
     // Offers that became unfunded.
-    std::unordered_set<uint256> usOfferUnfundedBecame; 
+    std::unordered_set<uint256, beast::hardened_hash<uint256>> usOfferUnfundedBecame; 
 
     // Accounts touched.
-    std::unordered_set<uint160> usAccountTouched;
+    std::unordered_set<uint160, beast::hardened_hash<uint160>> usAccountTouched;
 
     saTakerPaid = STAmount (saTakerPays.getCurrency (), saTakerPays.getIssuer ());
     saTakerGot = STAmount (saTakerGets.getCurrency (), saTakerGets.getIssuer ());
