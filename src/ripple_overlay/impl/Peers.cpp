@@ -91,8 +91,6 @@ class PeersImp
 public:
     typedef std::unordered_map <PeerFinder::Slot::ptr,
         boost::weak_ptr <PeerImp>> PeersBySlot;
-    typedef std::unordered_map <beast::IP::Endpoint,
-        boost::weak_ptr <PeerImp>> PeersByIP;
 
     typedef boost::unordered_map <
         RippleAddress, Peer::pointer> PeerByPublicKey;
@@ -489,8 +487,12 @@ public:
         for (auto const& entry : m_peers)
         {
             PeerImp::ptr const peer (entry.second.lock());
-            assert (peer != nullptr);
-            peer->close (graceful);
+
+            // VFALCO The only case where the weak_ptr is expired should be if
+            //        ~PeerImp is pre-empted before it calls m_peers.remove()
+            //
+            if (peer != nullptr)
+                peer->close (graceful);
         }
     }
 
