@@ -97,6 +97,7 @@ public:
 
         rocksdb::Options options;
         options.create_if_missing = true;
+        options.env = env;
 
         if (keyValues["cache_mb"].isEmpty())
         {
@@ -134,7 +135,17 @@ public:
             options.target_file_size_multiplier = keyValues["file_size_mult"].getIntValue();
         }
 
-        options.env = env;
+        if (! keyValues["bg_threads"].isEmpty())
+        {
+            options.env->SetBackgroundThreads
+                (keyValues["bg_threads"].getIntValue(), rocksdb::Env::LOW);
+        }
+
+        if (! keyValues["high_threads"].isEmpty())
+        {
+            options.env->SetBackgroundThreads
+                (keyValues["high_threads"].getIntValue(), rocksdb::Env::HIGH);
+        }
 
         rocksdb::DB* db = nullptr;
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
