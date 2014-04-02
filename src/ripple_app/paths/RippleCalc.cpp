@@ -82,7 +82,7 @@ TER RippleCalc::calcNodeAdvance (
         // levels (ratio of pay:get) that will be considered for one path.
         // Changing this value has repercusssions on validation and consensus.
         //
-        if (++loopCount > 20)
+        if (++loopCount > 100)
         {
             WriteLog (lsWARNING, RippleCalc) << "Loop count exceeded";
             return tefEXCEPTION;
