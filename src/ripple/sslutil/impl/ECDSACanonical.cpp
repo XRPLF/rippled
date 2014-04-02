@@ -99,7 +99,7 @@ namespace detail {
             
             // Can't be longer than the data we have and must
             // be between 1 and 33 bytes.
-            if ((sigLen > len) || (sigLen < 2) || (sigLen > 33))
+            if ((sigLen > (len - 2)) || (sigLen < 1) || (sigLen > 33))
                 return;
 
             // The signature can't be negative
@@ -107,7 +107,7 @@ namespace detail {
                 return;
 
             // It can't be zero
-            if ((sig[2] == 0) && (len == 1))
+            if ((sig[2] == 0) && (sigLen == 1))
                 return;
 
             // And it can't be padded
@@ -161,7 +161,7 @@ bool isCanonicalECDSASig (void const* vSig, size_t sigLen, ECDSA strict_param)
 
     unsigned char const* sig = reinterpret_cast<unsigned char const*> (vSig);
 
-    if ((sigLen < 10) || (sigLen > 72))
+    if ((sigLen < 8) || (sigLen > 72))
         return false;
 
     if ((sig[0] != 0x30) || (sig[1] != (sigLen - 2)))
@@ -385,6 +385,10 @@ public:
     void testValidSignatures ()
     {
         testcase ("Canonical signature checks", abort_on_fail);
+
+        // r and s 1 byte 1
+        expect (isValid ("3006" "020101" "020102"),
+            "Canonical signature");
 
         expect (isValid ("3044"
             "02203932c892e2e550f3af8ee4ce9c215a87f9bb831dcac87b2838e2c2eaa891df0c"
