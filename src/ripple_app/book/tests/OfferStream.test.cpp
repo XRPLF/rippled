@@ -17,26 +17,30 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include "../OfferStream.h"
 
-#include "ripple_app.h"
+#include "../../../beast/beast/unit_test/suite.h"
 
-#include "../ripple_net/ripple_net.h"
+namespace ripple {
+namespace core {
 
-#include "../ripple/common/seconds_clock.h"
+class OfferStream_test : public beast::unit_test::suite
+{
+public:
+    void
+    test()
+    {
+        pass();
+    }
 
-#include <fstream> // for UniqueNodeList.cpp
+    void
+    run()
+    {
+        test();
+    }
+};
 
-#include "transactors/Transactor.h"
+BEAST_DEFINE_TESTSUITE_MANUAL(OfferStream,core,ripple);
 
-#include "paths/RippleState.cpp"
-#include "peers/UniqueNodeList.cpp"
-#include "ledger/InboundLedger.cpp"
-#include "tx/TransactionCheck.cpp"
-#include "tx/TransactionMaster.cpp"
-#include "tx/Transaction.cpp"
-#include "tx/TransactionEngine.cpp"
-#include "tx/TransactionMeta.cpp"
-
-#include "book/tests/OfferStream.test.cpp"
-#include "book/tests/Quality.test.cpp"
+}
+}

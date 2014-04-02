@@ -217,7 +217,7 @@ TER PaymentTransactor::doApply ()
             terResult = openLedger && tooManyPaths
                         ? telBAD_PATH_COUNT // Too many paths for proposed ledger.
                         : RippleCalc::rippleCalc (
-                              mEngine->getNodes (),
+                              mEngine->view (),
                               saMaxAmountAct,
                               saDstAmountAct,
                               vpsExpanded,
@@ -236,7 +236,7 @@ TER PaymentTransactor::doApply ()
                 terResult = tecPATH_DRY;
 
             if ((tesSUCCESS == terResult) && (saDstAmountAct != saDstAmount))
-                mEngine->getNodes().setDeliveredAmount (saDstAmountAct);
+                mEngine->view().setDeliveredAmount (saDstAmountAct);
         }
         catch (std::exception const& e)
         {

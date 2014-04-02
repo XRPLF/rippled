@@ -75,11 +75,10 @@ public:
     {
     }
 
-    /** Assignment.
-        This is only valid when ByValue == `true`
-    */
-    template <bool OtherByValue>
-    RippleAssetType& operator= (RippleAssetType <OtherByValue> const& other)
+    /** Assignment. */
+    template <bool MaybeByValue = ByValue, bool OtherByValue>
+    std::enable_if_t <MaybeByValue, RippleAssetType&>
+    operator= (RippleAssetType <OtherByValue> const& other)
     {
         currency = other.currency;
         issuer = other.issuer;

@@ -55,7 +55,7 @@ TER AccountSetTransactor::doApply ()
 
     if (bSetRequireAuth && !isSetBit (uFlagsIn, lsfRequireAuth))
     {
-        if (!mEngine->getNodes ().dirIsEmpty (Ledger::getOwnerDirIndex (mTxnAccountID)))
+        if (!mEngine->view().dirIsEmpty (Ledger::getOwnerDirIndex (mTxnAccountID)))
         {
             m_journal.trace << "Retry: Owner directory not empty.";
 

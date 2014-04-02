@@ -101,7 +101,7 @@ TER TrustSetTransactor::doApply ()
             m_journal.warning << 
                 "Clearing redundant line.";
 
-            return mEngine->getNodes ().trustDelete (
+            return mEngine->view ().trustDelete (
                 selDelete, mTxnAccountID, uDstAccountID);
         }
         else
@@ -273,7 +273,7 @@ TER TrustSetTransactor::doApply ()
         {
             // Set reserve for low account.
 
-            mEngine->getNodes ().ownerCountAdjust (uLowAccountID, 1, sleLowAccount);
+            mEngine->view ().ownerCountAdjust (uLowAccountID, 1, sleLowAccount);
             uFlagsOut           |= lsfLowReserve;
 
             if (!bHigh)
@@ -284,7 +284,7 @@ TER TrustSetTransactor::doApply ()
         {
             // Clear reserve for low account.
 
-            mEngine->getNodes ().ownerCountAdjust (uLowAccountID, -1, sleLowAccount);
+            mEngine->view ().ownerCountAdjust (uLowAccountID, -1, sleLowAccount);
             uFlagsOut   &= ~lsfLowReserve;
         }
 
@@ -292,7 +292,7 @@ TER TrustSetTransactor::doApply ()
         {
             // Set reserve for high account.
 
-            mEngine->getNodes ().ownerCountAdjust (uHighAccountID, 1, sleHighAccount);
+            mEngine->view ().ownerCountAdjust (uHighAccountID, 1, sleHighAccount);
             uFlagsOut   |= lsfHighReserve;
 
             if (bHigh)
@@ -303,7 +303,7 @@ TER TrustSetTransactor::doApply ()
         {
             // Clear reserve for high account.
 
-            mEngine->getNodes ().ownerCountAdjust (uHighAccountID, -1, sleHighAccount);
+            mEngine->view ().ownerCountAdjust (uHighAccountID, -1, sleHighAccount);
             uFlagsOut   &= ~lsfHighReserve;
         }
 
@@ -314,7 +314,7 @@ TER TrustSetTransactor::doApply ()
         {
             // Delete.
 
-            terResult   = mEngine->getNodes ().trustDelete (sleRippleState, uLowAccountID, uHighAccountID);
+            terResult   = mEngine->view ().trustDelete (sleRippleState, uLowAccountID, uHighAccountID);
         }
         else if (bReserveIncrease
                  && mPriorBalance.getNValue () < uReserveCreate) // Reserve is not scaled by load.
@@ -366,7 +366,7 @@ TER TrustSetTransactor::doApply ()
             Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID).ToString ();
 
         // Create a new ripple line.
-        terResult = mEngine->getNodes ().trustCreate (
+        terResult = mEngine->view ().trustCreate (
                           bHigh,
                           mTxnAccountID,
                           uDstAccountID,

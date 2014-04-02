@@ -635,8 +635,10 @@ public:
     {
         if (!isZero ()) mIsNegative = !mIsNegative;
     }
+
     void zero ()
     {
+        // VFALCO: Why -100?
         mOffset = mIsNative ? 0 : -100;
         mValue = 0;
         mIsNegative = false;
@@ -733,6 +735,11 @@ public:
         return multiply (v1, v2, v1);
     }
 
+    /* addRound, subRound can end up rounding if the amount subtracted is too small
+       to make a change. Consder (X-d) where d is very small relative to X.
+       If you ask to round down, then (X-d) should not be X unless d is zero.
+       If you ask to round up, (X+d) should never be X unless d is zero. (Assuming X and d are positive).
+    */
     // Add, subtract, multiply, or divide rounding result in specified direction
     static STAmount addRound (const STAmount& v1, const STAmount& v2, bool roundUp);
     static STAmount subRound (const STAmount& v1, const STAmount& v2, bool roundUp);

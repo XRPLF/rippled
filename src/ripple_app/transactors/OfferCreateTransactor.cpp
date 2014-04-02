@@ -68,7 +68,7 @@ bool OfferCreateTransactor::isValidOffer (
     m_journal.trace <<
         "isValidOffer: saOfferPays=" << saOfferPays.getFullText ();
 
-    saOfferFunds = mEngine->getNodes ().accountFunds (uOfferOwnerID, saOfferPays);
+    saOfferFunds = mEngine->view ().accountFunds (uOfferOwnerID, saOfferPays);
 
     if (!saOfferFunds.isPositive ())
     {
@@ -353,7 +353,7 @@ TER OfferCreateTransactor::takeOffers (
         "takeOffers: bSell: " << bSell <<
         ": against book: " << uBookBase.ToString ();
 
-    LedgerEntrySet& lesActive = mEngine->getNodes ();
+    LedgerEntrySet& lesActive = mEngine->view ();
     std::uint64_t const uTakeQuality = STAmount::getRate (saTakerGets, saTakerPays);
     STAmount saTakerRate = STAmount::setRate (uTakeQuality);
     uint160 const uTakerPaysAccountID = saTakerPays.getIssuer ();
@@ -776,7 +776,7 @@ TER OfferCreateTransactor::doApply ()
     std::uint64_t              uOwnerNode;
     std::uint64_t              uBookNode;
 
-    LedgerEntrySet& lesActive = mEngine->getNodes ();
+    LedgerEntrySet& lesActive = mEngine->view ();
     LedgerEntrySet lesCheckpoint = lesActive; // Checkpoint with just fees paid.
     lesActive.bumpSeq (); // Begin ledger variance.
 
@@ -869,7 +869,7 @@ TER OfferCreateTransactor::doApply ()
             m_journal.warning <<
                 "uCancelSequence=" << uCancelSequence;
 
-            terResult   = mEngine->getNodes ().offerDelete (sleCancel);
+            terResult   = mEngine->view ().offerDelete (sleCancel);
         }
         else
         {

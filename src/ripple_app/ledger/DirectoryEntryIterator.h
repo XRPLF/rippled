@@ -27,12 +27,15 @@ class DirectoryEntryIterator
 {
 
 public:
+    DirectoryEntryIterator ()
+        : mEntry(0)
+    {
+    }
 
-    DirectoryEntryIterator () : mEntry(0)
-    { ; }
-
-    DirectoryEntryIterator (uint256 const& index) : mRootIndex(index), mEntry(0)
-    { ; }
+    DirectoryEntryIterator (uint256 const& index)
+        : mRootIndex(index), mEntry(0)
+    {
+    }
 
     /** Construct from a reference to the root directory
     */
@@ -42,24 +45,19 @@ public:
             mRootIndex = mDirNode->getIndex();
     }
 
-    /** Get the SLE this iterator currently references
-    */
+    /** Get the SLE this iterator currently references */
     SLE::pointer getEntry (LedgerEntrySet& les, LedgerEntryType type);
 
-    /** Make this iterator point to the first offer
-    */
+    /** Make this iterator point to the first offer */
     bool firstEntry (LedgerEntrySet&);
 
-    /** Make this iterator point to the next offer
-    */
+    /** Make this iterator point to the next offer */
     bool nextEntry (LedgerEntrySet&);
 
-    /** Add this iterator's position to a JSON object
-    */
+    /** Add this iterator's position to a JSON object */
     bool addJson (Json::Value&) const;
 
-    /** Set this iterator's position from a JSON object
-    */
+    /** Set this iterator's position from a JSON object */
     bool setJson (Json::Value const&, LedgerEntrySet& les);
 
     uint256 const& getEntryLedgerIndex () const
@@ -72,8 +70,19 @@ public:
         return mDirNode ? mDirNode->getIndex () : uint256();
     }
 
-private:
+    bool
+    operator== (DirectoryEntryIterator const& other) const
+    {
+        return mEntry == other.mEntry && mDirIndex == other.mDirIndex;
+    }
 
+    bool
+    operator!= (DirectoryEntryIterator const& other) const
+    {
+        return ! (*this == other);
+    }
+
+private:
     uint256      mRootIndex;    // ledger index of the root directory
     uint256      mDirIndex;     // ledger index of the current directory
     unsigned int mEntry;        // entry index we are on (0 means first is next)

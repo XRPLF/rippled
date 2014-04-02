@@ -29,7 +29,8 @@ class BookDirIterator
 public:
 
     BookDirIterator ()
-    { ; }
+    {
+    }
 
     BookDirIterator (
         uint160 const& uInCurrency, uint160 const& uInIssuer,
@@ -93,18 +94,33 @@ public:
     bool setJson (Json::Value const&);
 
     // Does this iterator currently point to a valid directory
+    explicit
     operator bool () const
     {
         return mOfferDir &&  (mOfferDir->getIndex() == mIndex);
     }    
 
-private:
+    bool
+    operator== (BookDirIterator const& other) const
+    {
+        assert (! mIndex.isZero() && ! other.mIndex.isZero());
+        return mIndex == other.mIndex;
+    }
 
+    bool
+    operator!= (BookDirIterator const& other) const
+    {
+        return ! (*this == other);
+    }
+
+private:
     uint256      mBase;     // The first index a directory in the book can have
     uint256      mEnd;      // The first index a directory in the book cannot have
     uint256      mIndex;    // The index we are currently on
     SLE::pointer mOfferDir; // The directory page we are currently on
 };
+
+//------------------------------------------------------------------------------
 
 /** An iterator that walks the offers in a book
     CAUTION: The LedgerEntrySet must remain valid for the life of the iterator
@@ -112,7 +128,6 @@ private:
 class OrderBookIterator
 {
 public:
-
     OrderBookIterator (
         LedgerEntrySet& set,
         uint160 const& uInCurrency,
@@ -121,7 +136,11 @@ public:
         uint160 const& uOutIssuer) :
             mEntrySet (set),
             mDirectoryIterator (uInCurrency, uInIssuer, uOutCurrency, uOutIssuer)
-    { ; }
+    {
+    }
+
+    OrderBookIterator&
+    operator= (OrderBookIterator const&) = default;
 
     bool addJson (Json::Value&) const;
 
@@ -193,8 +212,23 @@ public:
         return mOfferIterator;
     }
 
+    bool
+    operator== (OrderBookIterator const& other) const
+    {
+        return
+            std::addressof(mEntrySet) == std::addressof(other.mEntrySet) &&
+            mDirectoryIterator == other.mDirectoryIterator &&
+            mOfferIterator == mOfferIterator;
+    }
+
+    bool
+    operator!= (OrderBookIterator const& other) const
+    {
+        return ! (*this == other);
+    }
+
 private:
-    LedgerEntrySet&         mEntrySet;
+    std::reference_wrapper <LedgerEntrySet> mEntrySet;
     BookDirIterator         mDirectoryIterator;
     DirectoryEntryIterator  mOfferIterator;
 };

@@ -70,7 +70,7 @@ public:
         assert (mLedger);
     }
 
-    LedgerEntrySet& getNodes ()
+    LedgerEntrySet& view ()
     {
         return mNodes;
     }
@@ -84,19 +84,23 @@ public:
         mLedger = ledger;
     }
 
-    SLE::pointer        entryCreate (LedgerEntryType type, uint256 const & index)
+    // VFALCO TODO Remove these pointless wrappers
+    SLE::pointer entryCreate (LedgerEntryType type, uint256 const & index)
     {
         return mNodes.entryCreate (type, index);
     }
-    SLE::pointer        entryCache (LedgerEntryType type, uint256 const & index)
+
+    SLE::pointer entryCache (LedgerEntryType type, uint256 const & index)
     {
         return mNodes.entryCache (type, index);
     }
-    void                entryDelete (SLE::ref sleEntry)
+
+    void entryDelete (SLE::ref sleEntry)
     {
         mNodes.entryDelete (sleEntry);
     }
-    void                entryModify (SLE::ref sleEntry)
+
+    void entryModify (SLE::ref sleEntry)
     {
         mNodes.entryModify (sleEntry);
     }

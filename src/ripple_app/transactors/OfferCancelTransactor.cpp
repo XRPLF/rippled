@@ -57,7 +57,7 @@ TER OfferCancelTransactor::doApply ()
         m_journal.debug <<
             "OfferCancel: uOfferSequence=" << uOfferSequence;
 
-        return mEngine->getNodes ().offerDelete (sleOffer);
+        return mEngine->view ().offerDelete (sleOffer);
     }
 
     m_journal.warning <<

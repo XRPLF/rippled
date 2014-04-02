@@ -1515,6 +1515,9 @@
     <ClCompile Include="..\..\src\ripple_app\book\tests\Quality.test.cpp">
       <Filter>[2] Old Ripple\ripple_app\book\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\book\tests\OfferStream.test.cpp">
+      <Filter>[2] Old Ripple\ripple_app\book\tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">
@@ -3088,6 +3091,18 @@
       <Filter>[2] Old Ripple\ripple_app\book</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\book\Types.h">
+      <Filter>[2] Old Ripple\ripple_app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\book\OfferStream.h">
+      <Filter>[2] Old Ripple\ripple_app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\book\Taker.h">
+      <Filter>[2] Old Ripple\ripple_app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\book\BookTip.h">
+      <Filter>[2] Old Ripple\ripple_app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\book\Offer.h">
       <Filter>[2] Old Ripple\ripple_app\book</Filter>
     </ClInclude>
   </ItemGroup>
