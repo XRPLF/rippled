@@ -24,7 +24,6 @@
 #include "../utility/meta.h"
 
 #if BEAST_USE_BOOST_FEATURES
-#include <boost/array.hpp>
 #include <boost/tuple/tuple.hpp>
 #endif
 
@@ -154,17 +153,6 @@ struct is_contiguously_hashable <boost::tuple<T...>>
 {
 };
 #endif
-
-// boost::array
-template <class T, std::size_t N>
-struct is_contiguously_hashable <boost::array<T, N>>
-    : public std::integral_constant <bool,
-        is_contiguously_hashable<T>::value && 
-        sizeof(T)*N == sizeof(boost::array<T, N>)>
-{
-};
-
-static_assert (is_contiguously_hashable <boost::array<char, 3>>::value, "");
 
 #endif // BEAST_USE_BOOST_FEATURES
 /** @} */
@@ -301,17 +289,6 @@ typename std::enable_if
     !is_contiguously_hashable<std::array<T, N>>::value
 >::type
 hash_append (Hasher& h, std::array<T, N> const& a) noexcept;
-
-#if BEAST_USE_BOOST_FEATURES
-
-template <class Hasher, class T, std::size_t N>
-typename std::enable_if
-<
-    !is_contiguously_hashable<boost::array<T, N>>::value
->::type
-hash_append (Hasher& h, boost::array<T, N> const& a) noexcept;
-
-#endif // BEAST_USE_BOOST_FEATURES
 
 // std::tuple
 
@@ -952,24 +929,6 @@ hash_append (Hasher& h, std::vector<T, Alloc> const& v) noexcept
 {
     h.append (v.data(), v.size()*sizeof(T));
 }
-
-#if BEAST_USE_BOOST_FEATURES
-
-// boost::array
-
-template <class Hasher, class T, std::size_t N>
-inline
-std::enable_if_t
-<
-    !is_contiguously_hashable<T>::value
->
-hash_append (Hasher& h, boost::array<T, N> const& v) noexcept
-{
-    for (auto const& t : v)
-        hash_append (h, t);
-}
-
-#endif // BEAST_USE_BOOST_FEATURES
 
 template <class Hasher, class T0, class T1, class ...T>
 inline

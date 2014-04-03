@@ -21,8 +21,8 @@
 #define RIPPLE_TYPES_CRYPTOIDENTIFIER_H_INCLUDED
 
 #include "../../beast/beast/ByteOrder.h"
-#include "../../beast/beast/FixedArray.h"
 #include "../../beast/beast/crypto/Sha256.h"
+#include <array>
 
 #include "Base58.h"
 
@@ -74,8 +74,10 @@ public:
         if (Checked)
         {
             beast::Sha256::digest_type digest;
-            beast::Sha256::hash (beast::Sha256::hash (value.storage().cbegin(),
-                value.storage().cend() - post_size), digest);
+            auto const& vs = value.storage();
+            beast::Sha256::hash (beast::Sha256::hash (vs.data(),
+                                                      vs.data() + (vs.size() - post_size)),
+                                 digest);
             // We use the first 4 bytes as a checksum
             std::copy (digest.begin(), digest.begin() + 4,
                 value.end());
@@ -90,12 +92,12 @@ public:
         static value_type createFromInteger (UnsignedIntegralType i)
         {
             static_bassert (size >= sizeof (UnsignedIntegralType));
-            beast::FixedArray <std::uint8_t, size> data;
+            std::array <std::uint8_t, size> data;
             data.fill (0);
             i = beast::toNetworkByteOrder <UnsignedIntegralType> (i);
-            std::memcpy (data.end () - sizeof (i), &i, std::min (size, sizeof (i)));
+            std::memcpy (data.data () + (data.size() - sizeof (i)), &i, std::min (size, sizeof (i)));
             value_type value;
-            construct (data.begin(), data.end(), value);
+            construct (data.data(), data.data() + data.size(), value);
             return value;
         }
     };
@@ -105,11 +107,11 @@ public:
     {
         typename value_type::storage_type const& storage (value.storage());
         // We will convert to little endian with an extra pad byte
-        beast::FixedArray <std::uint8_t, value_type::storage_size + 1> le;
+        std::array <std::uint8_t, value_type::storage_size + 1> le;
         std::reverse_copy (storage.begin(), storage.end(), le.begin());
         // Set pad byte zero to make BIGNUM always positive
         le.back() = 0;
-        return Base58::raw_encode (le.begin(), le.end(),
+        return Base58::raw_encode (le.data(), le.data() + le.size(),
             Base58::getRippleAlphabet(), Checked);
     }
 
@@ -119,7 +121,7 @@ public:
         value_type value;
         bool success (! s.empty());
         if (success && !Base58::raw_decode (&s.front(), &s.back()+1,
-            value.storage().begin(), value_type::storage_size, Checked,
+            value.storage().data(), value_type::storage_size, Checked,
                 Base58::getRippleAlphabet()))
             success = false;
         if (success && value.storage()[0] != Token)

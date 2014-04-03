@@ -23,11 +23,11 @@
 #include "../../beast/beast/crypto/MurmurHash.h"
 #include "../../beast/beast/container/hardened_hash.h"
 
-#include <boost/array.hpp>
+#include <array>
 
 namespace ripple {
 
-/** A padded FixedArray used with IdentifierType traits. */
+/** A padded std::array used with IdentifierType traits. */
 template <std::size_t PreSize, std::size_t Size, std::size_t PostSize>
 class IdentifierStorage
 {
@@ -45,7 +45,7 @@ public:
     static size_type const      post_size = PostSize;
     static size_type const      storage_size = pre_size + size + post_size;
 
-    typedef boost::array <
+    typedef std::array <
         std::uint8_t, storage_size>    storage_type;
 
     /** Value hashing function.
