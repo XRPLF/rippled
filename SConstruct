@@ -41,6 +41,8 @@ HONOR_ENVS = ['CC', 'CXX', 'PATH']
 
 env = Environment(
     tools = ['default', 'protoc'],
+    CC = 'gcc-4.8',
+    CXX = 'g++-4.8',
     ENV = dict((k, os.environ[k]) for k in HONOR_ENVS if k in os.environ)
 )
 

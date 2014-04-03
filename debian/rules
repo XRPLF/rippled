@@ -1,0 +1,31 @@
+#!/usr/bin/make -f
+
+SCONS=scons
+
+# --- NOTE ---
+# Even if using pbuilder (chroot builds), this is executed on the host system
+# ------------
+clean:
+	dh_testdir
+	dh_testroot
+	-$(SCONS) -c
+	dh_clean
+
+build:
+	dh_testdir
+	$(SCONS) -j 8
+	build/rippled --unittest
+	-npm install
+	-npm test
+
+build-arch: build
+
+# We tell the system to save stripped debug symbols into the rippled-dbg package
+# so that we can install them if needed
+.PHONY: override_dh_strip
+override_dh_strip:
+	dh_strip -prippled --dbg-package=rippled-dbg
+
+# Everything else goes to debhelper
+%:
+	dh $@

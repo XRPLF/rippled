@@ -1,0 +1,44 @@
+#!/bin/sh
+# postinst script for rippled
+
+set -e
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see http://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+case "$1" in
+  configure)
+    adduser --disabled-password  --quiet --system \
+      --home /var/run/rippled --no-create-home \
+      --gecos "Rippled Daemon" --group rippled
+
+    # Add the rippled group unless it's already there
+    addgroup --quiet --system rippled || true
+
+    # Ensure directories have the correct owners/permissions
+    chown -R rippled:rippled /var/log/rippled
+    chmod 750 /var/log/rippled
+
+    chown -R rippled:rippled /var/run/rippled
+    chmod 750 /var/run/rippled
+
+    chown -R rippled:rippled /var/lib/rippled
+    chmod 750 /var/lib/rippled
+    chmod 750 /var/lib/rippled/db
+
+  ;;
+  abort-upgrade|abort-remove|abort-deconfigure)
+  ;;
+  *)
+    echo "postinst called with unknown argument \`$1'" >&2
+    exit 1
+  ;;
+esac

@@ -15,25 +15,14 @@ set -e
 NAME=rippled
 USER="rippled"
 GROUP="rippled"
-PIDFILE=/var/run/$NAME.pid
-DAEMON=/usr/local/sbin/rippled
-DAEMON_OPTS="--conf /etc/ripple/rippled.cfg"
+PIDFILE=/var/run/rippled/$NAME.pid
+DAEMON=/usr/bin/rippled
+DAEMON_OPTS="--conf /etc/rippled/rippled.cfg"
 NET_OPTS="--net $DAEMON_OPTS"
 LOGDIR="/var/log/rippled"
-DBDIR="/var/db/rippled/db/hyperldb"
+DBDIR="/var/lib/rippled/db"
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
-
-# I wish it didn't come down to this, but this is the easiest way to ensure
-# sanity of an install.
-if [ ! -d $LOGDIR ]; then
-	mkdir -p $LOGDIR
-	chown $USER:$GROUP $LOGDIR
-fi
-if [ ! -d $DBDIR ]; then
-	mkdir -p $DBDIR
-	chown -R $USER:$GROUP $DBDIR
-fi
 
 case "$1" in
     start)
