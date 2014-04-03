@@ -26,6 +26,9 @@
 
 // VFALCO NOTE this is analogous to <boost/config.hpp>
 
+// Assert to boost that we always have std::array support
+#define BOOST_ASIO_HAS_STD_ARRAY 1
+
 #if !defined(BEAST_COMPILER_CONFIG) && !defined(BEAST_NO_COMPILER_CONFIG) && !defined(BEAST_NO_CONFIG)
 #include "config/SelectCompilerConfig.h"
 #endif
