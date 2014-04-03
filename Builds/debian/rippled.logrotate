@@ -1,0 +1,13 @@
+/var/log/rippled/debug.log {
+	compress
+	daily
+	nocreate
+	missingok
+	su rippled rippled
+
+	postrotate
+		/etc/init.d/rippled command logrotate
+	endscript
+
+	rotate 10
+}

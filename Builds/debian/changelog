@@ -1,0 +1,41 @@
+rippled (0.23.0-0) precise; urgency=low
+
+  * Major release from Ripple Labs
+
+ -- Justin Lynn <j@jaesharp.com>  Fri, 28 Mar 2014 15:51:00 -0800
+
+rippled (0.22.0-0) precise; urgency=low
+
+  * Major release from Ripple Labs
+
+ -- Justin Lynn <j@jaesharp.com>  Tue, 25 Feb 2014 14:30:00 -0800
+
+rippled (0.16.0-1) precise; urgency=low
+
+  * Major release from Ripple Labs
+
+ -- Justin Lynn <j@jaesharp.com>  Wed, 9 Oct 2013 12:49:00 -0700
+
+rippled (0.13.0-5) precise; urgency=low
+
+  * We have to define build-arch for certain architecture targets in Soyuz, so do that.
+
+ -- Justin Lynn <j@jaesharp.com>  Mon, 30 Sep 2013 07:14:28 -0700
+
+rippled (0.13.0-4) precise; urgency=low
+
+  * We need to make the build tolerant of failures in the unit tests in order to upload to Soyuz. We need to make these unit tests available offline (without npm install)
+
+ -- Justin Lynn <j@jaesharp.com>  Sun, 29 Sep 2013 21:11:00 -0700
+
+rippled (0.13.0-3) precise; urgency=low
+
+  * Upgrade to head of develop.
+
+ -- Justin Lynn <j@jaesharp.com>  Sun, 29 Sep 2013 09:57:06 -0700
+
+rippled (0.12.0-1) UNRELEASED; urgency=low
+
+  * Initial package release.
+
+ -- Justin Lynn <j@jaesharp.com>  Sat, 28 Sep 2013 16:58:51 -0700

@@ -1,0 +1,21 @@
+Source: rippled
+Maintainer: Ripple Labs Packaging Team <packagers@ripplelabs.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 8), scons, pkg-config, ctags, libboost1.55-all-dev, protobuf-compiler, libprotobuf-dev, nodejs, libssl-dev, gcc-4.8, g++-4.8, nodejs
+
+Package: rippled
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Reference Ripple P2P server
+  Ripple's rippled, reference P2P payment network server.
+
+Package: rippled-dbg
+Architecture: any
+Section: debug
+Depends:
+  rippled (= ${binary:Version}),
+  ${misc:Depends}
+Description: debugging symbols for rippled
+  Debug symbols for rippled

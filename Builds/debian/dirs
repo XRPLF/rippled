@@ -1,0 +1,4 @@
+etc/rippled
+var/lib/rippled/db
+var/run/rippled
+var/log/rippled
