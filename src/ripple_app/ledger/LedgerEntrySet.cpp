@@ -359,7 +359,7 @@ Json::Value LedgerEntrySet::getJson (int) const
 }
 
 SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
-                                        boost::unordered_map<uint256, SLE::pointer>& newMods)
+                                        ripple::unordered_map<uint256, SLE::pointer>& newMods)
 {
     std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find (node);
 
@@ -383,7 +383,7 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
         return it->second.mEntry;
     }
 
-    boost::unordered_map<uint256, SLE::pointer>::iterator me = newMods.find (node);
+    ripple::unordered_map<uint256, SLE::pointer>::iterator me = newMods.find (node);
 
     if (me != newMods.end ())
     {
@@ -401,7 +401,7 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
 }
 
 bool LedgerEntrySet::threadTx (const RippleAddress& threadTo, Ledger::ref ledger,
-                               boost::unordered_map<uint256, SLE::pointer>& newMods)
+                               ripple::unordered_map<uint256, SLE::pointer>& newMods)
 {
 #ifdef META_DEBUG
     WriteLog (lsTRACE, LedgerEntrySet) << "Thread to " << threadTo.getAccountID ();
@@ -419,7 +419,7 @@ bool LedgerEntrySet::threadTx (const RippleAddress& threadTo, Ledger::ref ledger
 }
 
 bool LedgerEntrySet::threadTx (SLE::ref threadTo, Ledger::ref ledger,
-                               boost::unordered_map<uint256, SLE::pointer>& newMods)
+                               ripple::unordered_map<uint256, SLE::pointer>& newMods)
 {
     // node = the node that was modified/deleted/created
     // threadTo = the node that needs to know
@@ -438,7 +438,7 @@ bool LedgerEntrySet::threadTx (SLE::ref threadTo, Ledger::ref ledger,
 }
 
 bool LedgerEntrySet::threadOwners (SLE::ref node, Ledger::ref ledger,
-                                   boost::unordered_map<uint256, SLE::pointer>& newMods)
+                                   ripple::unordered_map<uint256, SLE::pointer>& newMods)
 {
     // thread new or modified node to owner or owners
     if (node->hasOneOwner ()) // thread to owner's account
@@ -466,7 +466,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
     // calculate the raw meta data and return it. This must be called before the set is committed
 
     // Entries modified only as a result of building the transaction metadata
-    boost::unordered_map<uint256, SLE::pointer> newMod;
+    ripple::unordered_map<uint256, SLE::pointer> newMod;
 
     typedef std::map<uint256, LedgerEntrySetEntry>::value_type u256_LES_pair;
     BOOST_FOREACH (u256_LES_pair & it, mEntries)

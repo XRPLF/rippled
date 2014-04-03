@@ -35,7 +35,6 @@
 #include <boost/array.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
-#include <boost/unordered_map.hpp>
 
 #include "../beast/modules/beast_sqdb/beast_sqdb.h"
 #include "../beast/modules/beast_asio/beast_asio.h"

@@ -20,6 +20,7 @@
 #include "../../ripple_overlay/api/Overlay.h"
 
 #include "../../beast/beast/unit_test/suite.h"
+#include <tuple>
 
 namespace ripple {
 
@@ -2466,11 +2467,11 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
                 ++count;
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
-                std::uint32_t  uLedgerIndex = it->get<2> ();
-                jvObj["tx_blob"]        = it->get<0> ();
-                jvObj["meta"]           = it->get<1> ();
-                jvObj["ledger_index"]   = uLedgerIndex;
-                jvObj["validated"]      = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
+                std::uint32_t  uLedgerIndex = std::get<2> (*it);
+                jvObj["tx_blob"]            = std::get<0> (*it);
+                jvObj["meta"]               = std::get<1> (*it);
+                jvObj["ledger_index"]       = uLedgerIndex;
+                jvObj["validated"]          = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
 
             }
         }
@@ -2612,11 +2613,11 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
             {
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
-                std::uint32_t uLedgerIndex = it->get<2> ();
-                jvObj["tx_blob"]        = it->get<0> ();
-                jvObj["meta"]           = it->get<1> ();
-                jvObj["ledger_index"]   = uLedgerIndex;
-                jvObj["validated"]      = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
+                std::uint32_t uLedgerIndex = std::get<2> (*it);
+                jvObj["tx_blob"]           = std::get<0> (*it);
+                jvObj["meta"]              = std::get<1> (*it);
+                jvObj["ledger_index"]      = uLedgerIndex;
+                jvObj["validated"]         = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
 
             }
         }

@@ -64,8 +64,8 @@ void OrderBookDB::setup (Ledger::ref ledger)
 
 static void updateHelper (SLE::ref entry,
     boost::unordered_set< uint256 >& seen,
-    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >& destMap,
-    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >& sourceMap,
+    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >& destMap,
+    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >& sourceMap,
     boost::unordered_set< RippleAsset >& XRPBooks,
     int& books)
 {
@@ -97,8 +97,8 @@ static void updateHelper (SLE::ref entry,
 void OrderBookDB::update (Ledger::pointer ledger)
 {
     boost::unordered_set< uint256 > seen;
-    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> > destMap;
-    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> > sourceMap;
+    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> > destMap;
+    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> > sourceMap;
     boost::unordered_set< RippleAsset > XRPBooks;
 
     WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update>";
@@ -168,7 +168,7 @@ void OrderBookDB::getBooksByTakerPays (RippleIssuer const& issuerID, RippleCurre
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock);
-    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >::const_iterator
+    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >::const_iterator
     it = mSourceMap.find (RippleAssetRef (currencyID, issuerID));
 
     if (it != mSourceMap.end ())
@@ -189,7 +189,7 @@ void OrderBookDB::getBooksByTakerGets (RippleIssuer const& issuerID, RippleCurre
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock);
-    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >::const_iterator
+    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >::const_iterator
     it = mDestMap.find (RippleAssetRef (currencyID, issuerID));
 
     if (it != mDestMap.end ())

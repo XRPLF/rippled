@@ -33,7 +33,6 @@
 #include <boost/functional/hash.hpp>
 #include <boost/range/adaptor/copied.hpp>
 #include <boost/regex.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <openssl/ec.h>

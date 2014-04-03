@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "../beast/modules/beast_core/system/BeforeBoost.h"
-#include <boost/unordered_map.hpp>
 
 #include "../beast/beast/http/URL.h"
 #include "../beast/beast/Threads.h"

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NETWORKOPS_H
 #define RIPPLE_NETWORKOPS_H
 
+#include <tuple>
+
 namespace ripple {
 
 // Operations that clients may wish to perform against the network
@@ -79,7 +81,7 @@ public:
 
     // VFALCO TODO Fix OrderBookDB to not need this unrelated type.
     //
-    typedef boost::unordered_map <std::uint64_t, InfoSub::wptr> SubMapType;
+    typedef ripple::unordered_map <std::uint64_t, InfoSub::wptr> SubMapType;
 
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
@@ -263,7 +265,7 @@ public:
     virtual Json::Value getLedgerFetchInfo () = 0;
     virtual std::uint32_t acceptLedger () = 0;
 
-    typedef boost::unordered_map <uint160, std::list<LedgerProposal::pointer> > Proposals;
+    typedef ripple::unordered_map <uint160, std::list<LedgerProposal::pointer> > Proposals;
     virtual Proposals& peekStoredProposals () = 0;
 
     virtual void storeProposal (LedgerProposal::ref proposal,
@@ -294,7 +296,7 @@ public:
         std::int32_t minLedger, std::int32_t maxLedger, bool forward, Json::Value& token,
         int limit, bool bAdmin) = 0;
 
-    typedef boost::tuple<std::string, std::string, std::uint32_t> txnMetaLedgerType;
+    typedef std::tuple<std::string, std::string, std::uint32_t> txnMetaLedgerType;
     typedef std::vector<txnMetaLedgerType> MetaTxsList;
     virtual MetaTxsList getAccountTxsB (const RippleAddress& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,

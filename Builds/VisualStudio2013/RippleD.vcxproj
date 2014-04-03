@@ -2264,6 +2264,7 @@
     <ClInclude Include="..\..\src\ripple\common\RippleSSLContext.h" />
     <ClInclude Include="..\..\src\ripple\common\seconds_clock.h" />
     <ClInclude Include="..\..\src\ripple\common\TaggedCache.h" />
+    <ClInclude Include="..\..\src\ripple\common\UnorderedMap.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Server.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Port.h" />

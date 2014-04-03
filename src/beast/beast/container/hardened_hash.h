@@ -22,14 +22,14 @@
 
 #include "hash_append.h"
 
-#include "impl/spookyv2.h"
-
 #include "../utility/noexcept.h"
 #include <cstdint>
 #include <functional>
 #include <mutex>
 #include <random>
 #include "../cxx14/type_traits.h" // <type_traits>
+#include <unordered_map>
+#include <unordered_set>
 #include "../cxx14/utility.h" // <utility>
 
 // When set to 1, makes the seed per-process instead
@@ -114,30 +114,6 @@ private:
 };
 
 //------------------------------------------------------------------------------
-
-class spooky_wrapper
-{
-    SpookyHash state_;
-public: 
-    spooky_wrapper (std::size_t seed1 = 1, std::size_t seed2 = 2) noexcept
-    {
-        state_.Init (seed1, seed2);
-    }
-
-    void
-    append (void const* key, std::size_t len) noexcept
-    {
-        state_.Update (key, len);
-    }
-
-    explicit
-    operator std::size_t() noexcept
-    {
-        std::uint64_t h1, h2;
-        state_.Final (&h1, &h2);
-        return static_cast <std::size_t> (h1);
-    }
-};
 
 } // detail
 

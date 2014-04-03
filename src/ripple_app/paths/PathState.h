@@ -24,8 +24,8 @@ namespace ripple {
 
 // account id, currency id, issuer id :: node
 typedef std::tuple <uint160, uint160, uint160> aciSource;
-typedef boost::unordered_map <aciSource, unsigned int>                   curIssuerNode;  // Map of currency, issuer to node index.
-typedef boost::unordered_map <aciSource, unsigned int>::const_iterator   curIssuerNodeConstIterator;
+typedef ripple::unordered_map <aciSource, unsigned int>                   curIssuerNode;  // Map of currency, issuer to node index.
+typedef ripple::unordered_map <aciSource, unsigned int>::const_iterator   curIssuerNodeConstIterator;
 
 extern std::size_t hash_value (const aciSource& asValue);
 

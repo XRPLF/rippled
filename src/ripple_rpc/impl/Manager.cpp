@@ -29,7 +29,7 @@ namespace RPC {
 class ManagerImp : public Manager
 {
 public:
-    typedef std::unordered_map <std::string, handler_type> Map;
+    typedef ripple::unordered_map <std::string, handler_type> Map;
 
     beast::Journal m_journal;
     Map m_map;

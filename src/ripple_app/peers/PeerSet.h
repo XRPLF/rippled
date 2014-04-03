@@ -155,7 +155,7 @@ protected:
     // VFALCO TODO Verify that these are used in the way that the names suggest.
     typedef Peer::ShortId PeerIdentifier;
     typedef int ReceivedChunkCount;
-    typedef boost::unordered_map <PeerIdentifier, ReceivedChunkCount> PeerSetMap;
+    typedef ripple::unordered_map <PeerIdentifier, ReceivedChunkCount> PeerSetMap;
 
     PeerSetMap mPeers;
 };

@@ -1096,7 +1096,7 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
 int SHAMap::armDirty ()
 {
     // begin saving dirty nodes
-    mDirtyNodes = boost::make_shared< boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> > ();
+    mDirtyNodes = boost::make_shared< ripple::unordered_map<SHAMapNode, SHAMapTreeNode::pointer, SHAMapNode_hash> > ();
     return ++mSeq;
 }
 
@@ -1258,7 +1258,7 @@ void SHAMap::dump (bool hash)
     WriteLog (lsINFO, SHAMap) << " MAP Contains";
     ScopedWriteLockType sl (mLock);
 
-    for (boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer>::iterator it = mTNByID.peekMap().begin ();
+    for (ripple::unordered_map<SHAMapNode, SHAMapTreeNode::pointer, SHAMapNode_hash>::iterator it = mTNByID.peekMap().begin ();
             it != mTNByID.peekMap().end (); ++it)
     {
         WriteLog (lsINFO, SHAMap) << it->second->getString ();

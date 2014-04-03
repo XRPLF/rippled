@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 #define RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 
+#include "../../common/UnorderedMap.h"
+
 #include "../../beast/beast/chrono/abstract_clock.h"
 
 namespace ripple {
@@ -29,8 +31,8 @@ class Logic
 {
 public:
     typedef beast::abstract_clock <std::chrono::seconds> clock_type;
-    typedef boost::unordered_map <std::string, Import> Imports;
-    typedef boost::unordered_map <Key, Entry, Key::hasher, Key::key_equal> Table;
+    typedef ripple::unordered_map <std::string, Import> Imports;
+    typedef ripple::unordered_map <Key, Entry, Key::hasher, Key::key_equal> Table;
 
     struct State
     {

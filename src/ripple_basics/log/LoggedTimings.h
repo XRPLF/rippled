@@ -23,6 +23,7 @@
 #include "../../beast/modules/beast_core/time/Time.h"
 #include "../../beast/modules/beast_core/diagnostic/MeasureFunctionCallTime.h"
 #include "../../beast/beast/utility/Debug.h"
+#include "../containers/SyncUnorderedMap.h"
     
 namespace ripple {
 
@@ -32,13 +33,7 @@ namespace detail {
     Default implementation simply calls delete
 */
 template <typename Object>
-struct Destroyer
-{
-    static void destroy (Object& object)
-    {
-        delete &object;
-    }
-};
+struct Destroyer;
 
 /** Specialization for boost::shared_ptr.
 */
@@ -51,12 +46,23 @@ struct Destroyer <boost::shared_ptr <Object> >
     }
 };
 
-/** Specialization for boost::unordered_map
+/** Specialization for std::unordered_map
 */
-template <typename Key, typename Value>
-struct Destroyer <boost::unordered_map <Key, Value> >
+template <typename Key, typename Value, typename Hash, typename Alloc>
+struct Destroyer <std::unordered_map <Key, Value, Hash, Alloc> >
 {
-    static void destroy (boost::unordered_map <Key, Value>& v)
+    static void destroy (std::unordered_map <Key, Value, Hash, Alloc>& v)
+    {
+        v.clear ();
+    }
+};
+
+/** Specialization for SyncUnorderedMapType
+*/
+template <typename Key, typename Value, typename Hash>
+struct Destroyer <SyncUnorderedMapType <Key, Value, Hash> >
+{
+    static void destroy (SyncUnorderedMapType <Key, Value, Hash>& v)
     {
         v.clear ();
     }

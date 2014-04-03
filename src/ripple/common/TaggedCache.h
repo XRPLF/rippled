@@ -529,7 +529,7 @@ private:
     };
 
     typedef std::pair <key_type, Entry> cache_pair;
-    typedef std::unordered_map <key_type, Entry, Hash, KeyEqual> cache_type;
+    typedef ripple::unordered_map <key_type, Entry, Hash, KeyEqual> cache_type;
     typedef typename cache_type::iterator cache_iterator;
 
     beast::Journal m_journal;

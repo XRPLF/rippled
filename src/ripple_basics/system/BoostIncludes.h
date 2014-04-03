@@ -43,7 +43,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
-#include <boost/unordered_map.hpp>
 
 // work-around for broken <boost/get_pointer.hpp>
 #include "../../beast/beast/boost/get_pointer.h"

@@ -25,8 +25,8 @@ namespace ripple {
 void DisputedTx::setVote (const uint160& peer, bool votesYes)
 {
     // VFALCO TODO Simplify this declaration. It doesn't exactly roll off the tongue!
-    std::pair <boost::unordered_map <const uint160, bool>::iterator, bool> res =
-        mVotes.insert (std::pair<const uint160, bool> (peer, votesYes));
+    std::pair <ripple::unordered_map <uint160, bool>::iterator, bool> res =
+        mVotes.insert (std::make_pair (peer, votesYes));
 
     // new vote
     if (res.second)
@@ -63,7 +63,7 @@ void DisputedTx::setVote (const uint160& peer, bool votesYes)
 // Remove a peer's vote on this disputed transasction
 void DisputedTx::unVote (const uint160& peer)
 {
-    boost::unordered_map<uint160, bool>::iterator it = mVotes.find (peer);
+    ripple::unordered_map<uint160, bool>::iterator it = mVotes.find (peer);
 
     if (it != mVotes.end ())
     {
@@ -139,7 +139,7 @@ Json::Value DisputedTx::getJson ()
     if (!mVotes.empty ())
     {
         Json::Value votesj (Json::objectValue);
-        typedef boost::unordered_map<uint160, bool>::value_type vt;
+        typedef ripple::unordered_map<uint160, bool>::value_type vt;
         BOOST_FOREACH (vt & vote, mVotes)
         {
             votesj[vote.first.GetHex ()] = vote.second;

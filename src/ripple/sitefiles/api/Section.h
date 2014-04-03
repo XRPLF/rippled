@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SITEFILES_SECTION_H_INCLUDED
 #define RIPPLE_SITEFILES_SECTION_H_INCLUDED
 
-#include <unordered_map>
+#include "../../common/UnorderedMap.h"
 #include <vector>
 
 namespace ripple {
@@ -33,7 +33,7 @@ namespace SiteFiles {
 class Section
 {
 public:
-    typedef std::unordered_map <std::string, std::string> MapType;
+    typedef ripple::unordered_map <std::string, std::string> MapType;
     typedef std::vector <std::string> DataType;
 
     Section(int = 0); // dummy argument for emplace()

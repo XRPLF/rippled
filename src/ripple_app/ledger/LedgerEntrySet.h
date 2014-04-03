@@ -270,14 +270,14 @@ private:
     }
 
     SLE::pointer getForMod (uint256 const & node, Ledger::ref ledger,
-                            boost::unordered_map<uint256, SLE::pointer>& newMods);
+                            ripple::unordered_map<uint256, SLE::pointer>& newMods);
 
     bool threadTx (const RippleAddress & threadTo, Ledger::ref ledger,
-                   boost::unordered_map<uint256, SLE::pointer>& newMods);
+                   ripple::unordered_map<uint256, SLE::pointer>& newMods);
 
-    bool threadTx (SLE::ref threadTo, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods);
+    bool threadTx (SLE::ref threadTo, Ledger::ref ledger, ripple::unordered_map<uint256, SLE::pointer>& newMods);
 
-    bool threadOwners (SLE::ref node, Ledger::ref ledger, boost::unordered_map<uint256, SLE::pointer>& newMods);
+    bool threadOwners (SLE::ref node, Ledger::ref ledger, ripple::unordered_map<uint256, SLE::pointer>& newMods);
 };
 
 inline LedgerEntrySet::iterator range_begin (LedgerEntrySet& x)

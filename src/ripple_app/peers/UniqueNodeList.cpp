@@ -104,9 +104,9 @@ private:
         std::vector<int>    viReferrals;
     } scoreNode;
 
-    typedef boost::unordered_map<std::string, int> strIndex;
+    typedef ripple::unordered_map<std::string, int> strIndex;
     typedef std::pair<std::string, int> IPAndPortNumber;
-    typedef boost::unordered_map<std::pair< std::string, int>, score>   epScore;
+    typedef ripple::unordered_map<std::pair< std::string, int>, score>   epScore;
 
 public:
     explicit UniqueNodeListImp (Stoppable& parent)
@@ -1056,7 +1056,7 @@ private:
             mUNL.swap (usUNL);
         }
 
-        boost::unordered_map<std::string, int>  umValidators;
+        ripple::unordered_map<std::string, int>  umValidators;
 
         if (!vsnNodes.empty ())
         {
@@ -1075,7 +1075,7 @@ private:
         // map of pair<IP,Port> :: score
         epScore umScore;
 
-        typedef boost::unordered_map<std::string, int>::value_type vcType;
+        typedef ripple::unordered_map<std::string, int>::value_type vcType;
         BOOST_FOREACH (vcType & vc, umValidators)
         {
             std::string strValidator    = vc.first;

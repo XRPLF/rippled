@@ -312,7 +312,7 @@ typedef RippleMutex StaticLockType;
 typedef std::lock_guard <StaticLockType> StaticScopedLockType;
 static StaticLockType s_lock;
 
-static boost::unordered_map< Blob , std::string > rncMap;
+static ripple::unordered_map< Blob , std::string > rncMap;
 
 std::string RippleAddress::humanAccountID () const
 {
@@ -324,7 +324,7 @@ std::string RippleAddress::humanAccountID () const
     case VER_ACCOUNT_ID:
     {
         StaticScopedLockType sl (s_lock);
-        boost::unordered_map< Blob , std::string >::iterator it = rncMap.find (vchData);
+        ripple::unordered_map< Blob , std::string >::iterator it = rncMap.find (vchData);
 
         if (it != rncMap.end ())
             return it->second;

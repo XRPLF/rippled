@@ -21,6 +21,7 @@
 
 #include "../../beast/modules/beast_core/thread/DeadlineTimer.h"
 #include "../../beast/modules/beast_core/system/SystemStats.h"
+#include <tuple>
 
 namespace ripple {
 
@@ -318,7 +319,7 @@ public:
     void clearLedgerFetch ();
     Json::Value getLedgerFetchInfo ();
     std::uint32_t acceptLedger ();
-    boost::unordered_map < uint160,
+    ripple::unordered_map < uint160,
           std::list<LedgerProposal::pointer> > & peekStoredProposals ()
     {
         return mStoredProposals;
@@ -356,7 +357,7 @@ public:
     getTxsAccount (const RippleAddress& account, std::int32_t minLedger, std::int32_t maxLedger,
                    bool forward, Json::Value& token, int limit, bool bAdmin);
 
-    typedef boost::tuple<std::string, std::string, std::uint32_t> txnMetaLedgerType;
+    typedef std::tuple<std::string, std::string, std::uint32_t> txnMetaLedgerType;
 
     std::vector<txnMetaLedgerType>
     getAccountTxsB (const RippleAddress& account, std::int32_t minLedger,
@@ -441,10 +442,10 @@ private:
 private:
     clock_type& m_clock;
 
-    typedef boost::unordered_map <uint160, SubMapType>               SubInfoMapType;
-    typedef boost::unordered_map <uint160, SubMapType>::iterator     SubInfoMapIterator;
+    typedef ripple::unordered_map <uint160, SubMapType>               SubInfoMapType;
+    typedef ripple::unordered_map <uint160, SubMapType>::iterator     SubInfoMapIterator;
 
-    typedef boost::unordered_map<std::string, InfoSub::pointer>     subRpcMapType;
+    typedef ripple::unordered_map<std::string, InfoSub::pointer>     subRpcMapType;
 
     // XXX Split into more locks.
     typedef RippleRecursiveMutex LockType;
@@ -464,7 +465,7 @@ private:
     beast::DeadlineTimer                m_heartbeatTimer;
     beast::DeadlineTimer                m_clusterTimer;
     boost::shared_ptr<LedgerConsensus>  mConsensus;
-    boost::unordered_map < uint160,
+    ripple::unordered_map < uint160,
           std::list<LedgerProposal::pointer> > mStoredProposals;
 
     LedgerMaster&                       m_ledgerMaster;
@@ -1274,9 +1275,9 @@ bool NetworkOPsImp::checkLastClosedLedger (const Overlay::PeerSequence& peerList
     m_journal.trace << "OurClosed:  " << closedLedger;
     m_journal.trace << "PrevClosed: " << prevClosedLedger;
 
-    boost::unordered_map<uint256, ValidationCount> ledgers;
+    ripple::unordered_map<uint256, ValidationCount> ledgers;
     {
-        boost::unordered_map<uint256, currentValidationCount> current =
+        ripple::unordered_map<uint256, currentValidationCount> current =
             getApp().getValidations ().getCurrentValidations (closedLedger, prevClosedLedger);
         typedef std::map<uint256, currentValidationCount>::value_type u256_cvc_pair;
         BOOST_FOREACH (const u256_cvc_pair & it, current)
@@ -1327,7 +1328,7 @@ bool NetworkOPsImp::checkLastClosedLedger (const Overlay::PeerSequence& peerList
     // 3) Is there a network ledger we'd like to switch to? If so, do we have it?
     bool switchLedgers = false;
 
-    for (boost::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin (), end = ledgers.end ();
+    for (ripple::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin (), end = ledgers.end ();
             it != end; ++it)
     {
         m_journal.debug << "L: " << it->first << " t=" << it->second.trustedValidations <<
@@ -1891,7 +1892,7 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
             // VFALCO TODO Change the container's type to be std::tuple so
             //             we can use std::forward_as_tuple here
             //
-            ret.push_back (boost::make_tuple (
+            ret.push_back (std::make_tuple (
                 strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq")));
         }
     }
@@ -2107,7 +2108,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, std::int32_t minLed
                 else
                     rawMeta.resize (metaSize);
 
-                ret.push_back (boost::make_tuple (
+                ret.push_back (std::make_tuple (
                     strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq")));
                 --numberOfResults;
             }

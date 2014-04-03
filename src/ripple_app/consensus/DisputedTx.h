@@ -78,7 +78,7 @@ private:
     int mNays;
     bool mOurVote;
     Serializer transaction;
-    boost::unordered_map <uint160, bool> mVotes;
+    ripple::unordered_map <uint160, bool> mVotes;
 };
 
 // VFALCO TODO Rename and put these in a tidy place

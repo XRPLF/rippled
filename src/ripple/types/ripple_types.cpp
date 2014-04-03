@@ -34,7 +34,6 @@
 #include <map>
 #include <unordered_set>
 #include <unordered_map>
-#include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 
 #include "impl/Base58.cpp"

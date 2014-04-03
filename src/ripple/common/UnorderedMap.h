@@ -17,36 +17,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RIPPLELINECACHE_H
-#define RIPPLE_RIPPLELINECACHE_H
+#ifndef RIPPLE_UNORDERED_MAP_H
+#define RIPPLE_UNORDERED_MAP_H
 
-namespace ripple {
+#include "../../beast/beast/container/hash_append.h"
 
-// Used by Pathfinder
-class RippleLineCache
+#include <unordered_map>
+
+namespace ripple
 {
-public:
-    typedef boost::shared_ptr <RippleLineCache> pointer;
-    typedef pointer const& ref;
 
-    explicit RippleLineCache (Ledger::ref l);
-
-    Ledger::ref getLedger () // VFALCO TODO const?
-    {
-        return mLedger;
-    }
-
-    AccountItems& getRippleLines (const uint160& accountID);
-
-private:
-    typedef RippleMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
-    LockType mLock;
-   
-    Ledger::pointer mLedger;
-    
-    ripple::unordered_map <uint160, AccountItems::pointer> mRLMap;
-};
+template <class Key, class Value, class Hash = beast::uhash<>,
+          class Pred = std::equal_to<Key>,
+          class Allocator = std::allocator<std::pair<Key const, Value>>>
+using unordered_map = std::unordered_map <Key, Value, Hash, Pred, Allocator>;
 
 } // ripple
 

@@ -42,7 +42,7 @@ namespace detail {
 class ErrorCategory
 {
 public:
-    typedef std::unordered_map <error_code_i, ErrorInfo> Map;
+    typedef ripple::unordered_map <error_code_i, ErrorInfo> Map;
 
     ErrorCategory ()
         : m_unknown (rpcUNKNOWN, "unknown", "An unknown error code.")

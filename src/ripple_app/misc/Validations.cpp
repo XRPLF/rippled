@@ -35,7 +35,7 @@ private:
     LockType mLock;
 
     TaggedCache<uint256, ValidationSet>     mValidations;
-    boost::unordered_map<uint160, SerializedValidation::pointer>    mCurrentValidations;
+    ripple::unordered_map<uint160, SerializedValidation::pointer>   mCurrentValidations;
     std::vector<SerializedValidation::pointer>                      mStaleValidations;
 
     bool mWriting;
@@ -104,7 +104,7 @@ private:
 
             if (isCurrent)
             {
-                boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.find (node);
+                ripple::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.find (node);
 
                 if (it == mCurrentValidations.end ())
                     mCurrentValidations.emplace (node, val);
@@ -298,7 +298,7 @@ private:
         std::list<SerializedValidation::pointer> ret;
 
         ScopedLockType sl (mLock);
-        boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
+        ripple::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
 
         while (it != mCurrentValidations.end ())
         {
@@ -325,17 +325,17 @@ private:
         return ret;
     }
 
-    boost::unordered_map<uint256, currentValidationCount>
+    ripple::unordered_map<uint256, currentValidationCount>
     getCurrentValidations (uint256 currentLedger, uint256 priorLedger)
     {
         std::uint32_t cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
         bool valPriorLedger = priorLedger.isNonZero ();
 
-        boost::unordered_map<uint256, currentValidationCount> ret;
+        ripple::unordered_map<uint256, currentValidationCount> ret;
 
         ScopedLockType sl (mLock);
-        boost::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
+        ripple::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
 
         while (it != mCurrentValidations.end ())
         {

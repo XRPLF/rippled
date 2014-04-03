@@ -71,7 +71,7 @@ private:
 
 protected:
     // For each connection maintain an associated object to track subscriptions.
-    typedef boost::unordered_map <connection_ptr,
+    typedef ripple::unordered_map <connection_ptr,
         boost::shared_ptr <WSConnectionType <endpoint_type> > > MapType;
     MapType mMap;
     bool const mPublic;
@@ -145,7 +145,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType sl (mLock);
-            typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
                 return;
@@ -175,7 +175,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType sl (mLock);
-            typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
                 return;
@@ -210,7 +210,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType   sl (mLock);
-            typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
                 return;
@@ -244,7 +244,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType   sl (mLock);
-            typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
             {
@@ -284,7 +284,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType   sl (mLock);
-            typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
                 return;
@@ -318,7 +318,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType   sl (mLock);
-            typename boost::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
 
             if (it == mMap.end ())
                 return;

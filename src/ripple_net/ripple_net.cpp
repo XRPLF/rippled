@@ -34,7 +34,6 @@
 #include <boost/bind.hpp>
 #include <boost/array.hpp>
 #include <boost/foreach.hpp>
-#include <boost/unordered_map.hpp> // for unit test
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
 

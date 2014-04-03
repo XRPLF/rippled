@@ -71,6 +71,13 @@ bool is_public (AddressV6 const& addr);
 
 //------------------------------------------------------------------------------
 
+template <class Hasher>
+void
+hash_append(Hasher&, AddressV6 const&)
+{
+    assert(false);
+}
+
 /** boost::hash support. */
 inline std::size_t hash_value (AddressV6 const&)
     { assert(false); return 0; }

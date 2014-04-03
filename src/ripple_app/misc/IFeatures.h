@@ -28,7 +28,7 @@ class FeatureSet
 public:
     std::uint32_t  mCloseTime;
     int     mTrustedValidations;                // number of trusted validations
-    boost::unordered_map<uint256, int> mVotes;  // yes votes by feature
+    ripple::unordered_map<uint256, int> mVotes;  // yes votes by feature
 
     FeatureSet (std::uint32_t ct, int tv) : mCloseTime (ct), mTrustedValidations (tv)
     {

@@ -128,8 +128,8 @@ private:
     STPathSet                         mCompletePaths;
     std::map< PathType_t, STPathSet > mPaths;
 
-    boost::unordered_map<uint160, AccountItems::pointer>    mRLMap;
-    boost::unordered_map<std::pair<uint160, uint160>, int>  mPOMap;
+    ripple::unordered_map<uint160, AccountItems::pointer>    mRLMap;
+    ripple::unordered_map<std::pair<uint160, uint160>, int>  mPOMap;
 
     static const std::uint32_t afADD_ACCOUNTS = 0x001;  // Add ripple paths
     static const std::uint32_t afADD_BOOKS    = 0x002;  // Add order books

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SYNC_UNORDERED_MAP_H
 #define RIPPLE_SYNC_UNORDERED_MAP_H
 
+#include "../../ripple/common/UnorderedMap.h"
+
 namespace ripple {
 
 // Common base
@@ -35,13 +37,13 @@ public:
     or a subset of an unchanging data set.
 */
 
-template <typename c_Key, typename c_Data>
+template <typename c_Key, typename c_Data, typename c_Hash = beast::uhash<>>
 class SyncUnorderedMapType : public SyncUnorderedMap
 {
 public:
-    typedef c_Key                               key_type;
-    typedef c_Data                              data_type;
-    typedef boost::unordered_map<c_Key, c_Data> map_type;
+    typedef c_Key                                        key_type;
+    typedef c_Data                                       data_type;
+    typedef ripple::unordered_map<c_Key, c_Data, c_Hash> map_type;
 
     class iterator
     {
@@ -150,21 +152,6 @@ private:
     map_type mMap;
     mutable LockType mLock;
 };
-
-
-namespace detail
-{
-
-template <typename Key, typename Value>
-struct Destroyer <SyncUnorderedMapType <Key, Value> >
-{
-    static void destroy (SyncUnorderedMapType <Key, Value>& v)
-    {
-        v.clear ();
-    }
-};
-
-} // detail
 
 } // ripple
 

@@ -30,7 +30,7 @@ class Features : public IFeatures
 {
 protected:
 
-    typedef boost::unordered_map<uint256, FeatureState> featureMap_t;
+    typedef ripple::unordered_map<uint256, FeatureState> featureMap_t;
     typedef std::pair<const uint256, FeatureState> featureIt_t;
     typedef boost::unordered_set<uint256> featureList_t;
 

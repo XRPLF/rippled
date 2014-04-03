@@ -23,14 +23,17 @@
 
 #include "../utility/meta.h"
 
+#include "impl/spookyv2.h"
+
 #if BEAST_USE_BOOST_FEATURES
-#include <boost/tuple/tuple.hpp>
+#include <boost/shared_ptr.hpp>
 #endif
 
 #include "../utility/noexcept.h"
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <tuple>
 #include "../cxx14/type_traits.h" // <type_traits>
@@ -141,20 +144,6 @@ static_assert (is_contiguously_hashable <
     std::tuple <char, char, short>>::value, "");
 #endif
 
-#if BEAST_USE_BOOST_FEATURES
-
-#if ! BEAST_NO_TUPLE_VARIADICS
-// boost::tuple
-template <class ...T>
-struct is_contiguously_hashable <boost::tuple<T...>>
-    : public std::integral_constant <bool,
-        static_and <is_contiguously_hashable<T>::value...>::value && 
-        static_sum <sizeof(T)...>::value == sizeof(boost::tuple<T...>)>
-{
-};
-#endif
-
-#endif // BEAST_USE_BOOST_FEATURES
 /** @} */
 
 //------------------------------------------------------------------------------
@@ -379,97 +368,6 @@ hash_append (Hasher& h, std::tuple <
     T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> const& t) noexcept;
 #endif
 
-// boost::tuple
-
-#if BEAST_USE_BOOST_FEATURES
-
-template <class Hasher>
-inline
-void
-hash_append (Hasher& h, boost::tuple<> const& t) noexcept;
-
-#if BEAST_VARIADIC_MAX >= 1
-template <class Hasher, class T1>
-inline
-void
-hash_append (Hasher& h, boost::tuple <T1> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 2
-template <class Hasher, class T1, class T2>
-inline
-void
-hash_append (Hasher& h, boost::tuple <T1, T2> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 3
-template <class Hasher, class T1, class T2, class T3>
-inline
-void
-hash_append (Hasher& h, boost::tuple <T1, T2, T3> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 4
-template <class Hasher, class T1, class T2, class T3, class T4>
-inline
-void
-hash_append (Hasher& h, boost::tuple <T1, T2, T3, T4> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 5
-template <class Hasher, class T1, class T2, class T3, class T4, class T5>
-inline
-void
-hash_append (Hasher& h, boost::tuple <T1, T2, T3, T4, T5> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 6
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5, T6> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 7
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5, T6, T7> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 8
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 9
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8, class T9>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8, T9> const& t) noexcept;
-#endif
-
-#if BEAST_VARIADIC_MAX >= 10
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8, class T9, class T10>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> const& t) noexcept;
-#endif
-
-#endif // BEAST_USE_BOOST_FEATURES
-
 #endif // BEAST_NO_TUPLE_VARIADICS
 
 //------------------------------------------------------------------------------
@@ -688,209 +586,6 @@ hash_append (Hasher& h, std::tuple<T...> const& t) noexcept
 
 #endif // BEAST_NO_TUPLE_VARIADICS
 
-// boost::tuple
-
-#if BEAST_USE_BOOST_FEATURES
-
-template <class Hasher>
-inline
-void
-hash_append (Hasher& h, boost::tuple<> const& t) noexcept
-{
-    hash_append (h, nullptr);
-}
-
-#if BEAST_NO_TUPLE_VARIADICS
-
-#if BEAST_VARIADIC_MAX >= 1
-template <class Hasher, class T1>
-inline
-void
-hash_append (Hasher& h, boost::tuple <T1> const& t) noexcept
-{
-    hash_append (h, boost::get<0>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 2
-template <class Hasher, class T1, class T2>
-inline
-void
-hash_append (Hasher& h, boost::tuple <T1, T2> const& t) noexcept
-{
-    hash_append (h, boost::get<0>(t));
-    hash_append (h, boost::get<1>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 3
-template <class Hasher, class T1, class T2, class T3>
-inline
-void
-hash_append (Hasher& h, boost::tuple <T1, T2, T3> const& t) noexcept
-{
-    hash_append (h, boost::get<0>(t));
-    hash_append (h, boost::get<1>(t));
-    hash_append (h, boost::get<2>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 4
-template <class Hasher, class T1, class T2, class T3, class T4>
-inline
-void
-hash_append (Hasher& h, boost::tuple <T1, T2, T3, T4> const& t) noexcept
-{
-    hash_append (h, boost::get<0>(t));
-    hash_append (h, boost::get<1>(t));
-    hash_append (h, boost::get<2>(t));
-    hash_append (h, boost::get<3>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 5
-template <class Hasher, class T1, class T2, class T3, class T4, class T5>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5> const& t) noexcept
-{
-    hash_append (h, boost::get<0>(t));
-    hash_append (h, boost::get<1>(t));
-    hash_append (h, boost::get<2>(t));
-    hash_append (h, boost::get<3>(t));
-    hash_append (h, boost::get<4>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 6
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5, T6> const& t) noexcept
-{
-    hash_append (h, boost::get<0>(t));
-    hash_append (h, boost::get<1>(t));
-    hash_append (h, boost::get<2>(t));
-    hash_append (h, boost::get<3>(t));
-    hash_append (h, boost::get<4>(t));
-    hash_append (h, boost::get<5>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 7
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5, T6, T7> const& t) noexcept
-{
-    hash_append (h, boost::get<0>(t));
-    hash_append (h, boost::get<1>(t));
-    hash_append (h, boost::get<2>(t));
-    hash_append (h, boost::get<3>(t));
-    hash_append (h, boost::get<4>(t));
-    hash_append (h, boost::get<5>(t));
-    hash_append (h, boost::get<6>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 8
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8> const& t) noexcept
-{
-    hash_append (h, boost::get<0>(t));
-    hash_append (h, boost::get<1>(t));
-    hash_append (h, boost::get<2>(t));
-    hash_append (h, boost::get<3>(t));
-    hash_append (h, boost::get<4>(t));
-    hash_append (h, boost::get<5>(t));
-    hash_append (h, boost::get<6>(t));
-    hash_append (h, boost::get<7>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 9
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8, class T9>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8, T9> const& t) noexcept
-{
-    hash_append (h, boost::get<0>(t));
-    hash_append (h, boost::get<1>(t));
-    hash_append (h, boost::get<2>(t));
-    hash_append (h, boost::get<3>(t));
-    hash_append (h, boost::get<4>(t));
-    hash_append (h, boost::get<5>(t));
-    hash_append (h, boost::get<6>(t));
-    hash_append (h, boost::get<7>(t));
-    hash_append (h, boost::get<8>(t));
-}
-#endif
-
-#if BEAST_VARIADIC_MAX >= 10
-template <class Hasher, class T1, class T2, class T3, class T4, class T5,
-                        class T6, class T7, class T8, class T9, class T10>
-inline
-void
-hash_append (Hasher& h, boost::tuple <
-    T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> const& t) noexcept
-{
-    hash_append (h, boost::get<0>(t));
-    hash_append (h, boost::get<1>(t));
-    hash_append (h, boost::get<2>(t));
-    hash_append (h, boost::get<3>(t));
-    hash_append (h, boost::get<4>(t));
-    hash_append (h, boost::get<5>(t));
-    hash_append (h, boost::get<6>(t));
-    hash_append (h, boost::get<7>(t));
-    hash_append (h, boost::get<8>(t));
-    hash_append (h, boost::get<9>(t));
-}
-#endif
-
-#else // BEAST_NO_TUPLE_VARIADICS
-
-namespace detail {
-
-template <class Hasher, class ...T, std::size_t ...I>
-inline
-void
-tuple_hash (Hasher& h, boost::tuple<T...> const& t,
-    std::index_sequence<I...>) noexcept
-{
-    struct for_each_item {
-        for_each_item (...) { }
-    };
-    for_each_item (hash_one(h, boost::get<I>(t))...);
-}
-
-} // detail
-
-template <class Hasher, class ...T>
-inline
-typename std::enable_if
-<
-    !is_contiguously_hashable<boost::tuple<T...>>::value
->::type
-hash_append (Hasher& h, boost::tuple<T...> const& t) noexcept
-{
-    detail::tuple_hash(h, t, std::index_sequence_for<T...>{});
-}
-
-#endif // BEAST_NO_TUPLE_VARIADICS
-
-#endif // BEAST_USE_BOOST_FEATURES
-
 // pair
 
 template <class Hasher, class T, class U>
@@ -930,6 +625,28 @@ hash_append (Hasher& h, std::vector<T, Alloc> const& v) noexcept
     h.append (v.data(), v.size()*sizeof(T));
 }
 
+// shared_ptr
+
+template <class Hasher, class T>
+inline
+void
+hash_append (Hasher& h, std::shared_ptr<T> const& p) noexcept
+{
+    hash_append(h, p.get());
+}
+
+#if BEAST_USE_BOOST_FEATURES
+template <class Hasher, class T>
+inline
+void
+hash_append (Hasher& h, boost::shared_ptr<T> const& p) noexcept
+{
+    hash_append(h, p.get());
+}
+#endif
+
+// variadic hash_append
+
 template <class Hasher, class T0, class T1, class ...T>
 inline
 void
@@ -938,6 +655,62 @@ hash_append (Hasher& h, T0 const& t0, T1 const& t1, T const& ...t) noexcept
     hash_append (h, t0);
     hash_append (h, t1, t...);
 }
+
+namespace detail
+{
+
+class spooky_wrapper
+{
+    SpookyHash state_;
+public:
+    using result_type = std::size_t;
+
+    spooky_wrapper (std::size_t seed1 = 1, std::size_t seed2 = 2) noexcept
+    {
+        state_.Init (seed1, seed2);
+    }
+
+    void
+    append (void const* key, std::size_t len) noexcept
+    {
+        state_.Update (key, len);
+    }
+
+    explicit
+    operator std::size_t() noexcept
+    {
+        std::uint64_t h1, h2;
+        state_.Final (&h1, &h2);
+        return static_cast <std::size_t> (h1);
+    }
+};
+
+} // detail
+
+template <class Hasher = detail::spooky_wrapper>
+struct uhash
+{
+    using result_type = typename Hasher::result_type;
+
+    template <class T>
+    result_type
+    operator()(T const& t) const noexcept
+    {
+        Hasher h;
+        hash_append (h, t);
+        return static_cast<result_type>(h);
+    }
+};
+
+struct call_hash_value
+{
+    template <class T>
+    std::size_t
+    operator()(T const& t) const noexcept
+    {
+        return hash_value(t);
+    }
+};
 
 } // beast
 

@@ -18,6 +18,8 @@
 */
 //==============================================================================
 
+#include <tuple>
+
 namespace ripple {
 
 SETUP_LOG (Pathfinder)
@@ -59,25 +61,25 @@ Test USD to EUR
 //    correct currency at the end
 
 // quality, length, liquidity, index
-typedef boost::tuple<std::uint64_t, int, STAmount, unsigned int> path_LQ_t;
+typedef std::tuple<std::uint64_t, int, STAmount, unsigned int> path_LQ_t;
 
 // Lower numbers have better quality. Sort higher quality first.
 static bool bQualityCmp (const path_LQ_t& a, const path_LQ_t& b)
 {
     // 1) Higher quality (lower cost) is better
-    if (a.get<0> () != b.get<0> ())
-        return a.get<0> () < b.get<0> ();
+    if (std::get<0> (a) != std::get<0> (b))
+        return std::get<0> (a) < std::get<0> (b);
 
     // 2) More liquidity (higher volume) is better
-    if (a.get<2> () != b.get<2> ())
-        return a.get<2> () > b.get<2> ();
+    if (std::get<2> (a) != std::get<2> (b))
+        return std::get<2> (a) > std::get<2> (b);
 
     // 3) Shorter paths are better
-    if (a.get<1> () != b.get<1> ())
-        return a.get<1> () < b.get<1> ();
+    if (std::get<1> (a) != std::get<1> (b))
+        return std::get<1> (a) < std::get<1> (b);
 
     // 4) Tie breaker
-    return a.get<3> () > b.get<3> ();
+    return std::get<3> (a) > std::get<3> (b);
 }
 
 typedef std::pair<int, uint160> candidate_t;
@@ -354,24 +356,24 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         {
             path_LQ_t& lqt = vMap[i];
 
-            if ((iPathsLeft > 1) || ((iPathsLeft > 0) && (lqt.get<2> () >= remaining)))
+            if ((iPathsLeft > 1) || ((iPathsLeft > 0) && (std::get<2> (lqt) >= remaining)))
             {
                 // last path must fill
                 --iPathsLeft;
-                remaining -= lqt.get<2> ();
-                spsDst.addPath (mCompletePaths[lqt.get<3> ()]);
+                remaining -= std::get<2> (lqt);
+                spsDst.addPath (mCompletePaths[std::get<3> (lqt)]);
             }
-            else if ((iPathsLeft == 0) && (lqt.get<2>() >= mDstAmount) && (extraPath.size() == 0))
+            else if ((iPathsLeft == 0) && (std::get<2>(lqt) >= mDstAmount) && (extraPath.size() == 0))
             {
                 // found an extra path that can move the whole amount
-                extraPath = mCompletePaths[lqt.get<3>()];
+                extraPath = mCompletePaths[std::get<3>(lqt)];
                 WriteLog (lsDEBUG, Pathfinder) <<
                     "Found extra full path: " << extraPath.getJson(0);
             }
             else
                 WriteLog (lsDEBUG, Pathfinder) <<
                     "Skipping a non-filling path: " <<
-                    mCompletePaths[lqt.get<3> ()].getJson (0);
+                    mCompletePaths[std::get<3> (lqt)].getJson (0);
         }
 
         if (remaining > zero)
@@ -469,7 +471,7 @@ int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& ac
     // VFALCO TODO Use RippleAsset here
     std::pair<const uint160&, const uint160&> accountCurrency (currencyID, accountID);
     // VFALCO TODO Use RippleAsset here
-    boost::unordered_map<std::pair<uint160, uint160>, int>::iterator it = mPOMap.find (accountCurrency);
+    ripple::unordered_map<std::pair<uint160, uint160>, int>::iterator it = mPOMap.find (accountCurrency);
 
     if (it != mPOMap.end ())
         return it->second;

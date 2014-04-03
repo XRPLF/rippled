@@ -615,7 +615,7 @@ private:
             ScopedLock lock (m_mutex);
 
             // Remove all jobs whose type is skipOnStop
-            typedef boost::unordered_map <JobType, std::size_t> JobDataMap;
+            typedef ripple::unordered_map <JobType, std::size_t> JobDataMap;
             JobDataMap counts;
             bool const report (m_journal.debug.active());
 

@@ -161,7 +161,7 @@ public:
 
             if (!mPeerPositions.empty ())
             {
-                typedef boost::unordered_map<uint160, 
+                typedef ripple::unordered_map<uint160, 
                     LedgerProposal::pointer>::value_type pp_t;
                 Json::Value ppj (Json::objectValue);
                 BOOST_FOREACH (pp_t & pp, mPeerPositions)
@@ -174,7 +174,7 @@ public:
             if (!mAcquired.empty ())
             {
                 // acquired
-                typedef boost::unordered_map<uint256, 
+                typedef ripple::unordered_map<uint256, 
                     SHAMap::pointer>::value_type ac_t;
                 Json::Value acq (Json::objectValue);
                 BOOST_FOREACH (ac_t & at, mAcquired)
@@ -189,7 +189,7 @@ public:
 
             if (!mAcquiring.empty ())
             {
-                typedef boost::unordered_map<uint256, 
+                typedef ripple::unordered_map<uint256, 
                     TransactionAcquire::pointer>::value_type ac_t;
                 Json::Value acq (Json::arrayValue);
                 BOOST_FOREACH (ac_t & at, mAcquiring)
@@ -201,7 +201,7 @@ public:
 
             if (!mDisputes.empty ())
             {
-                typedef boost::unordered_map<uint256, 
+                typedef ripple::unordered_map<uint256, 
                     DisputedTx::pointer>::value_type d_t;
                 Json::Value dsj (Json::objectValue);
                 BOOST_FOREACH (d_t & dt, mDisputes)
@@ -251,7 +251,7 @@ public:
     */
     SHAMap::pointer getTransactionTree (uint256 const& hash, bool doAcquire)
     {
-        boost::unordered_map<uint256, SHAMap::pointer>::iterator it 
+        ripple::unordered_map<uint256, SHAMap::pointer>::iterator it 
             = mAcquired.find (hash);
 
         if (it != mAcquired.end ())
@@ -314,7 +314,7 @@ public:
 
         assert (hash == map->getHash ());
 
-        boost::unordered_map<uint256, SHAMap::pointer>::iterator it 
+        ripple::unordered_map<uint256, SHAMap::pointer>::iterator it 
             = mAcquired.find (hash);
 
         if (mAcquired.find (hash) != mAcquired.end ())
@@ -333,7 +333,7 @@ public:
             && (hash != mOurPosition->getCurrentHash ()))
         {
             // this could create disputed transactions
-            boost::unordered_map<uint256, SHAMap::pointer>::iterator it2 
+            ripple::unordered_map<uint256, SHAMap::pointer>::iterator it2 
                 = mAcquired.find (mOurPosition->getCurrentHash ());
 
             if (it2 != mAcquired.end ())
@@ -406,7 +406,7 @@ public:
         if (mHaveCorrectLCL)
             priorLedger = mPreviousLedger->getParentHash (); // don't jump back
 
-        boost::unordered_map<uint256, currentValidationCount> vals =
+        ripple::unordered_map<uint256, currentValidationCount> vals =
             getApp().getValidations ().getCurrentValidations 
             (favoredLedger, priorLedger);
 
@@ -688,9 +688,9 @@ public:
                         uint256 hash = it.second->getCurrentHash();
                         WriteLog (lsDEBUG, LedgerConsensus) 
                             << "We have not compared to " << hash;
-                        boost::unordered_map<uint256, SHAMap::pointer>::iterator
+                        ripple::unordered_map<uint256, SHAMap::pointer>::iterator
                             it1 = mAcquired.find (hash);
-                        boost::unordered_map<uint256, SHAMap::pointer>::iterator
+                        ripple::unordered_map<uint256, SHAMap::pointer>::iterator
                             it2 = mAcquired.find 
                             (mOurPosition->getCurrentHash ());
                         if ((it1 != mAcquired.end()) && (it2 != mAcquired.end())
@@ -800,7 +800,7 @@ public:
                 return false;
         set.push_back (peer);
 
-        boost::unordered_map<uint256
+        ripple::unordered_map<uint256
             , TransactionAcquire::pointer>::iterator acq 
             = mAcquiring.find (hashSet);
 
@@ -817,7 +817,7 @@ public:
         , uint256 const& setHash, const std::list<SHAMapNode>& nodeIDs
         , const std::list< Blob >& nodeData)
     {
-        boost::unordered_map<uint256
+        ripple::unordered_map<uint256
             , TransactionAcquire::pointer>::iterator acq 
             = mAcquiring.find (setHash);
 
@@ -1065,7 +1065,7 @@ private:
     */
     void startAcquiring (TransactionAcquire::pointer acquire)
     {
-        boost::unordered_map< uint256, 
+        ripple::unordered_map< uint256, 
             std::vector< boost::weak_ptr<Peer> > >::iterator it =
             mPeerData.find (acquire->getHash ());
 
@@ -1172,7 +1172,7 @@ private:
 
         if (mOurPosition)
         {
-            boost::unordered_map<uint256, SHAMap::pointer>::iterator mit 
+            ripple::unordered_map<uint256, SHAMap::pointer>::iterator mit 
                 = mAcquired.find (mOurPosition->getCurrentHash ());
 
             if (mit != mAcquired.end ())
@@ -1187,7 +1187,7 @@ private:
 
         BOOST_FOREACH (u160_prop_pair & pit, mPeerPositions)
         {
-            boost::unordered_map<uint256, SHAMap::pointer>::const_iterator cit
+            ripple::unordered_map<uint256, SHAMap::pointer>::const_iterator cit
                 = mAcquired.find (pit.second->getCurrentHash ());
 
             if ((cit != mAcquired.end ()) && cit->second)
@@ -1517,7 +1517,7 @@ private:
 
             if (found.insert (set).second)
             {
-                boost::unordered_map<uint256, SHAMap::pointer>::iterator iit 
+                ripple::unordered_map<uint256, SHAMap::pointer>::iterator iit 
                     = mAcquired.find (set);
 
                 if (iit != mAcquired.end ())
@@ -1546,7 +1546,7 @@ private:
 
         // Verify freshness of peer positions and compute close times
         std::map<std::uint32_t, int> closeTimes;
-        boost::unordered_map<uint160, LedgerProposal::pointer>::iterator it 
+        ripple::unordered_map<uint160, LedgerProposal::pointer>::iterator it 
             = mPeerPositions.begin ();
 
         while (it != mPeerPositions.end ())
@@ -1706,11 +1706,11 @@ private:
     */
     void playbackProposals ()
     {
-        boost::unordered_map < uint160,
+        ripple::unordered_map < uint160,
               std::list<LedgerProposal::pointer> > & storedProposals 
               = getApp().getOPs ().peekStoredProposals ();
 
-        for (boost::unordered_map< uint160
+        for (ripple::unordered_map< uint160
             , std::list<LedgerProposal::pointer> >::iterator it 
             = storedProposals.begin ()
             , end = storedProposals.end (); it != end; ++it)
@@ -1903,18 +1903,18 @@ private:
     int                             mPreviousMSeconds;
 
     // Convergence tracking, trusted peers indexed by hash of public key
-    boost::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
+    ripple::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
 
     // Transaction Sets, indexed by hash of transaction tree
-    boost::unordered_map<uint256, SHAMap::pointer> mAcquired;
-    boost::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
+    ripple::unordered_map<uint256, SHAMap::pointer> mAcquired;
+    ripple::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
 
     // Peer sets
-    boost::unordered_map<uint256
+    ripple::unordered_map<uint256
         , std::vector< boost::weak_ptr<Peer> > > mPeerData;
 
     // Disputed transactions
-    boost::unordered_map<uint256, DisputedTx::pointer> mDisputes;
+    ripple::unordered_map<uint256, DisputedTx::pointer> mDisputes;
     boost::unordered_set<uint256> mCompares;
 
     // Close time estimates

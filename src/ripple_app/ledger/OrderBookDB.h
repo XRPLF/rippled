@@ -40,7 +40,7 @@ private:
 
     // VFALCO TODO Use a typedef for the uint64
     //             Use a typedef for the container
-    boost::unordered_map<std::uint64_t, InfoSub::wptr> mListeners;
+    ripple::unordered_map<std::uint64_t, InfoSub::wptr> mListeners;
 };
 
 //------------------------------------------------------------------------------
@@ -79,11 +79,11 @@ public:
 
 private:
     // by ci/ii
-    boost::unordered_map <RippleAsset,
+    ripple::unordered_map <RippleAsset,
         std::vector <OrderBook::pointer>> mSourceMap;
 
     // by co/io
-    boost::unordered_map <RippleAsset,
+    ripple::unordered_map <RippleAsset,
         std::vector<OrderBook::pointer>> mDestMap;
 
     // does an order book to XRP exist
@@ -93,7 +93,7 @@ private:
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
-    typedef boost::unordered_map <RippleBook, BookListeners::pointer> MapType;
+    typedef ripple::unordered_map <RippleBook, BookListeners::pointer> MapType;
 
     MapType mListeners;
 

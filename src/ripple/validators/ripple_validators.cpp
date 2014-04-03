@@ -23,7 +23,6 @@
 
 #include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/regex.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>

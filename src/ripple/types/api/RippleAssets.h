@@ -91,6 +91,15 @@ public:
             return true;
         return false;
     }
+
+    template <class Hasher>
+    friend
+    void
+    hash_append (Hasher& h, RippleAssetType const& r)
+    {
+        using beast::hash_append;
+        hash_append (h, r.currency, r.issuer);
+    }
 };
 
 /** Ordered comparison.
@@ -224,6 +233,15 @@ public:
         in = other.in;
         out = other.out;
         return *this;
+    }
+
+    template <class Hasher>
+    friend
+    void
+    hash_append (Hasher& h, RippleBookType const& b)
+    {
+        using beast::hash_append;
+        hash_append (h, b.in, b.out);
     }
 };
 

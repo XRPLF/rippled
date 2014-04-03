@@ -17,12 +17,13 @@
 */
 //==============================================================================
 
+#include "../../common/UnorderedMap.h"
+
 #include "../../../beast/beast/unit_test/suite.h"
 
 #include <boost/ref.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
 
 namespace ripple {
 namespace TestOverlay {
@@ -414,7 +415,7 @@ public:
         }
     };
 
-    typedef boost::unordered_map <Peer, Logic> PeerMap;
+    typedef ripple::unordered_map <Peer, Logic> PeerMap;
 
     BasicNetwork()
     {

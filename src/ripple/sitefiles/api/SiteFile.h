@@ -21,6 +21,7 @@
 #define RIPPLE_SITEFILES_SITEFILE_H_INCLUDED
 
 #include "Section.h"
+#include "../../common/UnorderedMap.h"
 
 #include <string>
 #include <unordered_map>
@@ -33,7 +34,7 @@ class SiteFile
 public:
     SiteFile (int = 0); // dummy argument for emplace
 
-    typedef std::unordered_map <std::string, Section> SectionsType;
+    typedef ripple::unordered_map <std::string, Section> SectionsType;
 
     /** Retrieve a section by name. */
     /** @{ */

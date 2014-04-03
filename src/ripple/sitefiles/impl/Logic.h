@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 #define RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 
+#include "../../common/UnorderedMap.h"
+
 #include <memory>
 
 namespace ripple {
@@ -60,7 +62,7 @@ class Logic
 {
 public:
     typedef std::set <Listener*> Listeners;
-    typedef boost::unordered_map <beast::URL, SiteFile> SiteFiles;
+    typedef ripple::unordered_map <beast::URL, SiteFile> SiteFiles;
 
     struct State
     {

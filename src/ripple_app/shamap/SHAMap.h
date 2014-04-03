@@ -23,6 +23,8 @@
 #include "../ripple/radmap/ripple_radmap.h"
 #include "../main/FullBelowCache.h"
 
+#include <unordered_map>
+
 namespace std {
 
 template <>
@@ -61,7 +63,7 @@ enum SHAMapState
 };
 
 class SHAMap
-    : public CountedObject <SHAMap>
+//     : public CountedObject <SHAMap>
 {
 private:
     /** Function object which handles missing nodes. */
@@ -87,7 +89,7 @@ public:
     typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> DeltaItem;
     typedef std::pair<SHAMapItem::ref, SHAMapItem::ref> DeltaRef;
     typedef std::map<uint256, DeltaItem> Delta;
-    typedef boost::unordered_map<SHAMapNode, SHAMapTreeNode::pointer> NodeMap;
+    typedef ripple::unordered_map<SHAMapNode, SHAMapTreeNode::pointer, SHAMapNode_hash> NodeMap;
 
     typedef boost::shared_mutex LockType;
     typedef boost::shared_lock<LockType> ScopedReadLockType;
@@ -322,7 +324,7 @@ private:
     FullBelowCache& m_fullBelowCache;
     std::uint32_t mSeq;
     std::uint32_t mLedgerSeq; // sequence number of ledger this is part of
-    SyncUnorderedMapType< SHAMapNode, SHAMapTreeNode::pointer > mTNByID;
+    SyncUnorderedMapType< SHAMapNode, SHAMapTreeNode::pointer, SHAMapNode_hash > mTNByID;
     boost::shared_ptr<NodeMap> mDirtyNodes;
     SHAMapTreeNode::pointer root;
     SHAMapState mState;
