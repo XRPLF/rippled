@@ -1215,6 +1215,14 @@ public:
     String convertToPrecomposedUnicode() const;
    #endif
 
+    template <class Hasher>
+    friend
+    void
+    hash_append (Hasher& h, String const& s)
+    {
+        h.append(s.text.getAddress(), s.text.sizeInBytes());
+    }
+
 private:
     //==============================================================================
     struct FromNumber { };

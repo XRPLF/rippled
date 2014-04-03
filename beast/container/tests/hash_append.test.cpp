@@ -119,10 +119,13 @@ public:
 
 namespace hash_append_tests {
 
-class fnv1a
+template <std::size_t> class fnv1a_imp;
+
+template <>
+class fnv1a_imp<64>
 {
 private:
-    std::size_t state_ = 14695981039346656037u;
+    std::uint64_t state_ = 14695981039346656037u;
 
 public:
     void
@@ -139,6 +142,35 @@ public:
     {
         return state_;
     }
+};
+
+template <>
+class fnv1a_imp<32>
+{
+private:
+    std::uint32_t state_ = 2166136261;
+
+public:
+    void
+    append (void const* key, std::size_t len) noexcept
+    {
+        unsigned char const* p = static_cast<unsigned char const*>(key);
+        unsigned char const* const e = p + len;
+        for (; p < e; ++p)
+            state_ = (state_ ^ *p) * 16777619;
+    }
+
+    explicit
+    operator std::size_t() noexcept
+    {
+        return state_;
+    }
+};
+
+class fnv1a
+    : public fnv1a_imp<CHAR_BIT*sizeof(std::size_t)>
+{
+public:
 };
 
 class jenkins1

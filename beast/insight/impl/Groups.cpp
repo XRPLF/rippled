@@ -91,7 +91,7 @@ private:
 class GroupsImp : public Groups
 {
 public:
-    typedef std::unordered_map <std::string, std::shared_ptr <Group>> Items;
+    typedef std::unordered_map <std::string, std::shared_ptr <Group>, uhash <>> Items;
 
     Collector::ptr m_collector;
     Items m_items;
