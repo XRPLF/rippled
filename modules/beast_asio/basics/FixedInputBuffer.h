@@ -21,6 +21,7 @@
 #define BEAST_ASIO_BASICS_FIXEDINPUTBUFFER_H_INCLUDED
 
 #include "../../../beast/asio/buffer_sequence.h"
+#include <array>
 
 namespace beast {
 namespace asio {
@@ -191,7 +192,7 @@ public:
     }
 
 private:
-    boost::array <std::uint8_t, Bytes> m_storage;
+    std::array <std::uint8_t, Bytes> m_storage;
     boost::asio::mutable_buffer m_buffer;
 };
 

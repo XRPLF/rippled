@@ -147,7 +147,6 @@
     <ClInclude Include="..\..\beast\cxx14\memory.h" />
     <ClInclude Include="..\..\beast\cxx14\type_traits.h" />
     <ClInclude Include="..\..\beast\cxx14\utility.h" />
-    <ClInclude Include="..\..\beast\FixedArray.h" />
     <ClInclude Include="..\..\beast\HeapBlock.h" />
     <ClInclude Include="..\..\beast\http\basic_message.h" />
     <ClInclude Include="..\..\beast\http\impl\http-parser\http_parser.h" />

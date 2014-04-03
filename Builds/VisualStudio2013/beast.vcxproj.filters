@@ -735,9 +735,6 @@
     <ClInclude Include="..\..\beast\http\ParsedURL.h">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\beast\FixedArray.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\beast\Crypto.h">
       <Filter>beast</Filter>
     </ClInclude>
