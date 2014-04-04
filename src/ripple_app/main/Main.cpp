@@ -84,11 +84,6 @@ void printHelp (const po::options_description& desc)
     cerr << "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> [<limit> [<proof> [<marker>]]]]]" << endl;
     cerr << "     connect <ip> [<port>]" << endl;
     cerr << "     consensus_info" << endl;
-#if ENABLE_INSECURE
-    cerr << "     data_delete <key>" << endl;
-    cerr << "     data_fetch <key>" << endl;
-    cerr << "     data_store <key> <value>" << endl;
-#endif
     cerr << "     get_counts" << endl;
     cerr << "     json <method> <json>" << endl;
     cerr << "     ledger [<id>|current|closed|validated] [full]" << endl;
@@ -174,7 +169,7 @@ int run (int argc, char** argv)
 
     setCallingThreadName ("main");
     int iResult = 0;
-    po::variables_map   vm;                                     // Map of options.
+    po::variables_map vm;
 
     beast::String importDescription;
     {

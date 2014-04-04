@@ -868,85 +868,6 @@ Json::Value RPCHandler::doConnect (Json::Value params,
     return "connecting";
 }
 
-#if ENABLE_INSECURE
-// {
-//   key: <string>
-// }
-Json::Value RPCHandler::doDataDelete (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
-{
-    if (!params.isMember ("key"))
-        return RPC::missing_field_error ("key");
-
-    std::string strKey = params["key"].asString ();
-
-    Json::Value ret = Json::Value (Json::objectValue);
-
-    if (getApp().getLocalCredentials ().dataDelete (strKey))
-    {
-        ret["key"]      = strKey;
-    }
-    else
-    {
-        ret = rpcError (rpcINTERNAL);
-    }
-
-    return ret;
-}
-#endif
-
-#if ENABLE_INSECURE
-// {
-//   key: <string>
-// }
-Json::Value RPCHandler::doDataFetch (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
-{
-    if (!params.isMember ("key"))
-        return RPC::missing_field_error ("key");
-
-    std::string strKey = params["key"].asString ();
-    std::string strValue;
-
-    Json::Value ret = Json::Value (Json::objectValue);
-
-    ret["key"]      = strKey;
-
-    if (getApp().getLocalCredentials ().dataFetch (strKey, strValue))
-        ret["value"]    = strValue;
-
-    return ret;
-}
-#endif
-
-#if ENABLE_INSECURE
-// {
-//   key: <string>
-//   value: <string>
-// }
-Json::Value RPCHandler::doDataStore (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
-{
-    if (!params.isMember ("key")
-        return RPC::missing_field_error ("key");
-    if (!params.isMember ("value")
-        return RPC::missing_field_error ("value");
-
-    std::string strKey      = params["key"].asString ();
-    std::string strValue    = params["value"].asString ();
-
-    Json::Value ret = Json::Value (Json::objectValue);
-
-    if (getApp().getLocalCredentials ().dataStore (strKey, strValue))
-    {
-        ret["key"]      = strKey;
-        ret["value"]    = strValue;
-    }
-    else
-    {
-        ret = rpcError (rpcINTERNAL);
-    }
-
-    return ret;
-}
-#endif
 
 #if 0
 // XXX Needs to be revised for new paradigm
@@ -2956,32 +2877,6 @@ Json::Value RPCHandler::doWalletSeed (Json::Value params, Resource::Charge& load
     }
 }
 
-#if ENABLE_INSECURE
-// TODO: for now this simply checks if this is the Config::ADMIN account
-// TODO: need to prevent them hammering this over and over
-// TODO: maybe a better way is only allow Config::ADMIN from local host
-// {
-//   username: <string>,
-//   password: <string>
-// }
-Json::Value RPCHandler::doLogin (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
-{
-    if (!params.isMember ("username")
-            || !params.isMember ("password"))
-        return rpcError (rpcINVALID_PARAMS);
-
-    if (params["username"].asString () == getConfig ().RPC_USER && params["password"].asString () == getConfig ().RPC_PASSWORD)
-    {
-        //mRole=ADMIN;
-        return "logged in";
-    }
-    else
-    {
-        return "nope";
-    }
-}
-#endif
-
 static void textTime (std::string& text, int& seconds, const char* unitName, int unitVal)
 {
     int i = seconds / unitVal;
@@ -4370,14 +4265,6 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, Resourc
         {   "wallet_accounts",      &RPCHandler::doWalletAccounts,      false,  optCurrent  },
         {   "wallet_propose",       &RPCHandler::doWalletPropose,       true,   optNone     },
         {   "wallet_seed",          &RPCHandler::doWalletSeed,          true,   optNone     },
-
-#if ENABLE_INSECURE
-        // XXX Unnecessary commands which should be removed.
-        {   "login",                &RPCHandler::doLogin,               true,   optNone     },
-        {   "data_delete",          &RPCHandler::doDataDelete,          true,   optNone     },
-        {   "data_fetch",           &RPCHandler::doDataFetch,           true,   optNone     },
-        {   "data_store",           &RPCHandler::doDataStore,           true,   optNone     },
-#endif
 
         // Evented methods
         {   "subscribe",            &RPCHandler::doSubscribe,           false,  optNone     },

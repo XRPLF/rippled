@@ -165,13 +165,6 @@ private:
     Json::Value doWalletUnlock          (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doWalletVerify          (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
 
-#if ENABLE_INSECURE
-    Json::Value doDataDelete            (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
-    Json::Value doDataFetch             (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
-    Json::Value doDataStore             (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
-    Json::Value doLogin                 (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
-#endif
-
 private:
     NetworkOPs*         mNetOps;
     InfoSub::pointer    mInfoSub;

@@ -121,8 +121,6 @@ David Features:
 
 - Replace C11X with BEAST_COMPILER_SUPPORTS_MOVE_SEMANTICS
 
-- Remove "ENABLE_INSECURE" when the time is right.
-
 - Go searching through VFALCO notes and fix everything
 
 - Deal with function-level statics used for SqliteDatabase (like in

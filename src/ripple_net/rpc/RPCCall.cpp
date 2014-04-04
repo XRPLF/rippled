@@ -332,43 +332,6 @@ private:
         return jvRequest;
     }
 
-    #if ENABLE_INSECURE
-    // data_delete <key>
-    Json::Value parseDataDelete (const Json::Value& jvParams)
-    {
-        Json::Value     jvRequest (Json::objectValue);
-
-        jvRequest["key"]    = jvParams[0u].asString ();
-
-        return jvRequest;
-    }
-    #endif
-
-    #if ENABLE_INSECURE
-    // data_fetch <key>
-    Json::Value parseDataFetch (const Json::Value& jvParams)
-    {
-        Json::Value     jvRequest (Json::objectValue);
-
-        jvRequest["key"]    = jvParams[0u].asString ();
-
-        return jvRequest;
-    }
-    #endif
-
-    #if ENABLE_INSECURE
-    // data_store <key> <value>
-    Json::Value parseDataStore (const Json::Value& jvParams)
-    {
-        Json::Value     jvRequest (Json::objectValue);
-
-        jvRequest["key"]    = jvParams[0u].asString ();
-        jvRequest["value"]  = jvParams[1u].asString ();
-
-        return jvRequest;
-    }
-    #endif
-
     // Return an error for attemping to subscribe/unsubscribe via RPC.
     Json::Value parseEvented (const Json::Value& jvParams)
     {
@@ -460,19 +423,6 @@ private:
 
         return jvRequest;
     }
-
-    #if ENABLE_INSECURE
-    // login <username> <password>
-    Json::Value parseLogin (const Json::Value& jvParams)
-    {
-        Json::Value     jvRequest (Json::objectValue);
-
-        jvRequest["username"]   = jvParams[0u].asString ();
-        jvRequest["password"]   = jvParams[1u].asString ();
-
-        return jvRequest;
-    }
-    #endif
 
     // log_level:                           Get log levels
     // log_level <severity>:                Set master log level to the specified severity
@@ -900,14 +850,6 @@ public:
             {   "wallet_propose",       &RPCParser::parseWalletPropose,         0,  1   },
             {   "wallet_seed",          &RPCParser::parseWalletSeed,            0,  1   },
             {   "internal",             &RPCParser::parseInternal,              1,  -1  },
-
-    #if ENABLE_INSECURE
-            // XXX Unnecessary commands which should be removed.
-            {   "login",                &RPCParser::parseLogin,                 2,  2   },
-            {   "data_delete",          &RPCParser::parseDataDelete,            1,  1   },
-            {   "data_fetch",           &RPCParser::parseDataFetch,             1,  1   },
-            {   "data_store",           &RPCParser::parseDataStore,             2,  2   },
-    #endif
 
             // Evented methods
             {   "path_find",            &RPCParser::parseEvented,               -1, -1  },
