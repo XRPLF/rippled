@@ -224,9 +224,15 @@ public:
     std::string getHex () const
     {
         std::stringstream h;
-        h << std::hex << std::setfill ('0');
+        
         for (unsigned char const& element : mData)
-            h << std::setw (2) << element;
+        {
+            h <<
+                std::setw (2) <<
+                std::hex <<
+                std::setfill ('0') <<
+                static_cast<unsigned int>(element);
+        }
         return h.str ();
     }
 
