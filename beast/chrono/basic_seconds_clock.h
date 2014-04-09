@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <vector>
 
 #ifndef BEAST_BASIC_SECONDS_CLOCK_BOOST_WORKAROUND
 # ifdef _MSC_VER
