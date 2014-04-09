@@ -17,25 +17,50 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#ifndef RIPPLE_CORE_AMOUNTS_H_INCLUDED
+#define RIPPLE_CORE_AMOUNTS_H_INCLUDED
 
-#include "ripple_app.h"
+#include "Amount.h"
 
-#include "../ripple_net/ripple_net.h"
+namespace ripple {
+namespace core {
 
-#include "../ripple/common/seconds_clock.h"
+struct Amounts
+{
+    Amounts() = default;
 
-#include <fstream> // for UniqueNodeList.cpp
+    Amounts (Amount const& in_, Amount const& out_)
+        : in (in_)
+        , out (out_)
+    {
+    }
 
-#include "transactors/Transactor.h"
+    /** Returns `true` if either quantity is not positive. */
+    bool
+    empty() const noexcept
+    {
+        return ! in.isPositive() || ! out.isPositive();
+    }
 
-#include "paths/RippleState.cpp"
-#include "peers/UniqueNodeList.cpp"
-#include "ledger/InboundLedger.cpp"
-#include "tx/TransactionCheck.cpp"
-#include "tx/TransactionMaster.cpp"
-#include "tx/Transaction.cpp"
-#include "tx/TransactionEngine.cpp"
-#include "tx/TransactionMeta.cpp"
+    Amount in;
+    Amount out;
+};
 
-#include "book/tests/Quality.test.cpp"
+inline
+bool
+operator== (Amounts const& lhs, Amounts const& rhs) noexcept
+{
+    return lhs.in == rhs.in && lhs.out == rhs.out;
+}
+
+inline
+bool
+operator!= (Amounts const& lhs, Amounts const& rhs) noexcept
+{
+    return ! (lhs == rhs);
+}
+
+}
+}
+
+#endif

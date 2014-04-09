@@ -319,6 +319,15 @@
     <Filter Include="[2] Old Ripple\ripple_app\transactors">
       <UniqueIdentifier>{dcb7c75c-4f1d-486c-8079-52dc43644ae6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\common\tests">
+      <UniqueIdentifier>{1aa56407-a927-42be-862b-cd5324b4d63b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[2] Old Ripple\ripple_app\book">
+      <UniqueIdentifier>{56248509-436d-4034-ab4e-64afbb532418}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[2] Old Ripple\ripple_app\book\tests">
+      <UniqueIdentifier>{28b72c9f-02e3-4b57-9386-957478e1f0b7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -1499,6 +1508,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\tx\LocalTxs.cpp">
       <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
+      <Filter>[1] Ripple\common\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\book\tests\Quality.test.cpp">
+      <Filter>[2] Old Ripple\ripple_app\book\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -3062,6 +3077,18 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\tx\LocalTxs.h">
       <Filter>[2] Old Ripple\ripple_app\tx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\book\Amount.h">
+      <Filter>[2] Old Ripple\ripple_app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\book\Amounts.h">
+      <Filter>[2] Old Ripple\ripple_app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\book\Quality.h">
+      <Filter>[2] Old Ripple\ripple_app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\book\Types.h">
+      <Filter>[2] Old Ripple\ripple_app\book</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

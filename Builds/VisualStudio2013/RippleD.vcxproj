@@ -820,6 +820,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\validators\ripple_validators.cpp" />
+    <ClCompile Include="..\..\src\ripple_app\book\tests\Quality.test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\consensus\DisputedTx.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2479,6 +2483,10 @@
     <ClInclude Include="..\..\src\ripple\validators\impl\Validation.h" />
     <ClInclude Include="..\..\src\ripple\validators\impl\Validator.h" />
     <ClInclude Include="..\..\src\ripple\validators\ripple_validators.h" />
+    <ClInclude Include="..\..\src\ripple_app\book\Amount.h" />
+    <ClInclude Include="..\..\src\ripple_app\book\Amounts.h" />
+    <ClInclude Include="..\..\src\ripple_app\book\Quality.h" />
+    <ClInclude Include="..\..\src\ripple_app\book\Types.h" />
     <ClInclude Include="..\..\src\ripple_app\consensus\DisputedTx.h" />
     <ClInclude Include="..\..\src\ripple_app\consensus\LedgerConsensus.h" />
     <ClInclude Include="..\..\src\ripple_app\contracts\Contract.h" />

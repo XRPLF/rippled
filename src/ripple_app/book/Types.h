@@ -17,25 +17,47 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#ifndef RIPPLE_CORE_TYPES_H_INCLUDED
+#define RIPPLE_CORE_TYPES_H_INCLUDED
 
-#include "ripple_app.h"
+#include "../ledger/LedgerEntrySet.h"
+#include "../../ripple/types/api/RippleAssets.h"
+#include "../../ripple/types/api/UInt160.h"
 
-#include "../ripple_net/ripple_net.h"
+#include <chrono>
+#include <cstdint>
 
-#include "../ripple/common/seconds_clock.h"
+namespace ripple {
+namespace core {
 
-#include <fstream> // for UniqueNodeList.cpp
+/** A mutable view that overlays an immutable ledger to track changes. */
+typedef LedgerEntrySet LedgerView;
 
-#include "transactors/Transactor.h"
+/** Identifies an account. */
+typedef uint160 Account;
 
-#include "paths/RippleState.cpp"
-#include "peers/UniqueNodeList.cpp"
-#include "ledger/InboundLedger.cpp"
-#include "tx/TransactionCheck.cpp"
-#include "tx/TransactionMaster.cpp"
-#include "tx/Transaction.cpp"
-#include "tx/TransactionEngine.cpp"
-#include "tx/TransactionMeta.cpp"
+/** Asset identifiers. */
+typedef RippleCurrency Currency;
+typedef RippleIssuer Issuer;
+typedef RippleAsset Asset;
+typedef RippleAssetRef AssetRef;
 
-#include "book/tests/Quality.test.cpp"
+/** Uniquely identifies an order book. */
+typedef RippleBook Book;
+typedef RippleBookRef BookRef;
+
+/** A clock representing network time.
+    This measures seconds since the Ripple epoch as seen
+    by the ledger close clock.
+*/
+class Clock // : public abstract_clock <std::chrono::seconds>
+{
+public:
+    typedef std::uint32_t time_point;
+    typedef std::chrono::seconds duration;
+};
+
+}
+}
+
+#endif
