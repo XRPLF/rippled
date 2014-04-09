@@ -1,0 +1,10 @@
+Python code for the beast and scons.
+
+Scripts you can run from this directory.
+
+./run-tests.sh
+  Runs the unit tests.
+
+./clean-python.sh
+  If you remove or rename any Python files, you should run this script to
+  prevent old .pyc files from hiding bugs.
