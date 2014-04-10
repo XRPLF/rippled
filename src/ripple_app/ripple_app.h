@@ -33,7 +33,6 @@
 #include <boost/array.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/streambuf.hpp>
-//#include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/mem_fn.hpp>
 #include <boost/pointer_cast.hpp>
@@ -53,7 +52,7 @@
 
 #include "../ripple/common/ResolverAsio.h"
 
-//#include "../beast/modules/beast_sqdb/beast_sqdb.h"
+// VFALCO TODO Remove this include
 #include "../beast/modules/beast_sqlite/beast_sqlite.h"
 
 // Order matters here. If you get compile errors,
@@ -61,8 +60,6 @@
 
 #include "../../ripple/common/KeyCache.h"
 #include "../../ripple/common/TaggedCache.h"
-
-#include "../../ripple_overlay/ripple_overlay.h"
 
 #include "data/Database.h"
 #include "data/DatabaseCon.h"

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../ripple_overlay/api/Overlay.h"
+
 namespace ripple {
 
 //SETUP_LOG (InboundLedger)
@@ -90,7 +92,7 @@ void InboundLedger::init (ScopedLockType& collectionLock)
         // For historical nodes, wait a bit since a
         // fetch pack is probably coming
         if (mReason != fcHISTORY)
-            trigger (Peer::pointer ());
+            trigger (Peer::ptr ());
     }
     else if (!isFailed ())
     {
@@ -261,7 +263,7 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
             "No progress(" << pc << 
             ") for ledger " << mHash;
 
-        trigger (Peer::pointer ());
+        trigger (Peer::ptr ());
         if (pc < 4)
             addPeers ();
     }
@@ -270,7 +272,7 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 /** Add more peers to the set, if possible */
 void InboundLedger::addPeers ()
 {
-    Peers::PeerSequence peerList = getApp().getPeers ().getActivePeers ();
+    Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
 
     int vSize = peerList.size ();
 
@@ -297,7 +299,7 @@ void InboundLedger::addPeers ()
     // First look for peers that are likely to have this ledger
     for (int i = 0; i < vSize; ++i)
     {
-        Peer::ref peer = peerList[ (i + firstPeer) % vSize];
+        Peer::ptr const& peer = peerList[ (i + firstPeer) % vSize];
 
         if (peer->hasLedger (getHash (), mSeq))
         {
@@ -406,7 +408,7 @@ bool InboundLedger::addOnComplete (
 
 /** Request more nodes, perhaps from a specific peer
 */
-void InboundLedger::trigger (Peer::ref peer)
+void InboundLedger::trigger (Peer::ptr const& peer)
 {
     ScopedLockType sl (mLock);
 
@@ -484,7 +486,7 @@ void InboundLedger::trigger (Peer::ref peer)
                     }
                 }
 
-                PackedMessage::pointer packet (boost::make_shared <PackedMessage> (
+                Message::pointer packet (boost::make_shared <Message> (
                     tmBH, protocol::mtGET_OBJECTS));
                 {
                     ScopedLockType sl (mLock);
@@ -492,8 +494,8 @@ void InboundLedger::trigger (Peer::ref peer)
                     for (PeerSetMap::iterator it = mPeers.begin (), end = mPeers.end ();
                             it != end; ++it)
                     {
-                        Peer::pointer iPeer (
-                            getApp().getPeers ().findPeerByShortID (it->first));
+                        Peer::ptr iPeer (
+                            getApp().overlay ().findPeerByShortID (it->first));
 
                         if (iPeer)
                         {
@@ -1191,7 +1193,7 @@ void InboundLedger::runData ()
         // breaking ties in favor of the peer that responded first.
         BOOST_FOREACH (PeerDataPairType& entry, data)
         {
-            Peer::pointer peer = entry.first.lock();
+            Peer::ptr peer = entry.first.lock();
             if (peer)
             {
                 int count = processData (peer, *(entry.second));

@@ -26,6 +26,8 @@
 #define RIPPLE_TYPES_UINT256_H_INCLUDED
 
 #include "base_uint.h"
+#include "Blob.h"
+#include "ByteOrder.h"
 
 #include <functional>
 

@@ -512,11 +512,11 @@ public:
     */
     void getFetchPack (Ledger::ref nextLedger)
     {
-        Peer::pointer target;
+        Peer::ptr target;
         int count = 0;
 
-        Peers::PeerSequence peerList = getApp().getPeers ().getActivePeers ();
-        BOOST_FOREACH (const Peer::pointer & peer, peerList)
+        Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
+        BOOST_FOREACH (const Peer::ptr & peer, peerList)
         {
             if (peer->hasRange (nextLedger->getLedgerSeq() - 1, nextLedger->getLedgerSeq()))
             {
@@ -533,7 +533,7 @@ public:
             tmBH.set_query (true);
             tmBH.set_type (protocol::TMGetObjectByHash::otFETCH_PACK);
             tmBH.set_ledgerhash (nextLedger->getHash().begin (), 32);
-            PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmBH, protocol::mtGET_OBJECTS);
+            Message::pointer packet = boost::make_shared<Message> (tmBH, protocol::mtGET_OBJECTS);
 
             target->sendPacket (packet, false);
             WriteLog (lsTRACE, LedgerMaster) << "Requested fetch pack for " << nextLedger->getLedgerSeq() - 1;

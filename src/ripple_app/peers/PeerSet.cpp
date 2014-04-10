@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include"../../ripple_overlay/api/Overlay.h"
+
 namespace ripple {
 
 class InboundLedger;
@@ -50,7 +52,7 @@ PeerSet::~PeerSet ()
 {
 }
 
-bool PeerSet::peerHas (Peer::ref ptr)
+bool PeerSet::peerHas (Peer::ptr const& ptr)
 {
     ScopedLockType sl (mLock);
 
@@ -61,7 +63,7 @@ bool PeerSet::peerHas (Peer::ref ptr)
     return true;
 }
 
-void PeerSet::badPeer (Peer::ref ptr)
+void PeerSet::badPeer (Peer::ptr const& ptr)
 {
     ScopedLockType sl (mLock);
     mPeers.erase (ptr->getShortId ());
@@ -141,12 +143,12 @@ bool PeerSet::isActive ()
     return !isDone ();
 }
 
-void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ref peer)
+void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ptr const& peer)
 {
     if (!peer)
         sendRequest (tmGL);
     else
-        peer->sendPacket (boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER), false);
+        peer->sendPacket (boost::make_shared<Message> (tmGL, protocol::mtGET_LEDGER), false);
 }
 
 void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
@@ -156,12 +158,12 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
     if (mPeers.empty ())
         return;
 
-    PackedMessage::pointer packet (
-        boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER));
+    Message::pointer packet (
+        boost::make_shared<Message> (tmGL, protocol::mtGET_LEDGER));
 
     for (auto const& p : mPeers)
     {
-        Peer::pointer peer (getApp().getPeers ().findPeerByShortID (p.first));
+        Peer::ptr peer (getApp().overlay ().findPeerByShortID (p.first));
 
         if (peer)
             peer->sendPacket (packet, false);
@@ -188,7 +190,7 @@ std::size_t PeerSet::getPeerCount () const
 
     for (auto const& p : mPeers)
     {
-        if (getApp ().getPeers ().findPeerByShortID (p.first))
+        if (getApp ().overlay ().findPeerByShortID (p.first))
             ++ret;
     }
 

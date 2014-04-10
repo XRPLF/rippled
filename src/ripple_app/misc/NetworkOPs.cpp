@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../ripple_overlay/api/predicates.h"
+
 #include "../../beast/modules/beast_core/thread/DeadlineTimer.h"
 #include "../../beast/modules/beast_core/system/SystemStats.h"
 
@@ -245,7 +247,7 @@ public:
     // VFALCO TODO Try to make all these private since they seem to be...private
     //
     void switchLastClosedLedger (Ledger::pointer newLedger, bool duringConsensus); // Used for the "jump" case
-    bool checkLastClosedLedger (const Peers::PeerSequence&, uint256& networkClosed);
+    bool checkLastClosedLedger (const Overlay::PeerSequence&, uint256& networkClosed);
     int beginConsensus (uint256 const& networkClosed, Ledger::pointer closingLedger);
     void tryStartConsensus ();
     void endConsensus (bool correctLCL);
@@ -539,7 +541,7 @@ void NetworkOPsImp::processHeartbeatTimer ()
         LoadManager& mgr (app.getLoadManager ());
         mgr.resetDeadlockDetector ();
 
-        std::size_t const numPeers = getApp().getPeers ().size ();
+        std::size_t const numPeers = getApp().overlay ().size ();
 
         // do we have sufficient peers? If not, we are disconnected.
         if (numPeers < getConfig ().NETWORK_QUORUM)
@@ -614,8 +616,8 @@ void NetworkOPsImp::processClusterTimer ()
         node.set_name (to_string (item.address));
         node.set_cost (item.balance);
     }
-    getApp ().getPeers ().foreach (send_if (
-        boost::make_shared<PackedMessage>(cluster, protocol::mtCLUSTER),
+    getApp ().overlay ().foreach (send_if (
+        boost::make_shared<Message>(cluster, protocol::mtCLUSTER),
         peer_in_cluster ()));
     setClusterTimer ();
 }
@@ -889,8 +891,8 @@ void NetworkOPsImp::runTransactionQueue ()
                         tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
                         tx.set_status (protocol::tsCURRENT);
                         tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
-                        getApp ().getPeers ().foreach (send_if_not (
-                            boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION),
+                        getApp ().overlay ().foreach (send_if_not (
+                            boost::make_shared<Message> (tx, protocol::mtTRANSACTION),
                             peer_in_set(peers)));
                     }
                     else
@@ -1020,8 +1022,8 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
                 tx.set_rawtransaction (&s.getData ().front (), s.getLength ());
                 tx.set_status (protocol::tsCURRENT);
                 tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
-                getApp ().getPeers ().foreach (send_if_not (
-                    boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION),
+                getApp ().overlay ().foreach (send_if_not (
+                    boost::make_shared<Message> (tx, protocol::mtTRANSACTION),
                     peer_in_set(peers)));
             }
         }
@@ -1221,7 +1223,7 @@ public:
 void NetworkOPsImp::tryStartConsensus ()
 {
     uint256 networkClosed;
-    bool ledgerChange = checkLastClosedLedger (getApp().getPeers ().getActivePeers (), networkClosed);
+    bool ledgerChange = checkLastClosedLedger (getApp().overlay ().getActivePeers (), networkClosed);
 
     if (networkClosed.isZero ())
         return;
@@ -1253,7 +1255,7 @@ void NetworkOPsImp::tryStartConsensus ()
         beginConsensus (networkClosed, m_ledgerMaster.getCurrentLedger ());
 }
 
-bool NetworkOPsImp::checkLastClosedLedger (const Peers::PeerSequence& peerList, uint256& networkClosed)
+bool NetworkOPsImp::checkLastClosedLedger (const Overlay::PeerSequence& peerList, uint256& networkClosed)
 {
     // Returns true if there's an *abnormal* ledger issue, normal changing in TRACKING mode should return false
     // Do we have sufficient validations for our last closed ledger? Or do sufficient nodes
@@ -1298,7 +1300,7 @@ bool NetworkOPsImp::checkLastClosedLedger (const Peers::PeerSequence& peerList, 
             ourVC.highNodeUsing = ourAddress;
     }
 
-    BOOST_FOREACH (Peer::ref peer, peerList)
+    BOOST_FOREACH (Peer::ptr const& peer, peerList)
     {
         uint256 peerLedger = peer->getClosedLedgerHash ();
 
@@ -1430,8 +1432,8 @@ void NetworkOPsImp::switchLastClosedLedger (Ledger::pointer newLedger, bool duri
     hash = newLedger->getHash ();
     s.set_ledgerhash (hash.begin (), hash.size ());
 
-    getApp ().getPeers ().foreach (send_always (
-        boost::make_shared<PackedMessage> (s, protocol::mtSTATUS_CHANGE)));
+    getApp ().overlay ().foreach (send_always (
+        boost::make_shared<Message> (s, protocol::mtSTATUS_CHANGE)));
 }
 
 int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer closingLedger)
@@ -1481,7 +1483,7 @@ bool NetworkOPsImp::haveConsensusObject ()
     {
         // we need to get into the consensus process
         uint256 networkClosed;
-        Peers::PeerSequence peerList = getApp().getPeers ().getActivePeers ();
+        Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
         bool ledgerChange = checkLastClosedLedger (peerList, networkClosed);
 
         if (!ledgerChange)
@@ -1549,8 +1551,8 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
             if (getApp().getHashRouter ().swapSet (
                 proposal->getSuppressionID (), peers, SF_RELAYED))
 	    {
-                getApp ().getPeers ().foreach (send_if_not (
-                    boost::make_shared<PackedMessage> (*set, protocol::mtPROPOSE_LEDGER),
+                getApp ().overlay ().foreach (send_if_not (
+                    boost::make_shared<Message> (*set, protocol::mtPROPOSE_LEDGER),
                     peer_in_set(peers)));
 	    }
         }
@@ -1640,9 +1642,9 @@ void NetworkOPsImp::endConsensus (bool correctLCL)
 {
     uint256 deadLedger = m_ledgerMaster.getClosedLedger ()->getParentHash ();
 
-    std::vector <Peer::pointer> peerList = getApp().getPeers ().getActivePeers ();
+    std::vector <Peer::ptr> peerList = getApp().overlay ().getActivePeers ();
 
-    BOOST_FOREACH (Peer::ref it, peerList)
+    BOOST_FOREACH (Peer::ptr const& it, peerList)
     {
         if (it && (it->getClosedLedgerHash () == deadLedger))
         {
@@ -2203,7 +2205,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     if (fp != 0)
         info["fetch_pack"] = Json::UInt (fp);
 
-    info["peers"] = Json::UInt (getApp ().getPeers ().size ());
+    info["peers"] = Json::UInt (getApp ().overlay ().size ());
 
     Json::Value lastClose = Json::objectValue;
     lastClose["proposers"] = getApp().getOPs ().getPreviousProposers ();
@@ -3193,7 +3195,7 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
 
     try
     {
-        Peer::pointer peer = wPeer.lock ();
+        Peer::ptr peer = wPeer.lock ();
 
         if (!peer)
             return;
@@ -3236,7 +3238,7 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
         while (wantLedger && (UptimeTimer::getInstance ().getElapsedSeconds () <= (uUptime + 1)));
 
         m_journal.info << "Built fetch pack with " << reply.objects ().size () << " nodes";
-        PackedMessage::pointer msg = boost::make_shared<PackedMessage> (reply, protocol::mtGET_OBJECTS);
+        Message::pointer msg = boost::make_shared<Message> (reply, protocol::mtGET_OBJECTS);
         peer->sendPacket (msg, false);
     }
     catch (...)

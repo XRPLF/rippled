@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "OverlayImpl.h"
 #include "PeerDoor.h"
 
 namespace ripple {
@@ -27,16 +28,24 @@ class PeerDoorImp
     : public PeerDoor
     , public beast::LeakChecked <PeerDoorImp>
 {
+private:
+    OverlayImpl& m_overlay;
+    beast::Journal m_journal;
+    Kind m_kind;
+    boost::asio::ip::tcp::acceptor m_acceptor;
+    boost::asio::deadline_timer m_acceptDelay;
+    NativeSocketType m_socket;
+
 public:
-    PeerDoorImp (Kind kind, Peers& peers,
-                 boost::asio::ip::tcp::endpoint const &ep,
-                 boost::asio::io_service& io_service)
-        : PeerDoor (static_cast<Stoppable&>(peers))
-        , m_peers (peers)
+    PeerDoorImp (Kind kind, OverlayImpl& overlay,
+        boost::asio::ip::tcp::endpoint const &ep,
+            boost::asio::io_service& io_service)
+        : m_overlay (overlay)
         , m_journal (LogPartition::getJournal <PeerDoor> ())
         , m_kind (kind)
         , m_acceptor (io_service, ep)
         , m_acceptDelay (io_service)
+        , m_socket (io_service)
     {
         m_journal.info <<
             "Listening on " <<
@@ -47,8 +56,18 @@ public:
         async_accept ();
     }
 
-    ~PeerDoorImp ()
+    void
+    stop()
     {
+        {
+            boost::system::error_code ec;
+            m_acceptDelay.cancel (ec);
+        }
+
+        {
+            boost::system::error_code ec;
+            m_acceptor.cancel (ec);
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -57,14 +76,9 @@ public:
     //
     void async_accept ()
     {
-        boost::shared_ptr <NativeSocketType> socket (
-            boost::make_shared <NativeSocketType> (
-                m_acceptor.get_io_service()));
-
-        m_acceptor.async_accept (*socket,
+        m_acceptor.async_accept (m_socket,
             boost::bind (&PeerDoorImp::handleAccept, this,
-                boost::asio::placeholders::error,
-                    socket));
+                boost::asio::placeholders::error));
     }
 
     //--------------------------------------------------------------------------
@@ -73,7 +87,7 @@ public:
     //
     void handleTimer (boost::system::error_code ec)
     {
-        if (ec == boost::asio::error::operation_aborted || isStopping ())
+        if (ec == boost::asio::error::operation_aborted)
             return;
 
         async_accept ();
@@ -81,10 +95,9 @@ public:
 
     // Called when the accept socket wait completes
     //
-    void handleAccept (boost::system::error_code ec,
-        boost::shared_ptr <NativeSocketType> const& socket)
+    void handleAccept (boost::system::error_code ec)
     {
-        if (ec == boost::asio::error::operation_aborted || isStopping ())
+        if (ec == boost::asio::error::operation_aborted)
             return;
 
         bool delay = false;
@@ -93,7 +106,7 @@ public:
         {
             bool const proxyHandshake (m_kind == sslAndPROXYRequired);
 
-            m_peers.accept (proxyHandshake, socket);
+            m_overlay.accept (proxyHandshake, std::move(m_socket));
         }
         else
         {
@@ -102,6 +115,8 @@ public:
 
             m_journal.info << "Error " << ec;
         }
+
+        m_socket.close(ec);
 
         if (delay)
         {
@@ -114,43 +129,13 @@ public:
             async_accept ();
         }
     }
-
-    //--------------------------------------------------------------------------
-
-    void onStop ()
-    {
-        {
-            boost::system::error_code ec;
-            m_acceptDelay.cancel (ec);
-        }
-
-        {
-            boost::system::error_code ec;
-            m_acceptor.cancel (ec);
-        }
-
-        stopped ();
-    }
-
-private:
-    Peers& m_peers;
-    beast::Journal m_journal;
-    Kind m_kind;
-    boost::asio::ip::tcp::acceptor m_acceptor;
-    boost::asio::deadline_timer m_acceptDelay;
 };
 
 //------------------------------------------------------------------------------
 
-PeerDoor::PeerDoor (Stoppable& parent)
-    : Stoppable ("PeerDoor", parent)
-{
-}
-
-//------------------------------------------------------------------------------
 std::unique_ptr<PeerDoor>
-createPeerDoor (
-    PeerDoor::Kind kind, Peers& peers,
+make_PeerDoor (
+    PeerDoor::Kind kind, OverlayImpl& overlay,
         std::string const& ip, int port,
             boost::asio::io_service& io_service)
 {
@@ -161,7 +146,7 @@ createPeerDoor (
         boost::asio::ip::address ().from_string (
             ip.empty () ? "0.0.0.0" : ip), port);
 
-    return std::make_unique<PeerDoorImp>(kind, peers, ep, io_service);
+    return std::make_unique<PeerDoorImp>(kind, overlay, ep, io_service);
 }
 
 }

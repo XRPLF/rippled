@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_H
 #define RIPPLE_PROTOCOL_H
 
+#include <cstdint>
+
 namespace ripple {
 
 /** Protocol specific constants, types, and data.

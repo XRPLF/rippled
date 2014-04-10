@@ -25,6 +25,8 @@
 #ifndef RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 #define RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 
+#include "strHex.h"
+    
 #include "../../beast/beast/container/hardened_hash.h"
 
 #include <functional>

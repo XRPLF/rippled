@@ -19,6 +19,7 @@
 
 #include "../ripple/common/seconds_clock.h"
 #include "../ripple_rpc/api/Manager.h"
+#include "../ripple_overlay/api/make_Overlay.h"
 
 #include "Tuning.h"
 
@@ -153,7 +154,7 @@ public:
 
     std::unique_ptr <beast::asio::SSLContext> m_peerSSLContext;
     std::unique_ptr <beast::asio::SSLContext> m_wsSSLContext;
-    std::unique_ptr <Peers> m_peers;
+    std::unique_ptr <Overlay> m_peers;
     std::unique_ptr <RPCDoor>  m_rpcDoor;
     std::unique_ptr <WSDoor> m_wsPublicDoor;
     std::unique_ptr <WSDoor> m_wsPrivateDoor;
@@ -482,7 +483,7 @@ public:
         return *mProofOfWorkFactory;
     }
 
-    Peers& getPeers ()
+    Overlay& overlay ()
     {
         return *m_peers;
     }
@@ -682,13 +683,15 @@ public:
         }
 
         // VFALCO NOTE Unfortunately, in stand-alone mode some code still
-        //             foolishly calls getPeers(). When this is fixed we can
+        //             foolishly calls overlay(). When this is fixed we can
         //             move the instantiation inside a conditional:
         //
         //             if (!getConfig ().RUN_STANDALONE)
-        m_peers.reset (add (Peers::New (m_mainIoPool, *m_resourceManager, 
+        m_peers = make_Overlay (m_mainIoPool, *m_resourceManager, 
             *m_siteFiles, getConfig ().getModuleDatabasePath (),
-            *m_resolver, m_mainIoPool, m_peerSSLContext->get ())));
+            *m_resolver, m_mainIoPool, m_peerSSLContext->get ());
+        // add to Stoppable
+        add (*m_peers);
 
         // SSL context used for WebSocket connections.
         if (getConfig ().WEBSOCKET_SECURE)

@@ -44,20 +44,20 @@ public:
     }
 
     SHAMapAddNode takeNodes (const std::list<SHAMapNode>& IDs,
-                             const std::list< Blob >& data, Peer::ref);
+                             const std::list< Blob >& data, Peer::ptr const&);
 
 private:
     SHAMap::pointer     mMap;
     bool                mHaveRoot;
 
     void onTimer (bool progress, ScopedLockType& peerSetLock);
-    void newPeer (Peer::ref peer)
+    void newPeer (Peer::ptr const& peer)
     {
         trigger (peer);
     }
 
     void done ();
-    void trigger (Peer::ref);
+    void trigger (Peer::ptr const&);
     boost::weak_ptr<PeerSet> pmDowncast ();
 };
 

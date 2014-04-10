@@ -1854,7 +1854,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_overlay\impl\PackedMessage.cpp">
+    <ClCompile Include="..\..\src\ripple_overlay\impl\Message.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -1866,7 +1866,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_overlay\impl\Peers.cpp">
+    <ClCompile Include="..\..\src\ripple_overlay\impl\OverlayImpl.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -2683,12 +2683,15 @@
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCErr.h" />
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCSub.h" />
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCUtil.h" />
-    <ClInclude Include="..\..\src\ripple_overlay\api\PackedMessage.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\api\make_Overlay.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\api\Message.h" />
     <ClInclude Include="..\..\src\ripple_overlay\api\Peer.h" />
-    <ClInclude Include="..\..\src\ripple_overlay\api\Peers.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\api\Overlay.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\api\predicates.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\impl\MessageStream.h" />
+    <ClInclude Include="..\..\src\ripple_overlay\impl\OverlayImpl.h" />
     <ClInclude Include="..\..\src\ripple_overlay\impl\PeerDoor.h" />
     <ClInclude Include="..\..\src\ripple_overlay\impl\PeerImp.h" />
-    <ClInclude Include="..\..\src\ripple_overlay\ripple_overlay.h" />
     <ClInclude Include="..\..\src\ripple_rpc\api\ErrorCodes.h" />
     <ClInclude Include="..\..\src\ripple_rpc\api\Manager.h" />
     <ClInclude Include="..\..\src\ripple_rpc\api\Request.h" />

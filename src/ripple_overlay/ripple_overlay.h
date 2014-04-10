@@ -19,11 +19,4 @@
 
 #ifndef RIPPLE_OVERLAY_H_INCLUDED
 #define RIPPLE_OVERLAY_H_INCLUDED
-
-#include "../ripple_data/ripple_data.h"
-
-#include "api/PackedMessage.h"
-#include "api/Peer.h"
-#include "api/Peers.h"
-
 #endif

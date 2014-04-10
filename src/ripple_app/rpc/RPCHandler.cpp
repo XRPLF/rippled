@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../ripple_overlay/api/Overlay.h"
+
 #include "../../beast/beast/unit_test/suite.h"
 
 namespace ripple {
@@ -863,7 +865,7 @@ Json::Value RPCHandler::doConnect (Json::Value params,
     beast::IP::Endpoint ip (beast::IP::Endpoint::from_string(params["ip"].asString ()));
 
     if (! is_unspecified (ip))
-        getApp().getPeers ().connect (ip.at_port(iPort));
+        getApp().overlay ().connect (ip.at_port(iPort));
 
     return "connecting";
 }
@@ -934,7 +936,7 @@ Json::Value RPCHandler::doPeers (Json::Value, Resource::Charge& loadType, Applic
 {
     Json::Value jvResult (Json::objectValue);
 
-    jvResult["peers"]   = getApp().getPeers ().json ();
+    jvResult["peers"]   = getApp().overlay ().json ();
 
     getApp().getUNL().addClusterStatus(jvResult);
 

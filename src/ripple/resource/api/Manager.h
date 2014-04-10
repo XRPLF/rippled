@@ -20,6 +20,9 @@
 #ifndef RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 #define RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 
+#include "Consumer.h"
+#include "Gossip.h"
+
 #include "../../beast/beast/insight/Collector.h"
 #include "../../beast/beast/net/IPEndpoint.h"
 #include "../../beast/beast/utility/Journal.h"

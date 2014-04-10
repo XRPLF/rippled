@@ -21,6 +21,8 @@
 #define RIPPLE_TYPES_RIPPLEACCOUNTID_H_INCLUDED
 
 #include "CryptoIdentifier.h"
+#include "IdentifierType.h"
+
 #include <array>
 
 namespace ripple {

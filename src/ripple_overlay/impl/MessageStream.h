@@ -17,37 +17,27 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERDOOR_H_INCLUDED
-#define RIPPLE_PEERDOOR_H_INCLUDED
+#ifndef RIPPLE_OVERLAY_MESSAGESTREAM_H_INCLUDED
+#define RIPPLE_OVERLAY_MESSAGESTREAM_H_INCLUDED
 
-#include "OverlayImpl.h"
-
-#include "../../beast/beast/cxx14/memory.h" // <memory>
+#include <cstddef>
 
 namespace ripple {
 
-/** Handles incoming connections from peers. */
-class PeerDoor
+/** Turns blocks of incoming data into protocol messages. */
+class MessageStream
 {
+private:
+    std::size_t m_bytes;
+    std::vector <uint8_t> m_buffer;
+
 public:
-    virtual ~PeerDoor () = default;
-
-    enum Kind
+    void
+    write (void const* buffer, std::size_t bytes)
     {
-        sslRequired,
-        sslAndPROXYRequired
-    };
-
-    virtual
-    void stop() = 0;
+    }
 };
 
-std::unique_ptr <PeerDoor>
-make_PeerDoor (
-    PeerDoor::Kind kind, OverlayImpl& overlay,
-        std::string const& ip, int port,
-            boost::asio::io_service& io_service);
-
-}
+} // ripple
 
 #endif

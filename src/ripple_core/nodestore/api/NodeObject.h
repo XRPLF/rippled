@@ -61,14 +61,6 @@ public:
         keyBytes = 32,
     };
 
-    /** The type used to hold the hash.
-
-        The hahes are fixed size, SHA256.
-
-        @note The key size can be retrieved with `Hash::sizeInBytes`
-    */
-    typedef beast::UnsignedInteger <32> Hash;
-
     // Please use this one. For a reference use Ptr const&
     typedef boost::shared_ptr <NodeObject> Ptr;
 

@@ -20,8 +20,11 @@
 #ifndef RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 #define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 
+#include "Config.h"
 #include "Slot.h"
 #include "Types.h"
+
+#include "../../sitefiles/api/Manager.h"
 
 #include "../../beast/modules/beast_core/files/File.h"
 

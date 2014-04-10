@@ -1413,12 +1413,6 @@
     <ClCompile Include="..\..\src\ripple_overlay\impl\PeerDoor.cpp">
       <Filter>[2] Old Ripple\ripple_overlay\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_overlay\impl\Peers.cpp">
-      <Filter>[2] Old Ripple\ripple_overlay\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_overlay\impl\PackedMessage.cpp">
-      <Filter>[2] Old Ripple\ripple_overlay\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_overlay\ripple_overlay.cpp">
       <Filter>[2] Old Ripple\ripple_overlay</Filter>
     </ClCompile>
@@ -1509,14 +1503,17 @@
     <ClCompile Include="..\..\src\ripple_app\tx\LocalTxs.cpp">
       <Filter>[2] Old Ripple\ripple_app\tx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
-      <Filter>[1] Ripple\common\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\book\tests\Quality.test.cpp">
       <Filter>[2] Old Ripple\ripple_app\book\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\book\tests\OfferStream.test.cpp">
       <Filter>[2] Old Ripple\ripple_app\book\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_overlay\impl\Message.cpp">
+      <Filter>[2] Old Ripple\ripple_overlay\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_overlay\impl\OverlayImpl.cpp">
+      <Filter>[2] Old Ripple\ripple_overlay\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2984,15 +2981,6 @@
     <ClInclude Include="..\..\src\ripple_overlay\api\Peer.h">
       <Filter>[2] Old Ripple\ripple_overlay\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_overlay\api\Peers.h">
-      <Filter>[2] Old Ripple\ripple_overlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_overlay\api\PackedMessage.h">
-      <Filter>[2] Old Ripple\ripple_overlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_overlay\ripple_overlay.h">
-      <Filter>[2] Old Ripple\ripple_overlay</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\handout.h">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClInclude>
@@ -3104,6 +3092,24 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\book\Offer.h">
       <Filter>[2] Old Ripple\ripple_app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_overlay\api\make_Overlay.h">
+      <Filter>[2] Old Ripple\ripple_overlay\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_overlay\impl\OverlayImpl.h">
+      <Filter>[2] Old Ripple\ripple_overlay\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_overlay\api\predicates.h">
+      <Filter>[2] Old Ripple\ripple_overlay\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_overlay\impl\MessageStream.h">
+      <Filter>[2] Old Ripple\ripple_overlay\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_overlay\api\Message.h">
+      <Filter>[2] Old Ripple\ripple_overlay\api</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_overlay\api\Overlay.h">
+      <Filter>[2] Old Ripple\ripple_overlay\api</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -17,9 +17,13 @@
 */
 //==============================================================================
 
+#include "../api/Message.h"
+
+#include <cstdint>
+
 namespace ripple {
 
-PackedMessage::PackedMessage (::google::protobuf::Message const& message, int type)
+Message::Message (::google::protobuf::Message const& message, int type)
 {
     unsigned const messageBytes = message.ByteSize ();
 
@@ -31,24 +35,24 @@ PackedMessage::PackedMessage (::google::protobuf::Message const& message, int ty
 
     if (messageBytes != 0)
     {
-        message.SerializeToArray (&mBuffer [PackedMessage::kHeaderBytes], messageBytes);
+        message.SerializeToArray (&mBuffer [Message::kHeaderBytes], messageBytes);
 
 #ifdef BEAST_DEBUG
-        //Log::out() << "PackedMessage: type=" << type << ", datalen=" << msg_size;
+        //Log::out() << "Message: type=" << type << ", datalen=" << msg_size;
 #endif
     }
 }
 
-bool PackedMessage::operator== (PackedMessage const& other) const
+bool Message::operator== (Message const& other) const
 {
     return mBuffer == other.mBuffer;
 }
 
-unsigned PackedMessage::getLength (std::vector <uint8_t> const& buf)
+unsigned Message::getLength (std::vector <uint8_t> const& buf)
 {
     unsigned result;
 
-    if (buf.size () >= PackedMessage::kHeaderBytes)
+    if (buf.size () >= Message::kHeaderBytes)
     {
         result = buf [0];
         result <<= 8;
@@ -66,9 +70,9 @@ unsigned PackedMessage::getLength (std::vector <uint8_t> const& buf)
     return result;
 }
 
-int PackedMessage::getType (std::vector<uint8_t> const& buf)
+int Message::getType (std::vector<uint8_t> const& buf)
 {
-    if (buf.size () < PackedMessage::kHeaderBytes)
+    if (buf.size () < Message::kHeaderBytes)
         return 0;
 
     int ret = buf[4];
@@ -77,15 +81,15 @@ int PackedMessage::getType (std::vector<uint8_t> const& buf)
     return ret;
 }
 
-void PackedMessage::encodeHeader (unsigned size, int type)
+void Message::encodeHeader (unsigned size, int type)
 {
-    assert (mBuffer.size () >= PackedMessage::kHeaderBytes);
-    mBuffer[0] = static_cast<boost::uint8_t> ((size >> 24) & 0xFF);
-    mBuffer[1] = static_cast<boost::uint8_t> ((size >> 16) & 0xFF);
-    mBuffer[2] = static_cast<boost::uint8_t> ((size >> 8) & 0xFF);
-    mBuffer[3] = static_cast<boost::uint8_t> (size & 0xFF);
-    mBuffer[4] = static_cast<boost::uint8_t> ((type >> 8) & 0xFF);
-    mBuffer[5] = static_cast<boost::uint8_t> (type & 0xFF);
+    assert (mBuffer.size () >= Message::kHeaderBytes);
+    mBuffer[0] = static_cast<std::uint8_t> ((size >> 24) & 0xFF);
+    mBuffer[1] = static_cast<std::uint8_t> ((size >> 16) & 0xFF);
+    mBuffer[2] = static_cast<std::uint8_t> ((size >> 8) & 0xFF);
+    mBuffer[3] = static_cast<std::uint8_t> (size & 0xFF);
+    mBuffer[4] = static_cast<std::uint8_t> ((type >> 8) & 0xFF);
+    mBuffer[5] = static_cast<std::uint8_t> (type & 0xFF);
 }
 
 }

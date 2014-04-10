@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TYPES_RIPPLEPUBLICKEYHASH_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEPUBLICKEYHASH_H_INCLUDED
 
+#include "SimpleIdentifier.h"
+
 namespace ripple {
 
 /** Traits for the public key hash. */

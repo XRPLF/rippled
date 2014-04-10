@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../ripple_overlay/api/predicates.h"
+
 namespace ripple {
 
 SETUP_LOG (LedgerConsensus)
@@ -786,7 +788,7 @@ public:
 
     /** A peer has informed us that it can give us a transaction set
     */
-    bool peerHasSet (Peer::ref peer, uint256 const& hashSet
+    bool peerHasSet (Peer::ptr const& peer, uint256 const& hashSet
         , protocol::TxSetStatus status)
     {
         if (status != protocol::tsHAVE) // Indirect requests for future support
@@ -811,7 +813,7 @@ public:
 
     /** A peer has sent us some nodes from a transaction set
     */
-    SHAMapAddNode peerGaveNodes (Peer::ref peer
+    SHAMapAddNode peerGaveNodes (Peer::ptr const& peer
         , uint256 const& setHash, const std::list<SHAMapNode>& nodeIDs
         , const std::list< Blob >& nodeData)
     {
@@ -963,8 +965,8 @@ private:
                 Blob validation = v->getSigned ();
                 protocol::TMValidation val;
                 val.set_validation (&validation[0], validation.size ());
-                getApp ().getPeers ().foreach (send_always (
-                    boost::make_shared <PackedMessage> (
+                getApp ().overlay ().foreach (send_always (
+                    boost::make_shared <Message> (
                         val, protocol::mtVALIDATION)));
                 WriteLog (lsINFO, LedgerConsensus) 
                     << "CNF Val " << newLCLHash;
@@ -1076,7 +1078,7 @@ private:
 
             while (pit != peerList.end ())
             {
-                Peer::pointer pr = pit->lock ();
+                Peer::ptr pr = pit->lock ();
 
                 if (!pr)
                 {
@@ -1100,14 +1102,14 @@ private:
                 : acquire(acq)
             { }
 
-            return_type operator() (Peer::ref peer) const
+            return_type operator() (Peer::ptr const& peer) const
             {
                 if (peer->hasTxSet (acquire->getHash ()))
                     acquire->peerHas (peer);
             }
         };
 
-        getApp().getPeers ().foreach (build_acquire_list (acquire));
+        getApp().overlay ().foreach (build_acquire_list (acquire));
 
         acquire->setTimer ();
     }
@@ -1201,8 +1203,8 @@ private:
             msg.set_rawtransaction (& (tx.front ()), tx.size ());
             msg.set_status (protocol::tsNEW);
             msg.set_receivetimestamp (getApp().getOPs ().getNetworkTimeNC ());
-            getApp ().getPeers ().foreach (send_always (
-                boost::make_shared<PackedMessage> (
+            getApp ().overlay ().foreach (send_always (
+                boost::make_shared<Message> (
                     msg, protocol::mtTRANSACTION)));
         }
     }
@@ -1240,8 +1242,8 @@ private:
         Blob sig = mOurPosition->sign ();
         prop.set_nodepubkey (&pubKey[0], pubKey.size ());
         prop.set_signature (&sig[0], sig.size ());
-        getApp ().getPeers ().foreach (send_always (
-            boost::make_shared<PackedMessage> (
+        getApp ().overlay ().foreach (send_always (
+            boost::make_shared<Message> (
                 prop, protocol::mtPROPOSE_LEDGER)));
     }
 
@@ -1253,8 +1255,8 @@ private:
         protocol::TMHaveTransactionSet msg;
         msg.set_hash (hash.begin (), 256 / 8);
         msg.set_status (direct ? protocol::tsHAVE : protocol::tsCAN_GET);
-        getApp ().getPeers ().foreach (send_always (
-            boost::make_shared <PackedMessage> (
+        getApp ().overlay ().foreach (send_always (
+            boost::make_shared <Message> (
                 msg, protocol::mtHAVE_SET)));        
     }
 
@@ -1458,8 +1460,8 @@ private:
         }
         s.set_firstseq (uMin);
         s.set_lastseq (uMax);
-        getApp ().getPeers ().foreach (send_always (
-            boost::make_shared <PackedMessage> (
+        getApp ().overlay ().foreach (send_always (
+            boost::make_shared <Message> (
                 s, protocol::mtSTATUS_CHANGE)));
         WriteLog (lsTRACE, LedgerConsensus) << "send status change to peer";
     }
@@ -1753,8 +1755,8 @@ private:
                     closetime
                     nodepubkey
                     signature
-                    getApp ().getPeers ().foreach (send_if_not (
-                        boost::make_shared<PackedMessage> (
+                    getApp ().overlay ().foreach (send_if_not (
+                        boost::make_shared<Message> (
                             set, protocol::mtPROPOSE_LEDGER), 
                                 peer_in_set(peers)));
                 }
@@ -1819,8 +1821,8 @@ private:
         protocol::TMValidation val;
         val.set_validation (&validation[0], validation.size ());
     #if 0
-        getApp ().getPeers ().visit (RelayMessage (
-            boost::make_shared <PackedMessage> (
+        getApp ().overlay ().visit (RelayMessage (
+            boost::make_shared <Message> (
                 val, protocol::mtVALIDATION)));
     #endif
         getApp().getOPs ().setLastValidation (v);

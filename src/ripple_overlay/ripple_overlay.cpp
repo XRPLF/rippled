@@ -19,17 +19,8 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_overlay.h"
-
-#include "../ripple_app/ripple_app.h"
-
-#include "../ripple/validators/ripple_validators.h"
-#include "../ripple/peerfinder/ripple_peerfinder.h"
-#include "../ripple_app/misc/ProofOfWork.h"
-#include "../ripple_app/misc/ProofOfWorkFactory.h"
-
-#include "impl/PackedMessage.cpp"
+#include "impl/Message.cpp"
+#include "impl/OverlayImpl.cpp"
 #include "impl/PeerImp.h"
 #include "impl/PeerDoor.cpp"
-#include "impl/Peers.cpp"
 

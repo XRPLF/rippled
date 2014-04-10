@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../ripple_overlay/api/Overlay.h"
+
 namespace ripple {
 
 //SETUP_LOG (TransactionAcquire)
@@ -110,8 +112,8 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
         WriteLog (lsWARNING, TransactionAcquire) << "Out of peers for TX set " << getHash ();
 
         bool found = false;
-        Peers::PeerSequence peerList = getApp().getPeers ().getActivePeers ();
-        BOOST_FOREACH (Peer::ref peer, peerList)
+        Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
+        BOOST_FOREACH (Peer::ptr const& peer, peerList)
         {
             if (peer->hasTxSet (getHash ()))
             {
@@ -122,12 +124,12 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
 
         if (!found)
         {
-            BOOST_FOREACH (Peer::ref peer, peerList)
+            BOOST_FOREACH (Peer::ptr const& peer, peerList)
             peerHas (peer);
         }
     }
     else if (!progress)
-        trigger (Peer::pointer ());
+        trigger (Peer::ptr ());
 }
 
 boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast ()
@@ -135,7 +137,7 @@ boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast ()
     return boost::dynamic_pointer_cast<PeerSet> (shared_from_this ());
 }
 
-void TransactionAcquire::trigger (Peer::ref peer)
+void TransactionAcquire::trigger (Peer::ptr const& peer)
 {
     if (mComplete)
     {
@@ -196,7 +198,7 @@ void TransactionAcquire::trigger (Peer::ref peer)
 }
 
 SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNode>& nodeIDs,
-        const std::list< Blob >& data, Peer::ref peer)
+        const std::list< Blob >& data, Peer::ptr const& peer)
 {
     if (mComplete)
     {

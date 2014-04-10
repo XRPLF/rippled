@@ -26,6 +26,7 @@
 #define RIPPLE_TYPES_UINT160_H_INCLUDED
 
 #include "base_uint.h"
+#include "strHex.h"
 
 namespace ripple {
 

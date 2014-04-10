@@ -32,6 +32,8 @@
 #ifndef RIPPLE_BASE58DATA_H
 #define RIPPLE_BASE58DATA_H
 
+#include ".././ripple/types/api/Base58.h"
+
 namespace ripple {
 
 class CBase58Data

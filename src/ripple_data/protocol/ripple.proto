@@ -226,7 +226,7 @@ message TMGetContacts
 
 message TMGetPeers
 {
-    required uint32 doWeNeedThis    = 1;  // yes since you are asserting that the packet size isn't 0 in PackedMessage
+    required uint32 doWeNeedThis    = 1;  // yes since you are asserting that the packet size isn't 0 in Message
 }
 
 message TMIPv4Endpoint

@@ -36,7 +36,7 @@ class IFeatures;
 class IFeeVote;
 class IHashRouter;
 class LoadFeeTrack;
-class Peers;
+class Overlay;
 class UniqueNodeList;
 class JobQueue;
 class InboundLedgers;
@@ -94,7 +94,7 @@ public:
     virtual IHashRouter&            getHashRouter () = 0;
     virtual LoadFeeTrack&           getFeeTrack () = 0;
     virtual LoadManager&            getLoadManager () = 0;
-    virtual Peers&                  getPeers () = 0;
+    virtual Overlay&                overlay () = 0;
     virtual ProofOfWorkFactory&     getProofOfWorkFactory () = 0;
     virtual UniqueNodeList&         getUNL () = 0;
     virtual Validations&            getValidations () = 0;

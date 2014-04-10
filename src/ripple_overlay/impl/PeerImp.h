@@ -20,9 +20,24 @@
 #ifndef RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 #define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
+#include "../api/predicates.h"
+
 #include "../../ripple/common/MultiSocket.h"
+#include "../../ripple_data/protocol/Protocol.h"
+#include "../ripple/validators/ripple_validators.h"
+#include "../ripple/peerfinder/ripple_peerfinder.h"
+#include "../ripple_app/misc/ProofOfWork.h"
+#include "../ripple_app/misc/ProofOfWorkFactory.h"
+
+// VFALCO This is unfortunate. Comment this out and
+//        just include what is needed.
+#include "../ripple_app/ripple_app.h"
+
+#include <cstdint>
 
 namespace ripple {
+
+typedef boost::asio::ip::tcp::socket NativeSocketType;
 
 class PeerImp;
 
@@ -40,36 +55,10 @@ std::ostream& operator<< (std::ostream& os, PeerImp const* peer);
 
 //------------------------------------------------------------------------------
 
-struct get_usable_peers
-{
-    typedef Peers::PeerSequence return_type;
-
-    Peers::PeerSequence usablePeers;
-    uint256 const& txHash;
-    Peer const* skip;
-
-    get_usable_peers(uint256 const& hash, Peer const* s)
-        : txHash(hash), skip(s)
-    { }
-
-    void operator() (Peer::ref peer)
-    {
-        if (peer->hasTxSet (txHash) && (peer.get () != skip))
-            usablePeers.push_back (peer);
-    }
-
-    return_type operator() ()
-    {
-        return usablePeers;
-    }
-};
-
-//------------------------------------------------------------------------------
-
 class PeerImp 
     : public Peer
-    , public CountedObject <PeerImp>
     , public boost::enable_shared_from_this <PeerImp>
+    , private beast::LeakChecked <Peer>
 {
 private:
     /** Time alloted for a peer to send a HELLO message (DEPRECATED) */
@@ -127,7 +116,7 @@ private:
             return;
         }
 
-        getNativeSocket ().async_connect (
+        m_socket->next_layer <NativeSocketType>().async_connect (
             beast::IPAddressConversion::to_asio_endpoint (m_remoteAddress),
                 m_strand.wrap (boost::bind (&PeerImp::onConnect,
                     shared_from_this (), boost::asio::placeholders::error)));
@@ -155,7 +144,7 @@ public:
 
     typedef boost::shared_ptr <PeerImp> ptr;
 
-    boost::shared_ptr <NativeSocketType> m_shared_socket;
+    NativeSocketType m_owned_socket;
 
     beast::Journal m_journal;
 
@@ -173,7 +162,7 @@ public:
     //
     Resource::Manager& m_resourceManager;
     PeerFinder::Manager& m_peerFinder;
-    Peers& m_peers;
+    OverlayImpl& m_overlay;
     bool m_inbound;
 
     std::unique_ptr <MultiSocket> m_socket;
@@ -205,8 +194,8 @@ public:
     boost::asio::deadline_timer         m_timer;
 
     std::vector<uint8_t>                m_readBuffer;
-    std::list<PackedMessage::pointer>   mSendQ;
-    PackedMessage::pointer              mSendingPacket;
+    std::list<Message::pointer>   mSendQ;
+    Message::pointer              mSendingPacket;
     protocol::TMStatusChange            mLastStatus;
     protocol::TMHello                   mHello;
 
@@ -221,31 +210,31 @@ public:
     //--------------------------------------------------------------------------
     /** New incoming peer from the specified socket */
     PeerImp (
-        boost::shared_ptr <NativeSocketType> const& socket,
+        NativeSocketType&& socket,
         beast::IP::Endpoint remoteAddress,
-        Peers& peers,
+        OverlayImpl& overlay,
         Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder,
         PeerFinder::Slot::ptr const& slot,
         boost::asio::ssl::context& ssl_context,
         MultiSocket::Flag flags)
-            : m_shared_socket (socket)
+            : m_owned_socket (std::move (socket))
             , m_journal (LogPartition::getJournal <Peer> ())
             , m_shortId (0)
             , m_remoteAddress (remoteAddress)
             , m_resourceManager (resourceManager)
             , m_peerFinder (peerFinder)
-            , m_peers (peers)
+            , m_overlay (overlay)
             , m_inbound (true)
             , m_socket (MultiSocket::New (
-                *socket, ssl_context, flags.asBits ()))
-            , m_strand (socket->get_io_service())
+                m_owned_socket, ssl_context, flags.asBits ()))
+            , m_strand (m_owned_socket.get_io_service())
             , m_state (stateConnected)
             , m_detaching (false)
             , m_clusterNode (false)
             , m_minLedger (0)
             , m_maxLedger (0)
-            , m_timer (socket->get_io_service())
+            , m_timer (m_owned_socket.get_io_service())
             , m_slot (slot)
             , m_was_canceled (false)
     {
@@ -260,18 +249,19 @@ public:
     PeerImp (
         beast::IP::Endpoint remoteAddress,
         boost::asio::io_service& io_service,
-        Peers& peers,
+        OverlayImpl& overlay,
         Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder,
         PeerFinder::Slot::ptr const& slot,
         boost::asio::ssl::context& ssl_context,
         MultiSocket::Flag flags)
-            : m_journal (LogPartition::getJournal <Peer> ())
+            : m_owned_socket (io_service)
+            , m_journal (LogPartition::getJournal <Peer> ())
             , m_shortId (0)
             , m_remoteAddress (remoteAddress)
             , m_resourceManager (resourceManager)
             , m_peerFinder (peerFinder)
-            , m_peers (peers)
+            , m_overlay (overlay)
             , m_inbound (false)
             , m_socket (MultiSocket::New (
                 io_service, ssl_context, flags.asBits ()))
@@ -287,15 +277,14 @@ public:
     {
     }
     
-    virtual ~PeerImp ()
+    virtual
+    ~PeerImp ()
     {
-        m_peers.remove (m_slot);
+        m_overlay.remove (m_slot);
     }
 
-    NativeSocketType& getNativeSocket ()
-    {
-        return m_socket->next_layer <NativeSocketType> ();
-    }
+    PeerImp (PeerImp const&) = delete;
+    PeerImp& operator= (PeerImp const&) = delete;
 
     MultiSocket& getStream ()
     {
@@ -346,7 +335,7 @@ public:
                 m_peerFinder.on_closed (m_slot);
             
             if (m_state == stateActive)
-                m_peers.onPeerDisconnect (shared_from_this ());
+                m_overlay.onPeerDisconnect (shared_from_this ());
 
             m_state = stateGracefulClose;
 
@@ -442,7 +431,9 @@ public:
     {
         bassert (m_state == stateHandshaked);
         m_state = stateActive;
-        m_peers.onPeerActivated(shared_from_this ());
+        bassert(m_shortId == 0);
+        m_shortId = m_overlay.next_id();
+        m_overlay.onPeerActivated(shared_from_this ());
     }
 
     void start ()
@@ -461,7 +452,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void sendPacket (const PackedMessage::pointer& packet, bool onStrand)
+    void sendPacket (const Message::pointer& packet, bool onStrand)
     {
         if (packet)
         {
@@ -486,12 +477,12 @@ public:
     void sendGetPeers ()
     {
         // Ask peer for known other peers.
-        protocol::TMGetPeers getPeers;
+        protocol::TMGetPeers msg;
 
-        getPeers.set_doweneedthis (1);
+        msg.set_doweneedthis (1);
 
-        PackedMessage::pointer packet = boost::make_shared<PackedMessage> (
-            getPeers, protocol::mtGET_PEERS);
+        Message::pointer packet = boost::make_shared<Message> (
+            msg, protocol::mtGET_PEERS);
 
         sendPacket (packet, true);
     }
@@ -500,6 +491,14 @@ public:
     {
          if ((m_usage.charge (fee) == Resource::drop) && m_usage.disconnect ())
              detach ("resource");
+    }
+
+    static void charge (boost::weak_ptr <Peer>& peer, Resource::Charge const& fee)
+    {
+        Peer::ptr p (peer.lock());
+
+        if (p != nullptr)
+            p->charge (fee);
     }
 
     Json::Value json ()
@@ -617,13 +616,6 @@ public:
         return false;
     }
 
-    void setShortId(Peer::ShortId shortId)
-    {
-        bassert((m_shortId == 0) && (shortId != 0));
-
-        m_shortId = shortId;
-    }
-
     Peer::ShortId getShortId () const
     {
         return m_shortId;
@@ -696,7 +688,7 @@ private:
 
         if (!mSendQ.empty ())
         {
-            PackedMessage::pointer packet = mSendQ.front ();
+            Message::pointer packet = mSendQ.front ();
 
             if (packet)
             {
@@ -722,7 +714,7 @@ private:
             return;
         }
 
-        unsigned msg_len = PackedMessage::getLength (m_readBuffer);
+        unsigned msg_len = Message::getLength (m_readBuffer);
 
         // WRITEME: Compare to maximum message length, abort if too large
         if ((msg_len > (32 * 1024 * 1024)) || (msg_len == 0))
@@ -824,7 +816,7 @@ private:
     void processReadBuffer ()
     {
         // must not hold peer lock
-        int type = PackedMessage::getType (m_readBuffer);
+        int type = Message::getType (m_readBuffer);
 
         LoadEvent::autoptr event (
             getApp().getJobQueue ().getLoadEventAP (jtPEER, "Peer::read"));
@@ -848,7 +840,7 @@ private:
                 return;
             }
 
-            size_t msgLen (m_readBuffer.size () - PackedMessage::kHeaderBytes);
+            size_t msgLen (m_readBuffer.size () - Message::kHeaderBytes);
 
             switch (type)
             {
@@ -857,7 +849,7 @@ private:
                 event->reName ("Peer::hello");
                 protocol::TMHello msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvHello (msg);
                 else
@@ -870,7 +862,7 @@ private:
                 event->reName ("Peer::cluster");
                 protocol::TMCluster msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvCluster (msg);
                 else
@@ -883,7 +875,7 @@ private:
                 event->reName ("Peer::errormessage");
                 protocol::TMErrorMsg msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvErrorMessage (msg);
                 else
@@ -896,7 +888,7 @@ private:
                 event->reName ("Peer::ping");
                 protocol::TMPing msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvPing (msg);
                 else
@@ -909,7 +901,7 @@ private:
                 event->reName ("Peer::getcontacts");
                 protocol::TMGetContacts msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvGetContacts (msg);
                 else
@@ -922,7 +914,7 @@ private:
                 event->reName ("Peer::contact");
                 protocol::TMContact msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvContact (msg);
                 else
@@ -935,7 +927,7 @@ private:
                 event->reName ("Peer::getpeers");
                 protocol::TMGetPeers msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvGetPeers (msg);
                 else
@@ -948,7 +940,7 @@ private:
                 event->reName ("Peer::peers");
                 protocol::TMPeers msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvPeers (msg);
                 else
@@ -961,7 +953,7 @@ private:
                 event->reName ("Peer::endpoints");
                 protocol::TMEndpoints msg;
 
-                if(msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if(msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                        msgLen))
                     recvEndpoints (msg);
                 else
@@ -974,7 +966,7 @@ private:
                 event->reName ("Peer::searchtransaction");
                 protocol::TMSearchTransaction msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvSearchTransaction (msg);
                 else
@@ -987,7 +979,7 @@ private:
                 event->reName ("Peer::getaccount");
                 protocol::TMGetAccount msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvGetAccount (msg);
                 else
@@ -1000,7 +992,7 @@ private:
                 event->reName ("Peer::account");
                 protocol::TMAccount msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvAccount (msg);
                 else
@@ -1013,7 +1005,7 @@ private:
                 event->reName ("Peer::transaction");
                 protocol::TMTransaction msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvTransaction (msg);
                 else
@@ -1026,7 +1018,7 @@ private:
                 event->reName ("Peer::statuschange");
                 protocol::TMStatusChange msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvStatus (msg);
                 else
@@ -1040,7 +1032,7 @@ private:
                 boost::shared_ptr<protocol::TMProposeSet> msg (
                 	boost::make_shared<protocol::TMProposeSet> ());
 
-                if (msg->ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                          msgLen))
                     recvPropose (msg);
                 else
@@ -1054,7 +1046,7 @@ private:
                 boost::shared_ptr<protocol::TMGetLedger> msg ( 
                     boost::make_shared<protocol::TMGetLedger> ());
 
-                if (msg->ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvGetLedger (msg);
                 else
@@ -1068,7 +1060,7 @@ private:
                 boost::shared_ptr<protocol::TMLedgerData> msg (
                 	boost::make_shared<protocol::TMLedgerData> ());
 
-                if (msg->ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                          msgLen))
                     recvLedger (msg);
                 else
@@ -1081,7 +1073,7 @@ private:
                 event->reName ("Peer::haveset");
                 protocol::TMHaveTransactionSet msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvHaveTxSet (msg);
                 else
@@ -1095,7 +1087,7 @@ private:
                 boost::shared_ptr<protocol::TMValidation> msg (
                 	boost::make_shared<protocol::TMValidation> ());
 
-                if (msg->ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                          msgLen))
                     recvValidation (msg);
                 else
@@ -1108,7 +1100,7 @@ private:
             {
                 protocol::TM msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes], msgLen))
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes], msgLen))
                     recv (msg);
                 else
                     m_journal.warning << "parse error: " << type;
@@ -1123,7 +1115,7 @@ private:
                 boost::shared_ptr<protocol::TMGetObjectByHash> msg =
                     boost::make_shared<protocol::TMGetObjectByHash> ();
 
-                if (msg->ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                          msgLen))
                     recvGetObjectByHash (msg);
                 else
@@ -1136,7 +1128,7 @@ private:
                 event->reName ("Peer::proofofwork");
                 protocol::TMProofWork msg;
 
-                if (msg.ParseFromArray (&m_readBuffer[PackedMessage::kHeaderBytes],
+                if (msg.ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
                     recvProofWork (msg);
                 else
@@ -1158,7 +1150,7 @@ private:
         if (!m_detaching)
         {
             m_readBuffer.clear ();
-            m_readBuffer.resize (PackedMessage::kHeaderBytes);
+            m_readBuffer.resize (Message::kHeaderBytes);
 
             boost::asio::async_read (getStream (),
                 boost::asio::buffer (m_readBuffer),
@@ -1171,17 +1163,17 @@ private:
 
     void startReadBody (unsigned msg_len)
     {
-        // The first PackedMessage::kHeaderBytes bytes of m_readbuf already
+        // The first Message::kHeaderBytes bytes of m_readbuf already
         // contains the header. Expand it to fit in the body as well, and
         // start async read into the body.
 
         if (!m_detaching)
         {
-            m_readBuffer.resize (PackedMessage::kHeaderBytes + msg_len);
+            m_readBuffer.resize (Message::kHeaderBytes + msg_len);
 
             boost::asio::async_read (getStream (),
                 boost::asio::buffer (
-                    &m_readBuffer [PackedMessage::kHeaderBytes], msg_len),
+                    &m_readBuffer [Message::kHeaderBytes], msg_len),
                 m_strand.wrap (boost::bind (
                     &PeerImp::handleReadBody,
                     boost::static_pointer_cast <PeerImp> (shared_from_this ()),
@@ -1190,7 +1182,7 @@ private:
         }
     }
 
-    void sendPacketForce (const PackedMessage::pointer& packet)
+    void sendPacketForce (const Message::pointer& packet)
     {
         // must be on IO strand
         if (!m_detaching)
@@ -1339,7 +1331,7 @@ private:
             h.set_ledgerprevious (hash.begin (), hash.GetSerializeSize ());
         }
 
-        PackedMessage::pointer packet = boost::make_shared<PackedMessage> (
+        Message::pointer packet = boost::make_shared<Message> (
             h, protocol::mtHELLO);
         sendPacket (packet, true);
 
@@ -1597,7 +1589,7 @@ private:
                     isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
                     "recvValidation->checkValidation",
                     BIND_TYPE (
-                        &PeerImp::checkValidation, P_1, &m_peers, val,
+                        &PeerImp::checkValidation, P_1, &m_overlay, val,
                         isTrusted, m_clusterNode, packet,
                         boost::weak_ptr<Peer> (shared_from_this ())));
             }
@@ -1638,7 +1630,7 @@ private:
         // response with some data here anyways, and send if non-empty.
 
         sendPacket (
-            boost::make_shared<PackedMessage> (peers, protocol::mtPEERS),
+            boost::make_shared<Message> (peers, protocol::mtPEERS),
             true);
 #endif
     }
@@ -1761,7 +1753,7 @@ private:
                                " of " << packet.objects_size () <<
                                " for " << to_string (this);
             sendPacket (
-                boost::make_shared<PackedMessage> (reply, protocol::mtGET_OBJECTS),
+                boost::make_shared<Message> (reply, protocol::mtGET_OBJECTS),
                 true);
         }
         else
@@ -1824,7 +1816,7 @@ private:
         if (packet.type () == protocol::TMPing::ptPING)
         {
             packet.set_type (protocol::TMPing::ptPONG);
-            sendPacket (boost::make_shared<PackedMessage> (packet, protocol::mtPING), true);
+            sendPacket (boost::make_shared<Message> (packet, protocol::mtPING), true);
         }        
     }
 
@@ -1847,7 +1839,7 @@ private:
     void recvGetLedger (boost::shared_ptr<protocol::TMGetLedger> const& packet)
     {
         getApp().getJobQueue().addJob (jtPACK, "recvGetLedger",
-        	std::bind (&sGetLedger, boost::weak_ptr<Peer> (shared_from_this ()), packet));
+        	std::bind (&sGetLedger, boost::weak_ptr<PeerImp> (shared_from_this ()), packet));
     }
 
     void recvLedger (boost::shared_ptr<protocol::TMLedgerData> const& packet_ptr)
@@ -1862,12 +1854,12 @@ private:
 
         if (packet.has_requestcookie ())
         {
-            Peer::pointer target = m_peers.findPeerByShortID (packet.requestcookie ());
+            Peer::ptr target = m_overlay.findPeerByShortID (packet.requestcookie ());
 
             if (target)
             {
                 packet.clear_requestcookie ();
-                target->sendPacket (boost::make_shared<PackedMessage> (packet, protocol::mtLEDGER_DATA), false);
+                target->sendPacket (boost::make_shared<Message> (packet, protocol::mtLEDGER_DATA), false);
             }
             else
             {
@@ -2067,7 +2059,7 @@ private:
 
         getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
             "recvPropose->checkPropose", BIND_TYPE (
-                &PeerImp::checkPropose, P_1, &m_peers, packet, proposal, consensusLCL,
+                &PeerImp::checkPropose, P_1, &m_overlay, packet, proposal, consensusLCL,
                 m_nodePublicKey, boost::weak_ptr<Peer> (shared_from_this ()), m_clusterNode));
     }
 
@@ -2228,7 +2220,31 @@ private:
 	            {
 	                m_journal.debug << "Trying to route TX set request";
 
-	                Peers::PeerSequence usablePeers (m_peers.foreach (
+                    struct get_usable_peers
+                    {
+                        typedef Overlay::PeerSequence return_type;
+
+                        Overlay::PeerSequence usablePeers;
+                        uint256 const& txHash;
+                        Peer const* skip;
+
+                        get_usable_peers(uint256 const& hash, Peer const* s)
+                            : txHash(hash), skip(s)
+                        { }
+
+                        void operator() (Peer::ptr const& peer)
+                        {
+                            if (peer->hasTxSet (txHash) && (peer.get () != skip))
+                                usablePeers.push_back (peer);
+                        }
+
+                        return_type operator() ()
+                        {
+                            return usablePeers;
+                        }
+                    };
+
+	                Overlay::PeerSequence usablePeers (m_overlay.foreach (
                         get_usable_peers (txHash, this)));
 
                     if (usablePeers.empty ())
@@ -2237,10 +2253,10 @@ private:
                         return;
                     }
 
-                    Peer::ref selectedPeer = usablePeers[rand () % usablePeers.size ()];
+                    Peer::ptr const& selectedPeer = usablePeers[rand () % usablePeers.size ()];
                     packet.set_requestcookie (getShortId ());
                     selectedPeer->sendPacket (
-                        boost::make_shared<PackedMessage> (packet, protocol::mtGET_LEDGER),
+                        boost::make_shared<Message> (packet, protocol::mtGET_LEDGER),
                         false);
                     return;
 	            }
@@ -2297,9 +2313,9 @@ private:
 	                if (packet.has_ledgerseq ())
 	                    seq = packet.ledgerseq ();
 
-	                Peers::PeerSequence peerList = m_peers.getActivePeers ();
-                        Peers::PeerSequence usablePeers;
-                        BOOST_FOREACH (Peer::ref peer, peerList)
+	                Overlay::PeerSequence peerList = m_overlay.getActivePeers ();
+                        Overlay::PeerSequence usablePeers;
+                        BOOST_FOREACH (Peer::ptr const& peer, peerList)
                         {
                             if (peer->hasLedger (ledgerhash, seq) && (peer.get () != this))
                                 usablePeers.push_back (peer);
@@ -2311,10 +2327,10 @@ private:
                             return;
                         }
 
-                        Peer::ref selectedPeer = usablePeers[rand () % usablePeers.size ()];
+                        Peer::ptr const& selectedPeer = usablePeers[rand () % usablePeers.size ()];
                         packet.set_requestcookie (getShortId ());
                         selectedPeer->sendPacket (
-                            boost::make_shared<PackedMessage> (packet, protocol::mtGET_LEDGER), false);
+                            boost::make_shared<Message> (packet, protocol::mtGET_LEDGER), false);
                         m_journal.debug << "Ledger request routed";
                         return;
                     }
@@ -2404,7 +2420,7 @@ private:
 	                }
 	            }
 
-	            PackedMessage::pointer oPacket = boost::make_shared<PackedMessage> (reply, protocol::mtLEDGER_DATA);
+	            Message::pointer oPacket = boost::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
 	            sendPacket (oPacket, false);
 	            return;
 	        }
@@ -2488,15 +2504,17 @@ private:
 	        }
 	    }
 
-	    PackedMessage::pointer oPacket = boost::make_shared<PackedMessage> (reply, protocol::mtLEDGER_DATA);
+	    Message::pointer oPacket = boost::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
 	    sendPacket (oPacket, false);    
     }
     
     // This is dispatched by the job queue
-    static void sGetLedger (boost::weak_ptr<Peer> wPeer, 
-        boost::shared_ptr<protocol::TMGetLedger> packet)
+    static
+    void
+    sGetLedger (boost::weak_ptr<PeerImp> wPeer, 
+        boost::shared_ptr <protocol::TMGetLedger> packet)
     {
-        boost::shared_ptr<Peer> peer = wPeer.lock ();
+        boost::shared_ptr<PeerImp> peer = wPeer.lock ();
         
         if (peer)
             peer->getLedger (*packet);
@@ -2584,14 +2602,14 @@ private:
         }
         else
         {
-            Peer::pointer pptr (peer.lock ());
+            Peer::ptr pptr (peer.lock ());
 
             if (pptr)
             {
                 protocol::TMProofWork reply;
                 reply.set_token (pow->getToken ());
                 reply.set_response (solution.begin (), solution.size ());
-                pptr->sendPacket (boost::make_shared<PackedMessage> (reply, protocol::mtPROOFOFWORK), false);
+                pptr->sendPacket (boost::make_shared<Message> (reply, protocol::mtPROOFOFWORK), false);
             }
             else
             {
@@ -2612,7 +2630,7 @@ private:
                 getApp().getLedgerMaster().getValidLedgerIndex()))
 	    { // Transaction has expired
                 getApp().getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
-                Peer::charge (peer, Resource::feeUnwantedData);
+                charge (peer, Resource::feeUnwantedData);
                 return;
             }
 
@@ -2623,7 +2641,7 @@ private:
             if (tx->getStatus () == INVALID)
             {
                 getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
-                Peer::charge (peer, Resource::feeInvalidSignature);
+                charge (peer, Resource::feeInvalidSignature);
                 return;
             }
             else
@@ -2636,14 +2654,14 @@ private:
         catch (...)
         {
             getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
-            Peer::charge (peer, Resource::feeInvalidRequest);
+            charge (peer, Resource::feeInvalidRequest);
         }
 
     #endif
     }
 
     // Called from our JobQueue
-    static void checkPropose (Job& job, Peers* pPeers, boost::shared_ptr<protocol::TMProposeSet> packet,
+    static void checkPropose (Job& job, Overlay* pPeers, boost::shared_ptr<protocol::TMProposeSet> packet,
                               LedgerProposal::pointer proposal, uint256 consensusLCL, RippleAddress nodePublic,
                               boost::weak_ptr<Peer> peer, bool fromCluster)
     {
@@ -2667,10 +2685,10 @@ private:
 
             if (!fromCluster && !proposal->checkSign (set.signature ()))
             {
-                Peer::pointer p = peer.lock ();
+                Peer::ptr p = peer.lock ();
                 WriteLog(lsWARNING, Peer) << "proposal with previous ledger fails sig check: " <<
                                              *p;
-                Peer::charge (peer, Resource::feeInvalidSignature);
+                charge (peer, Resource::feeInvalidSignature);
                 return;
             }
             else
@@ -2705,7 +2723,7 @@ private:
                 proposal->getSuppressionID (), peers, SF_RELAYED))
             {
                 pPeers->foreach (send_if_not (
-                    boost::make_shared<PackedMessage> (set, protocol::mtPROPOSE_LEDGER),
+                    boost::make_shared<Message> (set, protocol::mtPROPOSE_LEDGER),
                     peer_in_set(peers)));
 	    }
         }
@@ -2715,7 +2733,7 @@ private:
         }
     }
 
-    static void checkValidation (Job&, Peers* pPeers, SerializedValidation::pointer val, bool isTrusted, bool isCluster,
+    static void checkValidation (Job&, Overlay* pPeers, SerializedValidation::pointer val, bool isTrusted, bool isCluster,
                                  boost::shared_ptr<protocol::TMValidation> packet, boost::weak_ptr<Peer> peer)
     {
     #ifndef TRUST_NETWORK
@@ -2727,12 +2745,12 @@ private:
             if (!isCluster && !val->isValid (signingHash))
             {
                 WriteLog(lsWARNING, Peer) << "Validation is invalid";
-                Peer::charge (peer, Resource::feeInvalidRequest);
+                charge (peer, Resource::feeInvalidRequest);
                 return;
             }
 
             std::string source;
-            Peer::pointer lp = peer.lock ();
+            Peer::ptr lp = peer.lock ();
 
             if (lp)
                 source = to_string(*lp);
@@ -2757,7 +2775,7 @@ private:
                     getApp().getHashRouter ().swapSet (signingHash, peers, SF_RELAYED))
             {
                 pPeers->foreach (send_if_not (
-                    boost::make_shared<PackedMessage> (*packet, protocol::mtVALIDATION),
+                    boost::make_shared<Message> (*packet, protocol::mtVALIDATION),
                     peer_in_set(peers))); 
             }
         }
@@ -2766,7 +2784,7 @@ private:
         catch (...)
         {
             WriteLog(lsTRACE, Peer) << "Exception processing validation";
-            Peer::charge (peer, Resource::feeInvalidRequest);
+            charge (peer, Resource::feeInvalidRequest);
         }
     #endif
     }
@@ -2774,18 +2792,13 @@ private:
 
 //------------------------------------------------------------------------------
 
-void Peer::charge (boost::weak_ptr <Peer>& peer, Resource::Charge const& fee)
-{
-    Peer::pointer p (peer.lock());
-
-    if (p != nullptr)
-        p->charge (fee);
-}
-
 const boost::posix_time::seconds PeerImp::nodeVerifySeconds (15);
 
 //------------------------------------------------------------------------------
-std::string to_string (PeerImp const& peer)
+
+// to_string should not be used we should just use lexical_cast maybe
+
+inline std::string to_string (PeerImp const& peer)
 {
     if (peer.isInCluster())
         return peer.getClusterNodeName();
@@ -2793,19 +2806,19 @@ std::string to_string (PeerImp const& peer)
     return peer.getRemoteAddress().to_string();
 }
 
-std::string to_string (PeerImp const* peer)
+inline std::string to_string (PeerImp const* peer)
 {
     return to_string (*peer);
 }
 
-std::ostream& operator<< (std::ostream& os, PeerImp const& peer)
+inline std::ostream& operator<< (std::ostream& os, PeerImp const& peer)
 {
     os << to_string (peer);
 
     return os;
 }
 
-std::ostream& operator<< (std::ostream& os, PeerImp const* peer)
+inline std::ostream& operator<< (std::ostream& os, PeerImp const* peer)
 {
     os << to_string (peer);
 
@@ -2814,7 +2827,7 @@ std::ostream& operator<< (std::ostream& os, PeerImp const* peer)
 
 //------------------------------------------------------------------------------
 
-std::string to_string (Peer const& peer)
+inline std::string to_string (Peer const& peer)
 {
     if (peer.isInCluster())
         return peer.getClusterNodeName();
@@ -2822,19 +2835,19 @@ std::string to_string (Peer const& peer)
     return peer.getRemoteAddress().to_string();
 }
 
-std::string to_string (Peer const* peer)
+inline std::string to_string (Peer const* peer)
 {
     return to_string (*peer);
 }
 
-std::ostream& operator<< (std::ostream& os, Peer const& peer)
+inline std::ostream& operator<< (std::ostream& os, Peer const& peer)
 {
     os << to_string (peer);
 
     return os;
 }
 
-std::ostream& operator<< (std::ostream& os, Peer const* peer)
+inline std::ostream& operator<< (std::ostream& os, Peer const* peer)
 {
     os << to_string (peer);
 

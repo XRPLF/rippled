@@ -3,12 +3,15 @@
 
 ## Introduction
 
-Each _peer_ (a running instance of the **rippled** program) on the Ripple network
-maintains multiple TCP/IP connections to other peers (neighbors) who themselves
-have neighboring peers. The resulting network is called a _peer to peer overlay
-network_, or just [_overlay network_][overlay_network]. Messages passed along these
-connections travel between peers and implement the communication layer of the
-_Ripple peer protocol_.
+The _Ripple payment network_ consists of a collection of _peers_ running the
+**rippled software**. Each peer maintains multiple outgoing connections and
+optional incoming connections to other peers. These connections are made over
+both the public Internet and private local area networks. This network defines
+a fully connected directed graph of nodes. Peers send and receive messages to
+other connected peers. This peer to peer network, layered on top of the public
+and private Internet, forms an [_overlay network_][overlay_network].
+
+## Bootstrapping
 
 When a peer comes online it needs a set of IP addresses to connect to in order to
 gain initial entry into the overlay in a process called _bootstrapping_. Once they

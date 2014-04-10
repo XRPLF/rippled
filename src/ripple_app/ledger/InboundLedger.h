@@ -82,7 +82,7 @@ public:
     // VFALCO TODO Make this the Listener / Observer pattern
     bool addOnComplete (std::function<void (InboundLedger::pointer)>);
 
-    void trigger (Peer::ref);
+    void trigger (Peer::ptr const&);
     bool tryLocal ();
     void addPeers ();
     bool checkLocal ();
@@ -106,7 +106,7 @@ private:
 
     void onTimer (bool progress, ScopedLockType& peerSetLock);
 
-    void newPeer (Peer::ref peer)
+    void newPeer (Peer::ptr const& peer)
     {
         trigger (peer);
     }
