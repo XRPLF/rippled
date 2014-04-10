@@ -258,7 +258,7 @@ public:
         Not called for stand-alone mode.
     */
     void setStateTimer ();
-    
+
     void newLCL (int proposers, int convergeTime, uint256 const& ledgerHash);
     void needNetworkLedger ()
     {
@@ -324,7 +324,7 @@ public:
     void storeProposal (LedgerProposal::ref proposal,    const RippleAddress& peerPublic);
     uint256 getConsensusLCL ();
     void reportFeeChange ();
- 
+
     void updateLocalTx (Ledger::ref newValidLedger) override
     {
         m_localTX->sweep (newValidLedger);
@@ -408,7 +408,7 @@ public:
     //--------------------------------------------------------------------------
     //
     // Stoppable
-    
+
     void onStop ()
     {
         m_heartbeatTimer.cancel();
@@ -891,7 +891,7 @@ void NetworkOPsImp::runTransactionQueue ()
                         tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
                         getApp ().getPeers ().foreach (send_if_not (
                             boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION),
-                            peer_in_set(peers)));                        
+                            peer_in_set(peers)));
                     }
                     else
                         m_journal.debug << "recently relayed";
@@ -1022,7 +1022,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
                 tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
                 getApp ().getPeers ().foreach (send_if_not (
                     boost::make_shared<PackedMessage> (tx, protocol::mtTRANSACTION),
-                    peer_in_set(peers))); 
+                    peer_in_set(peers)));
             }
         }
     }
@@ -1459,7 +1459,7 @@ int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer
     // Create a consensus object to get consensus on this ledger
     assert (!mConsensus);
     prevLedger->setImmutable ();
-    
+
     mConsensus = LedgerConsensus::New (m_clock, *m_localTX,
         networkClosed, prevLedger,
         m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC ());
@@ -2927,11 +2927,11 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                         saOwnerFunds    = lesActive.accountHolds (uOfferOwnerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
 
                         // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
-                        if (saOwnerFunds.isNegative ())
+                        if (saOwnerFunds < zero)
                         {
                             // Treat negative funds as zero.
 
-                            saOwnerFunds.zero ();
+                            saOwnerFunds.clear ();
                         }
                     }
                 }
@@ -2985,7 +2985,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 
-                if (!saOwnerFunds.isZero () || uOfferOwnerID == uTakerID)
+                if (saOwnerFunds != zero || uOfferOwnerID == uTakerID)
                 {
                     // Only provide funded offers and offers of the taker.
                     Json::Value& jvOf   = jvOffers.append (jvOffer);

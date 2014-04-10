@@ -482,7 +482,7 @@ void STAmount::add (Serializer& s) const
     }
     else
     {
-        if (isZero ())
+        if (*this == zero)
             s.add64 (cNotNative);
         else if (mIsNegative) // 512 = not native
             s.add64 (mValue | (static_cast<std::uint64_t> (mOffset + 512 + 97) << (64 - 10)));
@@ -625,7 +625,8 @@ std::string STAmount::getRaw () const
 std::string STAmount::getText () const
 {
     // keep full internal accuracy, but make more human friendly if posible
-    if (isZero ()) return "0";
+    if (*this == zero)
+        return "0";
 
     if (mIsNative)
     {
@@ -821,9 +822,10 @@ STAmount operator+ (const STAmount& v1, const STAmount& v2)
 {
     v1.throwComparable (v2);
 
-    if (v2.isZero ()) return v1;
+    if (v2 == zero)
+        return v1;
 
-    if (v1.isZero ())
+    if (v1 == zero)
     {
         // Result must be in terms of v1 currency and issuer.
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer, v2.mValue, v2.mOffset, v2.mIsNegative);
@@ -867,7 +869,8 @@ STAmount operator- (const STAmount& v1, const STAmount& v2)
 {
     v1.throwComparable (v2);
 
-    if (v2.isZero ()) return v1;
+    if (v2 == zero)
+        return v1;
 
     if (v2.mIsNative)
     {
@@ -908,10 +911,10 @@ STAmount operator- (const STAmount& v1, const STAmount& v2)
 
 STAmount STAmount::divide (const STAmount& num, const STAmount& den, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
-    if (den.isZero ())
+    if (den == zero)
         throw std::runtime_error ("division by zero");
 
-    if (num.isZero ())
+    if (num == zero)
         return STAmount (uCurrencyID, uIssuerID);
 
     std::uint64_t numVal = num.mValue, denVal = den.mValue;
@@ -951,7 +954,7 @@ STAmount STAmount::divide (const STAmount& num, const STAmount& den, const uint1
 
 STAmount STAmount::multiply (const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
-    if (v1.isZero () || v2.isZero ())
+    if (v1 == zero || v2 == zero)
         return STAmount (uCurrencyID, uIssuerID);
 
     if (v1.mIsNative && v2.mIsNative && uCurrencyID.isZero ())
@@ -1018,14 +1021,14 @@ STAmount STAmount::multiply (const STAmount& v1, const STAmount& v2, const uint1
 // Zero is returned if the offer is worthless.
 std::uint64_t STAmount::getRate (const STAmount& offerOut, const STAmount& offerIn)
 {
-    if (offerOut.isZero ())
+    if (offerOut == zero)
         return 0;
 
     try
     {
         STAmount r = divide (offerIn, offerOut, CURRENCY_ONE, ACCOUNT_ONE);
 
-        if (r.isZero ()) // offer is too good
+        if (r == zero) // offer is too good
             return 0;
 
         assert ((r.getExponent () >= -100) && (r.getExponent () <= 155));
@@ -1055,7 +1058,7 @@ STAmount STAmount::setRate (std::uint64_t rate)
 STAmount STAmount::getPay (const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
 {
     // Someone wants to get (needed) out of the offer, how much should they pay in?
-    if (offerOut.isZero ())
+    if (offerOut == zero)
         return STAmount (offerIn.getCurrency (), offerIn.getIssuer ());
 
     if (needed >= offerOut)
@@ -1217,7 +1220,7 @@ public:
         {
             pass ();
         }
-        
+
         return true;
     }
 
@@ -1289,127 +1292,127 @@ public:
     {
         testcase ("native currency");
 
-        STAmount zero, one (1), hundred (100);
+        STAmount zeroSt, one (1), hundred (100);
 
-        unexpected (serializeAndDeserialize (zero) != zero, "STAmount fail");
+        unexpected (serializeAndDeserialize (zeroSt) != zeroSt, "STAmount fail");
 
         unexpected (serializeAndDeserialize (one) != one, "STAmount fail");
 
         unexpected (serializeAndDeserialize (hundred) != hundred, "STAmount fail");
 
-        unexpected (!zero.isNative (), "STAmount fail");
+        unexpected (!zeroSt.isNative (), "STAmount fail");
 
         unexpected (!hundred.isNative (), "STAmount fail");
 
-        unexpected (!zero.isZero (), "STAmount fail");
+        unexpected (zeroSt != zero, "STAmount fail");
 
-        unexpected (one.isZero (), "STAmount fail");
+        unexpected (one == zero, "STAmount fail");
 
-        unexpected (hundred.isZero (), "STAmount fail");
+        unexpected (hundred == zero, "STAmount fail");
 
-        unexpected ((zero < zero), "STAmount fail");
+        unexpected ((zeroSt < zeroSt), "STAmount fail");
 
-        unexpected (! (zero < one), "STAmount fail");
+        unexpected (! (zeroSt < one), "STAmount fail");
 
-        unexpected (! (zero < hundred), "STAmount fail");
+        unexpected (! (zeroSt < hundred), "STAmount fail");
 
-        unexpected ((one < zero), "STAmount fail");
+        unexpected ((one < zeroSt), "STAmount fail");
 
         unexpected ((one < one), "STAmount fail");
 
         unexpected (! (one < hundred), "STAmount fail");
 
-        unexpected ((hundred < zero), "STAmount fail");
+        unexpected ((hundred < zeroSt), "STAmount fail");
 
         unexpected ((hundred < one), "STAmount fail");
 
         unexpected ((hundred < hundred), "STAmount fail");
 
-        unexpected ((zero > zero), "STAmount fail");
+        unexpected ((zeroSt > zeroSt), "STAmount fail");
 
-        unexpected ((zero > one), "STAmount fail");
+        unexpected ((zeroSt > one), "STAmount fail");
 
-        unexpected ((zero > hundred), "STAmount fail");
+        unexpected ((zeroSt > hundred), "STAmount fail");
 
-        unexpected (! (one > zero), "STAmount fail");
+        unexpected (! (one > zeroSt), "STAmount fail");
 
         unexpected ((one > one), "STAmount fail");
 
         unexpected ((one > hundred), "STAmount fail");
 
-        unexpected (! (hundred > zero), "STAmount fail");
+        unexpected (! (hundred > zeroSt), "STAmount fail");
 
         unexpected (! (hundred > one), "STAmount fail");
 
         unexpected ((hundred > hundred), "STAmount fail");
 
-        unexpected (! (zero <= zero), "STAmount fail");
+        unexpected (! (zeroSt <= zeroSt), "STAmount fail");
 
-        unexpected (! (zero <= one), "STAmount fail");
+        unexpected (! (zeroSt <= one), "STAmount fail");
 
-        unexpected (! (zero <= hundred), "STAmount fail");
+        unexpected (! (zeroSt <= hundred), "STAmount fail");
 
-        unexpected ((one <= zero), "STAmount fail");
+        unexpected ((one <= zeroSt), "STAmount fail");
 
         unexpected (! (one <= one), "STAmount fail");
 
         unexpected (! (one <= hundred), "STAmount fail");
 
-        unexpected ((hundred <= zero), "STAmount fail");
+        unexpected ((hundred <= zeroSt), "STAmount fail");
 
         unexpected ((hundred <= one), "STAmount fail");
 
         unexpected (! (hundred <= hundred), "STAmount fail");
 
-        unexpected (! (zero >= zero), "STAmount fail");
+        unexpected (! (zeroSt >= zeroSt), "STAmount fail");
 
-        unexpected ((zero >= one), "STAmount fail");
+        unexpected ((zeroSt >= one), "STAmount fail");
 
-        unexpected ((zero >= hundred), "STAmount fail");
+        unexpected ((zeroSt >= hundred), "STAmount fail");
 
-        unexpected (! (one >= zero), "STAmount fail");
+        unexpected (! (one >= zeroSt), "STAmount fail");
 
         unexpected (! (one >= one), "STAmount fail");
 
         unexpected ((one >= hundred), "STAmount fail");
 
-        unexpected (! (hundred >= zero), "STAmount fail");
+        unexpected (! (hundred >= zeroSt), "STAmount fail");
 
         unexpected (! (hundred >= one), "STAmount fail");
 
         unexpected (! (hundred >= hundred), "STAmount fail");
 
-        unexpected (! (zero == zero), "STAmount fail");
+        unexpected (! (zeroSt == zeroSt), "STAmount fail");
 
-        unexpected ((zero == one), "STAmount fail");
+        unexpected ((zeroSt == one), "STAmount fail");
 
-        unexpected ((zero == hundred), "STAmount fail");
+        unexpected ((zeroSt == hundred), "STAmount fail");
 
-        unexpected ((one == zero), "STAmount fail");
+        unexpected ((one == zeroSt), "STAmount fail");
 
         unexpected (! (one == one), "STAmount fail");
 
         unexpected ((one == hundred), "STAmount fail");
 
-        unexpected ((hundred == zero), "STAmount fail");
+        unexpected ((hundred == zeroSt), "STAmount fail");
 
         unexpected ((hundred == one), "STAmount fail");
 
         unexpected (! (hundred == hundred), "STAmount fail");
 
-        unexpected ((zero != zero), "STAmount fail");
+        unexpected ((zeroSt != zeroSt), "STAmount fail");
 
-        unexpected (! (zero != one), "STAmount fail");
+        unexpected (! (zeroSt != one), "STAmount fail");
 
-        unexpected (! (zero != hundred), "STAmount fail");
+        unexpected (! (zeroSt != hundred), "STAmount fail");
 
-        unexpected (! (one != zero), "STAmount fail");
+        unexpected (! (one != zeroSt), "STAmount fail");
 
         unexpected ((one != one), "STAmount fail");
 
         unexpected (! (one != hundred), "STAmount fail");
 
-        unexpected (! (hundred != zero), "STAmount fail");
+        unexpected (! (hundred != zeroSt), "STAmount fail");
 
         unexpected (! (hundred != one), "STAmount fail");
 
@@ -1439,129 +1442,129 @@ public:
     {
         testcase ("custom currency");
 
-        STAmount zero (CURRENCY_ONE, ACCOUNT_ONE), one (CURRENCY_ONE, ACCOUNT_ONE, 1), hundred (CURRENCY_ONE, ACCOUNT_ONE, 100);
+        STAmount zeroSt (CURRENCY_ONE, ACCOUNT_ONE), one (CURRENCY_ONE, ACCOUNT_ONE, 1), hundred (CURRENCY_ONE, ACCOUNT_ONE, 100);
 
         serializeAndDeserialize (one).getRaw ();
 
-        unexpected (serializeAndDeserialize (zero) != zero, "STAmount fail");
+        unexpected (serializeAndDeserialize (zeroSt) != zeroSt, "STAmount fail");
 
         unexpected (serializeAndDeserialize (one) != one, "STAmount fail");
 
         unexpected (serializeAndDeserialize (hundred) != hundred, "STAmount fail");
 
-        unexpected (zero.isNative (), "STAmount fail");
+        unexpected (zeroSt.isNative (), "STAmount fail");
 
         unexpected (hundred.isNative (), "STAmount fail");
 
-        unexpected (!zero.isZero (), "STAmount fail");
+        unexpected (zeroSt != zero, "STAmount fail");
 
-        unexpected (one.isZero (), "STAmount fail");
+        unexpected (one == zero, "STAmount fail");
 
-        unexpected (hundred.isZero (), "STAmount fail");
+        unexpected (hundred == zero, "STAmount fail");
 
-        unexpected ((zero < zero), "STAmount fail");
+        unexpected ((zeroSt < zeroSt), "STAmount fail");
 
-        unexpected (! (zero < one), "STAmount fail");
+        unexpected (! (zeroSt < one), "STAmount fail");
 
-        unexpected (! (zero < hundred), "STAmount fail");
+        unexpected (! (zeroSt < hundred), "STAmount fail");
 
-        unexpected ((one < zero), "STAmount fail");
+        unexpected ((one < zeroSt), "STAmount fail");
 
         unexpected ((one < one), "STAmount fail");
 
         unexpected (! (one < hundred), "STAmount fail");
 
-        unexpected ((hundred < zero), "STAmount fail");
+        unexpected ((hundred < zeroSt), "STAmount fail");
 
         unexpected ((hundred < one), "STAmount fail");
 
         unexpected ((hundred < hundred), "STAmount fail");
 
-        unexpected ((zero > zero), "STAmount fail");
+        unexpected ((zeroSt > zeroSt), "STAmount fail");
 
-        unexpected ((zero > one), "STAmount fail");
+        unexpected ((zeroSt > one), "STAmount fail");
 
-        unexpected ((zero > hundred), "STAmount fail");
+        unexpected ((zeroSt > hundred), "STAmount fail");
 
-        unexpected (! (one > zero), "STAmount fail");
+        unexpected (! (one > zeroSt), "STAmount fail");
 
         unexpected ((one > one), "STAmount fail");
 
         unexpected ((one > hundred), "STAmount fail");
 
-        unexpected (! (hundred > zero), "STAmount fail");
+        unexpected (! (hundred > zeroSt), "STAmount fail");
 
         unexpected (! (hundred > one), "STAmount fail");
 
         unexpected ((hundred > hundred), "STAmount fail");
 
-        unexpected (! (zero <= zero), "STAmount fail");
+        unexpected (! (zeroSt <= zeroSt), "STAmount fail");
 
-        unexpected (! (zero <= one), "STAmount fail");
+        unexpected (! (zeroSt <= one), "STAmount fail");
 
-        unexpected (! (zero <= hundred), "STAmount fail");
+        unexpected (! (zeroSt <= hundred), "STAmount fail");
 
-        unexpected ((one <= zero), "STAmount fail");
+        unexpected ((one <= zeroSt), "STAmount fail");
 
         unexpected (! (one <= one), "STAmount fail");
 
         unexpected (! (one <= hundred), "STAmount fail");
 
-        unexpected ((hundred <= zero), "STAmount fail");
+        unexpected ((hundred <= zeroSt), "STAmount fail");
 
         unexpected ((hundred <= one), "STAmount fail");
 
         unexpected (! (hundred <= hundred), "STAmount fail");
 
-        unexpected (! (zero >= zero), "STAmount fail");
+        unexpected (! (zeroSt >= zeroSt), "STAmount fail");
 
-        unexpected ((zero >= one), "STAmount fail");
+        unexpected ((zeroSt >= one), "STAmount fail");
 
-        unexpected ((zero >= hundred), "STAmount fail");
+        unexpected ((zeroSt >= hundred), "STAmount fail");
 
-        unexpected (! (one >= zero), "STAmount fail");
+        unexpected (! (one >= zeroSt), "STAmount fail");
 
         unexpected (! (one >= one), "STAmount fail");
 
         unexpected ((one >= hundred), "STAmount fail");
 
-        unexpected (! (hundred >= zero), "STAmount fail");
+        unexpected (! (hundred >= zeroSt), "STAmount fail");
 
         unexpected (! (hundred >= one), "STAmount fail");
 
         unexpected (! (hundred >= hundred), "STAmount fail");
 
-        unexpected (! (zero == zero), "STAmount fail");
+        unexpected (! (zeroSt == zeroSt), "STAmount fail");
 
-        unexpected ((zero == one), "STAmount fail");
+        unexpected ((zeroSt == one), "STAmount fail");
 
-        unexpected ((zero == hundred), "STAmount fail");
+        unexpected ((zeroSt == hundred), "STAmount fail");
 
-        unexpected ((one == zero), "STAmount fail");
+        unexpected ((one == zeroSt), "STAmount fail");
 
         unexpected (! (one == one), "STAmount fail");
 
         unexpected ((one == hundred), "STAmount fail");
 
-        unexpected ((hundred == zero), "STAmount fail");
+        unexpected ((hundred == zeroSt), "STAmount fail");
 
         unexpected ((hundred == one), "STAmount fail");
 
         unexpected (! (hundred == hundred), "STAmount fail");
 
-        unexpected ((zero != zero), "STAmount fail");
+        unexpected ((zeroSt != zeroSt), "STAmount fail");
 
-        unexpected (! (zero != one), "STAmount fail");
+        unexpected (! (zeroSt != one), "STAmount fail");
 
-        unexpected (! (zero != hundred), "STAmount fail");
+        unexpected (! (zeroSt != hundred), "STAmount fail");
 
-        unexpected (! (one != zero), "STAmount fail");
+        unexpected (! (one != zeroSt), "STAmount fail");
 
         unexpected ((one != one), "STAmount fail");
 
         unexpected (! (one != hundred), "STAmount fail");
 
-        unexpected (! (hundred != zero), "STAmount fail");
+        unexpected (! (hundred != zeroSt), "STAmount fail");
 
         unexpected (! (hundred != one), "STAmount fail");
 
@@ -1708,27 +1711,27 @@ public:
                            (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
         STAmount smallValue (CURRENCY_ONE, ACCOUNT_ONE,
                              (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
-        STAmount zero (CURRENCY_ONE, ACCOUNT_ONE, 0);
+        STAmount zeroSt (CURRENCY_ONE, ACCOUNT_ONE, 0);
 
         STAmount smallXsmall = STAmount::multiply (smallValue, smallValue, CURRENCY_ONE, ACCOUNT_ONE);
 
-        expect (smallXsmall.isZero (), "smallXsmall != 0");
+        expect (smallXsmall == zero, "smallXsmall != 0");
 
         STAmount bigDsmall = STAmount::divide (smallValue, bigValue, CURRENCY_ONE, ACCOUNT_ONE);
 
-        expect (bigDsmall.isZero (), beast::String ("small/big != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall == zero, beast::String ("small/big != 0: ") + bigDsmall.getText ());
 
         bigDsmall = STAmount::divide (smallValue, bigNative, CURRENCY_ONE, uint160 ());
 
-        expect (bigDsmall.isZero (), beast::String ("small/bigNative != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall == zero, beast::String ("small/bigNative != 0: ") + bigDsmall.getText ());
 
         bigDsmall = STAmount::divide (smallValue, bigValue, uint160 (), uint160 ());
 
-        expect (bigDsmall.isZero (), beast::String ("(small/big)->N != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall == zero, beast::String ("(small/big)->N != 0: ") + bigDsmall.getText ());
 
         bigDsmall = STAmount::divide (smallValue, bigNative, uint160 (), uint160 ());
 
-        expect (bigDsmall.isZero (), beast::String ("(small/bigNative)->N != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall == zero, beast::String ("(small/bigNative)->N != 0: ") + bigDsmall.getText ());
 
         // very bad offer
         std::uint64_t r = STAmount::getRate (smallValue, bigValue);

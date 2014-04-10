@@ -29,7 +29,7 @@ namespace ripple {
 SETUP_LOG (RippleCalc)
 
 // VFALCO TODO Update the comment for this function, the argument list no
-//             resembles the comment 
+//             resembles the comment
 //
 //             Provide a better explanation for what this function does.
 
@@ -226,7 +226,7 @@ TER RippleCalc::calcNodeAdvance (
                     musUnfundedFound.insert(uOfferIndex);
                     continue;
                 }
-                else if (!saTakerPays.isPositive () || !saTakerGets.isPositive ())
+                else if (saTakerPays <= zero || saTakerGets <= zero)
                 {
                     // Offer has bad amounts. Offers should never have a bad amounts.
 
@@ -301,7 +301,7 @@ TER RippleCalc::calcNodeAdvance (
 
                 saOfferFunds    = lesActive.accountFunds (uOfrOwnerID, saTakerGets); // Funds held.
 
-                if (!saOfferFunds.isPositive ())
+                if (saOfferFunds <= zero)
                 {
                     // Offer is unfunded.
                     WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: unfunded offer";
@@ -388,7 +388,7 @@ TER RippleCalc::calcNodeDeliverRev (
         bDirectRestart  = true;                     // Restart at same quality.
 
     // YYY Note this gets zeroed on each increment, ideally only on first increment, then it could be a limit on the forward pass.
-    saOutAct.zero (saOutReq);
+    saOutAct.clear (saOutReq);
 
     WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeDeliverRev> saOutAct=%s saOutReq=%s saPrvDlvReq=%s")
                                   % saOutAct
@@ -421,7 +421,8 @@ TER RippleCalc::calcNodeDeliverRev (
         STAmount&       saTakerGets     = pnCur.saTakerGets;
         STAmount&       saRateMax       = pnCur.saRateMax;
 
-        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality || saOutAct.isZero(), true);      // If needed, advance to next funded offer.
+        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality || saOutAct == zero, true);
+        // If needed, advance to next funded offer.
 
         if (tesSUCCESS != terResult || !uOfferIndex)
         {
@@ -595,7 +596,7 @@ TER RippleCalc::calcNodeDeliverRev (
         STAmount    saTakerGetsNew  = saTakerGets - saOutPassAct;
         STAmount    saTakerPaysNew  = saTakerPays - saInPassAct;
 
-        if (saTakerPaysNew.isNegative () || saTakerGetsNew.isNegative ())
+        if (saTakerPaysNew < zero || saTakerGetsNew < zero)
         {
             WriteLog (lsWARNING, RippleCalc) << boost::str (boost::format ("calcNodeDeliverRev: NEGATIVE: saTakerPaysNew=%s saTakerGetsNew=%s")
                                              % saTakerPaysNew % saTakerGetsNew);
@@ -683,8 +684,8 @@ TER RippleCalc::calcNodeDeliverFwd (
     else
         bDirectRestart  = true;                     // Restart at same quality.
 
-    saInAct.zero (saInReq);
-    saInFees.zero (saInReq);
+    saInAct.clear (saInReq);
+    saInFees.clear (saInReq);
 
     int loopCount = 0;
 
@@ -700,7 +701,8 @@ TER RippleCalc::calcNodeDeliverFwd (
         }
 
         // Determine values for pass to adjust saInAct, saInFees, and saCurDeliverAct
-        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality || saInAct.isZero(), false);             // If needed, advance to next funded offer.
+        terResult   = calcNodeAdvance (uNode, psCur, bMultiQuality || saInAct == zero, false);
+        // If needed, advance to next funded offer.
 
         if (tesSUCCESS != terResult)
         {
@@ -738,8 +740,8 @@ TER RippleCalc::calcNodeDeliverFwd (
             STAmount    saInTotal       = STAmount::mulRound (saInFunded, saInFeeRate, true);               // Offer maximum in with fees.
             STAmount    saInRemaining   = saInReq - saInAct - saInFees;
 
-            if (saInRemaining.isNegative())
-                saInRemaining.zero();
+            if (saInRemaining < zero)
+                saInRemaining.clear();
 
             STAmount    saInSum         = std::min (saInTotal, saInRemaining);                              // In limited by remaining.
             STAmount    saInPassAct     = std::min (saTakerPays, STAmount::divRound (saInSum, saInFeeRate, true));     // In without fees.
@@ -766,7 +768,7 @@ TER RippleCalc::calcNodeDeliverFwd (
                                           % saInPassAct
                                           % saOutPassMax);
 
-            if (!saTakerPays || !saInSum.isPositive()) // FIXME: We remove an offer if WE didn't want anything out of it?
+            if (!saTakerPays || saInSum <= zero) // FIXME: We remove an offer if WE didn't want anything out of it?
             {
                 WriteLog (lsDEBUG, RippleCalc) << "calcNodeDeliverFwd: Microscopic offer unfunded.";
 
@@ -883,7 +885,7 @@ TER RippleCalc::calcNodeDeliverFwd (
             STAmount    saTakerGetsNew  = saTakerGets - saOutPassAct;
             STAmount    saTakerPaysNew  = saTakerPays - saInPassAct;
 
-            if (saTakerPaysNew.isNegative () || saTakerGetsNew.isNegative ())
+            if (saTakerPaysNew < zero || saTakerGetsNew < zero)
             {
                 WriteLog (lsWARNING, RippleCalc) << boost::str (boost::format ("calcNodeDeliverFwd: NEGATIVE: saTakerPaysNew=%s saTakerGetsNew=%s")
                                                  % saTakerPaysNew % saTakerGetsNew);
@@ -899,7 +901,7 @@ TER RippleCalc::calcNodeDeliverFwd (
 
             lesActive.entryModify (sleOffer);
 
-            if ((saOutPassAct == saOutFunded) || saTakerGetsNew.isZero())
+            if (saOutPassAct == saOutFunded || saTakerGetsNew == zero)
             {
                 // Offer became unfunded.
 
@@ -1046,12 +1048,12 @@ void RippleCalc::calcNodeRipple (
                                    % saPrvAct
                                    % saCurAct);
 
-    assert (saCurReq.isPositive ()); // FIXME: saCurReq was zero
+    assert (saCurReq > zero); // FIXME: saCurReq was zero
     assert (saPrvReq.getCurrency () == saCurReq.getCurrency ());
     assert (saPrvReq.getCurrency () == saPrvAct.getCurrency ());
     assert (saPrvReq.getIssuer () == saPrvAct.getIssuer ());
 
-    const bool      bPrvUnlimited   = saPrvReq.isNegative ();
+    const bool      bPrvUnlimited   = saPrvReq < zero;
     const STAmount  saPrv           = bPrvUnlimited ? STAmount (saPrvReq) : saPrvReq - saPrvAct;
     const STAmount  saCur           = saCurReq - saCurAct;
 
@@ -1187,11 +1189,11 @@ TER RippleCalc::calcNodeAccountRev (const unsigned int uNode, PathState& psCur, 
                                    % saPrvLimit);
 
     // Previous can redeem the owed IOUs it holds.
-    const STAmount  saPrvRedeemReq  = saPrvOwed.isPositive () ? saPrvOwed : STAmount (saPrvOwed.getCurrency (), saPrvOwed.getIssuer ());
+    const STAmount  saPrvRedeemReq  = (saPrvOwed > zero) ? saPrvOwed : STAmount (saPrvOwed.getCurrency (), saPrvOwed.getIssuer ());
     STAmount&       saPrvRedeemAct  = pnPrv.saRevRedeem;
 
     // Previous can issue up to limit minus whatever portion of limit already used (not including redeemable amount).
-    const STAmount  saPrvIssueReq   = saPrvOwed.isNegative () ? saPrvLimit + saPrvOwed : saPrvLimit;
+    const STAmount  saPrvIssueReq   = (saPrvOwed < zero) ? saPrvLimit + saPrvOwed : saPrvLimit;
     STAmount&       saPrvIssueAct   = pnPrv.saRevIssue;
 
     // For !bPrvAccount
@@ -1222,7 +1224,7 @@ TER RippleCalc::calcNodeAccountRev (const unsigned int uNode, PathState& psCur, 
 
     assert (!saCurRedeemReq || (-saNxtOwed) >= saCurRedeemReq); // Current redeem req can't be more than IOUs on hand.
     assert (!saCurIssueReq                  // If not issuing, fine.
-            || !saNxtOwed.isNegative ()         // saNxtOwed >= 0: Sender not holding next IOUs, saNxtOwed < 0: Sender holding next IOUs.
+            || saNxtOwed >= zero         // saNxtOwed >= 0: Sender not holding next IOUs, saNxtOwed < 0: Sender holding next IOUs.
             || -saNxtOwed == saCurRedeemReq);   // If issue req, then redeem req must consume all owed.
 
     if (!uNode)
@@ -1262,11 +1264,11 @@ TER RippleCalc::calcNodeAccountRev (const unsigned int uNode, PathState& psCur, 
             }
             else
             {
-                saPrvRedeemAct.zero (saPrvRedeemReq);
+                saPrvRedeemAct.clear (saPrvRedeemReq);
             }
 
             // Calculate issuing.
-            saPrvIssueAct.zero (saPrvIssueReq);
+            saPrvIssueAct.clear (saPrvIssueReq);
 
             if (saCurWantedReq != saCurWantedAct        // Need more.
                     && saPrvIssueReq)                       // Will accept IOUs from prevous.
@@ -1290,8 +1292,8 @@ TER RippleCalc::calcNodeAccountRev (const unsigned int uNode, PathState& psCur, 
         else
         {
             // ^|account --> ACCOUNT --> account
-            saPrvRedeemAct.zero (saPrvRedeemReq);
-            saPrvIssueAct.zero (saPrvIssueReq);
+            saPrvRedeemAct.clear (saPrvRedeemReq);
+            saPrvIssueAct.clear (saPrvIssueReq);
 
             // redeem (part 1) -> redeem
             if (saCurRedeemReq                          // Next wants IOUs redeemed.
@@ -1364,12 +1366,12 @@ TER RippleCalc::calcNodeAccountRev (const unsigned int uNode, PathState& psCur, 
         // Note: deliver is always issue as ACCOUNT is the issuer for the offer input.
         WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAccountRev: account --> ACCOUNT --> offer"));
 
-        saPrvRedeemAct.zero (saPrvRedeemReq);
-        saPrvIssueAct.zero (saPrvIssueReq);
+        saPrvRedeemAct.clear (saPrvRedeemReq);
+        saPrvIssueAct.clear (saPrvIssueReq);
 
         // redeem -> deliver/issue.
-        if (saPrvOwed.isPositive ()                 // Previous has IOUs to redeem.
-                && saCurDeliverReq)                     // Need some issued.
+        if (saPrvOwed > zero                    // Previous has IOUs to redeem.
+            && saCurDeliverReq)                 // Need some issued.
         {
             // Rate : 1.0 : transfer_rate
             calcNodeRipple (QUALITY_ONE, lesActive.rippleTransferRate (uCurAccountID), saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct, saCurDeliverAct, uRateMax);
@@ -1407,14 +1409,15 @@ TER RippleCalc::calcNodeAccountRev (const unsigned int uNode, PathState& psCur, 
                                            % psCur.saOutAct
                                            % psCur.saOutReq);
 
-            if (!saCurWantedReq.isPositive ())
+            if (saCurWantedReq <= zero)
             {
                 // TEMPORARY emergency fix
                 WriteLog (lsFATAL, RippleCalc) << "CurWantReq was not positive";
                 return tefEXCEPTION;
             }
 
-            assert (saCurWantedReq.isPositive ()); // FIXME: We got one of these
+            assert (saCurWantedReq > zero); // FIXME: We got one of these
+            // TR notes: can only be a race condition if true!
 
             // Rate: quality in : 1.0
             calcNodeRipple (uQualityIn, QUALITY_ONE, saPrvDeliverReq, saCurWantedReq, saPrvDeliverAct, saCurWantedAct, uRateMax);
@@ -1576,7 +1579,7 @@ TER RippleCalc::calcNodeAccountFwd (
 
             saCurRedeemAct      = saCurRedeemReq;
 
-            if (!psCur.saInReq.isNegative ())
+            if (psCur.saInReq >= zero)
             {
                 // Limit by send max.
                 saCurRedeemAct      = std::min (saCurRedeemAct, psCur.saInReq - psCur.saInAct);
@@ -1588,7 +1591,7 @@ TER RippleCalc::calcNodeAccountFwd (
                                   ? saCurIssueReq
                                   : STAmount (saCurIssueReq);
 
-            if (!!saCurIssueAct && !psCur.saInReq.isNegative ())
+            if (!!saCurIssueAct && psCur.saInReq >= zero)
             {
                 // Limit by send max.
                 saCurIssueAct       = std::min (saCurIssueAct, psCur.saInReq - psCur.saInAct - saCurRedeemAct);
@@ -1640,8 +1643,8 @@ TER RippleCalc::calcNodeAccountFwd (
             // account --> ACCOUNT --> account
             WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAccountFwd: account --> ACCOUNT --> account"));
 
-            saCurRedeemAct.zero (saCurRedeemReq);
-            saCurIssueAct.zero (saCurIssueReq);
+            saCurRedeemAct.clear (saCurRedeemReq);
+            saCurIssueAct.clear (saCurIssueReq);
 
             // Previous redeem part 1: redeem -> redeem
             if (saPrvRedeemReq && saCurRedeemReq)           // Previous wants to redeem.
@@ -1696,7 +1699,7 @@ TER RippleCalc::calcNodeAccountFwd (
             // Non-XRP, current node is the issuer.
             WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAccountFwd: account --> ACCOUNT --> offer"));
 
-            saCurDeliverAct.zero (saCurDeliverReq);
+            saCurDeliverAct.clear (saCurDeliverReq);
 
             // redeem -> issue/deliver.
             // Previous wants to redeem.
@@ -1727,7 +1730,7 @@ TER RippleCalc::calcNodeAccountFwd (
             saCurDeliverAct     = saCurDeliverReq;
 
             // If limited, then limit by send max and available.
-            if (!psCur.saInReq.isNegative ())
+            if (psCur.saInReq >= zero)
             {
                 // Limit by send max.
                 saCurDeliverAct     = std::min (saCurDeliverAct, psCur.saInReq - psCur.saInAct);
@@ -1784,8 +1787,8 @@ TER RippleCalc::calcNodeAccountFwd (
             // offer --> ACCOUNT --> account
             WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAccountFwd: offer --> ACCOUNT --> account"));
 
-            saCurRedeemAct.zero (saCurRedeemReq);
-            saCurIssueAct.zero (saCurIssueReq);
+            saCurRedeemAct.clear (saCurRedeemReq);
+            saCurIssueAct.clear (saCurIssueReq);
 
             // deliver -> redeem
             if (saPrvDeliverReq && saCurRedeemReq)          // Previous wants to deliver and can current redeem.
@@ -1817,7 +1820,7 @@ TER RippleCalc::calcNodeAccountFwd (
         // deliver/redeem -> deliver/issue.
         WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeAccountFwd: offer --> ACCOUNT --> offer"));
 
-        saCurDeliverAct.zero (saCurDeliverReq);
+        saCurDeliverAct.clear (saCurDeliverReq);
 
         if (saPrvDeliverReq                                 // Previous wants to deliver
                 && saCurIssueReq)                               // Current wants issue.
@@ -1937,10 +1940,10 @@ void RippleCalc::pathNext (PathState::ref psrCur, const bool bMultiQuality, cons
     {
         PathState::Node& pnCur   = psrCur->vpnNodes[uIndex];
 
-        pnCur.saRevRedeem.zero ();
-        pnCur.saRevIssue.zero ();
-        pnCur.saRevDeliver.zero ();
-        pnCur.saFwdDeliver.zero ();
+        pnCur.saRevRedeem.clear ();
+        pnCur.saRevIssue.clear ();
+        pnCur.saRevDeliver.clear ();
+        pnCur.saFwdDeliver.clear ();
     }
 
     psrCur->terStatus   = calcNodeRev (uLast, *psrCur, bMultiQuality);
@@ -2139,12 +2142,12 @@ TER RippleCalc::rippleCalc (
                 pspCur->saInAct     = saMaxAmountAct;                       // Update to current amount processed.
                 pspCur->saOutAct    = saDstAmountAct;
 
-                CondLog (pspCur->saInReq.isPositive () && pspCur->saInAct >= pspCur->saInReq, lsWARNING, RippleCalc)
+                CondLog (pspCur->saInReq > zero && pspCur->saInAct >= pspCur->saInReq, lsWARNING, RippleCalc)
                         << boost::str (boost::format ("rippleCalc: DONE: saInAct=%s saInReq=%s")
                                        % pspCur->saInAct
                                        % pspCur->saInReq);
 
-                assert (pspCur->saInReq.isNegative () || pspCur->saInAct < pspCur->saInReq); // Error if done.
+                assert (pspCur->saInReq < zero || pspCur->saInAct < pspCur->saInReq); // Error if done.
 
                 CondLog (pspCur->saOutAct >= pspCur->saOutReq, lsWARNING, RippleCalc)
                         << boost::str (boost::format ("rippleCalc: ALREADY DONE: saOutAct=%s saOutReq=%s")

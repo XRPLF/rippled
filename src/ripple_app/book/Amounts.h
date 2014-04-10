@@ -39,7 +39,7 @@ struct Amounts
     bool
     empty() const noexcept
     {
-        return ! in.isPositive() || ! out.isPositive();
+        return in <= zero || out <= zero;
     }
 
     Amount in;

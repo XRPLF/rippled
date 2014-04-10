@@ -215,7 +215,7 @@ void LedgerEntrySet::entryModify (SLE::ref sle)
     {
     case taaCACHED:
         it->second.mAction  = taaMODIFY;
-        
+
         // Fall through
 
     case taaCREATE:
@@ -1116,7 +1116,7 @@ STAmount LedgerEntrySet::rippleOwed (const uint160& uToAccountID, const uint160&
     }
     else
     {
-        saBalance.zero (uCurrencyID, uToAccountID);
+        saBalance.clear (uCurrencyID, uToAccountID);
 
         WriteLog (lsDEBUG, LedgerEntrySet) << "rippleOwed: No credit line between "
                                            << RippleAddress::createHumanAccountID (uFromAccountID)
@@ -1149,7 +1149,7 @@ STAmount LedgerEntrySet::rippleLimit (const uint160& uToAccountID, const uint160
     }
     else
     {
-        saLimit.zero (uCurrencyID, uToAccountID);
+        saLimit.clear (uCurrencyID, uToAccountID);
 #if 0
         // We could cut off coming here if we test for no line sooner.
         assert (false);
@@ -1244,7 +1244,7 @@ STAmount LedgerEntrySet::rippleHolds (const uint160& uAccountID, const uint160& 
 
     if (!sleRippleState)
     {
-        saBalance.zero (uCurrencyID, uIssuerID);
+        saBalance.clear (uCurrencyID, uIssuerID);
     }
     else if (uAccountID > uIssuerID)
     {
@@ -1279,7 +1279,7 @@ STAmount LedgerEntrySet::accountHolds (const uint160& uAccountID, const uint160&
 
         if (saBalance < uReserve)
         {
-            saAmount.zero ();
+            saAmount.clear ();
         }
         else
         {
@@ -1525,8 +1525,8 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
         std::uint32_t  uFlags;
 
         // YYY Could skip this if rippling in reverse.
-        if (saBefore.isPositive ()                                                                              // Sender balance was positive.
-                && !saBalance.isPositive ()                                                                         // Sender is zero or negative.
+        if (saBefore > zero                                                                              // Sender balance was positive.
+                && saBalance <= zero                                                                         // Sender is zero or negative.
                 && isSetBit ((uFlags = sleRippleState->getFieldU32 (sfFlags)), !bSenderHigh ? lsfLowReserve : lsfHighReserve) // Sender reserve is set.
                 && !isSetBit (uFlags, !bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)
                 && !sleRippleState->getFieldAmount (!bSenderHigh ? sfLowLimit : sfHighLimit)                        // Sender trust limit is 0.
@@ -1617,7 +1617,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
 {
     TER terResult   = tesSUCCESS;
 
-    assert (!saAmount.isNegative ());
+    assert (saAmount >= zero);
 
     if (!saAmount || (uSenderID == uReceiverID))
     {

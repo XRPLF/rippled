@@ -38,12 +38,12 @@ TER PaymentTransactor::doApply ()
                                         mTxnAccountID,
                                         saDstAmount.getMantissa (),
                                         saDstAmount.getExponent (),
-                                        saDstAmount.isNegative ());
+                                        saDstAmount < zero);
     uint160 const uSrcCurrency = saMaxAmount.getCurrency ();
     uint160 const uDstCurrency = saDstAmount.getCurrency ();
     bool const bXRPDirect = uSrcCurrency.isZero () && uDstCurrency.isZero ();
 
-    m_journal.trace << 
+    m_journal.trace <<
         "saMaxAmount=" << saMaxAmount.getFullText () <<
         " saDstAmount=" << saDstAmount.getFullText ();
 
@@ -52,7 +52,7 @@ TER PaymentTransactor::doApply ()
 
     if (uTxFlags & tfPaymentMask)
     {
-        m_journal.trace << 
+        m_journal.trace <<
             "Malformed transaction: Invalid flags set.";
 
         return temINVALID_FLAG;
@@ -64,14 +64,14 @@ TER PaymentTransactor::doApply ()
 
         return temDST_NEEDED;
     }
-    else if (bMax && !saMaxAmount.isPositive ())
+    else if (bMax && saMaxAmount <= zero)
     {
         m_journal.trace <<
             "Malformed transaction: bad max amount: " << saMaxAmount.getFullText ();
 
         return temBAD_AMOUNT;
     }
-    else if (!saDstAmount.isPositive ())
+    else if (saDstAmount <= zero)
     {
         m_journal.trace <<
             "Malformed transaction: bad dst amount: " << saDstAmount.getFullText ();
@@ -87,7 +87,7 @@ TER PaymentTransactor::doApply ()
     }
     else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
     {
-        m_journal.trace << 
+        m_journal.trace <<
             "Malformed transaction: Redundant transaction:" <<
             " src=" << mTxnAccountID.ToString () <<
             " dst=" << uDstAccountID.ToString () <<
@@ -159,7 +159,7 @@ TER PaymentTransactor::doApply ()
             // Make retry work smaller, by rejecting this.
             m_journal.trace <<
                 "Delay transaction: Partial payment not allowed to create account.";
-            
+
 
             // Another transaction could create the account and then this
             // transaction would succeed.
@@ -282,7 +282,7 @@ TER PaymentTransactor::doApply ()
 
     if (transResultInfo (terResult, strToken, strHuman))
     {
-        m_journal.trace << 
+        m_journal.trace <<
             strToken << ": " << strHuman;
     }
     else

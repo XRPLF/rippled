@@ -45,7 +45,7 @@ TER RegularKeySetTransactor::doApply ()
         return temINVALID_FLAG;
     }
 
-    if (mFeeDue.isZero ())
+    if (mFeeDue == zero)
     {
         mTxnAccount->setFlag (lsfPasswordSpent);
     }

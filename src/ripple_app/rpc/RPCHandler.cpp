@@ -105,7 +105,7 @@ enum
     is expressed as a multiplier based on the current ledger's fee schedule.
 
     JSON fields
-    
+
     "Fee"   The fee paid by the transaction. Omitted when the client
             wants the fee filled in.
 
@@ -342,7 +342,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
 
     if (!bOffline)
     {
-        SLE::pointer sleAccountRoot = mNetOps->getSLEi (lSnapshot, 
+        SLE::pointer sleAccountRoot = mNetOps->getSLEi (lSnapshot,
             Ledger::getAccountRootIndex (raSrcAddressID.getAccountID ()));
 
         if (!sleAccountRoot)
@@ -474,7 +474,7 @@ Json::Value RPCHandler::transactionSign (Json::Value params,
     try
     {
         // FIXME: For performance, should use asynch interface
-        tpTrans = mNetOps->submitTransactionSync (tpTrans, 
+        tpTrans = mNetOps->submitTransactionSync (tpTrans,
             mRole == Config::ADMIN, true, bFailHard, bSubmit);
 
         if (!tpTrans)
@@ -771,7 +771,7 @@ Json::Value RPCHandler::doAccountCurrencies (Json::Value params, Resource::Charg
     {
         recvCurrencies.append (STAmount::createHumanCurrency (c));
     }
-    
+
 
     return jvResult;
 }
@@ -1520,7 +1520,7 @@ Json::Value RPCHandler::doBookOffers (Json::Value params, Resource::Charge& load
     {
         if (! params ["taker"].isString ())
             return RPC::expected_field_error ("taker", "string");
-        
+
         if (! raTakerID.setAccountID (params ["taker"].asString ()))
             return RPC::invalid_field_error ("taker");
     }
@@ -1674,7 +1674,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
         // Parse saDstAmount.
         !params.isMember ("destination_amount")
         || !saDstAmount.bSetJson (params["destination_amount"])
-        || !saDstAmount.isPositive()
+        || saDstAmount <= zero
         || (!!saDstAmount.getCurrency () && (!saDstAmount.getIssuer () || ACCOUNT_ONE == saDstAmount.getIssuer ())))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad destination_amount.";

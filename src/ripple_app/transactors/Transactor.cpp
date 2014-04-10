@@ -79,7 +79,7 @@ Transactor::Transactor (
     SerializedTransaction const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine,
-    beast::Journal journal) 
+    beast::Journal journal)
     : mTxn (txn)
     , mEngine (engine)
     , mParams (params)
@@ -110,13 +110,13 @@ TER Transactor::payFee ()
     // Only check fee is sufficient when the ledger is open.
     if (isSetBit (mParams, tapOPEN_LEDGER) && saPaid < mFeeDue)
     {
-        m_journal.trace << "Insufficient fee paid: " << 
+        m_journal.trace << "Insufficient fee paid: " <<
             saPaid.getText () << "/" << mFeeDue.getText ();
 
         return telINSUF_FEE_P;
     }
 
-    if (saPaid.isNegative () || !saPaid.isNative ())
+    if (saPaid < zero || !saPaid.isNative ())
         return temBAD_FEE;
 
     if (!saPaid) return tesSUCCESS;
@@ -262,7 +262,7 @@ TER Transactor::apply ()
     // Restructure this to avoid the dependency on LedgerBase::mLock
     Ledger::ScopedLockType sl (mEngine->getLedger ()->mLock);
 
-    mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT, 
+    mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT,
         Ledger::getAccountRootIndex (mTxnAccountID));
     calculateFee ();
 
@@ -274,7 +274,7 @@ TER Transactor::apply ()
     {
         if (mustHaveValidAccount ())
         {
-            m_journal.trace << 
+            m_journal.trace <<
                 "apply: delay transaction: source account does not exist " <<
                 mTxn.getSourceAccount ().humanAccountID ();
             return terNO_ACCOUNT;

@@ -104,7 +104,7 @@ Pathfinder::Pathfinder (RippleLineCache::ref cache,
         mLedger (cache->getLedger ()), mRLCache (cache)
 {
 
-    if (((mSrcAccountID == mDstAccountID) && (mSrcCurrencyID == mDstAmount.getCurrency ())) || mDstAmount.isZero ())
+    if ((mSrcAccountID == mDstAccountID && mSrcCurrencyID == mDstAmount.getCurrency ()) || mDstAmount == zero)
     {
         // no need to send to same account with same currency, must send non-zero
         bValid = false;
@@ -373,7 +373,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
                 WriteLog (lsDEBUG, Pathfinder) << "Skipping a non-filling path: " << mCompletePaths[lqt.get<3> ()].getJson (0);
         }
 
-        if (remaining.isPositive ())
+        if (remaining > zero)
         {
             WriteLog (lsINFO, Pathfinder) << "Paths could not send " << remaining << " of " << mDstAmount;
         }
@@ -409,7 +409,7 @@ boost::unordered_set<uint160> usAccountSourceCurrencies (
         const STAmount& saBalance   = rspEntry->getBalance ();
 
         // Filter out non
-        if (saBalance.isPositive ()                             // Have IOUs to send.
+        if (saBalance > zero                             // Have IOUs to send.
                 || (rspEntry->getLimitPeer ()                       // Peer extends credit.
                     && ((-saBalance) < rspEntry->getLimitPeer ()))) // Credit left.
         {
@@ -489,7 +489,7 @@ int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& ac
 
         if (currencyID != rspEntry->getLimit ().getCurrency ())
             nothing ();
-        else if (!rspEntry->getBalance ().isPositive () &&
+        else if (rspEntry->getBalance () <= zero &&
                  (!rspEntry->getLimitPeer ()
                   || -rspEntry->getBalance () >= rspEntry->getLimitPeer ()
                   ||  (bAuthRequired && !rspEntry->getAuth ())))
@@ -657,7 +657,7 @@ void Pathfinder::addLink(
                     if ((uEndCurrency == rspEntry.getLimit().getCurrency()) &&
                         !currentPath.hasSeen(acctID, uEndCurrency, acctID))
                     { // path is for correct currency and has not been seen
-                        if (!rspEntry.getBalance().isPositive()
+                        if (rspEntry.getBalance() <= zero
                             && (!rspEntry.getLimitPeer()
                                 || -rspEntry.getBalance() >= rspEntry.getLimitPeer()
                                 || (bRequireAuth && !rspEntry.getAuth())))

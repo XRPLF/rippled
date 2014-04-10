@@ -307,7 +307,7 @@ TER PathState::pushNode (
                     }
                     else if ((isSetBit (sleBck->getFieldU32 (sfFlags), lsfRequireAuth)
                              && !isSetBit (sleRippleState->getFieldU32 (sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth)))
-                             && sleRippleState->getFieldAmount(sfBalance).isZero()) // CHECKME
+                             && sleRippleState->getFieldAmount(sfBalance) == zero) // CHECKME
                     {
                         WriteLog (lsWARNING, RippleCalc) << "pushNode: delay: can't receive IOUs from issuer without auth.";
 
@@ -319,7 +319,7 @@ TER PathState::pushNode (
                         STAmount    saOwed  = lesEntries.rippleOwed (pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID);
                         STAmount    saLimit;
 
-                        if (!saOwed.isPositive ()
+                        if (saOwed <= zero
                                 && -saOwed >= (saLimit = lesEntries.rippleLimit (pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID)))
                         {
                             WriteLog (lsWARNING, RippleCalc) << boost::str (boost::format ("pushNode: dry: saOwed=%s saLimit=%s")

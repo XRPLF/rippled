@@ -70,13 +70,13 @@ static inline const uint160& get_u160_one ()
 //------------------------------------------------------------------------------
 
 /** A type which can be exported to a well known binary format.
-    
+
     A SerializedType:
         - Always a field
         - Can always go inside an eligible enclosing SerializedType
             (such as STArray)
         - Has a field name
-        
+
 
     Like JSON, a SerializedObject is a basket which has rules
     on what it can hold.
@@ -574,6 +574,11 @@ public:
         return mValue;
     }
 
+    int signum () const
+    {
+        return mValue ? (mIsNegative ? -1 : 1) : 0;
+    }
+
     // When the currency is XRP, the value in raw units. S=signed
     std::uint64_t getNValue () const
     {
@@ -596,47 +601,24 @@ public:
     {
         return mIsNative;
     }
-    bool isZero () const
-    {
-        return mValue == 0;
-    }
-    bool isNonZero () const
-    {
-        return mValue != 0;
-    }
-    bool isNegative () const
-    {
-        return mIsNegative && !isZero ();
-    }
-    bool isPositive () const
-    {
-        return !mIsNegative && !isZero ();
-    }
-    bool isLEZero () const
-    {
-        return mIsNegative || isZero ();
-    }
-    bool isGEZero () const
-    {
-        return !mIsNegative;
-    }
     bool isLegalNet () const
     {
         return !mIsNative || (mValue <= cMaxNativeN);
     }
-    
+
     explicit
     operator bool () const noexcept
     {
-        return !isZero ();
+        return *this != zero;
     }
 
     void negate ()
     {
-        if (!isZero ()) mIsNegative = !mIsNegative;
+        if (*this != zero)
+            mIsNegative = !mIsNegative;
     }
 
-    void zero ()
+    void clear ()
     {
         // VFALCO: Why -100?
         mOffset = mIsNative ? 0 : -100;
@@ -645,19 +627,25 @@ public:
     }
 
     // Zero while copying currency and issuer.
-    void zero (const STAmount& saTmpl)
+    void clear (const STAmount& saTmpl)
     {
         mCurrency = saTmpl.mCurrency;
         mIssuer = saTmpl.mIssuer;
         mIsNative = saTmpl.mIsNative;
-        zero ();
+        clear ();
     }
-    void zero (const uint160& uCurrencyID, const uint160& uIssuerID)
+    void clear (const uint160& uCurrencyID, const uint160& uIssuerID)
     {
         mCurrency = uCurrencyID;
         mIssuer = uIssuerID;
         mIsNative = !uCurrencyID;
-        zero ();
+        clear ();
+    }
+
+    STAmount& operator=(beast::Zero)
+    {
+        clear ();
+        return *this;
     }
 
     int compare (const STAmount&) const;
@@ -789,7 +777,7 @@ public:
 
     STAmount getRound () const;
     void roundSelf ();
-    
+
     static void canonicalizeRound (bool isNative, std::uint64_t& value, int& offset, bool roundUp);
 
 private:
@@ -1278,7 +1266,7 @@ public:
 
     bool operator== (const STPathElement& t) const
     {
-        return ((mType & typeAccount) == (t.mType & typeAccount)) && 
+        return ((mType & typeAccount) == (t.mType & typeAccount)) &&
             (mAccountID == t.mAccountID) && (mCurrencyID == t.mCurrencyID) && (mIssuerID == t.mIssuerID);
     }
 

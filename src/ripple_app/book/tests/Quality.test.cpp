@@ -101,7 +101,7 @@ public:
                 1,       // limit: 1
                 1,  1);  // 1 in, 1 out
 
-            ceil_in (q, 
+            ceil_in (q,
                 10, 10, // 10 in, 10 out
                 5,      // limit: 5
                 5, 5);  // 5 in, 5 out
@@ -162,12 +162,12 @@ public:
             // 1 in, 1 out:
             Quality q (Amounts (amount(1),amount(1)));
 
-            ceil_out (q,  
+            ceil_out (q,
                 1,  1,    // 1 in, 1 out
                 1,        // limit 1
                 1,  1);   // 1 in, 1 out
 
-            ceil_out (q, 
+            ceil_out (q,
                 10, 10,   // 10 in, 10 out
                 5,        // limit 5
                 5, 5);    // 5 in, 5 out
@@ -230,7 +230,7 @@ public:
             Amount const limit (
                 raw (4131113916555555, -16));       // .4131113916555555
             Amounts const result (q.ceil_out (value, limit));
-            expect (! result.in.isZero());
+            expect (result.in != zero);
         }
     }
 

@@ -203,7 +203,7 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
 STAmount STAmount::mulRound (const STAmount& v1, const STAmount& v2,
                              const uint160& uCurrencyID, const uint160& uIssuerID, bool roundUp)
 {
-    if (v1.isZero () || v2.isZero ())
+    if (v1 == zero || v2 == zero)
         return STAmount (uCurrencyID, uIssuerID);
 
     if (v1.mIsNative && v2.mIsNative && uCurrencyID.isZero ())
@@ -267,10 +267,10 @@ STAmount STAmount::mulRound (const STAmount& v1, const STAmount& v2,
 STAmount STAmount::divRound (const STAmount& num, const STAmount& den,
                              const uint160& uCurrencyID, const uint160& uIssuerID, bool roundUp)
 {
-    if (den.isZero ())
+    if (den == zero)
         throw std::runtime_error ("division by zero");
 
-    if (num.isZero ())
+    if (num == zero)
         return STAmount (uCurrencyID, uIssuerID);
 
     std::uint64_t numVal = num.mValue, denVal = den.mValue;

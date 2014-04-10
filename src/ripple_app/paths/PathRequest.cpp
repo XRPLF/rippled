@@ -114,7 +114,7 @@ bool PathRequest::needsUpdate (bool newOnly, LedgerIndex index)
 bool PathRequest::isValid (RippleLineCache::ref crCache)
 {
     ScopedLockType sl (mLock);
-    bValid = raSrcAccount.isSet () && raDstAccount.isSet () && saDstAmount.isPositive ();
+    bValid = raSrcAccount.isSet () && raDstAccount.isSet () && saDstAmount > zero;
     Ledger::pointer lrLedger = crCache->getLedger ();
 
     if (bValid)
@@ -246,7 +246,7 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
         if (!saDstAmount.bSetJson (jvParams["destination_amount"]) ||
                 (saDstAmount.getCurrency ().isZero () && saDstAmount.getIssuer ().isNonZero ()) ||
                 (saDstAmount.getCurrency () == CURRENCY_BAD) ||
-                !saDstAmount.isPositive ())
+                saDstAmount <= zero)
         {
             jvStatus = rpcError (rpcDST_AMT_MALFORMED);
             return PFR_PJ_INVALID;

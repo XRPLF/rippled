@@ -212,7 +212,7 @@ dir() const noexcept
                 m_offer.account(), m_offer.amount().out));
 
             // Check for unfunded offer
-            if (! owner_funds.isPositive())
+            if (owner_funds <= zero)
             {
                 // If the owner's balance in the pristine view is the same,
                 // we haven't modified the balance and therefore the
@@ -270,7 +270,7 @@ dir() const noexcept
 
 //------------------------------------------------------------------------------
 
-/** 
+/**
   Does everything an OfferStream does, and:
   - remove offers that became unfunded (if path is used)
 */

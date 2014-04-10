@@ -32,7 +32,7 @@ bool OfferCreateTransactor::isValidOffer (
     std::unordered_set<uint160, beast::hardened_hash<uint160>>& usAccountTouched,
     STAmount& saOfferFunds)
 {
-    if (sleOffer->isFieldPresent (sfExpiration) && 
+    if (sleOffer->isFieldPresent (sfExpiration) &&
         sleOffer->getFieldU32 (sfExpiration) <= mEngine->getLedger ()->getParentCloseTimeNC ())
     {
         // Offer is expired. Expired offers are considered unfunded. Delete it.
@@ -42,7 +42,7 @@ bool OfferCreateTransactor::isValidOffer (
 
         return false;
     }
-    
+
     if (uOfferOwnerID == uTakerAccountID)
     {
         // Would take own offer. Consider old offer expired. Delete it.
@@ -52,8 +52,8 @@ bool OfferCreateTransactor::isValidOffer (
 
         return false;
     }
-    
-    if (!saOfferGets.isPositive () || !saOfferPays.isPositive ())
+
+    if (saOfferGets <= zero || saOfferPays <= zero)
     {
         // Offer has bad amounts. Consider offer expired. Delete it.
         m_journal.warning << "isValidOffer: BAD OFFER:" <<
@@ -64,13 +64,13 @@ bool OfferCreateTransactor::isValidOffer (
 
         return false;
     }
-    
+
     m_journal.trace <<
         "isValidOffer: saOfferPays=" << saOfferPays.getFullText ();
 
     saOfferFunds = mEngine->view ().accountFunds (uOfferOwnerID, saOfferPays);
 
-    if (!saOfferFunds.isPositive ())
+    if (saOfferFunds <= zero)
     {
         // Offer is unfunded, possibly due to previous balance action.
         m_journal.debug << "isValidOffer: offer unfunded: delete";
@@ -107,7 +107,7 @@ bool OfferCreateTransactor::canCross (
     bool& isUnfunded,
     TER& terResult) const
 {
-    if (!saTakerFunds.isPositive ())
+    if (saTakerFunds <= zero)
     {
         // Taker is out of funds. Don't create the offer.
         isUnfunded = true;
@@ -115,7 +115,7 @@ bool OfferCreateTransactor::canCross (
         return false;
     }
 
-    if (!saSubTakerPays.isPositive() || !saSubTakerGets.isPositive())
+    if (saSubTakerPays <= zero || saSubTakerGets <= zero)
     {
         // Offer is completely consumed
         terResult = tesSUCCESS;
@@ -159,11 +159,11 @@ bool OfferCreateTransactor::canCross (
     @param saTakerGets Limit for taker to get.
     @param saTakerPaid Actual amount the taker paid
     @param saTakerGot Actual amount the taker got
-    @param saTakerIssuerFee Actual 
+    @param saTakerIssuerFee Actual
     @param saOfferIssuerFee Actual
 
     @note Buy vs. Sell semantics:
-    
+
     In Ripple, placed offers are always executed at the rate at which they were
     placed. However, the offer we are processing hasn't been placed yet and it
     can cross with offers that have. Such crossing offers can be consumed by
@@ -174,7 +174,7 @@ bool OfferCreateTransactor::canCross (
     are consumed.
 
     First, consider the case where a user is trying to place an offer to buy
-    1 BTC for 700 USD: 
+    1 BTC for 700 USD:
     If an offer to giving 0.5 BTC for 300 USD is on the books, the offers cross
     and under buy semantics the user buys 0.5 BTC for 300 USD (less than the
     350 USD he was willing to pay) and the offer is adjusted and placed on the
@@ -201,8 +201,8 @@ bool OfferCreateTransactor::applyOffer (
 {
     saOfferGets.throwComparable (saTakerFunds);
 
-    assert (saOfferFunds.isPositive () && saTakerFunds.isPositive ()); // Both must have funds.
-    assert (saOfferGets.isPositive () && saOfferPays.isPositive ()); // Must not be a null offer.
+    assert (saOfferFunds > zero && saTakerFunds > zero); // Both must have funds.
+    assert (saOfferGets > zero && saOfferPays > zero); // Must not be a null offer.
 
     // Available = limited by funds.
     // Limit offerer funds available, by transfer fees.
@@ -292,7 +292,7 @@ bool OfferCreateTransactor::applyOffer (
                               ? saTakerFunds - saTakerPaid // Not enough funds to cover fee, stiff issuer the rounding error.
                               : saTakerCost - saTakerPaid;
         WriteLog (lsINFO, STAmount) << "applyOffer: saTakerIssuerFee=" << saTakerIssuerFee.getFullText ();
-        assert (!saTakerIssuerFee.isNegative ());
+        assert (saTakerIssuerFee >= zero);
     }
 
     if (uOfferPaysRate == QUALITY_ONE)
@@ -314,17 +314,17 @@ bool OfferCreateTransactor::applyOffer (
     return saTakerGot >= saOfferPaysAvailable;              // True, if consumed offer.
 }
 
-/** Take as much as possible. 
+/** Take as much as possible.
     We adjusts account balances and charges fees on top to taker.
 
     @param uBookBase The order book to take against.
     @param saTakerPays What the taker offers (w/ issuer)
     @param saTakerGets What the taker wanted (w/ issuer)
-    @param saTakerPaid What taker could have paid including saved not including 
+    @param saTakerPaid What taker could have paid including saved not including
                        fees. To reduce an offer.
     @param saTakerGot What taker got not including fees. To reduce an offer.
     @param bUnfunded if tesSUCCESS, consider offer unfunded after taking.
-    @return tesSUCCESS, terNO_ACCOUNT, telFAILED_PROCESSING, or 
+    @return tesSUCCESS, terNO_ACCOUNT, telFAILED_PROCESSING, or
             tecFAILED_PROCESSING
 */
 TER OfferCreateTransactor::takeOffers (
@@ -361,7 +361,7 @@ TER OfferCreateTransactor::takeOffers (
     TER terResult = temUNCERTAIN;
 
     // Offers that became unfunded.
-    std::unordered_set<uint256, beast::hardened_hash<uint256>> usOfferUnfundedBecame; 
+    std::unordered_set<uint256, beast::hardened_hash<uint256>> usOfferUnfundedBecame;
 
     // Accounts touched.
     std::unordered_set<uint160, beast::hardened_hash<uint160>> usAccountTouched;
@@ -400,8 +400,8 @@ TER OfferCreateTransactor::takeOffers (
                     "/" <<
                     RippleAddress::createHumanAccountID (saTakerPays.getIssuer()) <<
                 "' - XRP - '" <<
-                    STAmount::createHumanCurrency(saTakerGets.getCurrency ()) << 
-                    "/" << 
+                    STAmount::createHumanCurrency(saTakerGets.getCurrency ()) <<
+                    "/" <<
                     RippleAddress::createHumanAccountID (saTakerGets.getIssuer()) <<
                 "'";
         }
@@ -416,27 +416,27 @@ TER OfferCreateTransactor::takeOffers (
         std::uint64_t uTipQuality = directBookIter.getCurrentQuality();
 
 #ifdef RIPPLE_AUTOBRIDGE
-        if (bridgeBookIn && bridgeBookIn->nextOffer() && 
+        if (bridgeBookIn && bridgeBookIn->nextOffer() &&
             bridgeBookOut && bridgeBookOut->nextOffer())
         {
             STAmount bridgeIn = STAmount::setRate (bridgeBookIn->getCurrentQuality());
             STAmount bridgeOut = STAmount::setRate (bridgeBookOut->getCurrentQuality());
 
-            m_journal.error << 
+            m_journal.error <<
                 "The direct quality is: " << STAmount::setRate (uTipQuality);
 
-            m_journal.error << 
+            m_journal.error <<
                 "The bridge-to-XRP quality is: " << bridgeIn;
 
-            m_journal.error << 
+            m_journal.error <<
                 "The bridge-from-XRP quality is: " << bridgeOut;
 
             m_journal.error <<
-                "The bridge synthetic quality is: " << 
+                "The bridge synthetic quality is: " <<
                 STAmount::multiply (bridgeIn, bridgeOut, CURRENCY_ONE, ACCOUNT_ONE);
         }
 #endif
-        
+
         if (!canCross(
                 saTakerFunds,
                 saSubTakerPays,
@@ -461,7 +461,7 @@ TER OfferCreateTransactor::takeOffers (
             m_journal.warning <<
                 "takeOffers: offer not found : " << offerIndex;
             usMissingOffers.insert (missingOffer_t (
-                directBookIter.getCurrentIndex (), 
+                directBookIter.getCurrentIndex (),
                 directBookIter.getCurrentDirectory ()));
 
             continue;
@@ -600,12 +600,12 @@ TER OfferCreateTransactor::takeOffers (
                 // TODO check the synthetic case here (to ensure there
                 //      is no corruption)
 
-                if (!saOfferPays.isPositive () || !saOfferGets.isPositive ())
+                if (saOfferPays <= zero || saOfferGets <= zero)
                 {
-                    m_journal.warning << 
+                    m_journal.warning <<
                         "takeOffers: ILLEGAL OFFER RESULT.";
                     bUnfunded   = true;
-                    terResult   = bOpenLedger 
+                    terResult   = bOpenLedger
                                     ? telFAILED_PROCESSING
                                     : tecFAILED_PROCESSING;
                 }
@@ -757,7 +757,7 @@ TER OfferCreateTransactor::doApply ()
     // FIXME understand why we use SequenceNext instead of current transaction
     //       sequence to determine the transaction. Why is the offer seuqnce
     //       number insufficient?
-    
+
     std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
     std::uint32_t const uSequence = mTxn.getSequence ();
 
@@ -811,7 +811,7 @@ TER OfferCreateTransactor::doApply ()
 
         terResult   = temBAD_OFFER;
     }
-    else if (!saTakerPays.isPositive () || !saTakerGets.isPositive ())
+    else if (saTakerPays <= zero || saTakerGets <= zero)
     {
         m_journal.warning <<
             "Malformed offer: bad amount";
@@ -840,7 +840,7 @@ TER OfferCreateTransactor::doApply ()
 
         terResult   = temBAD_ISSUER;
     }
-    else if (!lesActive.accountFunds (mTxnAccountID, saTakerGets).isPositive ())
+    else if (lesActive.accountFunds (mTxnAccountID, saTakerGets) <= zero)
     {
         m_journal.warning <<
             "delay: Offers must be at least partially funded.";
@@ -878,7 +878,7 @@ TER OfferCreateTransactor::doApply ()
             // might not even have been an offer - we don't care.
 
             if (m_journal.warning) m_journal.warning <<
-                "offer not found: " << 
+                "offer not found: " <<
                 RippleAddress::createHumanAccountID (mTxnAccountID) <<
                 " : " << uCancelSequence <<
                 " : " << uCancelIndex.ToString ();
@@ -886,11 +886,11 @@ TER OfferCreateTransactor::doApply ()
     }
 
     // We definitely know the time that the parent ledger closed but we do not
-    // know the closing time of the ledger under construction. 
+    // know the closing time of the ledger under construction.
     // FIXME: Make sure that expiration is documented in terms of the close time
     //        of the previous ledger.
-    bool bExpired = 
-        bHaveExpiration && 
+    bool bExpired =
+        bHaveExpiration &&
         (mEngine->getLedger ()->getParentCloseTimeNC () >= uExpiration);
 
     // If all is well and this isn't an offer to XRP, then we make sure we are
@@ -911,7 +911,7 @@ TER OfferCreateTransactor::doApply ()
         else if (isSetBit (sleTakerPays->getFieldU32 (sfFlags), lsfRequireAuth))
         {
             SLE::pointer sleRippleState (mEngine->entryCache (
-                ltRIPPLE_STATE, 
+                ltRIPPLE_STATE,
                 Ledger::getRippleStateIndex (
                     mTxnAccountID, uPaysIssuerID, uPaysCurrency)));
 
@@ -923,7 +923,7 @@ TER OfferCreateTransactor::doApply ()
 
             if (!sleRippleState)
             {
-                terResult   = isSetBit (mParams, tapRETRY) 
+                terResult   = isSetBit (mParams, tapRETRY)
                     ? terNO_LINE
                     : tecNO_LINE;
             }
@@ -986,7 +986,7 @@ TER OfferCreateTransactor::doApply ()
             if (m_journal.debug)
             {
                 m_journal.debug <<
-                    "takeOffers: AFTER saTakerPays=" << 
+                    "takeOffers: AFTER saTakerPays=" <<
                     saTakerPays.getFullText ();
                 m_journal.debug <<
                     "takeOffers: AFTER saTakerGets=" <<
@@ -1019,11 +1019,11 @@ TER OfferCreateTransactor::doApply ()
         // nothing to do
         nothing ();
     }
-    else if (saTakerPays.isNegative () || saTakerGets.isNegative ())
+    else if (saTakerPays < zero || saTakerGets < zero)
     {
         // If ledger is not final, can vote no.
-        // When we are processing an open ledger, failures are local and we charge no fee; 
-        // otherwise we must claim a fee (even if they do nothing else due to an error) 
+        // When we are processing an open ledger, failures are local and we charge no fee;
+        // otherwise we must claim a fee (even if they do nothing else due to an error)
         // to prevent a DoS.
         terResult   = bOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
     }
@@ -1033,11 +1033,11 @@ TER OfferCreateTransactor::doApply ()
         lesActive.swapWith (lesCheckpoint); // Restore with just fees paid.
     }
     else if (
-        !saTakerPays.isPositive()                                           // Wants nothing more.
-        || !saTakerGets.isPositive()                                        // Offering nothing more.
-        || bImmediateOrCancel                                               // Do not persist.
-        || !lesActive.accountFunds (mTxnAccountID, saTakerGets).isPositive () // Not funded.
-        || bUnfunded)                                                       // Consider unfunded.
+        saTakerPays <= zero                                             // Wants nothing more.
+        || saTakerGets <= zero                                          // Offering nothing more.
+        || bImmediateOrCancel                                           // Do not persist.
+        || lesActive.accountFunds (mTxnAccountID, saTakerGets) <= zero  // Not funded.
+        || bUnfunded)                                                   // Consider unfunded.
     {
         // Complete as is.
         nothing ();
@@ -1047,7 +1047,7 @@ TER OfferCreateTransactor::doApply ()
         // If we are here, the signing account had an insufficient reserve
         // *prior* to our processing. We use the prior balance to simplify
         // client writing and make the user experience better.
-        
+
         if (bOpenLedger) // Ledger is not final, can vote no.
         {
             // Hope for more reserve to come in or more offers to consume. If we
@@ -1077,12 +1077,12 @@ TER OfferCreateTransactor::doApply ()
     {
         // We need to place the remainder of the offer into its order book.
         if (m_journal.trace) m_journal.trace <<
-            "offer not fully consumed:" << 
+            "offer not fully consumed:" <<
             " saTakerPays=" << saTakerPays.getFullText () <<
             " saTakerGets=" << saTakerGets.getFullText ();
 
         // Add offer to owner's directory.
-        terResult   = lesActive.dirAdd (uOwnerNode, 
+        terResult   = lesActive.dirAdd (uOwnerNode,
             Ledger::getOwnerDirIndex (mTxnAccountID), uLedgerIndex,
             BIND_TYPE (&Ledger::ownerDirDescriber, P_1, P_2, mTxnAccountID));
 
@@ -1109,7 +1109,7 @@ TER OfferCreateTransactor::doApply ()
 
             // Add offer to order book.
             terResult   = lesActive.dirAdd (uBookNode, uDirectory, uLedgerIndex,
-                BIND_TYPE (&Ledger::qualityDirDescriber, P_1, P_2, 
+                BIND_TYPE (&Ledger::qualityDirDescriber, P_1, P_2,
                     saTakerPays.getCurrency (), uPaysIssuerID,
                     saTakerGets.getCurrency (), uGetsIssuerID, uRate));
         }
@@ -1187,15 +1187,15 @@ TER OfferCreateTransactor::doApply ()
         {
             SLE::pointer sleDirectory (
                 lesActive.entryCache (ltDIR_NODE, indexes.second));
-            
+
             if (sleDirectory)
             {
                 STVector256 svIndexes = sleDirectory->getFieldV256 (sfIndexes);
                 std::vector<uint256>& vuiIndexes = svIndexes.peekValue();
-                
+
                 auto it = std::find (
                     vuiIndexes.begin (), vuiIndexes.end (), indexes.first);
-                
+
                 if (it != vuiIndexes.end ())
                 {
                     vuiIndexes.erase (it);
